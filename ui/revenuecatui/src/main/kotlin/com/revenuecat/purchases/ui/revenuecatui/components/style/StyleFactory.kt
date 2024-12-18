@@ -11,10 +11,8 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionary
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.string
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
@@ -33,9 +31,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
 internal class StyleFactory(
-    private val windowSize: ScreenCondition,
-    private val isEligibleForIntroOffer: Boolean,
-    private val componentState: ComponentViewState,
     private val localizationDictionary: LocalizationDictionary,
 ) {
 
