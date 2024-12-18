@@ -38,7 +38,8 @@ android {
         }
 
         Properties properties = new Properties()
-        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+        def localProperties = project.rootProject.file('local.properties')
+        if (localProperties.exists()) properties.load(localProperties.newDataInputStream())
         buildConfigField(
                 "boolean",
                 "FLAG_PAYWALL_COMPONENTS",
