@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
 import org.junit.Before
@@ -72,13 +73,14 @@ class StackComponentViewTests {
                 dark = ColorInfo.Hex(expectedDarkColor.toArgb()),
             ),
         )
+        val state = FakePaywallState(component)
 
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as StackComponentStyle
             },
-            act = { StackComponentView(style = it, modifier = Modifier.testTag("stack")) },
+            act = { StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack")) },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -115,6 +117,7 @@ class StackComponentViewTests {
                 width = borderWidthDp
             ),
         )
+        val state = FakePaywallState(component)
 
         themeChangingTest(
             arrange = {
@@ -124,7 +127,7 @@ class StackComponentViewTests {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as StackComponentStyle
             },
-            act = { StackComponentView(style = it, modifier = Modifier.testTag("stack")) },
+            act = { StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack")) },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -171,6 +174,7 @@ class StackComponentViewTests {
             ),
             backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
         )
+        val state = FakePaywallState(component)
 
         themeChangingTest(
             arrange = {
@@ -186,7 +190,7 @@ class StackComponentViewTests {
                         .background(expectedBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    StackComponentView(style = it, modifier = Modifier.testTag("stack"))
+                    StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack"))
                 }
             },
             assert = { theme ->

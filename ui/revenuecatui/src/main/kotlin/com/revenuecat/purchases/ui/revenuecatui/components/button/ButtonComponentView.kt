@@ -16,6 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -37,17 +44,21 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import kotlinx.coroutines.launch
+import java.net.URL
 
 @Composable
 internal fun ButtonComponentView(
     style: ButtonComponentStyle,
+    state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
     StackComponentView(
         style.stackComponentStyle,
+        state,
         modifier.clickable(enabled = isClickable) {
             isClickable = false
             coroutineScope.launch {
@@ -61,7 +72,7 @@ internal fun ButtonComponentView(
 @Preview
 @Composable
 private fun ButtonComponentView_Preview_Default() {
-    ButtonComponentView(previewButtonComponentStyle())
+    ButtonComponentView(previewButtonComponentStyle(), previewEmptyState())
 }
 
 @Composable
@@ -111,4 +122,30 @@ private fun previewButtonComponentStyle(
         action = action,
         actionHandler = actionHandler,
     )
+}
+
+private fun previewEmptyState(): PaywallState.Loaded.Components {
+    val data = PaywallComponentsData(
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                // This would normally contain at least one ButtonComponent, but that's not needed for previews.
+                stack = StackComponent(components = emptyList()),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                stickyFooter = null,
+            ),
+        ),
+        componentsLocalizations = emptyMap(),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "identifier",
+        serverDescription = "serverDescription",
+        metadata = emptyMap(),
+        availablePackages = emptyList(),
+        paywallComponents = data,
+    )
+
+    return PaywallState.Loaded.Components(offering, data)
 }

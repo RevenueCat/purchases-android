@@ -27,6 +27,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
 import org.assertj.core.api.Assertions.assertThat
@@ -71,13 +72,14 @@ class TextComponentViewTests {
                 dark = ColorInfo.Hex(expectedDarkColor.toArgb()),
             ),
         )
+        val state = FakePaywallState(component)
 
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
-            act = { TextComponentView(style = it) },
+            act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithText(localizationDictionary.values.first().value)
@@ -111,13 +113,14 @@ class TextComponentViewTests {
                 dark = ColorInfo.Hex(expectedDarkColor.toArgb()),
             ),
         )
+        val state = FakePaywallState(component)
 
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
-            act = { TextComponentView(style = it) },
+            act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithText(localizationDictionary.values.first().value)
@@ -145,19 +148,18 @@ class TextComponentViewTests {
         val textId = localizationDictionary.keys.first()
         val color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val size = Size(Fit, Fit)
+        val largeTextComponent = TextComponent(text = textId, color = color, fontSize = FontSize.HEADING_L, size = size)
+        val smallTextComponent = TextComponent(text = textId, color = color, fontSize = FontSize.BODY_S, size = size)
+        val state = FakePaywallState(largeTextComponent, smallTextComponent)
         setContent {
-            val largeTextStyle = styleFactory.create(
-                TextComponent(text = textId, color = color, fontSize = FontSize.HEADING_L, size = size)
-            ).getOrThrow() as TextComponentStyle
-            val smallTextStyle = styleFactory.create(
-                TextComponent(text = textId, color = color, fontSize = FontSize.BODY_S, size = size)
-            ).getOrThrow() as TextComponentStyle
+            val largeTextStyle = styleFactory.create(largeTextComponent).getOrThrow() as TextComponentStyle
+            val smallTextStyle = styleFactory.create(smallTextComponent).getOrThrow() as TextComponentStyle
 
             // Act
             MaterialTheme {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    TextComponentView(style = largeTextStyle, modifier = Modifier.testTag("large"))
-                    TextComponentView(style = smallTextStyle, modifier = Modifier.testTag("small"))
+                    TextComponentView(style = largeTextStyle, state = state, modifier = Modifier.testTag("large"))
+                    TextComponentView(style = smallTextStyle, state = state, modifier = Modifier.testTag("small"))
                 }
             }
         }
@@ -186,4 +188,6 @@ class TextComponentViewTests {
      */
     private fun SemanticsNodeInteraction.assertBackgroundColorEquals(color: Color): SemanticsNodeInteraction =
         assertPixelColorEquals(startX = 0, startY = 0, width = 4, height = 4, color = color)
+
+
 }

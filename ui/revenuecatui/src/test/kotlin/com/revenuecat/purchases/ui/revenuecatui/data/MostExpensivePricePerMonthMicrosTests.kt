@@ -1,17 +1,17 @@
-package com.revenuecat.purchases.ui.revenuecatui.components.state
+package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext.VariableContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import java.text.NumberFormat
 import java.util.Locale
 
-class VariableContextTests {
+class MostExpensivePricePerMonthMicrosTests {
 
     @Test
     fun `mostExpensivePricePerMonthMicros should be null for empty package list`() {
@@ -19,7 +19,7 @@ class VariableContextTests {
         val packages = emptyList<Package>()
 
         // Act
-        val actual = VariableContext(packages).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(packages = packages).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isNull()
@@ -32,7 +32,7 @@ class VariableContextTests {
         val expected = 1_000_000L
 
         // Act
-        val actual = VariableContext(listOf(package1)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(package1).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -47,7 +47,7 @@ class VariableContextTests {
         val expected = 2_000_000L
 
         // Act
-        val actual = VariableContext(listOf(package1, package2, package3)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(package1, package2, package3).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -63,7 +63,7 @@ class VariableContextTests {
         val expected = weekly.product.pricePerMonth()?.amountMicros
         
         // Act
-        val actual = VariableContext(listOf(monthly, weekly, yearly)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(monthly, weekly, yearly).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -77,7 +77,7 @@ class VariableContextTests {
         val expected = 1_000_000L
 
         // Act
-        val actual = VariableContext(listOf(package1, package2)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(package1, package2).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -90,7 +90,7 @@ class VariableContextTests {
         val package2 = lifetimePackageWithPrice(2_000_000_000)
 
         // Act
-        val actual = VariableContext(listOf(package1, package2)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(package1, package2).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isNull()

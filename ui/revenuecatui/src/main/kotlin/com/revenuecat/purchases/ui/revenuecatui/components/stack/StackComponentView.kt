@@ -17,6 +17,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -49,12 +56,15 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberCo
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import java.net.URL
 
 @Suppress("LongMethod")
 @Composable
 internal fun StackComponentView(
     style: StackComponentStyle,
+    state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) {
     if (style.visible) {
@@ -74,7 +84,7 @@ internal fun StackComponentView(
         }
 
         val content: @Composable () -> Unit = remember(style.children) {
-            @Composable { style.children.forEach { child -> ComponentView(style = child) } }
+            @Composable { style.children.forEach { child -> ComponentView(style = child, state = state) } }
         }
 
         // Show the right container composable depending on the dimension.
@@ -142,6 +152,7 @@ private fun StackComponentView_Preview_Vertical() {
                     y = 3.0,
                 ),
             ),
+            state = previewEmptyState(),
         )
     }
 }
@@ -175,6 +186,7 @@ private fun StackComponentView_Preview_Horizontal() {
                     y = 5.0,
                 ),
             ),
+            state = previewEmptyState(),
         )
     }
 }
@@ -247,6 +259,7 @@ private fun StackComponentView_Preview_ZLayer() {
                     y = 5.0,
                 ),
             ),
+            state = previewEmptyState(),
         )
     }
 }
@@ -290,3 +303,29 @@ private fun previewChildren() = listOf(
         margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
     ),
 )
+
+private fun previewEmptyState(): PaywallState.Loaded.Components {
+    val data = PaywallComponentsData(
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                // This would normally contain at least one StackComponent, but that's not needed for previews.
+                stack = StackComponent(components = emptyList()),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                stickyFooter = null,
+            ),
+        ),
+        componentsLocalizations = emptyMap(),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "identifier",
+        serverDescription = "serverDescription",
+        metadata = emptyMap(),
+        availablePackages = emptyList(),
+        paywallComponents = data,
+    )
+
+    return PaywallState.Loaded.Components(offering, data)
+}

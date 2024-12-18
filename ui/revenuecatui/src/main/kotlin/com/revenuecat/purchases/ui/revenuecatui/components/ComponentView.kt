@@ -13,6 +13,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 /**
  * A Composable that can show any [ComponentStyle].
@@ -21,10 +22,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentVie
 @Composable
 internal fun ComponentView(
     style: ComponentStyle,
+    state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) = when (style) {
-    is StackComponentStyle -> StackComponentView(style = style, modifier = modifier)
-    is TextComponentStyle -> TextComponentView(style = style, modifier = modifier)
+    is StackComponentStyle -> StackComponentView(style = style, state = state, modifier = modifier)
+    is TextComponentStyle -> TextComponentView(style = style, state = state, modifier = modifier)
     is ImageComponentStyle -> ImageComponentView(style = style, modifier = modifier)
-    is ButtonComponentStyle -> ButtonComponentView(style = style, modifier = modifier)
+    is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, modifier = modifier)
 }
