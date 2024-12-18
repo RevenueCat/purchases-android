@@ -137,7 +137,7 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
                 stickyFooter = null,
             ),
         ),
-        componentsLocalizations = emptyMap(),
+        componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
         defaultLocaleIdentifier = LocaleId("en_US"),
     )
     val offering = Offering(
