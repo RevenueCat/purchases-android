@@ -1,15 +1,20 @@
-## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Fix multi-tier template to allow optional header image (#1971) via Josh Holtz (@joshdholtz)
+## RevenueCat SDK
+### 📦 Dependency Updates
+* Bump fastlane from 2.225.0 to 2.226.0 (#1973) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `3b1e7cf` to `4ee8579` (#1980) via dependabot[bot] (@dependabot[bot])
 
 ### 🔄 Other Changes
-* [Paywalls V2] Adds first version of `LoadedPaywallComponents` (#1970) via JayShortway (@JayShortway)
-* [Paywalls V2] Add `ButtonComponentView` (#1963) via Toni Rico (@tonidero)
-* [Paywalls V2] Adds `PaywallState.Loaded.Components` (#1969) via JayShortway (@JayShortway)
-* [Paywalls V2] Adds image background tests (#1967) via JayShortway (@JayShortway)
-* [Paywalls V2] `TextComponentView` updates when the theme changes (#1966) via JayShortway (@JayShortway)
-* [Paywalls V2] Adds a `StyleFactory` (#1965) via JayShortway (@JayShortway)
-* [EXTERNAL] fix: update polish translations (#1919) via @radko93 (#1964) via JayShortway (@JayShortway)
-* [Paywalls V2] Adds `ImageComponentView` (#1959) via Toni Rico (@tonidero)
-* WebPurchaseRedemption: Rename `AlreadyRedeemed` result to `PurchaseBelongsToOtherUser` (#1962) via Toni Rico (@tonidero)
-* [Paywalls V2] Extends support for blurred shadows to all Android versions (#1957) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes previews of `ButtonComponentView`, `StackComponentView` and `TextComponentView` (#1992) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds a `FLAG_PAYWALL_COMPONENTS` build flag (#1990) via JayShortway (@JayShortway)
+* [Paywalls V2] Moves more state to `PaywallState` (#1988) via JayShortway (@JayShortway)
+* [PaywallsV2] Improve `ButtonComponentView` to handle disabling the button and add `PurchasePackage` action (#1984) via Toni Rico (@tonidero)
+* [Paywalls V2] `TextComponentStyle` no longer needs a Composable context (#1986) via JayShortway (@JayShortway)
+* Make web redemption link APIs stable (#1985) via Toni Rico (@tonidero)
+* [WEB-1757] Handle new backend error codes that may show in the redemption endpoint (#1987) via Toni Rico (@tonidero)
+* [Paywalls V2] Stack background, borders and shadows update depending on the theme (#1982) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes `TextComponentView`'s  font size (#1981) via JayShortway (@JayShortway)
+* [Paywalls V2] Various minor fixes (#1979) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds support to PaywallsTester (#1978) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PaywallComponentsData` to `Offering` (#1977) via JayShortway (@JayShortway)
+* Parse web redemption link strings more defensively (#1976) via Toni Rico (@tonidero)
+* Add web redemption parse method for strings to support hybrids (#1972) via Toni Rico (@tonidero)
