@@ -36,6 +36,14 @@ android {
             resources.excludes.add("META-INF/LICENSE.md")
             resources.excludes.add("META-INF/LICENSE-notice.md")
         }
+
+        Properties properties = new Properties()
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+        buildConfigField(
+                "boolean",
+                "FLAG_PAYWALL_COMPONENTS",
+                properties.getOrDefault("revenuecat.flag.paywallComponents", "false")
+        )
     }
 
     testOptions {
