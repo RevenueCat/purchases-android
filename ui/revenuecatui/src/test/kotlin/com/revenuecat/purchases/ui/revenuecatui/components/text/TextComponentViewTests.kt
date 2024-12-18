@@ -300,4 +300,6 @@ class TextComponentViewTests {
      */
     private fun SemanticsNodeInteraction.assertBackgroundColorEquals(color: Color): SemanticsNodeInteraction =
         assertPixelColorEquals(startX = 0, startY = 0, width = 4, height = 4, color = color)
+
+
 }
