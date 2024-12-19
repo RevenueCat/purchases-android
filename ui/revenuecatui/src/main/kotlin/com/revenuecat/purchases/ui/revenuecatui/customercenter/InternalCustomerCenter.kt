@@ -97,26 +97,25 @@ private fun CustomerCenterLoaded(
 ) {
     val configuration = state.customerCenterConfigData
     if (state.purchaseInformation != null) {
-        if (configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)) {
-            val managementScreen = configuration.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
+        configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
                 onDetermineFlow = onDetermineFlow,
             )
-        } else {
+        } ?: run {
+            // Handle missing management screen
             // WrongPlatformView
         }
     } else {
-        if (configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE)) {
-            val noActiveScreen = configuration.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
+        configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
                 screen = noActiveScreen,
                 onDetermineFlow = onDetermineFlow,
             )
-        } else {
+        } ?: run {
             // Fallback with a restore button
-//            NoSubscriptionsView(configuration = configuration)
+            // NoSubscriptionsView(configuration = configuration)
         }
     }
 }
