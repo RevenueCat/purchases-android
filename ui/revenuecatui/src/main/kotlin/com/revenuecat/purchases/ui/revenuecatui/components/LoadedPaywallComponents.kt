@@ -3,10 +3,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -82,12 +83,14 @@ internal fun LoadedPaywallComponents(
     val background = config.background.toBackgroundStyle()
 
     Column(modifier = modifier.background(background)) {
+        val scrollState = rememberScrollState()
         ComponentView(
             style = style,
             state = state,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                .verticalScroll(scrollState),
         )
         footerComponentStyle?.let {
             StickyFooterComponentView(
