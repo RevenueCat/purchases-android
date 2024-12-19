@@ -83,14 +83,13 @@ internal fun LoadedPaywallComponents(
     val background = config.background.toBackgroundStyle()
 
     Column(modifier = modifier.background(background)) {
-        val scrollState = rememberScrollState()
         ComponentView(
             style = style,
             state = state,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .verticalScroll(scrollState),
+                .verticalScroll(rememberScrollState()),
         )
         footerComponentStyle?.let {
             StickyFooterComponentView(
