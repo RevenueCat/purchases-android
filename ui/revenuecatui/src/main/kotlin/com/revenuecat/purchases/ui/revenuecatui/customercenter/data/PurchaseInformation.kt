@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
-internal data class SubscriptionInformation(
+internal data class PurchaseInformation(
     val title: String,
     val durationTitle: String,
     val price: String,
