@@ -33,7 +33,7 @@ internal fun rememberUpdatedTextComponentState(
 ): TextComponentState =
     rememberUpdatedTextComponentState(
         style = style,
-        locale = { paywallState.locale },
+        localeProvider = { paywallState.locale },
         isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
         selected = selected,
     )
@@ -42,7 +42,7 @@ internal fun rememberUpdatedTextComponentState(
 @Composable
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
-    locale: () -> Locale,
+    localeProvider: () -> Locale,
     isEligibleForIntroOffer: Boolean = false,
     selected: Boolean = false,
 ): TextComponentState {
@@ -54,7 +54,7 @@ internal fun rememberUpdatedTextComponentState(
             initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
             initialSelected = selected,
             style = style,
-            locale = locale,
+            localeProvider = localeProvider,
         )
     }.apply {
         update(
@@ -71,7 +71,7 @@ internal class TextComponentState(
     initialIsEligibleForIntroOffer: Boolean,
     initialSelected: Boolean,
     private val style: TextComponentStyle,
-    private val locale: () -> Locale,
+    private val localeProvider: () -> Locale,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
@@ -88,7 +88,7 @@ internal class TextComponentState(
 
     @get:JvmSynthetic
     val text by derivedStateOf {
-        val localeId = locale().toLocaleId()
+        val localeId = localeProvider().toLocaleId()
         // TODO Fallback to default locale
         presentedPartial?.texts?.getValue(localeId)
             ?: style.texts.getValue(localeId)
