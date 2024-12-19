@@ -62,7 +62,7 @@ internal fun LoadedPaywallComponents(
     val windowSize = ScreenCondition.from(windowSizeClass.windowWidthSizeClass)
 
     val styleFactory = remember(state.locale, windowSize) {
-        StyleFactory(TODO())
+        StyleFactory(state.data.componentsLocalizations)
     }
 
     val config = state.data.componentsConfig.base
