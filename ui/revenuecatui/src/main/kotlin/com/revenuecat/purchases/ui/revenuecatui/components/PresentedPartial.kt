@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
 import dev.drewhamilton.poko.Poko
@@ -83,21 +84,21 @@ internal class PresentedConditions<T : PresentedPartial<T>>(
 @Suppress("ReturnCount")
 @JvmSynthetic
 internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<T>.toPresentedOverrides(
-    transform: (T) -> Result<P, PaywallValidationError>,
+    transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
 ): Result<PresentedOverrides<P>, PaywallValidationError> {
     val introOffer = introOffer?.let(transform)
-        ?.getOrElse { return Result.Error(it) }
+        ?.getOrElse { return Result.Error(it.head) }
 
     val selectedState = states?.selected?.let(transform)
-        ?.getOrElse { return Result.Error(it) }
+        ?.getOrElse { return Result.Error(it.head) }
 
     val states = states?.let { PresentedStates(selected = selectedState) }
 
     val conditions = conditions?.let { conditions ->
         PresentedConditions(
-            compact = conditions.compact?.let(transform)?.getOrElse { return Result.Error(it) },
-            medium = conditions.medium?.let(transform)?.getOrElse { return Result.Error(it) },
-            expanded = conditions.expanded?.let(transform)?.getOrElse { return Result.Error(it) },
+            compact = conditions.compact?.let(transform)?.getOrElse { return Result.Error(it.head) },
+            medium = conditions.medium?.let(transform)?.getOrElse { return Result.Error(it.head) },
+            expanded = conditions.expanded?.let(transform)?.getOrElse { return Result.Error(it.head) },
         )
     }
 

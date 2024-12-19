@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -31,6 +33,7 @@ internal fun rememberUpdatedTextComponentState(
 ): TextComponentState =
     rememberUpdatedTextComponentState(
         style = style,
+        locale = { paywallState.locale },
         isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
         selected = selected,
     )
@@ -39,6 +42,7 @@ internal fun rememberUpdatedTextComponentState(
 @Composable
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
+    locale: () -> Locale,
     isEligibleForIntroOffer: Boolean = false,
     selected: Boolean = false,
 ): TextComponentState {
@@ -50,6 +54,7 @@ internal fun rememberUpdatedTextComponentState(
             initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
             initialSelected = selected,
             style = style,
+            locale = locale,
         )
     }.apply {
         update(
@@ -66,6 +71,7 @@ internal class TextComponentState(
     initialIsEligibleForIntroOffer: Boolean,
     initialSelected: Boolean,
     private val style: TextComponentStyle,
+    private val locale: () -> Locale,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
@@ -81,7 +87,12 @@ internal class TextComponentState(
     val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
 
     @get:JvmSynthetic
-    val text by derivedStateOf { presentedPartial?.text ?: style.text }
+    val text by derivedStateOf {
+        val localeId = locale().toLocaleId()
+        // TODO Fallback to default locale
+        presentedPartial?.texts?.getValue(localeId)
+            ?: style.texts.getValue(localeId)
+    }
 
     @get:JvmSynthetic
     val color by derivedStateOf { presentedPartial?.partial?.color ?: style.color }
