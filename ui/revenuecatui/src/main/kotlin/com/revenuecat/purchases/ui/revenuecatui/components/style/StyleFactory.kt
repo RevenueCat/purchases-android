@@ -27,7 +27,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
-import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
@@ -101,27 +100,23 @@ internal class StyleFactory(
             // Map all overrides to PresentedOverrides.
             ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizationDictionary) }
             .orSuccessfullyNull()
-            // Pick a single PresentedPartial to show.
-            .map { it?.buildPresentedPartial(windowSize, isEligibleForIntroOffer, componentState) }
             .mapError { nonEmptyListOf(it) },
-    ) { text, presentedPartial ->
-        // Combine the text and PresentedPartial into a TextComponentStyle.
-        val partial = presentedPartial?.partial
-        val weight = (partial?.fontWeight ?: component.fontWeight).toFontWeight()
-
+    ) { text, presentedOverrides ->
+        val weight = component.fontWeight.toFontWeight()
         TextComponentStyle(
-            visible = partial?.visible ?: true,
-            text = presentedPartial?.text ?: text,
-            color = partial?.color ?: component.color,
-            fontSize = partial?.fontSize ?: component.fontSize,
+            visible = true,
+            text = text,
+            color = component.color,
+            fontSize = component.fontSize,
             fontWeight = weight,
-            fontFamily = (partial?.fontName ?: component.fontName)?.let { SystemFontFamily(it, weight) },
-            textAlign = (partial?.horizontalAlignment ?: component.horizontalAlignment).toTextAlign(),
-            horizontalAlignment = (partial?.horizontalAlignment ?: component.horizontalAlignment).toAlignment(),
-            backgroundColor = partial?.backgroundColor ?: component.backgroundColor,
-            size = partial?.size ?: component.size,
-            padding = (partial?.padding ?: component.padding).toPaddingValues(),
-            margin = (partial?.margin ?: component.margin).toPaddingValues(),
+            fontFamily = component.fontName?.let { SystemFontFamily(it, weight) },
+            textAlign = component.horizontalAlignment.toTextAlign(),
+            horizontalAlignment = component.horizontalAlignment.toAlignment(),
+            backgroundColor = component.backgroundColor,
+            size = component.size,
+            padding = component.padding.toPaddingValues(),
+            margin = component.margin.toPaddingValues(),
+            overrides = presentedOverrides,
         )
     }
 }

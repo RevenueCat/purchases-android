@@ -58,17 +58,26 @@ internal fun TextComponentView(
     style: TextComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
+    // Get a TextComponentState that calculates the overridden properties we should use.
+    val textState = rememberUpdatedTextComponentState(
+        style = style,
+        paywallState = state,
+        selected = selected,
+    )
+
+    // Process any variables in the text.
     val context = LocalContext.current
     val variableDataProvider = remember { VariableDataProvider(context.toResourceProvider()) }
     val text = rememberProcessedText(
-        originalText = style.text,
-        variables = variableDataProvider,
         state = state,
+        textState = textState,
+        variables = variableDataProvider,
     )
 
-    val colorStyle = rememberColorStyle(scheme = style.color)
-    val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val colorStyle = rememberColorStyle(scheme = textState.color)
+    val backgroundColorStyle = textState.backgroundColor?.let { rememberColorStyle(scheme = it) }
 
     // Get the text color if it's solid.
     val color = when (colorStyle) {
@@ -83,20 +92,20 @@ internal fun TextComponentView(
         )
     }
 
-    if (style.visible) {
+    if (textState.visible) {
         Markdown(
             text = text,
             modifier = modifier
-                .size(style.size, horizontalAlignment = style.horizontalAlignment)
-                .padding(style.margin)
+                .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
+                .padding(textState.margin)
                 .applyIfNotNull(backgroundColorStyle) { background(it) }
-                .padding(style.padding),
+                .padding(textState.padding),
             color = color,
-            fontSize = style.fontSize.toTextUnit(),
-            fontWeight = style.fontWeight,
-            fontFamily = style.fontFamily,
-            horizontalAlignment = style.horizontalAlignment,
-            textAlign = style.textAlign,
+            fontSize = textState.fontSize.toTextUnit(),
+            fontWeight = textState.fontWeight,
+            fontFamily = textState.fontFamily,
+            horizontalAlignment = textState.horizontalAlignment,
+            textAlign = textState.textAlign,
             style = textStyle,
         )
     }
@@ -104,11 +113,11 @@ internal fun TextComponentView(
 
 @Composable
 private fun rememberProcessedText(
-    originalText: String,
-    variables: VariableDataProvider,
     state: PaywallState.Loaded.Components,
+    textState: TextComponentState,
+    variables: VariableDataProvider,
 ): String {
-    val processedText by remember(originalText) {
+    val processedText by remember(state, textState) {
         derivedStateOf {
             state.selectedPackage?.let { selectedPackage ->
                 val discount = discountPercentage(
@@ -122,11 +131,11 @@ private fun rememberProcessedText(
                 VariableProcessor.processVariables(
                     variableDataProvider = variables,
                     context = variableContext,
-                    originalString = originalText,
+                    originalString = textState.text,
                     rcPackage = selectedPackage,
                     locale = java.util.Locale.forLanguageTag(state.locale.toLanguageTag()),
                 )
-            } ?: originalText
+            } ?: textState.text
         }
     }
 
@@ -379,6 +388,7 @@ private fun previewTextComponentStyle(
         size = size,
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
+        overrides = null,
     )
 }
 
