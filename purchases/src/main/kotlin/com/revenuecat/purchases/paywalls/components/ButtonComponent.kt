@@ -16,7 +16,7 @@ import kotlinx.serialization.encoding.Encoder
 @Poko
 @Serializable
 @SerialName("button")
-class ButtonComponent internal constructor(
+class ButtonComponent(
     @get:JvmSynthetic val action: Action,
     @get:JvmSynthetic val stack: StackComponent,
 ) : PaywallComponent {
