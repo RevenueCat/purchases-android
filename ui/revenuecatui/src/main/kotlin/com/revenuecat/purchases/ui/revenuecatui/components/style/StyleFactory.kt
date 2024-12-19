@@ -24,6 +24,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
@@ -46,8 +47,15 @@ internal class StyleFactory(
             is PackageComponent -> TODO("PackageComponentStyle is not yet implemented.")
             is PurchaseButtonComponent -> TODO("PurchaseButtonComponentStyle is not yet implemented.")
             is StackComponent -> createStackComponentStyle(component = component)
-            is StickyFooterComponent -> TODO("StickyFooterComponentStyle is not yet implemented.")
+            is StickyFooterComponent -> createStickyFooterComponentStyle(component = component)
             is TextComponent -> createTextComponentStyle(component = component)
+        }
+
+    fun createStickyFooterComponentStyle(
+        component: StickyFooterComponent,
+    ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
+        createStackComponentStyle(component.stack).map {
+            StickyFooterComponentStyle(stackComponentStyle = it)
         }
 
     private fun createStackComponentStyle(
