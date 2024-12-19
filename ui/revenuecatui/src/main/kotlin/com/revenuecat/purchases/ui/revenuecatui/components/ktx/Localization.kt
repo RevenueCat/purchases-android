@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.ktx
 
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
-import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionary
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingImageLocalization
@@ -15,6 +14,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.mapValuesOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import androidx.compose.ui.text.intl.Locale as ComposeLocale
 import java.util.Locale as JavaLocale
+
+internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
 
 /**
  * Retrieves a string from this [LocalizationDictionary] associated with the provided [key].
