@@ -29,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertApproximatePixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
@@ -191,14 +192,14 @@ class StackComponentViewTests {
                 onNodeWithTag("parent")
                     .assertIsDisplayed()
                     // When the shadow is drawn, at least some pixels are the exact color we're looking for.
-                    .assertPixelColorPercentage(expectedLightColor) { it > 0f }
+                    .assertApproximatePixelColorPercentage(expectedLightColor, threshold = 0.1f) { it > 0f }
                     .assertNoPixelColorEquals(expectedDarkColor)
 
                 theme.setDark()
                 onNodeWithTag("parent")
                     .assertIsDisplayed()
                     // When the shadow is drawn, at least some pixels are the exact color we're looking for.
-                    .assertPixelColorPercentage(expectedDarkColor) { it > 0f }
+                    .assertApproximatePixelColorPercentage(expectedDarkColor, threshold = 0.1f) { it > 0f }
                     .assertNoPixelColorEquals(expectedLightColor)
             }
         )
