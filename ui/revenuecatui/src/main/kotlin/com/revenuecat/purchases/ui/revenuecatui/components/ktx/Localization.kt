@@ -27,7 +27,7 @@ internal typealias LocalizationDictionary = NonEmptyMap<LocalizationKey, Localiz
 internal fun LocalizationDictionary.string(key: LocalizationKey): Result<String, MissingStringLocalization> =
     (get(key) as? LocalizationData.Text)?.value
         ?.let { Result.Success(it) }
-        ?: Result.Error(MissingStringLocalization(key)) // FIXME Add locale to this error!
+        ?: Result.Error(MissingStringLocalization(key))
 
 /**
  * Retrieves a string for all locales in this map, associated with the provided [key].
@@ -39,10 +39,10 @@ internal fun LocalizationDictionary.string(key: LocalizationKey): Result<String,
 internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.stringForAllLocales(
     key: LocalizationKey,
 ): Result<NonEmptyMap<LocaleId, String>, NonEmptyList<MissingStringLocalization>> =
-    mapValues { (_, localizationDictionary) ->
+    mapValues { (locale, localizationDictionary) ->
         localizationDictionary
             .string(key)
-            .mapError { nonEmptyListOf(it) }
+            .mapError { nonEmptyListOf(MissingStringLocalization(key, locale)) }
     }.mapValuesOrAccumulate { it }
 
 /**
@@ -55,7 +55,7 @@ internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.stringForAllLocales(
 internal fun LocalizationDictionary.image(key: LocalizationKey): Result<ThemeImageUrls, MissingImageLocalization> =
     (get(key) as? LocalizationData.Image)?.value
         ?.let { Result.Success(it) }
-        ?: Result.Error(MissingImageLocalization(key)) // FIXME Add locale to this error!
+        ?: Result.Error(MissingImageLocalization(key))
 
 @JvmSynthetic
 internal fun LocaleId.toComposeLocale(): ComposeLocale =
