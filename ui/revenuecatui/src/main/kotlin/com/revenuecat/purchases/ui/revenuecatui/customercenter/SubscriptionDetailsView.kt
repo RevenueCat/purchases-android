@@ -22,14 +22,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.SubscriptionInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.icons.CalendarMonth
 import com.revenuecat.purchases.ui.revenuecatui.icons.CurrencyExchange
 import com.revenuecat.purchases.ui.revenuecatui.icons.UniversalCurrencyAlt
 
 @Composable
 internal fun SubscriptionDetailsView(
-    details: SubscriptionInformation,
+    details: PurchaseInformation,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -139,9 +139,9 @@ private val PaddingHorizontal = 8.dp
 private val PaddingVertical = 8.dp
 private const val SizeIconDp = 22
 
-private class SubscriptionInformationProvider : PreviewParameterProvider<SubscriptionInformation> {
-    override val values: Sequence<SubscriptionInformation> = sequenceOf(
-        SubscriptionInformation(
+private class SubscriptionInformationProvider : PreviewParameterProvider<PurchaseInformation> {
+    override val values: Sequence<PurchaseInformation> = sequenceOf(
+        PurchaseInformation(
             title = "Basic",
             durationTitle = "Monthly",
             price = "$4.99",
@@ -149,7 +149,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Subscri
             willRenew = true,
             active = true,
         ),
-        SubscriptionInformation(
+        PurchaseInformation(
             title = "Basic",
             durationTitle = "Yearly",
             price = "$49.99",
@@ -157,7 +157,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Subscri
             willRenew = false,
             active = true,
         ),
-        SubscriptionInformation(
+        PurchaseInformation(
             title = "Basic",
             durationTitle = "Weekly",
             price = "$1.99",

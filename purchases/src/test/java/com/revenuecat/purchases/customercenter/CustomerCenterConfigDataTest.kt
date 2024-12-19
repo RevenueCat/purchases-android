@@ -88,7 +88,8 @@ class CustomerCenterConfigDataTest {
                 androidOfferId = "offer_id",
                 eligible = true,
                 title = "Offer Title",
-                subtitle = "Offer Subtitle"
+                subtitle = "Offer Subtitle",
+                productMapping = mapOf("monthly_subscription" to "rc-refund-offer")
             )
         )
 

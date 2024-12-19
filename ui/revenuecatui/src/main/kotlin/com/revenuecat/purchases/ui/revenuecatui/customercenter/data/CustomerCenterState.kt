@@ -10,5 +10,8 @@ internal sealed class CustomerCenterState {
 
     // CustomerCenter WIP: Change to use the actual data the customer center will use.
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    data class Success(val customerCenterConfigData: CustomerCenterConfigData) : CustomerCenterState()
+    data class Success(
+        val customerCenterConfigData: CustomerCenterConfigData,
+        val purchaseInformation: PurchaseInformation?,
+    ) : CustomerCenterState()
 }

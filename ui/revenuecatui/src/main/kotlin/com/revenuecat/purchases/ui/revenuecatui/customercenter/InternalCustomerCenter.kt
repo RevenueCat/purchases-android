@@ -10,21 +10,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoSubscriptionsView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 
@@ -82,22 +80,24 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
 private fun CustomerCenterLoaded(state: CustomerCenterState.Success) {
     val configuration = state.customerCenterConfigData
 
-    when {
-        configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT) -> {
+    if (state.purchaseInformation != null) {
+        if (configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)) {
             val managementScreen = configuration.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
             ManageSubscriptionsView(
                 screen = managementScreen,
-                configuration = configuration
+                purchaseInformation = state.purchaseInformation,
             )
+        } else {
+            // WrongPlatformView
         }
-        configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE) -> {
+    } else {
+        if (configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE)) {
             val noActiveScreen = configuration.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
             ManageSubscriptionsView(
                 screen = noActiveScreen,
-                configuration = configuration
             )
-        }
-        else -> {
+        } else {
+            // Fallback with a restore button
 //            NoSubscriptionsView(configuration = configuration)
         }
     }
@@ -117,7 +117,9 @@ internal fun getCustomerCenterViewModel(
 @Composable
 internal fun CustomerCenterLoadingPreview() {
     InternalCustomerCenter(
-        modifier = Modifier.fillMaxSize().padding(10.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
         state = CustomerCenterState.Loading,
     )
 }
@@ -126,7 +128,9 @@ internal fun CustomerCenterLoadingPreview() {
 @Composable
 internal fun CustomerCenterErrorPreview() {
     InternalCustomerCenter(
-        modifier = Modifier.fillMaxSize().padding(10.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
         state = CustomerCenterState.Error(PurchasesError(PurchasesErrorCode.UnknownBackendError)),
     )
 }
@@ -136,8 +140,13 @@ internal fun CustomerCenterErrorPreview() {
 @Composable
 internal fun CustomerCenterLoadedPreview() {
     InternalCustomerCenter(
-        modifier = Modifier.fillMaxSize().padding(10.dp),
-        state = CustomerCenterState.Success(previewConfigData),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        state = CustomerCenterState.Success(
+            customerCenterConfigData = previewConfigData,
+            purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+        ),
     )
 }
 
