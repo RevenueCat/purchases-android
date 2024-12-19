@@ -8,6 +8,12 @@ import kotlinx.serialization.Serializable
 
 typealias RCColor = PaywallColor
 
+enum class SupportedPathType {
+    MISSING_PURCHASE,
+    CANCEL,
+    UNKNOWN
+}
+
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Serializable
 internal class CustomerCenterRoot(
@@ -266,6 +272,12 @@ data class CustomerCenterConfigData(
             MANAGEMENT,
             NO_ACTIVE,
             UNKNOWN,
+        }
+
+        val supportedPaths: List<HelpPath> by lazy {
+            paths.filter {
+                it.type.name in SupportedPathType.values().map { supportedType -> supportedType.name }
+            }
         }
     }
 
