@@ -1,24 +1,33 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
     suspend fun determineFlow(path: CustomerCenterConfigData.HelpPath)
+    fun dismissRestoreDialog()
+    suspend fun restorePurchases()
+    fun contactSupport(context: Context, supportEmail: String)
+    fun openAppStore(context: Context)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -29,23 +38,77 @@ internal class CustomerCenterViewModelImpl(
         private const val STOP_FLOW_TIMEOUT = 5_000L
     }
 
-    override val state = flow {
-        try {
-            val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformation = loadPurchaseInformation()
-            emit(CustomerCenterState.Success(customerCenterConfigData, purchaseInformation))
-        } catch (e: PurchasesException) {
-            emit(CustomerCenterState.Error(e.error))
+    private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.Loading)
+
+    override val state = _state
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
+            initialValue = CustomerCenterState.Loading,
+        )
+
+    init {
+        viewModelScope.launch {
+            try {
+                val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+                val purchaseInformation = loadPurchaseInformation()
+                _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
+            } catch (e: PurchasesException) {
+                _state.value = CustomerCenterState.Error(e.error)
+            }
         }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
-        initialValue = CustomerCenterState.Loading,
-    )
+    }
 
     override suspend fun determineFlow(path: CustomerCenterConfigData.HelpPath) {
-        if (path.type == CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE) {
-            purchases.awaitRestore()
+        when (path.type) {
+            CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
+                val currentState = _state.value
+                if (currentState is CustomerCenterState.Success) {
+                    _state.value = currentState.copy(showRestoreDialog = true)
+                }
+            }
+
+            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> {
+                // Customer Center WIP
+            }
+
+            else -> {
+                // Other cases are not supported
+            }
+        }
+    }
+
+    override fun dismissRestoreDialog() {
+        val currentState = _state.value
+        if (currentState is CustomerCenterState.Success) {
+            _state.value = currentState.copy(
+                showRestoreDialog = false,
+                restorePurchasesState = RestorePurchasesState.Initial,
+            )
+        }
+    }
+
+    override suspend fun restorePurchases() {
+        val currentState = _state.value as? CustomerCenterState.Success ?: return
+
+        try {
+            val customerInfo = purchases.awaitRestore()
+            val hasPurchases =
+                customerInfo.activeSubscriptions.isNotEmpty() ||
+                    customerInfo.nonSubscriptionTransactions.isNotEmpty()
+            if (hasPurchases) {
+                _state.value = currentState.copy(
+                    restorePurchasesState = RestorePurchasesState.PurchasesRecovered,
+                )
+            } else {
+                _state.value = currentState.copy(
+                    restorePurchasesState = RestorePurchasesState.PurchasesNotFound,
+                )
+            }
+        } catch (e: Exception) {
+            _state.value = currentState.copy(
+                restorePurchasesState = RestorePurchasesState.PurchasesNotFound,
+            )
         }
     }
 
@@ -59,5 +122,21 @@ internal class CustomerCenterViewModelImpl(
         }
 
         return null
+    }
+
+    override fun contactSupport(context: Context, supportEmail: String) {
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:$supportEmail")
+            putExtra(Intent.EXTRA_SUBJECT, "Support Request")
+            putExtra(Intent.EXTRA_TEXT, "Support request details...")
+        }
+        context.startActivity(Intent.createChooser(intent, "Contact Support"))
+    }
+
+    override fun openAppStore(context: Context) {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("market://details?id=${context.packageName}")
+        }
+        context.startActivity(intent)
     }
 }

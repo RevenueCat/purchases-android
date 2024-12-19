@@ -11,7 +11,7 @@ typealias RCColor = PaywallColor
 enum class SupportedPathType {
     MISSING_PURCHASE,
     CANCEL,
-    UNKNOWN
+    UNKNOWN,
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -275,8 +275,8 @@ data class CustomerCenterConfigData(
         }
 
         val supportedPaths: List<HelpPath> by lazy {
-            paths.filter {
-                it.type.name in SupportedPathType.values().map { supportedType -> supportedType.name }
+            paths.filter { path ->
+                SupportedPathType.values().any { it.name == path.type.name }
             }
         }
     }

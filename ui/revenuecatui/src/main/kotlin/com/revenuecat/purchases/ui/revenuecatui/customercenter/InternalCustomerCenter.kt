@@ -6,13 +6,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -37,6 +41,7 @@ internal fun InternalCustomerCenter(
 ) {
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     InternalCustomerCenter(
         state,
         modifier,
@@ -45,20 +50,41 @@ internal fun InternalCustomerCenter(
                 viewModel.determineFlow(path)
             }
         },
+        onPerformRestore = {
+            coroutineScope.launch {
+                viewModel.restorePurchases()
+            }
+        },
+        onDismissRestoreDialog = {
+            viewModel.dismissRestoreDialog()
+        },
+        onContactSupport = { email ->
+            viewModel.contactSupport(context, email)
+        },
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
     onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onPerformRestore: () -> Unit,
+    onDismissRestoreDialog: () -> Unit,
+    onContactSupport: (String) -> Unit,
 ) {
     CustomerCenterScaffold(modifier) {
         when (state) {
             is CustomerCenterState.Loading -> CustomerCenterLoading()
             is CustomerCenterState.Error -> CustomerCenterError(state)
-            is CustomerCenterState.Success -> CustomerCenterLoaded(state, onDetermineFlow)
+            is CustomerCenterState.Success -> CustomerCenterLoaded(
+                state,
+                onDetermineFlow,
+                onPerformRestore,
+                onDismissRestoreDialog,
+                onContactSupport,
+            )
         }
     }
 }
@@ -94,7 +120,23 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onPerformRestore: () -> Unit,
+    onDismissRestoreDialog: () -> Unit,
+    onContactSupport: (String) -> Unit,
 ) {
+    if (state.showRestoreDialog) {
+        RestorePurchasesDialog(
+            state = state.restorePurchasesState,
+            onDismiss = onDismissRestoreDialog,
+            onRestore = onPerformRestore,
+            onContactSupport = {
+                state.customerCenterConfigData.support.email?.let { email ->
+                    onContactSupport(email)
+                }
+            },
+        )
+    }
+
     val configuration = state.customerCenterConfigData
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
@@ -121,6 +163,74 @@ private fun CustomerCenterLoaded(
 }
 
 @Composable
+private fun RestorePurchasesDialog(
+    state: RestorePurchasesState,
+    onDismiss: () -> Unit,
+    onRestore: () -> Unit,
+    onContactSupport: () -> Unit,
+) {
+    when (state) {
+        RestorePurchasesState.Initial -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = { Text("Restore Purchases") },
+                text = { Text("Going to check for previous purchases") },
+                confirmButton = {
+                    Button(onClick = onRestore) {
+                        Text("Check Past Purchases")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                },
+            )
+        }
+        RestorePurchasesState.PurchasesRecovered -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = { Text("Purchases Recovered") },
+                text = { Text("Your purchases have been restored successfully") },
+                confirmButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text("Dismiss")
+                    }
+                },
+            )
+        }
+        RestorePurchasesState.PurchasesNotFound -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                text = {
+                    Text(
+                        buildString {
+                            append("No previous purchases were found")
+                        },
+                    )
+                },
+                confirmButton = {
+                    Column {
+                        Button(onClick = onContactSupport) {
+                            Text("Contact Support")
+                        }
+                        TextButton(onClick = onDismiss) {
+                            Text("Dismiss")
+                        }
+                    }
+                },
+            )
+        }
+    }
+}
+
+sealed class RestorePurchasesState {
+    object Initial : RestorePurchasesState()
+    object PurchasesRecovered : RestorePurchasesState()
+    object PurchasesNotFound : RestorePurchasesState()
+}
+
+@Composable
 internal fun getCustomerCenterViewModel(
     purchases: PurchasesType = PurchasesImpl(),
     viewModel: CustomerCenterViewModel = viewModel<CustomerCenterViewModelImpl>(
@@ -139,6 +249,9 @@ internal fun CustomerCenterLoadingPreview() {
             .fillMaxSize()
             .padding(10.dp),
         onDetermineFlow = {},
+        onPerformRestore = {},
+        onDismissRestoreDialog = {},
+        onContactSupport = {},
     )
 }
 
@@ -151,6 +264,9 @@ internal fun CustomerCenterErrorPreview() {
             .fillMaxSize()
             .padding(10.dp),
         onDetermineFlow = {},
+        onPerformRestore = {},
+        onDismissRestoreDialog = {},
+        onContactSupport = {},
     )
 }
 
@@ -167,6 +283,9 @@ internal fun CustomerCenterLoadedPreview() {
             .fillMaxSize()
             .padding(10.dp),
         onDetermineFlow = {},
+        onPerformRestore = {},
+        onDismissRestoreDialog = {},
+        onContactSupport = {},
     )
 }
 
