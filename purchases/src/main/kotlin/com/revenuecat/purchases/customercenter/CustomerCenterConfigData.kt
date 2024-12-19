@@ -276,4 +276,12 @@ data class CustomerCenterConfigData(
         @SerialName("should_warn_customer_to_update")
         val shouldWarnCustomerToUpdate: Boolean? = null,
     )
+
+    fun getManagementScreen(): CustomerCenterConfigData.Screen? {
+        return screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]
+    }
+
+    fun getNoActiveScreen(): CustomerCenterConfigData.Screen? {
+        return screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]
+    }
 }
