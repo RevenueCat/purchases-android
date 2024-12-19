@@ -78,10 +78,8 @@ private fun ButtonComponentView_Preview_Default() {
 @Composable
 private fun previewButtonComponentStyle(
     stackComponentStyle: StackComponentStyle = StackComponentStyle(
-        visible = true,
         children = listOf(
             TextComponentStyle(
-                visible = true,
                 texts = mapOf(LocaleId("en_US") to "Restore purchases"),
                 color = ColorScheme(
                     light = ColorInfo.Hex(Color.Black.toArgb()),

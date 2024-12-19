@@ -31,7 +31,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
-
 import kotlinx.coroutines.CompletableDeferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -52,10 +51,8 @@ class ButtonComponentViewTests {
         composeTestRule.setContent {
             val style = ButtonComponentStyle(
                 stackComponentStyle = StackComponentStyle(
-                    visible = true,
                     children = listOf(
                         TextComponentStyle(
-                            visible = true,
                             texts = mapOf(LocaleId("en_US") to "Purchase"),
                             color = ColorScheme(
                                 light = ColorInfo.Hex(Color.Black.toArgb()),

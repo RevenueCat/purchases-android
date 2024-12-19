@@ -363,7 +363,6 @@ private fun TextComponentView_Preview_RadialGradient() {
 private fun previewTextComponentStyle(
     text: String,
     color: ColorScheme,
-    visible: Boolean = true,
     fontSize: FontSize = FontSize.BODY_M,
     fontWeight: FontWeight = FontWeight.REGULAR,
     fontFamily: String? = null,
@@ -376,7 +375,6 @@ private fun previewTextComponentStyle(
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
     return TextComponentStyle(
-        visible = visible,
         texts = mapOf(LocaleId("en_US") to text),
         color = color,
         fontSize = fontSize,
