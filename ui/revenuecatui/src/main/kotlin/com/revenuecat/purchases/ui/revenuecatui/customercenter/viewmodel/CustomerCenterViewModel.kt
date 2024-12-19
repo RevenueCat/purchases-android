@@ -1,18 +1,24 @@
-package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
+package com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
+    suspend fun determineFlow(path: CustomerCenterConfigData.HelpPath)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -23,7 +29,6 @@ internal class CustomerCenterViewModelImpl(
         private const val STOP_FLOW_TIMEOUT = 5_000L
     }
 
-    // This won't load the state until there is a subscriber
     override val state = flow {
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
@@ -38,10 +43,16 @@ internal class CustomerCenterViewModelImpl(
         initialValue = CustomerCenterState.Loading,
     )
 
+    override suspend fun determineFlow(path: CustomerCenterConfigData.HelpPath) {
+        if (path.type == CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE) {
+            purchases.awaitRestore()
+        }
+    }
+
     private suspend fun loadPurchaseInformation(): PurchaseInformation? {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
-        // Customer Center WIP: udpate when we have subscription information in CustomerInfo
+        // Customer Center WIP: update when we have subscription information in CustomerInfo
         val activeEntitlement = customerInfo.entitlements.active.isEmpty()
         if (activeEntitlement) {
             return CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing

@@ -16,27 +16,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.ManageSubscriptionsViewModel
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.ManageSubscriptionsViewModelFactory
-import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
-import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
@@ -44,14 +35,8 @@ internal fun ManageSubscriptionsView(
     screen: CustomerCenterConfigData.Screen,
     modifier: Modifier = Modifier,
     purchaseInformation: PurchaseInformation? = null,
-    viewModel: ManageSubscriptionsViewModel = getManageSubscriptionsViewModel(
-        screen = screen,
-        purchaseInformation = purchaseInformation,
-    ),
+    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -62,39 +47,18 @@ internal fun ManageSubscriptionsView(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            uiState.purchaseInformation?.let { purchaseInformation ->
+            purchaseInformation?.let { purchaseInformation ->
                 ActiveUserManagementView(
-                    screen = uiState.screen,
+                    screen = screen,
                     purchaseInformation = purchaseInformation,
-                    onDetermineFlow = { path ->
-                        coroutineScope.launch {
-                            viewModel.determineFlow(path)
-                        }
-                    },
+                    onDetermineFlow = onDetermineFlow,
                 )
             } ?: NoActiveUserManagementView(
-                screen = uiState.screen,
-                onDetermineFlow = { path ->
-                    coroutineScope.launch {
-                        viewModel.determineFlow(path)
-                    }
-                },
+                screen = screen,
+                onDetermineFlow = onDetermineFlow,
             )
         }
     }
-}
-
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@Composable
-internal fun getManageSubscriptionsViewModel(
-    screen: CustomerCenterConfigData.Screen,
-    purchaseInformation: PurchaseInformation? = null,
-    purchases: PurchasesType = PurchasesImpl(),
-    viewModel: ManageSubscriptionsViewModel = viewModel<ManageSubscriptionsViewModel>(
-        factory = ManageSubscriptionsViewModelFactory(purchases, screen, purchaseInformation),
-    ),
-): ManageSubscriptionsViewModel {
-    return viewModel
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -209,6 +173,7 @@ private fun ManageSubscriptionsViewPreview() {
     ManageSubscriptionsView(
         screen = managementScreen,
         purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+        onDetermineFlow = {},
     )
 }
 
@@ -222,6 +187,7 @@ private fun NoActiveSubscriptionsViewPreview() {
     ManageSubscriptionsView(
         screen = noActiveScreen,
         purchaseInformation = null,
+        onDetermineFlow = {},
     )
 }
 

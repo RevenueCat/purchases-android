@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -19,12 +22,13 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModel
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModelFactory
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun InternalCustomerCenter(
@@ -32,19 +36,29 @@ internal fun InternalCustomerCenter(
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
-    InternalCustomerCenter(state, modifier)
+    val coroutineScope = rememberCoroutineScope()
+    InternalCustomerCenter(
+        state,
+        modifier,
+        onDetermineFlow = { path ->
+            coroutineScope.launch {
+                viewModel.determineFlow(path)
+            }
+        },
+    )
 }
 
 @Composable
 private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
+    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     CustomerCenterScaffold(modifier) {
         when (state) {
             is CustomerCenterState.Loading -> CustomerCenterLoading()
             is CustomerCenterState.Error -> CustomerCenterError(state)
-            is CustomerCenterState.Success -> CustomerCenterLoaded(state)
+            is CustomerCenterState.Success -> CustomerCenterLoaded(state, onDetermineFlow)
         }
     }
 }
@@ -77,15 +91,18 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
-private fun CustomerCenterLoaded(state: CustomerCenterState.Success) {
+private fun CustomerCenterLoaded(
+    state: CustomerCenterState.Success,
+    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
+) {
     val configuration = state.customerCenterConfigData
-
     if (state.purchaseInformation != null) {
         if (configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)) {
             val managementScreen = configuration.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
             ManageSubscriptionsView(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
+                onDetermineFlow = onDetermineFlow,
             )
         } else {
             // WrongPlatformView
@@ -95,6 +112,7 @@ private fun CustomerCenterLoaded(state: CustomerCenterState.Success) {
             val noActiveScreen = configuration.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
             ManageSubscriptionsView(
                 screen = noActiveScreen,
+                onDetermineFlow = onDetermineFlow,
             )
         } else {
             // Fallback with a restore button
@@ -117,10 +135,11 @@ internal fun getCustomerCenterViewModel(
 @Composable
 internal fun CustomerCenterLoadingPreview() {
     InternalCustomerCenter(
+        state = CustomerCenterState.Loading,
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
-        state = CustomerCenterState.Loading,
+        onDetermineFlow = {},
     )
 }
 
@@ -128,10 +147,11 @@ internal fun CustomerCenterLoadingPreview() {
 @Composable
 internal fun CustomerCenterErrorPreview() {
     InternalCustomerCenter(
+        state = CustomerCenterState.Error(PurchasesError(PurchasesErrorCode.UnknownBackendError)),
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
-        state = CustomerCenterState.Error(PurchasesError(PurchasesErrorCode.UnknownBackendError)),
+        onDetermineFlow = {},
     )
 }
 
@@ -140,13 +160,14 @@ internal fun CustomerCenterErrorPreview() {
 @Composable
 internal fun CustomerCenterLoadedPreview() {
     InternalCustomerCenter(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(10.dp),
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
             purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
         ),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        onDetermineFlow = {},
     )
 }
 
