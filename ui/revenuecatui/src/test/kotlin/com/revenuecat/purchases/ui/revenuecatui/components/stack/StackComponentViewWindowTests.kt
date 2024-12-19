@@ -40,7 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowChangingTest
 import org.junit.Rule
 import org.junit.Test
@@ -127,7 +127,7 @@ internal class StackComponentViewWindowTests {
             )
         )
         val state = FakePaywallState(component)
-        val styleFactory = StyleFactory(mapOf(LocaleId("en_US") to emptyMap()))
+        val styleFactory = StyleFactory(nonEmptyMapOf(LocaleId("en_US") to emptyMap()))
         val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
         val content = @Composable {
             // An outer box, because a shadow draws outside the Composable's bounds.

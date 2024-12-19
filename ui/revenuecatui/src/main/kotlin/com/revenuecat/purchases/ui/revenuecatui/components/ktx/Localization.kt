@@ -8,6 +8,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingImageLocalization
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingStringLocalization
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapValuesOrAccumulate
@@ -34,9 +35,9 @@ internal fun LocalizationDictionary.string(key: LocalizationKey): Result<String,
  * result containing a [MissingStringLocalization] error for each locale the [key] wasn't found for.
  */
 @JvmSynthetic
-internal fun Map<LocaleId, LocalizationDictionary>.stringForAllLocales(
+internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.stringForAllLocales(
     key: LocalizationKey,
-): Result<Map<LocaleId, String>, NonEmptyList<MissingStringLocalization>> =
+): Result<NonEmptyMap<LocaleId, String>, NonEmptyList<MissingStringLocalization>> =
     mapValues { (_, localizationDictionary) ->
         localizationDictionary
             .string(key)

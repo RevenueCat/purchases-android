@@ -89,9 +89,9 @@ internal class TextComponentState(
     @get:JvmSynthetic
     val text by derivedStateOf {
         val localeId = localeProvider().toLocaleId()
-        // TODO Fallback to default locale
-        presentedPartial?.texts?.getValue(localeId)
-            ?: style.texts.getValue(localeId)
+
+        presentedPartial?.texts?.run { getOrDefault(localeId, entry.value) }
+            ?: style.texts.run { getOrDefault(localeId, entry.value) }
     }
 
     @get:JvmSynthetic

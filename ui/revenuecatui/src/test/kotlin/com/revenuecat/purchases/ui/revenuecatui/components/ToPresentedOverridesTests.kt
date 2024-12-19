@@ -15,7 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
-
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,7 +60,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "introOffer")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(from = partial, using = nonEmptyMapOf(localeId to emptyMap()))
                     },
                     expected = Result.Error(InvalidTemplate("introOffer"))
                 )
@@ -82,7 +82,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "selected")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(from = partial, using = nonEmptyMapOf(localeId to emptyMap()))
                     },
                     expected = Result.Error(InvalidTemplate("selected"))
                 )
@@ -104,7 +104,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "compact")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(from = partial, using = nonEmptyMapOf(localeId to emptyMap()))
                     },
                     expected = Result.Error(InvalidTemplate("compact"))
                 )
@@ -126,7 +126,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "medium")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(from = partial, using = nonEmptyMapOf(localeId to emptyMap()))
                     },
                     expected = Result.Error(InvalidTemplate("medium"))
                 )
@@ -148,7 +148,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "expanded")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(from = partial, using = nonEmptyMapOf(localeId to emptyMap()))
                     },
                     expected = Result.Error(InvalidTemplate("expanded"))
                 )
@@ -167,31 +167,31 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             expanded = PartialTextComponent(fontName = "expanded"),
                         ),
                     ),
-                    transform = { partial -> LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap())) },
+                    transform = { partial -> LocalizedTextPartial(from = partial, using = nonEmptyMapOf(localeId to emptyMap())) },
                     expected = Result.Success(
                         PresentedOverrides(
                             introOffer = LocalizedTextPartial(
                                 from = PartialTextComponent(fontName = "introOffer"),
-                                using = mapOf(localeId to emptyMap())
+                                using = nonEmptyMapOf(localeId to emptyMap())
                             ).getOrThrow(),
                             states = PresentedStates(
                                 selected = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "selected"),
-                                    using = mapOf(localeId to emptyMap())
+                                    using = nonEmptyMapOf(localeId to emptyMap())
                                 ).getOrThrow(),
                             ),
                             conditions = PresentedConditions(
                                 compact = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "compact"),
-                                    using = mapOf(localeId to emptyMap())
+                                    using = nonEmptyMapOf(localeId to emptyMap())
                                 ).getOrThrow(),
                                 medium = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "medium"),
-                                    using = mapOf(localeId to emptyMap())
+                                    using = nonEmptyMapOf(localeId to emptyMap())
                                 ).getOrThrow(),
                                 expanded = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "expanded"),
-                                    using = mapOf(localeId to emptyMap())
+                                    using = nonEmptyMapOf(localeId to emptyMap())
                                 ).getOrThrow(),
                             ),
                         )

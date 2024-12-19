@@ -40,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -65,7 +66,7 @@ class TextComponentViewTests {
     private val expectedTextSelected = "selected text"
     private val expectedTextIneligibleEnUs = "ineligible text"
     private val expectedTextEligibleEnUs = "eligible text"
-    private val localizations = mapOf(
+    private val localizations = nonEmptyMapOf(
         localeIdEnUs to mapOf(
             LocalizationKey("text1") to LocalizationData.Text("this is text 1"),
             unselectedLocalizationKey to LocalizationData.Text(expectedTextUnselected),
@@ -293,7 +294,7 @@ class TextComponentViewTests {
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
-        val localizations = mapOf(
+        val localizations = nonEmptyMapOf(
             localeIdEnUs to mapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
             ),
@@ -334,7 +335,7 @@ class TextComponentViewTests {
                 ),
             )
         )
-        val localizations = mapOf(
+        val localizations = nonEmptyMapOf(
             localeIdEnUs to mapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
                 eligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),

@@ -17,6 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -33,7 +34,7 @@ class StyleFactoryTests {
     private lateinit var styleFactory: StyleFactory
 
     private val localeId = LocaleId("en_US")
-    private val localizations = mapOf(
+    private val localizations = nonEmptyMapOf(
         localeId to mapOf(
             LOCALIZATION_KEY_TEXT_1 to LocalizationData.Text("this is text 1"),
             LOCALIZATION_KEY_TEXT_2 to LocalizationData.Text("this is text 2"),
@@ -110,7 +111,7 @@ class StyleFactoryTests {
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
         val incorrectStyleFactory = StyleFactory(
-            mapOf(
+            nonEmptyMapOf(
                 defaultLocale to mapOf(
                     localizationKey to LocalizationData.Text(expectedText)
                 ),
@@ -144,7 +145,7 @@ class StyleFactoryTests {
             overrides = ComponentOverrides(introOffer = PartialTextComponent(text = overrideLocalizationKey))
         )
         val incorrectStyleFactory = StyleFactory(
-            mapOf(
+            nonEmptyMapOf(
                 defaultLocale to mapOf(
                     baseLocalizationKey to LocalizationData.Text(unexpectedText),
                     overrideLocalizationKey to LocalizationData.Text(expectedText),
