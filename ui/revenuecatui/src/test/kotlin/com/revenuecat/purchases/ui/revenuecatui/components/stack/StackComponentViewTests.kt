@@ -24,6 +24,8 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.ComponentStates
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -56,7 +58,13 @@ class StackComponentViewTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val styleFactory = StyleFactory(localizations = nonEmptyMapOf(LocaleId("en_US") to emptyMap()))
+    private val styleFactory = StyleFactory(
+        localizations = nonEmptyMapOf(
+            LocaleId("en_US") to nonEmptyMapOf(
+                LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+            )
+        )
+    )
 
     @Test
     fun `Should change background color based on theme`(): Unit = with(composeTestRule) {

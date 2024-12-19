@@ -69,7 +69,10 @@ internal fun LoadedPaywallComponents(
 
     val styleFactory = remember(state.locale, windowSize) {
         // TODO Remove the need for double bangs in the validation step.
-        StyleFactory(state.data.componentsLocalizations.toNonEmptyMapOrNull()!!)
+        val localizations = state.data.componentsLocalizations.mapValues { (_, localizationDictionary) ->
+            localizationDictionary.toNonEmptyMapOrNull()!!
+        }.toNonEmptyMapOrNull()!!
+        StyleFactory(localizations)
     }
 
     val config = state.data.componentsConfig.base

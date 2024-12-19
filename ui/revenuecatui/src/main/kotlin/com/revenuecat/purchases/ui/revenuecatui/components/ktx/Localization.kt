@@ -15,7 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import androidx.compose.ui.text.intl.Locale as ComposeLocale
 import java.util.Locale as JavaLocale
 
-internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
+internal typealias LocalizationDictionary = NonEmptyMap<LocalizationKey, LocalizationData>
 
 /**
  * Retrieves a string from this [LocalizationDictionary] associated with the provided [key].

@@ -35,7 +35,7 @@ class StyleFactoryTests {
 
     private val localeId = LocaleId("en_US")
     private val localizations = nonEmptyMapOf(
-        localeId to mapOf(
+        localeId to nonEmptyMapOf(
             LOCALIZATION_KEY_TEXT_1 to LocalizationData.Text("this is text 1"),
             LOCALIZATION_KEY_TEXT_2 to LocalizationData.Text("this is text 2"),
         )
@@ -105,17 +105,21 @@ class StyleFactoryTests {
         val otherLocale = LocaleId("nl_NL")
         val defaultLocale = LocaleId("en_US")
         val localizationKey = LocalizationKey("key")
+        val otherLocalizationKey = LocalizationKey("other-key")
         val expectedText = "value"
+        val unexpectedText = "waarde"
         val component = TextComponent(
             text = localizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
         val incorrectStyleFactory = StyleFactory(
             nonEmptyMapOf(
-                defaultLocale to mapOf(
+                defaultLocale to nonEmptyMapOf(
                     localizationKey to LocalizationData.Text(expectedText)
                 ),
-                otherLocale to emptyMap(),
+                otherLocale to nonEmptyMapOf(
+                    otherLocalizationKey to LocalizationData.Text(unexpectedText)
+                ),
             )
         )
 
@@ -146,11 +150,11 @@ class StyleFactoryTests {
         )
         val incorrectStyleFactory = StyleFactory(
             nonEmptyMapOf(
-                defaultLocale to mapOf(
+                defaultLocale to nonEmptyMapOf(
                     baseLocalizationKey to LocalizationData.Text(unexpectedText),
                     overrideLocalizationKey to LocalizationData.Text(expectedText),
                 ),
-                otherLocale to mapOf(
+                otherLocale to nonEmptyMapOf(
                     baseLocalizationKey to LocalizationData.Text(unexpectedText),
                     // otherLocale is missing the overrideLocalizationKey. We should fall back to defaultLocale.
                 ),

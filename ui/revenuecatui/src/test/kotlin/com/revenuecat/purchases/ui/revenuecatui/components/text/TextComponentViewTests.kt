@@ -67,7 +67,7 @@ class TextComponentViewTests {
     private val expectedTextIneligibleEnUs = "ineligible text"
     private val expectedTextEligibleEnUs = "eligible text"
     private val localizations = nonEmptyMapOf(
-        localeIdEnUs to mapOf(
+        localeIdEnUs to nonEmptyMapOf(
             LocalizationKey("text1") to LocalizationData.Text("this is text 1"),
             unselectedLocalizationKey to LocalizationData.Text(expectedTextUnselected),
             selectedLocalizationKey to LocalizationData.Text(expectedTextSelected),
@@ -295,10 +295,10 @@ class TextComponentViewTests {
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
         val localizations = nonEmptyMapOf(
-            localeIdEnUs to mapOf(
+            localeIdEnUs to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
             ),
-            localeIdNlNl to mapOf(
+            localeIdNlNl to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
@@ -336,11 +336,11 @@ class TextComponentViewTests {
             )
         )
         val localizations = nonEmptyMapOf(
-            localeIdEnUs to mapOf(
+            localeIdEnUs to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
                 eligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
             ),
-            localeIdNlNl to mapOf(
+            localeIdNlNl to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
                 eligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )

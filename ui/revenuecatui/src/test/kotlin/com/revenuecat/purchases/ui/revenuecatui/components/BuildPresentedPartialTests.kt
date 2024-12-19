@@ -38,10 +38,13 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
 
     companion object {
         private val localeId = LocaleId("en_US")
+        private val dummyLocalizationDictionary = nonEmptyMapOf(
+            LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+        )
         private val selectedPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
-                localeId to mapOf(
+                localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello selected"),
                 )
             )
@@ -49,7 +52,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         private val introOfferPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
-                localeId to mapOf(
+                localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello intro"),
                 )
             )
@@ -57,7 +60,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         private val compactPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
-                localeId to mapOf(
+                localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello compact"),
                 )
             )
@@ -65,7 +68,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         private val mediumPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
-                localeId to mapOf(
+                localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello medium"),
                 )
             )
@@ -73,7 +76,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         private val expandedPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
-                localeId to mapOf(
+                localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello expanded"),
                 )
             )
@@ -378,7 +381,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 ),
                                 using = nonEmptyMapOf(
-                                    localeId to mapOf(
+                                    localeId to nonEmptyMapOf(
                                         LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                     )
                                 )
@@ -397,7 +400,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                     margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                 ),
-                                using = nonEmptyMapOf(localeId to emptyMap()),
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             ).getOrThrow(),
                             expanded = LocalizedTextPartial(
                                 from = PartialTextComponent(
@@ -413,7 +416,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     padding = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                     margin = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
                                 ),
-                                using = nonEmptyMapOf(localeId to emptyMap()),
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             ).getOrThrow(),
                         ),
                     ),
@@ -438,7 +441,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             margin = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
                         ),
                         using = nonEmptyMapOf(
-                            localeId to mapOf(
+                            localeId to nonEmptyMapOf(
                                 LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                             )
                         )
@@ -463,7 +466,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
                                 margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
                             ),
-                            using = nonEmptyMapOf(localeId to emptyMap()),
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                         ).getOrThrow(),
                         states = PresentedStates(
                             selected = LocalizedTextPartial(
@@ -480,7 +483,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     padding = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
                                     margin = Padding(top = 70.0, bottom = 70.0, leading = 70.0, trailing = 70.0),
                                 ),
-                                using = nonEmptyMapOf(localeId to emptyMap()),
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             ).getOrThrow(),
                         ),
                         conditions = PresentedConditions(
@@ -499,7 +502,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 ),
                                 using = nonEmptyMapOf(
-                                    localeId to mapOf(
+                                    localeId to nonEmptyMapOf(
                                         LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                     )
                                 )
@@ -518,7 +521,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                     margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                 ),
-                                using = nonEmptyMapOf(localeId to emptyMap()),
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             ).getOrThrow(),
                             expanded = LocalizedTextPartial(
                                 from = PartialTextComponent(
@@ -534,7 +537,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     padding = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
                                     margin = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
                                 ),
-                                using = nonEmptyMapOf(localeId to emptyMap()),
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             ).getOrThrow(),
                         ),
                     ),
@@ -556,7 +559,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             margin = Padding(top = 70.0, bottom = 70.0, leading = 70.0, trailing = 70.0),
                         ),
                         using = nonEmptyMapOf(
-                            localeId to mapOf(
+                            localeId to nonEmptyMapOf(
                                 LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                             )
                         )

@@ -36,6 +36,9 @@ internal class LocalizedTextPartialTests {
 
         companion object {
             private val localeId = LocaleId("en_US")
+            private val dummyLocalizationDictionary = nonEmptyMapOf(
+                LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+            )
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -59,7 +62,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("baseKey") to LocalizationData.Text("base"),
                                 )
                             )
@@ -79,7 +82,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                                 )
                             )
@@ -99,7 +102,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                                 )
                             )
@@ -123,7 +126,7 @@ internal class LocalizedTextPartialTests {
                                 padding = null,
                                 margin = null,
                             ),
-                            using = nonEmptyMapOf(localeId to emptyMap())
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -139,7 +142,7 @@ internal class LocalizedTextPartialTests {
                                 padding = null,
                                 margin = null,
                             ),
-                            using = nonEmptyMapOf(localeId to emptyMap())
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -155,7 +158,7 @@ internal class LocalizedTextPartialTests {
                                 padding = null,
                                 margin = null,
                             ),
-                            using = nonEmptyMapOf(localeId to emptyMap())
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                         ).getOrThrow(),
                     )
                 ),
@@ -177,7 +180,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("baseKey") to LocalizationData.Text("base"),
                                 )
                             )
@@ -198,7 +201,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("baseKey") to LocalizationData.Text("base"),
                                 )
                             )
@@ -223,7 +226,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("baseKey") to LocalizationData.Text("base"),
                                 )
                             )
@@ -243,7 +246,7 @@ internal class LocalizedTextPartialTests {
                                 margin = null,
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                                 )
                             )
@@ -263,7 +266,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                                 )
                             )
@@ -286,7 +289,7 @@ internal class LocalizedTextPartialTests {
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                             ),
-                            using = nonEmptyMapOf(localeId to emptyMap()),
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -303,7 +306,7 @@ internal class LocalizedTextPartialTests {
                                 margin = null,
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                                 )
                             )
@@ -323,7 +326,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                                 )
                             )
@@ -348,7 +351,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("baseKey") to LocalizationData.Text("base"),
                                 )
                             )
@@ -367,7 +370,7 @@ internal class LocalizedTextPartialTests {
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                             ),
-                            using = nonEmptyMapOf(localeId to emptyMap()),
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -384,7 +387,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("baseKey") to LocalizationData.Text("base"),
                                 )
                             )
@@ -409,7 +412,7 @@ internal class LocalizedTextPartialTests {
                                 margin = null,
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("baseKey") to LocalizationData.Text("base"),
                                 )
                             )
@@ -428,7 +431,7 @@ internal class LocalizedTextPartialTests {
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                             ),
-                            using = nonEmptyMapOf(localeId to emptyMap()),
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -445,7 +448,7 @@ internal class LocalizedTextPartialTests {
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                             ),
                             using = nonEmptyMapOf(
-                                localeId to mapOf(
+                                localeId to nonEmptyMapOf(
                                     LocalizationKey("baseKey") to LocalizationData.Text("base"),
                                 )
                             )
@@ -470,6 +473,9 @@ internal class LocalizedTextPartialTests {
 
         companion object {
             private val localeId = LocaleId("en_US")
+            private val dummyLocalizationDictionary = nonEmptyMapOf(
+                LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+            )
         }
 
         @Test
@@ -480,7 +486,7 @@ internal class LocalizedTextPartialTests {
                     text = LocalizationKey("missing-key"),
                 ),
                 using = nonEmptyMapOf(
-                    localeId to mapOf(
+                    localeId to nonEmptyMapOf(
                         LocalizationKey("key") to LocalizationData.Text("Hello, world"),
                     )
                 )
@@ -498,7 +504,7 @@ internal class LocalizedTextPartialTests {
                     text = LocalizationKey("existing-key"),
                 ),
                 using = nonEmptyMapOf(
-                    localeId to mapOf(
+                    localeId to nonEmptyMapOf(
                         LocalizationKey("existing-key") to LocalizationData.Text("Hello, world"),
                     )
                 )
@@ -516,7 +522,7 @@ internal class LocalizedTextPartialTests {
                     text = null,
                 ),
                 using = nonEmptyMapOf(
-                    localeId to mapOf(
+                    localeId to nonEmptyMapOf(
                         LocalizationKey("existing-key") to LocalizationData.Text("Hello, world"),
                     )
                 )
@@ -534,7 +540,7 @@ internal class LocalizedTextPartialTests {
                 from = PartialTextComponent(
                     text = null,
                 ),
-                using = nonEmptyMapOf(localeId to emptyMap())
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
             )
 
             // Assert

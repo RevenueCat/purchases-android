@@ -27,6 +27,8 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -127,7 +129,13 @@ internal class StackComponentViewWindowTests {
             )
         )
         val state = FakePaywallState(component)
-        val styleFactory = StyleFactory(nonEmptyMapOf(LocaleId("en_US") to emptyMap()))
+        val styleFactory = StyleFactory(
+            nonEmptyMapOf(
+                LocaleId("en_US") to nonEmptyMapOf(
+                    LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+                )
+            )
+        )
         val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
         val content = @Composable {
             // An outer box, because a shadow draws outside the Composable's bounds.

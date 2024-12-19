@@ -69,7 +69,7 @@ internal class TextComponentViewWindowTests {
         private val expectedMediumBackgroundColor = Color.Red
         private val expectedExpandedBackgroundColor = Color.Green
         private val localizations = nonEmptyMapOf(
-            localeId to mapOf(
+            localeId to nonEmptyMapOf(
                 defaultLocalizationKey to LocalizationData.Text(UNEXPECTED_TEXT),
                 compactLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_COMPACT),
                 mediumLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_MEDIUM),
