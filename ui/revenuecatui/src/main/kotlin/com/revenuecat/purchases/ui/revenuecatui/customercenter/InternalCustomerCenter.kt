@@ -5,15 +5,22 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -169,31 +176,95 @@ private fun RestorePurchasesDialog(
     onRestore: () -> Unit,
     onContactSupport: () -> Unit,
 ) {
+    var isRestoring by remember { mutableStateOf(false) }
+
+    // Reset isRestoring when dialog is dismissed
+    DisposableEffect(Unit) {
+        onDispose {
+            isRestoring = false
+        }
+    }
+
     when (state) {
         RestorePurchasesState.Initial -> {
-            AlertDialog(
-                onDismissRequest = onDismiss,
-                title = { Text("Restore Purchases") },
-                text = { Text("Going to check for previous purchases") },
-                confirmButton = {
-                    Button(onClick = onRestore) {
-                        Text("Check Past Purchases")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel")
-                    }
-                },
-            )
+            if (isRestoring) {
+                AlertDialog(
+                    onDismissRequest = { /* Prevent dismiss while restoring */ },
+                    title = {
+                        Text(
+                            text = "Restoring Purchases...",
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                    },
+                    text = {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    },
+                    confirmButton = { },
+                )
+            } else {
+                AlertDialog(
+                    onDismissRequest = {
+                        isRestoring = false
+                        onDismiss()
+                    },
+                    title = {
+                        Text(
+                            text = "Restore Purchases",
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "Going to check for previous purchases",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                isRestoring = true
+                                onRestore()
+                            },
+                        ) {
+                            Text("Check Past Purchases")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                isRestoring = false
+                                onDismiss()
+                            },
+                        ) {
+                            Text("Cancel")
+                        }
+                    },
+                )
+            }
         }
         RestorePurchasesState.PurchasesRecovered -> {
             AlertDialog(
                 onDismissRequest = onDismiss,
-                title = { Text("Purchases Recovered") },
-                text = { Text("Your purchases have been restored successfully") },
+                title = {
+                    Text(
+                        text = "Purchases Recovered",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Your purchases have been restored successfully",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                },
                 confirmButton = {
-                    TextButton(onClick = onDismiss) {
+                    Button(onClick = onDismiss) {
                         Text("Dismiss")
                     }
                 },
@@ -202,21 +273,26 @@ private fun RestorePurchasesDialog(
         RestorePurchasesState.PurchasesNotFound -> {
             AlertDialog(
                 onDismissRequest = onDismiss,
+                title = {
+                    Text(
+                        text = "No Purchases Found",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                },
                 text = {
                     Text(
-                        buildString {
-                            append("No previous purchases were found")
-                        },
+                        text = "No previous purchases were found",
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                 },
                 confirmButton = {
-                    Column {
-                        Button(onClick = onContactSupport) {
-                            Text("Contact Support")
-                        }
-                        TextButton(onClick = onDismiss) {
-                            Text("Dismiss")
-                        }
+                    Button(onClick = onContactSupport) {
+                        Text("Contact Support")
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = onDismiss) {
+                        Text("Dismiss")
                     }
                 },
             )
