@@ -50,10 +50,8 @@ class ButtonComponentViewTests {
         composeTestRule.setContent {
             val style = ButtonComponentStyle(
                 stackComponentStyle = StackComponentStyle(
-                    visible = true,
                     children = listOf(
                         TextComponentStyle(
-                            visible = true,
                             text = "Purchase",
                             color = ColorScheme(
                                 light = ColorInfo.Hex(Color.Black.toArgb()),

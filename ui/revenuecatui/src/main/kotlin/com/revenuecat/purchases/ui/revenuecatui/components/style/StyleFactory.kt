@@ -64,7 +64,6 @@ internal class StyleFactory(
             .mapOrAccumulate { it },
     ) { presentedOverrides, children ->
         StackComponentStyle(
-            visible = true,
             children = children,
             dimension = component.dimension,
             size = component.size,
@@ -92,7 +91,6 @@ internal class StyleFactory(
     ) { text, presentedOverrides ->
         val weight = component.fontWeight.toFontWeight()
         TextComponentStyle(
-            visible = true,
             text = text,
             color = component.color,
             fontSize = component.fontSize,

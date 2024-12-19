@@ -16,8 +16,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 @Immutable
 internal class StackComponentStyle(
     @get:JvmSynthetic
-    val visible: Boolean,
-    @get:JvmSynthetic
     val children: List<ComponentStyle>,
     @get:JvmSynthetic
     val dimension: Dimension,

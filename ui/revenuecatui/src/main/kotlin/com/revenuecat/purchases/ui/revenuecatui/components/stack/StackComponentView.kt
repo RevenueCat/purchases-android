@@ -140,7 +140,6 @@ private fun StackComponentView_Preview_Vertical() {
     ) {
         StackComponentView(
             style = StackComponentStyle(
-                visible = true,
                 children = previewChildren(),
                 dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
                 size = Size(width = Fit, height = Fit),
@@ -175,7 +174,6 @@ private fun StackComponentView_Preview_Horizontal() {
     ) {
         StackComponentView(
             style = StackComponentStyle(
-                visible = true,
                 children = previewChildren(),
                 dimension = Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = START),
                 size = Size(width = Fit, height = Fit),
@@ -211,10 +209,8 @@ private fun StackComponentView_Preview_ZLayer() {
     ) {
         StackComponentView(
             style = StackComponentStyle(
-                visible = true,
                 children = listOf(
                     TextComponentStyle(
-                        visible = true,
                         text = "Hello",
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
@@ -234,7 +230,6 @@ private fun StackComponentView_Preview_ZLayer() {
                         overrides = null,
                     ),
                     TextComponentStyle(
-                        visible = true,
                         text = "World",
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
@@ -280,7 +275,6 @@ private fun StackComponentView_Preview_ZLayer() {
 @Composable
 private fun previewChildren() = listOf(
     TextComponentStyle(
-        visible = true,
         text = "Hello",
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
@@ -299,7 +293,6 @@ private fun previewChildren() = listOf(
         overrides = null,
     ),
     TextComponentStyle(
-        visible = true,
         text = "World",
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
