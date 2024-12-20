@@ -40,6 +40,13 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import kotlinx.coroutines.launch
 
+internal sealed class CustomerCenterAction {
+    data class DetermineFlow(val path: CustomerCenterConfigData.HelpPath) : CustomerCenterAction()
+    object PerformRestore : CustomerCenterAction()
+    object DismissRestoreDialog : CustomerCenterAction()
+    data class ContactSupport(val email: String) : CustomerCenterAction()
+}
+
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
@@ -51,21 +58,21 @@ internal fun InternalCustomerCenter(
     InternalCustomerCenter(
         state,
         modifier,
-        onDetermineFlow = { path ->
-            coroutineScope.launch {
-                viewModel.determineFlow(path)
+        onAction = { action ->
+            when (action) {
+                is CustomerCenterAction.DetermineFlow -> {
+                    coroutineScope.launch {
+                        viewModel.determineFlow(action.path)
+                    }
+                }
+                is CustomerCenterAction.PerformRestore -> {
+                    coroutineScope.launch {
+                        viewModel.restorePurchases()
+                    }
+                }
+                is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
+                is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
             }
-        },
-        onPerformRestore = {
-            coroutineScope.launch {
-                viewModel.restorePurchases()
-            }
-        },
-        onDismissRestoreDialog = {
-            viewModel.dismissRestoreDialog()
-        },
-        onContactSupport = { email ->
-            viewModel.contactSupport(context, email)
         },
     )
 }
@@ -75,10 +82,7 @@ internal fun InternalCustomerCenter(
 private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
-    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
-    onPerformRestore: () -> Unit,
-    onDismissRestoreDialog: () -> Unit,
-    onContactSupport: (String) -> Unit,
+    onAction: (CustomerCenterAction) -> Unit,
 ) {
     CustomerCenterScaffold(modifier) {
         when (state) {
@@ -86,10 +90,7 @@ private fun InternalCustomerCenter(
             is CustomerCenterState.Error -> CustomerCenterError(state)
             is CustomerCenterState.Success -> CustomerCenterLoaded(
                 state,
-                onDetermineFlow,
-                onPerformRestore,
-                onDismissRestoreDialog,
-                onContactSupport,
+                onAction,
             )
         }
     }
@@ -125,19 +126,16 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
 @Composable
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
-    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
-    onPerformRestore: () -> Unit,
-    onDismissRestoreDialog: () -> Unit,
-    onContactSupport: (String) -> Unit,
+    onAction: (CustomerCenterAction) -> Unit,
 ) {
     if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
-            onDismiss = onDismissRestoreDialog,
-            onRestore = onPerformRestore,
+            onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
+            onRestore = { onAction(CustomerCenterAction.PerformRestore) },
             onContactSupport = {
                 state.customerCenterConfigData.support.email?.let { email ->
-                    onContactSupport(email)
+                    onAction(CustomerCenterAction.ContactSupport(email))
                 }
             },
         )
@@ -149,7 +147,9 @@ private fun CustomerCenterLoaded(
             ManageSubscriptionsView(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
-                onDetermineFlow = onDetermineFlow,
+                onDetermineFlow = { path ->
+                    onAction(CustomerCenterAction.DetermineFlow(path))
+                },
             )
         } ?: run {
             // Handle missing management screen
@@ -159,7 +159,9 @@ private fun CustomerCenterLoaded(
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
                 screen = noActiveScreen,
-                onDetermineFlow = onDetermineFlow,
+                onDetermineFlow = { path ->
+                    onAction(CustomerCenterAction.DetermineFlow(path))
+                },
             )
         } ?: run {
             // Fallback with a restore button
@@ -316,10 +318,7 @@ internal fun CustomerCenterLoadingPreview() {
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
-        onDetermineFlow = {},
-        onPerformRestore = {},
-        onDismissRestoreDialog = {},
-        onContactSupport = {},
+        onAction = {},
     )
 }
 
@@ -331,10 +330,7 @@ internal fun CustomerCenterErrorPreview() {
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
-        onDetermineFlow = {},
-        onPerformRestore = {},
-        onDismissRestoreDialog = {},
-        onContactSupport = {},
+        onAction = {},
     )
 }
 
@@ -350,10 +346,7 @@ internal fun CustomerCenterLoadedPreview() {
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
-        onDetermineFlow = {},
-        onPerformRestore = {},
-        onDismissRestoreDialog = {},
-        onContactSupport = {},
+        onAction = {},
     )
 }
 
