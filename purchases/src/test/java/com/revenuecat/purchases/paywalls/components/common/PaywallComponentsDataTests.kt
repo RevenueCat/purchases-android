@@ -41,17 +41,15 @@ internal class PaywallComponentsDataTests(
                             "base": {
                               "stack": {
                                 "type": "stack",
-                                "components": [
-                                  {
-                                    "type": "badge",
-                                    "stack": {
-                                      "type": "stack",
-                                      "components": []
-                                    },
-                                    "style": "overlay",
-                                    "alignment": "bottom_trailing"
-                                  }
-                                ]
+                                "badge": {
+                                  "stack": {
+                                    "type": "stack",
+                                    "components": []
+                                  },
+                                  "style": "overlay",
+                                  "alignment": "bottom_trailing"
+                                },
+                                "components": []
                               },
                               "background": {
                                 "type": "color",
@@ -80,15 +78,14 @@ internal class PaywallComponentsDataTests(
                         componentsConfig = ComponentsConfig(
                             base = PaywallComponentsConfig(
                                 stack = StackComponent(
-                                    components = listOf(
-                                        Badge(
+                                    components = emptyList(),
+                                    badge = Badge(
                                         stack = StackComponent(
                                             components = emptyList()
                                         ),
                                         style = Badge.Style.Overlay,
                                         alignment = TwoDimensionalAlignment.BOTTOM_TRAILING
-                                    )
-                                    )
+                                    ),
                                 ),
                                 background = Background.Color(
                                     value = ColorScheme(
