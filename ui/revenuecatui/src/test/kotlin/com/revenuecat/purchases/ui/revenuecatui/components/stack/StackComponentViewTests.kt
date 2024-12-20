@@ -23,6 +23,7 @@ import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -38,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
 import org.junit.Rule
 import org.junit.Test
@@ -54,7 +56,7 @@ class StackComponentViewTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val styleFactory = StyleFactory(localizationDictionary = emptyMap())
+    private val styleFactory = StyleFactory(localizations = mapOf(LocaleId("en_US") to emptyMap()))
 
     @Test
     fun `Should change background color based on theme`(): Unit = with(composeTestRule) {

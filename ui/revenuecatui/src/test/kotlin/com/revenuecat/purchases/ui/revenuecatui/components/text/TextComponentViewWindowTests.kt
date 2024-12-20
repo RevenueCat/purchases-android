@@ -19,6 +19,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowChangingTest
 import org.junit.Rule
 import org.junit.Test
@@ -51,6 +53,7 @@ internal class TextComponentViewWindowTests {
         private const val MAX_WIDTH_MEDIUM = 839
         private const val MIN_WIDTH_EXPANDED = 841
 
+        private val localeId = LocaleId("en_US")
         private val defaultLocalizationKey = LocalizationKey("default key")
         private val compactLocalizationKey = LocalizationKey("compact key")
         private val mediumLocalizationKey = LocalizationKey("medium key")
@@ -65,11 +68,13 @@ internal class TextComponentViewWindowTests {
         private val expectedCompactBackgroundColor = Color.Yellow
         private val expectedMediumBackgroundColor = Color.Red
         private val expectedExpandedBackgroundColor = Color.Green
-        private val localizationDictionary = mapOf(
-            defaultLocalizationKey to LocalizationData.Text(UNEXPECTED_TEXT),
-            compactLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_COMPACT),
-            mediumLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_MEDIUM),
-            expandedLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_EXPANDED),
+        private val localizations = mapOf(
+            localeId to mapOf(
+                defaultLocalizationKey to LocalizationData.Text(UNEXPECTED_TEXT),
+                compactLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_COMPACT),
+                mediumLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_MEDIUM),
+                expandedLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_EXPANDED),
+            )
         )
         val component = TextComponent(
             text = defaultLocalizationKey,
@@ -95,7 +100,7 @@ internal class TextComponentViewWindowTests {
             )
         )
         val state = FakePaywallState(component)
-        val styleFactory = StyleFactory(localizationDictionary)
+        val styleFactory = StyleFactory(localizations)
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
     }
 

@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionary
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.string
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
@@ -11,7 +13,7 @@ import dev.drewhamilton.poko.Poko
 
 @Poko
 internal class LocalizedTextPartial private constructor(
-    @get:JvmSynthetic val text: String?,
+    @get:JvmSynthetic val texts: Map<LocaleId, String>?,
     @get:JvmSynthetic val partial: PartialTextComponent,
 ) : PresentedPartial<LocalizedTextPartial> {
 
@@ -24,14 +26,14 @@ internal class LocalizedTextPartial private constructor(
         @JvmSynthetic
         operator fun invoke(
             from: PartialTextComponent,
-            using: LocalizationDictionary,
-        ): Result<LocalizedTextPartial, PaywallValidationError> =
+            using: Map<LocaleId, LocalizationDictionary>,
+        ): Result<LocalizedTextPartial, NonEmptyList<PaywallValidationError>> =
             from.text
-                ?.let(using::string)
+                ?.let { localizationKey -> using.stringForAllLocales(localizationKey) }
                 .orSuccessfullyNull()
-                .map { string: String? ->
+                .map { texts ->
                     LocalizedTextPartial(
-                        text = string,
+                        texts = texts,
                         partial = from,
                     )
                 }
@@ -42,7 +44,7 @@ internal class LocalizedTextPartial private constructor(
         val otherPartial = with?.partial
 
         return LocalizedTextPartial(
-            text = with?.text ?: text,
+            texts = with?.texts ?: texts,
             partial = PartialTextComponent(
                 visible = otherPartial?.visible ?: partial.visible,
                 text = otherPartial?.text ?: partial.text,

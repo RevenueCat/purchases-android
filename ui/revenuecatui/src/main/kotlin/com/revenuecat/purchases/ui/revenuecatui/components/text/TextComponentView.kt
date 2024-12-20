@@ -375,7 +375,7 @@ private fun previewTextComponentStyle(
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
     return TextComponentStyle(
-        text = text,
+        texts = mapOf(LocaleId("en_US") to text),
         color = color,
         fontSize = fontSize,
         fontWeight = weight,

@@ -8,12 +8,13 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -67,8 +68,7 @@ internal sealed interface PaywallState {
         ) : Loaded {
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
-            val localizationDictionary by derivedStateOf { data.componentsLocalizations.getValue(localeId) }
-            val locale by derivedStateOf { localeId.toLocale() }
+            val locale by derivedStateOf { localeId.toComposeLocale() }
 
             var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
                 private set
@@ -93,12 +93,6 @@ internal sealed interface PaywallState {
                 map { it.toLocaleId() }.plus(data.defaultLocaleIdentifier)
                     // Find the first locale we have a LocalizationDictionary for.
                     .first { id -> data.componentsLocalizations.containsKey(id) }
-
-            private fun LocaleId.toLocale(): Locale =
-                Locale(value.replace('_', '-'))
-
-            private fun Locale.toLocaleId(): LocaleId =
-                LocaleId(toLanguageTag().replace('-', '_'))
 
             private fun List<Package>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()

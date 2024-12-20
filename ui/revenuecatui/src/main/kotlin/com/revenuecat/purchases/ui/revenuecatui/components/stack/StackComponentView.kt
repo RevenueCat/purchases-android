@@ -211,7 +211,7 @@ private fun StackComponentView_Preview_ZLayer() {
             style = StackComponentStyle(
                 children = listOf(
                     TextComponentStyle(
-                        text = "Hello",
+                        texts = mapOf(LocaleId("en_US") to "Hello"),
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
@@ -230,7 +230,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         overrides = null,
                     ),
                     TextComponentStyle(
-                        text = "World",
+                        texts = mapOf(LocaleId("en_US") to "World"),
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
@@ -275,7 +275,7 @@ private fun StackComponentView_Preview_ZLayer() {
 @Composable
 private fun previewChildren() = listOf(
     TextComponentStyle(
-        text = "Hello",
+        texts = mapOf(LocaleId("en_US") to "Hello"),
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),
@@ -293,7 +293,7 @@ private fun previewChildren() = listOf(
         overrides = null,
     ),
     TextComponentStyle(
-        text = "World",
+        texts = mapOf(LocaleId("en_US") to "World"),
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),

@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionary
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -26,8 +27,21 @@ internal fun FakePaywallState(vararg component: PaywallComponent): PaywallState.
     FakePaywallState(components = component.toList())
 
 internal fun FakePaywallState(
+    localizations: Map<LocaleId, LocalizationDictionary> = mapOf(LocaleId("en_US") to emptyMap()),
+    defaultLocaleIdentifier: LocaleId = LocaleId("en_US"),
+    vararg component: PaywallComponent
+): PaywallState.Loaded.Components =
+    FakePaywallState(
+        components = component.toList(),
+        localizations = localizations,
+        defaultLocaleIdentifier = defaultLocaleIdentifier
+    )
+
+internal fun FakePaywallState(
     components: List<PaywallComponent> = emptyList(),
     packages: List<Package> = emptyList(),
+    localizations: Map<LocaleId, LocalizationDictionary> = mapOf(LocaleId("en_US") to emptyMap()),
+    defaultLocaleIdentifier: LocaleId = LocaleId("en_US"),
 ): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
         templateName = "template",
@@ -39,8 +53,8 @@ internal fun FakePaywallState(
                 stickyFooter = null,
             ),
         ),
-        componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
-        defaultLocaleIdentifier = LocaleId("en_US"),
+        componentsLocalizations = localizations,
+        defaultLocaleIdentifier = defaultLocaleIdentifier,
     )
     val offering = Offering(
         identifier = "identifier",
