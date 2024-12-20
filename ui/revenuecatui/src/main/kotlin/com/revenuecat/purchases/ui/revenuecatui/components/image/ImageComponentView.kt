@@ -5,6 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.image
 import android.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -44,6 +46,7 @@ internal fun ImageComponentView(
                 .applyIfNotNull(style.shape) { clip(it) },
             placeholderUrlString = currentUrls.webpLowRes.toString(),
             contentScale = style.contentScale,
+            imagePreview = R.drawable.android,
         )
     }
 }
@@ -52,6 +55,16 @@ internal fun ImageComponentView(
 @Composable
 private fun ImageComponentView_Preview_Default() {
     Box(modifier = Modifier.background(ComposeColor.Red)) {
+        ImageComponentView(
+            style = previewImageComponentStyle(),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ImageComponentView_Preview_SmallerContainer() {
+    Box(modifier = Modifier.height(200.dp).background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(),
         )
@@ -103,7 +116,7 @@ private fun previewImageComponentStyle(
     lowResURL: URL = URL("https://assets.pawwalls.com/954459_1701163461.jpg"),
     visible: Boolean = true,
     size: Size = Size(width = SizeConstraint.Fixed(400u), height = SizeConstraint.Fit),
-    contentScale: ContentScale = ContentScale.Crop,
+    contentScale: ContentScale = ContentScale.Fit,
     overlay: ColorStyle? = null,
 ) = ImageComponentStyle(
     visible = visible,
