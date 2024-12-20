@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.BadgeComponent
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -52,6 +53,7 @@ internal class StyleFactory(
         actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
+            is BadgeComponent -> TODO("BadgeComponentStyle is not yet implemented")
             is ButtonComponent -> createButtonComponentStyle(component, actionHandler)
             is ImageComponent -> TODO("ImageComponentStyle is not yet implemented.")
             is PackageComponent -> TODO("PackageComponentStyle is not yet implemented.")
