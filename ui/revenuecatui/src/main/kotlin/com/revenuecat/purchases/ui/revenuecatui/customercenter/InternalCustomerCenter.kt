@@ -48,14 +48,16 @@ internal fun InternalCustomerCenter(
             when (action) {
                 is CustomerCenterAction.DetermineFlow -> {
                     coroutineScope.launch {
-                        viewModel.determineFlow(action.path)
+                        viewModel.determineFlow(context, action.path)
                     }
                 }
+
                 is CustomerCenterAction.PerformRestore -> {
                     coroutineScope.launch {
                         viewModel.restorePurchases()
                     }
                 }
+
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
             }
