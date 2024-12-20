@@ -35,4 +35,6 @@ internal class StackComponentStyle(
     val border: Border?,
     @get:JvmSynthetic
     val shadow: Shadow?,
+    @get:JvmSynthetic
+    val badge: BadgeStyle?,
 ) : ComponentStyle

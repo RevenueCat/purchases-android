@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.common.OfferingParser
-import com.revenuecat.purchases.paywalls.components.BadgeComponent
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -80,13 +80,15 @@ internal class PaywallComponentsDataTests(
                         componentsConfig = ComponentsConfig(
                             base = PaywallComponentsConfig(
                                 stack = StackComponent(
-                                    components = listOf(BadgeComponent(
+                                    components = listOf(
+                                        Badge(
                                         stack = StackComponent(
                                             components = emptyList()
                                         ),
-                                        style = BadgeComponent.Style.Overlay,
+                                        style = Badge.Style.Overlay,
                                         alignment = TwoDimensionalAlignment.BOTTOM_TRAILING
-                                    ))
+                                    )
+                                    )
                                 ),
                                 background = Background.Color(
                                     value = ColorScheme(
