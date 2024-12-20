@@ -9,11 +9,12 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -106,7 +107,8 @@ internal class CustomerCenterViewModelImpl(
                     restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
                 )
             }
-        } catch (e: Exception) {
+        } catch (e: PurchasesException) {
+            Logger.e("Error restoring purchases", e)
             _state.value = currentState.copy(
                 restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
             )

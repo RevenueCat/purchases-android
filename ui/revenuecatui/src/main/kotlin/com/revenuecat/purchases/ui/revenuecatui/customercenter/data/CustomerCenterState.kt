@@ -3,7 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.RestorePurchasesState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 
 internal sealed class CustomerCenterState {
     object Loading : CustomerCenterState()
