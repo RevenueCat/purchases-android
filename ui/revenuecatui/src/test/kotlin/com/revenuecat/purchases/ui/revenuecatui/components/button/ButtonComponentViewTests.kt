@@ -87,6 +87,7 @@ class ButtonComponentViewTests {
                         x = 0.0,
                         y = 3.0
                     ),
+                    badge = null,
                 ),
                 action = PaywallAction.PurchasePackage,
                 actionHandler = {

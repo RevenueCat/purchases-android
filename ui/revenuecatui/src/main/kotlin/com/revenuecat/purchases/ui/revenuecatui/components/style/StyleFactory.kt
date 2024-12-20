@@ -28,7 +28,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
@@ -106,6 +105,7 @@ internal class StyleFactory(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun createStackComponentStyle(
         component: StackComponent,
         actionHandler: suspend (PaywallAction) -> Unit,
@@ -129,9 +129,12 @@ internal class StyleFactory(
 
         val badge = partial?.badge ?: component.badge
         val badgeStyle = badge?.let {
+            val stackComponentStyle = when (val stackComponentStyleResult = createStackComponentStyle(it.stack)) {
+                is Result.Success -> stackComponentStyleResult.value
+                is Result.Error -> return stackComponentStyleResult
+            }
             BadgeStyle(
-                // TODO Need to map these errors instead of throwing.
-                stackStyle = createStackComponentStyle(it.stack).getOrThrow(),
+                stackStyle = stackComponentStyle,
                 style = it.style,
                 alignment = it.alignment,
             )
