@@ -103,7 +103,7 @@ internal class TextComponentViewWindowTests {
             componentState = ComponentViewState.DEFAULT,
             localizationDictionary = localizationDictionary,
         )
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component) {}.getOrThrow() as TextComponentStyle
     }
 
     @GraphicsMode(GraphicsMode.Mode.NATIVE)

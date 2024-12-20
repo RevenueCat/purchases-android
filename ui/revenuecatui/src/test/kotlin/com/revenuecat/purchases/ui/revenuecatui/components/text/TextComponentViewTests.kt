@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEqual
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -70,6 +71,7 @@ class TextComponentViewTests {
         ineligibleLocalizationKey to LocalizationData.Text(expectedTextIneligible),
         eligibleLocalizationKey to LocalizationData.Text(expectedTextEligible),
     )
+    private val actionHandler: (PaywallAction) -> Unit = {}
     private lateinit var styleFactory: StyleFactory
 
     @Before
@@ -99,7 +101,7 @@ class TextComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as TextComponentStyle
+                styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
             },
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
@@ -140,7 +142,7 @@ class TextComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as TextComponentStyle
+                styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
             },
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
@@ -174,8 +176,14 @@ class TextComponentViewTests {
         val smallTextComponent = TextComponent(text = textId, color = color, fontSize = FontSize.BODY_S, size = size)
         val state = FakePaywallState(largeTextComponent, smallTextComponent)
         setContent {
-            val largeTextStyle = styleFactory.create(largeTextComponent).getOrThrow() as TextComponentStyle
-            val smallTextStyle = styleFactory.create(smallTextComponent).getOrThrow() as TextComponentStyle
+            val largeTextStyle = styleFactory.create(
+                largeTextComponent,
+                actionHandler,
+            ).getOrThrow() as TextComponentStyle
+            val smallTextStyle = styleFactory.create(
+                smallTextComponent,
+                actionHandler,
+            ).getOrThrow() as TextComponentStyle
 
             // Act
             MaterialTheme {
@@ -225,7 +233,7 @@ class TextComponentViewTests {
             )
         )
         val state = FakePaywallState(component)
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
 
         // Act
         setContent {
@@ -272,7 +280,7 @@ class TextComponentViewTests {
             )
         )
         val state = FakePaywallState(component)
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
 
         // Act
         setContent { TextComponentView(style = style, state = state) }
