@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.paywalls.components.BadgeComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +41,17 @@ internal class PaywallComponentsDataTests(
                             "base": {
                               "stack": {
                                 "type": "stack",
-                                "components": []
+                                "components": [
+                                  {
+                                    "type": "badge",
+                                    "stack": {
+                                      "type": "stack",
+                                      "components": []
+                                    },
+                                    "style": "overlay",
+                                    "alignment": "bottom_trailing"
+                                  }
+                                ]
                               },
                               "background": {
                                 "type": "color",
@@ -68,7 +80,13 @@ internal class PaywallComponentsDataTests(
                         componentsConfig = ComponentsConfig(
                             base = PaywallComponentsConfig(
                                 stack = StackComponent(
-                                    components = emptyList()
+                                    components = listOf(BadgeComponent(
+                                        stack = StackComponent(
+                                            components = emptyList()
+                                        ),
+                                        style = BadgeComponent.Style.Overlay,
+                                        alignment = TwoDimensionalAlignment.BOTTOM_TRAILING
+                                    ))
                                 ),
                                 background = Background.Color(
                                     value = ColorScheme(
