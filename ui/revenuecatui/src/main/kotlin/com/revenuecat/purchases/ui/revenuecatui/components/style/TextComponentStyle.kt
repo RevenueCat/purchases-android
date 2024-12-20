@@ -12,12 +12,13 @@ import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 
 @Suppress("LongParameterList")
 @Immutable
 internal class TextComponentStyle(
     @get:JvmSynthetic
-    val texts: Map<LocaleId, String>,
+    val texts: NonEmptyMap<LocaleId, String>,
     @get:JvmSynthetic
     val color: ColorScheme,
     @get:JvmSynthetic

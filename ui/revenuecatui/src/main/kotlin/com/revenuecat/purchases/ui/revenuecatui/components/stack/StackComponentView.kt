@@ -58,6 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import java.net.URL
 
 @Suppress("LongMethod")
@@ -211,7 +212,7 @@ private fun StackComponentView_Preview_ZLayer() {
             style = StackComponentStyle(
                 children = listOf(
                     TextComponentStyle(
-                        texts = mapOf(LocaleId("en_US") to "Hello"),
+                        texts = nonEmptyMapOf(LocaleId("en_US") to "Hello"),
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
@@ -230,7 +231,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         overrides = null,
                     ),
                     TextComponentStyle(
-                        texts = mapOf(LocaleId("en_US") to "World"),
+                        texts = nonEmptyMapOf(LocaleId("en_US") to "World"),
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
@@ -275,7 +276,7 @@ private fun StackComponentView_Preview_ZLayer() {
 @Composable
 private fun previewChildren() = listOf(
     TextComponentStyle(
-        texts = mapOf(LocaleId("en_US") to "Hello"),
+        texts = nonEmptyMapOf(LocaleId("en_US") to "Hello"),
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),
@@ -293,7 +294,7 @@ private fun previewChildren() = listOf(
         overrides = null,
     ),
     TextComponentStyle(
-        texts = mapOf(LocaleId("en_US") to "World"),
+        texts = nonEmptyMapOf(LocaleId("en_US") to "World"),
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),

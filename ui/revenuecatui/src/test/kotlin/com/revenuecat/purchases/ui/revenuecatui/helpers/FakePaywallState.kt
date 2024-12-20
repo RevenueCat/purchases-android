@@ -11,14 +11,15 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionary
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import java.net.URL
-
 
 internal fun FakePaywallState(vararg pkg: Package): PaywallState.Loaded.Components =
     FakePaywallState(packages = pkg.toList())
@@ -27,9 +28,13 @@ internal fun FakePaywallState(vararg component: PaywallComponent): PaywallState.
     FakePaywallState(components = component.toList())
 
 internal fun FakePaywallState(
-    localizations: Map<LocaleId, LocalizationDictionary> = mapOf(LocaleId("en_US") to emptyMap()),
+    localizations: NonEmptyMap<LocaleId, LocalizationDictionary> = nonEmptyMapOf(
+        LocaleId("en_US") to nonEmptyMapOf(
+            LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+        )
+    ),
     defaultLocaleIdentifier: LocaleId = LocaleId("en_US"),
-    vararg component: PaywallComponent
+    vararg component: PaywallComponent,
 ): PaywallState.Loaded.Components =
     FakePaywallState(
         components = component.toList(),
@@ -40,7 +45,11 @@ internal fun FakePaywallState(
 internal fun FakePaywallState(
     components: List<PaywallComponent> = emptyList(),
     packages: List<Package> = emptyList(),
-    localizations: Map<LocaleId, LocalizationDictionary> = mapOf(LocaleId("en_US") to emptyMap()),
+    localizations: NonEmptyMap<LocaleId, LocalizationDictionary> = nonEmptyMapOf(
+        LocaleId("en_US") to nonEmptyMapOf(
+            LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+        )
+    ),
     defaultLocaleIdentifier: LocaleId = LocaleId("en_US"),
 ): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(

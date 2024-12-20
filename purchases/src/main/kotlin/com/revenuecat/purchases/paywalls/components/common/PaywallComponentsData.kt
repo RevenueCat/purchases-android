@@ -23,7 +23,7 @@ class PaywallComponentsData(
     val componentsConfig: ComponentsConfig,
     @get:JvmSynthetic
     @SerialName("components_localizations")
-    val componentsLocalizations: Map<LocaleId, LocalizationDictionary>,
+    val componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
     @get:JvmSynthetic
     @SerialName("default_locale")
     val defaultLocaleIdentifier: LocaleId,

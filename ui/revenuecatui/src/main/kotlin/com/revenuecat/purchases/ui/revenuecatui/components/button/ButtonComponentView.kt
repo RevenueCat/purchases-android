@@ -45,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import kotlinx.coroutines.launch
 import java.net.URL
 
@@ -80,7 +81,7 @@ private fun previewButtonComponentStyle(
     stackComponentStyle: StackComponentStyle = StackComponentStyle(
         children = listOf(
             TextComponentStyle(
-                texts = mapOf(LocaleId("en_US") to "Restore purchases"),
+                texts = nonEmptyMapOf(LocaleId("en_US") to "Restore purchases"),
                 color = ColorScheme(
                     light = ColorInfo.Hex(Color.Black.toArgb()),
                 ),

@@ -31,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import kotlinx.coroutines.CompletableDeferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -53,7 +54,7 @@ class ButtonComponentViewTests {
                 stackComponentStyle = StackComponentStyle(
                     children = listOf(
                         TextComponentStyle(
-                            texts = mapOf(LocaleId("en_US") to "Purchase"),
+                            texts = nonEmptyMapOf(LocaleId("en_US") to "Purchase"),
                             color = ColorScheme(
                                 light = ColorInfo.Hex(Color.Black.toArgb()),
                             ),
