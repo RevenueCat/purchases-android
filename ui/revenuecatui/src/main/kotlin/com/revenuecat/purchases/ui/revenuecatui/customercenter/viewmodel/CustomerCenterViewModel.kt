@@ -14,16 +14,12 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal interface CustomerCenterViewModel {
@@ -88,7 +84,7 @@ internal class CustomerCenterViewModelImpl(
         if (currentState is CustomerCenterState.Success) {
             _state.value = currentState.copy(
                 showRestoreDialog = false,
-                restorePurchasesState = RestorePurchasesState.Initial,
+                restorePurchasesState = RestorePurchasesState.INITIAL,
             )
         }
     }
@@ -103,16 +99,16 @@ internal class CustomerCenterViewModelImpl(
                     customerInfo.nonSubscriptionTransactions.isNotEmpty()
             if (hasPurchases) {
                 _state.value = currentState.copy(
-                    restorePurchasesState = RestorePurchasesState.PurchasesRecovered,
+                    restorePurchasesState = RestorePurchasesState.PURCHASES_RECOVERED,
                 )
             } else {
                 _state.value = currentState.copy(
-                    restorePurchasesState = RestorePurchasesState.PurchasesNotFound,
+                    restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
                 )
             }
         } catch (e: Exception) {
             _state.value = currentState.copy(
-                restorePurchasesState = RestorePurchasesState.PurchasesNotFound,
+                restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
             )
         }
     }

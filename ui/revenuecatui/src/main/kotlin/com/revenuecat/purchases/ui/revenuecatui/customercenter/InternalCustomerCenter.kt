@@ -14,7 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -178,15 +177,8 @@ private fun RestorePurchasesDialog(
 ) {
     var isRestoring by remember { mutableStateOf(false) }
 
-    // Reset isRestoring when dialog is dismissed
-    DisposableEffect(Unit) {
-        onDispose {
-            isRestoring = false
-        }
-    }
-
     when (state) {
-        RestorePurchasesState.Initial -> {
+        RestorePurchasesState.INITIAL -> {
             if (isRestoring) {
                 AlertDialog(
                     onDismissRequest = { /* Prevent dismiss while restoring */ },
@@ -248,7 +240,7 @@ private fun RestorePurchasesDialog(
                 )
             }
         }
-        RestorePurchasesState.PurchasesRecovered -> {
+        RestorePurchasesState.PURCHASES_RECOVERED -> {
             AlertDialog(
                 onDismissRequest = onDismiss,
                 title = {
@@ -270,7 +262,7 @@ private fun RestorePurchasesDialog(
                 },
             )
         }
-        RestorePurchasesState.PurchasesNotFound -> {
+        RestorePurchasesState.PURCHASES_NOT_FOUND -> {
             AlertDialog(
                 onDismissRequest = onDismiss,
                 title = {
@@ -300,10 +292,10 @@ private fun RestorePurchasesDialog(
     }
 }
 
-sealed class RestorePurchasesState {
-    object Initial : RestorePurchasesState()
-    object PurchasesRecovered : RestorePurchasesState()
-    object PurchasesNotFound : RestorePurchasesState()
+internal enum class RestorePurchasesState {
+    INITIAL,
+    PURCHASES_RECOVERED,
+    PURCHASES_NOT_FOUND,
 }
 
 @Composable
