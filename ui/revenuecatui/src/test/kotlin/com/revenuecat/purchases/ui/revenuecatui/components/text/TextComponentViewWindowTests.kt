@@ -25,8 +25,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -97,12 +95,7 @@ internal class TextComponentViewWindowTests {
             )
         )
         val state = FakePaywallState(component)
-        val styleFactory: StyleFactory = StyleFactory(
-            windowSize = ScreenCondition.COMPACT,
-            isEligibleForIntroOffer = true,
-            componentState = ComponentViewState.DEFAULT,
-            localizationDictionary = localizationDictionary,
-        )
+        val styleFactory = StyleFactory(localizationDictionary)
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
     }
 

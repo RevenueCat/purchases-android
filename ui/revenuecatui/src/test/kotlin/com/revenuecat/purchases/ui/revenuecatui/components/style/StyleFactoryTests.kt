@@ -11,8 +11,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -40,12 +38,7 @@ class StyleFactoryTests {
 
     @Before
     fun setup() {
-        styleFactory = StyleFactory(
-            windowSize = ScreenCondition.COMPACT,
-            isEligibleForIntroOffer = true,
-            componentState = ComponentViewState.DEFAULT,
-            localizationDictionary = localizationDictionary,
-        )
+        styleFactory = StyleFactory(localizationDictionary)
     }
 
     @Test

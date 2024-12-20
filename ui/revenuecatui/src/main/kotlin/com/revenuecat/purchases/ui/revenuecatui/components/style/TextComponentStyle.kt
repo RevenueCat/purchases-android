@@ -16,8 +16,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 @Immutable
 internal class TextComponentStyle(
     @get:JvmSynthetic
-    val visible: Boolean,
-    @get:JvmSynthetic
     val text: String,
     @get:JvmSynthetic
     val color: ColorScheme,
