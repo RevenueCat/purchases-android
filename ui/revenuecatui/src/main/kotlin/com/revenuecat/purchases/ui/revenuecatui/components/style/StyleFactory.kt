@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.paywalls.components.BadgeComponent
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -28,6 +27,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
@@ -49,7 +49,6 @@ internal class StyleFactory(
 
     fun create(component: PaywallComponent): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
-            is BadgeComponent -> TODO("BadgeComponentStyle is not yet implemented")
             is ButtonComponent -> TODO("ButtonComponentStyle is not yet implemented.")
             is ImageComponent -> TODO("ImageComponentStyle is not yet implemented.")
             is PackageComponent -> TODO("PackageComponentStyle is not yet implemented.")
@@ -86,6 +85,16 @@ internal class StyleFactory(
             state = componentState,
         )?.partial
 
+        val badge = partial?.badge ?: component.badge
+        val badgeStyle = badge?.let {
+            BadgeStyle(
+                // TODO Need to map these errors instead of throwing.
+                stackStyle = createStackComponentStyle(it.stack).getOrThrow(),
+                style = it.style,
+                alignment = it.alignment,
+            )
+        }
+
         StackComponentStyle(
             visible = partial?.visible ?: true,
             children = children,
@@ -98,6 +107,7 @@ internal class StyleFactory(
             shape = (partial?.shape ?: component.shape)?.toShape() ?: DEFAULT_SHAPE,
             border = partial?.border ?: component.border,
             shadow = partial?.shadow ?: component.shadow,
+            badge = badgeStyle,
         )
     }
 
