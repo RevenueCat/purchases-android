@@ -90,7 +90,7 @@ class BackendGetCustomerCenterConfigTest {
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
-                                        productMapping = mapOf("monthly_subscription" to "rc-refund-offer")
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer")
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -101,7 +101,7 @@ class BackendGetCustomerCenterConfigTest {
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
-                                        productMapping = mapOf("monthly_subscription" to "rc-refund-offer")
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer")
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -183,7 +183,8 @@ class BackendGetCustomerCenterConfigTest {
             )
         ),
         support = CustomerCenterConfigData.Support(
-            email = "support@revenuecat.com"
+            email = "support@revenuecat.com",
+            shouldWarnCustomerToUpdate = true
         ),
         lastPublishedAppVersion = null
     )

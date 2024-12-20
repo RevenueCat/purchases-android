@@ -70,7 +70,10 @@
               "eligible":true,
               "android_offer_id":"rc-refund-offer",
               "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
-              "title":"Wait!"
+              "title":"Wait!",
+              "product_mapping":{
+                "monthly_subscription":"rc-refund-offer"
+              }
             },
             "title":"Request a refund",
             "type":"REFUND_REQUEST"
@@ -89,7 +92,10 @@
                     "eligible":true,
                     "android_offer_id":"rc-cancel-offer",
                     "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
-                    "title":"Wait!"
+                    "title":"Wait!",
+                    "product_mapping":{
+                      "monthly_subscription":"rc-cancel-offer"
+                    }
                   },
                   "title":"Too expensive"
                 },
@@ -99,7 +105,10 @@
                     "eligible":true,
                     "android_offer_id":"rc-cancel-offer",
                     "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
-                    "title":"Wait!"
+                    "title":"Wait!",
+                    "product_mapping":{
+                      "monthly_subscription":"rc-cancel-offer"
+                    }
                   },
                   "title":"Don't use the app"
                 },
@@ -113,6 +122,13 @@
             "id":"jnkasldfhas",
             "title":"Cancel subscription",
             "type":"CANCEL"
+          },
+          {
+            "id": "path_ZD-yiHSBN",
+            "open_method": "EXTERNAL",
+            "title": "RevenueCat",
+            "type": "CUSTOM_URL",
+            "url": "https://revenuecat.com"
           }
         ],
         "title":"How can we help?",
@@ -124,6 +140,13 @@
             "id":"9q9719171o",
             "title":"Check purchases",
             "type":"MISSING_PURCHASE"
+          },
+          {
+            "id": "path_ZD-yiHSDN",
+            "open_method": "EXTERNAL",
+            "title": "RevenueCat",
+            "type": "CUSTOM_URL",
+            "url": "https://revenuecat.com"
           }
         ],
         "subtitle":"You currently have no active subscriptions",
@@ -132,7 +155,8 @@
       }
     },
     "support":{
-      "email":"support@revenuecat.com"
+      "email":"support@revenuecat.com",
+      "should_warn_customer_to_update": true
     }
   },
   "itunes_track_id":null,
