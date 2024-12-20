@@ -66,7 +66,8 @@ class BackendGetCustomerCenterConfigTest {
                             androidOfferId = "rc-refund-offer",
                             eligible = true,
                             title = "Wait!",
-                            subtitle = "Before you go, here's a one-time offer to continue at a discount."
+                            subtitle = "Before you go, here's a one-time offer to continue at a discount.",
+                            productMapping = mapOf("monthly_subscription" to "rc-refund-offer")
                         )
                     ),
                     HelpPath(
@@ -88,7 +89,8 @@ class BackendGetCustomerCenterConfigTest {
                                         androidOfferId = "rc-cancel-offer",
                                         eligible = true,
                                         title = "Wait!",
-                                        subtitle = "Before you go, here's a one-time offer to continue at a discount."
+                                        subtitle = "Before you go, here's a one-time offer to continue at a discount.",
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer")
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -98,7 +100,8 @@ class BackendGetCustomerCenterConfigTest {
                                         androidOfferId = "rc-cancel-offer",
                                         eligible = true,
                                         title = "Wait!",
-                                        subtitle = "Before you go, here's a one-time offer to continue at a discount."
+                                        subtitle = "Before you go, here's a one-time offer to continue at a discount.",
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer")
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -180,7 +183,8 @@ class BackendGetCustomerCenterConfigTest {
             )
         ),
         support = CustomerCenterConfigData.Support(
-            email = "support@revenuecat.com"
+            email = "support@revenuecat.com",
+            shouldWarnCustomerToUpdate = true
         ),
         lastPublishedAppVersion = null
     )
