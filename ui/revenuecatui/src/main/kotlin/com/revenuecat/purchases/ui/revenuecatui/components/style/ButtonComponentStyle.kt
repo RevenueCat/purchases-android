@@ -1,33 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 
 @Immutable
-internal class ButtonComponentStyle private constructor(
+internal class ButtonComponentStyle(
     @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
     @get:JvmSynthetic
     val action: PaywallAction,
     @get:JvmSynthetic
     val actionHandler: suspend (PaywallAction) -> Unit,
-) : ComponentStyle {
-
-    companion object {
-
-        @JvmSynthetic
-        @Composable
-        operator fun invoke(
-            stackComponentStyle: StackComponentStyle,
-            action: PaywallAction,
-            actionHandler: suspend (PaywallAction) -> Unit,
-        ): ButtonComponentStyle {
-            return ButtonComponentStyle(
-                stackComponentStyle = stackComponentStyle,
-                action = action,
-                actionHandler = actionHandler,
-            )
-        }
-    }
-}
+) : ComponentStyle

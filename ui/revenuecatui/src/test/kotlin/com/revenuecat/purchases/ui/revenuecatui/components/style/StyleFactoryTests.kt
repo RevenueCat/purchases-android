@@ -58,7 +58,7 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = styleFactory.create(textComponent)
+        val result = styleFactory.create(textComponent, {})
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
@@ -86,7 +86,7 @@ class StyleFactoryTests {
             )
 
             // Act
-            val result = styleFactory.create(stackComponent)
+            val result = styleFactory.create(stackComponent, {})
 
             // Assert
             assertThat(result).isInstanceOf(Result.Success::class.java)
