@@ -14,10 +14,15 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -39,32 +44,32 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.Loading)
-
     override val state = _state
+        .onStart {
+            try {
+                val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+                val purchaseInformation = loadPurchaseInformation()
+                emit(CustomerCenterState.Success(customerCenterConfigData, purchaseInformation))
+            } catch (e: PurchasesException) {
+                emit(CustomerCenterState.Error(e.error))
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
             initialValue = CustomerCenterState.Loading,
         )
 
-    init {
-        viewModelScope.launch {
-            try {
-                val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-                val purchaseInformation = loadPurchaseInformation()
-                _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
-            } catch (e: PurchasesException) {
-                _state.value = CustomerCenterState.Error(e.error)
-            }
-        }
-    }
-
     override suspend fun determineFlow(path: CustomerCenterConfigData.HelpPath) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
-                val currentState = _state.value
-                if (currentState is CustomerCenterState.Success) {
-                    _state.value = currentState.copy(showRestoreDialog = true)
+                _state.update { currentState ->
+                    when (currentState) {
+                        is CustomerCenterState.Success -> {
+                            currentState.copy(showRestoreDialog = true)
+                        }
+                        else -> currentState
+                    }
                 }
             }
 
