@@ -29,6 +29,7 @@ data class PaywallOptions internal constructor(
     val fontProvider: FontProvider?,
     val listener: PaywallListener?,
     val purchaseLogic: PurchaseLogic?,
+    val subscriptionOptionProvider: SubscriptionOptionProvider?,
     internal val mode: PaywallMode,
     val dismissRequest: () -> Unit,
 ) {
@@ -42,6 +43,7 @@ data class PaywallOptions internal constructor(
         fontProvider = builder.fontProvider,
         listener = builder.listener,
         purchaseLogic = builder.purchaseLogic,
+        subscriptionOptionProvider = builder.subscriptionOptionProvider,
         mode = builder.mode,
         dismissRequest = builder.dismissRequest,
     )
@@ -64,6 +66,7 @@ data class PaywallOptions internal constructor(
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
         internal var purchaseLogic: PurchaseLogic? = null
+        internal var subscriptionOptionProvider: SubscriptionOptionProvider? = null
         internal var mode: PaywallMode = PaywallMode.default
 
         fun setOffering(offering: Offering?) = apply {
@@ -90,6 +93,10 @@ data class PaywallOptions internal constructor(
 
         fun setListener(listener: PaywallListener?) = apply {
             this.listener = listener
+        }
+
+        fun setSubscriptionOptionProvider(provider: SubscriptionOptionProvider?) = apply {
+            this.subscriptionOptionProvider = provider
         }
 
         fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
