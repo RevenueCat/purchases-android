@@ -18,7 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
@@ -41,15 +41,16 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.Loading)
-    override val state: StateFlow<CustomerCenterState> = flow {
-        try {
-            val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformation = loadPurchaseInformation()
-            emit(CustomerCenterState.Success(customerCenterConfigData, purchaseInformation))
-        } catch (e: PurchasesException) {
-            emit(CustomerCenterState.Error(e.error))
+    override val state = _state
+        .onStart {
+            try {
+                val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+                val purchaseInformation = loadPurchaseInformation()
+                emit(CustomerCenterState.Success(customerCenterConfigData, purchaseInformation))
+            } catch (e: PurchasesException) {
+                emit(CustomerCenterState.Error(e.error))
+            }
         }
-    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
