@@ -154,7 +154,7 @@ internal class PaywallViewModelImpl(
             Logger.e("Activity is null, not initiating package purchase")
             return
         }
-        
+
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
@@ -390,6 +390,7 @@ internal class PaywallViewModelImpl(
                 variableDataProvider = variableDataProvider,
                 activelySubscribedProductIdentifiers = customerInfo.activeSubscriptions,
                 nonSubscriptionProductIdentifiers = customerInfo.nonSubscriptionTransactions
+                    // Filter out consumables so they don't get checked in valiation
                     .filter { !it.shouldConsume }
                     .map { it.productIdentifier }
                     .toSet(),
