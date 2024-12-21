@@ -154,7 +154,6 @@ internal class PaywallViewModelImpl(
             Logger.e("Activity is null, not initiating package purchase")
             return
         }
-
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
