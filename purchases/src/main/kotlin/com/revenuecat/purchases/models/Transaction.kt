@@ -21,7 +21,7 @@ data class Transaction(
     )
     val productId: String,
     val purchaseDate: Date,
-    var shouldConsume: Boolean
+    var shouldConsume: Boolean,
 ) : Parcelable {
 
     internal constructor(productId: String, jsonObject: JSONObject) : this(
