@@ -33,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEqu
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertRectangularBorderColor
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -54,6 +55,7 @@ class StackComponentViewTests {
     val composeTestRule = createComposeRule()
 
     private val styleFactory = StyleFactory(localizationDictionary = emptyMap())
+    private val actionHandler: (PaywallAction) -> Unit = {}
 
     @Test
     fun `Should change background color based on theme`(): Unit = with(composeTestRule) {
@@ -73,7 +75,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
             },
             act = { StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack")) },
             assert = { theme ->
@@ -115,7 +117,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
             },
             act = { StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack")) },
             assert = { theme ->
@@ -167,7 +169,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
             },
             act = {
                 // An outer box, because a shadow draws outside the Composable's bounds.
