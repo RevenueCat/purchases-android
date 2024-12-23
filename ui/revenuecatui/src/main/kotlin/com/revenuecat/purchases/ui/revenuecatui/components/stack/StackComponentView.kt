@@ -8,14 +8,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -24,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -35,6 +44,7 @@ import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
@@ -54,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -68,58 +79,119 @@ internal fun StackComponentView(
     modifier: Modifier = Modifier,
 ) {
     if (style.visible) {
-        val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
-        val borderStyle = style.border?.let { rememberBorderStyle(border = it) }
-        val shadowStyle = style.shadow?.let { rememberShadowStyle(shadow = it) }
+        if (style.badge != null) {
+            when (style.badge.style) {
+                Badge.Style.Overlay -> {
+                    StackWithOverlaidBadge(style, state, style.badge.stackStyle, style.badge.alignment, modifier)
+                }
 
-        // Modifier irrespective of dimension.
-        val commonModifier = remember(style) {
-            Modifier
-                .padding(style.margin)
-                .applyIfNotNull(shadowStyle) { shadow(it, style.shape) }
-                .applyIfNotNull(backgroundColorStyle) { background(it, style.shape) }
-                .clip(style.shape)
-                .applyIfNotNull(borderStyle) { border(it, style.shape) }
-                .padding(style.padding)
+                Badge.Style.EdgeToEdge -> {
+                }
+
+                Badge.Style.Nested -> {
+                }
+            }
+        } else {
+            MainStackComponent(style, state, modifier)
         }
+    }
+}
 
-        val content: @Composable () -> Unit = remember(style.children) {
-            @Composable { style.children.forEach { child -> ComponentView(style = child, state = state) } }
-        }
+@Composable
+private fun StackWithOverlaidBadge(
+    style: StackComponentStyle,
+    state: PaywallState.Loaded.Components,
+    badgeStack: StackComponentStyle,
+    alignment: TwoDimensionalAlignment,
+    modifier: Modifier = Modifier,
+) {
+    var badgeHeight by remember {
+        mutableIntStateOf(0)
+    }
+    val paddingDp = with(LocalDensity.current) { (badgeHeight / 2f).toDp() }
+    val padding = when (alignment) {
+        TwoDimensionalAlignment.TOP_LEADING,
+        TwoDimensionalAlignment.TOP,
+        TwoDimensionalAlignment.TOP_TRAILING,
+        -> PaddingValues(top = paddingDp)
+        TwoDimensionalAlignment.BOTTOM_LEADING,
+        TwoDimensionalAlignment.BOTTOM,
+        TwoDimensionalAlignment.BOTTOM_TRAILING,
+        -> PaddingValues(bottom = paddingDp)
+        else -> PaddingValues(0.dp)
+    }
+    Box(modifier = modifier) {
+        // TODO Fix margins when using badges
+        MainStackComponent(style, state, modifier = Modifier.padding(padding))
+        StackComponentView(
+            badgeStack,
+            state,
+            modifier = Modifier
+                .align(alignment.toAlignment())
+                .onGloballyPositioned {
+                    badgeHeight = it.size.height
+                },
+        )
+    }
+}
 
-        // Show the right container composable depending on the dimension.
-        when (style.dimension) {
-            is Dimension.Horizontal -> Row(
-                modifier = modifier
-                    .size(style.size, verticalAlignment = style.dimension.alignment.toAlignment())
-                    .then(commonModifier),
-                verticalAlignment = style.dimension.alignment.toAlignment(),
-                horizontalArrangement = style.dimension.distribution.toHorizontalArrangement(
-                    spacing = style.spacing,
-                ),
-            ) { content() }
+@Composable
+private fun MainStackComponent(
+    style: StackComponentStyle,
+    state: PaywallState.Loaded.Components,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val borderStyle = style.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = style.shadow?.let { rememberShadowStyle(shadow = it) }
 
-            is Dimension.Vertical -> Column(
-                modifier = modifier
-                    .size(style.size, horizontalAlignment = style.dimension.alignment.toAlignment())
-                    .then(commonModifier),
-                verticalArrangement = style.dimension.distribution.toVerticalArrangement(
-                    spacing = style.spacing,
-                ),
-                horizontalAlignment = style.dimension.alignment.toAlignment(),
-            ) { content() }
+    // Modifier irrespective of dimension.
+    val commonModifier = remember(style) {
+        Modifier
+            .padding(style.margin)
+            .applyIfNotNull(shadowStyle) { shadow(it, style.shape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, style.shape) }
+            .clip(style.shape)
+            .applyIfNotNull(borderStyle) { border(it, style.shape) }
+            .padding(style.padding)
+    }
 
-            is Dimension.ZLayer -> Box(
-                modifier = modifier
-                    .size(
-                        size = style.size,
-                        horizontalAlignment = style.dimension.alignment.toHorizontalAlignmentOrNull(),
-                        verticalAlignment = style.dimension.alignment.toVerticalAlignmentOrNull(),
-                    )
-                    .then(commonModifier),
-                contentAlignment = style.dimension.alignment.toAlignment(),
-            ) { content() }
-        }
+    val content: @Composable () -> Unit = remember(style.children) {
+        @Composable { style.children.forEach { child -> ComponentView(style = child, state = state) } }
+    }
+
+    // Show the right container composable depending on the dimension.
+    when (style.dimension) {
+        is Dimension.Horizontal -> Row(
+            modifier = modifier
+                .size(style.size, verticalAlignment = style.dimension.alignment.toAlignment())
+                .then(commonModifier),
+            verticalAlignment = style.dimension.alignment.toAlignment(),
+            horizontalArrangement = style.dimension.distribution.toHorizontalArrangement(
+                spacing = style.spacing,
+            ),
+        ) { content() }
+
+        is Dimension.Vertical -> Column(
+            modifier = modifier
+                .size(style.size, horizontalAlignment = style.dimension.alignment.toAlignment())
+                .then(commonModifier),
+            verticalArrangement = style.dimension.distribution.toVerticalArrangement(
+                spacing = style.spacing,
+            ),
+            horizontalAlignment = style.dimension.alignment.toAlignment(),
+        ) { content() }
+
+        is Dimension.ZLayer -> Box(
+            modifier = modifier
+                .size(
+                    size = style.size,
+                    horizontalAlignment = style.dimension.alignment.toHorizontalAlignmentOrNull(),
+                    verticalAlignment = style.dimension.alignment.toVerticalAlignmentOrNull(),
+                )
+                .then(commonModifier),
+            contentAlignment = style.dimension.alignment.toAlignment(),
+        ) { content() }
     }
 }
 
@@ -152,6 +224,47 @@ private fun StackComponentView_Preview_Vertical() {
                     y = 3.0,
                 ),
                 badge = null,
+            ),
+            state = previewEmptyState(),
+        )
+    }
+}
+
+private class BadgeAlignmentProvider : PreviewParameterProvider<TwoDimensionalAlignment> {
+    override val values = listOf(
+        TwoDimensionalAlignment.TOP_LEADING,
+        TwoDimensionalAlignment.TOP,
+        TwoDimensionalAlignment.TOP_TRAILING,
+        TwoDimensionalAlignment.BOTTOM_LEADING,
+        TwoDimensionalAlignment.BOTTOM,
+        TwoDimensionalAlignment.BOTTOM_TRAILING,
+    ).asSequence()
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_Badge(
+    @PreviewParameter(BadgeAlignmentProvider::class) alignment: TwoDimensionalAlignment,
+) {
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                visible = true,
+                children = previewChildren(),
+                dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
+                size = Size(width = SizeConstraint.Fixed(200u), height = Fit),
+                spacing = 16.dp,
+                backgroundColor = ColorScheme(
+                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                ),
+                padding = PaddingValues(all = 12.dp),
+                margin = PaddingValues(all = 0.dp),
+                shape = RoundedCornerShape(size = 20.dp),
+                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                shadow = null,
+                badge = previewBadge(alignment),
             ),
             state = previewEmptyState(),
         )
@@ -335,4 +448,55 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
     )
 
     return PaywallState.Loaded.Components(offering, data)
+}
+
+private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
+    return BadgeStyle(
+        stackStyle = StackComponentStyle(
+            visible = true,
+            children = listOf(
+                TextComponentStyle(
+                    visible = true,
+                    text = "Badge",
+                    color = ColorScheme(
+                        light = ColorInfo.Hex(Color.Black.toArgb()),
+                    ),
+                    fontSize = FontSize.BODY_M,
+                    fontWeight = FontWeight.REGULAR.toFontWeight(),
+                    fontFamily = null,
+                    textAlign = HorizontalAlignment.CENTER.toTextAlign(),
+                    horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
+                    backgroundColor = null,
+                    size = Size(width = Fit, height = Fit),
+                    padding = Padding(
+                        top = 8.0,
+                        bottom = 8.0,
+                        leading = 8.0,
+                        trailing = 8.0,
+                    ).toPaddingValues(),
+                    margin = Padding(
+                        top = 0.0,
+                        bottom = 0.0,
+                        leading = 0.0,
+                        trailing = 0.0,
+                    ).toPaddingValues(),
+                    overrides = null,
+                ),
+            ),
+            dimension = Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = START),
+            size = Size(width = Fit, height = Fit),
+            spacing = 0.dp,
+            backgroundColor = ColorScheme(
+                light = ColorInfo.Hex(Color.Green.toArgb()),
+            ),
+            padding = PaddingValues(all = 0.dp),
+            margin = PaddingValues(all = 0.dp),
+            shape = CircleShape,
+            border = null,
+            shadow = null,
+            badge = null,
+        ),
+        style = Badge.Style.Overlay,
+        alignment = alignment,
+    )
 }
