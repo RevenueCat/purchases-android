@@ -46,9 +46,9 @@ internal class CustomerCenterViewModelImpl(
             try {
                 val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
                 val purchaseInformation = loadPurchaseInformation()
-                emit(CustomerCenterState.Success(customerCenterConfigData, purchaseInformation))
+                _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
             } catch (e: PurchasesException) {
-                emit(CustomerCenterState.Error(e.error))
+                _state.value = CustomerCenterState.Error(e.error)
             }
         }
         .stateIn(
