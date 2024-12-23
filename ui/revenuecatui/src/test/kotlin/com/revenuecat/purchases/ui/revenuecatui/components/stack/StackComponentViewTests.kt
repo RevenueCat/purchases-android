@@ -256,7 +256,7 @@ class StackComponentViewTests {
             )
         )
         val state = FakePaywallState(component)
-        val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
+        val style = styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
 
         // Act
         setContent {
@@ -356,7 +356,7 @@ class StackComponentViewTests {
             )
         )
         val state = FakePaywallState(component)
-        val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
+        val style = styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
 
         // Act
         setContent {
