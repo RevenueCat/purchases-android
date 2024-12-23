@@ -94,6 +94,9 @@ internal class CustomerCenterViewModelImpl(
         val currentState = _state.value as? CustomerCenterState.Success ?: return
 
         try {
+            _state.value = currentState.copy(
+                restorePurchasesState = RestorePurchasesState.RESTORING,
+            )
             val customerInfo = purchases.awaitRestore()
             val hasPurchases =
                 customerInfo.activeSubscriptions.isNotEmpty() ||

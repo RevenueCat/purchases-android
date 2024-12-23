@@ -4,4 +4,5 @@ internal enum class RestorePurchasesState {
     INITIAL,
     PURCHASES_RECOVERED,
     PURCHASES_NOT_FOUND,
+    RESTORING,
 }
