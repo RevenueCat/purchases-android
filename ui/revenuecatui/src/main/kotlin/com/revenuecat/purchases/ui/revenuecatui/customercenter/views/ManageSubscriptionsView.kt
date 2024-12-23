@@ -199,7 +199,7 @@ private fun ManageSubscriptionsButtonsView(
     useOutlinedButton: Boolean = false,
 ) {
     Column {
-        screen.paths.forEach { path ->
+        screen.supportedPaths.forEach { path ->
             ManageSubscriptionButton(
                 path = path,
                 onDetermineFlow = onDetermineFlow,
