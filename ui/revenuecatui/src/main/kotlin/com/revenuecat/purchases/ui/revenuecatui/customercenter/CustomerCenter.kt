@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.compose.runtime.Composable
@@ -7,8 +9,10 @@ import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIP
 /**
  * Composable offering a full screen Customer Center UI configured from the RevenueCat dashboard.
  */
+@JvmSynthetic
 @Composable
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
+@SuppressWarnings("PreviewPublic")
 // CustomerCenter WIP: Make public when ready
 internal fun CustomerCenter(modifier: Modifier = Modifier) {
     InternalCustomerCenter(modifier)
