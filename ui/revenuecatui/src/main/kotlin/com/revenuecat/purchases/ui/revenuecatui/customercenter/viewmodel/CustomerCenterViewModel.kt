@@ -11,12 +11,13 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.utils.getDefaultLocales
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -133,9 +134,21 @@ internal class CustomerCenterViewModelImpl(
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
         // Customer Center WIP: update when we have subscription information in CustomerInfo
-        val activeEntitlement = customerInfo.entitlements.active.isEmpty()
+        val activeEntitlement = customerInfo.entitlements.active.isNotEmpty()
         if (activeEntitlement) {
-            return CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+            val entitlement = customerInfo.entitlements.active.values.first()
+            val product = purchases.awaitGetProduct(entitlement.productIdentifier).first()
+            val locale = getDefaultLocales().first()
+            val purchaseInformation = PurchaseInformation(
+                title = product.description,
+                durationTitle = product.period?.localizedPeriod(locale) ?: "",
+                price = product.price.formatted,
+                expirationDateString = entitlement.expirationDate.toString(),
+                willRenew = entitlement.willRenew,
+                active = entitlement.isActive,
+                productId = entitlement.productIdentifier,
+            )
+            return purchaseInformation
         }
 
         return null
