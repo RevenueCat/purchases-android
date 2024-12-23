@@ -37,6 +37,7 @@ internal fun LocalImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
+    @DrawableRes imagePreview: Int? = null,
 ) {
     Image(
         source = ImageSource.Local(resource),
@@ -46,9 +47,14 @@ internal fun LocalImage(
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
+        imagePreview = imagePreview,
     )
 }
 
+/**
+ * @param supportImagePreview: set to false to not show any image in previews and just a colored box. This is to avoid
+ * modifying Paywalls V1 previews.
+ */
 @SuppressWarnings("LongParameterList")
 @Composable
 internal fun RemoteImage(
@@ -59,6 +65,7 @@ internal fun RemoteImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
+    @DrawableRes imagePreview: Int? = null,
 ) {
     Image(
         source = ImageSource.Remote(urlString),
@@ -68,6 +75,7 @@ internal fun RemoteImage(
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
+        imagePreview = imagePreview,
     )
 }
 
@@ -92,9 +100,10 @@ private fun Image(
     contentDescription: String?,
     transformation: Transformation?,
     alpha: Float,
+    @DrawableRes imagePreview: Int?,
 ) {
     // Previews don't support images
-    if (isInPreviewMode()) {
+    if (isInPreviewMode() && imagePreview == null) {
         return ImageForPreviews(modifier)
     }
 
@@ -120,6 +129,7 @@ private fun Image(
             modifier = modifier,
             contentScale = contentScale,
             alpha = alpha,
+            imagePreview = imagePreview,
             onError = {
                 Logger.w("Image failed to load. Will try again disabling cache")
                 useCache = false
@@ -135,6 +145,7 @@ private fun Image(
             modifier = modifier,
             contentScale = contentScale,
             alpha = alpha,
+            imagePreview = imagePreview,
         )
     }
 }
@@ -150,6 +161,7 @@ private fun AsyncImage(
     contentScale: ContentScale,
     contentDescription: String?,
     alpha: Float,
+    @DrawableRes imagePreview: Int? = null,
     onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
 ) {
     AsyncImage(
@@ -158,7 +170,7 @@ private fun AsyncImage(
         placeholder = placeholderSource?.let {
             rememberAsyncImagePainter(
                 model = it.data,
-                placeholder = if (isInPreviewMode()) painterResource(R.drawable.android) else null,
+                placeholder = if (isInPreviewMode() && imagePreview != null) painterResource(imagePreview) else null,
                 imageLoader = imageLoader,
                 contentScale = contentScale,
                 onError = { errorState ->
