@@ -177,7 +177,6 @@ internal class CustomerCenterViewModelImpl(
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
         } catch (e: ActivityNotFoundException) {
             Logger.e("Error opening manage subscriptions", e)
-            e.printStackTrace()
         }
     }
 }
