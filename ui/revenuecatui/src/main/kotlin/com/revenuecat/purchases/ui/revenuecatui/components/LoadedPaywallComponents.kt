@@ -69,9 +69,10 @@ internal fun LoadedPaywallComponents(
     val styleFactory = remember(state.locale, windowSize) { StyleFactory(state.localizationDictionary) }
 
     val config = state.data.componentsConfig.base
-    val style = styleFactory.create(config.stack).getOrThrow()
+    val actionHandler: suspend (PaywallAction) -> Unit = { /* TODO Implement action handler */ }
+    val style = styleFactory.create(config.stack, actionHandler).getOrThrow()
     val footerComponentStyle = config.stickyFooter?.let {
-        styleFactory.createStickyFooterComponentStyle(it).getOrThrow()
+        styleFactory.createStickyFooterComponentStyle(it, actionHandler).getOrThrow()
     }
     val background = config.background.toBackgroundStyle()
 
