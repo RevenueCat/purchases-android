@@ -185,6 +185,28 @@ internal inline fun <A, B, E> Iterable<Result<A, NonEmptyList<E>>>.mapOrAccumula
  * Maps the Result values in this map using [transform], or accumulates the errors if at least one is a [Result.Error].
  */
 @JvmSynthetic
+internal inline fun <K, A, B, E> Map<K, Result<A, NonEmptyList<E>>>.mapValuesOrAccumulate(
+    transform: (A) -> B,
+): Result<Map<K, B>, NonEmptyList<E>> {
+    val successes = mutableMapOf<K, B>()
+    val errors = mutableListOf<E>()
+
+    for ((key, result) in this) {
+        when (result) {
+            is Result.Success -> if (errors.isEmpty()) successes[key] = transform(result.value)
+            is Result.Error -> errors.addAll(result.value)
+        }
+    }
+
+    return errors.toNonEmptyListOrNull()
+        ?.let { Result.Error(it) }
+        ?: Result.Success(successes)
+}
+
+/**
+ * Maps the Result values in this map using [transform], or accumulates the errors if at least one is a [Result.Error].
+ */
+@JvmSynthetic
 internal inline fun <K, A, B, E> NonEmptyMap<K, Result<A, NonEmptyList<E>>>.mapValuesOrAccumulate(
     transform: (A) -> B,
 ): Result<NonEmptyMap<K, B>, NonEmptyList<E>> {
