@@ -1,3 +1,4 @@
+@file:JvmSynthetic
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
@@ -33,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import kotlinx.coroutines.launch
 
+@JvmSynthetic
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
