@@ -416,7 +416,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     padding = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                     margin = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
                                 ),
-                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                using = emptyMap(),
                             ).getOrThrow(),
                         ),
                     ),
