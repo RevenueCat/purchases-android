@@ -62,6 +62,7 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
+                is CustomerCenterAction.DisplayFeedbackSurvey -> viewModel.displayFeedbackSurvey(action.path)
             }
         },
     )
@@ -137,7 +138,11 @@ private fun CustomerCenterLoaded(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
                 onDetermineFlow = { path ->
-                    onAction(CustomerCenterAction.DetermineFlow(path))
+                    if (path.feedbackSurvey != null) {
+                        onAction(CustomerCenterAction.DisplayFeedbackSurvey(path))
+                    } else {
+                        onAction(CustomerCenterAction.DetermineFlow(path))
+                    }
                 },
             )
         } ?: run {

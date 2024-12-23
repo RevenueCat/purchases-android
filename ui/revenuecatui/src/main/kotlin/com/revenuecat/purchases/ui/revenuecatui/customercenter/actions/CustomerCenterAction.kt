@@ -9,4 +9,5 @@ internal sealed class CustomerCenterAction {
     object PerformRestore : CustomerCenterAction()
     object DismissRestoreDialog : CustomerCenterAction()
     data class ContactSupport(val email: String) : CustomerCenterAction()
+    data class DisplayFeedbackSurvey(val path: CustomerCenterConfigData.HelpPath) : CustomerCenterAction()
 }
