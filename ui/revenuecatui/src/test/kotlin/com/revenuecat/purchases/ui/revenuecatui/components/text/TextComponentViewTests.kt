@@ -33,16 +33,13 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,17 +69,7 @@ class TextComponentViewTests {
         eligibleLocalizationKey to LocalizationData.Text(expectedTextEligible),
     )
     private val actionHandler: (PaywallAction) -> Unit = {}
-    private lateinit var styleFactory: StyleFactory
-
-    @Before
-    fun setup() {
-        styleFactory = StyleFactory(
-            windowSize = ScreenCondition.COMPACT,
-            isEligibleForIntroOffer = true,
-            componentState = ComponentViewState.DEFAULT,
-            localizationDictionary = localizationDictionary,
-        )
-    }
+    private val styleFactory = StyleFactory(localizationDictionary)
 
     @Test
     fun `Should change text color based on theme`(): Unit = with(composeTestRule) {

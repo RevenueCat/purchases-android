@@ -66,14 +66,7 @@ internal fun LoadedPaywallComponents(
     val windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val windowSize = ScreenCondition.from(windowSizeClass.windowWidthSizeClass)
 
-    val styleFactory = remember(state.locale, windowSize) {
-        StyleFactory(
-            windowSize = windowSize,
-            isEligibleForIntroOffer = false,
-            componentState = ComponentViewState.DEFAULT,
-            localizationDictionary = state.localizationDictionary,
-        )
-    }
+    val styleFactory = remember(state.locale, windowSize) { StyleFactory(state.localizationDictionary) }
 
     val config = state.data.componentsConfig.base
     val actionHandler: suspend (PaywallAction) -> Unit = { /* TODO Implement action handler */ }

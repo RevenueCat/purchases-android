@@ -50,10 +50,8 @@ class ButtonComponentViewTests {
         composeTestRule.setContent {
             val style = ButtonComponentStyle(
                 stackComponentStyle = StackComponentStyle(
-                    visible = true,
                     children = listOf(
                         TextComponentStyle(
-                            visible = true,
                             text = "Purchase",
                             color = ColorScheme(
                                 light = ColorInfo.Hex(Color.Black.toArgb()),
@@ -87,6 +85,7 @@ class ButtonComponentViewTests {
                         x = 0.0,
                         y = 3.0
                     ),
+                    overrides = null,
                 ),
                 action = PaywallAction.PurchasePackage,
                 actionHandler = {

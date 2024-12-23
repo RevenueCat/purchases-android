@@ -78,10 +78,8 @@ private fun ButtonComponentView_Preview_Default() {
 @Composable
 private fun previewButtonComponentStyle(
     stackComponentStyle: StackComponentStyle = StackComponentStyle(
-        visible = true,
         children = listOf(
             TextComponentStyle(
-                visible = true,
                 text = "Restore purchases",
                 color = ColorScheme(
                     light = ColorInfo.Hex(Color.Black.toArgb()),
@@ -114,6 +112,7 @@ private fun previewButtonComponentStyle(
             x = 0.0,
             y = 3.0,
         ),
+        overrides = null,
     ),
     action: PaywallAction = PaywallAction.RestorePurchases,
     actionHandler: (PaywallAction) -> Unit = {},
