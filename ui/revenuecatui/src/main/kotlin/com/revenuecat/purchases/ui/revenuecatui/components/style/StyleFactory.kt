@@ -105,6 +105,7 @@ internal class StyleFactory(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun createStackComponentStyle(
         component: StackComponent,
         actionHandler: suspend (PaywallAction) -> Unit,
@@ -126,6 +127,20 @@ internal class StyleFactory(
             state = componentState,
         )?.partial
 
+        val badge = partial?.badge ?: component.badge
+        val badgeStyle = badge?.let {
+            val stackComponentStyleResult = createStackComponentStyle(it.stack, actionHandler)
+            val stackComponentStyle = when (stackComponentStyleResult) {
+                is Result.Success -> stackComponentStyleResult.value
+                is Result.Error -> return stackComponentStyleResult
+            }
+            BadgeStyle(
+                stackStyle = stackComponentStyle,
+                style = it.style,
+                alignment = it.alignment,
+            )
+        }
+
         StackComponentStyle(
             visible = partial?.visible ?: true,
             children = children,
@@ -138,6 +153,7 @@ internal class StyleFactory(
             shape = (partial?.shape ?: component.shape)?.toShape() ?: DEFAULT_SHAPE,
             border = partial?.border ?: component.border,
             shadow = partial?.shadow ?: component.shadow,
+            badge = badgeStyle,
         )
     }
 

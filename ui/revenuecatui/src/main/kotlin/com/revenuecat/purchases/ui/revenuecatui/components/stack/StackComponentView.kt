@@ -151,6 +151,7 @@ private fun StackComponentView_Preview_Vertical() {
                     x = 0.0,
                     y = 3.0,
                 ),
+                badge = null,
             ),
             state = previewEmptyState(),
         )
@@ -185,6 +186,7 @@ private fun StackComponentView_Preview_Horizontal() {
                     x = 0.0,
                     y = 5.0,
                 ),
+                badge = null,
             ),
             state = previewEmptyState(),
         )
@@ -260,6 +262,7 @@ private fun StackComponentView_Preview_ZLayer() {
                     x = 5.0,
                     y = 5.0,
                 ),
+                badge = null,
             ),
             state = previewEmptyState(),
         )
