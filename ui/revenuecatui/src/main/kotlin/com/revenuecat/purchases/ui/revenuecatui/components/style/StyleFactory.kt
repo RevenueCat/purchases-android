@@ -10,12 +10,13 @@ import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.string
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -33,7 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
 internal class StyleFactory(
-    private val localizationDictionary: LocalizationDictionary,
+    private val localizations: Map<LocaleId, LocalizationDictionary>,
 ) {
 
     private companion object {
@@ -131,17 +132,17 @@ internal class StyleFactory(
     private fun createTextComponentStyle(
         component: TextComponent,
     ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-        // Get our text from the localization dictionary.
-        first = localizationDictionary.string(component.text).mapError { nonEmptyListOf(it) },
+        // Get our texts from the localization dictionary.
+        first = localizations.stringForAllLocales(component.text),
         second = component.overrides
             // Map all overrides to PresentedOverrides.
-            ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizationDictionary) }
+            ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizations) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
-    ) { text, presentedOverrides ->
+    ) { texts, presentedOverrides ->
         val weight = component.fontWeight.toFontWeight()
         TextComponentStyle(
-            text = text,
+            texts = texts,
             color = component.color,
             fontSize = component.fontSize,
             fontWeight = weight,

@@ -6,6 +6,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -16,7 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 @Immutable
 internal class TextComponentStyle(
     @get:JvmSynthetic
-    val text: String,
+    val texts: Map<LocaleId, String>,
     @get:JvmSynthetic
     val color: ColorScheme,
     @get:JvmSynthetic

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.errors
 
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 
@@ -36,10 +37,20 @@ internal sealed class PaywallValidationError : Throwable() {
     data class InvalidIcons(val invalidIcons: Set<String>) : PaywallValidationError()
     object MissingTiers : PaywallValidationError()
     data class MissingTierConfigurations(val tierIds: Set<String>) : PaywallValidationError()
-    data class MissingStringLocalization(val key: LocalizationKey) : PaywallValidationError() {
-        override val message: String = PaywallValidationErrorStrings.MISSING_STRING_LOCALIZATION.format(key.value)
+    data class MissingStringLocalization(
+        val key: LocalizationKey,
+        val locale: LocaleId? = null,
+    ) : PaywallValidationError() {
+        override val message: String = locale?.let {
+            PaywallValidationErrorStrings.MISSING_STRING_LOCALIZATION_WITH_LOCALE.format(key.value, locale.value)
+        } ?: PaywallValidationErrorStrings.MISSING_STRING_LOCALIZATION.format(key.value)
     }
-    data class MissingImageLocalization(val key: LocalizationKey) : PaywallValidationError() {
-        override val message: String = PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION.format(key.value)
+    data class MissingImageLocalization(
+        val key: LocalizationKey,
+        val locale: LocaleId? = null,
+    ) : PaywallValidationError() {
+        override val message: String = locale?.let {
+            PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION_WITH_LOCALE.format(key.value, locale.value)
+        } ?: PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION.format(key.value)
     }
 }

@@ -11,4 +11,8 @@ internal object PaywallValidationErrorStrings {
     const val MISSING_TIER_CONFIGURATIONS = "There are required tier configurations missing for: '%s'."
     const val MISSING_STRING_LOCALIZATION = "Missing string localization for property with id: '%s'"
     const val MISSING_IMAGE_LOCALIZATION = "Missing image localization for property with id: '%s'"
+    const val MISSING_STRING_LOCALIZATION_WITH_LOCALE =
+        "Missing string localization for property with id: '%s', for locale: '%s'."
+    const val MISSING_IMAGE_LOCALIZATION_WITH_LOCALE =
+        "Missing image localization for property with id: '%s', for locale: '%s'."
 }
