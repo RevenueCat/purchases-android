@@ -101,7 +101,7 @@ internal class TextComponentViewWindowTests {
         )
         val state = FakePaywallState(component)
         val styleFactory = StyleFactory(localizations)
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component, { }).getOrThrow() as TextComponentStyle
     }
 
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
