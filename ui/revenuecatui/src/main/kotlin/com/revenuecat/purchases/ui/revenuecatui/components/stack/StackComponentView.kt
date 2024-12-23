@@ -58,7 +58,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
 import java.net.URL
 
 @Suppress("LongMethod")
@@ -336,5 +339,5 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
 
-    return PaywallState.Loaded.Components(offering, data)
+    return offering.toComponentsPaywallState(data.validate().getOrThrow())
 }
