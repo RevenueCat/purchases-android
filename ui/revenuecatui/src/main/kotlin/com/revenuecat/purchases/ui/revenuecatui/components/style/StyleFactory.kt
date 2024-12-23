@@ -129,7 +129,8 @@ internal class StyleFactory(
 
         val badge = partial?.badge ?: component.badge
         val badgeStyle = badge?.let {
-            val stackComponentStyle = when (val stackComponentStyleResult = createStackComponentStyle(it.stack)) {
+            val stackComponentStyleResult = createStackComponentStyle(it.stack, actionHandler)
+            val stackComponentStyle = when (stackComponentStyleResult) {
                 is Result.Success -> stackComponentStyleResult.value
                 is Result.Error -> return stackComponentStyleResult
             }
