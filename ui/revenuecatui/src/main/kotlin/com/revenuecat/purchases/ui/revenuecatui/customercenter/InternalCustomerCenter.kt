@@ -50,7 +50,7 @@ internal fun InternalCustomerCenter(
             when (action) {
                 is CustomerCenterAction.DetermineFlow -> {
                     coroutineScope.launch {
-                        viewModel.determineFlow(action.path)
+                        viewModel.pathButtonPressed(action.path)
                     }
                 }
                 is CustomerCenterAction.PerformRestore -> {

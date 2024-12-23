@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.update
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
-    suspend fun determineFlow(path: CustomerCenterConfigData.HelpPath)
+    suspend fun pathButtonPressed(path: CustomerCenterConfigData.HelpPath)
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
@@ -57,7 +57,7 @@ internal class CustomerCenterViewModelImpl(
             initialValue = CustomerCenterState.Loading,
         )
 
-    override suspend fun determineFlow(path: CustomerCenterConfigData.HelpPath) {
+    override suspend fun pathButtonPressed(path: CustomerCenterConfigData.HelpPath) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
                 _state.update { currentState ->
