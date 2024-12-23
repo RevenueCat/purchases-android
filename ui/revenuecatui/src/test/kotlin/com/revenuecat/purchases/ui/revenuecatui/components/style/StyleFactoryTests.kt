@@ -56,7 +56,7 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = styleFactory.create(textComponent)
+        val result = styleFactory.create(textComponent, {})
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
@@ -83,8 +83,8 @@ class StyleFactoryTests {
             spacing = 8f
         )
 
-        // Act
-        val result = styleFactory.create(stackComponent)
+            // Act
+            val result = styleFactory.create(stackComponent, {})
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
@@ -124,7 +124,7 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = incorrectStyleFactory.create(component)
+        val result = incorrectStyleFactory.create(component, {})
 
         // Assert
         assertThat(result.isError).isTrue()
@@ -162,7 +162,7 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = incorrectStyleFactory.create(component)
+        val result = incorrectStyleFactory.create(component, {})
 
         // Assert
         assertThat(result.isError).isTrue()
