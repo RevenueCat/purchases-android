@@ -5,6 +5,8 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.ComponentStates
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.InvalidTemplate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -15,7 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
-
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,6 +37,9 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
 
     companion object {
         private val localeId = LocaleId("en_US")
+        private val dummyLocalizationDictionary = nonEmptyMapOf(
+            LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+        )
             
         @Suppress("LongMethod")
         @JvmStatic
@@ -60,7 +65,10 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "introOffer")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(
+                            from = partial,
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                        )
                     },
                     expected = Result.Error(InvalidTemplate("introOffer"))
                 )
@@ -82,7 +90,10 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "selected")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(
+                            from = partial,
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                        )
                     },
                     expected = Result.Error(InvalidTemplate("selected"))
                 )
@@ -104,7 +115,10 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "compact")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(
+                            from = partial,
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                        )
                     },
                     expected = Result.Error(InvalidTemplate("compact"))
                 )
@@ -126,7 +140,10 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "medium")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(
+                            from = partial,
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                        )
                     },
                     expected = Result.Error(InvalidTemplate("medium"))
                 )
@@ -148,7 +165,10 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     transform = { partial ->
                         if (partial.fontName == "expanded")
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
-                        else LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap()))
+                        else LocalizedTextPartial(
+                            from = partial,
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                        )
                     },
                     expected = Result.Error(InvalidTemplate("expanded"))
                 )
@@ -167,31 +187,34 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             expanded = PartialTextComponent(fontName = "expanded"),
                         ),
                     ),
-                    transform = { partial -> LocalizedTextPartial(from = partial, using = mapOf(localeId to emptyMap())) },
+                    transform = { partial -> LocalizedTextPartial(
+                        from = partial,
+                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                    ) },
                     expected = Result.Success(
                         PresentedOverrides(
                             introOffer = LocalizedTextPartial(
                                 from = PartialTextComponent(fontName = "introOffer"),
-                                using = mapOf(localeId to emptyMap())
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                             ).getOrThrow(),
                             states = PresentedStates(
                                 selected = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "selected"),
-                                    using = mapOf(localeId to emptyMap())
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                                 ).getOrThrow(),
                             ),
                             conditions = PresentedConditions(
                                 compact = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "compact"),
-                                    using = mapOf(localeId to emptyMap())
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                                 ).getOrThrow(),
                                 medium = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "medium"),
-                                    using = mapOf(localeId to emptyMap())
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                                 ).getOrThrow(),
                                 expanded = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "expanded"),
-                                    using = mapOf(localeId to emptyMap())
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                                 ).getOrThrow(),
                             ),
                         )

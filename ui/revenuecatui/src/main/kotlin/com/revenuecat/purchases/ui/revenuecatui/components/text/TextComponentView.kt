@@ -50,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import java.net.URL
 
@@ -375,7 +376,7 @@ private fun previewTextComponentStyle(
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
     return TextComponentStyle(
-        texts = mapOf(LocaleId("en_US") to text),
+        texts = nonEmptyMapOf(LocaleId("en_US") to text),
         color = color,
         fontSize = fontSize,
         fontWeight = weight,

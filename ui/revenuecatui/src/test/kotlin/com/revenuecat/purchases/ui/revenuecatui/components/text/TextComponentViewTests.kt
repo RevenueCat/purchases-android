@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -66,8 +67,8 @@ class TextComponentViewTests {
     private val expectedTextSelected = "selected text"
     private val expectedTextIneligibleEnUs = "ineligible text"
     private val expectedTextEligibleEnUs = "eligible text"
-    private val localizations = mapOf(
-        localeIdEnUs to mapOf(
+    private val localizations = nonEmptyMapOf(
+        localeIdEnUs to nonEmptyMapOf(
             LocalizationKey("text1") to LocalizationData.Text("this is text 1"),
             unselectedLocalizationKey to LocalizationData.Text(expectedTextUnselected),
             selectedLocalizationKey to LocalizationData.Text(expectedTextSelected),
@@ -301,11 +302,11 @@ class TextComponentViewTests {
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
-        val localizations = mapOf(
-            localeIdEnUs to mapOf(
+        val localizations = nonEmptyMapOf(
+            localeIdEnUs to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
             ),
-            localeIdNlNl to mapOf(
+            localeIdNlNl to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
@@ -342,12 +343,12 @@ class TextComponentViewTests {
                 ),
             )
         )
-        val localizations = mapOf(
-            localeIdEnUs to mapOf(
+        val localizations = nonEmptyMapOf(
+            localeIdEnUs to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
                 eligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
             ),
-            localeIdNlNl to mapOf(
+            localeIdNlNl to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
                 eligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
