@@ -3,7 +3,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import kotlinx.coroutines.launch
@@ -45,12 +45,18 @@ internal fun InternalCustomerCenter(
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // This doesn't work for some reason
+//    BackHandler {
+//        Log.d("CustomerCenter", "Back button pressed")
+//    }
+
     InternalCustomerCenter(
         state,
         modifier,
         onAction = { action ->
             when (action) {
-                is CustomerCenterAction.DetermineFlow -> {
+                is CustomerCenterAction.PathButtonPressed -> {
                     coroutineScope.launch {
                         viewModel.pathButtonPressed(context, action.path)
                     }
@@ -68,7 +74,13 @@ internal fun InternalCustomerCenter(
                     action.path,
                     action.onOptionSelected,
                 )
-                is CustomerCenterAction.DismissFeedbackSurvey -> viewModel.dismissFeedbackSurvey()
+                is CustomerCenterAction.DismissFeedbackSurvey -> viewModel.goBackToMain()
+                is CustomerCenterAction.DisplayPromotionalOffer -> viewModel.displayPromotionalOffer(
+                    action.promotionalOffer,
+                    action.onAcceptedOffer,
+                    action.onDismissedOffer,
+                )
+                is CustomerCenterAction.DismissPromotionalOffer -> viewModel.dismissPromotionalOffer()
             }
         },
     )
@@ -128,6 +140,10 @@ private fun CustomerCenterLoaded(
         FeedbackSurveyView(state.feedbackSurveyData)
         return
     }
+    if (state.promotionalOfferData != null) {
+        PromotionalOfferView(state.promotionalOfferData)
+        return
+    }
     if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
@@ -148,18 +164,7 @@ private fun CustomerCenterLoaded(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
                 onDetermineFlow = { path ->
-                    if (path.feedbackSurvey != null) {
-                        onAction(
-                            CustomerCenterAction.DisplayFeedbackSurvey(path) { option ->
-                                option?.let {
-                                    Log.d("CustomerCenter", "Option selected: $option")
-                                    onAction(CustomerCenterAction.DetermineFlow(path))
-                                } ?: onAction(CustomerCenterAction.DismissFeedbackSurvey)
-                            },
-                        )
-                    } else {
-                        onAction(CustomerCenterAction.DetermineFlow(path))
-                    }
+                    onAction(CustomerCenterAction.PathButtonPressed(path))
                 },
             )
         } ?: run {
@@ -171,7 +176,7 @@ private fun CustomerCenterLoaded(
             ManageSubscriptionsView(
                 screen = noActiveScreen,
                 onDetermineFlow = { path ->
-                    onAction(CustomerCenterAction.DetermineFlow(path))
+                    onAction(CustomerCenterAction.PathButtonPressed(path))
                 },
             )
         } ?: run {

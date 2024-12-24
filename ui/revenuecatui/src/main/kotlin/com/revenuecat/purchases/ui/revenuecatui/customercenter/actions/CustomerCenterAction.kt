@@ -5,7 +5,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal sealed class CustomerCenterAction {
-    data class DetermineFlow(val path: CustomerCenterConfigData.HelpPath) : CustomerCenterAction()
+    data class PathButtonPressed(val path: CustomerCenterConfigData.HelpPath) : CustomerCenterAction()
     object PerformRestore : CustomerCenterAction()
     object DismissRestoreDialog : CustomerCenterAction()
     data class ContactSupport(val email: String) : CustomerCenterAction()
@@ -14,4 +14,10 @@ internal sealed class CustomerCenterAction {
         val onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
     ) : CustomerCenterAction()
     object DismissFeedbackSurvey : CustomerCenterAction()
+    data class DisplayPromotionalOffer(
+        val promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+        val onAcceptedOffer: () -> Unit,
+        val onDismissedOffer: () -> Unit,
+    ) : CustomerCenterAction()
+    object DismissPromotionalOffer : CustomerCenterAction()
 }
