@@ -99,7 +99,11 @@ internal class TextComponentViewWindowTests {
                 )
             )
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(
+            localizations = localizations,
+            defaultLocaleIdentifier = localeId,
+            component
+        )
         val styleFactory = StyleFactory(localizations)
         val style = styleFactory.create(component, { }).getOrThrow() as TextComponentStyle
     }

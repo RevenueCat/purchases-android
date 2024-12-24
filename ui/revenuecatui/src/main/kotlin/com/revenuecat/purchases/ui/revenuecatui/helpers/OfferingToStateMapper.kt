@@ -1,10 +1,16 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.material3.ColorScheme
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
@@ -17,27 +23,30 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 import kotlin.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 
 @Suppress("ReturnCount")
-internal fun Offering.validatedLegacyPaywall(
+internal fun Offering.validatedPaywall(
+    currentColorScheme: ColorScheme,
+    resourceProvider: ResourceProvider,
+): PaywallValidationResult =
+    paywallComponents?.validate()?.let { result ->
+        // We need to either unwrap the success value, or wrap the errors in a fallback Paywall.
+        when (result) {
+            is RcResult.Success -> result.value
+            is RcResult.Error -> fallbackPaywall(currentColorScheme, resourceProvider, errors = result.value)
+        }
+    } ?: paywall?.validate(currentColorScheme, resourceProvider)
+        ?: fallbackPaywall(currentColorScheme, resourceProvider, error = PaywallValidationError.MissingPaywall)
+
+internal fun PaywallData.validate(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
 ): PaywallValidationResult.Legacy {
-    val paywallData = this.paywall
-        ?: return PaywallValidationResult.Legacy(
-            PaywallData.createDefault(
-                availablePackages,
-                currentColorScheme,
-                resourceProvider,
-            ),
-            PaywallData.defaultTemplate,
-            PaywallValidationError.MissingPaywall,
-        )
-
-    val template = paywallData.validate().getOrElse {
+    val template = validate().getOrElse {
         return PaywallValidationResult.Legacy(
             PaywallData.createDefaultForIdentifiers(
-                paywallData.config.packageIds,
+                config.packageIds,
                 currentColorScheme,
                 resourceProvider,
             ),
@@ -46,10 +55,71 @@ internal fun Offering.validatedLegacyPaywall(
         )
     }
     return PaywallValidationResult.Legacy(
-        paywallData,
+        this,
         template,
     )
 }
+
+private fun Offering.fallbackPaywall(
+    currentColorScheme: ColorScheme,
+    resourceProvider: ResourceProvider,
+    error: PaywallValidationError,
+): PaywallValidationResult.Legacy =
+    fallbackPaywall(
+        currentColorScheme = currentColorScheme,
+        resourceProvider = resourceProvider,
+        errors = nonEmptyListOf(error),
+    )
+
+private fun Offering.fallbackPaywall(
+    currentColorScheme: ColorScheme,
+    resourceProvider: ResourceProvider,
+    errors: NonEmptyList<PaywallValidationError>,
+): PaywallValidationResult.Legacy =
+    PaywallValidationResult.Legacy(
+        PaywallData.createDefault(
+            availablePackages,
+            currentColorScheme,
+            resourceProvider,
+        ),
+        PaywallData.defaultTemplate,
+        errors,
+    )
+
+@Suppress("MaxLineLength")
+internal fun PaywallComponentsData.validate(): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>> =
+    defaultLocalization
+        // Check that the default localization is present in the localizations map.
+        .errorIfNull(PaywallValidationError.AllLocalizationsMissing(defaultLocaleIdentifier))
+        .mapError { nonEmptyListOf(it) }
+        .map { defaultLocalization ->
+            // Build a NonEmptyMap, ensuring that we always have the default localization as fallback.
+            nonEmptyMapOf(defaultLocaleIdentifier to defaultLocalization, componentsLocalizations)
+        }
+        .flatMap { localizations ->
+            // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>.
+            localizations.mapValues { (locale, map) ->
+                map.toNonEmptyMapOrNull()
+                    .errorIfNull(PaywallValidationError.AllLocalizationsMissing(locale))
+                    .mapError { nonEmptyListOf(it) }
+            }.mapValuesOrAccumulate { it }
+        }.flatMap { localizations ->
+            // Use the StyleFactory to recursively create and validate all ComponentStyles.
+            val styleFactory = StyleFactory(localizations)
+            val actionHandler: suspend (PaywallAction) -> Unit = { /* TODO Move the action handler to the UI layer. */ }
+            val config = componentsConfig.base
+            zipOrAccumulate(
+                styleFactory.create(config.stack, actionHandler),
+                config.stickyFooter?.let { styleFactory.create(it, actionHandler) }.orSuccessfullyNull(),
+            ) { stack, stickyFooter ->
+                PaywallValidationResult.Components(
+                    stack = stack,
+                    stickyFooter = stickyFooter,
+                    background = config.background,
+                    locales = localizations.keys,
+                )
+            }
+        }
 
 @Suppress("ReturnCount")
 private fun PaywallData.validate(): Result<PaywallTemplate> {
@@ -162,10 +232,15 @@ internal fun Offering.toLegacyPaywallState(
     )
 }
 
-internal fun Offering.toComponentsPaywallState(validatedPaywallData: PaywallComponentsData): PaywallState =
+internal fun Offering.toComponentsPaywallState(
+    validationResult: PaywallValidationResult.Components,
+): PaywallState.Loaded.Components =
     PaywallState.Loaded.Components(
+        stack = validationResult.stack,
+        stickyFooter = validationResult.stickyFooter,
+        background = validationResult.background,
         offering = this,
-        data = validatedPaywallData,
+        locales = validationResult.locales,
     )
 
 /**
@@ -222,3 +297,6 @@ private fun PaywallData.LocalizedConfiguration.validateIcons(): PaywallValidatio
 private fun PaywallData.validateTemplate(): PaywallTemplate? {
     return PaywallTemplate.fromId(templateName)
 }
+
+private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, LocalizationData>?
+    get() = componentsLocalizations[defaultLocaleIdentifier]
