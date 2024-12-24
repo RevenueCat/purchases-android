@@ -30,7 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePu
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurvey
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -125,7 +125,7 @@ private fun CustomerCenterLoaded(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     if (state.feedbackSurveyData != null) {
-        FeedbackSurvey(state.feedbackSurveyData)
+        FeedbackSurveyView(state.feedbackSurveyData)
         return
     }
     if (state.showRestoreDialog) {

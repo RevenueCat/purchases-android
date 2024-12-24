@@ -38,7 +38,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurv
 @OptIn(ExperimentalMaterial3Api::class)
 @JvmSynthetic
 @Composable
-internal fun FeedbackSurvey(
+internal fun FeedbackSurveyView(
     data: FeedbackSurveyData,
     modifier: Modifier = Modifier,
 ) {
@@ -120,7 +120,7 @@ internal fun FeedbackSurveyButtonsView(
 @Preview(showBackground = true)
 @Composable
 internal fun FeedbackSurveyPreview() {
-    FeedbackSurvey(
+    FeedbackSurveyView(
         FeedbackSurveyData(
             path = CustomerCenterConfigTestData.customerCenterData()
                 .getManagementScreen()?.paths?.first { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }!!,
