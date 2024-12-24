@@ -30,8 +30,8 @@ internal object CustomerCenterConfigTestData {
                             promotionalOffer = CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
                                 androidOfferId = "offer_id",
                                 eligible = true,
-                                title = "title",
-                                subtitle = "subtitle",
+                                title = "Wait a minute...",
+                                subtitle = "Before you cancel, please consider accepting this one time offer",
                                 productMapping = mapOf("monthly" to "offer_id"),
                             ),
                         ),
@@ -50,6 +50,13 @@ internal object CustomerCenterConfigTestData {
                                     CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option(
                                         id = "1",
                                         title = "Too expensive",
+                                        promotionalOffer = CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
+                                            androidOfferId = "offer_id",
+                                            eligible = true,
+                                            title = "Wait a minute...",
+                                            subtitle = "Before you cancel, please consider accepting this one time offer",
+                                            productMapping = mapOf("monthly" to "offer_id"),
+                                        ),
                                     ),
                                     CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option(
                                         id = "2",

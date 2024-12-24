@@ -4,14 +4,17 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -38,7 +41,15 @@ internal interface CustomerCenterViewModel {
         path: CustomerCenterConfigData.HelpPath,
         onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
     )
-    fun dismissFeedbackSurvey()
+
+    fun goBackToMain()
+    fun displayPromotionalOffer(
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+        onAccepted: () -> Unit,
+        onDismiss: () -> Unit,
+    )
+
+    fun dismissPromotionalOffer()
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -53,7 +64,8 @@ internal class CustomerCenterViewModelImpl(
     override val state = _state
         .onStart {
             try {
-                val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+//                val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+                val customerCenterConfigData = CustomerCenterConfigTestData.customerCenterData()
                 val purchaseInformation = loadPurchaseInformation()
                 _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
             } catch (e: PurchasesException) {
@@ -67,6 +79,39 @@ internal class CustomerCenterViewModelImpl(
         )
 
     override suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath) {
+        if (path.feedbackSurvey != null) {
+            displayFeedbackSurvey(path, onOptionSelected = { option ->
+                goBackToMain()
+                option?.let {
+                    promotionalOfferOrMainPathAction(option.promotionalOffer, path, context)
+                }
+            })
+            return
+        }
+        promotionalOfferOrMainPathAction(path.promotionalOffer, path, context)
+    }
+
+    private fun promotionalOfferOrMainPathAction(
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer?,
+        path: CustomerCenterConfigData.HelpPath,
+        context: Context,
+    ) {
+        promotionalOffer?.let {
+            displayPromotionalOffer(it, onAccepted = {
+                Log.d("CustomerCenter", "Promotional offer accepted")
+                goBackToMain()
+            }, onDismiss = {
+                mainPathAction(path, context)
+            })
+            return
+        }
+        mainPathAction(path, context)
+    }
+
+    private fun mainPathAction(
+        path: CustomerCenterConfigData.HelpPath,
+        context: Context,
+    ) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
                 _state.update { currentState ->
@@ -206,11 +251,39 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun dismissFeedbackSurvey() {
+    override fun goBackToMain() {
         _state.update {
             val currentState = _state.value
             if (currentState is CustomerCenterState.Success) {
-                currentState.copy(feedbackSurveyData = null)
+                currentState.copy(feedbackSurveyData = null, promotionalOfferData = null, showRestoreDialog = false)
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun displayPromotionalOffer(
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+        onAccepted: () -> Unit,
+        onDismiss: () -> Unit,
+    ) {
+        _state.update {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    promotionalOfferData = PromotionalOfferData(promotionalOffer, onAccepted, onDismiss),
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun dismissPromotionalOffer() {
+        _state.update {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(promotionalOfferData = null)
             } else {
                 currentState
             }
