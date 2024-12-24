@@ -80,7 +80,7 @@ private fun previewButtonComponentStyle(
     stackComponentStyle: StackComponentStyle = StackComponentStyle(
         children = listOf(
             TextComponentStyle(
-                text = "Restore purchases",
+                texts = mapOf(LocaleId("en_US") to "Restore purchases"),
                 color = ColorScheme(
                     light = ColorInfo.Hex(Color.Black.toArgb()),
                 ),

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
+import android.os.LocaleList
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -34,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEqual
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -53,23 +56,27 @@ class TextComponentViewTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private val localeIdEnUs = LocaleId("en_US")
+    private val localeIdNlNl = LocaleId("nl_NL")
     private val unselectedLocalizationKey = LocalizationKey("unselected key")
     private val selectedLocalizationKey = LocalizationKey("selected key")
     private val ineligibleLocalizationKey = LocalizationKey("ineligible key")
     private val eligibleLocalizationKey = LocalizationKey("eligible key")
     private val expectedTextUnselected = "unselected text"
     private val expectedTextSelected = "selected text"
-    private val expectedTextIneligible = "ineligible text"
-    private val expectedTextEligible = "eligible text"
-    private val localizationDictionary = mapOf(
-        LocalizationKey("text1") to LocalizationData.Text("this is text 1"),
-        unselectedLocalizationKey to LocalizationData.Text(expectedTextUnselected),
-        selectedLocalizationKey to LocalizationData.Text(expectedTextSelected),
-        ineligibleLocalizationKey to LocalizationData.Text(expectedTextIneligible),
-        eligibleLocalizationKey to LocalizationData.Text(expectedTextEligible),
+    private val expectedTextIneligibleEnUs = "ineligible text"
+    private val expectedTextEligibleEnUs = "eligible text"
+    private val localizations = mapOf(
+        localeIdEnUs to mapOf(
+            LocalizationKey("text1") to LocalizationData.Text("this is text 1"),
+            unselectedLocalizationKey to LocalizationData.Text(expectedTextUnselected),
+            selectedLocalizationKey to LocalizationData.Text(expectedTextSelected),
+            ineligibleLocalizationKey to LocalizationData.Text(expectedTextIneligibleEnUs),
+            eligibleLocalizationKey to LocalizationData.Text(expectedTextEligibleEnUs),
+        ),
     )
     private val actionHandler: (PaywallAction) -> Unit = {}
-    private val styleFactory = StyleFactory(localizationDictionary)
+    private val styleFactory = StyleFactory(localizations)
 
     @Test
     fun `Should change text color based on theme`(): Unit = with(composeTestRule) {
@@ -77,7 +84,7 @@ class TextComponentViewTests {
         val expectedLightColor = Color.Red
         val expectedDarkColor = Color.Yellow
         val component = TextComponent(
-            text = localizationDictionary.keys.first(),
+            text = localizations.getValue(localeIdEnUs).keys.first(),
             color = ColorScheme(
                 light = ColorInfo.Hex(expectedLightColor.toArgb()),
                 dark = ColorInfo.Hex(expectedDarkColor.toArgb()),
@@ -93,12 +100,12 @@ class TextComponentViewTests {
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
                 theme.setLight()
-                onNodeWithText(localizationDictionary.values.first().value)
+                onNodeWithText(localizations.getValue(localeIdEnUs).values.first().value)
                     .assertIsDisplayed()
                     .assertTextColorEquals(expectedLightColor)
 
                 theme.setDark()
-                onNodeWithText(localizationDictionary.values.first().value)
+                onNodeWithText(localizations.getValue(localeIdEnUs).values.first().value)
                     .assertIsDisplayed()
                     .assertTextColorEquals(expectedDarkColor)
             }
@@ -113,7 +120,7 @@ class TextComponentViewTests {
         val expectedLightColor = Color.Red
         val expectedDarkColor = Color.Yellow
         val component = TextComponent(
-            text = localizationDictionary.keys.first(),
+            text = localizations.getValue(localeIdEnUs).keys.first(),
             color = ColorScheme(
                 // We're setting the text color to transparent, because our way of checking the background is far from
                 // optimal. It just checks a few pixels.
@@ -134,12 +141,12 @@ class TextComponentViewTests {
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
                 theme.setLight()
-                onNodeWithText(localizationDictionary.values.first().value)
+                onNodeWithText(localizations.getValue(localeIdEnUs).values.first().value)
                     .assertIsDisplayed()
                     .assertBackgroundColorEquals(expectedLightColor)
 
                 theme.setDark()
-                onNodeWithText(localizationDictionary.values.first().value)
+                onNodeWithText(localizations.getValue(localeIdEnUs).values.first().value)
                     .assertIsDisplayed()
                     .assertBackgroundColorEquals(expectedDarkColor)
             }
@@ -156,7 +163,7 @@ class TextComponentViewTests {
     @Test
     fun `Should properly set the font size in a Material3 theme`(): Unit = with(composeTestRule) {
         // Arrange
-        val textId = localizationDictionary.keys.first()
+        val textId = localizations.getValue(localeIdEnUs).keys.first()
         val color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val size = Size(Fit, Fit)
         val largeTextComponent = TextComponent(text = textId, color = color, fontSize = FontSize.HEADING_L, size = size)
@@ -274,16 +281,96 @@ class TextComponentViewTests {
 
         // Assert
         state.update(isEligibleForIntroOffer = false)
-        onNodeWithText(expectedTextIneligible)
+        onNodeWithText(expectedTextIneligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedIneligibleTextColor)
             .assertPixelColorPercentage(expectedIneligibleBackgroundColor) { percentage -> percentage > 0.4 }
 
         state.update(isEligibleForIntroOffer = true)
-        onNodeWithText(expectedTextEligible)
+        onNodeWithText(expectedTextEligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedEligibleTextColor)
             .assertPixelColorPercentage(expectedEligibleBackgroundColor) { percentage -> percentage > 0.4 }
+    }
+
+    @Test
+    fun `Should use the correct text when the locale changes`(): Unit = with(composeTestRule) {
+        val expectedTextEnUs = "expected"
+        val expectedTextNlNl = "verwacht"
+        val component = TextComponent(
+            text = ineligibleLocalizationKey,
+            color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
+        )
+        val localizations = mapOf(
+            localeIdEnUs to mapOf(
+                ineligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
+            ),
+            localeIdNlNl to mapOf(
+                ineligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
+            )
+        )
+        val styleFactory = StyleFactory(localizations)
+        val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
+        val state = FakePaywallState(
+            localizations = localizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+            component
+        )
+
+        // Act
+        setContent { TextComponentView(style = style, state = state) }
+
+        // Assert
+        state.update(localeList = LocaleList(localeIdEnUs.toJavaLocale()))
+        onNodeWithText(expectedTextEnUs).assertIsDisplayed()
+
+        state.update(localeList = LocaleList(localeIdNlNl.toJavaLocale()))
+        onNodeWithText(expectedTextNlNl).assertIsDisplayed()
+    }
+
+    @Test
+    fun `Should use the correct override text when the locale changes`(): Unit = with(composeTestRule) {
+        val expectedTextEnUs = "expected"
+        val expectedTextNlNl = "verwacht"
+        val unexpectedText = "unexpected"
+        val component = TextComponent(
+            text = ineligibleLocalizationKey,
+            color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
+            overrides = ComponentOverrides(
+                introOffer = PartialTextComponent(
+                    text = eligibleLocalizationKey,
+                ),
+            )
+        )
+        val localizations = mapOf(
+            localeIdEnUs to mapOf(
+                ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
+                eligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
+            ),
+            localeIdNlNl to mapOf(
+                ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
+                eligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
+            )
+        )
+        val styleFactory = StyleFactory(localizations)
+        val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
+        val state = FakePaywallState(
+            localizations = localizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+            component
+        ).apply {
+            update(isEligibleForIntroOffer = true)
+        }
+
+        // Act
+        setContent { TextComponentView(style = style, state = state) }
+
+        // Assert
+        state.update(localeList = LocaleList(localeIdEnUs.toJavaLocale()))
+        onNodeWithText(expectedTextEnUs).assertIsDisplayed()
+
+        state.update(localeList = LocaleList(localeIdNlNl.toJavaLocale()))
+        onNodeWithText(expectedTextNlNl).assertIsDisplayed()
     }
 
     /**
@@ -295,6 +382,4 @@ class TextComponentViewTests {
      */
     private fun SemanticsNodeInteraction.assertBackgroundColorEquals(color: Color): SemanticsNodeInteraction =
         assertPixelColorEquals(startX = 0, startY = 0, width = 4, height = 4, color = color)
-
-
 }
