@@ -17,6 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -33,8 +34,8 @@ class StyleFactoryTests {
     private lateinit var styleFactory: StyleFactory
 
     private val localeId = LocaleId("en_US")
-    private val localizations = mapOf(
-        localeId to mapOf(
+    private val localizations = nonEmptyMapOf(
+        localeId to nonEmptyMapOf(
             LOCALIZATION_KEY_TEXT_1 to LocalizationData.Text("this is text 1"),
             LOCALIZATION_KEY_TEXT_2 to LocalizationData.Text("this is text 2"),
         )
@@ -104,17 +105,21 @@ class StyleFactoryTests {
         val otherLocale = LocaleId("nl_NL")
         val defaultLocale = LocaleId("en_US")
         val localizationKey = LocalizationKey("key")
+        val otherLocalizationKey = LocalizationKey("other-key")
         val expectedText = "value"
+        val unexpectedText = "waarde"
         val component = TextComponent(
             text = localizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
         val incorrectStyleFactory = StyleFactory(
-            mapOf(
-                defaultLocale to mapOf(
+            nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(
                     localizationKey to LocalizationData.Text(expectedText)
                 ),
-                otherLocale to emptyMap(),
+                otherLocale to nonEmptyMapOf(
+                    otherLocalizationKey to LocalizationData.Text(unexpectedText)
+                ),
             )
         )
 
@@ -144,12 +149,12 @@ class StyleFactoryTests {
             overrides = ComponentOverrides(introOffer = PartialTextComponent(text = overrideLocalizationKey))
         )
         val incorrectStyleFactory = StyleFactory(
-            mapOf(
-                defaultLocale to mapOf(
+            nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(
                     baseLocalizationKey to LocalizationData.Text(unexpectedText),
                     overrideLocalizationKey to LocalizationData.Text(expectedText),
                 ),
-                otherLocale to mapOf(
+                otherLocale to nonEmptyMapOf(
                     baseLocalizationKey to LocalizationData.Text(unexpectedText),
                     // otherLocale is missing the overrideLocalizationKey. We should fall back to defaultLocale.
                 ),

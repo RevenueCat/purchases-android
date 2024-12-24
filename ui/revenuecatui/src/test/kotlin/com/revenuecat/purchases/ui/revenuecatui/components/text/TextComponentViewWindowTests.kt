@@ -30,7 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowChangingTest
 import org.junit.Rule
 import org.junit.Test
@@ -68,8 +68,8 @@ internal class TextComponentViewWindowTests {
         private val expectedCompactBackgroundColor = Color.Yellow
         private val expectedMediumBackgroundColor = Color.Red
         private val expectedExpandedBackgroundColor = Color.Green
-        private val localizations = mapOf(
-            localeId to mapOf(
+        private val localizations = nonEmptyMapOf(
+            localeId to nonEmptyMapOf(
                 defaultLocalizationKey to LocalizationData.Text(UNEXPECTED_TEXT),
                 compactLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_COMPACT),
                 mediumLocalizationKey to LocalizationData.Text(EXPECTED_TEXT_MEDIUM),
