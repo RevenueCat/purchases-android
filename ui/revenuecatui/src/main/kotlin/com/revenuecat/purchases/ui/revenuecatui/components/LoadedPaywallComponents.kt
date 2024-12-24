@@ -53,6 +53,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stickyfooter.StickyFo
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
 import java.net.URL
 
 @Composable
@@ -67,7 +68,11 @@ internal fun LoadedPaywallComponents(
     val windowSize = ScreenCondition.from(windowSizeClass.windowWidthSizeClass)
 
     val styleFactory = remember(state.locale, windowSize) {
-        StyleFactory(state.data.componentsLocalizations)
+        // TODO Remove the need for double bangs in the validation step.
+        val localizations = state.data.componentsLocalizations.mapValues { (_, localizationDictionary) ->
+            localizationDictionary.toNonEmptyMapOrNull()!!
+        }.toNonEmptyMapOrNull()!!
+        StyleFactory(localizations)
     }
 
     val config = state.data.componentsConfig.base
