@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
@@ -12,6 +11,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -34,6 +34,11 @@ internal interface CustomerCenterViewModel {
     fun contactSupport(context: Context, supportEmail: String)
     fun openAppStore(context: Context)
     fun showManageSubscriptions(context: Context, productId: String)
+    fun displayFeedbackSurvey(
+        path: CustomerCenterConfigData.HelpPath,
+        onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+    )
+    fun dismissFeedbackSurvey()
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -69,6 +74,7 @@ internal class CustomerCenterViewModelImpl(
                         is CustomerCenterState.Success -> {
                             currentState.copy(showRestoreDialog = true)
                         }
+
                         else -> currentState
                     }
                 }
@@ -93,12 +99,16 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun dismissRestoreDialog() {
-        val currentState = _state.value
-        if (currentState is CustomerCenterState.Success) {
-            _state.value = currentState.copy(
-                showRestoreDialog = false,
-                restorePurchasesState = RestorePurchasesState.INITIAL,
-            )
+        _state.update {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    showRestoreDialog = false,
+                    restorePurchasesState = RestorePurchasesState.INITIAL,
+                )
+            } else {
+                currentState
+            }
         }
     }
 
@@ -176,6 +186,33 @@ internal class CustomerCenterViewModelImpl(
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
         } catch (e: ActivityNotFoundException) {
             Logger.e("Error opening manage subscriptions", e)
+        }
+    }
+
+    override fun displayFeedbackSurvey(
+        path: CustomerCenterConfigData.HelpPath,
+        onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+    ) {
+        _state.update {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    feedbackSurveyData = FeedbackSurveyData(path, onOptionSelected),
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun dismissFeedbackSurvey() {
+        _state.update {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(feedbackSurveyData = null)
+            } else {
+                currentState
+            }
         }
     }
 }

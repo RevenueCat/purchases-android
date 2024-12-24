@@ -16,5 +16,12 @@ internal sealed class CustomerCenterState {
         val purchaseInformation: PurchaseInformation? = null,
         val showRestoreDialog: Boolean = false,
         val restorePurchasesState: RestorePurchasesState = RestorePurchasesState.INITIAL,
+        val feedbackSurveyData: FeedbackSurveyData? = null,
     ) : CustomerCenterState()
 }
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+internal data class FeedbackSurveyData(
+    val path: CustomerCenterConfigData.HelpPath,
+    val onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+)
