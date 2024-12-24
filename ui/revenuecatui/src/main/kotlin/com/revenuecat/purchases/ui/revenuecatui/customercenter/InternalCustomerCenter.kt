@@ -3,6 +3,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePu
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurvey
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -62,7 +64,11 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
-                is CustomerCenterAction.DisplayFeedbackSurvey -> viewModel.displayFeedbackSurvey(action.path)
+                is CustomerCenterAction.DisplayFeedbackSurvey -> viewModel.displayFeedbackSurvey(
+                    action.path,
+                    action.onOptionSelected,
+                )
+                is CustomerCenterAction.DismissFeedbackSurvey -> viewModel.dismissFeedbackSurvey()
             }
         },
     )
@@ -118,6 +124,10 @@ private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
+    if (state.feedbackSurveyData != null) {
+        FeedbackSurvey(state.feedbackSurveyData)
+        return
+    }
     if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
@@ -139,7 +149,14 @@ private fun CustomerCenterLoaded(
                 purchaseInformation = state.purchaseInformation,
                 onDetermineFlow = { path ->
                     if (path.feedbackSurvey != null) {
-                        onAction(CustomerCenterAction.DisplayFeedbackSurvey(path))
+                        onAction(
+                            CustomerCenterAction.DisplayFeedbackSurvey(path) { option ->
+                                option?.let {
+                                    Log.d("CustomerCenter", "Option selected: $option")
+                                    onAction(CustomerCenterAction.DetermineFlow(path))
+                                } ?: onAction(CustomerCenterAction.DismissFeedbackSurvey)
+                            },
+                        )
                     } else {
                         onAction(CustomerCenterAction.DetermineFlow(path))
                     }
