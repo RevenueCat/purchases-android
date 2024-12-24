@@ -10,10 +10,12 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 
 /**
@@ -32,6 +34,8 @@ internal interface PurchasesType {
     ): CustomerInfo
 
     suspend fun awaitCustomerCenterConfigData(): CustomerCenterConfigData
+
+    suspend fun awaitGetProduct(productId: String): List<StoreProduct>
 
     fun track(event: PaywallEvent)
 
@@ -62,6 +66,10 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override suspend fun awaitCustomerCenterConfigData(): CustomerCenterConfigData {
         return purchases.awaitCustomerCenterConfigData()
+    }
+
+    override suspend fun awaitGetProduct(productId: String): List<StoreProduct> {
+        return purchases.awaitGetProducts(listOf(productId))
     }
 
     override fun track(event: PaywallEvent) {

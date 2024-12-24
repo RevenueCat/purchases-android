@@ -148,6 +148,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             expirationDateString = "June 1st, 2024",
             willRenew = true,
             active = true,
+            productId = "basic_monthly",
         ),
         PurchaseInformation(
             title = "Basic",
@@ -156,6 +157,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             expirationDateString = "June 1st, 2024",
             willRenew = false,
             active = true,
+            productId = "basic_yearly",
         ),
         PurchaseInformation(
             title = "Basic",
@@ -164,6 +166,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             expirationDateString = "June 1st, 2024",
             willRenew = false,
             active = false,
+            productId = "basic_weekly",
         ),
     )
 }
