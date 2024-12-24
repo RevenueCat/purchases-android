@@ -79,7 +79,7 @@ internal fun FeedbackSurvey(
         Box(modifier = Modifier.padding(innerPadding)) {
             FeedbackSurveyButtonsView(
                 options = feedbackSurvey.options,
-                onOptionSelected = { option ->
+                onOptionSelect = { option ->
                     loadingOption = option.id
                     data.onOptionSelected(option)
                     loadingOption = null
