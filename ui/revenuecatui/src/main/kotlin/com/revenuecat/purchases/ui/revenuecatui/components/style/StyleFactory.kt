@@ -11,13 +11,18 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -31,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
@@ -49,7 +55,7 @@ internal class StyleFactory(
     ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
             is ButtonComponent -> createButtonComponentStyle(component, actionHandler)
-            is ImageComponent -> TODO("ImageComponentStyle is not yet implemented.")
+            is ImageComponent -> createImageComponentStyle(component)
             is PackageComponent -> TODO("PackageComponentStyle is not yet implemented.")
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, actionHandler)
             is StackComponent -> createStackComponentStyle(component, actionHandler)
@@ -57,7 +63,7 @@ internal class StyleFactory(
             is TextComponent -> createTextComponentStyle(component = component)
         }
 
-    fun createStickyFooterComponentStyle(
+    private fun createStickyFooterComponentStyle(
         component: StickyFooterComponent,
         actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
@@ -157,4 +163,36 @@ internal class StyleFactory(
             overrides = presentedOverrides,
         )
     }
+
+    private fun createImageComponentStyle(
+        component: ImageComponent,
+    ): Result<ImageComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = component.source.withLocalizedOverrides(component.overrideSourceLid),
+        second = component.overrides
+            ?.toPresentedOverrides {
+                it.source
+                    ?.withLocalizedOverrides(it.overrideSourceLid)
+                    .orSuccessfullyNull()
+                    .map { sources -> PresentedImagePartial(sources = sources, partial = it) }
+            }.orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+    ) { sources, presentedOverrides ->
+        ImageComponentStyle(
+            sources,
+            size = component.size,
+            shape = component.maskShape?.toShape(),
+            overlay = component.colorOverlay,
+            contentScale = component.fitMode.toContentScale(),
+            overrides = presentedOverrides,
+        )
+    }
+
+    private fun ThemeImageUrls.withLocalizedOverrides(
+        overrideSourceLid: LocalizationKey?,
+    ): Result<NonEmptyMap<LocaleId, ThemeImageUrls>, NonEmptyList<PaywallValidationError.MissingImageLocalization>> =
+        overrideSourceLid
+            ?.let { key -> localizations.imageForAllLocales(key) }
+            .orSuccessfullyNull()
+            // Ensure the default source keyed by the default locale is present in the result.
+            .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
 }
