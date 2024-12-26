@@ -43,9 +43,11 @@ internal fun PromotionalOfferView(
             .fillMaxSize()
             .padding(horizontal = 24.dp),
     ) {
-        AppIconView(modifier = Modifier
-            .padding(top = 48.dp, bottom = 16.dp)
-            .size(100.dp))
+        AppIconView(
+            modifier = Modifier
+                .padding(top = 48.dp, bottom = 16.dp)
+                .size(100.dp),
+        )
 
         Text(
             text = promotionalOfferData.promotionalOffer.title,
@@ -108,7 +110,7 @@ fun AppIconView(
             modifier = modifier
                 .clip(CircleShape),
             painter = rememberAsyncImagePainter(model = it),
-            contentDescription = null
+            contentDescription = null,
         )
     }
 }
