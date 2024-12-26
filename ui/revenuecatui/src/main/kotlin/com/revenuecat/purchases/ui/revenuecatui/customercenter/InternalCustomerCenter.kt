@@ -1,13 +1,26 @@
 @file:JvmSynthetic
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:OptIn(
+    ExperimentalPreviewRevenueCatPurchasesAPI::class,
+    ExperimentalPreviewRevenueCatPurchasesAPI::class,
+)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,11 +53,17 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
+    onDismiss: () -> Unit,
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    BackHandler {
+        onDismiss()
+    }
+
     InternalCustomerCenter(
         state,
         modifier,
@@ -71,6 +90,7 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.DismissFeedbackSurvey -> viewModel.dismissFeedbackSurvey()
             }
         },
+        onDismiss = onDismiss,
     )
 }
 
@@ -79,8 +99,10 @@ private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
     onAction: (CustomerCenterAction) -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    CustomerCenterScaffold(modifier) {
+    val title = getTitleForState(state)
+    CustomerCenterScaffold(modifier, title, onDismiss) {
         when (state) {
             is CustomerCenterState.Loading -> CustomerCenterLoading()
             is CustomerCenterState.Error -> CustomerCenterError(state)
@@ -95,13 +117,41 @@ private fun InternalCustomerCenter(
 @Composable
 private fun CustomerCenterScaffold(
     modifier: Modifier = Modifier,
+    title: String? = null,
+    onDismiss: () -> Unit,
     mainContent: @Composable () -> Unit,
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize()
+            .systemBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+                .statusBarsPadding(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start,
+        ) {
+            IconButton(onClick = {
+                onDismiss()
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Localized description",
+                )
+            }
+            title?.let {
+                Text(
+                    text = title,
+                    modifier = Modifier.padding(start = 4.dp),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            }
+        }
         mainContent()
     }
 }
@@ -181,6 +231,16 @@ private fun CustomerCenterLoaded(
     }
 }
 
+private fun getTitleForState(state: CustomerCenterState): String? {
+    return when (state) {
+        is CustomerCenterState.Success -> {
+            state.title
+        }
+
+        else -> null
+    }
+}
+
 @Composable
 private fun getCustomerCenterViewModel(
     purchases: PurchasesType = PurchasesImpl(),
@@ -229,6 +289,7 @@ internal fun CustomerCenterLoadingPreview() {
             .fillMaxSize()
             .padding(10.dp),
         onAction = {},
+        onDismiss = {},
     )
 }
 
@@ -241,6 +302,7 @@ internal fun CustomerCenterErrorPreview() {
             .fillMaxSize()
             .padding(10.dp),
         onAction = {},
+        onDismiss = {},
     )
 }
 
@@ -257,5 +319,6 @@ internal fun CustomerCenterLoadedPreview() {
             .fillMaxSize()
             .padding(10.dp),
         onAction = {},
+        onDismiss = {},
     )
 }

@@ -17,6 +17,7 @@ internal sealed class CustomerCenterState {
         val showRestoreDialog: Boolean = false,
         val restorePurchasesState: RestorePurchasesState = RestorePurchasesState.INITIAL,
         val feedbackSurveyData: FeedbackSurveyData? = null,
+        val title: String? = null,
     ) : CustomerCenterState()
 }
 

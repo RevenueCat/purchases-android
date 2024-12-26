@@ -40,7 +40,7 @@ internal fun ManageSubscriptionsView(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
