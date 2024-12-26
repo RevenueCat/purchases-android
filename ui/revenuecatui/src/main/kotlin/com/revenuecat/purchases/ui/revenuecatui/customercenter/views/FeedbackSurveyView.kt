@@ -5,19 +5,13 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -27,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -43,38 +36,11 @@ internal fun FeedbackSurveyView(
     modifier: Modifier = Modifier,
 ) {
     var loadingOption by remember { mutableStateOf<String?>(null) }
-    val feedbackSurvey = data.path.feedbackSurvey ?: return
+    val feedbackSurvey = data.feedbackSurvey
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                // Had to add this to prevent a padding  that appears on top
-                windowInsets = WindowInsets(
-                    top = 0.dp,
-                    bottom = 0.dp,
-                ),
-                title = {
-                    Text(
-                        feedbackSurvey.title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        data.onOptionSelected(null)
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Localized description",
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-            )
-        },
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             FeedbackSurveyButtonsView(
@@ -122,8 +88,9 @@ internal fun FeedbackSurveyButtonsView(
 internal fun FeedbackSurveyPreview() {
     FeedbackSurveyView(
         FeedbackSurveyData(
-            path = CustomerCenterConfigTestData.customerCenterData()
-                .getManagementScreen()?.paths?.first { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }!!,
+            feedbackSurvey = CustomerCenterConfigTestData.customerCenterData()
+                .getManagementScreen()?.paths?.first { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }!!
+                .feedbackSurvey!!,
             onOptionSelected = { _ -> },
         ),
 

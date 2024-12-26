@@ -63,7 +63,9 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
         Button(onClick = { isDebugBottomSheetVisible = true }) {
             Text(text = "Show debug view")
         }
-        Button(onClick = { isCustomerCenterVisible = true }) {
+        Button(onClick = {
+            isCustomerCenterVisible = true
+        }) {
             Text(text = "Show customer center")
         }
     }

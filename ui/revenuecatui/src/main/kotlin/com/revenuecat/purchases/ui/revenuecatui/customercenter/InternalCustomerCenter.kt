@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,8 +61,20 @@ internal fun InternalCustomerCenter(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    BackHandler {
+    if (state is CustomerCenterState.NotLoaded) {
+        coroutineScope.launch {
+            viewModel.loadCustomerCenter()
+        }
+    }
+
+    if (state.dismissCustomerCenter) {
         onDismiss()
+        viewModel.resetState()
+        return
+    }
+
+    BackHandler {
+        viewModel.onNavigationButtonPressed()
     }
 
     InternalCustomerCenter(
@@ -84,13 +97,13 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
                 is CustomerCenterAction.DisplayFeedbackSurvey -> viewModel.displayFeedbackSurvey(
-                    action.path,
+                    action.feedbackSurvey,
                     action.onOptionSelected,
                 )
                 is CustomerCenterAction.DismissFeedbackSurvey -> viewModel.dismissFeedbackSurvey()
+                is CustomerCenterAction.NavigationButtonPressed -> viewModel.onNavigationButtonPressed()
             }
         },
-        onDismiss = onDismiss,
     )
 }
 
@@ -99,11 +112,16 @@ private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
     onAction: (CustomerCenterAction) -> Unit,
-    onDismiss: () -> Unit,
 ) {
     val title = getTitleForState(state)
-    CustomerCenterScaffold(modifier, title, onDismiss) {
+    CustomerCenterScaffold(
+        modifier,
+        title,
+        onAction,
+        buttonType = if (state is CustomerCenterState.Success) state.buttonType else CustomerCenterState.ButtonType.CLOSE,
+    ) {
         when (state) {
+            is CustomerCenterState.NotLoaded -> {}
             is CustomerCenterState.Loading -> CustomerCenterLoading()
             is CustomerCenterState.Error -> CustomerCenterError(state)
             is CustomerCenterState.Success -> CustomerCenterLoaded(
@@ -118,7 +136,8 @@ private fun InternalCustomerCenter(
 private fun CustomerCenterScaffold(
     modifier: Modifier = Modifier,
     title: String? = null,
-    onDismiss: () -> Unit,
+    onAction: (CustomerCenterAction) -> Unit,
+    buttonType: CustomerCenterState.ButtonType = CustomerCenterState.ButtonType.CLOSE,
     mainContent: @Composable () -> Unit,
 ) {
     Column(
@@ -137,11 +156,14 @@ private fun CustomerCenterScaffold(
             horizontalArrangement = Arrangement.Start,
         ) {
             IconButton(onClick = {
-                onDismiss()
+                onAction(CustomerCenterAction.NavigationButtonPressed)
             }) {
                 Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Localized description",
+                    imageVector = when (buttonType) {
+                        CustomerCenterState.ButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
+                        CustomerCenterState.ButtonType.CLOSE -> Icons.Default.Close
+                    },
+                    contentDescription = null,
                 )
             }
             title?.let {
@@ -198,18 +220,16 @@ private fun CustomerCenterLoaded(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
                 onDetermineFlow = { path ->
-                    if (path.feedbackSurvey != null) {
+                    path.feedbackSurvey?.let { feedbackSurvey ->
                         onAction(
-                            CustomerCenterAction.DisplayFeedbackSurvey(path) { option ->
+                            CustomerCenterAction.DisplayFeedbackSurvey(feedbackSurvey) { option ->
                                 option?.let {
                                     Log.d("CustomerCenter", "Option selected: $option")
                                     onAction(CustomerCenterAction.DetermineFlow(path))
                                 } ?: onAction(CustomerCenterAction.DismissFeedbackSurvey)
                             },
                         )
-                    } else {
-                        onAction(CustomerCenterAction.DetermineFlow(path))
-                    }
+                    } ?: onAction(CustomerCenterAction.DetermineFlow(path))
                 },
             )
         } ?: run {
@@ -284,12 +304,11 @@ private val previewConfigData = CustomerCenterConfigData(
 @Composable
 internal fun CustomerCenterLoadingPreview() {
     InternalCustomerCenter(
-        state = CustomerCenterState.Loading,
+        state = CustomerCenterState.Loading(),
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
         onAction = {},
-        onDismiss = {},
     )
 }
 
@@ -302,7 +321,6 @@ internal fun CustomerCenterErrorPreview() {
             .fillMaxSize()
             .padding(10.dp),
         onAction = {},
-        onDismiss = {},
     )
 }
 
@@ -319,6 +337,5 @@ internal fun CustomerCenterLoadedPreview() {
             .fillMaxSize()
             .padding(10.dp),
         onAction = {},
-        onDismiss = {},
     )
 }
