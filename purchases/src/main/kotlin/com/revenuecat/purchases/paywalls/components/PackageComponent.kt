@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("package")
-class PackageComponent internal constructor(
+class PackageComponent(
     @get:JvmSynthetic
     @SerialName("package_id")
     val packageId: String,
