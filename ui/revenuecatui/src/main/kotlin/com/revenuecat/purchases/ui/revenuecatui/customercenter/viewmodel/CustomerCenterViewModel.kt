@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Suppress("TooManyFunctions")
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
     suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath)
@@ -58,6 +59,7 @@ internal interface CustomerCenterViewModel {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Suppress("TooManyFunctions")
 internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
 ) : ViewModel(), CustomerCenterViewModel {
