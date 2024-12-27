@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -32,6 +34,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
@@ -75,23 +78,19 @@ class PackageComponentViewTests {
         period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
     )
     private val offeringId = "offering_identifier"
+    @Suppress("DEPRECATION")
     private val packageYearly = Package(
         packageType = PackageType.ANNUAL,
         identifier = "package_yearly",
         offering = offeringId,
         product = productYearly,
     )
+    @Suppress("DEPRECATION")
     private val packageMonthly = Package(
         packageType = PackageType.MONTHLY,
         identifier = "package_monthly",
         offering = offeringId,
         product = productMonthly,
-    )
-    private val offering = Offering(
-        identifier = offeringId,
-        serverDescription = "description",
-        metadata = emptyMap(),
-        availablePackages = listOf(packageYearly, packageMonthly),
     )
 
     @Test
@@ -123,6 +122,7 @@ class PackageComponentViewTests {
                     TextComponent(
                         text = unselectedKeyYearly,
                         color = textColor,
+                        horizontalAlignment = HorizontalAlignment.LEADING,
                         overrides = ComponentOverrides(
                             states = ComponentStates(
                                 selected = PartialTextComponent(
@@ -142,6 +142,7 @@ class PackageComponentViewTests {
                     TextComponent(
                         text = unselectedKeyMonthly,
                         color = textColor,
+                        horizontalAlignment = HorizontalAlignment.LEADING,
                         overrides = ComponentOverrides(
                             states = ComponentStates(
                                 selected = PartialTextComponent(
@@ -186,8 +187,10 @@ class PackageComponentViewTests {
 
         // Act
         setContent {
-            PackageComponentView(style = styleYearly, state = state, modifier = Modifier.testTag("yearly"))
-            PackageComponentView(style = styleMonthly, state = state, modifier = Modifier.testTag("monthly"))
+            Column {
+                PackageComponentView(style = styleYearly, state = state, modifier = Modifier.testTag("yearly"))
+                PackageComponentView(style = styleMonthly, state = state, modifier = Modifier.testTag("monthly"))
+            }
         }
 
         // Assert
@@ -203,6 +206,8 @@ class PackageComponentViewTests {
 
         // Select yearly
         onNodeWithTag("yearly")
+            .assertIsDisplayed()
+            .assertHasClickAction()
             .performClick()
 
         onNodeWithText(unselectedTextYearly.value)
@@ -216,6 +221,8 @@ class PackageComponentViewTests {
 
         // Select monthly
         onNodeWithTag("monthly")
+            .assertIsDisplayed()
+            .assertHasClickAction()
             .performClick()
 
         onNodeWithText(unselectedTextYearly.value)
