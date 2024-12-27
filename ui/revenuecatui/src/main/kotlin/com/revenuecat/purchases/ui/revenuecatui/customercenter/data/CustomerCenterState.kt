@@ -5,11 +5,24 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 
-internal sealed class CustomerCenterState {
-    object Loading : CustomerCenterState()
-    data class Error(val error: PurchasesError) : CustomerCenterState()
+internal sealed class CustomerCenterState(
+    open val dismissCustomerCenter: Boolean = false,
+) {
+    enum class ButtonType {
+        BACK, CLOSE
+    }
 
-    // CustomerCenter WIP: Change to use the actual data the customer center will use.
+    object NotLoaded : CustomerCenterState()
+
+    data class Loading(
+        override val dismissCustomerCenter: Boolean = false,
+    ) : CustomerCenterState(dismissCustomerCenter)
+
+    data class Error(
+        val error: PurchasesError,
+        override val dismissCustomerCenter: Boolean = false,
+    ) : CustomerCenterState(dismissCustomerCenter)
+
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     data class Success(
         val customerCenterConfigData: CustomerCenterConfigData,
@@ -18,12 +31,15 @@ internal sealed class CustomerCenterState {
         val restorePurchasesState: RestorePurchasesState = RestorePurchasesState.INITIAL,
         val feedbackSurveyData: FeedbackSurveyData? = null,
         val promotionalOfferData: PromotionalOfferData? = null,
-    ) : CustomerCenterState()
+        val title: String? = null,
+        val buttonType: ButtonType = ButtonType.CLOSE,
+        override val dismissCustomerCenter: Boolean = false,
+    ) : CustomerCenterState(dismissCustomerCenter)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class FeedbackSurveyData(
-    val path: CustomerCenterConfigData.HelpPath,
+    val feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
     val onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
 )
 

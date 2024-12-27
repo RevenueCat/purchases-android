@@ -9,11 +9,14 @@ import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIP
 /**
  * Composable offering a full screen Customer Center UI configured from the RevenueCat dashboard.
  */
+// CustomerCenter WIP: Make public when ready
 @JvmSynthetic
 @Composable
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
 @SuppressWarnings("PreviewPublic")
-// CustomerCenter WIP: Make public when ready
-internal fun CustomerCenter(modifier: Modifier = Modifier) {
-    InternalCustomerCenter(modifier)
+internal fun CustomerCenter(
+    modifier: Modifier = Modifier,
+    onDismiss: () -> Unit,
+) {
+    InternalCustomerCenter(modifier, onDismiss)
 }

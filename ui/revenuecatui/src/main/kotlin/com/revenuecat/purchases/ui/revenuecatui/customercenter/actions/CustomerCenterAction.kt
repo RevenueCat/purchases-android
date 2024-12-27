@@ -10,7 +10,7 @@ internal sealed class CustomerCenterAction {
     object DismissRestoreDialog : CustomerCenterAction()
     data class ContactSupport(val email: String) : CustomerCenterAction()
     data class DisplayFeedbackSurvey(
-        val path: CustomerCenterConfigData.HelpPath,
+        val feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
         val onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
     ) : CustomerCenterAction()
     object DismissFeedbackSurvey : CustomerCenterAction()
@@ -20,4 +20,5 @@ internal sealed class CustomerCenterAction {
         val onDismissedOffer: () -> Unit,
     ) : CustomerCenterAction()
     object DismissPromotionalOffer : CustomerCenterAction()
+    object NavigationButtonPressed : CustomerCenterAction()
 }
