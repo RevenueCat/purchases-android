@@ -7,4 +7,5 @@ internal data class PurchaseInformation(
     val expirationDateString: String?,
     val willRenew: Boolean,
     val active: Boolean,
+    val productId: String,
 )
