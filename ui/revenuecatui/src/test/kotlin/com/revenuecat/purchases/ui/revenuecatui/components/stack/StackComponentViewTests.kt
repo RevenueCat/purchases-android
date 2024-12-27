@@ -95,7 +95,14 @@ class StackComponentViewTests {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
             },
-            act = { StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack")) },
+            act = {
+                StackComponentView(
+                    style = it,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("stack")
+                )
+                  },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -137,7 +144,14 @@ class StackComponentViewTests {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
             },
-            act = { StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack")) },
+            act = {
+                StackComponentView(
+                style = it,
+                state = state,
+                clickHandler = { },
+                modifier = Modifier.testTag("stack")
+            )
+                  },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -198,7 +212,12 @@ class StackComponentViewTests {
                         .background(expectedBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack"))
+                    StackComponentView(
+                        style = it,
+                        state = state,
+                        clickHandler = { },
+                        modifier = Modifier.testTag("stack")
+                    )
                 }
             },
             assert = { theme ->
@@ -289,6 +308,7 @@ class StackComponentViewTests {
                 StackComponentView(
                     style = style,
                     state = state,
+                    clickHandler = { },
                     selected = selected,
                     modifier = Modifier.testTag("stack")
                 )
@@ -385,7 +405,12 @@ class StackComponentViewTests {
                     .background(parentBackgroundColor),
                 contentAlignment = Alignment.Center,
             ) {
-                StackComponentView(style = style, state = state, modifier = Modifier.testTag("stack"))
+                StackComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("stack")
+                )
             }
         }
 

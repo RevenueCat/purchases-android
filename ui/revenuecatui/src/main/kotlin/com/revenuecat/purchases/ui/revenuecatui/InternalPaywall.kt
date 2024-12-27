@@ -102,7 +102,10 @@ internal fun InternalPaywall(
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
             if (state is PaywallState.Loaded.Components) {
-                LoadedPaywallComponents(state = state)
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = viewModel::handleAction,
+                )
             } else {
                 Logger.e(
                     "State is not Loaded.Components while transitioning animation. This may happen if state changes " +

@@ -153,7 +153,7 @@ internal class StackComponentViewWindowTests {
                     .background(parentBackgroundColor),
                 contentAlignment = Alignment.Center,
             ) {
-                StackComponentView(style, state, modifier = Modifier.testTag("stack"))
+                StackComponentView(style, state, { }, modifier = Modifier.testTag("stack"))
             }
         }
 

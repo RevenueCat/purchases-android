@@ -95,7 +95,14 @@ class ButtonComponentViewTests {
                     completable.await()
                 }
             )
-            ButtonComponentView(style = style, state = FakePaywallState())
+            ButtonComponentView(
+                style = style,
+                state = FakePaywallState(),
+                onClick = {
+                    actionHandleCalledCount++
+                    completable.await()
+                }
+            )
         }
 
         val purchaseButton = composeTestRule.onNodeWithText("Purchase")

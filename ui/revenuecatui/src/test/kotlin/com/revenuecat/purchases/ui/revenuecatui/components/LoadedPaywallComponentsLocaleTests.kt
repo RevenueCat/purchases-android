@@ -119,7 +119,7 @@ internal class LoadedPaywallComponentsLocaleTests {
                 super.onCreate(savedInstanceState)
                 val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
                 val state = offering.toComponentsPaywallState(validated)
-                setContent { LoadedPaywallComponents(state = state) }
+                setContent { LoadedPaywallComponents(state = state, clickHandler = { }) }
             }
         }
     }
@@ -137,7 +137,7 @@ internal class LoadedPaywallComponentsLocaleTests {
                     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
                     offering.toComponentsPaywallState(validated)
                 },
-                act = { state -> LoadedPaywallComponents(state = state) },
+                act = { state -> LoadedPaywallComponents(state = state, clickHandler = { }) },
                 assert = { localeController ->
                     localeController.setLocale("en-US")
                     onNodeWithText(EXPECTED_TEXT_EN)

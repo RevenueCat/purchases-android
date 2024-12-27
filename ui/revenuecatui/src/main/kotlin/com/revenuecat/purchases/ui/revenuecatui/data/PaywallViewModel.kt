@@ -24,6 +24,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -62,6 +63,8 @@ internal interface PaywallViewModel {
     fun restorePurchases()
 
     fun clearActionError()
+
+    suspend fun handleAction(action: PaywallAction)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -246,6 +249,10 @@ internal class PaywallViewModelImpl(
             paywallPresentationData = createEventData()
             track(PaywallEventType.IMPRESSION)
         }
+    }
+
+    override suspend fun handleAction(action: PaywallAction) {
+        TODO("Not yet implemented")
     }
 
     private suspend fun handlePackagePurchase(activity: Activity) {

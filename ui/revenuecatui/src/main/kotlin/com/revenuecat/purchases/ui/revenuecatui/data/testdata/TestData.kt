@@ -17,6 +17,7 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.loadedLegacy
@@ -521,6 +522,13 @@ internal class MockViewModel(
     override fun clearActionError() {
         clearActionErrorCallCount++
         _actionError.value = null
+    }
+
+    private val _clickActions = mutableListOf<PaywallAction>()
+    val clickActions: List<PaywallAction>
+        get() = _clickActions
+    override suspend fun handleAction(action: PaywallAction) {
+        _clickActions.add(action)
     }
 
     private fun simulateActionInProgress() {
