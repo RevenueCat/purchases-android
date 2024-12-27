@@ -28,11 +28,17 @@ internal fun ComponentView(
     style: ComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) = when (style) {
-    is StackComponentStyle -> StackComponentView(style = style, state = state, modifier = modifier)
-    is TextComponentStyle -> TextComponentView(style = style, state = state, modifier = modifier)
-    is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
-    is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, modifier = modifier)
+    is StackComponentStyle -> StackComponentView(style = style, state = state, modifier = modifier, selected = selected)
+    is TextComponentStyle -> TextComponentView(style = style, state = state, modifier = modifier, selected = selected)
+    is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier, selected = selected)
+    is ButtonComponentStyle -> ButtonComponentView(
+        style = style,
+        state = state,
+        modifier = modifier,
+        selected = selected,
+    )
     is StickyFooterComponentStyle -> StickyFooterComponentView(style = style, state = state, modifier = modifier)
     is PackageComponentStyle -> PackageComponentView(style = style, state = state, modifier = modifier)
 }

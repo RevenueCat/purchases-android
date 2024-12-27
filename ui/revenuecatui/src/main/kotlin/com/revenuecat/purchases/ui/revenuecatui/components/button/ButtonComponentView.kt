@@ -57,6 +57,7 @@ internal fun ButtonComponentView(
     style: ButtonComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
@@ -70,6 +71,7 @@ internal fun ButtonComponentView(
                 isClickable = true
             }
         },
+        selected,
     )
 }
 

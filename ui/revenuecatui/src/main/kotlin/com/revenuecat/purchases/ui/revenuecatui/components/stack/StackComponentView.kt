@@ -95,8 +95,12 @@ internal fun StackComponentView(
                 .padding(stackState.padding)
         }
 
-        val content: @Composable () -> Unit = remember(stackState.children) {
-            @Composable { stackState.children.forEach { child -> ComponentView(style = child, state = state) } }
+        val content: @Composable () -> Unit = remember(stackState.children, selected) {
+            @Composable {
+                stackState.children.forEach { child ->
+                    ComponentView(style = child, state = state, selected = selected)
+                }
+            }
         }
 
         // Show the right container composable depending on the dimension.
