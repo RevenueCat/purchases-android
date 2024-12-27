@@ -1,20 +1,23 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.utils.getDefaultLocales
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,11 +28,12 @@ import kotlinx.coroutines.flow.update
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
-    suspend fun pathButtonPressed(path: CustomerCenterConfigData.HelpPath)
+    suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath)
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
     fun openAppStore(context: Context)
+    fun showManageSubscriptions(context: Context, productId: String)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -57,7 +61,7 @@ internal class CustomerCenterViewModelImpl(
             initialValue = CustomerCenterState.Loading,
         )
 
-    override suspend fun pathButtonPressed(path: CustomerCenterConfigData.HelpPath) {
+    override suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
                 _state.update { currentState ->
@@ -71,7 +75,15 @@ internal class CustomerCenterViewModelImpl(
             }
 
             CustomerCenterConfigData.HelpPath.PathType.CANCEL -> {
-                // Customer Center WIP
+                when (val currentState = _state.value) {
+                    is CustomerCenterState.Success -> {
+                        currentState.purchaseInformation?.productId?.let {
+                            showManageSubscriptions(context, it)
+                        }
+                    }
+
+                    else -> {}
+                }
             }
 
             else -> {
@@ -122,9 +134,20 @@ internal class CustomerCenterViewModelImpl(
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
         // Customer Center WIP: update when we have subscription information in CustomerInfo
-        val activeEntitlement = customerInfo.entitlements.active.isEmpty()
-        if (activeEntitlement) {
-            return CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+        val activeEntitlement = customerInfo.entitlements.active.values.firstOrNull()
+        if (activeEntitlement != null) {
+            val product = purchases.awaitGetProduct(activeEntitlement.productIdentifier).first()
+            val locale = getDefaultLocales().first()
+            val purchaseInformation = PurchaseInformation(
+                title = product.description,
+                durationTitle = product.period?.localizedPeriod(locale) ?: "",
+                price = product.price.formatted,
+                expirationDateString = activeEntitlement.expirationDate.toString(),
+                willRenew = activeEntitlement.willRenew,
+                active = activeEntitlement.isActive,
+                productId = activeEntitlement.productIdentifier,
+            )
+            return purchaseInformation
         }
 
         return null
@@ -144,5 +167,15 @@ internal class CustomerCenterViewModelImpl(
             data = Uri.parse("market://details?id=${context.packageName}")
         }
         context.startActivity(intent)
+    }
+
+    override fun showManageSubscriptions(context: Context, productId: String) {
+        try {
+            val packageName = context.packageName
+            val uri = "https://play.google.com/store/account/subscriptions?sku=$productId&package=$packageName"
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+        } catch (e: ActivityNotFoundException) {
+            Logger.e("Error opening manage subscriptions", e)
+        }
     }
 }
