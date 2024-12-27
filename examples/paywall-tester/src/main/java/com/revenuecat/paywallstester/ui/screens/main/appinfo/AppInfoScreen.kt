@@ -29,7 +29,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -40,12 +39,13 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
     var isCustomerCenterVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
 
-    if (isCustomerCenterVisible) {
-        CustomerCenter(modifier = Modifier.fillMaxSize()) {
-            isCustomerCenterVisible = false
-        }
-        return
-    }
+//    if (isCustomerCenterVisible) {
+    // CustomerCenter WIP: Uncomment when ready
+//        CustomerCenter(modifier = Modifier.fillMaxSize()) {
+//            isCustomerCenterVisible = false
+//        }
+//        return
+//    }
 
     Column(
         modifier = Modifier.fillMaxSize(),

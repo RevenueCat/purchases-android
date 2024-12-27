@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 @file:JvmSynthetic
 @file:OptIn(
     ExperimentalPreviewRevenueCatPurchasesAPI::class,
@@ -54,8 +55,8 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
-    onDismiss: () -> Unit,
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(),
+    onDismiss: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -115,10 +116,15 @@ private fun InternalCustomerCenter(
 ) {
     val title = getTitleForState(state)
     CustomerCenterScaffold(
-        modifier,
-        title,
-        onAction,
-        buttonType = if (state is CustomerCenterState.Success) state.buttonType else CustomerCenterState.ButtonType.CLOSE,
+        modifier = modifier,
+        title = title,
+        onAction = onAction,
+        buttonType =
+        if (state is CustomerCenterState.Success) {
+            state.buttonType
+        } else {
+            CustomerCenterState.ButtonType.CLOSE
+        },
     ) {
         when (state) {
             is CustomerCenterState.NotLoaded -> {}
@@ -134,9 +140,9 @@ private fun InternalCustomerCenter(
 
 @Composable
 private fun CustomerCenterScaffold(
+    onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
-    onAction: (CustomerCenterAction) -> Unit,
     buttonType: CustomerCenterState.ButtonType = CustomerCenterState.ButtonType.CLOSE,
     mainContent: @Composable () -> Unit,
 ) {
@@ -214,6 +220,15 @@ private fun CustomerCenterLoaded(
     }
 
     val configuration = state.customerCenterConfigData
+    MainScreen(state, configuration, onAction)
+}
+
+@Composable
+private fun MainScreen(
+    state: CustomerCenterState.Success,
+    configuration: CustomerCenterConfigData,
+    onAction: (CustomerCenterAction) -> Unit,
+) {
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(

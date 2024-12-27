@@ -18,5 +18,5 @@ internal fun CustomerCenter(
     modifier: Modifier = Modifier,
     onDismiss: () -> Unit,
 ) {
-    InternalCustomerCenter(modifier, onDismiss)
+    InternalCustomerCenter(modifier = modifier, onDismiss = onDismiss)
 }
