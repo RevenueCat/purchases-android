@@ -71,7 +71,7 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = styleFactory.create(textComponent, {})
+        val result = styleFactory.create(textComponent)
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
@@ -99,7 +99,7 @@ class StyleFactoryTests {
         )
 
             // Act
-            val result = styleFactory.create(stackComponent, {})
+            val result = styleFactory.create(stackComponent)
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
@@ -140,7 +140,7 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = incorrectStyleFactory.create(component, {})
+        val result = incorrectStyleFactory.create(component)
 
         // Assert
         assertThat(result.isError).isTrue()
@@ -179,7 +179,7 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = incorrectStyleFactory.create(component, {})
+        val result = incorrectStyleFactory.create(component)
 
         // Assert
         assertThat(result.isError).isTrue()
@@ -231,7 +231,7 @@ class StyleFactoryTests {
             offering = offering,
         )
 
-        val imageComponentStyle = styleFactory.create(component, { }).getOrThrow() as ImageComponentStyle
+        val imageComponentStyle = styleFactory.create(component).getOrThrow() as ImageComponentStyle
         with (imageComponentStyle) {
             assertThat(sources.size).isEqualTo(1)
             assertThat(sources.getValue(defaultLocale)).isEqualTo(expectedBaseSource)

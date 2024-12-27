@@ -9,7 +9,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -110,13 +109,10 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
                     localizations = localizations,
                     offering = this@validatePaywallComponentsDataOrNull,
                 )
-                val actionHandler: suspend (
-                    PaywallAction,
-                ) -> Unit = { /* TODO Move the action handler to the UI layer. */ }
                 val config = componentsConfig.base
                 zipOrAccumulate(
-                    styleFactory.create(config.stack, actionHandler),
-                    config.stickyFooter?.let { styleFactory.create(it, actionHandler) }.orSuccessfullyNull(),
+                    styleFactory.create(config.stack),
+                    config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
                 ) { stack, stickyFooter ->
                     PaywallValidationResult.Components(
                         stack = stack,

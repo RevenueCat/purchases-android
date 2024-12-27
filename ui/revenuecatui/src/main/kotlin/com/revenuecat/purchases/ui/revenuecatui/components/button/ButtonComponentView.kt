@@ -124,12 +124,10 @@ private fun previewButtonComponentStyle(
         overrides = null,
     ),
     action: PaywallAction = PaywallAction.RestorePurchases,
-    actionHandler: (PaywallAction) -> Unit = {},
 ): ButtonComponentStyle {
     return ButtonComponentStyle(
         stackComponentStyle = stackComponentStyle,
         action = action,
-        actionHandler = actionHandler,
     )
 }
 

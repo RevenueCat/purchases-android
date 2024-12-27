@@ -90,10 +90,6 @@ class ButtonComponentViewTests {
                     overrides = null,
                 ),
                 action = PaywallAction.PurchasePackage,
-                actionHandler = {
-                    actionHandleCalledCount++
-                    completable.await()
-                }
             )
             ButtonComponentView(
                 style = style,

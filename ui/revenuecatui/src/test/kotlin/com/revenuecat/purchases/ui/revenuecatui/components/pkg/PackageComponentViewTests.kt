@@ -182,8 +182,8 @@ class PackageComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val styleYearly = styleFactory.create(componentYearly, { }).getOrThrow() as PackageComponentStyle
-        val styleMonthly = styleFactory.create(componentMonthly, { }).getOrThrow() as PackageComponentStyle
+        val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle
+        val styleMonthly = styleFactory.create(componentMonthly).getOrThrow() as PackageComponentStyle
 
         // Act
         setContent {

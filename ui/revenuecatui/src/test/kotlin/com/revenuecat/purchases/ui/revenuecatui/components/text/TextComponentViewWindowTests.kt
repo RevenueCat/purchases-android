@@ -114,7 +114,7 @@ internal class TextComponentViewWindowTests {
             availablePackages = emptyList(),
         )
         )
-        val style = styleFactory.create(component, { }).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
     }
 
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
