@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -32,6 +33,8 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
@@ -42,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
+    private val offering: Offering,
 ) {
 
     private companion object {
@@ -56,7 +60,7 @@ internal class StyleFactory(
         when (component) {
             is ButtonComponent -> createButtonComponentStyle(component, actionHandler)
             is ImageComponent -> createImageComponentStyle(component)
-            is PackageComponent -> TODO("PackageComponentStyle is not yet implemented.")
+            is PackageComponent -> createPackageComponentStyle(component, actionHandler)
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, actionHandler)
             is StackComponent -> createStackComponentStyle(component, actionHandler)
             is StickyFooterComponent -> createStickyFooterComponentStyle(component, actionHandler)
@@ -83,6 +87,30 @@ internal class StyleFactory(
             action = component.action.mapButtonComponentActionToPaywallAction(),
             actionHandler = actionHandler,
         )
+    }
+
+    private fun createPackageComponentStyle(
+        component: PackageComponent,
+        actionHandler: suspend (PaywallAction) -> Unit,
+    ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
+        component.stack,
+        actionHandler,
+    ).flatMap { style ->
+        offering.getPackage(component.packageId)
+            .errorIfNull(
+                nonEmptyListOf(
+                    PaywallValidationError.MissingPackage(
+                        offeringId = offering.identifier,
+                        packageId = component.packageId,
+                    ),
+                ),
+            ).map { pkg ->
+                PackageComponentStyle(
+                    stackComponentStyle = style,
+                    pkg = pkg,
+                    isSelectedByDefault = component.isSelectedByDefault,
+                )
+            }
     }
 
     private fun createPurchaseButtonComponentStyle(
