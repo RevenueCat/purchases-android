@@ -37,13 +37,6 @@ internal interface CustomerCenterViewModel {
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
-    fun openAppStore(context: Context)
-    fun showManageSubscriptions(context: Context, productId: String)
-    fun displayFeedbackSurvey(
-        feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-        onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
-    )
-
     fun loadAndDisplayPromotionalOffer(
         productId: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
@@ -52,10 +45,7 @@ internal interface CustomerCenterViewModel {
     )
 
     fun dismissPromotionalOffer()
-    fun dismissFeedbackSurvey()
-    fun goBackToMain()
     fun onNavigationButtonPressed(onDismiss: () -> Unit)
-    fun resetState()
     suspend fun loadCustomerCenter()
 }
 
@@ -243,45 +233,6 @@ internal class CustomerCenterViewModelImpl(
         context.startActivity(Intent.createChooser(intent, "Contact Support"))
     }
 
-    override fun showManageSubscriptions(context: Context, productId: String) {
-        try {
-            val packageName = context.packageName
-            val uri = "https://play.google.com/store/account/subscriptions?sku=$productId&package=$packageName"
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
-        } catch (e: ActivityNotFoundException) {
-            Logger.e("Error opening manage subscriptions", e)
-        }
-    }
-
-    override fun displayFeedbackSurvey(
-        feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-        onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
-    ) {
-        _state.update {
-            val currentState = _state.value
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onOptionSelected),
-                    title = feedbackSurvey.title,
-                    buttonType = CustomerCenterState.ButtonType.BACK,
-                )
-            } else {
-                currentState
-            }
-        }
-    }
-
-    override fun goBackToMain() {
-        _state.update {
-            val currentState = _state.value
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(feedbackSurveyData = null, promotionalOfferData = null, showRestoreDialog = false)
-            } else {
-                currentState
-            }
-        }
-    }
-
     override fun loadAndDisplayPromotionalOffer(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
@@ -372,6 +323,7 @@ internal class CustomerCenterViewModelImpl(
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
                     feedbackSurveyData = null,
+                    promotionalOfferData = null,
                     showRestoreDialog = false,
                     title = null,
                     buttonType = CustomerCenterState.ButtonType.CLOSE,

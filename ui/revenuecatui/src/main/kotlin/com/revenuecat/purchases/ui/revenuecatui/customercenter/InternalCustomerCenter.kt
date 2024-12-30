@@ -88,10 +88,6 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
-                is CustomerCenterAction.DisplayFeedbackSurvey -> viewModel.displayFeedbackSurvey(
-                    action.feedbackSurvey,
-                    action.onAnswerSubmitted,
-                )
                 is CustomerCenterAction.DisplayPromotionalOffer -> viewModel.loadAndDisplayPromotionalOffer(
                     action.product,
                     action.promotionalOffer,
@@ -99,7 +95,6 @@ internal fun InternalCustomerCenter(
                     action.onDismissedOffer,
                 )
                 is CustomerCenterAction.DismissPromotionalOffer -> viewModel.dismissPromotionalOffer()
-                is CustomerCenterAction.DismissFeedbackSurvey -> viewModel.dismissFeedbackSurvey()
                 is CustomerCenterAction.NavigationButtonPressed -> viewModel.onNavigationButtonPressed(onDismiss)
             }
         },
