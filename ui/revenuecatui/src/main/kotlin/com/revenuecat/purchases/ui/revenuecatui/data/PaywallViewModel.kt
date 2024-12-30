@@ -64,7 +64,7 @@ internal interface PaywallViewModel {
 
     fun clearActionError()
 
-    suspend fun handleAction(action: PaywallAction)
+    suspend fun handleAction(action: PaywallAction, activity: Activity?)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -251,8 +251,13 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override suspend fun handleAction(action: PaywallAction) {
-        TODO("Not yet implemented")
+    override suspend fun handleAction(action: PaywallAction, activity: Activity?) {
+        when (action) {
+            is PaywallAction.RestorePurchases -> TODO()
+            is PaywallAction.PurchasePackage -> TODO()
+            is PaywallAction.NavigateBack -> TODO()
+            is PaywallAction.NavigateTo -> TODO()
+        }
     }
 
     private suspend fun handlePackagePurchase(activity: Activity) {

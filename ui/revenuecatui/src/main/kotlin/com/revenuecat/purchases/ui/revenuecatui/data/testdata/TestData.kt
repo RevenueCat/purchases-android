@@ -532,7 +532,7 @@ internal class MockViewModel(
     private val _clickActions = mutableListOf<PaywallAction>()
     val clickActions: List<PaywallAction>
         get() = _clickActions
-    override suspend fun handleAction(action: PaywallAction) {
+    override suspend fun handleAction(action: PaywallAction, activity: Activity?) {
         _clickActions.add(action)
     }
 

@@ -207,7 +207,7 @@ private class LoadingViewModel(
 
     override fun clearActionError() = Unit
 
-    override suspend fun handleAction(action: PaywallAction) {
+    override suspend fun handleAction(action: PaywallAction, activity: Activity?) {
         // no-op
     }
 }
