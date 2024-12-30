@@ -5,7 +5,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 
-internal sealed class CustomerCenterState() {
+internal sealed class CustomerCenterState {
     enum class ButtonType {
         BACK, CLOSE
     }
