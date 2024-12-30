@@ -157,55 +157,55 @@ private fun MainStackComponent(
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
 
-        // Modifier irrespective of dimension.
-        val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
-            Modifier
-                .padding(stackState.margin)
-                .applyIfNotNull(shadowStyle) { shadow(it, stackState.shape) }
-                .applyIfNotNull(backgroundColorStyle) { background(it, stackState.shape) }
-                .clip(stackState.shape)
-                .applyIfNotNull(borderStyle) { border(it, stackState.shape) }
-                .padding(stackState.padding)
-        }
-
-        val content: @Composable () -> Unit = remember(stackState.children) {
-            @Composable { stackState.children.forEach { child -> ComponentView(style = child, state = state) } }
-        }
-
-        // Show the right container composable depending on the dimension.
-        when (val dimension = stackState.dimension) {
-            is Dimension.Horizontal -> Row(
-                modifier = modifier
-                    .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
-                    .then(commonModifier),
-                verticalAlignment = dimension.alignment.toAlignment(),
-                horizontalArrangement = dimension.distribution.toHorizontalArrangement(
-                    spacing = stackState.spacing,
-                ),
-            ) { content() }
-
-            is Dimension.Vertical -> Column(
-                modifier = modifier
-                    .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                    .then(commonModifier),
-                verticalArrangement = dimension.distribution.toVerticalArrangement(
-                    spacing = stackState.spacing,
-                ),
-                horizontalAlignment = dimension.alignment.toAlignment(),
-            ) { content() }
-
-            is Dimension.ZLayer -> Box(
-                modifier = modifier
-                    .size(
-                        size = stackState.size,
-                        horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                        verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                    )
-                    .then(commonModifier),
-                contentAlignment = dimension.alignment.toAlignment(),
-            ) { content() }
-        }
+    // Modifier irrespective of dimension.
+    val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
+        Modifier
+            .padding(stackState.margin)
+            .applyIfNotNull(shadowStyle) { shadow(it, stackState.shape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, stackState.shape) }
+            .clip(stackState.shape)
+            .applyIfNotNull(borderStyle) { border(it, stackState.shape) }
+            .padding(stackState.padding)
     }
+
+    val content: @Composable () -> Unit = remember(stackState.children) {
+        @Composable { stackState.children.forEach { child -> ComponentView(style = child, state = state) } }
+    }
+
+    // Show the right container composable depending on the dimension.
+    when (val dimension = stackState.dimension) {
+        is Dimension.Horizontal -> Row(
+            modifier = modifier
+                .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                .then(commonModifier),
+            verticalAlignment = dimension.alignment.toAlignment(),
+            horizontalArrangement = dimension.distribution.toHorizontalArrangement(
+                spacing = stackState.spacing,
+            ),
+        ) { content() }
+
+        is Dimension.Vertical -> Column(
+            modifier = modifier
+                .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                .then(commonModifier),
+            verticalArrangement = dimension.distribution.toVerticalArrangement(
+                spacing = stackState.spacing,
+            ),
+            horizontalAlignment = dimension.alignment.toAlignment(),
+        ) { content() }
+
+        is Dimension.ZLayer -> Box(
+            modifier = modifier
+                .size(
+                    size = stackState.size,
+                    horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                    verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                )
+                .then(commonModifier),
+            contentAlignment = dimension.alignment.toAlignment(),
+        ) { content() }
+    }
+}
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
