@@ -37,7 +37,7 @@ internal interface CustomerCenterViewModel {
     fun showManageSubscriptions(context: Context, productId: String)
     fun displayFeedbackSurvey(
         feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-        onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+        onAnswerSubmitted: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
     )
 
     fun dismissFeedbackSurvey()
@@ -205,12 +205,12 @@ internal class CustomerCenterViewModelImpl(
 
     override fun displayFeedbackSurvey(
         feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-        onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+        onAnswerSubmitted: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
     ) {
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
-                    feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onOptionSelected),
+                    feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onAnswerSubmitted),
                     title = feedbackSurvey.title,
                     buttonType = CustomerCenterState.ButtonType.BACK,
                 )
