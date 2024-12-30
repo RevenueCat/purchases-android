@@ -14,7 +14,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import org.intellij.lang.annotations.Language
-import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
@@ -235,7 +234,7 @@ internal class StackComponentTests {
             val actual = OfferingParser.json.decodeFromString<StackComponent>(args.json)
 
             // Assert
-            assertEquals(args.expected, actual)
+            assert(actual == args.expected)
         }
 
         @Test
@@ -244,7 +243,7 @@ internal class StackComponentTests {
             val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
-            assertEquals(args.expected, actual)
+            assert(actual == args.expected)
         }
     }
 
@@ -389,7 +388,7 @@ internal class StackComponentTests {
             val actual = OfferingParser.json.decodeFromString<PartialStackComponent>(args.json)
 
             // Assert
-            assertEquals(args.expected, actual)
+            assert(actual == args.expected)
         }
     }
 }
