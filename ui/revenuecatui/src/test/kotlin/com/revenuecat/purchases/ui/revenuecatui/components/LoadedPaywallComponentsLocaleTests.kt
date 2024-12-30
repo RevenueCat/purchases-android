@@ -25,8 +25,10 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.localeChangingTest
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
 import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -115,7 +117,7 @@ internal class LoadedPaywallComponentsLocaleTests {
         class TestActivity : ComponentActivity() {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                val state = PaywallState.Loaded.Components(offering, paywallComponents)
+                val state = offering.toComponentsPaywallState(paywallComponents.validate().getOrThrow())
                 setContent { LoadedPaywallComponents(state = state) }
             }
         }
@@ -126,11 +128,11 @@ internal class LoadedPaywallComponentsLocaleTests {
 
         @get:Rule
         val composeTestRule = createComposeRule()
-        
+
         @Test
         fun `Should propagate locale changes without Activity recreation`(): Unit = with(composeTestRule) {
             localeChangingTest(
-                arrange = { PaywallState.Loaded.Components(offering, paywallComponents) },
+                arrange = { offering.toComponentsPaywallState(paywallComponents.validate().getOrThrow()) },
                 act = { state -> LoadedPaywallComponents(state = state) },
                 assert = { localeController ->
                     localeController.setLocale("en-US")
@@ -142,7 +144,7 @@ internal class LoadedPaywallComponentsLocaleTests {
                         .assertIsDisplayed()
                 }
             )
-            
+
         }
     }
 }

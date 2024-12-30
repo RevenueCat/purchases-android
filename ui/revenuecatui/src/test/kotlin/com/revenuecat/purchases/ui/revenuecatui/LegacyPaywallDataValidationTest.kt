@@ -7,7 +7,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvid
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedLegacyPaywall
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import io.mockk.mockkObject
 import io.mockk.verify
 import kotlinx.serialization.json.Json
@@ -23,21 +24,22 @@ class LegacyPaywallDataValidationTest {
     fun `Validate an offering without paywall`() {
         val offering = TestData.offeringWithNoPaywall
         val paywallValidationResult = getPaywallValidationResult(offering)
-        assertThat(paywallValidationResult.error).isEqualTo(PaywallValidationError.MissingPaywall)
+        assertThat(paywallValidationResult.errors?.size).isEqualTo(1)
+        assertThat(paywallValidationResult.errors?.first()).isEqualTo(PaywallValidationError.MissingPaywall)
     }
 
     @Test
     fun `Validate a valid paywall`() {
         val offering = TestData.template1Offering
         val paywallValidationResult = getPaywallValidationResult(offering)
-        assertThat(paywallValidationResult.error).isNull()
+        assertThat(paywallValidationResult.errors).isNull()
     }
 
     @Test
     fun `Validate a valid multi-tier paywall`() {
         val offering = TestData.template7Offering
         val paywallValidationResult = getPaywallValidationResult(offering)
-        assertThat(paywallValidationResult.error).isNull()
+        assertThat(paywallValidationResult.errors).isNull()
     }
 
     @Test
@@ -47,10 +49,13 @@ class LegacyPaywallDataValidationTest {
         val offering = originalOffering.copy(paywall = originalOffering.paywall!!.copy(templateName = templateName))
 
         val paywallValidationResult = getPaywallValidationResult(offering)
+        check(paywallValidationResult is PaywallValidationResult.Legacy)
 
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
         compareWithDefaultTemplate(paywallValidationResult.displayablePaywall)
-        assertThat(paywallValidationResult.error).isEqualTo(PaywallValidationError.InvalidTemplate(templateName))
+        assertThat(paywallValidationResult.errors?.size).isEqualTo(1)
+        assertThat(paywallValidationResult.errors?.first())
+            .isEqualTo(PaywallValidationError.InvalidTemplate(templateName))
     }
 
     @Test
@@ -68,9 +73,11 @@ class LegacyPaywallDataValidationTest {
 
         val offering = originalOffering.copy(paywall = paywall)
         val paywallValidationResult = getPaywallValidationResult(offering)
+        check(paywallValidationResult is PaywallValidationResult.Legacy)
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
         compareWithDefaultTemplate(paywallValidationResult.displayablePaywall)
-        assertThat(paywallValidationResult.error).isEqualTo(
+        assertThat(paywallValidationResult.errors?.size).isEqualTo(1)
+        assertThat(paywallValidationResult.errors?.first()).isEqualTo(
             PaywallValidationError.InvalidVariables(setOf("unrecognized_variable", "future_variable"))
         )
     }
@@ -97,9 +104,11 @@ class LegacyPaywallDataValidationTest {
 
         val offering = originalOffering.copy(paywall = paywall)
         val paywallValidationResult = getPaywallValidationResult(offering)
+        check(paywallValidationResult is PaywallValidationResult.Legacy)
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
         compareWithDefaultTemplate(paywallValidationResult.displayablePaywall)
-        assertThat(paywallValidationResult.error).isEqualTo(
+        assertThat(paywallValidationResult.errors?.size).isEqualTo(1)
+        assertThat(paywallValidationResult.errors?.first()).isEqualTo(
             PaywallValidationError.InvalidVariables(setOf("future_variable", "new_variable", "another_one"))
         )
     }
@@ -123,9 +132,11 @@ class LegacyPaywallDataValidationTest {
 
         val offering = originalOffering.copy(paywall = paywall)
         val paywallValidationResult = getPaywallValidationResult(offering)
+        check(paywallValidationResult is PaywallValidationResult.Legacy)
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
         compareWithDefaultTemplate(paywallValidationResult.displayablePaywall)
-        assertThat(paywallValidationResult.error).isEqualTo(
+        assertThat(paywallValidationResult.errors?.size).isEqualTo(1)
+        assertThat(paywallValidationResult.errors?.first()).isEqualTo(
             PaywallValidationError.InvalidIcons(setOf("an_unrecognized_icon"))
         )
     }
@@ -143,13 +154,15 @@ class LegacyPaywallDataValidationTest {
 
         val offering = originalOffering.copy(paywall = paywall)
         val paywallValidationResult = getPaywallValidationResult(offering)
+        check(paywallValidationResult is PaywallValidationResult.Legacy)
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
         compareWithDefaultTemplate(
             paywallValidationResult.displayablePaywall,
             // Skipping because there are none but they will show in the paywall from createPackageConfiguration
             skipPackageIds = true,
         )
-        assertThat(paywallValidationResult.error).isEqualTo(
+        assertThat(paywallValidationResult.errors?.size).isEqualTo(1)
+        assertThat(paywallValidationResult.errors?.first()).isEqualTo(
             PaywallValidationError.MissingTiers
         )
     }
@@ -170,13 +183,15 @@ class LegacyPaywallDataValidationTest {
 
         val offering = originalOffering.copy(paywall = paywall)
         val paywallValidationResult = getPaywallValidationResult(offering)
+        check(paywallValidationResult is PaywallValidationResult.Legacy)
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
         compareWithDefaultTemplate(
             paywallValidationResult.displayablePaywall,
             // Skipping because there are none but they will show in the paywall from createPackageConfiguration
             skipPackageIds = true,
         )
-        assertThat(paywallValidationResult.error).isEqualTo(
+        assertThat(paywallValidationResult.errors?.size).isEqualTo(1)
+        assertThat(paywallValidationResult.errors?.first()).isEqualTo(
             PaywallValidationError.MissingTierConfigurations(setOf("basic"))
         )
     }
@@ -199,9 +214,10 @@ class LegacyPaywallDataValidationTest {
 
         val offering = originalOffering.copy(paywall = paywall)
         val paywallValidationResult = getPaywallValidationResult(offering)
+        check(paywallValidationResult is PaywallValidationResult.Legacy)
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
 
-        assertThat(paywallValidationResult.error).isNull()
+        assertThat(paywallValidationResult.errors).isNull()
         verify { Logger.w("Missing images for tier(s): basic") }
     }
 
@@ -220,18 +236,20 @@ class LegacyPaywallDataValidationTest {
 
         val offering = originalOffering.copy(paywall = paywall)
         val paywallValidationResult = getPaywallValidationResult(offering)
+        check(paywallValidationResult is PaywallValidationResult.Legacy)
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
         compareWithDefaultTemplate(
             paywallValidationResult.displayablePaywall,
             // Skipping because there are none but they will show in the paywall from createPackageConfiguration
             skipPackageIds = true,
         )
-        assertThat(paywallValidationResult.error).isEqualTo(
+        assertThat(paywallValidationResult.errors?.size).isEqualTo(1)
+        assertThat(paywallValidationResult.errors?.first()).isEqualTo(
             PaywallValidationError.MissingTierConfigurations(setOf("basic"))
         )
     }
 
-    private fun getPaywallValidationResult(offering: Offering) = offering.validatedLegacyPaywall(
+    private fun getPaywallValidationResult(offering: Offering) = offering.validatedPaywall(
         currentColorScheme = TestData.Constants.currentColorScheme,
         resourceProvider = MockResourceProvider()
     )
