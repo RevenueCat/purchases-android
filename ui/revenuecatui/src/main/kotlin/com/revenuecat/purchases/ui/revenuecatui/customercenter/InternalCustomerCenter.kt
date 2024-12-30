@@ -1,9 +1,6 @@
 @file:Suppress("TooManyFunctions")
 @file:JvmSynthetic
-@file:OptIn(
-    ExperimentalPreviewRevenueCatPurchasesAPI::class,
-    ExperimentalPreviewRevenueCatPurchasesAPI::class,
-)
+@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
@@ -196,7 +193,6 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
     Text("Error: ${state.error}")
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
@@ -284,7 +280,6 @@ private fun getCustomerCenterViewModel(
     return viewModel
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private val previewConfigData = CustomerCenterConfigData(
     screens = mapOf(
         CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT to CustomerCenterConfigData.Screen(
@@ -337,7 +332,6 @@ internal fun CustomerCenterErrorPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview
 @Composable
 internal fun CustomerCenterLoadedPreview() {
