@@ -204,9 +204,7 @@ private fun CustomerCenterLoaded(
 ) {
     if (state.feedbackSurveyData != null) {
         FeedbackSurveyView(state.feedbackSurveyData)
-        return
-    }
-    if (state.showRestoreDialog) {
+    } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
             onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
@@ -217,10 +215,10 @@ private fun CustomerCenterLoaded(
                 }
             },
         )
+    } else {
+        val configuration = state.customerCenterConfigData
+        MainScreen(state, configuration, onAction)
     }
-
-    val configuration = state.customerCenterConfigData
-    MainScreen(state, configuration, onAction)
 }
 
 @Composable
