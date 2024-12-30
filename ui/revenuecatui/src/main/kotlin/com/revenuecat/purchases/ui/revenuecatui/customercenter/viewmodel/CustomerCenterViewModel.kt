@@ -100,8 +100,7 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun dismissRestoreDialog() {
-        _state.update {
-            val currentState = _state.value
+        _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
                     showRestoreDialog = false,
@@ -114,30 +113,44 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun restorePurchases() {
-        val currentState = _state.value as? CustomerCenterState.Success ?: return
-
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    restorePurchasesState = RestorePurchasesState.RESTORING,
+                )
+            } else {
+                currentState
+            }
+        }
         try {
-            _state.value = currentState.copy(
-                restorePurchasesState = RestorePurchasesState.RESTORING,
-            )
             val customerInfo = purchases.awaitRestore()
             val hasPurchases =
                 customerInfo.activeSubscriptions.isNotEmpty() ||
                     customerInfo.nonSubscriptionTransactions.isNotEmpty()
-            if (hasPurchases) {
-                _state.value = currentState.copy(
-                    restorePurchasesState = RestorePurchasesState.PURCHASES_RECOVERED,
-                )
-            } else {
-                _state.value = currentState.copy(
-                    restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
-                )
+            _state.update { currentState ->
+                if (currentState is CustomerCenterState.Success) {
+                    currentState.copy(
+                        restorePurchasesState = if (hasPurchases) {
+                            RestorePurchasesState.PURCHASES_RECOVERED
+                        } else {
+                            RestorePurchasesState.PURCHASES_NOT_FOUND
+                        },
+                    )
+                } else {
+                    currentState
+                }
             }
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases", e)
-            _state.value = currentState.copy(
-                restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
-            )
+            _state.update { currentState ->
+                if (currentState is CustomerCenterState.Success) {
+                    currentState.copy(
+                        restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
+                    )
+                } else {
+                    currentState
+                }
+            }
         }
     }
 
@@ -194,8 +207,7 @@ internal class CustomerCenterViewModelImpl(
         feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
         onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
     ) {
-        _state.update {
-            val currentState = _state.value
+        _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
                     feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onOptionSelected),
@@ -209,8 +221,7 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun goBackToMain() {
-        _state.update {
-            val currentState = _state.value
+        _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(feedbackSurveyData = null, showRestoreDialog = false)
             } else {
@@ -220,8 +231,7 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun dismissFeedbackSurvey() {
-        _state.update {
-            val currentState = _state.value
+        _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
                     feedbackSurveyData = null,
@@ -273,7 +283,7 @@ internal class CustomerCenterViewModelImpl(
 
     override suspend fun loadCustomerCenter() {
         if (_state.value !is CustomerCenterState.Loading) {
-            _state.update { CustomerCenterState.Loading(dismissCustomerCenter = false) }
+            _state.value = CustomerCenterState.Loading(dismissCustomerCenter = false)
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
