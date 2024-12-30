@@ -21,7 +21,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.loadedLegacy
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template1
@@ -31,8 +30,11 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template5
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7CustomPackages
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -442,16 +444,19 @@ internal class MockViewModel(
     }
 
     private val _state = MutableStateFlow(
-        offering.toLegacyPaywallState(
-            variableDataProvider = VariableDataProvider(resourceProvider),
-            activelySubscribedProductIdentifiers = setOf(),
-            nonSubscriptionProductIdentifiers = setOf(),
-            mode = mode,
-            validatedPaywallData = offering.paywall!!,
-            template = PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
-            shouldDisplayDismissButton = false,
-            storefrontCountryCode = "US",
-        ),
+        when (val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, resourceProvider)) {
+            is PaywallValidationResult.Legacy -> offering.toLegacyPaywallState(
+                variableDataProvider = VariableDataProvider(resourceProvider),
+                activelySubscribedProductIdentifiers = setOf(),
+                nonSubscriptionProductIdentifiers = setOf(),
+                mode = mode,
+                validatedPaywallData = validated.displayablePaywall,
+                template = validated.template,
+                shouldDisplayDismissButton = false,
+                storefrontCountryCode = "US",
+            )
+            is PaywallValidationResult.Components -> offering.toComponentsPaywallState(validated)
+        },
     )
 
     private val _actionInProgress = mutableStateOf(false)
