@@ -13,6 +13,8 @@ internal class NonEmptyMap<K, out V> private constructor(
 
     constructor(entry: Pair<K, V>, tail: Map<K, V>) : this(entry = mapOf(entry).entries.first(), all = tail + entry)
 
+    override val keys: NonEmptySet<K> = NonEmptySet(entry.key, all.keys)
+
     @JvmSynthetic
     fun toMap(): Map<K, V> = all
 
