@@ -9,18 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -28,31 +23,24 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 
-@OptIn(ExperimentalMaterial3Api::class)
 @JvmSynthetic
 @Composable
 internal fun FeedbackSurveyView(
     data: FeedbackSurveyData,
-    modifier: Modifier = Modifier,
 ) {
     var loadingOption by remember { mutableStateOf<String?>(null) }
     val feedbackSurvey = data.feedbackSurvey
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
-    Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            FeedbackSurveyButtonsView(
-                options = feedbackSurvey.options,
-                onOptionSelect = { option ->
-                    loadingOption = option.id
-                    data.onOptionSelected(option)
-                    loadingOption = null
-                },
-                loadingOption = loadingOption,
-            )
-        }
+    Box {
+        FeedbackSurveyButtonsView(
+            options = feedbackSurvey.options,
+            onOptionSelect = { option ->
+                loadingOption = option.id
+                data.onOptionSelected(option)
+                loadingOption = null
+            },
+            loadingOption = loadingOption,
+        )
     }
 }
 
