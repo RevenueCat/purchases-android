@@ -21,6 +21,8 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -406,7 +408,11 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
                 stickyFooter = null,
             ),
         ),
-        componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
+        componentsLocalizations = nonEmptyMapOf(
+            LocaleId("en_US") to nonEmptyMapOf(
+                LocalizationKey("text") to LocalizationData.Text("text"),
+            ),
+        ),
         defaultLocaleIdentifier = LocaleId("en_US"),
     )
     val offering = Offering(
