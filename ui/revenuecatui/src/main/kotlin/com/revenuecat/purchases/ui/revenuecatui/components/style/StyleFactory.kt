@@ -115,7 +115,17 @@ internal class StyleFactory(
         second = component.components
             .map { create(it, actionHandler) }
             .mapOrAccumulate { it },
-    ) { presentedOverrides, children ->
+        third = component.badge?.let { badge ->
+            createStackComponentStyle(badge.stack, actionHandler)
+                .map {
+                    BadgeStyle(
+                        stackStyle = it,
+                        style = badge.style,
+                        alignment = badge.alignment,
+                    )
+                }
+        }.orSuccessfullyNull(),
+    ) { presentedOverrides, children, badge ->
         StackComponentStyle(
             children = children,
             dimension = component.dimension,
@@ -127,7 +137,7 @@ internal class StyleFactory(
             shape = component.shape?.toShape() ?: DEFAULT_SHAPE,
             border = component.border,
             shadow = component.shadow,
-            badge = null,
+            badge = badge,
             overrides = presentedOverrides,
         )
     }
