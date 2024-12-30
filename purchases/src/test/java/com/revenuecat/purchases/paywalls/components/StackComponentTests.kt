@@ -14,6 +14,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import org.intellij.lang.annotations.Language
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
@@ -187,6 +188,44 @@ internal class StackComponentTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "empty margin and padding",
+                    Args(
+                        json = """
+                        {
+                          "components": [
+                            {
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "primary"
+                                }
+                              },
+                              "components": [],
+                              "id": "xmpgCrN9Rb",
+                              "name": "Text",
+                              "text_lid": "7bkohQjzIE",
+                              "type": "text"
+                            }
+                          ],
+                          "margin": {},
+                          "name": "Stack",
+                          "padding": {},
+                          "type": "stack"
+                        }
+                        """.trimIndent(),
+                        expected = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("7bkohQjzIE"),
+                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                )
+                            ),
+                            margin = Padding.zero,
+                            padding = Padding.zero,
+                        )
+                    ),
+                ),
             )
         }
 
@@ -196,7 +235,7 @@ internal class StackComponentTests {
             val actual = OfferingParser.json.decodeFromString<StackComponent>(args.json)
 
             // Assert
-            assert(actual == args.expected)
+            assertEquals(args.expected, actual)
         }
 
         @Test
@@ -205,7 +244,7 @@ internal class StackComponentTests {
             val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
-            assert(actual == args.expected)
+            assertEquals(args.expected, actual)
         }
     }
 
@@ -326,6 +365,21 @@ internal class StackComponentTests {
                         expected = PartialStackComponent()
                     )
                 ),
+                arrayOf(
+                    "empty padding and margin",
+                    Args(
+                        json = """
+                        {
+                          "padding": {},
+                          "margin": {}
+                        }
+                        """.trimIndent(),
+                        expected = PartialStackComponent(
+                            padding = Padding.zero,
+                            margin = Padding.zero,
+                        )
+                    )
+                ),
             )
         }
 
@@ -335,7 +389,7 @@ internal class StackComponentTests {
             val actual = OfferingParser.json.decodeFromString<PartialStackComponent>(args.json)
 
             // Assert
-            assert(actual == args.expected)
+            assertEquals(args.expected, actual)
         }
     }
 }
