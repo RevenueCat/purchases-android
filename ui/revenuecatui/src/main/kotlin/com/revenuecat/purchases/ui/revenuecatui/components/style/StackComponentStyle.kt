@@ -9,12 +9,12 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 
 @Suppress("LongParameterList")
 @Immutable
 internal class StackComponentStyle(
-    @get:JvmSynthetic
-    val visible: Boolean,
     @get:JvmSynthetic
     val children: List<ComponentStyle>,
     @get:JvmSynthetic
@@ -37,4 +37,6 @@ internal class StackComponentStyle(
     val shadow: Shadow?,
     @get:JvmSynthetic
     val badge: BadgeStyle?,
+    @get:JvmSynthetic
+    val overrides: PresentedOverrides<PresentedStackPartial>?,
 ) : ComponentStyle

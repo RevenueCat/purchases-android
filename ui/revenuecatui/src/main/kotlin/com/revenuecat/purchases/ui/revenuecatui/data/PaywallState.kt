@@ -8,15 +8,18 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import android.os.LocaleList as FrameworkLocaleList
 
@@ -57,18 +60,24 @@ internal sealed interface PaywallState {
             }
         }
 
+        @Suppress("LongParameterList")
         @Stable
         class Components(
+            val stack: ComponentStyle,
+            val stickyFooter: ComponentStyle?,
+            val background: Background,
             override val offering: Offering,
-            val data: PaywallComponentsData,
+            /**
+             * All locales that this paywall supports, with `locales.head` being the default one.
+             */
+            private val locales: NonEmptySet<LocaleId>,
             initialLocaleList: LocaleList = LocaleList.current,
             initialIsEligibleForIntroOffer: Boolean = false,
             initialSelectedPackage: Package? = null,
         ) : Loaded {
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
-            val localizationDictionary by derivedStateOf { data.componentsLocalizations.getValue(localeId) }
-            val locale by derivedStateOf { localeId.toLocale() }
+            val locale by derivedStateOf { localeId.toComposeLocale() }
 
             var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
                 private set
@@ -90,15 +99,9 @@ internal sealed interface PaywallState {
 
             private fun LocaleList.toLocaleId(): LocaleId =
                 // Configured locales take precedence over the default one.
-                map { it.toLocaleId() }.plus(data.defaultLocaleIdentifier)
+                map { it.toLocaleId() }.plus(locales.head)
                     // Find the first locale we have a LocalizationDictionary for.
-                    .first { id -> data.componentsLocalizations.containsKey(id) }
-
-            private fun LocaleId.toLocale(): Locale =
-                Locale(value.replace('_', '-'))
-
-            private fun Locale.toLocaleId(): LocaleId =
-                LocaleId(toLanguageTag().replace('-', '_'))
+                    .first { id -> locales.contains(id) }
 
             private fun List<Package>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()
