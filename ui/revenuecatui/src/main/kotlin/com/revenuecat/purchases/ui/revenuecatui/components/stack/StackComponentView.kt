@@ -69,6 +69,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
 import java.net.URL
 
 @Suppress("LongMethod")
@@ -77,12 +81,20 @@ internal fun StackComponentView(
     style: StackComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
-    if (style.visible) {
+    // Get a StackComponentState that calculates the overridden properties we should use.
+    val stackState = rememberUpdatedStackComponentState(
+        style = style,
+        paywallState = state,
+        selected = selected,
+    )
+
+    if (stackState.visible) {
         if (style.badge != null) {
             when (style.badge.style) {
                 Badge.Style.Overlay -> {
-                    StackWithOverlaidBadge(style, state, style.badge.stackStyle, style.badge.alignment, modifier)
+                    StackWithOverlaidBadge(stackState, state, style.badge.stackStyle, style.badge.alignment, modifier)
                 }
 
                 Badge.Style.EdgeToEdge -> {
@@ -92,14 +104,14 @@ internal fun StackComponentView(
                 }
             }
         } else {
-            MainStackComponent(style, state, modifier)
+            MainStackComponent(stackState, state, modifier)
         }
     }
 }
 
 @Composable
 private fun StackWithOverlaidBadge(
-    style: StackComponentStyle,
+    stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
@@ -122,7 +134,7 @@ private fun StackWithOverlaidBadge(
     }
     Box(modifier = modifier) {
         // TODO Fix margins when using badges
-        MainStackComponent(style, state, modifier = Modifier.padding(padding))
+        MainStackComponent(stackState, state, modifier = Modifier.padding(padding))
         StackComponentView(
             badgeStack,
             state,
@@ -137,63 +149,63 @@ private fun StackWithOverlaidBadge(
 
 @Composable
 private fun MainStackComponent(
-    style: StackComponentStyle,
+    stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) {
-    val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
-    val borderStyle = style.border?.let { rememberBorderStyle(border = it) }
-    val shadowStyle = style.shadow?.let { rememberShadowStyle(shadow = it) }
+    val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
 
-    // Modifier irrespective of dimension.
-    val commonModifier = remember(style) {
-        Modifier
-            .padding(style.margin)
-            .applyIfNotNull(shadowStyle) { shadow(it, style.shape) }
-            .applyIfNotNull(backgroundColorStyle) { background(it, style.shape) }
-            .clip(style.shape)
-            .applyIfNotNull(borderStyle) { border(it, style.shape) }
-            .padding(style.padding)
+        // Modifier irrespective of dimension.
+        val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
+            Modifier
+                .padding(stackState.margin)
+                .applyIfNotNull(shadowStyle) { shadow(it, stackState.shape) }
+                .applyIfNotNull(backgroundColorStyle) { background(it, stackState.shape) }
+                .clip(stackState.shape)
+                .applyIfNotNull(borderStyle) { border(it, stackState.shape) }
+                .padding(stackState.padding)
+        }
+
+        val content: @Composable () -> Unit = remember(stackState.children) {
+            @Composable { stackState.children.forEach { child -> ComponentView(style = child, state = state) } }
+        }
+
+        // Show the right container composable depending on the dimension.
+        when (val dimension = stackState.dimension) {
+            is Dimension.Horizontal -> Row(
+                modifier = modifier
+                    .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                    .then(commonModifier),
+                verticalAlignment = dimension.alignment.toAlignment(),
+                horizontalArrangement = dimension.distribution.toHorizontalArrangement(
+                    spacing = stackState.spacing,
+                ),
+            ) { content() }
+
+            is Dimension.Vertical -> Column(
+                modifier = modifier
+                    .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                    .then(commonModifier),
+                verticalArrangement = dimension.distribution.toVerticalArrangement(
+                    spacing = stackState.spacing,
+                ),
+                horizontalAlignment = dimension.alignment.toAlignment(),
+            ) { content() }
+
+            is Dimension.ZLayer -> Box(
+                modifier = modifier
+                    .size(
+                        size = stackState.size,
+                        horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                        verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                    )
+                    .then(commonModifier),
+                contentAlignment = dimension.alignment.toAlignment(),
+            ) { content() }
+        }
     }
-
-    val content: @Composable () -> Unit = remember(style.children) {
-        @Composable { style.children.forEach { child -> ComponentView(style = child, state = state) } }
-    }
-
-    // Show the right container composable depending on the dimension.
-    when (style.dimension) {
-        is Dimension.Horizontal -> Row(
-            modifier = modifier
-                .size(style.size, verticalAlignment = style.dimension.alignment.toAlignment())
-                .then(commonModifier),
-            verticalAlignment = style.dimension.alignment.toAlignment(),
-            horizontalArrangement = style.dimension.distribution.toHorizontalArrangement(
-                spacing = style.spacing,
-            ),
-        ) { content() }
-
-        is Dimension.Vertical -> Column(
-            modifier = modifier
-                .size(style.size, horizontalAlignment = style.dimension.alignment.toAlignment())
-                .then(commonModifier),
-            verticalArrangement = style.dimension.distribution.toVerticalArrangement(
-                spacing = style.spacing,
-            ),
-            horizontalAlignment = style.dimension.alignment.toAlignment(),
-        ) { content() }
-
-        is Dimension.ZLayer -> Box(
-            modifier = modifier
-                .size(
-                    size = style.size,
-                    horizontalAlignment = style.dimension.alignment.toHorizontalAlignmentOrNull(),
-                    verticalAlignment = style.dimension.alignment.toVerticalAlignmentOrNull(),
-                )
-                .then(commonModifier),
-            contentAlignment = style.dimension.alignment.toAlignment(),
-        ) { content() }
-    }
-}
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
@@ -204,7 +216,6 @@ private fun StackComponentView_Preview_Vertical() {
     ) {
         StackComponentView(
             style = StackComponentStyle(
-                visible = true,
                 children = previewChildren(),
                 dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
                 size = Size(width = Fit, height = Fit),
@@ -224,6 +235,7 @@ private fun StackComponentView_Preview_Vertical() {
                     y = 3.0,
                 ),
                 badge = null,
+                overrides = null,
             ),
             state = previewEmptyState(),
         )
@@ -251,7 +263,6 @@ private fun StackComponentView_Preview_Badge(
     ) {
         StackComponentView(
             style = StackComponentStyle(
-                visible = true,
                 children = previewChildren(),
                 dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
                 size = Size(width = SizeConstraint.Fixed(200u), height = Fit),
@@ -265,6 +276,7 @@ private fun StackComponentView_Preview_Badge(
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(alignment),
+                overrides = null,
             ),
             state = previewEmptyState(),
         )
@@ -280,7 +292,6 @@ private fun StackComponentView_Preview_Horizontal() {
     ) {
         StackComponentView(
             style = StackComponentStyle(
-                visible = true,
                 children = previewChildren(),
                 dimension = Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = START),
                 size = Size(width = Fit, height = Fit),
@@ -300,6 +311,7 @@ private fun StackComponentView_Preview_Horizontal() {
                     y = 5.0,
                 ),
                 badge = null,
+                overrides = null,
             ),
             state = previewEmptyState(),
         )
@@ -316,11 +328,9 @@ private fun StackComponentView_Preview_ZLayer() {
     ) {
         StackComponentView(
             style = StackComponentStyle(
-                visible = true,
                 children = listOf(
                     TextComponentStyle(
-                        visible = true,
-                        text = "Hello",
+                        texts = nonEmptyMapOf(LocaleId("en_US") to "Hello"),
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
@@ -339,8 +349,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         overrides = null,
                     ),
                     TextComponentStyle(
-                        visible = true,
-                        text = "World",
+                        texts = nonEmptyMapOf(LocaleId("en_US") to "World"),
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
@@ -376,6 +385,7 @@ private fun StackComponentView_Preview_ZLayer() {
                     y = 5.0,
                 ),
                 badge = null,
+                overrides = null,
             ),
             state = previewEmptyState(),
         )
@@ -385,8 +395,7 @@ private fun StackComponentView_Preview_ZLayer() {
 @Composable
 private fun previewChildren() = listOf(
     TextComponentStyle(
-        visible = true,
-        text = "Hello",
+        texts = nonEmptyMapOf(LocaleId("en_US") to "Hello"),
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),
@@ -404,8 +413,7 @@ private fun previewChildren() = listOf(
         overrides = null,
     ),
     TextComponentStyle(
-        visible = true,
-        text = "World",
+        texts = nonEmptyMapOf(LocaleId("en_US") to "World"),
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),
@@ -447,17 +455,15 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
 
-    return PaywallState.Loaded.Components(offering, data)
+    return offering.toComponentsPaywallState(data.validate().getOrThrow())
 }
 
 private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
     return BadgeStyle(
         stackStyle = StackComponentStyle(
-            visible = true,
             children = listOf(
                 TextComponentStyle(
-                    visible = true,
-                    text = "Badge",
+                    texts = nonEmptyMapOf(LocaleId("en_US") to "Badge"),
                     color = ColorScheme(
                         light = ColorInfo.Hex(Color.Black.toArgb()),
                     ),
@@ -495,6 +501,7 @@ private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
             border = null,
             shadow = null,
             badge = null,
+            overrides = null,
         ),
         style = Badge.Style.Overlay,
         alignment = alignment,

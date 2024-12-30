@@ -26,9 +26,6 @@ value class LocaleId(@get:JvmSynthetic val value: String)
 @JvmInline
 value class LocalizationKey(@get:JvmSynthetic val value: String)
 
-@InternalRevenueCatAPI
-typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
-
 /**
  * A make-shift union type. LocalizationData is either a plain String or a ThemeImageUrls object.
  */

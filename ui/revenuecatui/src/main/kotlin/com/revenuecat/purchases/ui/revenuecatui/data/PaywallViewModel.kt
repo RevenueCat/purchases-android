@@ -31,7 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedLegacyPaywall
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -374,13 +374,12 @@ internal class PaywallViewModelImpl(
             return PaywallState.Error("No packages available")
         }
 
-        val validationResult = offering.paywallComponents
-            // TODO Actually validate the PaywallComponentsData
-            ?.let { PaywallValidationResult.Components(displayablePaywall = it) }
-            ?: offering.validatedLegacyPaywall(colorScheme, resourceProvider)
+        val validationResult = offering.validatedPaywall(colorScheme, resourceProvider)
 
-        validationResult.error?.let { validationError ->
-            Logger.w(validationError.associatedErrorString(offering))
+        validationResult.errors?.let { validationErrors ->
+            validationErrors.forEach { error ->
+                Logger.w(error.associatedErrorString(offering))
+            }
             Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
 
@@ -398,7 +397,7 @@ internal class PaywallViewModelImpl(
                 storefrontCountryCode = storefrontCountryCode,
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
-                validatedPaywallData = validationResult.displayablePaywall,
+                validationResult = validationResult,
             )
         }
     }

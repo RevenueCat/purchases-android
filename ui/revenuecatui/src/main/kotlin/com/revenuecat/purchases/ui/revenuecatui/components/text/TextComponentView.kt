@@ -50,7 +50,11 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
 import java.net.URL
 
 @Composable
@@ -363,7 +367,6 @@ private fun TextComponentView_Preview_RadialGradient() {
 private fun previewTextComponentStyle(
     text: String,
     color: ColorScheme,
-    visible: Boolean = true,
     fontSize: FontSize = FontSize.BODY_M,
     fontWeight: FontWeight = FontWeight.REGULAR,
     fontFamily: String? = null,
@@ -376,8 +379,7 @@ private fun previewTextComponentStyle(
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
     return TextComponentStyle(
-        visible = visible,
-        text = text,
+        texts = nonEmptyMapOf(LocaleId("en_US") to text),
         color = color,
         fontSize = fontSize,
         fontWeight = weight,
@@ -415,5 +417,5 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
 
-    return PaywallState.Loaded.Components(offering, data)
+    return offering.toComponentsPaywallState(data.validate().getOrThrow())
 }

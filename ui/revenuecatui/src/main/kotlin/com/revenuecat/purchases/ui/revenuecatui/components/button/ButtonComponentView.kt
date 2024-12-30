@@ -45,6 +45,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
 import kotlinx.coroutines.launch
 import java.net.URL
 
@@ -78,11 +82,9 @@ private fun ButtonComponentView_Preview_Default() {
 @Composable
 private fun previewButtonComponentStyle(
     stackComponentStyle: StackComponentStyle = StackComponentStyle(
-        visible = true,
         children = listOf(
             TextComponentStyle(
-                visible = true,
-                text = "Restore purchases",
+                texts = nonEmptyMapOf(LocaleId("en_US") to "Restore purchases"),
                 color = ColorScheme(
                     light = ColorInfo.Hex(Color.Black.toArgb()),
                 ),
@@ -115,6 +117,7 @@ private fun previewButtonComponentStyle(
             y = 3.0,
         ),
         badge = null,
+        overrides = null,
     ),
     action: PaywallAction = PaywallAction.RestorePurchases,
     actionHandler: (PaywallAction) -> Unit = {},
@@ -149,5 +152,5 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
 
-    return PaywallState.Loaded.Components(offering, data)
+    return offering.toComponentsPaywallState(data.validate().getOrThrow())
 }

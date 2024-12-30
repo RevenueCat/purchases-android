@@ -116,6 +116,7 @@ internal object CustomerCenterConfigTestData {
         expirationDateString = "June 1st, 2024",
         willRenew = true,
         active = true,
+        productId = "monthly_product_id",
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -125,5 +126,6 @@ internal object CustomerCenterConfigTestData {
         expirationDateString = "June 1st, 2025",
         willRenew = false,
         active = true,
+        productId = "yearly_product_id",
     )
 }

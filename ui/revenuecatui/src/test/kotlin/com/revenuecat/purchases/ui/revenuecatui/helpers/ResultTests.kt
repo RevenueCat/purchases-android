@@ -83,5 +83,127 @@ class ResultTests {
         assertThat(actual).isInstanceOf(Result.Success::class.java)
         assertThat(actual.getOrNull()).isEmpty()
     }
+
+    @Test
+    fun `mapValuesOrAccumulate on Map should transform a map of successful results`() {
+        // Arrange
+        val map: Map<String, Result<Int, NonEmptyList<Int>>> = mapOf(
+            "first" to Result.Success(1),
+            "second" to Result.Success(2),
+            "third" to Result.Success(3)
+        )
+
+        // Act
+        val actual = map.mapValuesOrAccumulate { it * 2 }
+
+        // Assert
+        assertThat(actual).isInstanceOf(Result.Success::class.java)
+        val successValue = actual.getOrNull()
+        assertThat(successValue?.toMap()).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+                "first" to 2,
+                "second" to 4,
+                "third" to 6
+            )
+        )
+    }
+
+    @Test
+    fun `mapValuesOrAccumulate on Map should accumulate errors from multiple results`() {
+        // Arrange
+        val map: Map<String, Result<Int, NonEmptyList<String>>> = mapOf(
+            "first" to Result.Success(1),
+            "second" to Result.Error(nonEmptyListOf("error1")),
+            "third" to Result.Error(nonEmptyListOf("error2"))
+        )
+
+        // Act
+        val actual = map.mapValuesOrAccumulate { it * 2 }
+
+        // Assert
+        assertThat(actual).isInstanceOf(Result.Error::class.java)
+        assertThat(actual.errorOrNull()?.toList()).containsExactly("error1", "error2")
+    }
+
+    @Test
+    fun `mapValuesOrAccumulate on Map should work with single entry map`() {
+        // Arrange
+        val map = mapOf(
+            "single" to Result.Success(1)
+        ) as Map<String, Result<Int, NonEmptyList<String>>>
+
+        // Act
+        val actual = map.mapValuesOrAccumulate { it * 2 }
+
+        // Assert
+        assertThat(actual).isInstanceOf(Result.Success::class.java)
+        val successValue = actual.getOrNull()
+        assertThat(successValue?.toMap()).containsExactlyInAnyOrderEntriesOf(
+            mapOf("single" to 2)
+        )
+    }
+
+    @Test
+    fun `mapValuesOrAccumulate on NonEmptyMap should transform a map of successful results`() {
+        // Arrange
+        val map: NonEmptyMap<String, Result<Int, NonEmptyList<Int>>> = nonEmptyMapOf(
+            "first" to Result.Success(1),
+            mapOf(
+                "second" to Result.Success(2),
+                "third" to Result.Success(3)
+            )
+        )
+
+        // Act
+        val actual = map.mapValuesOrAccumulate { it * 2 }
+
+        // Assert
+        assertThat(actual).isInstanceOf(Result.Success::class.java)
+        val successValue = actual.getOrNull()
+        assertThat(successValue?.toMap()).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+                "first" to 2,
+                "second" to 4,
+                "third" to 6
+            )
+        )
+    }
+
+    @Test
+    fun `mapValuesOrAccumulate on NonEmptyMap should accumulate errors from multiple results`() {
+        // Arrange
+        val map: NonEmptyMap<String, Result<Int, NonEmptyList<String>>> = nonEmptyMapOf(
+            "first" to Result.Success(1),
+            mapOf(
+                "second" to Result.Error(nonEmptyListOf("error1")),
+                "third" to Result.Error(nonEmptyListOf("error2"))
+            )
+        )
+
+        // Act
+        val actual = map.mapValuesOrAccumulate { it * 2 }
+
+        // Assert
+        assertThat(actual).isInstanceOf(Result.Error::class.java)
+        assertThat(actual.errorOrNull()?.toList()).containsExactly("error1", "error2")
+    }
+
+    @Test
+    fun `mapValuesOrAccumulate on NonEmptyMap should work with single entry map`() {
+        // Arrange
+        val map = nonEmptyMapOf(
+            "single" to Result.Success(1)
+        ) as NonEmptyMap<String, Result<Int, NonEmptyList<String>>>
+
+        // Act
+        val actual = map.mapValuesOrAccumulate { it * 2 }
+
+        // Assert
+        assertThat(actual).isInstanceOf(Result.Success::class.java)
+        val successValue = actual.getOrNull()
+        assertThat(successValue?.toMap()).containsExactlyInAnyOrderEntriesOf(
+            mapOf("single" to 2)
+        )
+    }
     
 }

@@ -1,6 +1,6 @@
 @file:JvmSynthetic
 
-package com.revenuecat.purchases.ui.revenuecatui.components.text
+package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
@@ -10,51 +10,44 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
-import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 @JvmSynthetic
 @Composable
-internal fun rememberUpdatedTextComponentState(
-    style: TextComponentStyle,
+internal fun rememberUpdatedStackComponentState(
+    style: StackComponentStyle,
     paywallState: PaywallState.Loaded.Components,
     selected: Boolean,
-): TextComponentState =
-    rememberUpdatedTextComponentState(
+): StackComponentState =
+    rememberUpdatedStackComponentState(
         style = style,
-        localeProvider = { paywallState.locale },
         isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
         selected = selected,
     )
 
 @JvmSynthetic
 @Composable
-internal fun rememberUpdatedTextComponentState(
-    style: TextComponentStyle,
-    localeProvider: () -> Locale,
+internal fun rememberUpdatedStackComponentState(
+    style: StackComponentStyle,
     isEligibleForIntroOffer: Boolean = false,
     selected: Boolean = false,
-): TextComponentState {
+): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
     return remember(style) {
-        TextComponentState(
+        StackComponentState(
             initialWindowSize = windowSize,
             initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
             initialSelected = selected,
             style = style,
-            localeProvider = localeProvider,
         )
     }.apply {
         update(
@@ -66,12 +59,11 @@ internal fun rememberUpdatedTextComponentState(
 }
 
 @Stable
-internal class TextComponentState(
+internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialIsEligibleForIntroOffer: Boolean,
     initialSelected: Boolean,
-    private val style: TextComponentStyle,
-    private val localeProvider: () -> Locale,
+    private val style: StackComponentStyle,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
@@ -87,48 +79,34 @@ internal class TextComponentState(
     val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
 
     @get:JvmSynthetic
-    val text by derivedStateOf {
-        val localeId = localeProvider().toLocaleId()
-
-        presentedPartial?.texts?.run { getOrDefault(localeId, entry.value) }
-            ?: style.texts.run { getOrDefault(localeId, entry.value) }
-    }
+    val children = style.children
 
     @get:JvmSynthetic
-    val color by derivedStateOf { presentedPartial?.partial?.color ?: style.color }
-
-    @get:JvmSynthetic
-    val fontSize by derivedStateOf { presentedPartial?.partial?.fontSize ?: style.fontSize }
-
-    @get:JvmSynthetic
-    val fontWeight by derivedStateOf { presentedPartial?.partial?.fontWeight?.toFontWeight() ?: style.fontWeight }
-
-    @get:JvmSynthetic
-    val fontFamily by derivedStateOf {
-        presentedPartial?.partial?.fontName?.let { SystemFontFamily(it, fontWeight) } ?: style.fontFamily
-    }
-
-    @get:JvmSynthetic
-    val textAlign by derivedStateOf {
-        presentedPartial?.partial?.horizontalAlignment?.toTextAlign() ?: style.textAlign
-    }
-
-    @get:JvmSynthetic
-    val horizontalAlignment by derivedStateOf {
-        presentedPartial?.partial?.horizontalAlignment?.toAlignment() ?: style.horizontalAlignment
-    }
-
-    @get:JvmSynthetic
-    val backgroundColor by derivedStateOf { presentedPartial?.partial?.backgroundColor ?: style.backgroundColor }
+    val dimension by derivedStateOf { presentedPartial?.partial?.dimension ?: style.dimension }
 
     @get:JvmSynthetic
     val size by derivedStateOf { presentedPartial?.partial?.size ?: style.size }
+
+    @get:JvmSynthetic
+    val spacing by derivedStateOf { presentedPartial?.partial?.spacing?.dp ?: style.spacing }
+
+    @get:JvmSynthetic
+    val backgroundColor by derivedStateOf { presentedPartial?.partial?.backgroundColor ?: style.backgroundColor }
 
     @get:JvmSynthetic
     val padding by derivedStateOf { presentedPartial?.partial?.padding?.toPaddingValues() ?: style.padding }
 
     @get:JvmSynthetic
     val margin by derivedStateOf { presentedPartial?.partial?.margin?.toPaddingValues() ?: style.margin }
+
+    @get:JvmSynthetic
+    val shape by derivedStateOf { presentedPartial?.partial?.shape?.toShape() ?: style.shape }
+
+    @get:JvmSynthetic
+    val border by derivedStateOf { presentedPartial?.partial?.border ?: style.border }
+
+    @get:JvmSynthetic
+    val shadow by derivedStateOf { presentedPartial?.partial?.shadow ?: style.shadow }
 
     @JvmSynthetic
     fun update(
