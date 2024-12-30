@@ -33,15 +33,6 @@ internal interface CustomerCenterViewModel {
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
-    fun openAppStore(context: Context)
-    fun showManageSubscriptions(context: Context, productId: String)
-    fun displayFeedbackSurvey(
-        feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-        onAnswerSubmitted: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
-    )
-
-    fun dismissFeedbackSurvey()
-    fun goBackToMain()
     fun onNavigationButtonPressed(onDismiss: () -> Unit)
     suspend fun loadCustomerCenter()
 }
@@ -67,6 +58,22 @@ internal class CustomerCenterViewModelImpl(
         )
 
     override suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath) {
+        path.feedbackSurvey?.let { feedbackSurvey ->
+            displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
+                goBackToMain()
+                option?.let {
+                    mainPathAction(path, context)
+                }
+            })
+            return
+        }
+        mainPathAction(path, context)
+    }
+
+    private fun mainPathAction(
+        path: CustomerCenterConfigData.HelpPath,
+        context: Context,
+    ) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
                 _state.update { currentState ->
@@ -185,64 +192,6 @@ internal class CustomerCenterViewModelImpl(
         context.startActivity(Intent.createChooser(intent, "Contact Support"))
     }
 
-    override fun openAppStore(context: Context) {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("market://details?id=${context.packageName}")
-        }
-        context.startActivity(intent)
-    }
-
-    override fun showManageSubscriptions(context: Context, productId: String) {
-        try {
-            val packageName = context.packageName
-            val uri = "https://play.google.com/store/account/subscriptions?sku=$productId&package=$packageName"
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
-        } catch (e: ActivityNotFoundException) {
-            Logger.e("Error opening manage subscriptions", e)
-        }
-    }
-
-    override fun displayFeedbackSurvey(
-        feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-        onAnswerSubmitted: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
-    ) {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onAnswerSubmitted),
-                    title = feedbackSurvey.title,
-                    buttonType = CustomerCenterState.ButtonType.BACK,
-                )
-            } else {
-                currentState
-            }
-        }
-    }
-
-    override fun goBackToMain() {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(feedbackSurveyData = null, showRestoreDialog = false)
-            } else {
-                currentState
-            }
-        }
-    }
-
-    override fun dismissFeedbackSurvey() {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    feedbackSurveyData = null,
-                    title = null,
-                    buttonType = CustomerCenterState.ButtonType.CLOSE,
-                )
-            } else {
-                currentState
-            }
-        }
-    }
-
     override fun onNavigationButtonPressed(onDismiss: () -> Unit) {
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success &&
@@ -270,6 +219,48 @@ internal class CustomerCenterViewModelImpl(
             _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
         } catch (e: PurchasesException) {
             _state.value = CustomerCenterState.Error(e.error)
+        }
+    }
+
+    private fun displayFeedbackSurvey(
+        feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
+        onAnswerSubmitted: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+    ) {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onAnswerSubmitted),
+                    title = feedbackSurvey.title,
+                    buttonType = CustomerCenterState.ButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    private fun goBackToMain() {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    feedbackSurveyData = null,
+                    showRestoreDialog = false,
+                    title = null,
+                    buttonType = CustomerCenterState.ButtonType.CLOSE,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    private fun showManageSubscriptions(context: Context, productId: String) {
+        try {
+            val packageName = context.packageName
+            val uri = "https://play.google.com/store/account/subscriptions?sku=$productId&package=$packageName"
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+        } catch (e: ActivityNotFoundException) {
+            Logger.e("Error opening manage subscriptions", e)
         }
     }
 }
