@@ -42,8 +42,7 @@ internal interface CustomerCenterViewModel {
 
     fun dismissFeedbackSurvey()
     fun goBackToMain()
-    fun onNavigationButtonPressed()
-    fun resetState()
+    fun onNavigationButtonPressed(onDismiss: () -> Unit)
     suspend fun loadCustomerCenter()
 }
 
@@ -64,7 +63,7 @@ internal class CustomerCenterViewModelImpl(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
-            initialValue = CustomerCenterState.Loading(dismissCustomerCenter = false),
+            initialValue = CustomerCenterState.Loading,
         )
 
     override suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath) {
@@ -244,46 +243,26 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun onNavigationButtonPressed() {
+    override fun onNavigationButtonPressed(onDismiss: () -> Unit) {
         _state.update { currentState ->
-            when (currentState) {
-                is CustomerCenterState.NotLoaded -> {
-                    currentState
-                }
-
-                is CustomerCenterState.Success -> {
-                    when (currentState.buttonType) {
-                        CustomerCenterState.ButtonType.BACK -> currentState.copy(
-                            feedbackSurveyData = null,
-                            showRestoreDialog = false,
-                            dismissCustomerCenter = false,
-                            buttonType = CustomerCenterState.ButtonType.CLOSE,
-                        )
-
-                        CustomerCenterState.ButtonType.CLOSE -> currentState.copy(
-                            dismissCustomerCenter = true,
-                        )
-                    }
-                }
-
-                is CustomerCenterState.Error -> currentState.copy(
-                    dismissCustomerCenter = true,
+            if (currentState is CustomerCenterState.Success &&
+                currentState.buttonType == CustomerCenterState.ButtonType.BACK
+            ) {
+                currentState.copy(
+                    feedbackSurveyData = null,
+                    showRestoreDialog = false,
+                    buttonType = CustomerCenterState.ButtonType.CLOSE,
                 )
-
-                is CustomerCenterState.Loading -> currentState.copy(
-                    dismissCustomerCenter = false,
-                )
+            } else {
+                onDismiss()
+                CustomerCenterState.NotLoaded
             }
         }
     }
 
-    override fun resetState() {
-        _state.value = CustomerCenterState.NotLoaded
-    }
-
     override suspend fun loadCustomerCenter() {
         if (_state.value !is CustomerCenterState.Loading) {
-            _state.value = CustomerCenterState.Loading(dismissCustomerCenter = false)
+            _state.value = CustomerCenterState.Loading
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()

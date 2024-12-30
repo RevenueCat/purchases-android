@@ -65,14 +65,8 @@ internal fun InternalCustomerCenter(
         }
     }
 
-    if (state.dismissCustomerCenter) {
-        onDismiss()
-        viewModel.resetState()
-        return
-    }
-
     BackHandler {
-        viewModel.onNavigationButtonPressed()
+        viewModel.onNavigationButtonPressed(onDismiss)
     }
 
     InternalCustomerCenter(
@@ -99,7 +93,7 @@ internal fun InternalCustomerCenter(
                     action.onOptionSelected,
                 )
                 is CustomerCenterAction.DismissFeedbackSurvey -> viewModel.dismissFeedbackSurvey()
-                is CustomerCenterAction.NavigationButtonPressed -> viewModel.onNavigationButtonPressed()
+                is CustomerCenterAction.NavigationButtonPressed -> viewModel.onNavigationButtonPressed(onDismiss)
             }
         },
     )
@@ -312,7 +306,7 @@ private val previewConfigData = CustomerCenterConfigData(
 @Composable
 internal fun CustomerCenterLoadingPreview() {
     InternalCustomerCenter(
-        state = CustomerCenterState.Loading(),
+        state = CustomerCenterState.Loading,
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
