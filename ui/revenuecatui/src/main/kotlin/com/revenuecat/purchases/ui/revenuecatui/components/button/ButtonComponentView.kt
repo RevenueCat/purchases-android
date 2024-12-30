@@ -21,6 +21,8 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Border
@@ -45,7 +47,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
 import kotlinx.coroutines.launch
 import java.net.URL
 
@@ -137,7 +142,11 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
                 stickyFooter = null,
             ),
         ),
-        componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
+        componentsLocalizations = nonEmptyMapOf(
+            LocaleId("en_US") to nonEmptyMapOf(
+                LocalizationKey("text") to LocalizationData.Text("text"),
+            ),
+        ),
         defaultLocaleIdentifier = LocaleId("en_US"),
     )
     val offering = Offering(
@@ -148,5 +157,5 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
 
-    return PaywallState.Loaded.Components(offering, data)
+    return offering.toComponentsPaywallState(data.validate().getOrThrow())
 }

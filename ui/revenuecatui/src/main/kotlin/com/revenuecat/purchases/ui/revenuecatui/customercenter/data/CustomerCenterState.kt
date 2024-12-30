@@ -5,23 +5,18 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 
-internal sealed class CustomerCenterState(
-    open val dismissCustomerCenter: Boolean = false,
-) {
+internal sealed class CustomerCenterState {
     enum class ButtonType {
         BACK, CLOSE
     }
 
     object NotLoaded : CustomerCenterState()
 
-    data class Loading(
-        override val dismissCustomerCenter: Boolean = false,
-    ) : CustomerCenterState(dismissCustomerCenter)
+    object Loading : CustomerCenterState()
 
     data class Error(
         val error: PurchasesError,
-        override val dismissCustomerCenter: Boolean = false,
-    ) : CustomerCenterState(dismissCustomerCenter)
+    ) : CustomerCenterState()
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     data class Success(
@@ -33,8 +28,7 @@ internal sealed class CustomerCenterState(
         val promotionalOfferData: PromotionalOfferData? = null,
         val title: String? = null,
         val buttonType: ButtonType = ButtonType.CLOSE,
-        override val dismissCustomerCenter: Boolean = false,
-    ) : CustomerCenterState(dismissCustomerCenter)
+    ) : CustomerCenterState()
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

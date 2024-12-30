@@ -54,7 +54,7 @@ internal interface CustomerCenterViewModel {
     fun dismissPromotionalOffer()
     fun dismissFeedbackSurvey()
     fun goBackToMain()
-    fun onNavigationButtonPressed()
+    fun onNavigationButtonPressed(onDismiss: () -> Unit)
     fun resetState()
     suspend fun loadCustomerCenter()
 }
@@ -76,7 +76,7 @@ internal class CustomerCenterViewModelImpl(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
-            initialValue = CustomerCenterState.Loading(dismissCustomerCenter = false),
+            initialValue = CustomerCenterState.Loading,
         )
 
     override suspend fun pathButtonPressed(
@@ -85,7 +85,7 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct?,
     ) {
         path.feedbackSurvey?.let { feedbackSurvey ->
-            displayFeedbackSurvey(feedbackSurvey, onOptionSelected = { option ->
+            displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 goBackToMain()
                 option?.let {
                     promotionalOfferOrMainPathAction(product, option.promotionalOffer, path, context)
@@ -155,8 +155,7 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun dismissRestoreDialog() {
-        _state.update {
-            val currentState = _state.value
+        _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
                     showRestoreDialog = false,
@@ -169,30 +168,44 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun restorePurchases() {
-        val currentState = _state.value as? CustomerCenterState.Success ?: return
-
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    restorePurchasesState = RestorePurchasesState.RESTORING,
+                )
+            } else {
+                currentState
+            }
+        }
         try {
-            _state.value = currentState.copy(
-                restorePurchasesState = RestorePurchasesState.RESTORING,
-            )
             val customerInfo = purchases.awaitRestore()
             val hasPurchases =
                 customerInfo.activeSubscriptions.isNotEmpty() ||
                     customerInfo.nonSubscriptionTransactions.isNotEmpty()
-            if (hasPurchases) {
-                _state.value = currentState.copy(
-                    restorePurchasesState = RestorePurchasesState.PURCHASES_RECOVERED,
-                )
-            } else {
-                _state.value = currentState.copy(
-                    restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
-                )
+            _state.update { currentState ->
+                if (currentState is CustomerCenterState.Success) {
+                    currentState.copy(
+                        restorePurchasesState = if (hasPurchases) {
+                            RestorePurchasesState.PURCHASES_RECOVERED
+                        } else {
+                            RestorePurchasesState.PURCHASES_NOT_FOUND
+                        },
+                    )
+                } else {
+                    currentState
+                }
             }
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases", e)
-            _state.value = currentState.copy(
-                restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
-            )
+            _state.update { currentState ->
+                if (currentState is CustomerCenterState.Success) {
+                    currentState.copy(
+                        restorePurchasesState = RestorePurchasesState.PURCHASES_NOT_FOUND,
+                    )
+                } else {
+                    currentState
+                }
+            }
         }
     }
 
@@ -228,13 +241,6 @@ internal class CustomerCenterViewModelImpl(
             putExtra(Intent.EXTRA_TEXT, "Support request details...")
         }
         context.startActivity(Intent.createChooser(intent, "Contact Support"))
-    }
-
-    override fun openAppStore(context: Context) {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("market://details?id=${context.packageName}")
-        }
-        context.startActivity(intent)
     }
 
     override fun showManageSubscriptions(context: Context, productId: String) {
@@ -314,12 +320,59 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun dismissFeedbackSurvey() {
-        _state.update {
-            val currentState = _state.value
+    override fun onNavigationButtonPressed(onDismiss: () -> Unit) {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success &&
+                currentState.buttonType == CustomerCenterState.ButtonType.BACK
+            ) {
+                currentState.copy(
+                    feedbackSurveyData = null,
+                    showRestoreDialog = false,
+                    buttonType = CustomerCenterState.ButtonType.CLOSE,
+                )
+            } else {
+                onDismiss()
+                CustomerCenterState.NotLoaded
+            }
+        }
+    }
+
+    override suspend fun loadCustomerCenter() {
+        if (_state.value !is CustomerCenterState.Loading) {
+            _state.value = CustomerCenterState.Loading
+        }
+        try {
+            val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+            val purchaseInformation = loadPurchaseInformation()
+            _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
+        } catch (e: PurchasesException) {
+            _state.value = CustomerCenterState.Error(e.error)
+        }
+    }
+
+    private fun displayFeedbackSurvey(
+        feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
+        onAnswerSubmitted: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+    ) {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onAnswerSubmitted),
+                    title = feedbackSurvey.title,
+                    buttonType = CustomerCenterState.ButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    private fun goBackToMain() {
+        _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
                     feedbackSurveyData = null,
+                    showRestoreDialog = false,
                     title = null,
                     buttonType = CustomerCenterState.ButtonType.CLOSE,
                 )
@@ -329,53 +382,13 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun onNavigationButtonPressed() {
-        _state.update { currentState ->
-            when (currentState) {
-                is CustomerCenterState.NotLoaded -> {
-                    currentState
-                }
-
-                is CustomerCenterState.Success -> {
-                    when (currentState.buttonType) {
-                        CustomerCenterState.ButtonType.BACK -> currentState.copy(
-                            feedbackSurveyData = null,
-                            showRestoreDialog = false,
-                            dismissCustomerCenter = false,
-                            buttonType = CustomerCenterState.ButtonType.CLOSE,
-                        )
-
-                        CustomerCenterState.ButtonType.CLOSE -> currentState.copy(
-                            dismissCustomerCenter = true,
-                        )
-                    }
-                }
-
-                is CustomerCenterState.Error -> currentState.copy(
-                    dismissCustomerCenter = true,
-                )
-
-                is CustomerCenterState.Loading -> currentState.copy(
-                    dismissCustomerCenter = false,
-                )
-            }
-        }
-    }
-
-    override fun resetState() {
-        _state.value = CustomerCenterState.NotLoaded
-    }
-
-    override suspend fun loadCustomerCenter() {
-        if (_state.value !is CustomerCenterState.Loading) {
-            _state.update { CustomerCenterState.Loading(dismissCustomerCenter = false) }
-        }
+    private fun showManageSubscriptions(context: Context, productId: String) {
         try {
-            val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformation = loadPurchaseInformation()
-            _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
-        } catch (e: PurchasesException) {
-            _state.value = CustomerCenterState.Error(e.error)
+            val packageName = context.packageName
+            val uri = "https://play.google.com/store/account/subscriptions?sku=$productId&package=$packageName"
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+        } catch (e: ActivityNotFoundException) {
+            Logger.e("Error opening manage subscriptions", e)
         }
     }
 }

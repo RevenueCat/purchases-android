@@ -28,6 +28,7 @@ internal sealed class PaywallValidationError : Throwable() {
             }
             is MissingStringLocalization -> message
             is MissingImageLocalization -> message
+            is AllLocalizationsMissing -> message
         }
     }
 
@@ -52,5 +53,11 @@ internal sealed class PaywallValidationError : Throwable() {
         override val message: String = locale?.let {
             PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION_WITH_LOCALE.format(key.value, locale.value)
         } ?: PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION.format(key.value)
+    }
+    data class AllLocalizationsMissing(
+        val locale: LocaleId,
+    ) : PaywallValidationError() {
+        override val message: String =
+            PaywallValidationErrorStrings.ALL_LOCALIZATIONS_MISSING_FOR_LOCALE.format(locale.value)
     }
 }

@@ -1,9 +1,6 @@
 @file:Suppress("TooManyFunctions")
 @file:JvmSynthetic
-@file:OptIn(
-    ExperimentalPreviewRevenueCatPurchasesAPI::class,
-    ExperimentalPreviewRevenueCatPurchasesAPI::class,
-)
+@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
@@ -68,14 +65,8 @@ internal fun InternalCustomerCenter(
         }
     }
 
-    if (state.dismissCustomerCenter) {
-        onDismiss()
-        viewModel.resetState()
-        return
-    }
-
     BackHandler {
-        viewModel.onNavigationButtonPressed()
+        viewModel.onNavigationButtonPressed(onDismiss)
     }
 
     InternalCustomerCenter(
@@ -99,7 +90,7 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
                 is CustomerCenterAction.DisplayFeedbackSurvey -> viewModel.displayFeedbackSurvey(
                     action.feedbackSurvey,
-                    action.onOptionSelected,
+                    action.onAnswerSubmitted,
                 )
                 is CustomerCenterAction.DisplayPromotionalOffer -> viewModel.loadAndDisplayPromotionalOffer(
                     action.product,
@@ -109,7 +100,7 @@ internal fun InternalCustomerCenter(
                 )
                 is CustomerCenterAction.DismissPromotionalOffer -> viewModel.dismissPromotionalOffer()
                 is CustomerCenterAction.DismissFeedbackSurvey -> viewModel.dismissFeedbackSurvey()
-                is CustomerCenterAction.NavigationButtonPressed -> viewModel.onNavigationButtonPressed()
+                is CustomerCenterAction.NavigationButtonPressed -> viewModel.onNavigationButtonPressed(onDismiss)
             }
         },
     )
@@ -203,7 +194,6 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
     Text("Error: ${state.error}")
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
@@ -211,13 +201,9 @@ private fun CustomerCenterLoaded(
 ) {
     if (state.feedbackSurveyData != null) {
         FeedbackSurveyView(state.feedbackSurveyData)
-        return
-    }
-    if (state.promotionalOfferData != null) {
+    } else if (state.promotionalOfferData != null) {
         PromotionalOfferView(state.promotionalOfferData)
-        return
-    }
-    if (state.showRestoreDialog) {
+    } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
             onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
@@ -228,10 +214,10 @@ private fun CustomerCenterLoaded(
                 }
             },
         )
+    } else {
+        val configuration = state.customerCenterConfigData
+        MainScreen(state, configuration, onAction)
     }
-
-    val configuration = state.customerCenterConfigData
-    MainScreen(state, configuration, onAction)
 }
 
 @Composable
@@ -245,7 +231,7 @@ private fun MainScreen(
             ManageSubscriptionsView(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
-                onPathButtonPressed = { path ->
+                onPathButtonPress = { path ->
                     onAction(CustomerCenterAction.PathButtonPressed(path, state.purchaseInformation.product))
                 },
             )
@@ -257,7 +243,7 @@ private fun MainScreen(
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
                 screen = noActiveScreen,
-                onPathButtonPressed = { path ->
+                onPathButtonPress = { path ->
                     onAction(CustomerCenterAction.PathButtonPressed(path, null))
                 },
             )
@@ -288,7 +274,6 @@ private fun getCustomerCenterViewModel(
     return viewModel
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private val previewConfigData = CustomerCenterConfigData(
     screens = mapOf(
         CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT to CustomerCenterConfigData.Screen(
@@ -321,7 +306,7 @@ private val previewConfigData = CustomerCenterConfigData(
 @Composable
 internal fun CustomerCenterLoadingPreview() {
     InternalCustomerCenter(
-        state = CustomerCenterState.Loading(),
+        state = CustomerCenterState.Loading,
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
@@ -341,7 +326,6 @@ internal fun CustomerCenterErrorPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview
 @Composable
 internal fun CustomerCenterLoadedPreview() {

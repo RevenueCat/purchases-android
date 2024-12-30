@@ -15,4 +15,6 @@ internal object PaywallValidationErrorStrings {
         "Missing string localization for property with id: '%s', for locale: '%s'."
     const val MISSING_IMAGE_LOCALIZATION_WITH_LOCALE =
         "Missing image localization for property with id: '%s', for locale: '%s'."
+    const val ALL_LOCALIZATIONS_MISSING_FOR_LOCALE =
+        "All localizations for locale '%s' are missing."
 }

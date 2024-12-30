@@ -29,6 +29,13 @@ internal val Result<*, *>.isError: Boolean
     get() = this is Result.Error
 
 /**
+ * Wrap this in a Result.Success if it's non-null. Otherwise, wrap [error] in a Result.Error.
+ */
+@JvmSynthetic
+internal fun <A, B> A?.errorIfNull(error: B): Result<A & Any, B> =
+    this?.let { Result.Success(it) } ?: Result.Error(error)
+
+/**
  * Side effect to run when this Result represents an Error.
  */
 @JvmSynthetic
@@ -46,6 +53,16 @@ internal inline fun <A, B> Result<A, B>.onError(block: (value: B) -> Unit): Resu
 internal inline fun <A, B, R> Result<A, B>.map(transform: (value: A) -> R): Result<R, B> =
     when (this) {
         is Result.Success -> Result.Success(transform(value))
+        is Result.Error -> this
+    }
+
+/**
+ * Maps this Result's success value into a new Result.
+ */
+@JvmSynthetic
+internal inline fun <A, B, R> Result<A, B>.flatMap(transform: (value: A) -> Result<R, B>): Result<R, B> =
+    when (this) {
+        is Result.Success -> transform(value)
         is Result.Error -> this
     }
 

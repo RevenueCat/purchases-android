@@ -35,7 +35,7 @@ internal fun ManageSubscriptionsView(
     screen: CustomerCenterConfigData.Screen,
     modifier: Modifier = Modifier,
     purchaseInformation: PurchaseInformation? = null,
-    onPathButtonPressed: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onPathButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Box(
         modifier = modifier
@@ -51,11 +51,11 @@ internal fun ManageSubscriptionsView(
                 ActiveUserManagementView(
                     screen = screen,
                     purchaseInformation = purchaseInformation,
-                    onDetermineFlow = onPathButtonPressed,
+                    onDetermineFlow = onPathButtonPress,
                 )
             } ?: NoActiveUserManagementView(
                 screen = screen,
-                onDetermineFlow = onPathButtonPressed,
+                onDetermineFlow = onPathButtonPress,
             )
         }
     }
@@ -173,7 +173,7 @@ private fun ManageSubscriptionsViewPreview() {
     ManageSubscriptionsView(
         screen = managementScreen,
         purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
-        onPathButtonPressed = {},
+        onPathButtonPress = {},
     )
 }
 
@@ -187,7 +187,7 @@ private fun NoActiveSubscriptionsViewPreview() {
     ManageSubscriptionsView(
         screen = noActiveScreen,
         purchaseInformation = null,
-        onPathButtonPressed = {},
+        onPathButtonPress = {},
     )
 }
 
