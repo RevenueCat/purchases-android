@@ -3,6 +3,9 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.RCColor
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal object CustomerCenterConfigTestData {
@@ -123,7 +126,14 @@ internal object CustomerCenterConfigTestData {
         expirationDateString = "June 1st, 2024",
         willRenew = true,
         active = true,
-        productId = "monthly_product_id",
+        product = TestStoreProduct(
+            "monthly_product_id",
+            "Basic",
+            "title",
+            "description",
+            Price("$4.99", 4_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        ),
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -133,6 +143,13 @@ internal object CustomerCenterConfigTestData {
         expirationDateString = "June 1st, 2025",
         willRenew = false,
         active = true,
-        productId = "yearly_product_id",
+        product = TestStoreProduct(
+            "yearly_product_id",
+            "Basic",
+            "title",
+            "description",
+            Price("$40.99", 40_990_000, "US"),
+            Period(1, Period.Unit.YEAR, "P1Y"),
+        ),
     )
 }

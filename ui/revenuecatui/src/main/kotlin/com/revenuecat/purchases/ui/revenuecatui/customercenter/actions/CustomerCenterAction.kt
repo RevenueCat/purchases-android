@@ -2,10 +2,14 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.actions
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.models.StoreProduct
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal sealed class CustomerCenterAction {
-    data class PathButtonPressed(val path: CustomerCenterConfigData.HelpPath) : CustomerCenterAction()
+    data class PathButtonPressed(
+        val path: CustomerCenterConfigData.HelpPath,
+        val product: StoreProduct?,
+    ) : CustomerCenterAction()
     object PerformRestore : CustomerCenterAction()
     object DismissRestoreDialog : CustomerCenterAction()
     data class ContactSupport(val email: String) : CustomerCenterAction()
@@ -15,6 +19,7 @@ internal sealed class CustomerCenterAction {
     ) : CustomerCenterAction()
     object DismissFeedbackSurvey : CustomerCenterAction()
     data class DisplayPromotionalOffer(
+        val product: StoreProduct,
         val promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         val onAcceptedOffer: () -> Unit,
         val onDismissedOffer: () -> Unit,

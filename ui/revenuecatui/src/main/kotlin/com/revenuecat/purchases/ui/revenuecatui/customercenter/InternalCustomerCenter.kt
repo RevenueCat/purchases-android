@@ -7,7 +7,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -86,7 +85,7 @@ internal fun InternalCustomerCenter(
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
                     coroutineScope.launch {
-                        viewModel.pathButtonPressed(context, action.path)
+                        viewModel.pathButtonPressed(context, action.path, action.product)
                     }
                 }
 
@@ -102,7 +101,8 @@ internal fun InternalCustomerCenter(
                     action.feedbackSurvey,
                     action.onOptionSelected,
                 )
-                is CustomerCenterAction.DisplayPromotionalOffer -> viewModel.displayPromotionalOffer(
+                is CustomerCenterAction.DisplayPromotionalOffer -> viewModel.loadAndDisplayPromotionalOffer(
+                    action.product,
                     action.promotionalOffer,
                     action.onAcceptedOffer,
                     action.onDismissedOffer,
@@ -245,17 +245,8 @@ private fun MainScreen(
             ManageSubscriptionsView(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
-                onDetermineFlow = { path ->
-                    path.feedbackSurvey?.let { feedbackSurvey ->
-                        onAction(
-                            CustomerCenterAction.DisplayFeedbackSurvey(feedbackSurvey) { option ->
-                                option?.let {
-                                    Log.d("CustomerCenter", "Option selected: $option")
-                                    onAction(CustomerCenterAction.PathButtonPressed(path))
-                                } ?: onAction(CustomerCenterAction.DismissFeedbackSurvey)
-                            },
-                        )
-                    } ?: onAction(CustomerCenterAction.PathButtonPressed(path))
+                onPathButtonPressed = { path ->
+                    onAction(CustomerCenterAction.PathButtonPressed(path, state.purchaseInformation.product))
                 },
             )
         } ?: run {
@@ -266,8 +257,8 @@ private fun MainScreen(
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
                 screen = noActiveScreen,
-                onDetermineFlow = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path))
+                onPathButtonPressed = { path ->
+                    onAction(CustomerCenterAction.PathButtonPressed(path, null))
                 },
             )
         } ?: run {

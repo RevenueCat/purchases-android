@@ -22,6 +22,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.icons.CalendarMonth
 import com.revenuecat.purchases.ui.revenuecatui.icons.CurrencyExchange
@@ -148,7 +151,14 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             expirationDateString = "June 1st, 2024",
             willRenew = true,
             active = true,
-            productId = "basic_monthly",
+            product = TestStoreProduct(
+                "basic_monthly",
+                "name",
+                "title",
+                "description",
+                Price("$1.99", 1_990_000, "US"),
+                Period(1, Period.Unit.MONTH, "P1M"),
+            ),
         ),
         PurchaseInformation(
             title = "Basic",
@@ -157,7 +167,14 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             expirationDateString = "June 1st, 2024",
             willRenew = false,
             active = true,
-            productId = "basic_yearly",
+            product = TestStoreProduct(
+                "basic_yearly",
+                "name",
+                "title",
+                "description",
+                Price("$1.99", 1_990_000, "US"),
+                Period(1, Period.Unit.YEAR, "P1Y"),
+            ),
         ),
         PurchaseInformation(
             title = "Basic",
@@ -166,7 +183,14 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             expirationDateString = "June 1st, 2024",
             willRenew = false,
             active = false,
-            productId = "basic_weekly",
+            product = TestStoreProduct(
+                "basic_weekly",
+                "name",
+                "title",
+                "description",
+                Price("$0.99", 990_000, "US"),
+                Period(1, Period.Unit.WEEK, "P1W"),
+            ),
         ),
     )
 }
