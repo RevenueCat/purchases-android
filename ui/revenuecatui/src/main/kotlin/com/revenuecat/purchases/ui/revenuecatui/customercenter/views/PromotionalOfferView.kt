@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @JvmSynthetic
 @Composable
@@ -101,7 +102,7 @@ fun AppIconView(
     val icon: Drawable? = try {
         context.packageManager.getApplicationIcon(context.packageName)
     } catch (e: PackageManager.NameNotFoundException) {
-        e.printStackTrace()
+        Logger.e("Error getting app icon", e)
         null
     }
 
@@ -117,7 +118,7 @@ fun AppIconView(
 
 @Preview(showBackground = true)
 @Composable
-fun PromotionalOfferViewPreview() {
+internal fun PromotionalOfferViewPreview() {
     val promoOffer = CustomerCenterConfigTestData.customerCenterData()
         .getManagementScreen()?.paths?.first {
             it.type == CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST

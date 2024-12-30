@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
@@ -199,6 +198,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    @Suppress("ReturnCount")
     private suspend fun loadPurchaseInformation(): PurchaseInformation? {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
@@ -239,23 +239,16 @@ internal class CustomerCenterViewModelImpl(
         onAccepted: () -> Unit,
         onDismiss: () -> Unit,
     ) {
-        viewModelScope.launch {
-            try {
-                val offerIdentifier = promotionalOffer.productMapping[product.id]
-                product.subscriptionOptions?.firstOrNull { option -> option.id == offerIdentifier }
-                _state.update {
-                    val currentState = _state.value
-                    if (currentState is CustomerCenterState.Success) {
-                        currentState.copy(
-                            promotionalOfferData = PromotionalOfferData(promotionalOffer, onAccepted, onDismiss),
-                        )
-                    } else {
-                        currentState
-                    }
-                }
-            } catch (e: Exception) {
-                Logger.e("Error loading promotional offer", e)
-                // Handle the error, possibly updating the state to reflect the error
+        val offerIdentifier = promotionalOffer.productMapping[product.id]
+        product.subscriptionOptions?.firstOrNull { option -> option.id == offerIdentifier }
+        _state.update {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    promotionalOfferData = PromotionalOfferData(promotionalOffer, onAccepted, onDismiss),
+                )
+            } else {
+                currentState
             }
         }
     }

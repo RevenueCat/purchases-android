@@ -8,6 +8,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Suppress("MagicNumber")
 internal object CustomerCenterConfigTestData {
 
     @SuppressWarnings("LongMethod")
@@ -53,11 +54,12 @@ internal object CustomerCenterConfigTestData {
                                     CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option(
                                         id = "1",
                                         title = "Too expensive",
-                                        promotionalOffer = CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
+                                        promotionalOffer =
+                                        CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
                                             androidOfferId = "offer_id",
                                             eligible = true,
                                             title = "Wait a minute...",
-                                            subtitle = "Before you cancel, please consider accepting this one time offer",
+                                            subtitle = "Before you cancel, please consider accepting this offer",
                                             productMapping = mapOf("monthly" to "offer_id"),
                                         ),
                                     ),

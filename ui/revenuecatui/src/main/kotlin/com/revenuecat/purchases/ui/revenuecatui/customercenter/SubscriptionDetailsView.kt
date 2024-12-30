@@ -142,6 +142,7 @@ private val PaddingHorizontal = 8.dp
 private val PaddingVertical = 8.dp
 private const val SizeIconDp = 22
 
+@Suppress("MagicNumber")
 private class SubscriptionInformationProvider : PreviewParameterProvider<PurchaseInformation> {
     override val values: Sequence<PurchaseInformation> = sequenceOf(
         PurchaseInformation(
