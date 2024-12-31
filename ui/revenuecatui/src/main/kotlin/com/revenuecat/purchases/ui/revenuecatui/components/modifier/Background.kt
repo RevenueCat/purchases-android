@@ -31,5 +31,11 @@ internal fun Modifier.background(
 ): Modifier =
     when (background) {
         is BackgroundStyle.Color -> this then background(color = background.color, shape = shape)
-        is BackgroundStyle.Image -> this then paint(background.painter) then clip(shape)
+        is BackgroundStyle.Image ->
+            this then
+                paint(
+                    painter = background.painter,
+                    contentScale = background.contentScale,
+                ) then
+                clip(shape)
     }
