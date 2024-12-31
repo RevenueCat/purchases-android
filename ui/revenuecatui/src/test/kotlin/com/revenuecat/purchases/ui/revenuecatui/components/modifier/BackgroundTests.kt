@@ -29,10 +29,13 @@ import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import coil.test.FakeImageLoaderEngine
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEquals
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorCount
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyle
@@ -142,6 +145,50 @@ class BackgroundTests {
                 // Text rendering might not be fully deterministic (e.g. due to anti aliasing, font settings, etc.) so
                 // we're just verifying that the majority of the Composable shows the background, but not all of it.
                 predicate = { percentage -> percentage in 0.6f..0.99f }
+            )
+    }
+
+    @Test
+    fun `Should draw image background overlay behind content`(): Unit = with(composeTestRule) {
+        // Arrange
+        val unexpectedColor = TestUrl.Blue
+        val expectedColor = Color.Yellow
+        val textColor = Color.Red
+        val background = Background.Image(
+            value = ThemeImageUrls(light = unexpectedColor.toImageUrls(size = imageSizePx)),
+            fitMode = FitMode.FILL,
+            colorOverlay = ColorScheme(ColorInfo.Hex(expectedColor.toArgb())),
+        )
+        setContent {
+            val backgroundStyle = background.toBackgroundStyle()
+            val sizeDp = with(LocalDensity.current) { imageSizePx.toDp() }
+
+            // Act
+            Text(
+                text = "Hello",
+                modifier = Modifier
+                    .requiredSize(sizeDp)
+                    .background(backgroundStyle)
+                    .semantics { testTag = "text" },
+                color = textColor,
+            )
+        }
+
+        // Assert
+        onNodeWithTag("text")
+            .assertIsDisplayed()
+            // The overlay should cover the entire background, as it is fully opaque.
+            .assertNoPixelColorEquals(unexpectedColor.color)
+            .assertPixelColorPercentage(
+                color = expectedColor,
+                // Text rendering might not be fully deterministic (e.g. due to anti aliasing, font settings, etc.) so
+                // we're just verifying that the majority of the Composable shows the overlay, but not all of it.
+                predicate = { percentage -> percentage in 0.6f..0.99f }
+            )
+            .assertPixelColorCount(
+                color = textColor,
+                // The text should be drawn on top of the overlay.
+                predicate = { count -> count > 0}
             )
     }
 
