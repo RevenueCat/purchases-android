@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="OK">D\'ACCORD</string>
+    <string name="OK">OK</string>
     <string name="privacy">Confidentialité</string>
     <string name="privacy_policy">Politique de confidentialité</string>
     <string name="restore">Restaurer</string>
     <string name="restore_purchases">Restaurer les achats</string>
     <string name="terms">Termes</string>
-    <string name="terms_and_conditions">Termes et conditions</string>
+    <string name="terms_and_conditions">Conditions d’utilisation</string>
     <string name="all_plans">Tous les abonnements</string>
     <string name="annual">Annuel</string>
     <string name="semester">6 mois</string>
