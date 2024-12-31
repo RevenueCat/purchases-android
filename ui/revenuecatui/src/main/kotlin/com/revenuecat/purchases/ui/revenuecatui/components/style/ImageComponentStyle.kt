@@ -17,7 +17,7 @@ internal class ImageComponentStyle(
     @get:JvmSynthetic
     val sources: NonEmptyMap<LocaleId, ThemeImageUrls>,
     @get:JvmSynthetic
-    val size: Size,
+    override val size: Size,
     @get:JvmSynthetic
     val shape: Shape?,
     @get:JvmSynthetic
