@@ -8,7 +8,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.parseRGBAColor
 import org.intellij.lang.annotations.Language
-import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -134,6 +133,6 @@ internal class BackgroundTests(@Suppress("UNUSED_PARAMETER") name: String, priva
         val actual = OfferingParser.json.decodeFromString<Background>(args.json)
 
         // Assert
-        assertEquals(args.expected, actual)
+        assert(actual == args.expected)
     }
 }
