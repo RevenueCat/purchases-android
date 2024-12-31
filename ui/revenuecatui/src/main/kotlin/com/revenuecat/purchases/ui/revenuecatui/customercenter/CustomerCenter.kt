@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 
 /**
@@ -13,7 +14,10 @@ import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIP
 @Composable
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
 @SuppressWarnings("PreviewPublic")
-// CustomerCenter WIP: Make public when ready
-internal fun CustomerCenter(modifier: Modifier = Modifier) {
-    InternalCustomerCenter(modifier)
+@InternalRevenueCatAPI
+fun CustomerCenter(
+    modifier: Modifier = Modifier,
+    onDismiss: () -> Unit,
+) {
+    InternalCustomerCenter(modifier = modifier, onDismiss = onDismiss)
 }
