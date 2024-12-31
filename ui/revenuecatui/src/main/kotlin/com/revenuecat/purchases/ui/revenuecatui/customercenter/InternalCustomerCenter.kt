@@ -1,12 +1,24 @@
+@file:Suppress("TooManyFunctions")
 @file:JvmSynthetic
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -29,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePu
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -39,16 +52,32 @@ import kotlinx.coroutines.launch
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(),
+    onDismiss: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    if (state is CustomerCenterState.NotLoaded) {
+        coroutineScope.launch {
+            viewModel.loadCustomerCenter()
+        }
+    }
+
+    BackHandler {
+        val buttonType = state.navigationButtonType
+        viewModel.onNavigationButtonPressed()
+        if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+            onDismiss()
+        }
+    }
+
     InternalCustomerCenter(
         state,
         modifier,
         onAction = { action ->
             when (action) {
-                is CustomerCenterAction.DetermineFlow -> {
+                is CustomerCenterAction.PathButtonPressed -> {
                     coroutineScope.launch {
                         viewModel.pathButtonPressed(context, action.path)
                     }
@@ -62,6 +91,13 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
+                is CustomerCenterAction.NavigationButtonPressed -> {
+                    val buttonType = state.navigationButtonType
+                    viewModel.onNavigationButtonPressed()
+                    if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+                        onDismiss()
+                    }
+                }
             }
         },
     )
@@ -73,8 +109,20 @@ private fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    CustomerCenterScaffold(modifier) {
+    val title = getTitleForState(state)
+    CustomerCenterScaffold(
+        modifier = modifier,
+        title = title,
+        onAction = onAction,
+        navigationButtonType =
+        if (state is CustomerCenterState.Success) {
+            state.navigationButtonType
+        } else {
+            CustomerCenterState.NavigationButtonType.CLOSE
+        },
+    ) {
         when (state) {
+            is CustomerCenterState.NotLoaded -> {}
             is CustomerCenterState.Loading -> CustomerCenterLoading()
             is CustomerCenterState.Error -> CustomerCenterError(state)
             is CustomerCenterState.Success -> CustomerCenterLoaded(
@@ -87,14 +135,46 @@ private fun InternalCustomerCenter(
 
 @Composable
 private fun CustomerCenterScaffold(
+    onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
+    title: String? = null,
+    navigationButtonType: CustomerCenterState.NavigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
     mainContent: @Composable () -> Unit,
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize()
+            .systemBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+                .statusBarsPadding(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start,
+        ) {
+            IconButton(onClick = {
+                onAction(CustomerCenterAction.NavigationButtonPressed)
+            }) {
+                Icon(
+                    imageVector = when (navigationButtonType) {
+                        CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
+                        CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+                    },
+                    contentDescription = null,
+                )
+            }
+            title?.let {
+                Text(
+                    text = title,
+                    modifier = Modifier.padding(start = 4.dp),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            }
+        }
         mainContent()
     }
 }
@@ -111,13 +191,14 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
     Text("Error: ${state.error}")
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    if (state.showRestoreDialog) {
+    if (state.feedbackSurveyData != null) {
+        FeedbackSurveyView(state.feedbackSurveyData)
+    } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
             onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
@@ -128,16 +209,25 @@ private fun CustomerCenterLoaded(
                 }
             },
         )
+    } else {
+        val configuration = state.customerCenterConfigData
+        MainScreen(state, configuration, onAction)
     }
+}
 
-    val configuration = state.customerCenterConfigData
+@Composable
+private fun MainScreen(
+    state: CustomerCenterState.Success,
+    configuration: CustomerCenterConfigData,
+    onAction: (CustomerCenterAction) -> Unit,
+) {
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
-                onDetermineFlow = { path ->
-                    onAction(CustomerCenterAction.DetermineFlow(path))
+                onPathButtonPress = { path ->
+                    onAction(CustomerCenterAction.PathButtonPressed(path))
                 },
             )
         } ?: run {
@@ -148,14 +238,24 @@ private fun CustomerCenterLoaded(
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
                 screen = noActiveScreen,
-                onDetermineFlow = { path ->
-                    onAction(CustomerCenterAction.DetermineFlow(path))
+                onPathButtonPress = { path ->
+                    onAction(CustomerCenterAction.PathButtonPressed(path))
                 },
             )
         } ?: run {
             // Fallback with a restore button
             // NoSubscriptionsView(configuration = configuration)
         }
+    }
+}
+
+private fun getTitleForState(state: CustomerCenterState): String? {
+    return when (state) {
+        is CustomerCenterState.Success -> {
+            state.title
+        }
+
+        else -> null
     }
 }
 
@@ -169,7 +269,6 @@ private fun getCustomerCenterViewModel(
     return viewModel
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private val previewConfigData = CustomerCenterConfigData(
     screens = mapOf(
         CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT to CustomerCenterConfigData.Screen(
@@ -222,7 +321,6 @@ internal fun CustomerCenterErrorPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview
 @Composable
 internal fun CustomerCenterLoadedPreview() {
