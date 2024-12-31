@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @JvmSynthetic
 @Stable
@@ -37,5 +38,6 @@ internal fun Modifier.background(
                     painter = background.painter,
                     contentScale = background.contentScale,
                 ) then
+                applyIfNotNull(background.colorOverlay) { underlay(it, shape) } then
                 clip(shape)
     }
