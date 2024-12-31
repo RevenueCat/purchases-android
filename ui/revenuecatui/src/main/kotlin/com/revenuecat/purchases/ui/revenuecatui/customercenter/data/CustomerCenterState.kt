@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 
 internal sealed class CustomerCenterState {
@@ -40,6 +41,7 @@ internal data class FeedbackSurveyData(
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class PromotionalOfferData(
     val promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+    val offer: SubscriptionOption,
     val onAccepted: () -> Unit,
     val onDismiss: () -> Unit,
 )

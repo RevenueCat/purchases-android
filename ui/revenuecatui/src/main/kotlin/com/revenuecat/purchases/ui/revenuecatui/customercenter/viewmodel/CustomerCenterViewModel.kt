@@ -37,7 +37,7 @@ internal interface CustomerCenterViewModel {
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
     fun loadAndDisplayPromotionalOffer(
-        productId: StoreProduct,
+        product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         onAccepted: () -> Unit,
         onDismiss: () -> Unit,
@@ -240,15 +240,17 @@ internal class CustomerCenterViewModelImpl(
         onDismiss: () -> Unit,
     ) {
         val offerIdentifier = promotionalOffer.productMapping[product.id]
-        product.subscriptionOptions?.firstOrNull { option -> option.id == offerIdentifier }
-        _state.update {
-            val currentState = _state.value
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    promotionalOfferData = PromotionalOfferData(promotionalOffer, onAccepted, onDismiss),
-                )
-            } else {
-                currentState
+        val offer = product.subscriptionOptions?.firstOrNull { option -> option.id == offerIdentifier }
+        if (offer != null) {
+            _state.update {
+                val currentState = _state.value
+                if (currentState is CustomerCenterState.Success) {
+                    currentState.copy(
+                        promotionalOfferData = PromotionalOfferData(promotionalOffer, offer, onAccepted, onDismiss),
+                    )
+                } else {
+                    currentState
+                }
             }
         }
     }
