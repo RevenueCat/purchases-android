@@ -195,12 +195,12 @@ internal class CustomerCenterViewModelImpl(
     override fun onNavigationButtonPressed() {
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success &&
-                currentState.buttonType == CustomerCenterState.ButtonType.BACK
+                currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK
             ) {
                 currentState.copy(
                     feedbackSurveyData = null,
                     showRestoreDialog = false,
-                    buttonType = CustomerCenterState.ButtonType.CLOSE,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
                 CustomerCenterState.NotLoaded
@@ -230,7 +230,7 @@ internal class CustomerCenterViewModelImpl(
                 currentState.copy(
                     feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onAnswerSubmitted),
                     title = feedbackSurvey.title,
-                    buttonType = CustomerCenterState.ButtonType.BACK,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                 )
             } else {
                 currentState
@@ -245,7 +245,7 @@ internal class CustomerCenterViewModelImpl(
                     feedbackSurveyData = null,
                     showRestoreDialog = false,
                     title = null,
-                    buttonType = CustomerCenterState.ButtonType.CLOSE,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
                 currentState
