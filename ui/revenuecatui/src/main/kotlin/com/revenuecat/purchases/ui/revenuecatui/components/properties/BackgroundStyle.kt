@@ -28,6 +28,7 @@ internal sealed interface BackgroundStyle {
     data class Image(
         @get:JvmSynthetic val painter: Painter,
         @get:JvmSynthetic val contentScale: ContentScale,
+        @get:JvmSynthetic val colorOverlay: ColorStyle?,
     ) : BackgroundStyle
 }
 
@@ -53,6 +54,7 @@ internal fun Background.toBackgroundStyle(): BackgroundStyle =
                     contentScale = contentScale,
                 ),
                 contentScale = contentScale,
+                colorOverlay = colorOverlay?.toColorStyle(),
             )
         }
     }
