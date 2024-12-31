@@ -33,7 +33,7 @@ internal interface CustomerCenterViewModel {
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
-    fun onNavigationButtonPressed(onDismiss: () -> Unit)
+    fun onNavigationButtonPressed()
     suspend fun loadCustomerCenter()
 }
 
@@ -192,7 +192,7 @@ internal class CustomerCenterViewModelImpl(
         context.startActivity(Intent.createChooser(intent, "Contact Support"))
     }
 
-    override fun onNavigationButtonPressed(onDismiss: () -> Unit) {
+    override fun onNavigationButtonPressed() {
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success &&
                 currentState.buttonType == CustomerCenterState.ButtonType.BACK
@@ -203,7 +203,6 @@ internal class CustomerCenterViewModelImpl(
                     buttonType = CustomerCenterState.ButtonType.CLOSE,
                 )
             } else {
-                onDismiss()
                 CustomerCenterState.NotLoaded
             }
         }

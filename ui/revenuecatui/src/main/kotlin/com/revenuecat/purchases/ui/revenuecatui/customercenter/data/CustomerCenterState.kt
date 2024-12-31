@@ -5,7 +5,10 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 
-internal sealed class CustomerCenterState {
+internal sealed class CustomerCenterState(
+    open val buttonType: ButtonType = ButtonType.CLOSE,
+) {
+
     enum class ButtonType {
         BACK, CLOSE
     }
@@ -26,8 +29,8 @@ internal sealed class CustomerCenterState {
         val restorePurchasesState: RestorePurchasesState = RestorePurchasesState.INITIAL,
         val feedbackSurveyData: FeedbackSurveyData? = null,
         val title: String? = null,
-        val buttonType: ButtonType = ButtonType.CLOSE,
-    ) : CustomerCenterState()
+        override val buttonType: ButtonType = ButtonType.CLOSE,
+    ) : CustomerCenterState(buttonType)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

@@ -65,7 +65,11 @@ internal fun InternalCustomerCenter(
     }
 
     BackHandler {
-        viewModel.onNavigationButtonPressed(onDismiss)
+        val buttonType = state.buttonType
+        viewModel.onNavigationButtonPressed()
+        if (buttonType == CustomerCenterState.ButtonType.CLOSE) {
+            onDismiss()
+        }
     }
 
     InternalCustomerCenter(
@@ -87,7 +91,13 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
-                is CustomerCenterAction.NavigationButtonPressed -> viewModel.onNavigationButtonPressed(onDismiss)
+                is CustomerCenterAction.NavigationButtonPressed -> {
+                    val buttonType = state.buttonType
+                    viewModel.onNavigationButtonPressed()
+                    if (buttonType == CustomerCenterState.ButtonType.CLOSE) {
+                        onDismiss()
+                    }
+                }
             }
         },
     )
