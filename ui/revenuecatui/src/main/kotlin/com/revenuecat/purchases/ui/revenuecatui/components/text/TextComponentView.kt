@@ -388,7 +388,6 @@ private fun TextComponentView_Preview_RadialGradient() {
 }
 
 @Suppress("LongParameterList")
-@Composable
 private fun previewTextComponentStyle(
     text: String,
     color: ColorScheme,
