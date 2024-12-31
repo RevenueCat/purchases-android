@@ -5,20 +5,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,19 +27,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-private const val BOTTOM_SHEET_MAX_HEIGHT_PERCENTAGE = 0.9f
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, InternalRevenueCatAPI::class)
 @Composable
 fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>()) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
-    var isCustomerCenterBottomSheetVisible by remember { mutableStateOf(false) }
+    var isCustomerCenterVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
+
+    if (isCustomerCenterVisible) {
+        CustomerCenter(modifier = Modifier.fillMaxSize()) {
+            isCustomerCenterVisible = false
+        }
+        return
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -61,7 +64,9 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
         Button(onClick = { isDebugBottomSheetVisible = true }) {
             Text(text = "Show debug view")
         }
-        Button(onClick = { isCustomerCenterBottomSheetVisible = true }) {
+        Button(onClick = {
+            isCustomerCenterVisible = true
+        }) {
             Text(text = "Show customer center")
         }
     }
@@ -76,19 +81,6 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
         isVisible = isDebugBottomSheetVisible,
         onDismissCallback = { isDebugBottomSheetVisible = false },
     )
-
-    if (isCustomerCenterBottomSheetVisible) {
-        val customerCenterSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { isCustomerCenterBottomSheetVisible = false },
-            modifier = Modifier.fillMaxHeight(BOTTOM_SHEET_MAX_HEIGHT_PERCENTAGE),
-            sheetState = customerCenterSheetState,
-        ) {
-            // CustomerCenter WIP: Uncomment when ready
-            // CustomerCenter(modifier = Modifier.fillMaxSize())
-            Text("CustomerCenter disabled. Uncomment when ready.")
-        }
-    }
 }
 
 @Composable

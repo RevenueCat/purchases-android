@@ -199,6 +199,8 @@ class StyleFactoryTests {
                     original = URL("https://original$index"),
                     webp = URL("https://webp$index"),
                     webpLowRes = URL("https://webpLowRes$index"),
+                    width = 100u,
+                    height = 100u
                 )
             )
         }
