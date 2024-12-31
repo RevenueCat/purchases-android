@@ -66,7 +66,11 @@ internal fun InternalCustomerCenter(
     }
 
     BackHandler {
-        viewModel.onNavigationButtonPressed(onDismiss)
+        val buttonType = state.navigationButtonType
+        viewModel.onNavigationButtonPressed()
+        if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+            onDismiss()
+        }
     }
 
     InternalCustomerCenter(
@@ -95,7 +99,13 @@ internal fun InternalCustomerCenter(
                     action.onDismissedOffer,
                 )
                 is CustomerCenterAction.DismissPromotionalOffer -> viewModel.dismissPromotionalOffer()
-                is CustomerCenterAction.NavigationButtonPressed -> viewModel.onNavigationButtonPressed(onDismiss)
+                is CustomerCenterAction.NavigationButtonPressed -> {
+                    val buttonType = state.navigationButtonType
+                    viewModel.onNavigationButtonPressed()
+                    if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+                        onDismiss()
+                    }
+                }
             }
         },
     )
@@ -112,11 +122,11 @@ private fun InternalCustomerCenter(
         modifier = modifier,
         title = title,
         onAction = onAction,
-        buttonType =
+        navigationButtonType =
         if (state is CustomerCenterState.Success) {
-            state.buttonType
+            state.navigationButtonType
         } else {
-            CustomerCenterState.ButtonType.CLOSE
+            CustomerCenterState.NavigationButtonType.CLOSE
         },
     ) {
         when (state) {
@@ -136,7 +146,7 @@ private fun CustomerCenterScaffold(
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
-    buttonType: CustomerCenterState.ButtonType = CustomerCenterState.ButtonType.CLOSE,
+    navigationButtonType: CustomerCenterState.NavigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
     mainContent: @Composable () -> Unit,
 ) {
     Column(
@@ -158,9 +168,9 @@ private fun CustomerCenterScaffold(
                 onAction(CustomerCenterAction.NavigationButtonPressed)
             }) {
                 Icon(
-                    imageVector = when (buttonType) {
-                        CustomerCenterState.ButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
-                        CustomerCenterState.ButtonType.CLOSE -> Icons.Default.Close
+                    imageVector = when (navigationButtonType) {
+                        CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
+                        CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
                     },
                     contentDescription = null,
                 )

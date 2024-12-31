@@ -42,9 +42,8 @@ internal interface CustomerCenterViewModel {
         onAccepted: () -> Unit,
         onDismiss: () -> Unit,
     )
-
     fun dismissPromotionalOffer()
-    fun onNavigationButtonPressed(onDismiss: () -> Unit)
+    fun onNavigationButtonPressed()
     suspend fun loadCustomerCenter()
 }
 
@@ -255,6 +254,22 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    override fun onNavigationButtonPressed() {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success &&
+                currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK
+            ) {
+                currentState.copy(
+                    feedbackSurveyData = null,
+                    showRestoreDialog = false,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                )
+            } else {
+                CustomerCenterState.NotLoaded
+            }
+        }
+    }
+
     override fun dismissPromotionalOffer() {
         _state.update {
             val currentState = _state.value
@@ -262,23 +277,6 @@ internal class CustomerCenterViewModelImpl(
                 currentState.copy(promotionalOfferData = null)
             } else {
                 currentState
-            }
-        }
-    }
-
-    override fun onNavigationButtonPressed(onDismiss: () -> Unit) {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success &&
-                currentState.buttonType == CustomerCenterState.ButtonType.BACK
-            ) {
-                currentState.copy(
-                    feedbackSurveyData = null,
-                    showRestoreDialog = false,
-                    buttonType = CustomerCenterState.ButtonType.CLOSE,
-                )
-            } else {
-                onDismiss()
-                CustomerCenterState.NotLoaded
             }
         }
     }
@@ -305,7 +303,7 @@ internal class CustomerCenterViewModelImpl(
                 currentState.copy(
                     feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onAnswerSubmitted),
                     title = feedbackSurvey.title,
-                    buttonType = CustomerCenterState.ButtonType.BACK,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                 )
             } else {
                 currentState
@@ -321,7 +319,7 @@ internal class CustomerCenterViewModelImpl(
                     promotionalOfferData = null,
                     showRestoreDialog = false,
                     title = null,
-                    buttonType = CustomerCenterState.ButtonType.CLOSE,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
                 currentState

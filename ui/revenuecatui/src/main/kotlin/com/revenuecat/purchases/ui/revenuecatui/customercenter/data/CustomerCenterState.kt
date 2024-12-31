@@ -6,8 +6,11 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 
-internal sealed class CustomerCenterState {
-    enum class ButtonType {
+internal sealed class CustomerCenterState(
+    open val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
+) {
+
+    enum class NavigationButtonType {
         BACK, CLOSE
     }
 
@@ -28,8 +31,8 @@ internal sealed class CustomerCenterState {
         val feedbackSurveyData: FeedbackSurveyData? = null,
         val promotionalOfferData: PromotionalOfferData? = null,
         val title: String? = null,
-        val buttonType: ButtonType = ButtonType.CLOSE,
-    ) : CustomerCenterState()
+        override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
+    ) : CustomerCenterState(navigationButtonType)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
