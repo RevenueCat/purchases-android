@@ -98,7 +98,7 @@ internal class StyleFactory(
             ).map { pkg ->
                 PackageComponentStyle(
                     stackComponentStyle = style,
-                    pkg = pkg,
+                    rcPackage = pkg,
                     isSelectedByDefault = component.isSelectedByDefault,
                 )
             }
