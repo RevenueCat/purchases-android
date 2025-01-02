@@ -26,11 +26,13 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
@@ -81,6 +83,34 @@ private fun ImageComponentView_Preview_Default() {
     Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(),
+            state = previewEmptyState(),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ImageComponentView_Preview_FixedWidthFitHeight() {
+    Box(modifier = Modifier.background(ComposeColor.Red)) {
+        ImageComponentView(
+            style = previewImageComponentStyle(
+                size = Size(width = SizeConstraint.Fixed(72u), height = SizeConstraint.Fit),
+                contentScale = FitMode.FILL.toContentScale(),
+            ),
+            state = previewEmptyState(),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ImageComponentView_Preview_FitWidthFixedHeight() {
+    Box(modifier = Modifier.background(ComposeColor.Red)) {
+        ImageComponentView(
+            style = previewImageComponentStyle(
+                size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fixed(72u)),
+                contentScale = FitMode.FILL.toContentScale(),
+            ),
             state = previewEmptyState(),
         )
     }
