@@ -7,7 +7,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 @Immutable
 internal class PackageComponentStyle(
     @get:JvmSynthetic
-    val pkg: Package,
+    val rcPackage: Package,
     @get:JvmSynthetic
     val isSelectedByDefault: Boolean,
     @get:JvmSynthetic
