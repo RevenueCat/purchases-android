@@ -41,6 +41,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
@@ -71,6 +72,7 @@ import java.net.URL
 internal fun StackComponentView(
     style: StackComponentStyle,
     state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
 ) {
@@ -100,7 +102,7 @@ internal fun StackComponentView(
         val content: @Composable () -> Unit = remember(stackState.children, selected) {
             @Composable {
                 stackState.children.forEach { child ->
-                    ComponentView(style = child, state = state, selected = selected)
+                    ComponentView(style = child, state = state, selected = selected, onClick = clickHandler)
                 }
             }
         }
@@ -171,6 +173,7 @@ private fun StackComponentView_Preview_Vertical() {
                 overrides = null,
             ),
             state = previewEmptyState(),
+            clickHandler = { },
         )
     }
 }
@@ -205,6 +208,7 @@ private fun StackComponentView_Preview_Horizontal() {
                 overrides = null,
             ),
             state = previewEmptyState(),
+            clickHandler = { },
         )
     }
 }
@@ -278,6 +282,7 @@ private fun StackComponentView_Preview_ZLayer() {
                 overrides = null,
             ),
             state = previewEmptyState(),
+            clickHandler = { },
         )
     }
 }

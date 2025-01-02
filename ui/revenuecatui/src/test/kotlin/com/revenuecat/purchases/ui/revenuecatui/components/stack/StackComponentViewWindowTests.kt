@@ -143,7 +143,7 @@ internal class StackComponentViewWindowTests {
                 availablePackages = emptyList(),
             )
         )
-        val style = styleFactory.create(component, { }).getOrThrow() as StackComponentStyle
+        val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
         val content = @Composable {
             // An outer box, because a shadow draws outside the Composable's bounds.
             Box(
@@ -153,7 +153,7 @@ internal class StackComponentViewWindowTests {
                     .background(parentBackgroundColor),
                 contentAlignment = Alignment.Center,
             ) {
-                StackComponentView(style, state, modifier = Modifier.testTag("stack"))
+                StackComponentView(style, state, { }, modifier = Modifier.testTag("stack"))
             }
         }
 

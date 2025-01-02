@@ -9,6 +9,4 @@ internal class ButtonComponentStyle(
     val stackComponentStyle: StackComponentStyle,
     @get:JvmSynthetic
     val action: PaywallAction,
-    @get:JvmSynthetic
-    val actionHandler: suspend (PaywallAction) -> Unit,
 ) : ComponentStyle

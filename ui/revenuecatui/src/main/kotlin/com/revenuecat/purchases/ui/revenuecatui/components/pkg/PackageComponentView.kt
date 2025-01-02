@@ -19,6 +19,8 @@ internal fun PackageComponentView(
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
+        // We act like a button, so we're handling the click already.
+        clickHandler = { },
         modifier = modifier.clickable { state.update(selectedPackage = style.rcPackage) },
         selected = state.selectedPackage?.identifier == style.rcPackage.identifier,
     )

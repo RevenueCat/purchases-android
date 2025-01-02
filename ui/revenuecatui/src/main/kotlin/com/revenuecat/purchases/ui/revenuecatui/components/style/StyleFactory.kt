@@ -53,48 +53,39 @@ internal class StyleFactory(
         private val DEFAULT_SHAPE = RectangleShape
     }
 
-    fun create(
-        component: PaywallComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
-    ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
+    fun create(component: PaywallComponent): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
-            is ButtonComponent -> createButtonComponentStyle(component, actionHandler)
+            is ButtonComponent -> createButtonComponentStyle(component)
             is ImageComponent -> createImageComponentStyle(component)
-            is PackageComponent -> createPackageComponentStyle(component, actionHandler)
-            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, actionHandler)
-            is StackComponent -> createStackComponentStyle(component, actionHandler)
-            is StickyFooterComponent -> createStickyFooterComponentStyle(component, actionHandler)
+            is PackageComponent -> createPackageComponentStyle(component)
+            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
+            is StackComponent -> createStackComponentStyle(component)
+            is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component = component)
         }
 
     private fun createStickyFooterComponentStyle(
         component: StickyFooterComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createStackComponentStyle(component.stack, actionHandler).map {
+        createStackComponentStyle(component.stack).map {
             StickyFooterComponentStyle(stackComponentStyle = it)
         }
 
     private fun createButtonComponentStyle(
         component: ButtonComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
         component.stack,
-        actionHandler,
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
             action = component.action.mapButtonComponentActionToPaywallAction(),
-            actionHandler = actionHandler,
         )
     }
 
     private fun createPackageComponentStyle(
         component: PackageComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
         component.stack,
-        actionHandler,
     ).flatMap { style ->
         offering.getPackage(component.packageId)
             .errorIfNull(
@@ -115,15 +106,12 @@ internal class StyleFactory(
 
     private fun createPurchaseButtonComponentStyle(
         component: PurchaseButtonComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
         component.stack,
-        actionHandler,
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
             action = PaywallAction.PurchasePackage,
-            actionHandler = actionHandler,
         )
     }
 
@@ -137,7 +125,6 @@ internal class StyleFactory(
 
     private fun createStackComponentStyle(
         component: StackComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
@@ -146,7 +133,7 @@ internal class StyleFactory(
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
         second = component.components
-            .map { create(it, actionHandler) }
+            .map { create(it) }
             .mapOrAccumulate { it },
     ) { presentedOverrides, children ->
         StackComponentStyle(

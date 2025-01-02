@@ -58,29 +58,32 @@ import java.net.URL
 internal fun ButtonComponentView(
     style: ButtonComponentStyle,
     state: PaywallState.Loaded.Components,
+    onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
     StackComponentView(
-        style.stackComponentStyle,
-        state,
-        modifier.clickable(enabled = isClickable) {
+        style = style.stackComponentStyle,
+        state = state,
+        // We're the button, so we're handling the click already.
+        clickHandler = { },
+        modifier = modifier.clickable(enabled = isClickable) {
             isClickable = false
             coroutineScope.launch {
-                style.actionHandler(style.action)
+                onClick(style.action)
                 isClickable = true
             }
         },
-        selected,
+        selected = selected,
     )
 }
 
 @Preview
 @Composable
 private fun ButtonComponentView_Preview_Default() {
-    ButtonComponentView(previewButtonComponentStyle(), previewEmptyState())
+    ButtonComponentView(previewButtonComponentStyle(), previewEmptyState(), { })
 }
 
 @Composable
@@ -123,12 +126,10 @@ private fun previewButtonComponentStyle(
         overrides = null,
     ),
     action: PaywallAction = PaywallAction.RestorePurchases,
-    actionHandler: (PaywallAction) -> Unit = {},
 ): ButtonComponentStyle {
     return ButtonComponentStyle(
         stackComponentStyle = stackComponentStyle,
         action = action,
-        actionHandler = actionHandler,
     )
 }
 

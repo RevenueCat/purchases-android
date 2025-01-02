@@ -55,6 +55,7 @@ import java.net.URL
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
@@ -68,6 +69,7 @@ internal fun LoadedPaywallComponents(
         ComponentView(
             style = style,
             state = state,
+            onClick = clickHandler,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -77,6 +79,7 @@ internal fun LoadedPaywallComponents(
             ComponentView(
                 style = it,
                 state = state,
+                onClick = clickHandler,
                 modifier = Modifier
                     .fillMaxWidth(),
             )
@@ -160,6 +163,7 @@ private fun LoadedPaywallComponents_Preview() {
     val state = offering.toComponentsPaywallState(validated)
     LoadedPaywallComponents(
         state = state,
+        clickHandler = { },
         modifier = Modifier
             .fillMaxSize(),
     )
@@ -334,6 +338,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
 
     LoadedPaywallComponents(
         state = state,
+        clickHandler = { },
         modifier = Modifier
             .fillMaxSize(),
     )
