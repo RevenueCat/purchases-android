@@ -72,6 +72,6 @@ internal fun FakePaywallState(
         availablePackages = packages,
         paywallComponents = data,
     )
-    val validated = data.validate().getOrThrow()
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
     return offering.toComponentsPaywallState(validated)
 }

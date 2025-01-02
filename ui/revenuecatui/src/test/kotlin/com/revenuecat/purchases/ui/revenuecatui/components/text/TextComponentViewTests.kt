@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
@@ -77,7 +78,15 @@ class TextComponentViewTests {
         ),
     )
     private val actionHandler: (PaywallAction) -> Unit = {}
-    private val styleFactory = StyleFactory(localizations)
+    private val styleFactory = StyleFactory(
+        localizations = localizations,
+        offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+    )
 
     @Test
     fun `Should change text color based on theme`(): Unit = with(composeTestRule) {
@@ -331,7 +340,13 @@ class TextComponentViewTests {
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
-        val styleFactory = StyleFactory(localizations)
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+        val styleFactory = StyleFactory(localizations, offering)
         val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
@@ -374,7 +389,13 @@ class TextComponentViewTests {
                 eligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
-        val styleFactory = StyleFactory(localizations)
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+        val styleFactory = StyleFactory(localizations, offering)
         val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,

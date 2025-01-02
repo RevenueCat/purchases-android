@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
@@ -64,6 +65,12 @@ class StackComponentViewTests {
             LocaleId("en_US") to nonEmptyMapOf(
                 LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
             )
+        ),
+        offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
         )
     )
     private val actionHandler: (PaywallAction) -> Unit = {}

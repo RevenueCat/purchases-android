@@ -50,7 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import kotlinx.coroutines.launch
 import java.net.URL
 
@@ -59,6 +59,7 @@ internal fun ButtonComponentView(
     style: ButtonComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
@@ -72,6 +73,7 @@ internal fun ButtonComponentView(
                 isClickable = true
             }
         },
+        selected,
     )
 }
 
@@ -156,6 +158,6 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         availablePackages = emptyList(),
         paywallComponents = data,
     )
-
-    return offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(validated)
 }

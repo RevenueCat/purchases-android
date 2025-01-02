@@ -28,7 +28,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.localeChangingTest
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -117,7 +117,8 @@ internal class LoadedPaywallComponentsLocaleTests {
         class TestActivity : ComponentActivity() {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                val state = offering.toComponentsPaywallState(paywallComponents.validate().getOrThrow())
+                val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+                val state = offering.toComponentsPaywallState(validated)
                 setContent { LoadedPaywallComponents(state = state) }
             }
         }
@@ -132,7 +133,10 @@ internal class LoadedPaywallComponentsLocaleTests {
         @Test
         fun `Should propagate locale changes without Activity recreation`(): Unit = with(composeTestRule) {
             localeChangingTest(
-                arrange = { offering.toComponentsPaywallState(paywallComponents.validate().getOrThrow()) },
+                arrange = {
+                    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+                    offering.toComponentsPaywallState(validated)
+                },
                 act = { state -> LoadedPaywallComponents(state = state) },
                 assert = { localeController ->
                     localeController.setLocale("en-US")

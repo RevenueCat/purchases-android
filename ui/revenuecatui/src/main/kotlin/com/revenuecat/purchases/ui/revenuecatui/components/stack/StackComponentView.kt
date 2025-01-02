@@ -63,7 +63,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
 @Suppress("LongMethod")
@@ -97,8 +97,12 @@ internal fun StackComponentView(
                 .padding(stackState.padding)
         }
 
-        val content: @Composable () -> Unit = remember(stackState.children) {
-            @Composable { stackState.children.forEach { child -> ComponentView(style = child, state = state) } }
+        val content: @Composable () -> Unit = remember(stackState.children, selected) {
+            @Composable {
+                stackState.children.forEach { child ->
+                    ComponentView(style = child, state = state, selected = selected)
+                }
+            }
         }
 
         // Show the right container composable depending on the dimension.
@@ -344,6 +348,6 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         availablePackages = emptyList(),
         paywallComponents = data,
     )
-
-    return offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(validated)
 }

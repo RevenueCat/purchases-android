@@ -30,7 +30,7 @@ internal fun Offering.validatedPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
 ): PaywallValidationResult =
-    paywallComponents?.validate()?.let { result ->
+    validatePaywallComponentsDataOrNull()?.let { result ->
         // We need to either unwrap the success value, or wrap the errors in a fallback Paywall.
         when (result) {
             is RcResult.Success -> result.value
@@ -87,39 +87,46 @@ private fun Offering.fallbackPaywall(
     )
 
 @Suppress("MaxLineLength")
-internal fun PaywallComponentsData.validate(): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>> =
-    defaultLocalization
-        // Check that the default localization is present in the localizations map.
-        .errorIfNull(PaywallValidationError.AllLocalizationsMissing(defaultLocaleIdentifier))
-        .mapError { nonEmptyListOf(it) }
-        .map { defaultLocalization ->
-            // Build a NonEmptyMap, ensuring that we always have the default localization as fallback.
-            nonEmptyMapOf(defaultLocaleIdentifier to defaultLocalization, componentsLocalizations)
-        }
-        .flatMap { localizations ->
-            // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>.
-            localizations.mapValues { (locale, map) ->
-                map.toNonEmptyMapOrNull()
-                    .errorIfNull(PaywallValidationError.AllLocalizationsMissing(locale))
-                    .mapError { nonEmptyListOf(it) }
-            }.mapValuesOrAccumulate { it }
-        }.flatMap { localizations ->
-            // Use the StyleFactory to recursively create and validate all ComponentStyles.
-            val styleFactory = StyleFactory(localizations)
-            val actionHandler: suspend (PaywallAction) -> Unit = { /* TODO Move the action handler to the UI layer. */ }
-            val config = componentsConfig.base
-            zipOrAccumulate(
-                styleFactory.create(config.stack, actionHandler),
-                config.stickyFooter?.let { styleFactory.create(it, actionHandler) }.orSuccessfullyNull(),
-            ) { stack, stickyFooter ->
-                PaywallValidationResult.Components(
-                    stack = stack,
-                    stickyFooter = stickyFooter,
-                    background = config.background,
-                    locales = localizations.keys,
-                )
+internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? =
+    paywallComponents?.run {
+        defaultLocalization
+            // Check that the default localization is present in the localizations map.
+            .errorIfNull(PaywallValidationError.AllLocalizationsMissing(defaultLocaleIdentifier))
+            .mapError { nonEmptyListOf(it) }
+            .map { defaultLocalization ->
+                // Build a NonEmptyMap, ensuring that we always have the default localization as fallback.
+                nonEmptyMapOf(defaultLocaleIdentifier to defaultLocalization, componentsLocalizations)
             }
-        }
+            .flatMap { localizations ->
+                // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>.
+                localizations.mapValues { (locale, map) ->
+                    map.toNonEmptyMapOrNull()
+                        .errorIfNull(PaywallValidationError.AllLocalizationsMissing(locale))
+                        .mapError { nonEmptyListOf(it) }
+                }.mapValuesOrAccumulate { it }
+            }.flatMap { localizations ->
+                // Use the StyleFactory to recursively create and validate all ComponentStyles.
+                val styleFactory = StyleFactory(
+                    localizations = localizations,
+                    offering = this@validatePaywallComponentsDataOrNull,
+                )
+                val actionHandler: suspend (
+                    PaywallAction,
+                ) -> Unit = { /* TODO Move the action handler to the UI layer. */ }
+                val config = componentsConfig.base
+                zipOrAccumulate(
+                    styleFactory.create(config.stack, actionHandler),
+                    config.stickyFooter?.let { styleFactory.create(it, actionHandler) }.orSuccessfullyNull(),
+                ) { stack, stickyFooter ->
+                    PaywallValidationResult.Components(
+                        stack = stack,
+                        stickyFooter = stickyFooter,
+                        background = config.background,
+                        locales = localizations.keys,
+                    )
+                }
+            }
+    }
 
 @Suppress("ReturnCount")
 private fun PaywallData.validate(): Result<PaywallTemplate> {

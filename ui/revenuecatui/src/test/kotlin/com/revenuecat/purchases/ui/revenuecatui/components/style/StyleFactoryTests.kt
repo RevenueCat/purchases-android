@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -48,10 +49,16 @@ class StyleFactoryTests {
             LOCALIZATION_KEY_TEXT_2 to LocalizationData.Text("this is text 2"),
         )
     )
+    private val offering = Offering(
+        identifier = "identifier",
+        serverDescription = "description",
+        metadata = emptyMap(),
+        availablePackages = emptyList(),
+    )
 
     @Before
     fun setup() {
-        styleFactory = StyleFactory(localizations)
+        styleFactory = StyleFactory(localizations, offering)
     }
 
     @Test
@@ -121,14 +128,15 @@ class StyleFactoryTests {
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
         val incorrectStyleFactory = StyleFactory(
-            nonEmptyMapOf(
+            localizations = nonEmptyMapOf(
                 defaultLocale to nonEmptyMapOf(
                     localizationKey to LocalizationData.Text(expectedText)
                 ),
                 otherLocale to nonEmptyMapOf(
                     otherLocalizationKey to LocalizationData.Text(unexpectedText)
                 ),
-            )
+            ),
+            offering = offering,
         )
 
         // Act
@@ -157,7 +165,7 @@ class StyleFactoryTests {
             overrides = ComponentOverrides(introOffer = PartialTextComponent(text = overrideLocalizationKey))
         )
         val incorrectStyleFactory = StyleFactory(
-            nonEmptyMapOf(
+            localizations = nonEmptyMapOf(
                 defaultLocale to nonEmptyMapOf(
                     baseLocalizationKey to LocalizationData.Text(unexpectedText),
                     overrideLocalizationKey to LocalizationData.Text(expectedText),
@@ -166,7 +174,8 @@ class StyleFactoryTests {
                     baseLocalizationKey to LocalizationData.Text(unexpectedText),
                     // otherLocale is missing the overrideLocalizationKey.
                 ),
-            )
+            ),
+            offering = offering,
         )
 
         // Act
@@ -213,12 +222,13 @@ class StyleFactoryTests {
             )
         )
         val styleFactory = StyleFactory(
-            nonEmptyMapOf(
+            localizations = nonEmptyMapOf(
                 // We have some localized text, but no images.
                 defaultLocale to nonEmptyMapOf(
                     LocalizationKey("key-text") to LocalizationData.Text("value-text"),
                 ),
-            )
+            ),
+            offering = offering,
         )
 
         val imageComponentStyle = styleFactory.create(component, { }).getOrThrow() as ImageComponentStyle

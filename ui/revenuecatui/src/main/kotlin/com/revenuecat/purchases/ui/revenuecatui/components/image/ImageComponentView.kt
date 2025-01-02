@@ -41,7 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 import androidx.compose.ui.graphics.Color as ComposeColor
 
@@ -203,6 +203,6 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         availablePackages = emptyList(),
         paywallComponents = data,
     )
-
-    return offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(validated)
 }
