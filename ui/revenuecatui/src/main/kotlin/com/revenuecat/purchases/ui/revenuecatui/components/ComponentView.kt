@@ -29,7 +29,7 @@ internal fun ComponentView(
 ) = when (style) {
     is StackComponentStyle -> StackComponentView(style = style, state = state, modifier = modifier)
     is TextComponentStyle -> TextComponentView(style = style, state = state, modifier = modifier)
-    is ImageComponentStyle -> ImageComponentView(style = style, modifier = modifier)
+    is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
     is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, modifier = modifier)
     is StickyFooterComponentStyle -> StickyFooterComponentView(style = style, state = state, modifier = modifier)
 }
