@@ -148,23 +148,23 @@ internal class ImageComponentState(
         if (darkMode != null) this.darkMode = darkMode
     }
 
+    /**
+     * We don't want to have Fit in any dimension, as that resolves to zero, which results in an invisible image. So
+     * instead, we use the px size from the provided [ImageUrls], converted to dp.
+     */
     private fun Size.adjustForImage(imageUrls: ImageUrls, density: Density): Size =
         Size(
-            width = imageUrls.width?.let { imageWidthPx ->
-                when (width) {
-                    is Fit -> Fixed(with(density) { imageWidthPx.toInt().toDp().value.toUInt() })
-                    is Fill,
-                    is Fixed,
-                    -> width
-                }
-            } ?: width,
-            height = imageUrls.height?.let { imageHeightPx ->
-                when (height) {
-                    is Fit -> Fixed(with(density) { imageHeightPx.toInt().toDp().value.toUInt() })
-                    is Fill,
-                    is Fixed,
-                    -> height
-                }
-            } ?: height,
+            width = when (width) {
+                is Fit -> Fixed(with(density) { imageUrls.width.toInt().toDp().value.toUInt() })
+                is Fill,
+                is Fixed,
+                -> width
+            },
+            height = when (height) {
+                is Fit -> Fixed(with(density) { imageUrls.height.toInt().toDp().value.toUInt() })
+                is Fill,
+                is Fixed,
+                -> height
+            },
         )
 }

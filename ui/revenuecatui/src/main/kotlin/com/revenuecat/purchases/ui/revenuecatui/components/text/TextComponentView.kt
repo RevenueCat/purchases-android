@@ -6,6 +6,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.text
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -91,9 +93,13 @@ internal fun TextComponentView(
         is ColorStyle.Gradient -> Color.Unspecified
     }
     // Create a TextStyle with gradient if necessary.
+    // Remove the line height, as that's not configurable anyway, so we should let Text decide the line height.
     val textStyle = when (colorStyle) {
-        is ColorStyle.Solid -> LocalTextStyle.current
+        is ColorStyle.Solid -> LocalTextStyle.current.copy(
+            lineHeight = TextUnit.Unspecified,
+        )
         is ColorStyle.Gradient -> LocalTextStyle.current.copy(
+            lineHeight = TextUnit.Unspecified,
             brush = colorStyle.brush,
         )
     }
@@ -169,6 +175,23 @@ private fun TextComponentView_Preview_Default() {
         ),
         state = previewEmptyState(),
     )
+}
+
+@Preview
+@Composable
+private fun TextComponentView_Preview_HeadingXlExtraBold() {
+    // Since we use LocalTextStyle, a MaterialTheme can influence the rendering.
+    MaterialTheme {
+        TextComponentView(
+            style = previewTextComponentStyle(
+                text = "Experience Pro today!",
+                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                fontSize = FontSize.HEADING_XL,
+                fontWeight = FontWeight.EXTRA_BOLD,
+            ),
+            state = previewEmptyState(),
+        )
+    }
 }
 
 @Preview(name = "SerifFont")
@@ -365,7 +388,6 @@ private fun TextComponentView_Preview_RadialGradient() {
 }
 
 @Suppress("LongParameterList")
-@Composable
 private fun previewTextComponentStyle(
     text: String,
     color: ColorScheme,

@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,13 +36,17 @@ import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
+import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
@@ -57,6 +62,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -99,10 +105,16 @@ internal fun StackComponentView(
                 .padding(stackState.padding)
         }
 
-        val content: @Composable () -> Unit = remember(stackState.children, selected) {
-            @Composable {
+        val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children, selected) {
+            @Composable { modifierProvider ->
                 stackState.children.forEach { child ->
-                    ComponentView(style = child, state = state, selected = selected, onClick = clickHandler)
+                    ComponentView(
+                        style = child,
+                        state = state,
+                        onClick = clickHandler,
+                        modifier = modifierProvider(child),
+                        selected = selected,
+                    )
                 }
             }
         }
@@ -117,7 +129,7 @@ internal fun StackComponentView(
                 horizontalArrangement = dimension.distribution.toHorizontalArrangement(
                     spacing = stackState.spacing,
                 ),
-            ) { content() }
+            ) { content { child -> if (child.size.width == Fill) Modifier.weight(1f) else Modifier } }
 
             is Dimension.Vertical -> Column(
                 modifier = modifier
@@ -127,7 +139,7 @@ internal fun StackComponentView(
                     spacing = stackState.spacing,
                 ),
                 horizontalAlignment = dimension.alignment.toAlignment(),
-            ) { content() }
+            ) { content { child -> if (child.size.height == Fill) Modifier.weight(1f) else Modifier } }
 
             is Dimension.ZLayer -> Box(
                 modifier = modifier
@@ -138,7 +150,7 @@ internal fun StackComponentView(
                     )
                     .then(commonModifier),
                 contentAlignment = dimension.alignment.toAlignment(),
-            ) { content() }
+            ) { content { child -> Modifier } }
         }
     }
 }
@@ -287,6 +299,72 @@ private fun StackComponentView_Preview_ZLayer() {
     }
 }
 
+@Preview
+@Composable
+private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
+    StackComponentView(
+        style = StackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Hello",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
+                    size = Size(width = Fill, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "World",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
+                    size = Size(width = Fill, height = Fit),
+                ),
+            ),
+            dimension = Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = START),
+            size = Size(width = Fixed(200u), height = Fit),
+            spacing = 16.dp,
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            padding = PaddingValues(all = 16.dp),
+            margin = PaddingValues(all = 16.dp),
+            shape = RectangleShape,
+            border = null,
+            shadow = null,
+            overrides = null,
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+    )
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
+    StackComponentView(
+        style = StackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Hello",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
+                    size = Size(width = Fit, height = Fill),
+                ),
+                previewTextComponentStyle(
+                    text = "World",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
+                    size = Size(width = Fit, height = Fill),
+                ),
+            ),
+            dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
+            size = Size(width = Fit, height = Fixed(200u)),
+            spacing = 16.dp,
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            padding = PaddingValues(all = 16.dp),
+            margin = PaddingValues(all = 16.dp),
+            shape = RectangleShape,
+            border = null,
+            shadow = null,
+            overrides = null,
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+    )
+}
+
 @Composable
 private fun previewChildren() = listOf(
     TextComponentStyle(
@@ -326,6 +404,37 @@ private fun previewChildren() = listOf(
         overrides = null,
     ),
 )
+
+@Suppress("LongParameterList")
+private fun previewTextComponentStyle(
+    text: String,
+    color: ColorScheme = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+    fontSize: FontSize = FontSize.BODY_M,
+    fontWeight: FontWeight = FontWeight.REGULAR,
+    fontFamily: String? = null,
+    textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
+    horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
+    backgroundColor: ColorScheme? = null,
+    size: Size = Size(width = Fill, height = Fit),
+    padding: Padding = zero,
+    margin: Padding = zero,
+): TextComponentStyle {
+    val weight = fontWeight.toFontWeight()
+    return TextComponentStyle(
+        texts = nonEmptyMapOf(LocaleId("en_US") to text),
+        color = color,
+        fontSize = fontSize,
+        fontWeight = weight,
+        fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
+        textAlign = textAlign.toTextAlign(),
+        horizontalAlignment = horizontalAlignment.toAlignment(),
+        backgroundColor = backgroundColor,
+        size = size,
+        padding = padding.toPaddingValues(),
+        margin = margin.toPaddingValues(),
+        overrides = null,
+    )
+}
 
 private fun previewEmptyState(): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(

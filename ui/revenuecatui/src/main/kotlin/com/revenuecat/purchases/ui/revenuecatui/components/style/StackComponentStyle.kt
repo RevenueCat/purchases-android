@@ -20,7 +20,7 @@ internal class StackComponentStyle(
     @get:JvmSynthetic
     val dimension: Dimension,
     @get:JvmSynthetic
-    val size: Size,
+    override val size: Size,
     @get:JvmSynthetic
     val spacing: Dp,
     @get:JvmSynthetic
