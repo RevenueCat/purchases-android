@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -46,6 +47,8 @@ class StackComponent(
     @get:JvmSynthetic
     val shadow: Shadow? = null,
     @get:JvmSynthetic
+    val badge: Badge? = null,
+    @get:JvmSynthetic
     val overrides: ComponentOverrides<PartialStackComponent>? = null,
 ) : PaywallComponent
 
@@ -75,4 +78,6 @@ class PartialStackComponent(
     val border: Border? = null,
     @get:JvmSynthetic
     val shadow: Shadow? = null,
+    @get:JvmSynthetic
+    val badge: Badge? = null,
 ) : PartialComponent
