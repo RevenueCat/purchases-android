@@ -43,6 +43,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import kotlinx.coroutines.launch
@@ -79,7 +80,7 @@ internal fun InternalCustomerCenter(
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
                     coroutineScope.launch {
-                        viewModel.pathButtonPressed(context, action.path)
+                        viewModel.pathButtonPressed(context, action.path, action.product)
                     }
                 }
 
@@ -91,6 +92,13 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
+                is CustomerCenterAction.DisplayPromotionalOffer -> viewModel.loadAndDisplayPromotionalOffer(
+                    action.product,
+                    action.promotionalOffer,
+                    action.onAcceptedOffer,
+                    action.onDismissedOffer,
+                )
+                is CustomerCenterAction.DismissPromotionalOffer -> viewModel.dismissPromotionalOffer()
                 is CustomerCenterAction.NavigationButtonPressed -> {
                     val buttonType = state.navigationButtonType
                     viewModel.onNavigationButtonPressed()
@@ -198,6 +206,8 @@ private fun CustomerCenterLoaded(
 ) {
     if (state.feedbackSurveyData != null) {
         FeedbackSurveyView(state.feedbackSurveyData)
+    } else if (state.promotionalOfferData != null) {
+        PromotionalOfferView(state.promotionalOfferData)
     } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
@@ -227,7 +237,7 @@ private fun MainScreen(
                 screen = managementScreen,
                 purchaseInformation = state.purchaseInformation,
                 onPathButtonPress = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path))
+                    onAction(CustomerCenterAction.PathButtonPressed(path, state.purchaseInformation.product))
                 },
             )
         } ?: run {
@@ -239,7 +249,7 @@ private fun MainScreen(
             ManageSubscriptionsView(
                 screen = noActiveScreen,
                 onPathButtonPress = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path))
+                    onAction(CustomerCenterAction.PathButtonPressed(path, null))
                 },
             )
         } ?: run {
