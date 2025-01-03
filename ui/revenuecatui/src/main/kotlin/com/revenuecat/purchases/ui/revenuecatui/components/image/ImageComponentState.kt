@@ -155,13 +155,42 @@ internal class ImageComponentState(
     private fun Size.adjustForImage(imageUrls: ImageUrls, density: Density): Size =
         Size(
             width = when (width) {
-                is Fit -> Fixed(with(density) { imageUrls.width.toInt().toDp().value.toUInt() })
+                is Fit -> {
+                    // If height is Fixed, we'll have to scale width by the same factor.
+                    val scaleFactor = when (val height = height) {
+                        is Fit,
+                        is Fill,
+                        -> 1f
+
+                        is Fixed -> {
+                            val imageHeightDp = with(density) { imageUrls.height.toInt().toDp() }
+                            height.value.toFloat() / imageHeightDp.value
+                        }
+                    }
+                    Fixed(with(density) { (scaleFactor * imageUrls.width.toInt()).toDp().value.toUInt() })
+                }
+
                 is Fill,
                 is Fixed,
                 -> width
             },
             height = when (height) {
-                is Fit -> Fixed(with(density) { imageUrls.height.toInt().toDp().value.toUInt() })
+                is Fit -> {
+                    // If width is Fixed, we'll have to scale height by the same factor.
+                    val scaleFactor = when (val width = width) {
+                        is Fit,
+                        is Fill,
+                        -> 1f
+
+                        is Fixed -> {
+                            val imageWidthDp = with(density) { imageUrls.width.toInt().toDp() }
+                            width.value.toFloat() / imageWidthDp.value
+                        }
+                    }
+
+                    Fixed(with(density) { (scaleFactor * imageUrls.height.toInt()).toDp().value.toUInt() })
+                }
+
                 is Fill,
                 is Fixed,
                 -> height
