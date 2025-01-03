@@ -187,6 +187,44 @@ internal class StackComponentTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "empty margin and padding",
+                    Args(
+                        json = """
+                        {
+                          "components": [
+                            {
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "primary"
+                                }
+                              },
+                              "components": [],
+                              "id": "xmpgCrN9Rb",
+                              "name": "Text",
+                              "text_lid": "7bkohQjzIE",
+                              "type": "text"
+                            }
+                          ],
+                          "margin": {},
+                          "name": "Stack",
+                          "padding": {},
+                          "type": "stack"
+                        }
+                        """.trimIndent(),
+                        expected = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("7bkohQjzIE"),
+                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                )
+                            ),
+                            margin = Padding.zero,
+                            padding = Padding.zero,
+                        )
+                    ),
+                ),
             )
         }
 
@@ -324,6 +362,21 @@ internal class StackComponentTests {
                         { }
                         """.trimIndent(),
                         expected = PartialStackComponent()
+                    )
+                ),
+                arrayOf(
+                    "empty padding and margin",
+                    Args(
+                        json = """
+                        {
+                          "padding": {},
+                          "margin": {}
+                        }
+                        """.trimIndent(),
+                        expected = PartialStackComponent(
+                            padding = Padding.zero,
+                            margin = Padding.zero,
+                        )
                     )
                 ),
             )

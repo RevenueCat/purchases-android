@@ -23,7 +23,7 @@ internal class FontTests {
                     FontWeight.LIGHT -> "\"light\""
                     FontWeight.REGULAR -> "\"regular\""
                     FontWeight.MEDIUM -> "\"medium\""
-                    FontWeight.SEMI_BOLD -> "\"semi_bold\""
+                    FontWeight.SEMI_BOLD -> "\"semibold\""
                     FontWeight.BOLD -> "\"bold\""
                     FontWeight.EXTRA_BOLD -> "\"extra_bold\""
                     FontWeight.BLACK -> "\"black\""
