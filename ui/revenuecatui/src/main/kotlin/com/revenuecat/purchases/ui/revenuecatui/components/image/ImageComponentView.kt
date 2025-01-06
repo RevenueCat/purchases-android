@@ -1,8 +1,17 @@
 @file:JvmSynthetic
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.image
 
+import android.graphics.Bitmap
+import android.graphics.Bitmap.Config
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
+import androidx.annotation.Px
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -12,9 +21,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.component1
+import androidx.core.graphics.component2
+import androidx.core.graphics.component3
+import androidx.core.graphics.component4
+import coil.ImageLoader
+import coil.decode.DataSource
+import coil.request.SuccessResult
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -30,9 +48,12 @@ import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
@@ -54,6 +75,7 @@ internal fun ImageComponentView(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    previewImageLoader: ImageLoader? = null,
 ) {
     // Get an ImageComponentState that calculates the overridden properties we should use.
     val imageState = rememberUpdatedImageComponentState(
@@ -72,46 +94,92 @@ internal fun ImageComponentView(
                 .applyIfNotNull(imageState.shape) { clip(it) },
             placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
             contentScale = imageState.contentScale,
-            imagePreview = R.drawable.android,
+            previewImageLoader = previewImageLoader,
         )
     }
 }
 
-@Preview
-@Composable
-private fun ImageComponentView_Preview_Default() {
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(),
-            state = previewEmptyState(),
-        )
-    }
+private class PreviewParameters(
+    @Px val imageWidth: UInt,
+    @Px val imageHeight: UInt,
+    val viewSize: Size,
+    val fitMode: FitMode,
+)
+
+private class PreviewParametersProvider : PreviewParameterProvider<PreviewParameters> {
+    override val values: Sequence<PreviewParameters> = sequenceOf(
+        PreviewParameters(
+            imageWidth = 100u,
+            imageHeight = 100u,
+            viewSize = Size(width = Fixed(200u), height = Fixed(200u)),
+            fitMode = FitMode.FILL,
+        ),
+        PreviewParameters(
+            imageWidth = 100u,
+            imageHeight = 100u,
+            viewSize = Size(width = Fixed(200u), height = Fixed(200u)),
+            fitMode = FitMode.FIT,
+        ),
+        PreviewParameters(
+            imageWidth = 100u,
+            imageHeight = 100u,
+            viewSize = Size(width = Fixed(200u), height = Fixed(50u)),
+            fitMode = FitMode.FILL,
+        ),
+        PreviewParameters(
+            imageWidth = 100u,
+            imageHeight = 100u,
+            viewSize = Size(width = Fixed(200u), height = Fixed(50u)),
+            fitMode = FitMode.FIT,
+        ),
+        PreviewParameters(
+            imageWidth = 100u,
+            imageHeight = 100u,
+            viewSize = Size(width = Fixed(50u), height = Fixed(200u)),
+            fitMode = FitMode.FILL,
+        ),
+        PreviewParameters(
+            imageWidth = 100u,
+            imageHeight = 100u,
+            viewSize = Size(width = Fixed(50u), height = Fixed(200u)),
+            fitMode = FitMode.FIT,
+        ),
+        PreviewParameters(
+            imageWidth = 100u,
+            imageHeight = 100u,
+            viewSize = Size(width = Fixed(72u), height = Fit),
+            fitMode = FitMode.FILL,
+        ),
+        PreviewParameters(
+            imageWidth = 100u,
+            imageHeight = 100u,
+            viewSize = Size(width = Fit, height = Fixed(72u)),
+            fitMode = FitMode.FILL,
+        ),
+        PreviewParameters(
+            imageWidth = 1909u,
+            imageHeight = 1306u,
+            viewSize = Size(width = SizeConstraint.Fill, height = Fit),
+            fitMode = FitMode.FIT,
+        ),
+    )
 }
 
 @Preview
 @Composable
-private fun ImageComponentView_Preview_FixedWidthFitHeight() {
+private fun ImageComponentView_Preview(
+    @PreviewParameter(PreviewParametersProvider::class) parameters: PreviewParameters,
+) {
+    val themeImageUrls = previewThemeImageUrls(widthPx = parameters.imageWidth, heightPx = parameters.imageHeight)
     Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
-                size = Size(width = SizeConstraint.Fixed(72u), height = SizeConstraint.Fit),
-                contentScale = FitMode.FILL.toContentScale(),
+                themeImageUrls = themeImageUrls,
+                size = parameters.viewSize,
+                fitMode = parameters.fitMode,
             ),
             state = previewEmptyState(),
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun ImageComponentView_Preview_FitWidthFixedHeight() {
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fixed(72u)),
-                contentScale = FitMode.FILL.toContentScale(),
-            ),
-            state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(themeImageUrls),
         )
     }
 }
@@ -119,10 +187,16 @@ private fun ImageComponentView_Preview_FitWidthFixedHeight() {
 @Preview
 @Composable
 private fun ImageComponentView_Preview_SmallerContainer() {
-    Box(modifier = Modifier.height(200.dp).background(ComposeColor.Red)) {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
+    Box(modifier = Modifier.height(200.dp).background(ComposeColor.Blue)) {
         ImageComponentView(
-            style = previewImageComponentStyle(),
+            style = previewImageComponentStyle(
+                themeImageUrls = themeImageUrls,
+                size = Size(width = Fixed(400u), height = Fixed(400u)),
+                fitMode = FitMode.FIT,
+            ),
             state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(themeImageUrls),
         )
     }
 }
@@ -131,9 +205,13 @@ private fun ImageComponentView_Preview_SmallerContainer() {
 @Preview
 @Composable
 private fun ImageComponentView_Preview_LinearGradient() {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 100u, heightPx = 100u)
     Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
+                themeImageUrls = themeImageUrls,
+                size = Size(width = Fixed(400u), height = Fit),
+                fitMode = FitMode.FIT,
                 overlay = ColorScheme(
                     light = ColorInfo.Gradient.Linear(
                         degrees = -90f,
@@ -163,9 +241,13 @@ private fun ImageComponentView_Preview_LinearGradient() {
 @Preview
 @Composable
 private fun ImageComponentView_Preview_RadialGradient() {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 100u, heightPx = 100u)
     Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
+                themeImageUrls = themeImageUrls,
+                size = Size(width = Fixed(400u), height = Fit),
+                fitMode = FitMode.FIT,
                 overlay = ColorScheme(
                     light = ColorInfo.Gradient.Radial(
                         listOf(
@@ -193,17 +275,16 @@ private fun ImageComponentView_Preview_RadialGradient() {
 @Suppress("LongParameterList")
 @Composable
 private fun previewImageComponentStyle(
-    url: URL = URL("https://sample-videos.com/img/Sample-jpg-image-5mb.jpg"),
-    lowResURL: URL = URL("https://assets.pawwalls.com/954459_1701163461.jpg"),
-    size: Size = Size(width = SizeConstraint.Fixed(400u), height = SizeConstraint.Fit),
-    contentScale: ContentScale = ContentScale.Fit,
+    themeImageUrls: ThemeImageUrls,
+    size: Size,
+    fitMode: FitMode,
     overlay: ColorScheme? = null,
 ) = ImageComponentStyle(
-    sources = nonEmptyMapOf(LocaleId("en_US") to ThemeImageUrls(light = ImageUrls(url, url, lowResURL, 1000u, 1000u))),
+    sources = nonEmptyMapOf(LocaleId("en_US") to themeImageUrls),
     size = size,
     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 20.dp),
     overlay = overlay,
-    contentScale = contentScale,
+    contentScale = fitMode.toContentScale(),
     overrides = null,
 )
 
@@ -235,4 +316,81 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
     return offering.toComponentsPaywallState(validated)
+}
+
+@Composable
+private fun previewImageLoader(themeImageUrls: ThemeImageUrls) =
+    previewImageLoader(imageUrls = themeImageUrls.urlsForCurrentTheme)
+
+@Composable
+private fun previewImageLoader(
+    imageUrls: ImageUrls,
+    @DrawableRes resource: Int = R.drawable.android,
+): ImageLoader {
+    val context = LocalContext.current
+    return ImageLoader.Builder(context)
+        .components {
+            add { chain ->
+                SuccessResult(
+                    drawable = BitmapDrawable(
+                        chain.request.context.resources,
+                        context.getDrawable(resource)!!.toBitmap(
+                            width = imageUrls.width,
+                            height = imageUrls.height,
+                            // Create a deterministic color from the URL and size.
+                            background = with(imageUrls) { "$original:$width$height".toRgbColor() },
+                        ),
+                    ),
+                    request = chain.request,
+                    dataSource = DataSource.MEMORY,
+                )
+            }
+        }
+        .build()
+}
+
+private fun previewThemeImageUrls(widthPx: UInt, heightPx: UInt): ThemeImageUrls =
+    ThemeImageUrls(
+        light = ImageUrls(
+            original = URL("https://preview"),
+            webp = URL("https://preview"),
+            webpLowRes = URL("https://preview"),
+            width = widthPx,
+            height = heightPx,
+        ),
+    )
+
+/**
+ * Converts this drawable to a bitmap with a [background].
+ */
+@Suppress("DestructuringDeclarationWithTooManyEntries")
+fun Drawable.toBitmap(
+    @Px width: UInt,
+    @Px height: UInt,
+    @ColorInt background: Int,
+): Bitmap {
+    val (oldLeft, oldTop, oldRight, oldBottom) = bounds
+
+    val bitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+
+    canvas.drawColor(background)
+
+    setBounds(0, 0, width.toInt(), height.toInt())
+    draw(canvas)
+    setBounds(oldLeft, oldTop, oldRight, oldBottom)
+
+    return bitmap
+}
+
+@Suppress("MagicNumber")
+private fun String.toRgbColor(): Int {
+    val hash = hashCode()
+    // Use the hash to generate ARGB color components
+    val r = (hash shr 16 and 0xFF)
+    val g = (hash shr 8 and 0xFF)
+    val b = (hash and 0xFF)
+
+    // Combine the components into a color integer with full opacity (alpha = 255)
+    return 0xFF000000.toInt() or (r shl 16) or (g shl 8) or b
 }
