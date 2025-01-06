@@ -455,22 +455,28 @@ private fun Template2PaywallPreview() {
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")
 @Preview(showBackground = true, locale = "es-rES", group = "footer")
 @Composable
 private fun Template2PaywallFooterPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template2Offering),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template2Offering),
+        )
+    }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "condensed")
 @Preview(showBackground = true, locale = "es-rES", group = "condensed")
 @Composable
 private fun Template2PaywallFooterCondensedPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template2Offering),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template2Offering),
+        )
+    }
 }

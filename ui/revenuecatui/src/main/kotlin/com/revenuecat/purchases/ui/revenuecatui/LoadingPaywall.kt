@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -32,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsPrimaryColor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
@@ -212,12 +214,15 @@ private class LoadingViewModel(
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true)
 @Composable
 internal fun LoadingPaywallPreview() {
-    LoadingPaywall(
-        mode = PaywallMode.FULL_SCREEN,
-        shouldDisplayDismissButton = false,
-        onDismiss = {},
-    )
+    PreviewImagesAsPrimaryColor {
+        LoadingPaywall(
+            mode = PaywallMode.FULL_SCREEN,
+            shouldDisplayDismissButton = false,
+            onDismiss = {},
+        )
+    }
 }
