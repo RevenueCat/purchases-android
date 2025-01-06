@@ -160,20 +160,26 @@ internal fun DefaultPaywallPreview() {
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")
 @Composable
 internal fun DefaultPaywallFooterPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = getDefaultPreviewOffering()),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = getDefaultPreviewOffering()),
+        )
+    }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")
 @Composable
 internal fun DefaultPaywallFooterCondensedPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = getDefaultPreviewOffering()),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = getDefaultPreviewOffering()),
+        )
+    }
 }
