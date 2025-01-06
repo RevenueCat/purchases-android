@@ -217,7 +217,7 @@ private fun ImageComponentView_Preview_SmallerContainer() {
 @Preview
 @Composable
 private fun ImageComponentView_Preview_LinearGradient() {
-    val themeImageUrls = previewThemeImageUrls(widthPx = 100u, heightPx = 100u)
+    val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
     Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
@@ -245,6 +245,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
                 ),
             ),
             state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(themeImageUrls),
         )
     }
 }
@@ -253,7 +254,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
 @Preview
 @Composable
 private fun ImageComponentView_Preview_RadialGradient() {
-    val themeImageUrls = previewThemeImageUrls(widthPx = 100u, heightPx = 100u)
+    val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
     Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
@@ -280,6 +281,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
                 ),
             ),
             state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(themeImageUrls),
         )
     }
 }
