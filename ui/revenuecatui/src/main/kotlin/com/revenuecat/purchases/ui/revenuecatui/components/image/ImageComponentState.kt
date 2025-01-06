@@ -20,6 +20,7 @@ import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
@@ -191,40 +192,45 @@ internal class ImageComponentState(
      */
     private fun Size.adjustForImage(imageUrls: ImageUrls, density: Density): Size =
         Size(
-            width = when (width) {
-                is Fit -> {
-                    when (val height = height) {
-                        is Fit -> Fixed(with(density) { imageUrls.width.toInt().toDp().value.toUInt() })
-                        is Fill -> width
-
-                        is Fixed -> {
-                            // If height is Fixed, we'll have to scale width by the same factor.
-                            val imageHeightDp = with(density) { imageUrls.height.toInt().toDp() }
-                            val scaleFactor = height.value.toFloat() / imageHeightDp.value
-                            Fixed(with(density) { (scaleFactor * imageUrls.width.toInt()).toDp().value.toUInt() })
-                        }
-                    }
-                }
-
-                is Fill,
-                is Fixed,
-                -> width
-            },
-            height = when (height) {
-                is Fit -> when (val width = width) {
-                    is Fit -> Fixed(with(density) { imageUrls.height.toInt().toDp().value.toUInt() })
-                    is Fill -> height
-                    is Fixed -> {
-                        // If width is Fixed, we'll have to scale height by the same factor.
-                        val imageWidthDp = with(density) { imageUrls.width.toInt().toDp() }
-                        val scaleFactor = width.value.toFloat() / imageWidthDp.value
-                        Fixed(with(density) { (scaleFactor * imageUrls.height.toInt()).toDp().value.toUInt() })
-                    }
-                }
-
-                is Fill,
-                is Fixed,
-                -> height
-            },
+            width = width.adjustDimension(
+                other = height,
+                thisImageDimensionPx = imageUrls.width,
+                otherImageDimensionPx = imageUrls.height,
+                density = density,
+            ),
+            height = height.adjustDimension(
+                other = width,
+                thisImageDimensionPx = imageUrls.height,
+                otherImageDimensionPx = imageUrls.width,
+                density = density,
+            ),
         )
+
+    /**
+     * Adjusts this size constraint to take into account the size of the image.
+     */
+    private fun SizeConstraint.adjustDimension(
+        other: SizeConstraint,
+        thisImageDimensionPx: UInt,
+        otherImageDimensionPx: UInt,
+        density: Density,
+    ): SizeConstraint = when (this) {
+        is Fit -> {
+            when (other) {
+                is Fit -> Fixed(with(density) { thisImageDimensionPx.toInt().toDp().value.toUInt() })
+                is Fill -> this
+
+                is Fixed -> {
+                    // If the other dimension is Fixed, we'll have to scale this one by the same factor.
+                    val otherImageDimensionDp = with(density) { otherImageDimensionPx.toInt().toDp() }
+                    val scaleFactor = other.value.toFloat() / otherImageDimensionDp.value
+                    Fixed(with(density) { (scaleFactor * thisImageDimensionPx.toInt()).toDp().value.toUInt() })
+                }
+            }
+        }
+
+        is Fill,
+        is Fixed,
+        -> this
+    }
 }
