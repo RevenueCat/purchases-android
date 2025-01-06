@@ -47,13 +47,14 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
@@ -90,6 +91,7 @@ internal fun ImageComponentView(
             urlString = imageState.imageUrls.webp.toString(),
             modifier = modifier
                 .size(imageState.size)
+                .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
                 .applyIfNotNull(overlay) { overlay(it, imageState.shape ?: RectangleShape) }
                 .applyIfNotNull(imageState.shape) { clip(it) },
             placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
@@ -159,7 +161,13 @@ private class PreviewParametersProvider : PreviewParameterProvider<PreviewParame
         PreviewParameters(
             imageWidth = 1909u,
             imageHeight = 1306u,
-            viewSize = Size(width = SizeConstraint.Fill, height = Fit),
+            viewSize = Size(width = Fill, height = Fit),
+            fitMode = FitMode.FIT,
+        ),
+        PreviewParameters(
+            imageWidth = 1306u,
+            imageHeight = 1909u,
+            viewSize = Size(width = Fit, height = Fill),
             fitMode = FitMode.FIT,
         ),
     )
@@ -188,7 +196,11 @@ private fun ImageComponentView_Preview(
 @Composable
 private fun ImageComponentView_Preview_SmallerContainer() {
     val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
-    Box(modifier = Modifier.height(200.dp).background(ComposeColor.Blue)) {
+    Box(
+        modifier = Modifier
+            .height(200.dp)
+            .background(ComposeColor.Blue),
+    ) {
         ImageComponentView(
             style = previewImageComponentStyle(
                 themeImageUrls = themeImageUrls,

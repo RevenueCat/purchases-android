@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
@@ -117,9 +118,46 @@ internal class ImageComponentState(
         if (darkMode) themeImageUrls.dark ?: themeImageUrls.light else themeImageUrls.light
     }
 
+    private val imageAspectRatio: Float by derivedStateOf {
+        imageUrls.width.toFloat() / imageUrls.height.toFloat()
+    }
+
     @get:JvmSynthetic
     val size: Size by derivedStateOf {
         (presentedPartial?.partial?.size ?: style.size).adjustForImage(imageUrls, density)
+    }
+
+    /**
+     * Depending on the [size], it's sometimes possible to figure out the aspect ratio of the view before the
+     * measurement phase. If that is the case, this will be non-null. This is especially helpful when one axis is set
+     * to Fit.
+     */
+    @get:JvmSynthetic
+    val aspectRatio: AspectRatio? by derivedStateOf {
+        with(size) {
+            when (val height = height) {
+                is Fit -> when (width) {
+                    is Fit -> AspectRatio(ratio = imageAspectRatio, matchHeightConstraintsFirst = true)
+                    is Fill -> AspectRatio(ratio = imageAspectRatio, matchHeightConstraintsFirst = true)
+                    is Fixed -> null
+                }
+
+                is Fill -> when (width) {
+                    is Fit -> AspectRatio(ratio = imageAspectRatio, matchHeightConstraintsFirst = false)
+                    is Fill -> null
+                    is Fixed -> null
+                }
+
+                is Fixed -> when (val width = width) {
+                    is Fit -> null
+                    is Fill -> null
+                    is Fixed -> AspectRatio(
+                        ratio = width.value.toFloat() / height.value.toFloat(),
+                        matchHeightConstraintsFirst = true,
+                    )
+                }
+            }
+        }
     }
 
     @get:JvmSynthetic
@@ -149,25 +187,23 @@ internal class ImageComponentState(
     }
 
     /**
-     * We don't want to have Fit in any dimension, as that resolves to zero, which results in an invisible image. So
-     * instead, we use the px size from the provided [ImageUrls], converted to dp.
+     * Adjusts this size to take into account the size of the image.
      */
     private fun Size.adjustForImage(imageUrls: ImageUrls, density: Density): Size =
         Size(
             width = when (width) {
                 is Fit -> {
-                    // If height is Fixed, we'll have to scale width by the same factor.
-                    val scaleFactor = when (val height = height) {
-                        is Fit,
-                        is Fill,
-                        -> 1f
+                    when (val height = height) {
+                        is Fit -> Fixed(with(density) { imageUrls.width.toInt().toDp().value.toUInt() })
+                        is Fill -> width
 
                         is Fixed -> {
+                            // If height is Fixed, we'll have to scale width by the same factor.
                             val imageHeightDp = with(density) { imageUrls.height.toInt().toDp() }
-                            height.value.toFloat() / imageHeightDp.value
+                            val scaleFactor = height.value.toFloat() / imageHeightDp.value
+                            Fixed(with(density) { (scaleFactor * imageUrls.width.toInt()).toDp().value.toUInt() })
                         }
                     }
-                    Fixed(with(density) { (scaleFactor * imageUrls.width.toInt()).toDp().value.toUInt() })
                 }
 
                 is Fill,
@@ -175,20 +211,15 @@ internal class ImageComponentState(
                 -> width
             },
             height = when (height) {
-                is Fit -> {
-                    // If width is Fixed, we'll have to scale height by the same factor.
-                    val scaleFactor = when (val width = width) {
-                        is Fit,
-                        is Fill,
-                        -> 1f
-
-                        is Fixed -> {
-                            val imageWidthDp = with(density) { imageUrls.width.toInt().toDp() }
-                            width.value.toFloat() / imageWidthDp.value
-                        }
+                is Fit -> when (val width = width) {
+                    is Fit -> Fixed(with(density) { imageUrls.height.toInt().toDp().value.toUInt() })
+                    is Fill -> height
+                    is Fixed -> {
+                        // If width is Fixed, we'll have to scale height by the same factor.
+                        val imageWidthDp = with(density) { imageUrls.width.toInt().toDp() }
+                        val scaleFactor = width.value.toFloat() / imageWidthDp.value
+                        Fixed(with(density) { (scaleFactor * imageUrls.height.toInt()).toDp().value.toUInt() })
                     }
-
-                    Fixed(with(density) { (scaleFactor * imageUrls.height.toInt()).toDp().value.toUInt() })
                 }
 
                 is Fill,
