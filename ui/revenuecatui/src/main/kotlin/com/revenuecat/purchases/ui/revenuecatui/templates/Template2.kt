@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -72,6 +73,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsPrimaryColor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
@@ -430,6 +432,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "full-screen", name = "Portrait")
 @Preview(
     showBackground = true,
@@ -444,10 +447,12 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Preview(showBackground = true, device = Devices.NEXUS_10, group = "full-screen")
 @Composable
 private fun Template2PaywallPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(offering = TestData.template2Offering),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(offering = TestData.template2Offering),
+        )
+    }
 }
 
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")

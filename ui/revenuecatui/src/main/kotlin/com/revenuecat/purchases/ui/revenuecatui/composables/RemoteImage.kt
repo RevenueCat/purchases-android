@@ -2,9 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.content.Context
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
@@ -26,10 +22,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.transformations
 import coil3.transform.Transformation
-import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 @SuppressWarnings("LongParameterList")
 @Composable
@@ -40,7 +34,6 @@ internal fun LocalImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
-    @DrawableRes imagePreview: Int? = null,
 ) {
     Image(
         source = ImageSource.Local(resource),
@@ -50,14 +43,9 @@ internal fun LocalImage(
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
-        imagePreview = imagePreview,
     )
 }
 
-/**
- * @param supportImagePreview: set to false to not show any image in previews and just a colored box. This is to avoid
- * modifying Paywalls V1 previews.
- */
 @SuppressWarnings("LongParameterList")
 @Composable
 internal fun RemoteImage(
@@ -68,7 +56,6 @@ internal fun RemoteImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
-    @DrawableRes imagePreview: Int? = null,
 ) {
     Image(
         source = ImageSource.Remote(urlString),
@@ -78,7 +65,6 @@ internal fun RemoteImage(
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
-        imagePreview = imagePreview,
     )
 }
 
@@ -103,13 +89,7 @@ private fun Image(
     contentDescription: String?,
     transformation: Transformation?,
     alpha: Float,
-    @DrawableRes imagePreview: Int?,
 ) {
-    // Previews don't support images
-    if (isInPreviewMode() && imagePreview == null) {
-        return ImageForPreviews(modifier)
-    }
-
     var useCache by remember { mutableStateOf(true) }
     val applicationContext = LocalContext.current.applicationContext
     val imageLoader = remember(useCache) {
@@ -132,7 +112,6 @@ private fun Image(
             modifier = modifier,
             contentScale = contentScale,
             alpha = alpha,
-            imagePreview = imagePreview,
             onError = {
                 Logger.w("Image failed to load. Will try again disabling cache")
                 useCache = false
@@ -148,7 +127,6 @@ private fun Image(
             modifier = modifier,
             contentScale = contentScale,
             alpha = alpha,
-            imagePreview = imagePreview,
         )
     }
 }
@@ -164,7 +142,6 @@ private fun AsyncImage(
     contentScale: ContentScale,
     contentDescription: String?,
     alpha: Float,
-    @DrawableRes imagePreview: Int? = null,
     onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
 ) {
     AsyncImage(
@@ -173,14 +150,13 @@ private fun AsyncImage(
         placeholder = placeholderSource?.let {
             rememberAsyncImagePainter(
                 model = it.data,
-                placeholder = if (isInPreviewMode() && imagePreview != null) painterResource(imagePreview) else null,
                 imageLoader = imageLoader,
                 contentScale = contentScale,
                 onError = { errorState ->
                     Logger.e("Error loading placeholder image", errorState.result.throwable)
                 },
             )
-        } ?: if (isInPreviewMode()) painterResource(R.drawable.android) else null,
+        },
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
@@ -194,13 +170,6 @@ private fun AsyncImage(
             Logger.e(error, it.result.throwable)
             onError?.invoke(it)
         },
-    )
-}
-
-@Composable
-private fun ImageForPreviews(modifier: Modifier) {
-    Box(
-        modifier = modifier.background(MaterialTheme.colorScheme.primary),
     )
 }
 

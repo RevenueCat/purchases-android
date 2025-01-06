@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -77,6 +78,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsPrimaryColor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template5UIConstants {
@@ -508,6 +510,7 @@ private val TemplateConfiguration.Colors.selectedDiscountText: Color
 private val TemplateConfiguration.Colors.unselectedDiscountText: Color
     get() = this.text3
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "full_screen")
 @Preview(
     showBackground = true,
@@ -523,10 +526,12 @@ private val TemplateConfiguration.Colors.unselectedDiscountText: Color
 @Preview(showBackground = true, device = Devices.NEXUS_10, group = "full_screen")
 @Composable
 private fun Template5PaywallPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(offering = TestData.template5Offering),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(offering = TestData.template5Offering),
+        )
+    }
 }
 
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")

@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -47,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsPrimaryColor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template3UIConstants {
@@ -242,6 +244,7 @@ private fun Feature(
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(locale = "en-rUS", showBackground = true, group = "full_screen", name = "Portrait")
 @Preview(
     locale = "en-rUS",
@@ -256,10 +259,12 @@ private fun Feature(
 @Preview(showBackground = true, device = Devices.NEXUS_10, group = "full_screen")
 @Composable
 private fun Template3Preview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(offering = TestData.template3Offering),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(offering = TestData.template3Offering),
+        )
+    }
 }
 
 @Preview(showBackground = true, group = "footer")
