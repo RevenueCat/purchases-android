@@ -2,9 +2,10 @@ package com.revenuecat.purchases.utils
 
 import android.content.Context
 import android.net.Uri
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.request.ImageRequest
+import coil3.ImageLoader
+import coil3.disk.DiskCache
+import coil3.disk.directory
+import coil3.request.ImageRequest
 
 // Note: these values have to match those in RemoteImage
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
