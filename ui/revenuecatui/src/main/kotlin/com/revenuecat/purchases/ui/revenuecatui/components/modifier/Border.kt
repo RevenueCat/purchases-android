@@ -127,15 +127,15 @@ private fun Border_Preview_LinearGradient(shape: Shape) {
                                 points = listOf(
                                     ColorInfo.Gradient.Point(
                                         color = Color.Cyan.toArgb(),
-                                        percent = 0.1f,
+                                        percent = 10f,
                                     ),
                                     ColorInfo.Gradient.Point(
                                         color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                                        percent = 0.3f,
+                                        percent = 30f,
                                     ),
                                     ColorInfo.Gradient.Point(
                                         color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                                        percent = 0.8f,
+                                        percent = 80f,
                                     ),
                                 ),
                             ),
@@ -163,15 +163,15 @@ private fun Border_Preview_RadialGradient(shape: Shape) {
                                 points = listOf(
                                     ColorInfo.Gradient.Point(
                                         color = Color.Cyan.toArgb(),
-                                        percent = 0.8f,
+                                        percent = 80f,
                                     ),
                                     ColorInfo.Gradient.Point(
                                         color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                                        percent = 0.9f,
+                                        percent = 90f,
                                     ),
                                     ColorInfo.Gradient.Point(
                                         color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                                        percent = 0.96f,
+                                        percent = 96f,
                                     ),
                                 ),
                             ),

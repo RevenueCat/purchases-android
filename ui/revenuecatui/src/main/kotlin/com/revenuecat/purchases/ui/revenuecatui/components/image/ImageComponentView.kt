@@ -234,11 +234,11 @@ private fun ImageComponentView_Preview_LinearGradient() {
                             ),
                             ColorInfo.Gradient.Point(
                                 color = Color.parseColor("#8800FF00"),
-                                percent = 0.5f,
+                                percent = 50f,
                             ),
                             ColorInfo.Gradient.Point(
                                 color = Color.parseColor("#880000FF"),
-                                percent = 1f,
+                                percent = 100f,
                             ),
                         ),
                     ),
@@ -270,11 +270,11 @@ private fun ImageComponentView_Preview_RadialGradient() {
                             ),
                             ColorInfo.Gradient.Point(
                                 color = Color.parseColor("#8800FF00"),
-                                percent = 0.5f,
+                                percent = 50f,
                             ),
                             ColorInfo.Gradient.Point(
                                 color = Color.parseColor("#880000FF"),
-                                percent = 1f,
+                                percent = 100f,
                             ),
                         ),
                     ),

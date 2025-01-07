@@ -157,15 +157,15 @@ private fun Shadow_Preview_Gradient_CustomShape() {
                                     points = listOf(
                                         ColorInfo.Gradient.Point(
                                             color = Color.Red.toArgb(),
-                                            percent = 0.1f,
+                                            percent = 10f,
                                         ),
                                         ColorInfo.Gradient.Point(
                                             color = Color.Green.toArgb(),
-                                            percent = 0.5f,
+                                            percent = 50f,
                                         ),
                                         ColorInfo.Gradient.Point(
                                             color = Color.Blue.toArgb(),
-                                            percent = 0.9f,
+                                            percent = 90f,
                                         ),
                                     ),
                                 ),

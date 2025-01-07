@@ -57,6 +57,9 @@ sealed interface ColorInfo {
             @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
             @ColorInt
             @get:JvmSynthetic val color: Int,
+            /**
+             * A percentage value in the range 0.0..100.0.
+             */
             @get:JvmSynthetic val percent: Float,
         )
     }

@@ -93,11 +93,11 @@ private fun Background_Preview_ColorGradientLinear() {
                                 ),
                                 ColorInfo.Gradient.Point(
                                     color = Color.Green.toArgb(),
-                                    percent = 0.5f,
+                                    percent = 50f,
                                 ),
                                 ColorInfo.Gradient.Point(
                                     color = Color.Blue.toArgb(),
-                                    percent = 1f,
+                                    percent = 100f,
                                 ),
                             ),
                         ),
@@ -124,11 +124,11 @@ private fun Background_Preview_ColorGradientRadial() {
                                 ),
                                 ColorInfo.Gradient.Point(
                                     color = Color.Green.toArgb(),
-                                    percent = 0.5f,
+                                    percent = 50f,
                                 ),
                                 ColorInfo.Gradient.Point(
                                     color = Color.Blue.toArgb(),
-                                    percent = 1f,
+                                    percent = 100f,
                                 ),
                             ),
                         ),
