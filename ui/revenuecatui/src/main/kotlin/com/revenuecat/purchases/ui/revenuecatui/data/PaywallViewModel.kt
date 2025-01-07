@@ -193,7 +193,13 @@ internal class PaywallViewModelImpl(
         }
         when (action) {
             is PaywallAction.RestorePurchases -> handleRestorePurchases()
-            is PaywallAction.PurchasePackage -> TODO()
+            is PaywallAction.PurchasePackage ->
+                if (activity == null) {
+                    Logger.e("Activity is null, not initiating package purchase")
+                } else {
+                    handlePackagePurchase(activity)
+                }
+
             is PaywallAction.NavigateBack -> TODO()
             is PaywallAction.NavigateTo -> TODO()
         }
