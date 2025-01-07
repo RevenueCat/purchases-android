@@ -200,7 +200,7 @@ internal class PaywallViewModelImpl(
                     handlePackagePurchase(activity)
                 }
 
-            is PaywallAction.NavigateBack -> TODO()
+            is PaywallAction.NavigateBack -> closePaywall()
             is PaywallAction.NavigateTo -> TODO()
         }
         finishAction()
