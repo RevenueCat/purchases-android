@@ -20,7 +20,6 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.DisableTouchesComposable
 import com.revenuecat.purchases.ui.revenuecatui.composables.Fade
@@ -201,15 +200,19 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override suspend fun handlePackagePurchase(activity: Activity) {
+        // no-op
+    }
+
     override fun restorePurchases() {
         // no-op
     }
 
-    override fun clearActionError() = Unit
-
-    override suspend fun handleAction(action: PaywallAction, activity: Activity?) {
+    override suspend fun handleRestorePurchases() {
         // no-op
     }
+
+    override fun clearActionError() = Unit
 }
 
 @Preview(showBackground = true)

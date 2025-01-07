@@ -24,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -59,12 +58,12 @@ internal interface PaywallViewModel {
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(activity: Activity?)
+    suspend fun handlePackagePurchase(activity: Activity)
 
     fun restorePurchases()
+    suspend fun handleRestorePurchases()
 
     fun clearActionError()
-
-    suspend fun handleAction(action: PaywallAction, activity: Activity?)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -157,22 +156,14 @@ internal class PaywallViewModelImpl(
             Logger.e("Activity is null, not initiating package purchase")
             return
         }
-        if (verifyNoActionInProgressOrStartAction()) {
-            return
-        }
         viewModelScope.launch {
             handlePackagePurchase(activity)
-            finishAction()
         }
     }
 
     override fun restorePurchases() {
-        if (verifyNoActionInProgressOrStartAction()) {
-            return
-        }
         viewModelScope.launch {
             handleRestorePurchases()
-            finishAction()
         }
     }
 
@@ -187,27 +178,11 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override suspend fun handleAction(action: PaywallAction, activity: Activity?) {
+    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
+    override suspend fun handleRestorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
-        when (action) {
-            is PaywallAction.RestorePurchases -> handleRestorePurchases()
-            is PaywallAction.PurchasePackage ->
-                if (activity == null) {
-                    Logger.e("Activity is null, not initiating package purchase")
-                } else {
-                    handlePackagePurchase(activity)
-                }
-
-            is PaywallAction.NavigateBack -> closePaywall()
-            is PaywallAction.NavigateTo -> TODO()
-        }
-        finishAction()
-    }
-
-    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
-    private suspend fun handleRestorePurchases() {
         try {
             val customRestoreHandler: (suspend (CustomerInfo) -> PurchaseLogicResult)? =
                 purchaseLogic?.let { it::performRestore }
@@ -272,9 +247,14 @@ internal class PaywallViewModelImpl(
             listener?.onRestoreError(e.error)
             _actionError.value = e.error
         }
+
+        finishAction()
     }
 
-    private suspend fun handlePackagePurchase(activity: Activity) {
+    override suspend fun handlePackagePurchase(activity: Activity) {
+        if (verifyNoActionInProgressOrStartAction()) {
+            return
+        }
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
@@ -288,6 +268,7 @@ internal class PaywallViewModelImpl(
                 Logger.e("Unexpected state trying to purchase package: $currentState")
             }
         }
+        finishAction()
     }
 
     @Suppress("LongMethod", "NestedBlockDepth")

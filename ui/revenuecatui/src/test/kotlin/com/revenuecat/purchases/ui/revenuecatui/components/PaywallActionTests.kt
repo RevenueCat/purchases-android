@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,24 +43,21 @@ class PaywallActionTests {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `Should pass the PaywallAction to the ViewModel`(): Unit = with(composeTestRule) {
+    fun `Should pass the right PaywallActions to the ViewModel`(): Unit = with(composeTestRule) {
         // Arrange
         val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val localizationKeyRestore = LocalizationKey("restore")
         val localizationKeyBack = LocalizationKey("back")
         val localizationKeyPurchase = LocalizationKey("purchase")
-        val localizationKeyNavigate = LocalizationKey("navigate")
         val localizationDataRestore = LocalizationData.Text("restore")
         val localizationDataBack = LocalizationData.Text("back")
         val localizationDataPurchase = LocalizationData.Text("purchase")
-        val localizationDataNavigate = LocalizationData.Text("navigate")
         val localizations = nonEmptyMapOf(
             defaultLocale to nonEmptyMapOf(
                 localizationKeyRestore to localizationDataRestore,
                 localizationKeyBack to localizationDataBack,
                 localizationKeyPurchase to localizationDataPurchase,
-                localizationKeyNavigate to localizationDataNavigate,
             )
         )
         // Bit of a convoluted way to create components, to ensure we use an an exhaustive when, forcing ourselves to
@@ -68,7 +66,6 @@ class PaywallActionTests {
             PaywallAction.RestorePurchases to localizationKeyRestore,
             PaywallAction.NavigateBack to localizationKeyBack,
             PaywallAction.PurchasePackage to localizationKeyPurchase,
-            PaywallAction.NavigateTo(ButtonComponent.Destination.CustomerCenter) to localizationKeyNavigate,
         ).map { (action, key) ->
             when (action) {
                 is PaywallAction.RestorePurchases,
@@ -96,22 +93,11 @@ class PaywallActionTests {
         clickButtonsWithText(localizationDataRestore, expectedCount = 2)
         clickButtonsWithText(localizationDataBack, expectedCount = 2)
         clickButtonsWithText(localizationDataPurchase, expectedCount = 2)
-        clickButtonsWithText(localizationDataNavigate, expectedCount = 2)
 
         // Assert
-        viewModel.clickActions.forEachIndexed { index, action ->
-            when (index) {
-                0 -> assert(action is PaywallAction.RestorePurchases)
-                1 -> assert(action is PaywallAction.RestorePurchases)
-                2 -> assert(action is PaywallAction.NavigateBack)
-                3 -> assert(action is PaywallAction.NavigateBack)
-                4 -> assert(action is PaywallAction.PurchasePackage)
-                5 -> assert(action is PaywallAction.PurchasePackage)
-                6 -> assert(action is PaywallAction.NavigateTo)
-                7 -> assert(action is PaywallAction.NavigateTo)
-                else -> error("Unexpected PaywallAction at index $index: $action")
-            }
-        }
+        assertEquals(2, viewModel.handleRestorePurchasesCallCount)
+        assertEquals(2, viewModel.closePaywallCallCount)
+        assertEquals(2, viewModel.handlePackagePurchaseCount)
     }
 
     private fun SemanticsNodeInteractionsProvider.clickButtonsWithText(
