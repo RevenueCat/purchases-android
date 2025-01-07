@@ -32,6 +32,7 @@ import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.transform.Transformation
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -178,14 +179,7 @@ private fun AsyncImage(
         placeholder = placeholderSource?.let {
             rememberAsyncImagePainter(
                 model = it.data,
-                placeholder = if (isInPreviewMode()) {
-                    when (val result = runBlocking { imageLoader.execute(imageRequest) }) {
-                        is SuccessResult -> DrawablePainter(result.drawable)
-                        is ErrorResult -> throw result.throwable
-                    }
-                } else {
-                    null
-                },
+                placeholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholder(imageRequest) else null,
                 imageLoader = imageLoader,
                 contentScale = contentScale,
                 onError = { errorState ->
@@ -215,6 +209,13 @@ private fun ImageForPreviews(modifier: Modifier) {
         modifier = modifier.background(MaterialTheme.colorScheme.primary),
     )
 }
+
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+private fun ImageLoader.getPreviewPlaceholder(imageRequest: ImageRequest): Painter =
+    when (val result = runBlocking { execute(imageRequest) }) {
+        is SuccessResult -> DrawablePainter(result.drawable)
+        is ErrorResult -> throw result.throwable
+    }
 
 // Note: these values have to match those in CoilImageDownloader
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
@@ -249,7 +250,11 @@ private fun Context.getRevenueCatUIImageLoader(readCache: Boolean): ImageLoader 
  * This is loosely based on [Accompanist's Drawable Painter](https://google.github.io/accompanist/drawablepainter/).
  * This is not production-quality code and should only be used for Previews. If we ever have a need for this, it's
  * better to use the Accompanist Drawable Painter library directly.
+ *
+ * It's annotated with [ExperimentalPreviewRevenueCatUIPurchasesAPI] to discourage usage in production and as a nudge
+ * to read this documentation.
  */
+@ExperimentalPreviewRevenueCatUIPurchasesAPI
 private class DrawablePainter(
     private val drawable: Drawable,
 ) : Painter() {
