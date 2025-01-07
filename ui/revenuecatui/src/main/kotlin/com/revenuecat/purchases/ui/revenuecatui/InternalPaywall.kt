@@ -259,8 +259,8 @@ private fun ErrorDialog(
 
 @Composable
 private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction) -> Unit {
-    val activity = LocalActivity.current
-    val context = activity ?: LocalContext.current
+    val context: Context = LocalContext.current
+    val activity: Activity? = context.getActivity()
     return remember(viewModel) {
         {
                 action ->

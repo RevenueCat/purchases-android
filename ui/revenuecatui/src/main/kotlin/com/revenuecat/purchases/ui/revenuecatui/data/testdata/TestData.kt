@@ -493,7 +493,6 @@ internal class MockViewModel(
         private set
     override fun closePaywall() {
         closePaywallCallCount++
-        unsupportedMethod()
     }
 
     var purchaseSelectedPackageCallCount = 0

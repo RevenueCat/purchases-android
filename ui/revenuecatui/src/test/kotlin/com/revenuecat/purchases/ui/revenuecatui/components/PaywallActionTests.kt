@@ -43,7 +43,7 @@ class PaywallActionTests {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `Should pass the right PaywallActions to the ViewModel`(): Unit = with(composeTestRule) {
+    fun `Should pass the PaywallAction to the ViewModel`(): Unit = with(composeTestRule) {
         // Arrange
         val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
@@ -85,7 +85,7 @@ class PaywallActionTests {
         val options = PaywallOptions.Builder(dismissRequest = { })
             .setOffering(offering)
             .build()
-        val viewModel = MockViewModel(offering = offering)
+        val viewModel = MockViewModel(offering = offering, allowsPurchases = true)
 
         // Act
         setContent { InternalPaywall(options, viewModel) }
@@ -120,7 +120,7 @@ class PaywallActionTests {
         when (this) {
             is PaywallAction.NavigateBack -> ButtonComponent.Action.NavigateBack
             is PaywallAction.NavigateTo -> ButtonComponent.Action.NavigateTo(destination)
-            is PaywallAction.RestorePurchases -> ButtonComponent.Action.NavigateBack
+            is PaywallAction.RestorePurchases -> ButtonComponent.Action.RestorePurchases
             is PaywallAction.PurchasePackage -> error(
                 "PurchasePackage is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
             )
