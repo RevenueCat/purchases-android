@@ -101,14 +101,15 @@ internal fun StackComponentView(
     )
 
     if (stackState.visible) {
-        if (style.badge != null) {
-            when (style.badge.style) {
+        val badge = stackState.badge
+        if (badge != null) {
+            when (badge.style) {
                 Badge.Style.Overlay -> {
                     StackWithOverlaidBadge(
                         stackState,
                         state,
-                        style.badge.stackStyle,
-                        style.badge.alignment,
+                        badge.stackStyle,
+                        badge.alignment,
                         clickHandler,
                         modifier,
                         selected,

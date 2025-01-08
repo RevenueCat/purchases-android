@@ -108,6 +108,9 @@ internal class StackComponentState(
     @get:JvmSynthetic
     val shadow by derivedStateOf { presentedPartial?.partial?.shadow ?: style.shadow }
 
+    @get:JvmSynthetic
+    val badge by derivedStateOf { style.badge }
+
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
