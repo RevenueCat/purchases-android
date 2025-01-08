@@ -14,6 +14,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 
@@ -22,10 +23,13 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
  */
 internal sealed interface BackgroundStyle {
     @JvmInline
-    value class Color(@JvmSynthetic val color: ColorStyle) : BackgroundStyle
+    value class Color(@get:JvmSynthetic val color: ColorStyle) : BackgroundStyle
 
-    @JvmInline
-    value class Image(@JvmSynthetic val painter: Painter) : BackgroundStyle
+    data class Image(
+        @get:JvmSynthetic val painter: Painter,
+        @get:JvmSynthetic val contentScale: ContentScale,
+        @get:JvmSynthetic val colorOverlay: ColorStyle?,
+    ) : BackgroundStyle
 }
 
 @JvmSynthetic
@@ -35,6 +39,7 @@ internal fun Background.toBackgroundStyle(): BackgroundStyle =
         is Background.Color -> BackgroundStyle.Color(color = value.toColorStyle())
         is Background.Image -> {
             val imageUrls = value.urlsForCurrentTheme
+            val contentScale = fitMode.toContentScale()
             BackgroundStyle.Image(
                 painter = rememberAsyncImagePainter(
                     model = imageUrls.webp.toString(),
@@ -42,12 +47,14 @@ internal fun Background.toBackgroundStyle(): BackgroundStyle =
                         model = imageUrls.webpLowRes.toString(),
                         error = null,
                         fallback = null,
-                        contentScale = ContentScale.Crop,
+                        contentScale = contentScale,
                     ),
                     error = null,
                     fallback = null,
-                    contentScale = ContentScale.Crop,
+                    contentScale = contentScale,
                 ),
+                contentScale = contentScale,
+                colorOverlay = colorOverlay?.toColorStyle(),
             )
         }
     }

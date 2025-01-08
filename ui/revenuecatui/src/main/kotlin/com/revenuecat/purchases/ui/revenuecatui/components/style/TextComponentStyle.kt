@@ -34,7 +34,7 @@ internal class TextComponentStyle(
     @get:JvmSynthetic
     val backgroundColor: ColorScheme?,
     @get:JvmSynthetic
-    val size: Size,
+    override val size: Size,
     @get:JvmSynthetic
     val padding: PaddingValues,
     @get:JvmSynthetic

@@ -22,7 +22,7 @@ enum class FontWeight {
     @SerialName("medium")
     MEDIUM,
 
-    @SerialName("semi_bold")
+    @SerialName("semibold")
     SEMI_BOLD,
 
     @SerialName("bold")

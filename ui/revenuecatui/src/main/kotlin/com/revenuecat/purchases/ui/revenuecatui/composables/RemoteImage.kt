@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.withSave
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -21,12 +28,17 @@ import coil.compose.rememberAsyncImagePainter
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
+import coil.request.ErrorResult
 import coil.request.ImageRequest
+import coil.request.SuccessResult
 import coil.transform.Transformation
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
+import kotlinx.coroutines.runBlocking
+import kotlin.math.roundToInt
 
 @SuppressWarnings("LongParameterList")
 @Composable
@@ -37,7 +49,6 @@ internal fun LocalImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
-    @DrawableRes imagePreview: Int? = null,
 ) {
     Image(
         source = ImageSource.Local(resource),
@@ -47,7 +58,7 @@ internal fun LocalImage(
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
-        imagePreview = imagePreview,
+        previewImageLoader = null,
     )
 }
 
@@ -65,7 +76,7 @@ internal fun RemoteImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
-    @DrawableRes imagePreview: Int? = null,
+    previewImageLoader: ImageLoader? = null,
 ) {
     Image(
         source = ImageSource.Remote(urlString),
@@ -75,7 +86,7 @@ internal fun RemoteImage(
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
-        imagePreview = imagePreview,
+        previewImageLoader = previewImageLoader,
     )
 }
 
@@ -100,16 +111,17 @@ private fun Image(
     contentDescription: String?,
     transformation: Transformation?,
     alpha: Float,
-    @DrawableRes imagePreview: Int?,
+    previewImageLoader: ImageLoader?,
 ) {
     // Previews don't support images
-    if (isInPreviewMode() && imagePreview == null) {
+    val isInPreviewMode = isInPreviewMode()
+    if (isInPreviewMode && previewImageLoader == null) {
         return ImageForPreviews(modifier)
     }
 
     var useCache by remember { mutableStateOf(true) }
     val applicationContext = LocalContext.current.applicationContext
-    val imageLoader = remember(useCache) {
+    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(useCache) {
         applicationContext.getRevenueCatUIImageLoader(readCache = useCache)
     }
 
@@ -129,7 +141,6 @@ private fun Image(
             modifier = modifier,
             contentScale = contentScale,
             alpha = alpha,
-            imagePreview = imagePreview,
             onError = {
                 Logger.w("Image failed to load. Will try again disabling cache")
                 useCache = false
@@ -145,7 +156,6 @@ private fun Image(
             modifier = modifier,
             contentScale = contentScale,
             alpha = alpha,
-            imagePreview = imagePreview,
         )
     }
 }
@@ -161,7 +171,6 @@ private fun AsyncImage(
     contentScale: ContentScale,
     contentDescription: String?,
     alpha: Float,
-    @DrawableRes imagePreview: Int? = null,
     onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
 ) {
     AsyncImage(
@@ -170,7 +179,7 @@ private fun AsyncImage(
         placeholder = placeholderSource?.let {
             rememberAsyncImagePainter(
                 model = it.data,
-                placeholder = if (isInPreviewMode() && imagePreview != null) painterResource(imagePreview) else null,
+                placeholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholder(imageRequest) else null,
                 imageLoader = imageLoader,
                 contentScale = contentScale,
                 onError = { errorState ->
@@ -201,6 +210,13 @@ private fun ImageForPreviews(modifier: Modifier) {
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+private fun ImageLoader.getPreviewPlaceholder(imageRequest: ImageRequest): Painter =
+    when (val result = runBlocking { execute(imageRequest) }) {
+        is SuccessResult -> DrawablePainter(result.drawable)
+        is ErrorResult -> throw result.throwable
+    }
+
 // Note: these values have to match those in CoilImageDownloader
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 private const val PAYWALL_IMAGE_CACHE_FOLDER = "revenuecatui_cache"
@@ -228,4 +244,40 @@ private fun Context.getRevenueCatUIImageLoader(readCache: Boolean): ImageLoader 
         .diskCachePolicy(cachePolicy)
         .memoryCachePolicy(cachePolicy)
         .build()
+}
+
+/**
+ * This is loosely based on [Accompanist's Drawable Painter](https://google.github.io/accompanist/drawablepainter/).
+ * This is not production-quality code and should only be used for Previews. If we ever have a need for this, it's
+ * better to use the Accompanist Drawable Painter library directly.
+ *
+ * It's annotated with [ExperimentalPreviewRevenueCatUIPurchasesAPI] to discourage usage in production and as a nudge
+ * to read this documentation.
+ */
+@ExperimentalPreviewRevenueCatUIPurchasesAPI
+private class DrawablePainter(
+    private val drawable: Drawable,
+) : Painter() {
+
+    override fun DrawScope.onDraw() {
+        drawIntoCanvas { canvas ->
+            // Update the Drawable's bounds
+            drawable.setBounds(0, 0, size.width.roundToInt(), size.height.roundToInt())
+
+            canvas.withSave {
+                drawable.draw(canvas.nativeCanvas)
+            }
+        }
+    }
+
+    override val intrinsicSize: Size = drawable.intrinsicSize
+
+    private val Drawable.intrinsicSize: Size
+        get() = when {
+            // Only return a finite size if the drawable has an intrinsic size
+            intrinsicWidth >= 0 && intrinsicHeight >= 0 -> {
+                Size(width = intrinsicWidth.toFloat(), height = intrinsicHeight.toFloat())
+            }
+            else -> Size.Unspecified
+        }
 }

@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
@@ -33,6 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -102,7 +104,10 @@ internal fun InternalPaywall(
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
             if (state is PaywallState.Loaded.Components) {
-                LoadedPaywallComponents(state = state)
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = rememberPaywallActionHandler(viewModel),
+                )
             } else {
                 Logger.e(
                     "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
@@ -246,6 +251,17 @@ private fun ErrorDialog(
             Text(text = error)
         },
     )
+}
+
+@Composable
+private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction) -> Unit {
+    val activity = LocalActivity.current
+    return remember(viewModel, activity) {
+        {
+                action ->
+            viewModel.handleAction(action, activity)
+        }
+    }
 }
 
 /**

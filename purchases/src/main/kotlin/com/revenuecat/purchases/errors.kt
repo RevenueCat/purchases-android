@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.os.Parcelable
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
+import java.io.Serializable
 
 typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 
@@ -16,7 +17,12 @@ typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 class PurchasesError(
     val code: PurchasesErrorCode,
     val underlyingErrorMessage: String? = null,
-) : Parcelable {
+) : Parcelable, Serializable {
+
+    companion object {
+        private const val serialVersionUID = 81719171L
+    }
+
     // Message explaining the error
     @IgnoredOnParcel
     val message: String = code.description
