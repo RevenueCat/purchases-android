@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.snapshottests
 
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsPrimaryColor
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -43,33 +45,42 @@ class TemplateSnapshotTest(private val testConfig: TemplateTestConfig): BasePapa
         }
     }
 
+    @OptIn(ExperimentalCoilApi::class)
     @Test
     fun templateFullScreen() {
         screenshotTest {
-            InternalPaywall(
-                options = PaywallOptions.Builder(dismissRequest = {}).build(),
-                viewModel = MockViewModel(offering = testConfig.offering),
-            )
+            PreviewImagesAsPrimaryColor {
+                InternalPaywall(
+                    options = PaywallOptions.Builder(dismissRequest = {}).build(),
+                    viewModel = MockViewModel(offering = testConfig.offering),
+                )
+            }
         }
     }
 
+    @OptIn(ExperimentalCoilApi::class)
     @Test
     fun templateFooter() {
         screenshotTest {
-            InternalPaywall(
-                options = PaywallOptions.Builder(dismissRequest = {}).build(),
-                viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = testConfig.offering),
-            )
+            PreviewImagesAsPrimaryColor {
+                InternalPaywall(
+                    options = PaywallOptions.Builder(dismissRequest = {}).build(),
+                    viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = testConfig.offering),
+                )
+            }
         }
     }
 
+    @OptIn(ExperimentalCoilApi::class)
     @Test
     fun templateCondensedFooter() {
         screenshotTest {
-            InternalPaywall(
-                options = PaywallOptions.Builder(dismissRequest = {}).build(),
-                viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = testConfig.offering),
-            )
+            PreviewImagesAsPrimaryColor {
+                InternalPaywall(
+                    options = PaywallOptions.Builder(dismissRequest = {}).build(),
+                    viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = testConfig.offering),
+                )
+            }
         }
     }
 }

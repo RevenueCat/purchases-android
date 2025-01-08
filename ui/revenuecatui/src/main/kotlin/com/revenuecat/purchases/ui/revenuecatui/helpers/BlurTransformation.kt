@@ -5,8 +5,8 @@ import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
 import androidx.annotation.VisibleForTesting
-import coil.size.Size
-import coil.transform.Transformation
+import coil3.size.Size
+import coil3.transform.Transformation
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -21,7 +21,7 @@ import kotlin.math.roundToInt
 internal class BlurTransformation(
     private val context: Context,
     private val radius: Float,
-) : Transformation {
+) : Transformation() {
     override val cacheKey: String = "${javaClass.name}-$radius"
 
     override suspend fun transform(

@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -40,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsDrawableResource
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
@@ -72,121 +74,138 @@ internal fun ImageComponentView(
                 .applyIfNotNull(imageState.shape) { clip(it) },
             placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
             contentScale = imageState.contentScale,
-            imagePreview = R.drawable.android,
         )
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_Default() {
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(),
-            state = previewEmptyState(),
-        )
+    PreviewImagesAsDrawableResource(R.drawable.android) {
+        Box(modifier = Modifier.background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_FixedWidthFitHeight() {
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                size = Size(width = SizeConstraint.Fixed(72u), height = SizeConstraint.Fit),
-                contentScale = FitMode.FILL.toContentScale(),
-            ),
-            state = previewEmptyState(),
-        )
+    PreviewImagesAsDrawableResource(R.drawable.android) {
+        Box(modifier = Modifier.background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    size = Size(width = SizeConstraint.Fixed(72u), height = SizeConstraint.Fit),
+                    contentScale = FitMode.FILL.toContentScale(),
+                ),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_FitWidthFixedHeight() {
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fixed(72u)),
-                contentScale = FitMode.FILL.toContentScale(),
-            ),
-            state = previewEmptyState(),
-        )
+    PreviewImagesAsDrawableResource(R.drawable.android) {
+        Box(modifier = Modifier.background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fixed(72u)),
+                    contentScale = FitMode.FILL.toContentScale(),
+                ),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_SmallerContainer() {
-    Box(modifier = Modifier.height(200.dp).background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(),
-            state = previewEmptyState(),
-        )
+    PreviewImagesAsDrawableResource(R.drawable.android) {
+        Box(modifier = Modifier.height(200.dp).background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Suppress("MagicNumber")
 @Preview
 @Composable
 private fun ImageComponentView_Preview_LinearGradient() {
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                overlay = ColorScheme(
-                    light = ColorInfo.Gradient.Linear(
-                        degrees = -90f,
-                        points = listOf(
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#88FF0000"),
-                                percent = 0f,
-                            ),
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#8800FF00"),
-                                percent = 0.5f,
-                            ),
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#880000FF"),
-                                percent = 1f,
+    PreviewImagesAsDrawableResource(R.drawable.android) {
+        Box(modifier = Modifier.background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    overlay = ColorScheme(
+                        light = ColorInfo.Gradient.Linear(
+                            degrees = -90f,
+                            points = listOf(
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#88FF0000"),
+                                    percent = 0f,
+                                ),
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#8800FF00"),
+                                    percent = 0.5f,
+                                ),
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#880000FF"),
+                                    percent = 1f,
+                                ),
                             ),
                         ),
                     ),
                 ),
-            ),
-            state = previewEmptyState(),
-        )
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Suppress("MagicNumber")
 @Preview
 @Composable
 private fun ImageComponentView_Preview_RadialGradient() {
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                overlay = ColorScheme(
-                    light = ColorInfo.Gradient.Radial(
-                        listOf(
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#88FF0000"),
-                                percent = 0f,
-                            ),
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#8800FF00"),
-                                percent = 0.5f,
-                            ),
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#880000FF"),
-                                percent = 1f,
+    PreviewImagesAsDrawableResource(R.drawable.android) {
+        Box(modifier = Modifier.background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    overlay = ColorScheme(
+                        light = ColorInfo.Gradient.Radial(
+                            listOf(
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#88FF0000"),
+                                    percent = 0f,
+                                ),
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#8800FF00"),
+                                    percent = 0.5f,
+                                ),
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#880000FF"),
+                                    percent = 1f,
+                                ),
                             ),
                         ),
                     ),
                 ),
-            ),
-            state = previewEmptyState(),
-        )
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 

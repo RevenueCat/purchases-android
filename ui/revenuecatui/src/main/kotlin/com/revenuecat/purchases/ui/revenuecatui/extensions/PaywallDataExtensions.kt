@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallColor
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsPrimaryColor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import java.net.URL
 
@@ -145,30 +147,39 @@ private fun getDefaultPreviewOffering(): Offering {
     )
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
 internal fun DefaultPaywallPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(offering = getDefaultPreviewOffering()),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(offering = getDefaultPreviewOffering()),
+        )
+    }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")
 @Composable
 internal fun DefaultPaywallFooterPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = getDefaultPreviewOffering()),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = getDefaultPreviewOffering()),
+        )
+    }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")
 @Composable
 internal fun DefaultPaywallFooterCondensedPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = getDefaultPreviewOffering()),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = getDefaultPreviewOffering()),
+        )
+    }
 }

@@ -3,7 +3,7 @@
 -dontwarn com.google.errorprone.annotations.CanIgnoreReturnValue
 -dontwarn com.google.errorprone.annotations.Immutable
 -dontwarn com.amazon.**
--dontwarn coil.**
+-dontwarn coil3.**
 # Adding temporarily to fix issue after adding kotlin serialization
 -dontwarn java.lang.ClassValue
 

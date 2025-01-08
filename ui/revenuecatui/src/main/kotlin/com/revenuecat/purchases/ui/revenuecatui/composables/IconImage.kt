@@ -7,7 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -22,8 +22,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultAppIconPlaceholder
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsPrimaryColor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 @Composable
@@ -39,13 +41,7 @@ internal fun IconImage(
                 .aspectRatio(ratio = 1f)
                 .widthIn(max = maxWidth)
                 .clip(RoundedCornerShape(iconCornerRadius))
-            if (isInPreviewMode()) {
-                Box(
-                    modifier = modifier
-                        .background(color = MaterialTheme.colorScheme.primary)
-                        .size(maxWidth),
-                )
-            } else if (uri.toString().contains(PaywallData.defaultAppIconPlaceholder)) {
+            if (uri.toString().contains(PaywallData.defaultAppIconPlaceholder)) {
                 AppIcon(modifier = modifier)
             } else {
                 RemoteImage(
@@ -62,26 +58,38 @@ internal fun IconImage(
 private fun AppIcon(
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
+    // Since we're not using a Coil AsyncImage here, we can't use the PreviewHandler.
+    if (isInPreviewMode()) {
+        Box(
+            modifier = modifier
+                .background(color = MaterialTheme.colorScheme.primary)
+                .fillMaxSize(),
+        )
+    } else {
+        val context = LocalContext.current
 
-    val appIconResId = remember {
-        val packageManager = context.packageManager
-        context.applicationInfo.loadIcon(packageManager)
+        val appIconResId = remember {
+            val packageManager = context.packageManager
+            context.applicationInfo.loadIcon(packageManager)
+        }
+        Image(
+            bitmap = appIconResId.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = ContentScale.Crop,
+        )
     }
-    Image(
-        bitmap = appIconResId.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = ContentScale.Crop,
-    )
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview
 @Composable
 private fun IconImagePreview() {
-    IconImage(
-        uri = Uri.parse("https://assets.pawwalls.com/icon.jpg"),
-        maxWidth = 140.dp,
-        iconCornerRadius = 16.dp,
-    )
+    PreviewImagesAsPrimaryColor {
+        IconImage(
+            uri = Uri.parse("https://assets.pawwalls.com/icon.jpg"),
+            maxWidth = 140.dp,
+            iconCornerRadius = 16.dp,
+        )
+    }
 }

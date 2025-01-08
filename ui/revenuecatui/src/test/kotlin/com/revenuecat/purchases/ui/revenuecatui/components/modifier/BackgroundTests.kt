@@ -24,10 +24,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.Coil
-import coil.ImageLoader
-import coil.annotation.ExperimentalCoilApi
-import coil.test.FakeImageLoaderEngine
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.annotation.DelicateCoilApi
+import coil3.test.FakeImageLoaderEngine
+import coil3.test.intercept
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -51,7 +52,7 @@ import java.net.URL
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
-@OptIn(ExperimentalCoilApi::class)
+@OptIn(DelicateCoilApi::class)
 @RunWith(AndroidJUnit4::class)
 class BackgroundTests {
 
@@ -74,12 +75,12 @@ class BackgroundTests {
             .components { add(engine) }
             .build()
 
-        Coil.setImageLoader(imageLoader)
+        SingletonImageLoader.setUnsafe(imageLoader)
     }
 
     @After
     fun teardown() {
-        Coil.reset()
+        SingletonImageLoader.reset()
     }
 
     @Test

@@ -38,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import coil3.annotation.ExperimentalCoilApi
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -55,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PreviewImagesAsPrimaryColor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 @Composable
@@ -201,6 +203,7 @@ private object Template1UIConstants {
     const val circleScaleLanscape = 8.0f
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, group = "full_screen")
 @Preview(
     showBackground = true,
@@ -213,19 +216,24 @@ private object Template1UIConstants {
 @Preview(showBackground = true, device = Devices.NEXUS_10, group = "full_screen")
 @Composable
 private fun Template1PaywallPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(offering = TestData.template1Offering),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(offering = TestData.template1Offering),
+        )
+    }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 @Preview(showBackground = true, group = "full_screen")
 @Composable
 private fun Template1NoFooterPaywallPreview() {
-    InternalPaywall(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(offering = TestData.template1OfferingNoFooter),
-    )
+    PreviewImagesAsPrimaryColor {
+        InternalPaywall(
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            viewModel = MockViewModel(offering = TestData.template1OfferingNoFooter),
+        )
+    }
 }
 
 @Preview(showBackground = true, group = "footer")
