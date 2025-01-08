@@ -49,12 +49,13 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgrou
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
@@ -68,6 +69,7 @@ internal fun LoadedPaywallComponents(
         ComponentView(
             style = style,
             state = state,
+            onClick = clickHandler,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -77,6 +79,7 @@ internal fun LoadedPaywallComponents(
             ComponentView(
                 style = it,
                 state = state,
+                onClick = clickHandler,
                 modifier = Modifier
                     .fillMaxWidth(),
             )
@@ -156,9 +159,11 @@ private fun LoadedPaywallComponents_Preview() {
         availablePackages = emptyList(),
         paywallComponents = data,
     )
-    val state = offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(validated)
     LoadedPaywallComponents(
         state = state,
+        clickHandler = { },
         modifier = Modifier
             .fillMaxSize(),
     )
@@ -194,11 +199,11 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                                         ColorInfo.Gradient.Point(
                                             color = Color(red = 0xFF, green = 0xFF, blue = 0xFF, alpha = 0xFF)
                                                 .toArgb(),
-                                            percent = 0.4f,
+                                            percent = 40f,
                                         ),
                                         ColorInfo.Gradient.Point(
                                             color = Color(red = 5, green = 124, blue = 91).toArgb(),
-                                            percent = 1f,
+                                            percent = 100f,
                                         ),
                                     ),
                                 ),
@@ -328,10 +333,12 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         availablePackages = emptyList(),
         paywallComponents = data,
     )
-    val state = offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(validated)
 
     LoadedPaywallComponents(
         state = state,
+        clickHandler = { },
         modifier = Modifier
             .fillMaxSize(),
     )

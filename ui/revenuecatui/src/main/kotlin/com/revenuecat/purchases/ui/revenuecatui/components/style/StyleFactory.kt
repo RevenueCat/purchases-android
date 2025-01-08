@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -11,13 +12,18 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -27,15 +33,19 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
+    private val offering: Offering,
 ) {
 
     private companion object {
@@ -43,53 +53,65 @@ internal class StyleFactory(
         private val DEFAULT_SHAPE = RectangleShape
     }
 
-    fun create(
-        component: PaywallComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
-    ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
+    fun create(component: PaywallComponent): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
-            is ButtonComponent -> createButtonComponentStyle(component, actionHandler)
-            is ImageComponent -> TODO("ImageComponentStyle is not yet implemented.")
-            is PackageComponent -> TODO("PackageComponentStyle is not yet implemented.")
-            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, actionHandler)
-            is StackComponent -> createStackComponentStyle(component, actionHandler)
-            is StickyFooterComponent -> createStickyFooterComponentStyle(component, actionHandler)
+            is ButtonComponent -> createButtonComponentStyle(component)
+            is ImageComponent -> createImageComponentStyle(component)
+            is PackageComponent -> createPackageComponentStyle(component)
+            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
+            is StackComponent -> createStackComponentStyle(component)
+            is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component = component)
         }
 
-    fun createStickyFooterComponentStyle(
+    private fun createStickyFooterComponentStyle(
         component: StickyFooterComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createStackComponentStyle(component.stack, actionHandler).map {
+        createStackComponentStyle(component.stack).map {
             StickyFooterComponentStyle(stackComponentStyle = it)
         }
 
     private fun createButtonComponentStyle(
         component: ButtonComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
         component.stack,
-        actionHandler,
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
             action = component.action.mapButtonComponentActionToPaywallAction(),
-            actionHandler = actionHandler,
         )
+    }
+
+    private fun createPackageComponentStyle(
+        component: PackageComponent,
+    ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
+        component.stack,
+    ).flatMap { style ->
+        offering.getPackage(component.packageId)
+            .errorIfNull(
+                nonEmptyListOf(
+                    PaywallValidationError.MissingPackage(
+                        offeringId = offering.identifier,
+                        packageId = component.packageId,
+                    ),
+                ),
+            ).map { pkg ->
+                PackageComponentStyle(
+                    stackComponentStyle = style,
+                    rcPackage = pkg,
+                    isSelectedByDefault = component.isSelectedByDefault,
+                )
+            }
     }
 
     private fun createPurchaseButtonComponentStyle(
         component: PurchaseButtonComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
         component.stack,
-        actionHandler,
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
             action = PaywallAction.PurchasePackage,
-            actionHandler = actionHandler,
         )
     }
 
@@ -104,7 +126,6 @@ internal class StyleFactory(
     @Suppress("CyclomaticComplexMethod")
     private fun createStackComponentStyle(
         component: StackComponent,
-        actionHandler: suspend (PaywallAction) -> Unit,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
@@ -113,10 +134,10 @@ internal class StyleFactory(
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
         second = component.components
-            .map { create(it, actionHandler) }
+            .map { create(it) }
             .mapOrAccumulate { it },
         third = component.badge?.let { badge ->
-            createStackComponentStyle(badge.stack, actionHandler)
+            createStackComponentStyle(badge.stack)
                 .map {
                     BadgeStyle(
                         stackStyle = it,
@@ -169,4 +190,36 @@ internal class StyleFactory(
             overrides = presentedOverrides,
         )
     }
+
+    private fun createImageComponentStyle(
+        component: ImageComponent,
+    ): Result<ImageComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = component.source.withLocalizedOverrides(component.overrideSourceLid),
+        second = component.overrides
+            ?.toPresentedOverrides {
+                it.source
+                    ?.withLocalizedOverrides(it.overrideSourceLid)
+                    .orSuccessfullyNull()
+                    .map { sources -> PresentedImagePartial(sources = sources, partial = it) }
+            }.orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+    ) { sources, presentedOverrides ->
+        ImageComponentStyle(
+            sources,
+            size = component.size,
+            shape = component.maskShape?.toShape(),
+            overlay = component.colorOverlay,
+            contentScale = component.fitMode.toContentScale(),
+            overrides = presentedOverrides,
+        )
+    }
+
+    private fun ThemeImageUrls.withLocalizedOverrides(
+        overrideSourceLid: LocalizationKey?,
+    ): Result<NonEmptyMap<LocaleId, ThemeImageUrls>, NonEmptyList<PaywallValidationError.MissingImageLocalization>> =
+        overrideSourceLid
+            ?.let { key -> localizations.imageForAllLocales(key) }
+            .orSuccessfullyNull()
+            // Ensure the default source keyed by the default locale is present in the result.
+            .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
 }

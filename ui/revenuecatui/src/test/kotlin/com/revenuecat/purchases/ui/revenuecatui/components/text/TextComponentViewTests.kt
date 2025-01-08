@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
@@ -35,7 +36,6 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -76,8 +76,15 @@ class TextComponentViewTests {
             eligibleLocalizationKey to LocalizationData.Text(expectedTextEligibleEnUs),
         ),
     )
-    private val actionHandler: (PaywallAction) -> Unit = {}
-    private val styleFactory = StyleFactory(localizations)
+    private val styleFactory = StyleFactory(
+        localizations = localizations,
+        offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+    )
 
     @Test
     fun `Should change text color based on theme`(): Unit = with(composeTestRule) {
@@ -100,7 +107,7 @@ class TextComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
+                styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
@@ -145,7 +152,7 @@ class TextComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
+                styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
@@ -184,14 +191,8 @@ class TextComponentViewTests {
             smallTextComponent
         )
         setContent {
-            val largeTextStyle = styleFactory.create(
-                largeTextComponent,
-                actionHandler,
-            ).getOrThrow() as TextComponentStyle
-            val smallTextStyle = styleFactory.create(
-                smallTextComponent,
-                actionHandler,
-            ).getOrThrow() as TextComponentStyle
+            val largeTextStyle = styleFactory.create(largeTextComponent).getOrThrow() as TextComponentStyle
+            val smallTextStyle = styleFactory.create(smallTextComponent).getOrThrow() as TextComponentStyle
 
             // Act
             MaterialTheme {
@@ -245,7 +246,7 @@ class TextComponentViewTests {
             defaultLocaleIdentifier = localeIdEnUs,
             component
         )
-        val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
 
         // Act
         setContent {
@@ -296,7 +297,7 @@ class TextComponentViewTests {
             defaultLocaleIdentifier = localeIdEnUs,
             component
         )
-        val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
 
         // Act
         setContent { TextComponentView(style = style, state = state) }
@@ -331,8 +332,14 @@ class TextComponentViewTests {
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
-        val styleFactory = StyleFactory(localizations)
-        val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+        val styleFactory = StyleFactory(localizations, offering)
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
@@ -374,8 +381,14 @@ class TextComponentViewTests {
                 eligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
-        val styleFactory = StyleFactory(localizations)
-        val style = styleFactory.create(component, actionHandler).getOrThrow() as TextComponentStyle
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+        val styleFactory = StyleFactory(localizations, offering)
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,

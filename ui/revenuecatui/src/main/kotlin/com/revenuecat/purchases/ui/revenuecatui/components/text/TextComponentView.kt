@@ -6,6 +6,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.text
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -15,12 +16,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -54,7 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
 @Composable
@@ -89,9 +93,13 @@ internal fun TextComponentView(
         is ColorStyle.Gradient -> Color.Unspecified
     }
     // Create a TextStyle with gradient if necessary.
+    // Remove the line height, as that's not configurable anyway, so we should let Text decide the line height.
     val textStyle = when (colorStyle) {
-        is ColorStyle.Solid -> LocalTextStyle.current
+        is ColorStyle.Solid -> LocalTextStyle.current.copy(
+            lineHeight = TextUnit.Unspecified,
+        )
         is ColorStyle.Gradient -> LocalTextStyle.current.copy(
+            lineHeight = TextUnit.Unspecified,
             brush = colorStyle.brush,
         )
     }
@@ -167,6 +175,23 @@ private fun TextComponentView_Preview_Default() {
         ),
         state = previewEmptyState(),
     )
+}
+
+@Preview
+@Composable
+private fun TextComponentView_Preview_HeadingXlExtraBold() {
+    // Since we use LocalTextStyle, a MaterialTheme can influence the rendering.
+    MaterialTheme {
+        TextComponentView(
+            style = previewTextComponentStyle(
+                text = "Experience Pro today!",
+                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                fontSize = FontSize.HEADING_XL,
+                fontWeight = FontWeight.EXTRA_BOLD,
+            ),
+            state = previewEmptyState(),
+        )
+    }
 }
 
 @Preview(name = "SerifFont")
@@ -300,15 +325,15 @@ private fun TextComponentView_Preview_LinearGradient() {
                     points = listOf(
                         ColorInfo.Gradient.Point(
                             color = Color.Cyan.toArgb(),
-                            percent = 0.1f,
+                            percent = 10f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                            percent = 0.3f,
+                            percent = 30f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                            percent = 0.8f,
+                            percent = 80f,
                         ),
                     ),
                 ),
@@ -337,15 +362,15 @@ private fun TextComponentView_Preview_RadialGradient() {
                     points = listOf(
                         ColorInfo.Gradient.Point(
                             color = Color.Cyan.toArgb(),
-                            percent = 0.1f,
+                            percent = 10f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                            percent = 0.8f,
+                            percent = 80f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                            percent = 1f,
+                            percent = 100f,
                         ),
                     ),
                 ),
@@ -363,7 +388,6 @@ private fun TextComponentView_Preview_RadialGradient() {
 }
 
 @Suppress("LongParameterList")
-@Composable
 private fun previewTextComponentStyle(
     text: String,
     color: ColorScheme,
@@ -406,7 +430,11 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
                 stickyFooter = null,
             ),
         ),
-        componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
+        componentsLocalizations = nonEmptyMapOf(
+            LocaleId("en_US") to nonEmptyMapOf(
+                LocalizationKey("text") to LocalizationData.Text("text"),
+            ),
+        ),
         defaultLocaleIdentifier = LocaleId("en_US"),
     )
     val offering = Offering(
@@ -416,6 +444,6 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         availablePackages = emptyList(),
         paywallComponents = data,
     )
-
-    return offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(validated)
 }

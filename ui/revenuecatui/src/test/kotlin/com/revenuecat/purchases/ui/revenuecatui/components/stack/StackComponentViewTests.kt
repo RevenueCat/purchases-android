@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
@@ -37,7 +38,6 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEqu
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertRectangularBorderColor
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -64,9 +64,14 @@ class StackComponentViewTests {
             LocaleId("en_US") to nonEmptyMapOf(
                 LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
             )
+        ),
+        offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
         )
     )
-    private val actionHandler: (PaywallAction) -> Unit = {}
 
     @Test
     fun `Should change background color based on theme`(): Unit = with(composeTestRule) {
@@ -86,9 +91,16 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow() as StackComponentStyle
             },
-            act = { StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack")) },
+            act = {
+                StackComponentView(
+                    style = it,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("stack")
+                )
+                  },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -128,9 +140,16 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow() as StackComponentStyle
             },
-            act = { StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack")) },
+            act = {
+                StackComponentView(
+                style = it,
+                state = state,
+                clickHandler = { },
+                modifier = Modifier.testTag("stack")
+            )
+                  },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -180,7 +199,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow() as StackComponentStyle
             },
             act = {
                 // An outer box, because a shadow draws outside the Composable's bounds.
@@ -191,7 +210,12 @@ class StackComponentViewTests {
                         .background(expectedBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    StackComponentView(style = it, state = state, modifier = Modifier.testTag("stack"))
+                    StackComponentView(
+                        style = it,
+                        state = state,
+                        clickHandler = { },
+                        modifier = Modifier.testTag("stack")
+                    )
                 }
             },
             assert = { theme ->
@@ -266,7 +290,7 @@ class StackComponentViewTests {
             )
         )
         val state = FakePaywallState(component)
-        val style = styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
+        val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
 
         // Act
         setContent {
@@ -282,6 +306,7 @@ class StackComponentViewTests {
                 StackComponentView(
                     style = style,
                     state = state,
+                    clickHandler = { },
                     selected = selected,
                     modifier = Modifier.testTag("stack")
                 )
@@ -366,7 +391,7 @@ class StackComponentViewTests {
             )
         )
         val state = FakePaywallState(component)
-        val style = styleFactory.create(component, actionHandler).getOrThrow() as StackComponentStyle
+        val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
 
         // Act
         setContent {
@@ -378,7 +403,12 @@ class StackComponentViewTests {
                     .background(parentBackgroundColor),
                 contentAlignment = Alignment.Center,
             ) {
-                StackComponentView(style = style, state = state, modifier = Modifier.testTag("stack"))
+                StackComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("stack")
+                )
             }
         }
 

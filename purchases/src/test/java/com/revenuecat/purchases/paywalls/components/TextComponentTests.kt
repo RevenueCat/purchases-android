@@ -129,6 +129,36 @@ internal class TextComponentTests {
                         )
                     )
                 ),
+                arrayOf(
+                    "empty margin and padding",
+                    Args(
+                        json = """
+                        {
+                          "color": {
+                            "light": {
+                              "type": "hex",
+                              "value": "#ffffff"
+                            }
+                          },
+                          "components": [],
+                          "id": "xmpgCrN9Rb",
+                          "margin": {},
+                          "name": "Text",
+                          "padding": {},
+                          "text_lid": "7bkohQjzIE",
+                          "type": "text"
+                        }
+                        """.trimIndent(),
+                        expected = TextComponent(
+                            text = LocalizationKey("7bkohQjzIE"),
+                            color = ColorScheme(
+                                light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0xff, green = 0xff, blue = 0xff))
+                            ),
+                            padding = Padding.zero,
+                            margin = Padding.zero,
+                        )
+                    )
+                ),
             )
         }
 
@@ -242,6 +272,21 @@ internal class TextComponentTests {
                         { }
                         """.trimIndent(),
                         expected = PartialTextComponent()
+                    )
+                ),
+                arrayOf(
+                    "empty margin and padding",
+                    Args(
+                        json = """
+                        {
+                          "margin": {},
+                          "padding": {}
+                        }
+                        """.trimIndent(),
+                        expected = PartialTextComponent(
+                            padding = Padding.zero,
+                            margin = Padding.zero,
+                        )
                     )
                 ),
             )

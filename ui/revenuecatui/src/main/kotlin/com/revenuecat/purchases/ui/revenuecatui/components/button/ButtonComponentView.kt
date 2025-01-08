@@ -21,6 +21,8 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Border
@@ -48,7 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import kotlinx.coroutines.launch
 import java.net.URL
 
@@ -56,27 +58,32 @@ import java.net.URL
 internal fun ButtonComponentView(
     style: ButtonComponentStyle,
     state: PaywallState.Loaded.Components,
+    onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
     StackComponentView(
-        style.stackComponentStyle,
-        state,
-        modifier.clickable(enabled = isClickable) {
+        style = style.stackComponentStyle,
+        state = state,
+        // We're the button, so we're handling the click already.
+        clickHandler = { },
+        modifier = modifier.clickable(enabled = isClickable) {
             isClickable = false
             coroutineScope.launch {
-                style.actionHandler(style.action)
+                onClick(style.action)
                 isClickable = true
             }
         },
+        selected = selected,
     )
 }
 
 @Preview
 @Composable
 private fun ButtonComponentView_Preview_Default() {
-    ButtonComponentView(previewButtonComponentStyle(), previewEmptyState())
+    ButtonComponentView(previewButtonComponentStyle(), previewEmptyState(), { })
 }
 
 @Composable
@@ -120,12 +127,10 @@ private fun previewButtonComponentStyle(
         overrides = null,
     ),
     action: PaywallAction = PaywallAction.RestorePurchases,
-    actionHandler: (PaywallAction) -> Unit = {},
 ): ButtonComponentStyle {
     return ButtonComponentStyle(
         stackComponentStyle = stackComponentStyle,
         action = action,
-        actionHandler = actionHandler,
     )
 }
 
@@ -141,7 +146,11 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
                 stickyFooter = null,
             ),
         ),
-        componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
+        componentsLocalizations = nonEmptyMapOf(
+            LocaleId("en_US") to nonEmptyMapOf(
+                LocalizationKey("text") to LocalizationData.Text("text"),
+            ),
+        ),
         defaultLocaleIdentifier = LocaleId("en_US"),
     )
     val offering = Offering(
@@ -151,6 +160,6 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         availablePackages = emptyList(),
         paywallComponents = data,
     )
-
-    return offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(validated)
 }

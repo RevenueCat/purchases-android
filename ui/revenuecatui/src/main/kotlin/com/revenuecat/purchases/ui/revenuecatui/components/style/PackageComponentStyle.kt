@@ -1,15 +1,17 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.runtime.Immutable
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 
 @Immutable
-internal class ButtonComponentStyle(
+internal class PackageComponentStyle(
+    @get:JvmSynthetic
+    val rcPackage: Package,
+    @get:JvmSynthetic
+    val isSelectedByDefault: Boolean,
     @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
-    @get:JvmSynthetic
-    val action: PaywallAction,
 ) : ComponentStyle {
     override val size: Size = stackComponentStyle.size
 }

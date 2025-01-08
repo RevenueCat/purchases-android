@@ -91,12 +91,15 @@ class ButtonComponentViewTests {
                     overrides = null,
                 ),
                 action = PaywallAction.PurchasePackage,
-                actionHandler = {
+            )
+            ButtonComponentView(
+                style = style,
+                state = FakePaywallState(),
+                onClick = {
                     actionHandleCalledCount++
                     completable.await()
                 }
             )
-            ButtonComponentView(style = style, state = FakePaywallState())
         }
 
         val purchaseButton = composeTestRule.onNodeWithText("Purchase")
