@@ -80,6 +80,7 @@ dependencies {
     implementation libs.activity.compose
     implementation libs.androidx.fragment.ktx
     implementation libs.compose.ui.google.fonts
+    implementation libs.androidx.browser
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 
