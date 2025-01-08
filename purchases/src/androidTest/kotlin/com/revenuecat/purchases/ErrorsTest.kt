@@ -23,6 +23,8 @@ class ErrorsTest {
         val parcel = Parcel.obtain()
         val readBundle: Bundle?
         try {
+            // Write the bundle to a parcel in order to actually perform the serialization. Without this,
+            // the bundle will not be serialized and the test will be successful while not actually being serializable.
             parcel.writeBundle(bundle)
             parcel.setDataPosition(0)
             readBundle = parcel.readBundle(javaClass.classLoader)!!
