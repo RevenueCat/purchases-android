@@ -134,7 +134,7 @@ class PaywallActionTests {
         when (this) {
             is PaywallAction.NavigateBack -> ButtonComponent.Action.NavigateBack
             is PaywallAction.NavigateTo -> ButtonComponent.Action.NavigateTo(destination)
-            is PaywallAction.RestorePurchases -> ButtonComponent.Action.NavigateBack
+            is PaywallAction.RestorePurchases -> ButtonComponent.Action.RestorePurchases
             is PaywallAction.PurchasePackage -> error(
                 "PurchasePackage is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
             )
