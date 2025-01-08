@@ -124,8 +124,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 
 kotlin-bom = "org.jetbrains.kotlin:kotlin-bom:1.8.0"
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-# When we update to 2024.09.00 or higher, we can remove the version from compose-material3Adaptive below.
-compose-bom = "androidx.compose:compose-bom:2024.08.00"
+compose-bom = "androidx.compose:compose-bom:2024.09.00"
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-util = { module = "androidx.compose.ui:ui-util" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
@@ -134,7 +133,7 @@ compose-ui-google-fonts = { module = "androidx.compose.ui:ui-text-google-fonts" 
 compose-material = { module = "androidx.compose.material:material" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-window-size = { module = "androidx.compose.material3:material3-window-size-class" }
-compose-material3Adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version = "1.0.0" }
+compose-material3Adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 
 window = { module = "androidx.window:window", version.ref = "window" }
