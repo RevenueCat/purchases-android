@@ -199,11 +199,11 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                                         ColorInfo.Gradient.Point(
                                             color = Color(red = 0xFF, green = 0xFF, blue = 0xFF, alpha = 0xFF)
                                                 .toArgb(),
-                                            percent = 0.4f,
+                                            percent = 40f,
                                         ),
                                         ColorInfo.Gradient.Point(
                                             color = Color(red = 5, green = 124, blue = 91).toArgb(),
-                                            percent = 1f,
+                                            percent = 100f,
                                         ),
                                     ),
                                 ),
