@@ -62,6 +62,12 @@ internal fun ButtonComponentView(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
 ) {
+    // Get a ButtonComponentState that calculates the stateful properties we should use.
+    val buttonState = rememberButtonComponentState(
+        style = style,
+        paywallState = state,
+    )
+
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
     StackComponentView(
@@ -72,7 +78,7 @@ internal fun ButtonComponentView(
         modifier = modifier.clickable(enabled = isClickable) {
             isClickable = false
             coroutineScope.launch {
-                onClick(style.action)
+                onClick(buttonState.action)
                 isClickable = true
             }
         },
@@ -125,7 +131,7 @@ private fun previewButtonComponentStyle(
         ),
         overrides = null,
     ),
-    action: PaywallAction = PaywallAction.RestorePurchases,
+    action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,
 ): ButtonComponentStyle {
     return ButtonComponentStyle(
         stackComponentStyle = stackComponentStyle,

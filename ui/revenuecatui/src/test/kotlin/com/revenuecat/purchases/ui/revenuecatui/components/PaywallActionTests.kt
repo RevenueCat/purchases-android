@@ -119,10 +119,21 @@ class PaywallActionTests {
     private fun PaywallAction.toButtonAction(): ButtonComponent.Action =
         when (this) {
             is PaywallAction.NavigateBack -> ButtonComponent.Action.NavigateBack
-            is PaywallAction.NavigateTo -> ButtonComponent.Action.NavigateTo(destination)
+            is PaywallAction.NavigateTo -> ButtonComponent.Action.NavigateTo(destination.toButtonDestination())
             is PaywallAction.RestorePurchases -> ButtonComponent.Action.RestorePurchases
             is PaywallAction.PurchasePackage -> error(
                 "PurchasePackage is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
+            )
+        }
+
+    private fun PaywallAction.NavigateTo.Destination.toButtonDestination(): ButtonComponent.Destination =
+        when (this) {
+            is PaywallAction.NavigateTo.Destination.CustomerCenter -> ButtonComponent.Destination.CustomerCenter
+            is PaywallAction.NavigateTo.Destination.Url -> ButtonComponent.Destination.Url(
+                // We are treating the actual URL as a LocalizationKey here, which is not correct. However the actual
+                // LocalizationKey is not known here, and this is sufficient for our tests.
+                urlLid = LocalizationKey(url),
+                method = method
             )
         }
 

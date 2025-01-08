@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -46,15 +47,21 @@ class ButtonComponent(
 
         @Serializable
         data class PrivacyPolicy(
-            @get:JvmSynthetic val urlLid: String,
+            @get:JvmSynthetic val urlLid: LocalizationKey,
             @get:JvmSynthetic val method: UrlMethod,
         ) : Destination
 
         @Serializable
-        data class Terms(@get:JvmSynthetic val urlLid: String, @get:JvmSynthetic val method: UrlMethod) : Destination
+        data class Terms(
+            @get:JvmSynthetic val urlLid: LocalizationKey,
+            @get:JvmSynthetic val method: UrlMethod,
+        ) : Destination
 
         @Serializable
-        data class Url(@get:JvmSynthetic val urlLid: String, @get:JvmSynthetic val method: UrlMethod) : Destination
+        data class Url(
+            @get:JvmSynthetic val urlLid: LocalizationKey,
+            @get:JvmSynthetic val method: UrlMethod,
+        ) : Destination
     }
 
     @InternalRevenueCatAPI
@@ -203,4 +210,4 @@ private enum class DestinationSurrogate {
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("ConstructorParameterNaming", "PropertyName")
 @Serializable
-private class UrlSurrogate(val url_lid: String, val method: UrlMethod)
+private class UrlSurrogate(val url_lid: LocalizationKey, val method: UrlMethod)

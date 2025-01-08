@@ -275,21 +275,10 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
 
                 is PaywallAction.NavigateBack -> viewModel.closePaywall()
                 is PaywallAction.NavigateTo -> when (val destination = action.destination) {
-                    is ButtonComponent.Destination.CustomerCenter ->
-                        Logger.w("Opening Customer Center is not yet implemented.")
-
-                    is ButtonComponent.Destination.PrivacyPolicy -> context.handleUrlDestination(
-                        url = destination.urlLid,
-                        method = destination.method,
-                    )
-
-                    is ButtonComponent.Destination.Terms -> context.handleUrlDestination(
-                        url = destination.urlLid,
-                        method = destination.method,
-                    )
-
-                    is ButtonComponent.Destination.Url -> context.handleUrlDestination(
-                        url = destination.urlLid,
+                    is PaywallAction.NavigateTo.Destination.CustomerCenter ->
+                        Logger.w("Customer Center is not yet implemented on Android.")
+                    is PaywallAction.NavigateTo.Destination.Url -> context.handleUrlDestination(
+                        url = destination.url,
                         method = destination.method,
                     )
                 }
