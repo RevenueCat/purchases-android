@@ -137,7 +137,7 @@ internal class StyleFactory(
             .map { create(it) }
             .mapOrAccumulate { it },
         third = component.badge?.let { badge ->
-            createStackComponentStyle(badge.stack, actionHandler)
+            createStackComponentStyle(badge.stack)
                 .map {
                     BadgeStyle(
                         stackStyle = it,
