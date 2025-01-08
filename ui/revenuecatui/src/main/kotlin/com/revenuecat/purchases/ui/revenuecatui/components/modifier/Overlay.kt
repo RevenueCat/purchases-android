@@ -19,7 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 internal fun Modifier.overlay(
     color: ColorStyle,
     shape: Shape = RectangleShape,
-): Modifier = this then drawWithCache {
+): Modifier = this.drawWithCache {
     val outline = shape.createOutline(size, layoutDirection, this)
 
     onDrawWithContent {
@@ -39,7 +39,7 @@ internal fun Modifier.overlay(
 internal fun Modifier.underlay(
     color: ColorStyle,
     shape: Shape = RectangleShape,
-): Modifier = this then drawBehind {
+): Modifier = this.drawBehind {
     val outline = shape.createOutline(size, layoutDirection, this)
     when (color) {
         is ColorStyle.Solid -> drawOutline(outline, color.color)

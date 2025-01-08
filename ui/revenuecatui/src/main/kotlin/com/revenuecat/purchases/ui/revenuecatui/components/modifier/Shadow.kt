@@ -44,7 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberSh
 internal fun Modifier.shadow(
     shadow: ShadowStyle,
     shape: Shape,
-) = this then drawBehind {
+) = this.drawBehind {
     // Where to draw
     val outline = shape.createOutline(size, layoutDirection, this)
     val offset = Offset(x = shadow.x.toPx(), y = shadow.y.toPx())
