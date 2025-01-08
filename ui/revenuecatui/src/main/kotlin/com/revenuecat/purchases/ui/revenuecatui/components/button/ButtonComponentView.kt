@@ -123,6 +123,7 @@ private fun previewButtonComponentStyle(
             x = 0.0,
             y = 3.0,
         ),
+        badge = null,
         overrides = null,
     ),
     action: PaywallAction = PaywallAction.RestorePurchases,
