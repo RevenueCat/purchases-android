@@ -28,6 +28,11 @@ import kotlin.math.max
 import kotlin.math.sin
 
 /**
+ * Used to normalize [ColorInfo.Gradient.Point.percent] values (which are in the range 0..100) to a range of 0..1.
+ */
+private const val PERCENT_SCALE = 100f
+
+/**
  * Ready to use color properties for the current theme.
  */
 internal sealed interface ColorStyle {
@@ -71,7 +76,7 @@ internal fun ColorInfo.toColorStyle(): ColorStyle {
 }
 
 private fun List<ColorInfo.Gradient.Point>.toColorStops(): Array<Pair<Float, Color>> =
-    map { point -> point.percent to Color(point.color) }
+    map { point -> point.percent / PERCENT_SCALE to Color(point.color) }
         .toTypedArray()
 
 @Stable

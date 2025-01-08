@@ -325,15 +325,15 @@ private fun TextComponentView_Preview_LinearGradient() {
                     points = listOf(
                         ColorInfo.Gradient.Point(
                             color = Color.Cyan.toArgb(),
-                            percent = 0.1f,
+                            percent = 10f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                            percent = 0.3f,
+                            percent = 30f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                            percent = 0.8f,
+                            percent = 80f,
                         ),
                     ),
                 ),
@@ -362,15 +362,15 @@ private fun TextComponentView_Preview_RadialGradient() {
                     points = listOf(
                         ColorInfo.Gradient.Point(
                             color = Color.Cyan.toArgb(),
-                            percent = 0.1f,
+                            percent = 10f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                            percent = 0.8f,
+                            percent = 80f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                            percent = 1f,
+                            percent = 100f,
                         ),
                     ),
                 ),
