@@ -36,5 +36,7 @@ internal class StackComponentStyle(
     @get:JvmSynthetic
     val shadow: Shadow?,
     @get:JvmSynthetic
+    val badge: BadgeStyle?,
+    @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedStackPartial>?,
 ) : ComponentStyle
