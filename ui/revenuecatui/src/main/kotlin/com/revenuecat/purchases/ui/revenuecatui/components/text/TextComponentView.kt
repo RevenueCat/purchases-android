@@ -116,7 +116,7 @@ internal fun TextComponentView(
             fontSize = textState.fontSize.toTextUnit(),
             fontWeight = textState.fontWeight,
             fontFamily = textState.fontFamily,
-            // horizontalAlignment = textState.horizontalAlignment,
+            horizontalAlignment = textState.horizontalAlignment,
             textAlign = textState.textAlign,
             style = textStyle,
         )
