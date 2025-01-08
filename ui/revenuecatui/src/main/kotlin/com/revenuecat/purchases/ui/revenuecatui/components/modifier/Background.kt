@@ -20,8 +20,8 @@ internal fun Modifier.background(
     shape: Shape = RectangleShape,
 ): Modifier =
     when (color) {
-        is ColorStyle.Solid -> this then background(color.color, shape)
-        is ColorStyle.Gradient -> this then background(color.brush, shape, alpha = 1f)
+        is ColorStyle.Solid -> this.background(color.color, shape)
+        is ColorStyle.Gradient -> this.background(color.brush, shape, alpha = 1f)
     }
 
 @JvmSynthetic
@@ -31,13 +31,12 @@ internal fun Modifier.background(
     shape: Shape = RectangleShape,
 ): Modifier =
     when (background) {
-        is BackgroundStyle.Color -> this then background(color = background.color, shape = shape)
+        is BackgroundStyle.Color -> this.background(color = background.color, shape = shape)
         is BackgroundStyle.Image ->
-            this then
-                paint(
-                    painter = background.painter,
-                    contentScale = background.contentScale,
-                ) then
-                applyIfNotNull(background.colorOverlay) { underlay(it, shape) } then
-                clip(shape)
+            this.paint(
+                painter = background.painter,
+                contentScale = background.contentScale,
+            )
+                .applyIfNotNull(background.colorOverlay) { underlay(it, shape) }
+                .clip(shape)
     }

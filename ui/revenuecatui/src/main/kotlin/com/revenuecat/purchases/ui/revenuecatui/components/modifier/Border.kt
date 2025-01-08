@@ -30,8 +30,8 @@ internal fun Modifier.border(
     shape: Shape = RectangleShape,
 ): Modifier =
     when (border.color) {
-        is ColorStyle.Solid -> this then border(width = border.width, color = border.color.color, shape = shape)
-        is ColorStyle.Gradient -> this then border(width = border.width, brush = border.color.brush, shape = shape)
+        is ColorStyle.Solid -> this.border(width = border.width, color = border.color.color, shape = shape)
+        is ColorStyle.Gradient -> this.border(width = border.width, brush = border.color.brush, shape = shape)
     }
 
 @Suppress("MagicNumber")

@@ -304,7 +304,7 @@ private fun TextComponentView_Preview_Customizations() {
 private fun TextComponentView_Preview_Markdown() {
     TextComponentView(
         style = previewTextComponentStyle(
-            text = "Hello, **bold**, *italic* or _italic2_ with ~strikethrough~ and `monospace`. " +
+            text = "Hello, **bold**, *italic* or _italic2_ with ~strikethrough~, ~~strikethrough2~~ and `monospace`. " +
                 "Click [here](https://revenuecat.com)",
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
