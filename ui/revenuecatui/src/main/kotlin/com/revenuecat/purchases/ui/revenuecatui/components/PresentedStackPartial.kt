@@ -22,6 +22,7 @@ internal class PresentedStackPartial(
                 shape = otherPartial?.shape ?: partial.shape,
                 border = otherPartial?.border ?: partial.border,
                 shadow = otherPartial?.shadow ?: partial.shadow,
+                badge = otherPartial?.badge ?: partial.badge,
             ),
         )
     }
