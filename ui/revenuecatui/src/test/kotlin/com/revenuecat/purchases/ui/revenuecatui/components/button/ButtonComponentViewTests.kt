@@ -99,6 +99,7 @@ class ButtonComponentViewTests {
                         x = 0.0,
                         y = 3.0
                     ),
+                    badge = null,
                     overrides = null,
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage,

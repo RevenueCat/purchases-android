@@ -147,6 +147,7 @@ internal class StyleFactory(
             ButtonComponentStyle.Action.NavigateTo.Destination.Url(urls, method)
         }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun createStackComponentStyle(
         component: StackComponent,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
@@ -159,7 +160,17 @@ internal class StyleFactory(
         second = component.components
             .map { create(it) }
             .mapOrAccumulate { it },
-    ) { presentedOverrides, children ->
+        third = component.badge?.let { badge ->
+            createStackComponentStyle(badge.stack)
+                .map {
+                    BadgeStyle(
+                        stackStyle = it,
+                        style = badge.style,
+                        alignment = badge.alignment,
+                    )
+                }
+        }.orSuccessfullyNull(),
+    ) { presentedOverrides, children, badge ->
         StackComponentStyle(
             children = children,
             dimension = component.dimension,
@@ -171,6 +182,7 @@ internal class StyleFactory(
             shape = component.shape?.toShape() ?: DEFAULT_SHAPE,
             border = component.border,
             shadow = component.shadow,
+            badge = badge,
             overrides = presentedOverrides,
         )
     }

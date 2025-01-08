@@ -561,7 +561,7 @@ class BillingWrapperTest {
             subscriptionOfferDetails = null
         )
         every {
-            oneTimePurchaseOfferDetails.zza()
+            oneTimePurchaseOfferDetails.zzb()
         } returns productId
         
         val storeProduct = productDetails.toInAppStoreProduct()!!

@@ -58,7 +58,7 @@ sealed interface ColorInfo {
             @ColorInt
             @get:JvmSynthetic val color: Int,
             /**
-             * A percentage value in the range 0.0..100.0.
+             * A percentage value in the range 0..100.
              */
             @get:JvmSynthetic val percent: Float,
         )

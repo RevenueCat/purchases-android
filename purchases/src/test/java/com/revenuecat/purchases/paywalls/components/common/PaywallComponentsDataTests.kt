@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,6 +41,14 @@ internal class PaywallComponentsDataTests(
                             "base": {
                               "stack": {
                                 "type": "stack",
+                                "badge": {
+                                  "stack": {
+                                    "type": "stack",
+                                    "components": []
+                                  },
+                                  "style": "overlay",
+                                  "alignment": "bottom_trailing"
+                                },
                                 "components": []
                               },
                               "background": {
@@ -68,7 +78,14 @@ internal class PaywallComponentsDataTests(
                         componentsConfig = ComponentsConfig(
                             base = PaywallComponentsConfig(
                                 stack = StackComponent(
-                                    components = emptyList()
+                                    components = emptyList(),
+                                    badge = Badge(
+                                        stack = StackComponent(
+                                            components = emptyList()
+                                        ),
+                                        style = Badge.Style.Overlay,
+                                        alignment = TwoDimensionalAlignment.BOTTOM_TRAILING
+                                    ),
                                 ),
                                 background = Background.Color(
                                     value = ColorScheme(
