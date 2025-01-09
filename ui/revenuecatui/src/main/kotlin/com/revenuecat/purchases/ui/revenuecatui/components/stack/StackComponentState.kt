@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
@@ -102,6 +103,11 @@ internal class StackComponentState(
 
     @get:JvmSynthetic
     val shape by derivedStateOf { presentedPartial?.partial?.shape?.toShape() ?: style.shape }
+
+    @get:JvmSynthetic
+    val cornerRadiuses by derivedStateOf {
+        (presentedPartial?.partial?.shape as? Shape.Rectangle)?.corners ?: style.cornerRadiuses
+    }
 
     @get:JvmSynthetic
     val border by derivedStateOf { presentedPartial?.partial?.border ?: style.border }

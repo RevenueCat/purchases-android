@@ -16,13 +16,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -40,6 +46,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.CENTER
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
@@ -64,6 +71,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
@@ -158,7 +166,7 @@ private fun StackWithOverlaidBadge(
     }
 }
 
-@Suppress("LongMethod", "LongParameterList")
+@Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 @Composable
 private fun StackWithEdgeToEdgeBadge(
     stackState: StackComponentState,
@@ -169,6 +177,10 @@ private fun StackWithEdgeToEdgeBadge(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
 ) {
+    var badgeHeight by remember {
+        mutableIntStateOf(0)
+    }
+    val badgeHeightDp = with(LocalDensity.current) { badgeHeight.toDp() }
     val badge = @Composable {
         StackComponentView(
             // The background and border is applied to the parent container so we null it out here.
@@ -176,12 +188,15 @@ private fun StackWithEdgeToEdgeBadge(
             badgeStack.copy(
                 backgroundColor = null,
                 size = Size(width = Fill, height = badgeStack.size.height),
-                badge = null,
                 border = null,
+                margin = PaddingValues(0.dp),
             ),
             state,
             clickHandler,
             selected = selected,
+            modifier = Modifier.onGloballyPositioned {
+                badgeHeight = it.size.height
+            },
         )
     }
     val mainContent = @Composable {
@@ -195,37 +210,57 @@ private fun StackWithEdgeToEdgeBadge(
     val backgroundColorStyle = badgeStack.backgroundColor?.let { rememberColorStyle(scheme = it) }
     val borderStyle = badgeStack.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = badgeStack.shadow?.let { rememberShadowStyle(shadow = it) }
-    val shape = if (badgeStack.shape is RoundedCornerShape) {
-        
-    } else null
+    val shape = badgeStack.cornerRadiuses?.let { cornerRadiuses ->
+        val filteredCornerRadiuses = when (alignment) {
+            TwoDimensionalAlignment.TOP_LEADING,
+            TwoDimensionalAlignment.TOP,
+            TwoDimensionalAlignment.TOP_TRAILING,
+            -> cornerRadiuses.copy(bottomLeading = 0.0, bottomTrailing = 0.0)
+            TwoDimensionalAlignment.BOTTOM_LEADING,
+            TwoDimensionalAlignment.BOTTOM,
+            TwoDimensionalAlignment.BOTTOM_TRAILING,
+            -> cornerRadiuses.copy(topLeading = 0.0, topTrailing = 0.0)
+            else -> cornerRadiuses
+        }
+        Shape.Rectangle(filteredCornerRadiuses).toShape()
+    }
 
     val backgroundModifier = remember(badgeStack, backgroundColorStyle, borderStyle, shadowStyle) {
         Modifier
             .padding(badgeStack.margin)
-            .applyIfNotNull(backgroundColorStyle) { background(it, badgeStack.shape) }
-            .applyIfNotNull(shape) { clip(shape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, shape ?: RectangleShape) }
+            .applyIfNotNull(shape) { clip(it) }
             .applyIfNotNull(borderStyle) { border(it, badgeStack.shape) }
-            .padding(badgeStack.padding)
     }
 
+    val backgroundHeight by remember(stackState.cornerRadiuses, badgeHeightDp) {
+        derivedStateOf {
+            stackState.cornerRadiuses?.let {
+                badgeHeightDp + maxOf(it.topLeading, it.topTrailing, it.bottomLeading, it.bottomTrailing).dp
+            } ?: badgeHeightDp
+        }
+    }
     Box(modifier = modifier.width(IntrinsicSize.Min)) {
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .then(backgroundModifier))
+        Box(
+            modifier = Modifier
+                .align(alignment.toAlignment())
+                .fillMaxWidth()
+                .height(backgroundHeight)
+                .then(backgroundModifier),
+        )
         Column {
             when (alignment) {
                 TwoDimensionalAlignment.TOP_LEADING,
                 TwoDimensionalAlignment.TOP,
                 TwoDimensionalAlignment.TOP_TRAILING,
-                    -> {
+                -> {
                     badge()
                     mainContent()
                 }
                 TwoDimensionalAlignment.BOTTOM_LEADING,
                 TwoDimensionalAlignment.BOTTOM,
                 TwoDimensionalAlignment.BOTTOM_TRAILING,
-                    -> {
+                -> {
                     mainContent()
                     badge()
                 }
@@ -372,6 +407,12 @@ private fun StackComponentView_Preview_Vertical() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
+                cornerRadiuses = CornerRadiuses(
+                    topLeading = 20.0,
+                    topTrailing = 20.0,
+                    bottomLeading = 20.0,
+                    bottomTrailing = 20.0,
+                ),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -419,6 +460,12 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 padding = PaddingValues(all = 12.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = RoundedCornerShape(size = 20.dp),
+                cornerRadiuses = CornerRadiuses(
+                    topLeading = 20.0,
+                    topTrailing = 20.0,
+                    bottomLeading = 20.0,
+                    bottomTrailing = 20.0,
+                ),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Overlay, alignment),
@@ -450,6 +497,12 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = RoundedCornerShape(size = 20.dp),
+                cornerRadiuses = CornerRadiuses(
+                    topLeading = 20.0,
+                    topTrailing = 20.0,
+                    bottomLeading = 20.0,
+                    bottomTrailing = 20.0,
+                ),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment),
@@ -481,6 +534,12 @@ private fun StackComponentView_Preview_Horizontal() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
+                cornerRadiuses = CornerRadiuses(
+                    topLeading = 20.0,
+                    topTrailing = 20.0,
+                    bottomLeading = 20.0,
+                    bottomTrailing = 20.0,
+                ),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -556,6 +615,12 @@ private fun StackComponentView_Preview_ZLayer() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
+                cornerRadiuses = CornerRadiuses(
+                    topLeading = 20.0,
+                    topTrailing = 20.0,
+                    bottomLeading = 20.0,
+                    bottomTrailing = 20.0,
+                ),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -596,6 +661,7 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
             shape = RectangleShape,
+            cornerRadiuses = null,
             border = null,
             shadow = null,
             overrides = null,
@@ -630,6 +696,7 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
             shape = RectangleShape,
+            cornerRadiuses = null,
             border = null,
             shadow = null,
             overrides = null,
@@ -781,6 +848,12 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment)
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 0.dp),
             shape = RoundedCornerShape(size = 20.dp),
+            cornerRadiuses = CornerRadiuses(
+                topLeading = 20.0,
+                topTrailing = 20.0,
+                bottomLeading = 20.0,
+                bottomTrailing = 20.0,
+            ),
             border = null,
             shadow = null,
             badge = null,
