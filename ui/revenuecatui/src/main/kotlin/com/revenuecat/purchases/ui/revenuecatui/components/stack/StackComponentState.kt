@@ -17,6 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
+import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
@@ -109,7 +110,15 @@ internal class StackComponentState(
     val shadow by derivedStateOf { presentedPartial?.partial?.shadow ?: style.shadow }
 
     @get:JvmSynthetic
-    val badge by derivedStateOf { style.badge }
+    val badge by derivedStateOf {
+        style.badge?.let { badgeStyle ->
+            BadgeStyle(
+                stackStyle = badgeStyle.stackStyle,
+                style = presentedPartial?.partial?.badge?.style ?: badgeStyle.style,
+                alignment = presentedPartial?.partial?.badge?.alignment ?: badgeStyle.alignment,
+            )
+        }
+    }
 
     @JvmSynthetic
     fun update(
