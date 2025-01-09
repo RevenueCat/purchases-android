@@ -6,6 +6,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
@@ -39,6 +40,11 @@ internal class TextComponentStyle(
     val padding: PaddingValues,
     @get:JvmSynthetic
     val margin: PaddingValues,
+    /**
+     * The package any variables in [texts] should take values from. The selected package will be used if this is null.
+     */
+    @get:JvmSynthetic
+    val rcPackage: Package?,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<LocalizedTextPartial>?,
 ) : ComponentStyle

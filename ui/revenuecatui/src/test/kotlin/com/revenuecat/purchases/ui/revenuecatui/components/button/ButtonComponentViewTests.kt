@@ -82,6 +82,7 @@ class ButtonComponentViewTests {
                             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
                             margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
                                 .toPaddingValues(),
+                            rcPackage = null,
                             overrides = null,
                         ),
                     ),

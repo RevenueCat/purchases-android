@@ -437,6 +437,7 @@ private fun previewTextComponentStyle(
         size = size,
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
+        rcPackage = null,
         overrides = null,
     )
 }

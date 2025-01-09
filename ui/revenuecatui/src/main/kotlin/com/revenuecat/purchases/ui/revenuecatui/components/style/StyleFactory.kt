@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -53,28 +54,32 @@ internal class StyleFactory(
         private val DEFAULT_SHAPE = RectangleShape
     }
 
-    fun create(component: PaywallComponent): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
+    fun create(
+        component: PaywallComponent,
+        rcPackage: Package? = null,
+    ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
-            is ButtonComponent -> createButtonComponentStyle(component)
+            is ButtonComponent -> createButtonComponentStyle(component, rcPackage)
             is ImageComponent -> createImageComponentStyle(component)
             is PackageComponent -> createPackageComponentStyle(component)
-            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
-            is StackComponent -> createStackComponentStyle(component)
+            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, rcPackage)
+            is StackComponent -> createStackComponentStyle(component, rcPackage)
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
-            is TextComponent -> createTextComponentStyle(component = component)
+            is TextComponent -> createTextComponentStyle(component, rcPackage)
         }
 
     private fun createStickyFooterComponentStyle(
         component: StickyFooterComponent,
     ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createStackComponentStyle(component.stack).map {
+        createStackComponentStyle(component.stack, rcPackage = null).map {
             StickyFooterComponentStyle(stackComponentStyle = it)
         }
 
     private fun createButtonComponentStyle(
         component: ButtonComponent,
+        rcPackage: Package?,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-        first = createStackComponentStyle(component.stack),
+        first = createStackComponentStyle(component.stack, rcPackage),
         second = component.action.toButtonComponentStyleAction(),
     ) { stack, action ->
         ButtonComponentStyle(
@@ -85,9 +90,7 @@ internal class StyleFactory(
 
     private fun createPackageComponentStyle(
         component: PackageComponent,
-    ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
-        component.stack,
-    ).flatMap { style ->
+    ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> =
         offering.getPackage(component.packageId)
             .errorIfNull(
                 nonEmptyListOf(
@@ -96,19 +99,25 @@ internal class StyleFactory(
                         packageId = component.packageId,
                     ),
                 ),
-            ).map { pkg ->
-                PackageComponentStyle(
-                    stackComponentStyle = style,
-                    rcPackage = pkg,
-                    isSelectedByDefault = component.isSelectedByDefault,
-                )
+            ).flatMap { rcPackage ->
+                createStackComponentStyle(
+                    component = component.stack,
+                    rcPackage = rcPackage,
+                ).map { stack ->
+                    PackageComponentStyle(
+                        stackComponentStyle = stack,
+                        rcPackage = rcPackage,
+                        isSelectedByDefault = component.isSelectedByDefault,
+                    )
+                }
             }
-    }
 
     private fun createPurchaseButtonComponentStyle(
         component: PurchaseButtonComponent,
+        rcPackage: Package?,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
         component.stack,
+        rcPackage,
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
@@ -150,6 +159,7 @@ internal class StyleFactory(
     @Suppress("CyclomaticComplexMethod")
     private fun createStackComponentStyle(
         component: StackComponent,
+        rcPackage: Package?,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
@@ -158,10 +168,10 @@ internal class StyleFactory(
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
         second = component.components
-            .map { create(it) }
+            .map { create(it, rcPackage) }
             .mapOrAccumulate { it },
         third = component.badge?.let { badge ->
-            createStackComponentStyle(badge.stack)
+            createStackComponentStyle(badge.stack, rcPackage)
                 .map {
                     BadgeStyle(
                         stackStyle = it,
@@ -189,6 +199,7 @@ internal class StyleFactory(
 
     private fun createTextComponentStyle(
         component: TextComponent,
+        rcPackage: Package?,
     ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Get our texts from the localization dictionary.
         first = localizations.stringForAllLocales(component.text),
@@ -211,6 +222,7 @@ internal class StyleFactory(
             size = component.size,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
+            rcPackage = rcPackage,
             overrides = presentedOverrides,
         )
     }
