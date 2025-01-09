@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
@@ -92,6 +93,12 @@ class ButtonComponentViewTests {
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
                     shape = RoundedCornerShape(size = 20.dp),
+                    cornerRadiuses = CornerRadiuses(
+                        topLeading = 20.0,
+                        topTrailing = 20.0,
+                        bottomLeading = 20.0,
+                        bottomTrailing = 20.0,
+                    ),
                     border = Border(width = 2.0, color = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb()))),
                     shadow = Shadow(
                         color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
