@@ -5,6 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,18 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -142,26 +138,36 @@ private fun StackWithOverlaidBadge(
     selected: Boolean = false,
 ) {
     Box(modifier = modifier) {
-        // TODO Fix margins when using badges
         MainStackComponent(stackState, state, clickHandler, selected = selected)
-        StackComponentView(
-            badgeStack,
-            state,
-            clickHandler,
-            modifier = Modifier
-                .align(alignment.toAlignment())
-                .layout { measurable, constraints ->
-                    val placeable = measurable.measure(constraints)
-                    layout(placeable.width, placeable.height) {
-                        placeable.placeRelative(
-                            x = 0,
-                            y = getOverlaidBadgeOffsetY(placeable.height, alignment),
-                        )
-                    }
-                },
-            selected = selected,
-        )
+        OverlaidBadge(badgeStack, state, alignment, selected = selected)
     }
+}
+
+@Composable
+private fun BoxScope.OverlaidBadge(
+    badgeStack: StackComponentStyle,
+    state: PaywallState.Loaded.Components,
+    alignment: TwoDimensionalAlignment,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+) {
+    StackComponentView(
+        badgeStack,
+        state,
+        {},
+        modifier = modifier
+            .align(alignment.toAlignment())
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, placeable.height) {
+                    placeable.placeRelative(
+                        x = 0,
+                        y = getOverlaidBadgeOffsetY(placeable.height, alignment),
+                    )
+                }
+            },
+        selected = selected,
+    )
 }
 
 @Composable
@@ -240,13 +246,16 @@ private fun getOverlaidBadgeOffsetY(height: Int, alignment: TwoDimensionalAlignm
     when (alignment) {
         TwoDimensionalAlignment.CENTER,
         TwoDimensionalAlignment.LEADING,
-        TwoDimensionalAlignment.TRAILING -> 0
+        TwoDimensionalAlignment.TRAILING,
+        -> 0
         TwoDimensionalAlignment.TOP,
         TwoDimensionalAlignment.TOP_LEADING,
-        TwoDimensionalAlignment.TOP_TRAILING -> (-(height.toFloat() / 2)).roundToInt()
+        TwoDimensionalAlignment.TOP_TRAILING,
+        -> (-(height.toFloat() / 2)).roundToInt()
         TwoDimensionalAlignment.BOTTOM,
         TwoDimensionalAlignment.BOTTOM_LEADING,
-        TwoDimensionalAlignment.BOTTOM_TRAILING -> (height.toFloat() / 2).roundToInt()
+        TwoDimensionalAlignment.BOTTOM_TRAILING,
+        -> (height.toFloat() / 2).roundToInt()
     }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
