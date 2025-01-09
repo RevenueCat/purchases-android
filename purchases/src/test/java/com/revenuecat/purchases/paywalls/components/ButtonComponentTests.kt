@@ -195,7 +195,7 @@ internal class ButtonComponentTests {
                         expected = ButtonComponent(
                             action = ButtonComponent.Action.NavigateTo(
                                 destination = ButtonComponent.Destination.PrivacyPolicy(
-                                    urlLid = "ef54",
+                                    urlLid = LocalizationKey("ef54"),
                                     method = ButtonComponent.UrlMethod.IN_APP_BROWSER
                                 )
                             ),
@@ -247,7 +247,7 @@ internal class ButtonComponentTests {
                         expected = ButtonComponent(
                             action = ButtonComponent.Action.NavigateTo(
                                 destination = ButtonComponent.Destination.Terms(
-                                    urlLid = "ef64",
+                                    urlLid = LocalizationKey("ef64"),
                                     method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER
                                 )
                             ),
@@ -299,7 +299,7 @@ internal class ButtonComponentTests {
                         expected = ButtonComponent(
                             action = ButtonComponent.Action.NavigateTo(
                                 destination = ButtonComponent.Destination.Url(
-                                    urlLid = "ef74",
+                                    urlLid = LocalizationKey("ef74"),
                                     method = ButtonComponent.UrlMethod.DEEP_LINK
                                 )
                             ),
@@ -432,7 +432,7 @@ internal class ButtonComponentTests {
                         """.trimIndent(),
                         deserialized = ButtonComponent.Action.NavigateTo(
                             destination = ButtonComponent.Destination.PrivacyPolicy(
-                                urlLid = "ef54",
+                                urlLid = LocalizationKey("ef54"),
                                 method = ButtonComponent.UrlMethod.IN_APP_BROWSER
                             )
                         ),
@@ -453,7 +453,7 @@ internal class ButtonComponentTests {
                         """.trimIndent(),
                         deserialized = ButtonComponent.Action.NavigateTo(
                             destination = ButtonComponent.Destination.Terms(
-                                urlLid = "ef64",
+                                urlLid = LocalizationKey("ef64"),
                                 method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER
                             )
                         )
@@ -474,7 +474,7 @@ internal class ButtonComponentTests {
                         """.trimIndent(),
                         deserialized = ButtonComponent.Action.NavigateTo(
                             destination = ButtonComponent.Destination.Url(
-                                urlLid = "ef74",
+                                urlLid = LocalizationKey("ef74"),
                                 method = ButtonComponent.UrlMethod.DEEP_LINK
                             )
                         )
