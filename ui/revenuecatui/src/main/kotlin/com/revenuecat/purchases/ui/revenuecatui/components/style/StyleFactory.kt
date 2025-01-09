@@ -15,7 +15,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
@@ -43,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
+@Suppress("TooManyFunctions")
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
     private val offering: Offering,
@@ -73,12 +73,13 @@ internal class StyleFactory(
 
     private fun createButtonComponentStyle(
         component: ButtonComponent,
-    ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
-        component.stack,
-    ).map {
+    ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = createStackComponentStyle(component.stack),
+        second = component.action.toButtonComponentStyleAction(),
+    ) { stack, action ->
         ButtonComponentStyle(
-            stackComponentStyle = it,
-            action = component.action.mapButtonComponentActionToPaywallAction(),
+            stackComponentStyle = stack,
+            action = action,
         )
     }
 
@@ -111,17 +112,40 @@ internal class StyleFactory(
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
-            action = PaywallAction.PurchasePackage,
+            action = ButtonComponentStyle.Action.PurchasePackage,
         )
     }
 
-    private fun ButtonComponent.Action.mapButtonComponentActionToPaywallAction(): PaywallAction {
+    @Suppress("MaxLineLength")
+    private fun ButtonComponent.Action.toButtonComponentStyleAction(): Result<ButtonComponentStyle.Action, NonEmptyList<PaywallValidationError>> {
         return when (this) {
-            ButtonComponent.Action.NavigateBack -> PaywallAction.NavigateBack
-            ButtonComponent.Action.RestorePurchases -> PaywallAction.RestorePurchases
-            is ButtonComponent.Action.NavigateTo -> PaywallAction.NavigateTo(destination)
+            ButtonComponent.Action.NavigateBack -> Result.Success(ButtonComponentStyle.Action.NavigateBack)
+            ButtonComponent.Action.RestorePurchases -> Result.Success(ButtonComponentStyle.Action.RestorePurchases)
+            is ButtonComponent.Action.NavigateTo -> destination.toPaywallDestination()
+                .map { ButtonComponentStyle.Action.NavigateTo(it) }
         }
     }
+
+    @Suppress("MaxLineLength")
+    private fun ButtonComponent.Destination.toPaywallDestination(): Result<ButtonComponentStyle.Action.NavigateTo.Destination, NonEmptyList<PaywallValidationError>> =
+
+        when (this) {
+            is ButtonComponent.Destination.CustomerCenter -> Result.Success(
+                ButtonComponentStyle.Action.NavigateTo.Destination.CustomerCenter,
+            )
+
+            is ButtonComponent.Destination.PrivacyPolicy -> buttonComponentStyleUrlDestination(urlLid, method)
+            is ButtonComponent.Destination.Terms -> buttonComponentStyleUrlDestination(urlLid, method)
+            is ButtonComponent.Destination.Url -> buttonComponentStyleUrlDestination(urlLid, method)
+        }
+
+    private fun buttonComponentStyleUrlDestination(
+        urlLid: LocalizationKey,
+        method: ButtonComponent.UrlMethod,
+    ) =
+        localizations.stringForAllLocales(urlLid).map { urls ->
+            ButtonComponentStyle.Action.NavigateTo.Destination.Url(urls, method)
+        }
 
     @Suppress("CyclomaticComplexMethod")
     private fun createStackComponentStyle(

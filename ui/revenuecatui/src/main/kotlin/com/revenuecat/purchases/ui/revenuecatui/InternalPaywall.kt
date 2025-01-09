@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -32,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -44,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -255,11 +259,47 @@ private fun ErrorDialog(
 
 @Composable
 private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction) -> Unit {
-    val activity = LocalActivity.current
-    return remember(viewModel, activity) {
+    val context: Context = LocalContext.current
+    val activity: Activity? = context.getActivity()
+    return remember(viewModel) {
         {
                 action ->
-            viewModel.handleAction(action, activity)
+            when (action) {
+                is PaywallAction.RestorePurchases -> viewModel.handleRestorePurchases()
+                is PaywallAction.PurchasePackage ->
+                    if (activity == null) {
+                        Logger.e("Activity is null, not initiating package purchase")
+                    } else {
+                        viewModel.handlePackagePurchase(activity)
+                    }
+
+                is PaywallAction.NavigateBack -> viewModel.closePaywall()
+                is PaywallAction.NavigateTo -> when (val destination = action.destination) {
+                    is PaywallAction.NavigateTo.Destination.CustomerCenter ->
+                        Logger.w("Customer Center is not yet implemented on Android.")
+                    is PaywallAction.NavigateTo.Destination.Url -> context.handleUrlDestination(
+                        url = destination.url,
+                        method = destination.method,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
+    when (method) {
+        ButtonComponent.UrlMethod.IN_APP_BROWSER -> TODO()
+        ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        ButtonComponent.UrlMethod.DEEP_LINK,
+        -> openUriOrElse(url) { exception ->
+            val message = if (exception is ActivityNotFoundException) {
+                getString(R.string.no_browser_cannot_open_link)
+            } else {
+                getString(R.string.cannot_open_link)
+            }
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            Logger.w(message)
         }
     }
 }

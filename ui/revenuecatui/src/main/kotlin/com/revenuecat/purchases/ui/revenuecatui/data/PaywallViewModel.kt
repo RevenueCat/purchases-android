@@ -24,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -59,12 +58,12 @@ internal interface PaywallViewModel {
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(activity: Activity?)
+    suspend fun handlePackagePurchase(activity: Activity)
 
     fun restorePurchases()
+    suspend fun handleRestorePurchases()
 
     fun clearActionError()
-
-    suspend fun handleAction(action: PaywallAction, activity: Activity?)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -157,86 +156,14 @@ internal class PaywallViewModelImpl(
             Logger.e("Activity is null, not initiating package purchase")
             return
         }
-        if (verifyNoActionInProgressOrStartAction()) {
-            return
-        }
         viewModelScope.launch {
             handlePackagePurchase(activity)
-            finishAction()
         }
     }
 
-    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     override fun restorePurchases() {
-        if (verifyNoActionInProgressOrStartAction()) {
-            return
-        }
         viewModelScope.launch {
-            try {
-                val customRestoreHandler = purchaseLogic?.let { it::performRestore }
-
-                when (purchases.purchasesAreCompletedBy) {
-                    PurchasesAreCompletedBy.MY_APP -> {
-                        checkNotNull(customRestoreHandler) {
-                            "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
-                                "is PurchasesAreCompletedBy.MY_APP"
-                        }
-                        val customerInfo = purchases.awaitCustomerInfo()
-                        when (val result = customRestoreHandler(customerInfo)) {
-                            is PurchaseLogicResult.Success -> {
-                                purchases.syncPurchases()
-
-                                shouldDisplayBlock?.let {
-                                    if (!it(customerInfo)) {
-                                        Logger.d(
-                                            "Dismissing paywall after restore since display " +
-                                                "condition has not been met",
-                                        )
-                                        options.dismissRequest()
-                                    }
-                                }
-                            }
-                            is PurchaseLogicResult.Cancellation -> {
-                                // silently ignore
-                            }
-                            is PurchaseLogicResult.Error -> {
-                                result.errorDetails?.let { _actionError.value = it }
-                            }
-                        }
-                    }
-
-                    PurchasesAreCompletedBy.REVENUECAT -> {
-                        listener?.onRestoreStarted()
-                        if (customRestoreHandler != null) {
-                            Logger.w(
-                                "myAppPurchaseLogic expected be null when " +
-                                    "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
-                                    "myAppPurchaseLogic.performRestore will not be executed.",
-                            )
-                        }
-                        val customerInfo = purchases.awaitRestore()
-                        Logger.i("Restore purchases successful: $customerInfo")
-                        listener?.onRestoreCompleted(customerInfo)
-
-                        shouldDisplayBlock?.let {
-                            if (!it(customerInfo)) {
-                                Logger.d("Dismissing paywall after restore since display condition has not been met")
-                                options.dismissRequest()
-                            }
-                        }
-                    }
-
-                    else -> {
-                        Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
-                    }
-                }
-            } catch (e: PurchasesException) {
-                Logger.e("Error restoring purchases: $e")
-                listener?.onRestoreError(e.error)
-                _actionError.value = e.error
-            }
-
-            finishAction()
+            handleRestorePurchases()
         }
     }
 
@@ -251,16 +178,83 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override suspend fun handleAction(action: PaywallAction, activity: Activity?) {
-        when (action) {
-            is PaywallAction.RestorePurchases -> TODO()
-            is PaywallAction.PurchasePackage -> TODO()
-            is PaywallAction.NavigateBack -> TODO()
-            is PaywallAction.NavigateTo -> TODO()
+    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
+    override suspend fun handleRestorePurchases() {
+        if (verifyNoActionInProgressOrStartAction()) {
+            return
         }
+        try {
+            val customRestoreHandler: (suspend (CustomerInfo) -> PurchaseLogicResult)? =
+                purchaseLogic?.let { it::performRestore }
+
+            when (purchases.purchasesAreCompletedBy) {
+                PurchasesAreCompletedBy.MY_APP -> {
+                    checkNotNull(customRestoreHandler) {
+                        "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
+                            "is PurchasesAreCompletedBy.MY_APP"
+                    }
+                    val customerInfo = purchases.awaitCustomerInfo()
+                    when (val result = customRestoreHandler(customerInfo)) {
+                        is PurchaseLogicResult.Success -> {
+                            purchases.syncPurchases()
+
+                            shouldDisplayBlock?.let {
+                                if (!it(customerInfo)) {
+                                    Logger.d(
+                                        "Dismissing paywall after restore since display " +
+                                            "condition has not been met",
+                                    )
+                                    options.dismissRequest()
+                                }
+                            }
+                        }
+                        is PurchaseLogicResult.Cancellation -> {
+                            // silently ignore
+                        }
+                        is PurchaseLogicResult.Error -> {
+                            result.errorDetails?.let { _actionError.value = it }
+                        }
+                    }
+                }
+
+                PurchasesAreCompletedBy.REVENUECAT -> {
+                    listener?.onRestoreStarted()
+                    if (customRestoreHandler != null) {
+                        Logger.w(
+                            "myAppPurchaseLogic expected be null when " +
+                                "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
+                                "myAppPurchaseLogic.performRestore will not be executed.",
+                        )
+                    }
+                    val customerInfo = purchases.awaitRestore()
+                    Logger.i("Restore purchases successful: $customerInfo")
+                    listener?.onRestoreCompleted(customerInfo)
+
+                    shouldDisplayBlock?.let {
+                        if (!it(customerInfo)) {
+                            Logger.d("Dismissing paywall after restore since display condition has not been met")
+                            options.dismissRequest()
+                        }
+                    }
+                }
+
+                else -> {
+                    Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
+                }
+            }
+        } catch (e: PurchasesException) {
+            Logger.e("Error restoring purchases: $e")
+            listener?.onRestoreError(e.error)
+            _actionError.value = e.error
+        }
+
+        finishAction()
     }
 
-    private suspend fun handlePackagePurchase(activity: Activity) {
+    override suspend fun handlePackagePurchase(activity: Activity) {
+        if (verifyNoActionInProgressOrStartAction()) {
+            return
+        }
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
@@ -274,6 +268,7 @@ internal class PaywallViewModelImpl(
                 Logger.e("Unexpected state trying to purchase package: $currentState")
             }
         }
+        finishAction()
     }
 
     @Suppress("LongMethod", "NestedBlockDepth")

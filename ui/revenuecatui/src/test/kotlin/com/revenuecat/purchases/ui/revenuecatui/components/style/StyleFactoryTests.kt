@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -173,6 +174,47 @@ class StyleFactoryTests {
                 otherLocale to nonEmptyMapOf(
                     baseLocalizationKey to LocalizationData.Text(unexpectedText),
                     // otherLocale is missing the overrideLocalizationKey.
+                ),
+            ),
+            offering = offering,
+        )
+
+        // Act
+        val result = incorrectStyleFactory.create(component)
+
+        // Assert
+        assertThat(result.isError).isTrue()
+        val errors = result.errorOrNull()!!
+        assertThat(errors.size).isEqualTo(1)
+        val error = errors[0]
+        assertThat(error).isInstanceOf(PaywallValidationError.MissingStringLocalization::class.java)
+    }
+
+    @Test
+    fun `Should fail to create a ButtonComponentStyle if localized URL is missing`() {
+        // Arrange
+        val otherLocale = LocaleId("nl_NL")
+        val defaultLocale = LocaleId("en_US")
+        val localizationKey = LocalizationKey("key")
+        val otherLocalizationKey = LocalizationKey("other-key")
+        val expectedText = "value"
+        val unexpectedText = "waarde"
+        val component = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(
+                destination = ButtonComponent.Destination.Url(
+                    urlLid = localizationKey,
+                    method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                )
+            ),
+            stack = StackComponent(components = emptyList()),
+        )
+        val incorrectStyleFactory = StyleFactory(
+            localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(
+                    localizationKey to LocalizationData.Text(expectedText)
+                ),
+                otherLocale to nonEmptyMapOf(
+                    otherLocalizationKey to LocalizationData.Text(unexpectedText)
                 ),
             ),
             offering = offering,

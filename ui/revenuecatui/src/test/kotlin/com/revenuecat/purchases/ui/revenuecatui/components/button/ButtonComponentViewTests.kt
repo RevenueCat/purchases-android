@@ -1,15 +1,24 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
+import android.os.LocaleList
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -25,12 +34,15 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import kotlinx.coroutines.CompletableDeferred
 import org.assertj.core.api.Assertions.assertThat
@@ -90,7 +102,7 @@ class ButtonComponentViewTests {
                     badge = null,
                     overrides = null,
                 ),
-                action = PaywallAction.PurchasePackage,
+                action = ButtonComponentStyle.Action.PurchasePackage,
             )
             ButtonComponentView(
                 style = style,
@@ -117,6 +129,82 @@ class ButtonComponentViewTests {
         purchaseButton.performClick()
 
         assertThat(actionHandleCalledCount).isEqualTo(2)
+    }
+
+    @Test
+    fun `Should use the correct URL when the locale changes`(): Unit = with(composeTestRule) {
+        val localeIdEnUs = LocaleId("en_US")
+        val localeIdNlNl = LocaleId("nl_NL")
+        val localizationKey = LocalizationKey("ineligible key")
+        val expectedUrlEnUs = "expected"
+        val expectedUrlNlNl = "verwacht"
+        val component = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(
+                destination = ButtonComponent.Destination.Url(
+                    urlLid = localizationKey,
+                    method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                )
+            ),
+            stack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = localizationKey,
+                        color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
+                    )
+                )
+            ),
+        )
+        val localizations = nonEmptyMapOf(
+            localeIdEnUs to nonEmptyMapOf(
+                localizationKey to LocalizationData.Text(expectedUrlEnUs),
+            ),
+            localeIdNlNl to nonEmptyMapOf(
+                localizationKey to LocalizationData.Text(expectedUrlNlNl),
+            )
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+        val styleFactory = StyleFactory(localizations, offering)
+        val style = styleFactory.create(component).getOrThrow() as ButtonComponentStyle
+        val state = FakePaywallState(
+            localizations = localizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+            component
+        )
+
+        // Act
+        var clickedUrl: String? = null
+        setContent {
+            ButtonComponentView(
+                style = style,
+                onClick = { action ->
+                    clickedUrl = action
+                        .let { it as? PaywallAction.NavigateTo }
+                        ?.let { it.destination as PaywallAction.NavigateTo.Destination.Url }
+                        ?.url
+                },
+                state = state
+            )
+        }
+
+        // Assert
+        state.update(localeList = LocaleList(localeIdEnUs.toJavaLocale()))
+        onNodeWithText(expectedUrlEnUs)
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .performClick()
+        assertThat(clickedUrl).isEqualTo(expectedUrlEnUs)
+
+        state.update(localeList = LocaleList(localeIdNlNl.toJavaLocale()))
+        onNodeWithText(expectedUrlNlNl)
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .performClick()
+        assertThat(clickedUrl).isEqualTo(expectedUrlNlNl)
     }
 
 }
