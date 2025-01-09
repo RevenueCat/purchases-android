@@ -60,7 +60,6 @@ internal fun ButtonComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     // Get a ButtonComponentState that calculates the stateful properties we should use.
     val buttonState = rememberButtonComponentState(
@@ -82,7 +81,6 @@ internal fun ButtonComponentView(
                 isClickable = true
             }
         },
-        selected = selected,
     )
 }
 

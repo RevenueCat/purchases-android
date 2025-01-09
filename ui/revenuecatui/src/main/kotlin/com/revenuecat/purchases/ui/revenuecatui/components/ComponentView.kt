@@ -37,7 +37,6 @@ internal fun ComponentView(
         state = state,
         clickHandler = onClick,
         modifier = modifier,
-        selected = selected,
     )
     is TextComponentStyle -> TextComponentView(
         style = style,
@@ -50,7 +49,6 @@ internal fun ComponentView(
         state = state,
         onClick = onClick,
         modifier = modifier,
-        selected = selected,
     )
     is StickyFooterComponentStyle -> StickyFooterComponentView(
         style = style,

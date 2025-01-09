@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
@@ -25,12 +26,11 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-    selected: Boolean,
 ): StackComponentState =
     rememberUpdatedStackComponentState(
         style = style,
         isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
-        selected = selected,
+        selectedPackageProvider = { paywallState.selectedPackage },
     )
 
 @JvmSynthetic
@@ -38,7 +38,7 @@ internal fun rememberUpdatedStackComponentState(
 internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     isEligibleForIntroOffer: Boolean = false,
-    selected: Boolean = false,
+    selectedPackageProvider: () -> Package?,
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -46,14 +46,13 @@ internal fun rememberUpdatedStackComponentState(
         StackComponentState(
             initialWindowSize = windowSize,
             initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
-            initialSelected = selected,
             style = style,
+            selectedPackageProvider = selectedPackageProvider,
         )
     }.apply {
         update(
             windowSize = windowSize,
             isEligibleForIntroOffer = isEligibleForIntroOffer,
-            selected = selected,
         )
     }
 }
@@ -62,12 +61,14 @@ internal fun rememberUpdatedStackComponentState(
 internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialIsEligibleForIntroOffer: Boolean,
-    initialSelected: Boolean,
     private val style: StackComponentStyle,
+    private val selectedPackageProvider: () -> Package?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
-    private var selected by mutableStateOf(initialSelected)
+    private val selected by derivedStateOf {
+        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+    }
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
@@ -112,10 +113,8 @@ internal class StackComponentState(
     fun update(
         windowSize: WindowWidthSizeClass? = null,
         isEligibleForIntroOffer: Boolean? = null,
-        selected: Boolean? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
         if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
-        if (selected != null) this.selected = selected
     }
 }

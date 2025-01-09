@@ -80,13 +80,11 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
         style = style,
         paywallState = state,
-        selected = selected,
     )
 
     if (stackState.visible) {
@@ -105,7 +103,7 @@ internal fun StackComponentView(
                 .padding(stackState.padding)
         }
 
-        val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children, selected) {
+        val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
             @Composable { modifierProvider ->
                 stackState.children.forEach { child ->
                     ComponentView(
@@ -113,7 +111,6 @@ internal fun StackComponentView(
                         state = state,
                         onClick = clickHandler,
                         modifier = modifierProvider(child),
-                        selected = selected,
                     )
                 }
             }

@@ -3,11 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.stack
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.material3.Switch
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,17 +11,21 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -38,18 +37,24 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEqu
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertRectangularBorderColor
+import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
+import java.net.URL
 
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
@@ -59,12 +64,13 @@ class StackComponentViewTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private val localizations = nonEmptyMapOf(
+        LocaleId("en_US") to nonEmptyMapOf(
+            LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
+        )
+    )
     private val styleFactory = StyleFactory(
-        localizations = nonEmptyMapOf(
-            LocaleId("en_US") to nonEmptyMapOf(
-                LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
-            )
-        ),
+        localizations = localizations,
         offering = Offering(
             identifier = "identifier",
             serverDescription = "description",
@@ -246,6 +252,7 @@ class StackComponentViewTests {
     @Test
     fun `Should use the selected overrides`(): Unit = with(composeTestRule) {
         // Arrange
+        val rcPackage = TestData.Packages.annual
         val parentSizeDp = 200u
         val stackSizeDp = 100u
         val expectedUnselectedBorderColor = Color.Black
@@ -257,44 +264,74 @@ class StackComponentViewTests {
         val expectedSelectedBackgroundColor = Color.Blue
         val expectedUnselectedBackgroundColor = Color.Green
         val parentBackgroundColor = Color.Magenta
-        val component = StackComponent(
-            components = emptyList(),
-            size = Size(Fixed(stackSizeDp), Fixed(stackSizeDp)),
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedUnselectedBackgroundColor.toArgb())),
-            border = Border(
-                color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedBorderColor.toArgb())),
-                width = expectedUnselectedBorderWidth
-            ),
-            shadow = Shadow(
-                color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedShadowColor.toArgb())),
-                radius = 5.0,
-                x = 10.0,
-                y = 10.0,
-            ),
-            overrides = ComponentOverrides(
-                states = ComponentStates(
-                    selected = PartialStackComponent(
-                        backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
-                        border = Border(
-                            color = ColorScheme(light = ColorInfo.Hex(expectedSelectedBorderColor.toArgb())),
-                            width = expectedSelectedBorderWidth
-                        ),
-                        shadow = Shadow(
-                            color = ColorScheme(light = ColorInfo.Hex(expectedSelectedShadowColor.toArgb())),
-                            radius = 5.0,
-                            x = 10.0,
-                            y = 10.0,
+        val component = PackageComponent(
+            packageId = rcPackage.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = emptyList(),
+                size = Size(Fixed(stackSizeDp), Fixed(stackSizeDp)),
+                backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedUnselectedBackgroundColor.toArgb())),
+                border = Border(
+                    color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedBorderColor.toArgb())),
+                    width = expectedUnselectedBorderWidth
+                ),
+                shadow = Shadow(
+                    color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedShadowColor.toArgb())),
+                    radius = 5.0,
+                    x = 10.0,
+                    y = 10.0,
+                ),
+                overrides = ComponentOverrides(
+                    states = ComponentStates(
+                        selected = PartialStackComponent(
+                            backgroundColor = ColorScheme(ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
+                            border = Border(
+                                color = ColorScheme(light = ColorInfo.Hex(expectedSelectedBorderColor.toArgb())),
+                                width = expectedSelectedBorderWidth
+                            ),
+                            shadow = Shadow(
+                                color = ColorScheme(light = ColorInfo.Hex(expectedSelectedShadowColor.toArgb())),
+                                radius = 5.0,
+                                x = 10.0,
+                                y = 10.0,
+                            ),
                         ),
                     ),
-                ),
+                )
             )
         )
-        val state = FakePaywallState(component)
-        val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
+
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(component)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = LocaleId("en_US"),
+        )
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(rcPackage),
+            paywallComponents = data,
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
+
 
         // Act
         setContent {
-            var selected by remember { mutableStateOf(false) }
             // An outer box, because a shadow draws outside the Composable's bounds.
             Box(
                 modifier = Modifier
@@ -303,19 +340,13 @@ class StackComponentViewTests {
                     .background(parentBackgroundColor),
                 contentAlignment = Alignment.Center,
             ) {
-                StackComponentView(
-                    style = style,
-                    state = state,
-                    clickHandler = { },
-                    selected = selected,
-                    modifier = Modifier.testTag("stack")
-                )
+                // This PackageComponentView has a StackComponentView child.
+                PackageComponentView(style = style, state = state, modifier = Modifier.testTag("pkg"))
             }
-            Switch(checked = selected, onCheckedChange = { selected = it }, modifier = Modifier.testTag("switch"))
         }
 
         // Assert
-        onNodeWithTag("stack")
+        onNodeWithTag("pkg")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
                 borderWidth = expectedUnselectedBorderWidth.dp,
@@ -327,11 +358,10 @@ class StackComponentViewTests {
             .assertPixelColorPercentage(expectedUnselectedShadowColor) { it > 0f }
             .assertNoPixelColorEquals(expectedSelectedShadowColor)
 
-        // Change `selected` to true
-        onNodeWithTag("switch")
-            .performClick()
+        // Select our package
+        state.update(selectedPackage = rcPackage)
 
-        onNodeWithTag("stack")
+        onNodeWithTag("pkg")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
                 borderWidth = expectedSelectedBorderWidth.dp,
