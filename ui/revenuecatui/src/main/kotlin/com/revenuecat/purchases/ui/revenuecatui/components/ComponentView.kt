@@ -30,7 +30,6 @@ internal fun ComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) = when (style) {
     is StackComponentStyle -> StackComponentView(
         style = style,
@@ -43,13 +42,8 @@ internal fun ComponentView(
         state = state,
         modifier = modifier,
     )
-    is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier, selected = selected)
-    is ButtonComponentStyle -> ButtonComponentView(
-        style = style,
-        state = state,
-        onClick = onClick,
-        modifier = modifier,
-    )
+    is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
+    is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, onClick = onClick, modifier = modifier)
     is StickyFooterComponentStyle -> StickyFooterComponentView(
         style = style,
         state = state,
