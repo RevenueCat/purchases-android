@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -34,6 +35,7 @@ internal sealed interface PaywallValidationResult {
          * All locales that this paywall supports, with `locales.head` being the default one.
          */
         val locales: NonEmptySet<LocaleId>,
+        val initialSelectedPackage: Package?,
     ) : PaywallValidationResult {
         // If a Components Paywall has an error, it will be reflected as a Legacy type so we can use the Legacy
         // fallback.

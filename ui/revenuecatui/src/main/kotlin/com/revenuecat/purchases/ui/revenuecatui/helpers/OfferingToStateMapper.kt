@@ -9,7 +9,14 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
@@ -117,11 +124,18 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
         styleFactory.create(config.stack),
         config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
     ) { stack, stickyFooter ->
+        // Find the first PackageComponentStyle which has isSelectedByDefault equal to true.
+        val predicate: (ComponentStyle) -> Boolean = { it is PackageComponentStyle && it.isSelectedByDefault }
+        val initialSelectedPackage = (stack.firstOrNull(predicate) ?: stickyFooter?.firstOrNull(predicate))
+            ?.let { it as PackageComponentStyle? }
+            ?.rcPackage
+
         PaywallValidationResult.Components(
             stack = stack,
             stickyFooter = stickyFooter,
             background = config.background,
             locales = localizations.keys,
+            initialSelectedPackage = initialSelectedPackage,
         )
     }
 }
@@ -246,6 +260,7 @@ internal fun Offering.toComponentsPaywallState(
         background = validationResult.background,
         offering = this,
         locales = validationResult.locales,
+        initialSelectedPackage = validationResult.initialSelectedPackage,
     )
 
 /**
@@ -305,3 +320,35 @@ private fun PaywallData.validateTemplate(): PaywallTemplate? {
 
 private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, LocalizationData>?
     get() = componentsLocalizations[defaultLocaleIdentifier]
+
+/**
+ * Returns the first ComponentStyle that satisfies the predicate, or null if none is found.
+ *
+ * Implemented as breadth-first search.
+ */
+private fun ComponentStyle.firstOrNull(predicate: (ComponentStyle) -> Boolean): ComponentStyle? {
+    val queue = ArrayDeque<ComponentStyle>()
+    queue.add(this)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+
+        if (predicate(current)) {
+            return current
+        }
+
+        when (current) {
+            is StackComponentStyle -> queue.addAll(current.children)
+            is ButtonComponentStyle -> queue.add(current.stackComponentStyle)
+            is PackageComponentStyle -> queue.add(current.stackComponentStyle)
+            is StickyFooterComponentStyle -> queue.add(current.stackComponentStyle)
+            is ImageComponentStyle,
+            is TextComponentStyle,
+            -> {
+                // These don't have child components.
+            }
+        }
+    }
+
+    return null
+}

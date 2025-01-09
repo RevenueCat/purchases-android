@@ -71,9 +71,9 @@ internal sealed interface PaywallState {
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
+            initialSelectedPackage: Package?,
             initialLocaleList: LocaleList = LocaleList.current,
             initialIsEligibleForIntroOffer: Boolean = false,
-            initialSelectedPackage: Package? = null,
         ) : Loaded {
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
