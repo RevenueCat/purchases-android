@@ -37,6 +37,8 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
@@ -318,6 +320,133 @@ class PackageComponentViewTests {
             .assertIsDisplayed()
         onNodeWithText(expectedTextMonthly)
             .assertIsDisplayed()
+    }
+
+    /**
+     * This is more of an integration test as it is not exactly testing logic in the PackageComponentView, but this
+     * allows us to assert this behavior from a higher level.
+     */
+    @Test
+    fun `Should select the correct package by default`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocaleIdentifier = LocaleId("en_US")
+        val yearlyPackageTextKey = LocalizationKey("key_yearly")
+        val monthlyPackageTextKey = LocalizationKey("key_monthly")
+        val selectedPackageTextKey = LocalizationKey("key_selected")
+        val yearlyPackageText = LocalizationData.Text("Yearly")
+        val monthlyPackageText = LocalizationData.Text("Monthly")
+        val selectedPackageTextWithVariable = LocalizationData.Text("Selected product: {{ product_name }}")
+        val expectedTextYearly = "Selected product: ${packageYearly.product.name}"
+        val expectedTextMonthly = "Selected product: ${packageMonthly.product.name}"
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                yearlyPackageTextKey to yearlyPackageText,
+                monthlyPackageTextKey to monthlyPackageText,
+                selectedPackageTextKey to selectedPackageTextWithVariable,
+            )
+        )
+        // We have 2 packages, one of which is selected by default.
+        val yearlyComponent = PackageComponent(
+            packageId = packageYearly.identifier,
+            isSelectedByDefault = true,
+            stack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = yearlyPackageTextKey,
+                        color = textColor,
+                    )
+                ),
+            )
+        )
+        val monthlyComponent = PackageComponent(
+            packageId = packageMonthly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = monthlyPackageTextKey,
+                        color = textColor,
+                    )
+                ),
+            )
+        )
+        // And we have a TextComponent containing a variable of which the value should reflect the currently selected
+        // package.
+        val selectedComponent = TextComponent(
+            text = selectedPackageTextKey,
+            color = textColor,
+        )
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(yearlyComponent, monthlyComponent, selectedComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageYearly, packageMonthly),
+            paywallComponents = data,
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val styleYearly = styleFactory.create(yearlyComponent).getOrThrow() as PackageComponentStyle
+        val styleMonthly = styleFactory.create(monthlyComponent).getOrThrow() as PackageComponentStyle
+        val styleSelected = styleFactory.create(selectedComponent).getOrThrow() as TextComponentStyle
+
+        // Act
+        setContent {
+            Column {
+                PackageComponentView(style = styleYearly, state = state, modifier = Modifier.testTag("yearly"))
+                PackageComponentView(style = styleMonthly, state = state, modifier = Modifier.testTag("monthly"))
+                // The text component is not a child of a package component, so any variables should take its values
+                // from the currently selected package.
+                TextComponentView(style = styleSelected, state = state, modifier = Modifier.testTag("selected"))
+            }
+        }
+
+        // Assert
+        // Yearly selected by default
+        onNodeWithText(expectedTextYearly)
+            .assertIsDisplayed()
+        onNodeWithText(expectedTextMonthly)
+            .assertIsNotDisplayed()
+
+        // Select monthly
+        onNodeWithTag("monthly")
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .performClick()
+
+        onNodeWithText(expectedTextYearly)
+            .assertIsNotDisplayed()
+        onNodeWithText(expectedTextMonthly)
+            .assertIsDisplayed()
+
+        // Select yearly again
+        onNodeWithTag("yearly")
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .performClick()
+
+        onNodeWithText(expectedTextYearly)
+            .assertIsDisplayed()
+        onNodeWithText(expectedTextMonthly)
+            .assertIsNotDisplayed()
     }
 
 }
