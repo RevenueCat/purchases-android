@@ -210,7 +210,7 @@ private fun StackWithEdgeToEdgeBadge(
     val backgroundColorStyle = badgeStack.backgroundColor?.let { rememberColorStyle(scheme = it) }
     val borderStyle = badgeStack.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = badgeStack.shadow?.let { rememberShadowStyle(shadow = it) }
-    val shape = badgeStack.cornerRadiuses?.let { cornerRadiuses ->
+    val backgroundShape = badgeStack.cornerRadiuses?.let { cornerRadiuses ->
         val filteredCornerRadiuses = when (alignment) {
             TwoDimensionalAlignment.TOP_LEADING,
             TwoDimensionalAlignment.TOP,
@@ -228,8 +228,8 @@ private fun StackWithEdgeToEdgeBadge(
     val backgroundModifier = remember(badgeStack, backgroundColorStyle, borderStyle, shadowStyle) {
         Modifier
             .padding(badgeStack.margin)
-            .applyIfNotNull(backgroundColorStyle) { background(it, shape ?: RectangleShape) }
-            .applyIfNotNull(shape) { clip(it) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, backgroundShape ?: RectangleShape) }
+            .applyIfNotNull(backgroundShape) { clip(it) }
             .applyIfNotNull(borderStyle) { border(it, badgeStack.shape) }
     }
 
