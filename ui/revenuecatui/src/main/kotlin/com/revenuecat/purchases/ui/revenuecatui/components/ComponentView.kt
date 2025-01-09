@@ -43,7 +43,6 @@ internal fun ComponentView(
         style = style,
         state = state,
         modifier = modifier,
-        selected = selected,
     )
     is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier, selected = selected)
     is ButtonComponentStyle -> ButtonComponentView(

@@ -4,11 +4,6 @@ import android.os.LocaleList
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -19,7 +14,6 @@ import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -27,6 +21,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -48,6 +43,8 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEqual
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -285,36 +282,67 @@ class TextComponentViewTests {
     @Test
     fun `Should use the selected overrides`(): Unit = with(composeTestRule) {
         // Arrange
+        val rcPackage = packageYearly
         val expectedUnselectedTextColor = Color.Black
         val expectedSelectedTextColor = Color.White
         val expectedUnselectedBackgroundColor = Color.Yellow
         val expectedSelectedBackgroundColor = Color.Red
-        val component = TextComponent(
-            text = unselectedLocalizationKey,
-            color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedTextColor.toArgb())),
-            backgroundColor = ColorScheme(ColorInfo.Hex(expectedUnselectedBackgroundColor.toArgb())),
-            overrides = ComponentOverrides(
-                states = ComponentStates(
-                    selected = PartialTextComponent(
-                        text = selectedLocalizationKey,
-                        color = ColorScheme(ColorInfo.Hex(expectedSelectedTextColor.toArgb())),
-                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
-                    ),
-                ),
+        val component = PackageComponent(
+            packageId = rcPackage.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = unselectedLocalizationKey,
+                        color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedUnselectedBackgroundColor.toArgb())),
+                        overrides = ComponentOverrides(
+                            states = ComponentStates(
+                                selected = PartialTextComponent(
+                                    text = selectedLocalizationKey,
+                                    color = ColorScheme(ColorInfo.Hex(expectedSelectedTextColor.toArgb())),
+                                    backgroundColor = ColorScheme(
+                                        ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())
+                                    ),
+                                ),
+                            ),
+                        )
+                    )
+                )
             )
         )
-        val state = FakePaywallState(
-            localizations = localizations,
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(component)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            component
         )
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(rcPackage),
+            paywallComponents = data,
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
 
         // Act
         setContent {
-            var selected by remember { mutableStateOf(false) }
-            TextComponentView(style = style, state = state, selected = selected)
-            Switch(checked = selected, onCheckedChange = { selected = it }, modifier = Modifier.testTag("switch"))
+            // This PackageComponentView has a TextComponentView child.
+            PackageComponentView(style = style, state = state)
         }
 
         // Assert
@@ -323,9 +351,8 @@ class TextComponentViewTests {
             .assertTextColorEquals(expectedUnselectedTextColor)
             .assertPixelColorPercentage(expectedUnselectedBackgroundColor) { percentage -> percentage > 0.4 }
 
-        // Change `selected` to true.
-        onNodeWithTag("switch")
-            .performClick()
+        // Select the yearly package
+        state.update(selectedPackage = rcPackage)
 
         onNodeWithText(expectedTextSelected)
             .assertIsDisplayed()

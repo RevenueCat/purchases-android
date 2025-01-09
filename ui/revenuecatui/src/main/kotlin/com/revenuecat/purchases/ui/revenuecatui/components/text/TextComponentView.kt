@@ -67,13 +67,11 @@ internal fun TextComponentView(
     style: TextComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     // Get a TextComponentState that calculates the overridden properties we should use.
     val textState = rememberUpdatedTextComponentState(
         style = style,
         paywallState = state,
-        selected = selected,
     )
 
     // Process any variables in the text.

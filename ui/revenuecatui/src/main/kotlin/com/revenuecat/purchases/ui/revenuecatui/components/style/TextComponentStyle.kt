@@ -42,6 +42,8 @@ internal class TextComponentStyle(
     val margin: PaddingValues,
     /**
      * The package any variables in [texts] should take values from. The selected package will be used if this is null.
+     * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
+     * available.
      */
     @get:JvmSynthetic
     val rcPackage: Package?,
