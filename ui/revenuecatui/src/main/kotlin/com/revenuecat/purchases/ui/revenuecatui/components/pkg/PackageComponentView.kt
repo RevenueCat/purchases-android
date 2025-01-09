@@ -23,6 +23,5 @@ internal fun PackageComponentView(
         clickHandler = { },
         modifier = modifier.clickable { state.update(selectedPackage = style.rcPackage) },
         selected = state.selectedPackage?.identifier == style.rcPackage.identifier,
-        rcPackage = style.rcPackage,
     )
 }

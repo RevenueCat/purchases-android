@@ -62,15 +62,10 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
-/**
- * @param rcPackage The package to take values from for any variables present in this text. If this is null, the
- * selected package will be used instead.
- */
 @Composable
 internal fun TextComponentView(
     style: TextComponentStyle,
     state: PaywallState.Loaded.Components,
-    rcPackage: Package?,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
 ) {
@@ -88,7 +83,7 @@ internal fun TextComponentView(
         state = state,
         textState = textState,
         variables = variableDataProvider,
-        fixedPackage = rcPackage,
+        fixedPackage = style.rcPackage,
     )
 
     val colorStyle = rememberColorStyle(scheme = textState.color)
@@ -185,7 +180,6 @@ private fun TextComponentView_Preview_Default() {
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -202,7 +196,6 @@ private fun TextComponentView_Preview_HeadingXlExtraBold() {
                 fontWeight = FontWeight.EXTRA_BOLD,
             ),
             state = previewEmptyState(),
-            rcPackage = null,
         )
     }
 }
@@ -218,7 +211,6 @@ private fun TextComponentView_Preview_SerifFont() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -233,7 +225,6 @@ private fun TextComponentView_Preview_SansSerifFont() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -248,7 +239,6 @@ private fun TextComponentView_Preview_MonospaceFont() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -263,7 +253,6 @@ private fun TextComponentView_Preview_CursiveFont() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -278,7 +267,6 @@ private fun TextComponentView_Preview_FontSize() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -293,7 +281,6 @@ private fun TextComponentView_Preview_HorizontalAlignment() {
             horizontalAlignment = HorizontalAlignment.TRAILING,
         ),
         state = previewEmptyState(),
-        rcPackage = null,
         // Our width is Fit, but we are forced to be wider than our contents.
         modifier = Modifier.widthIn(min = 400.dp),
     )
@@ -315,7 +302,6 @@ private fun TextComponentView_Preview_Customizations() {
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -329,7 +315,6 @@ private fun TextComponentView_Preview_Markdown() {
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -368,7 +353,6 @@ private fun TextComponentView_Preview_LinearGradient() {
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 
@@ -406,7 +390,6 @@ private fun TextComponentView_Preview_RadialGradient() {
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
         state = previewEmptyState(),
-        rcPackage = null,
     )
 }
 

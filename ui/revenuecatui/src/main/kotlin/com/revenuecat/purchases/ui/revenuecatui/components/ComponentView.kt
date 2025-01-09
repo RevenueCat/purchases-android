@@ -4,7 +4,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
@@ -22,9 +21,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 /**
  * A Composable that can show any [ComponentStyle].
- *
- * @param rcPackage If this Component represents a package, it should be provided here. This makes sure that any
- * variables present in TextComponent children use the values from this package, instead of from the selected package.
  */
 @Suppress("LongParameterList")
 @JvmSynthetic
@@ -35,7 +31,6 @@ internal fun ComponentView(
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
-    rcPackage: Package? = null,
 ) = when (style) {
     is StackComponentStyle -> StackComponentView(
         style = style,
@@ -43,12 +38,10 @@ internal fun ComponentView(
         clickHandler = onClick,
         modifier = modifier,
         selected = selected,
-        rcPackage = rcPackage,
     )
     is TextComponentStyle -> TextComponentView(
         style = style,
         state = state,
-        rcPackage = rcPackage,
         modifier = modifier,
         selected = selected,
     )

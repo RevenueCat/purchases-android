@@ -173,7 +173,7 @@ internal class TextComponentViewWindowTests {
         internal class TestActivity : ComponentActivity() {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                setContent { TextComponentView(style, state, null) }
+                setContent { TextComponentView(style, state) }
             }
         }
     }
@@ -191,7 +191,7 @@ internal class TextComponentViewWindowTests {
 
             windowChangingTest(
                 arrange = { },
-                act = { TextComponentView(style, state, null) },
+                act = { TextComponentView(style, state) },
                 assert = { windowSizeController ->
                     // Resize the window without recreating the Activity.
                     windowSizeController.setWindowSizeInexact(width = (MAX_WIDTH_COMPACT - 100).dp, height = 600.dp)
