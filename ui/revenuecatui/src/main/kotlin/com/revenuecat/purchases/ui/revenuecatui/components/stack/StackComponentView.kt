@@ -7,10 +7,13 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -38,6 +41,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.CENTER
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
@@ -45,6 +49,7 @@ import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -115,9 +120,19 @@ internal fun StackComponentView(
                 }
 
                 Badge.Style.EdgeToEdge -> {
+                    StackWithEdgeToEdgeBadge(
+                        stackState,
+                        state,
+                        badge.stackStyle,
+                        badge.alignment,
+                        clickHandler,
+                        modifier,
+                        selected,
+                    )
                 }
 
                 Badge.Style.Nested -> {
+                    MainStackComponent(stackState, state, clickHandler, modifier, selected)
                 }
             }
         } else {
@@ -140,6 +155,85 @@ private fun StackWithOverlaidBadge(
     Box(modifier = modifier) {
         MainStackComponent(stackState, state, clickHandler, selected = selected)
         OverlaidBadge(badgeStack, state, alignment, selected = selected)
+    }
+}
+
+@Suppress("LongMethod", "LongParameterList")
+@Composable
+private fun StackWithEdgeToEdgeBadge(
+    stackState: StackComponentState,
+    state: PaywallState.Loaded.Components,
+    badgeStack: StackComponentStyle,
+    alignment: TwoDimensionalAlignment,
+    clickHandler: suspend (PaywallAction) -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+) {
+    val badge = @Composable {
+        StackComponentView(
+            // The background and border is applied to the parent container so we null it out here.
+            // We make the badge use all the available width without increasing the size of the main content.
+            badgeStack.copy(
+                backgroundColor = null,
+                size = Size(width = Fill, height = badgeStack.size.height),
+                badge = null,
+                border = null,
+            ),
+            state,
+            clickHandler,
+            selected = selected,
+        )
+    }
+    val mainContent = @Composable {
+        MainStackComponent(
+            stackState,
+            state,
+            clickHandler,
+            selected = selected,
+        )
+    }
+    val backgroundColorStyle = badgeStack.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val borderStyle = badgeStack.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = badgeStack.shadow?.let { rememberShadowStyle(shadow = it) }
+    val shape = if (badgeStack.shape is RoundedCornerShape) {
+        
+    } else null
+
+    val backgroundModifier = remember(badgeStack, backgroundColorStyle, borderStyle, shadowStyle) {
+        Modifier
+            .padding(badgeStack.margin)
+            .applyIfNotNull(backgroundColorStyle) { background(it, badgeStack.shape) }
+            .applyIfNotNull(shape) { clip(shape) }
+            .applyIfNotNull(borderStyle) { border(it, badgeStack.shape) }
+            .padding(badgeStack.padding)
+    }
+
+    Box(modifier = modifier.width(IntrinsicSize.Min)) {
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .then(backgroundModifier))
+        Column {
+            when (alignment) {
+                TwoDimensionalAlignment.TOP_LEADING,
+                TwoDimensionalAlignment.TOP,
+                TwoDimensionalAlignment.TOP_TRAILING,
+                    -> {
+                    badge()
+                    mainContent()
+                }
+                TwoDimensionalAlignment.BOTTOM_LEADING,
+                TwoDimensionalAlignment.BOTTOM,
+                TwoDimensionalAlignment.BOTTOM_TRAILING,
+                    -> {
+                    mainContent()
+                    badge()
+                }
+                else -> {
+                    mainContent()
+                }
+            }
+        }
     }
 }
 
@@ -307,7 +401,7 @@ private class BadgeAlignmentProvider : PreviewParameterProvider<TwoDimensionalAl
 
 @Preview
 @Composable
-private fun StackComponentView_Preview_Badge(
+private fun StackComponentView_Preview_Overlay_Badge(
     @PreviewParameter(BadgeAlignmentProvider::class) alignment: TwoDimensionalAlignment,
 ) {
     Box(
@@ -327,7 +421,38 @@ private fun StackComponentView_Preview_Badge(
                 shape = RoundedCornerShape(size = 20.dp),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
-                badge = previewBadge(alignment),
+                badge = previewBadge(Badge.Style.Overlay, alignment),
+                overrides = null,
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_EdgeToEdge_Badge(
+    @PreviewParameter(BadgeAlignmentProvider::class) alignment: TwoDimensionalAlignment,
+) {
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                children = previewChildren(),
+                dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
+                size = Size(width = Fixed(200u), height = Fit),
+                spacing = 16.dp,
+                backgroundColor = ColorScheme(
+                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                ),
+                padding = PaddingValues(all = 0.dp),
+                margin = PaddingValues(all = 0.dp),
+                shape = RoundedCornerShape(size = 20.dp),
+                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                shadow = null,
+                badge = previewBadge(Badge.Style.EdgeToEdge, alignment),
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -616,7 +741,7 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
     return offering.toComponentsPaywallState(validated)
 }
 
-private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
+private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment): BadgeStyle {
     return BadgeStyle(
         stackStyle = StackComponentStyle(
             children = listOf(
@@ -647,7 +772,7 @@ private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
                     overrides = null,
                 ),
             ),
-            dimension = Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = START),
+            dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = CENTER),
             size = Size(width = Fit, height = Fit),
             spacing = 0.dp,
             backgroundColor = ColorScheme(
@@ -655,13 +780,13 @@ private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
             ),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 0.dp),
-            shape = CircleShape,
+            shape = RoundedCornerShape(size = 20.dp),
             border = null,
             shadow = null,
             badge = null,
             overrides = null,
         ),
-        style = Badge.Style.Overlay,
+        style = style,
         alignment = alignment,
     )
 }

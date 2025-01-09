@@ -39,4 +39,33 @@ internal class StackComponentStyle(
     val badge: BadgeStyle?,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedStackPartial>?,
-) : ComponentStyle
+) : ComponentStyle {
+    @JvmSynthetic
+    internal fun copy(
+        children: List<ComponentStyle> = this.children,
+        dimension: Dimension = this.dimension,
+        size: Size = this.size,
+        spacing: Dp = this.spacing,
+        backgroundColor: ColorScheme? = this.backgroundColor,
+        padding: PaddingValues = this.padding,
+        margin: PaddingValues = this.margin,
+        shape: Shape = this.shape,
+        border: Border? = this.border,
+        shadow: Shadow? = this.shadow,
+        badge: BadgeStyle? = this.badge,
+        overrides: PresentedOverrides<PresentedStackPartial>? = this.overrides,
+    ): StackComponentStyle = StackComponentStyle(
+        children = children,
+        dimension = dimension,
+        size = size,
+        spacing = spacing,
+        backgroundColor = backgroundColor,
+        padding = padding,
+        margin = margin,
+        shape = shape,
+        border = border,
+        shadow = shadow,
+        badge = badge,
+        overrides = overrides,
+    )
+}
