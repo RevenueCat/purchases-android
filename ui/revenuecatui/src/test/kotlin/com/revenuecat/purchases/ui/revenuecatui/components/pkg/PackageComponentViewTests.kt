@@ -413,7 +413,13 @@ class PackageComponentViewTests {
             Column {
                 PackageComponentView(style = styleYearly, state = state, modifier = Modifier.testTag("yearly"))
                 PackageComponentView(style = styleMonthly, state = state, modifier = Modifier.testTag("monthly"))
-                TextComponentView(style = styleSelected, state = state, modifier = Modifier.testTag("selected"))
+                TextComponentView(
+                    style = styleSelected,
+                    state = state,
+                    // We want variables in this text to take values from the selected package.
+                    rcPackage = null,
+                    modifier = Modifier.testTag("selected")
+                )
             }
         }
 

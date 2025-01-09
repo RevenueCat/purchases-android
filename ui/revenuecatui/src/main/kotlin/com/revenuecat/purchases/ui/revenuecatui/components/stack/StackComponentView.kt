@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -73,7 +74,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
-@Suppress("LongMethod")
+/**
+ * @param rcPackage If this Stack represents a package, it should be provided here. This makes sure that any variables
+ * present in TextComponent children use the values from this package, instead of from the selected package.
+ */
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 internal fun StackComponentView(
     style: StackComponentStyle,
@@ -81,6 +86,7 @@ internal fun StackComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    rcPackage: Package? = null,
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -114,6 +120,7 @@ internal fun StackComponentView(
                         onClick = clickHandler,
                         modifier = modifierProvider(child),
                         selected = selected,
+                        rcPackage = rcPackage,
                     )
                 }
             }

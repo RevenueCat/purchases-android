@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -61,10 +62,15 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
+/**
+ * @param rcPackage The package to take values from for any variables present in this text. If this is null, the
+ * selected package will be used instead.
+ */
 @Composable
 internal fun TextComponentView(
     style: TextComponentStyle,
     state: PaywallState.Loaded.Components,
+    rcPackage: Package?,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
 ) {
@@ -82,6 +88,7 @@ internal fun TextComponentView(
         state = state,
         textState = textState,
         variables = variableDataProvider,
+        fixedPackage = rcPackage,
     )
 
     val colorStyle = rememberColorStyle(scheme = textState.color)
@@ -123,17 +130,21 @@ internal fun TextComponentView(
     }
 }
 
+/**
+ * @param fixedPackage If provided, this package will be used to take values from instead of the selected package.
+ */
 @Composable
 private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
     variables: VariableDataProvider,
+    fixedPackage: Package?,
 ): String {
-    val processedText by remember(state, textState) {
+    val processedText by remember(state, textState, fixedPackage) {
         derivedStateOf {
-            state.selectedPackage?.let { selectedPackage ->
+            (fixedPackage ?: state.selectedPackage)?.let { packageToUse ->
                 val discount = discountPercentage(
-                    pricePerMonthMicros = selectedPackage.product.pricePerMonth()?.amountMicros,
+                    pricePerMonthMicros = packageToUse.product.pricePerMonth()?.amountMicros,
                     mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
                 )
                 val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
@@ -144,7 +155,7 @@ private fun rememberProcessedText(
                     variableDataProvider = variables,
                     context = variableContext,
                     originalString = textState.text,
-                    rcPackage = selectedPackage,
+                    rcPackage = packageToUse,
                     locale = java.util.Locale.forLanguageTag(state.locale.toLanguageTag()),
                 )
             } ?: textState.text
@@ -174,6 +185,7 @@ private fun TextComponentView_Preview_Default() {
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -190,6 +202,7 @@ private fun TextComponentView_Preview_HeadingXlExtraBold() {
                 fontWeight = FontWeight.EXTRA_BOLD,
             ),
             state = previewEmptyState(),
+            rcPackage = null,
         )
     }
 }
@@ -205,6 +218,7 @@ private fun TextComponentView_Preview_SerifFont() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -219,6 +233,7 @@ private fun TextComponentView_Preview_SansSerifFont() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -233,6 +248,7 @@ private fun TextComponentView_Preview_MonospaceFont() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -247,6 +263,7 @@ private fun TextComponentView_Preview_CursiveFont() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -261,6 +278,7 @@ private fun TextComponentView_Preview_FontSize() {
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -275,6 +293,7 @@ private fun TextComponentView_Preview_HorizontalAlignment() {
             horizontalAlignment = HorizontalAlignment.TRAILING,
         ),
         state = previewEmptyState(),
+        rcPackage = null,
         // Our width is Fit, but we are forced to be wider than our contents.
         modifier = Modifier.widthIn(min = 400.dp),
     )
@@ -296,6 +315,7 @@ private fun TextComponentView_Preview_Customizations() {
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -309,6 +329,7 @@ private fun TextComponentView_Preview_Markdown() {
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -347,6 +368,7 @@ private fun TextComponentView_Preview_LinearGradient() {
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 
@@ -384,6 +406,7 @@ private fun TextComponentView_Preview_RadialGradient() {
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
         state = previewEmptyState(),
+        rcPackage = null,
     )
 }
 

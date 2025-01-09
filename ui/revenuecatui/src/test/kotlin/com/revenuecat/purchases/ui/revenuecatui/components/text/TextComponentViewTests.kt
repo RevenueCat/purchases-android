@@ -163,7 +163,7 @@ class TextComponentViewTests {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
-            act = { TextComponentView(style = it, state = state) },
+            act = { TextComponentView(style = it, state = state, rcPackage = null) },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithText(localizations.getValue(localeIdEnUs).values.first().value)
@@ -208,7 +208,7 @@ class TextComponentViewTests {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
-            act = { TextComponentView(style = it, state = state) },
+            act = { TextComponentView(style = it, state = state, rcPackage = null) },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithText(localizations.getValue(localeIdEnUs).values.first().value)
@@ -251,8 +251,18 @@ class TextComponentViewTests {
             // Act
             MaterialTheme {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    TextComponentView(style = largeTextStyle, state = state, modifier = Modifier.testTag("large"))
-                    TextComponentView(style = smallTextStyle, state = state, modifier = Modifier.testTag("small"))
+                    TextComponentView(
+                        style = largeTextStyle,
+                        state = state,
+                        rcPackage = null,
+                        modifier = Modifier.testTag("large")
+                    )
+                    TextComponentView(
+                        style = smallTextStyle,
+                        state = state,
+                        rcPackage = null,
+                        modifier = Modifier.testTag("small")
+                    )
                 }
             }
         }
@@ -305,7 +315,7 @@ class TextComponentViewTests {
         // Act
         setContent {
             var selected by remember { mutableStateOf(false) }
-            TextComponentView(style = style, state = state, selected = selected)
+            TextComponentView(style = style, state = state, rcPackage = null, selected = selected)
             Switch(checked = selected, onCheckedChange = { selected = it }, modifier = Modifier.testTag("switch"))
         }
 
@@ -354,7 +364,7 @@ class TextComponentViewTests {
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
 
         // Act
-        setContent { TextComponentView(style = style, state = state) }
+        setContent { TextComponentView(style = style, state = state, rcPackage = null) }
 
         // Assert
         state.update(isEligibleForIntroOffer = false)
@@ -401,7 +411,7 @@ class TextComponentViewTests {
         )
 
         // Act
-        setContent { TextComponentView(style = style, state = state) }
+        setContent { TextComponentView(style = style, state = state, rcPackage = null) }
 
         // Assert
         state.update(localeList = LocaleList(localeIdEnUs.toJavaLocale()))
@@ -452,7 +462,7 @@ class TextComponentViewTests {
         }
 
         // Act
-        setContent { TextComponentView(style = style, state = state) }
+        setContent { TextComponentView(style = style, state = state, rcPackage = null) }
 
         // Assert
         state.update(localeList = LocaleList(localeIdEnUs.toJavaLocale()))
@@ -512,7 +522,12 @@ class TextComponentViewTests {
         // Act
         setContent {
             Column {
-                TextComponentView(style = styleSelected, state = state, modifier = Modifier.testTag("selected"))
+                TextComponentView(
+                    style = styleSelected,
+                    state = state,
+                    rcPackage = null,
+                    modifier = Modifier.testTag("selected")
+                )
             }
         }
 
