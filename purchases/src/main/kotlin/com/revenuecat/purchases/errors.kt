@@ -24,8 +24,8 @@ class PurchasesError(
     }
 
     // Message explaining the error
-    @IgnoredOnParcel
-    val message: String = code.description
+    val message: String
+        get() = code.description
 
     override fun toString(): String {
         return "PurchasesError(code=$code, underlyingErrorMessage=$underlyingErrorMessage, message='$message')"
