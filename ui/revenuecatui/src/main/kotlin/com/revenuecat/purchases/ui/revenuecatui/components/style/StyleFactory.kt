@@ -193,6 +193,7 @@ internal class StyleFactory(
             border = component.border,
             shadow = component.shadow,
             badge = badge,
+            rcPackage = rcPackage,
             overrides = presentedOverrides,
         )
     }

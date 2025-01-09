@@ -101,6 +101,7 @@ class ButtonComponentViewTests {
                         y = 3.0
                     ),
                     badge = null,
+                    rcPackage = null,
                     overrides = null,
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage,

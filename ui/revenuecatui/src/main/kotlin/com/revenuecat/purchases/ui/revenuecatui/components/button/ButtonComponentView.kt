@@ -131,6 +131,7 @@ private fun previewButtonComponentStyle(
             y = 3.0,
         ),
         badge = null,
+        rcPackage = null,
         overrides = null,
     ),
     action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,
