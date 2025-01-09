@@ -60,7 +60,7 @@ internal class StyleFactory(
     ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
             is ButtonComponent -> createButtonComponentStyle(component, rcPackage)
-            is ImageComponent -> createImageComponentStyle(component)
+            is ImageComponent -> createImageComponentStyle(component, rcPackage)
             is PackageComponent -> createPackageComponentStyle(component)
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, rcPackage)
             is StackComponent -> createStackComponentStyle(component, rcPackage)
@@ -230,6 +230,7 @@ internal class StyleFactory(
 
     private fun createImageComponentStyle(
         component: ImageComponent,
+        rcPackage: Package?,
     ): Result<ImageComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.source.withLocalizedOverrides(component.overrideSourceLid),
         second = component.overrides
@@ -247,6 +248,7 @@ internal class StyleFactory(
             shape = component.maskShape?.toShape(),
             overlay = component.colorOverlay,
             contentScale = component.fitMode.toContentScale(),
+            rcPackage = rcPackage,
             overrides = presentedOverrides,
         )
     }

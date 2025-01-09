@@ -299,6 +299,7 @@ private fun previewImageComponentStyle(
     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 20.dp),
     overlay = overlay,
     contentScale = fitMode.toContentScale(),
+    rcPackage = null,
     overrides = null,
 )
 
