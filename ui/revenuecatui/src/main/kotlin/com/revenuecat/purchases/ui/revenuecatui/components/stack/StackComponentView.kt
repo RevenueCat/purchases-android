@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
@@ -83,6 +84,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
+import kotlin.math.roundToInt
 
 @Suppress("LongMethod")
 @Composable
@@ -139,32 +141,23 @@ private fun StackWithOverlaidBadge(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
 ) {
-    var badgeHeight by remember {
-        mutableIntStateOf(0)
-    }
-    val paddingDp = with(LocalDensity.current) { (badgeHeight / 2f).toDp() }
-    val padding = when (alignment) {
-        TwoDimensionalAlignment.TOP_LEADING,
-        TwoDimensionalAlignment.TOP,
-        TwoDimensionalAlignment.TOP_TRAILING,
-        -> PaddingValues(top = paddingDp)
-        TwoDimensionalAlignment.BOTTOM_LEADING,
-        TwoDimensionalAlignment.BOTTOM,
-        TwoDimensionalAlignment.BOTTOM_TRAILING,
-        -> PaddingValues(bottom = paddingDp)
-        else -> PaddingValues(0.dp)
-    }
     Box(modifier = modifier) {
         // TODO Fix margins when using badges
-        MainStackComponent(stackState, state, clickHandler, modifier = Modifier.padding(padding), selected = selected)
+        MainStackComponent(stackState, state, clickHandler, selected = selected)
         StackComponentView(
             badgeStack,
             state,
             clickHandler,
             modifier = Modifier
                 .align(alignment.toAlignment())
-                .onGloballyPositioned {
-                    badgeHeight = it.size.height
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, placeable.height) {
+                        placeable.placeRelative(
+                            x = 0,
+                            y = getOverlaidBadgeOffsetY(placeable.height, alignment),
+                        )
+                    }
                 },
             selected = selected,
         )
@@ -242,6 +235,19 @@ private fun MainStackComponent(
         ) { content { child -> Modifier } }
     }
 }
+
+private fun getOverlaidBadgeOffsetY(height: Int, alignment: TwoDimensionalAlignment) =
+    when (alignment) {
+        TwoDimensionalAlignment.CENTER,
+        TwoDimensionalAlignment.LEADING,
+        TwoDimensionalAlignment.TRAILING -> 0
+        TwoDimensionalAlignment.TOP,
+        TwoDimensionalAlignment.TOP_LEADING,
+        TwoDimensionalAlignment.TOP_TRAILING -> (-(height.toFloat() / 2)).roundToInt()
+        TwoDimensionalAlignment.BOTTOM,
+        TwoDimensionalAlignment.BOTTOM_LEADING,
+        TwoDimensionalAlignment.BOTTOM_TRAILING -> (height.toFloat() / 2).roundToInt()
+    }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
