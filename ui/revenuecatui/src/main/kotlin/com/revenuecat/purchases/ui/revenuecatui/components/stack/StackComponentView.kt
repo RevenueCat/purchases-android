@@ -186,18 +186,18 @@ private fun MainStackComponent(
             .padding(stackState.padding)
     }
 
-        val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
-            @Composable { modifierProvider ->
-                stackState.children.forEach { child ->
-                    ComponentView(
-                        style = child,
-                        state = state,
-                        onClick = clickHandler,
-                        modifier = modifierProvider(child),
-                    )
-                }
+    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
+        @Composable { modifierProvider ->
+            stackState.children.forEach { child ->
+                ComponentView(
+                    style = child,
+                    state = state,
+                    onClick = clickHandler,
+                    modifier = modifierProvider(child),
+                )
             }
         }
+    }
 
     // Show the right container composable depending on the dimension.
     when (val dimension = stackState.dimension) {
