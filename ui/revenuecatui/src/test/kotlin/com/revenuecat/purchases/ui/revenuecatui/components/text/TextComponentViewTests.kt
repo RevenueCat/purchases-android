@@ -11,9 +11,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.printToString
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -571,6 +575,109 @@ class TextComponentViewTests {
             .assertIsDisplayed()
         onNodeWithText(expectedTextMonthly)
             .assertIsNotDisplayed()
+    }
+
+    @Test
+    fun `Should correctly show or hide price decimals`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocaleIdentifier = LocaleId("en_US")
+        val rcPackage = packageYearly
+        val countryWithoutDecimals = "MX"
+        val textKey = LocalizationKey("key_selected")
+        val textWithPriceVariable = LocalizationData.Text("Price: {{ price }}")
+        val expectedTextWithDecimals = "Price: \$ 2.00"
+        val expectedTextWithoutDecimals = "Price: \$2"
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                textKey to textWithPriceVariable,
+            )
+        )
+        val component = TextComponent(text = textKey, color = textColor)
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(component)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            zeroDecimalPlaceCountries = listOf(countryWithoutDecimals),
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(rcPackage),
+            paywallComponents = data,
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        // We create 3 PaywallStates for different country codes. Also make sure our package is the selected one, so
+        // the variables take its values. Otherwise our TextComponent would need to be a child of a PackageComponent
+        // for it to take those values.
+        val stateWithNullStoreFrontCountryCode = offering.toComponentsPaywallState(
+            validationResult = validated,
+            storefrontCountryCode = null
+        ).apply { update(selectedPackage = rcPackage) }
+        val stateWithNlStoreFrontCountryCode = offering.toComponentsPaywallState(
+            validationResult = validated,
+            storefrontCountryCode = "NL",
+        ).apply { update(selectedPackage = rcPackage) }
+        val stateWithMxStoreFrontCountryCode = offering.toComponentsPaywallState(
+            validationResult = validated,
+            storefrontCountryCode = countryWithoutDecimals,
+        ).apply { update(selectedPackage = rcPackage) }
+
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val styleSelected = styleFactory.create(component).getOrThrow() as TextComponentStyle
+
+        // Act
+        setContent {
+            Column {
+                TextComponentView(
+                    style = styleSelected,
+                    state = stateWithNullStoreFrontCountryCode,
+                    modifier = Modifier.testTag("country-null")
+                )
+                TextComponentView(
+                    style = styleSelected,
+                    state = stateWithNlStoreFrontCountryCode,
+                    modifier = Modifier.testTag("country-nl")
+                )
+                TextComponentView(
+                    style = styleSelected,
+                    state = stateWithMxStoreFrontCountryCode,
+                    modifier = Modifier.testTag("country-mx")
+                )
+            }
+        }
+
+        onRoot()
+            .printToString()
+            .also { println(it) }
+
+        // Assert
+        onNodeWithTag("country-null")
+            .assertIsDisplayed()
+            .onChild()
+            .assertTextEquals(expectedTextWithDecimals)
+
+        onNodeWithTag("country-nl")
+            .assertIsDisplayed()
+            .onChild()
+            .assertTextEquals(expectedTextWithDecimals)
+
+        onNodeWithTag("country-mx")
+            .assertIsDisplayed()
+            .onChild()
+            .assertTextEquals(expectedTextWithoutDecimals)
     }
 
     /**
