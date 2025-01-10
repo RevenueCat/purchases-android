@@ -142,7 +142,7 @@ private fun rememberProcessedText(
                 )
                 val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
-                    showZeroDecimalPlacePrices = state.showZeroDecimalPlacePrices,
+                    showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
                 )
                 VariableProcessor.processVariables(
                     variableDataProvider = variables,
@@ -450,5 +450,5 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated)
+    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 }

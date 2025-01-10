@@ -332,7 +332,7 @@ class TextComponentViewTests {
             paywallComponents = data,
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-        val state = offering.toComponentsPaywallState(validated)
+        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
         val styleFactory = StyleFactory(
             localizations = localizations,
             offering = offering,
@@ -536,7 +536,7 @@ class TextComponentViewTests {
             paywallComponents = data,
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-        val state = offering.toComponentsPaywallState(validated)
+        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 
         val styleFactory = StyleFactory(
             localizations = localizations,
