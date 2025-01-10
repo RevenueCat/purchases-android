@@ -208,9 +208,7 @@ internal class PaywallComponentsDataTests(
                       "TH"
                     ]
                   }
-                }
-
-                        """.trimIndent(),
+                }""".trimIndent(),
                     expected = PaywallComponentsData(
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
