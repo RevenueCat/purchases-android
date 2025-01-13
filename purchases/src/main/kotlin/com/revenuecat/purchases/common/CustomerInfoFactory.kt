@@ -1,16 +1,20 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
+import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
+import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Collections.emptyMap
@@ -21,6 +25,12 @@ import java.util.Date
  * @throws [JSONException] If the json is invalid.
  */
 internal object CustomerInfoFactory {
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val json = Json {
+        ignoreUnknownKeys = true
+    }
+
     @Throws(JSONException::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
@@ -87,6 +97,24 @@ internal object CustomerInfoFactory {
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate,
         )
+    }
+
+    fun parseSubscriptionInfos(subscriberJSONObject: JSONObject, requestDate: Date): Map<String, SubscriptionInfo> {
+        val subscriptionMap = mutableMapOf<String, SubscriptionInfo>()
+        val subscriptions = subscriberJSONObject.getJSONObject("subscriptions")
+        try {
+            subscriptions.keys().forEach { productId ->
+                val subscriptionJSONObject = subscriptions.getJSONObject(productId)
+                val subscriptionInfoResponse = json.decodeFromString<SubscriptionInfoResponse>(
+                    subscriptionJSONObject.toString(),
+                )
+                subscriptionMap[productId] = SubscriptionInfo(productId, requestDate, subscriptionInfoResponse)
+            }
+        } catch (t: Throwable) {
+            errorLog("Error deserializing subscription information", t)
+            emptyMap<String, SubscriptionInfo>()
+        }
+        return subscriptionMap
     }
 
     /**
