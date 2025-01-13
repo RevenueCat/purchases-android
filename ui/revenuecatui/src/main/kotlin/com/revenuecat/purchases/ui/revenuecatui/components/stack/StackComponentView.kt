@@ -1,13 +1,16 @@
 @file:JvmSynthetic
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -16,7 +19,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -27,6 +33,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -62,6 +69,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -72,6 +80,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
+import kotlin.math.roundToInt
 
 @Suppress("LongMethod")
 @Composable
@@ -88,69 +97,158 @@ internal fun StackComponentView(
     )
 
     if (stackState.visible) {
-        val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
-        val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
-        val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
-
-        // Modifier irrespective of dimension.
-        val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
-            Modifier
-                .padding(stackState.margin)
-                .applyIfNotNull(shadowStyle) { shadow(it, stackState.shape) }
-                .applyIfNotNull(backgroundColorStyle) { background(it, stackState.shape) }
-                .clip(stackState.shape)
-                .applyIfNotNull(borderStyle) { border(it, stackState.shape) }
-                .padding(stackState.padding)
-        }
-
-        val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
-            @Composable { modifierProvider ->
-                stackState.children.forEach { child ->
-                    ComponentView(
-                        style = child,
-                        state = state,
-                        onClick = clickHandler,
-                        modifier = modifierProvider(child),
+        val badge = stackState.badge
+        if (badge != null) {
+            when (badge.style) {
+                Badge.Style.Overlay -> {
+                    StackWithOverlaidBadge(
+                        stackState,
+                        state,
+                        badge.stackStyle,
+                        badge.alignment,
+                        clickHandler,
+                        modifier,
                     )
                 }
+
+                Badge.Style.EdgeToEdge -> {
+                }
+
+                Badge.Style.Nested -> {
+                }
             }
-        }
-
-        // Show the right container composable depending on the dimension.
-        when (val dimension = stackState.dimension) {
-            is Dimension.Horizontal -> Row(
-                modifier = modifier
-                    .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
-                    .then(commonModifier),
-                verticalAlignment = dimension.alignment.toAlignment(),
-                horizontalArrangement = dimension.distribution.toHorizontalArrangement(
-                    spacing = stackState.spacing,
-                ),
-            ) { content { child -> if (child.size.width == Fill) Modifier.weight(1f) else Modifier } }
-
-            is Dimension.Vertical -> Column(
-                modifier = modifier
-                    .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                    .then(commonModifier),
-                verticalArrangement = dimension.distribution.toVerticalArrangement(
-                    spacing = stackState.spacing,
-                ),
-                horizontalAlignment = dimension.alignment.toAlignment(),
-            ) { content { child -> if (child.size.height == Fill) Modifier.weight(1f) else Modifier } }
-
-            is Dimension.ZLayer -> Box(
-                modifier = modifier
-                    .size(
-                        size = stackState.size,
-                        horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                        verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                    )
-                    .then(commonModifier),
-                contentAlignment = dimension.alignment.toAlignment(),
-            ) { content { child -> Modifier } }
+        } else {
+            MainStackComponent(stackState, state, clickHandler, modifier)
         }
     }
 }
+
+@Suppress("LongParameterList")
+@Composable
+private fun StackWithOverlaidBadge(
+    stackState: StackComponentState,
+    state: PaywallState.Loaded.Components,
+    badgeStack: StackComponentStyle,
+    alignment: TwoDimensionalAlignment,
+    clickHandler: suspend (PaywallAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        MainStackComponent(stackState, state, clickHandler)
+        OverlaidBadge(badgeStack, state, alignment)
+    }
+}
+
+@Composable
+private fun BoxScope.OverlaidBadge(
+    badgeStack: StackComponentStyle,
+    state: PaywallState.Loaded.Components,
+    alignment: TwoDimensionalAlignment,
+    modifier: Modifier = Modifier,
+) {
+    StackComponentView(
+        badgeStack,
+        state,
+        {},
+        modifier = modifier
+            .align(alignment.toAlignment())
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, placeable.height) {
+                    placeable.placeRelative(
+                        x = 0,
+                        y = getOverlaidBadgeOffsetY(placeable.height, alignment),
+                    )
+                }
+            },
+    )
+}
+
+@Composable
+private fun MainStackComponent(
+    stackState: StackComponentState,
+    state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+
+    // Modifier irrespective of dimension.
+    val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
+        Modifier
+            .padding(stackState.margin)
+            .applyIfNotNull(shadowStyle) { shadow(it, stackState.shape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, stackState.shape) }
+            .clip(stackState.shape)
+            .applyIfNotNull(borderStyle) { border(it, stackState.shape) }
+            .padding(stackState.padding)
+    }
+
+    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
+        @Composable { modifierProvider ->
+            stackState.children.forEach { child ->
+                ComponentView(
+                    style = child,
+                    state = state,
+                    onClick = clickHandler,
+                    modifier = modifierProvider(child),
+                )
+            }
+        }
+    }
+
+    // Show the right container composable depending on the dimension.
+    when (val dimension = stackState.dimension) {
+        is Dimension.Horizontal -> Row(
+            modifier = modifier
+                .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                .then(commonModifier),
+            verticalAlignment = dimension.alignment.toAlignment(),
+            horizontalArrangement = dimension.distribution.toHorizontalArrangement(
+                spacing = stackState.spacing,
+            ),
+        ) { content { child -> if (child.size.width == Fill) Modifier.weight(1f) else Modifier } }
+
+        is Dimension.Vertical -> Column(
+            modifier = modifier
+                .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                .then(commonModifier),
+            verticalArrangement = dimension.distribution.toVerticalArrangement(
+                spacing = stackState.spacing,
+            ),
+            horizontalAlignment = dimension.alignment.toAlignment(),
+        ) { content { child -> if (child.size.height == Fill) Modifier.weight(1f) else Modifier } }
+
+        is Dimension.ZLayer -> Box(
+            modifier = modifier
+                .size(
+                    size = stackState.size,
+                    horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                    verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                )
+                .then(commonModifier),
+            contentAlignment = dimension.alignment.toAlignment(),
+        ) { content { child -> Modifier } }
+    }
+}
+
+private fun getOverlaidBadgeOffsetY(height: Int, alignment: TwoDimensionalAlignment) =
+    when (alignment) {
+        TwoDimensionalAlignment.CENTER,
+        TwoDimensionalAlignment.LEADING,
+        TwoDimensionalAlignment.TRAILING,
+        -> 0
+        TwoDimensionalAlignment.TOP,
+        TwoDimensionalAlignment.TOP_LEADING,
+        TwoDimensionalAlignment.TOP_TRAILING,
+        -> (-(height.toFloat() / 2)).roundToInt()
+        TwoDimensionalAlignment.BOTTOM,
+        TwoDimensionalAlignment.BOTTOM_LEADING,
+        TwoDimensionalAlignment.BOTTOM_TRAILING,
+        -> (height.toFloat() / 2).roundToInt()
+    }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
@@ -180,6 +278,49 @@ private fun StackComponentView_Preview_Vertical() {
                     y = 3.0,
                 ),
                 badge = null,
+                rcPackage = null,
+                overrides = null,
+            ),
+            state = previewEmptyState(),
+            clickHandler = {},
+        )
+    }
+}
+
+private class BadgeAlignmentProvider : PreviewParameterProvider<TwoDimensionalAlignment> {
+    override val values = listOf(
+        TwoDimensionalAlignment.TOP_LEADING,
+        TwoDimensionalAlignment.TOP,
+        TwoDimensionalAlignment.TOP_TRAILING,
+        TwoDimensionalAlignment.BOTTOM_LEADING,
+        TwoDimensionalAlignment.BOTTOM,
+        TwoDimensionalAlignment.BOTTOM_TRAILING,
+    ).asSequence()
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_Badge(
+    @PreviewParameter(BadgeAlignmentProvider::class) alignment: TwoDimensionalAlignment,
+) {
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                children = previewChildren(),
+                dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
+                size = Size(width = Fixed(200u), height = Fit),
+                spacing = 16.dp,
+                backgroundColor = ColorScheme(
+                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                ),
+                padding = PaddingValues(all = 12.dp),
+                margin = PaddingValues(all = 0.dp),
+                shape = RoundedCornerShape(size = 20.dp),
+                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                shadow = null,
+                badge = previewBadge(alignment),
                 rcPackage = null,
                 overrides = null,
             ),
@@ -476,4 +617,56 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
     return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+}
+
+private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
+    return BadgeStyle(
+        stackStyle = StackComponentStyle(
+            children = listOf(
+                TextComponentStyle(
+                    texts = nonEmptyMapOf(LocaleId("en_US") to "Badge"),
+                    color = ColorScheme(
+                        light = ColorInfo.Hex(Color.Black.toArgb()),
+                    ),
+                    fontSize = FontSize.BODY_M,
+                    fontWeight = FontWeight.REGULAR.toFontWeight(),
+                    fontFamily = null,
+                    textAlign = HorizontalAlignment.CENTER.toTextAlign(),
+                    horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
+                    backgroundColor = null,
+                    size = Size(width = Fit, height = Fit),
+                    padding = Padding(
+                        top = 8.0,
+                        bottom = 8.0,
+                        leading = 8.0,
+                        trailing = 8.0,
+                    ).toPaddingValues(),
+                    margin = Padding(
+                        top = 0.0,
+                        bottom = 0.0,
+                        leading = 0.0,
+                        trailing = 0.0,
+                    ).toPaddingValues(),
+                    rcPackage = null,
+                    overrides = null,
+                ),
+            ),
+            dimension = Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = START),
+            size = Size(width = Fit, height = Fit),
+            spacing = 0.dp,
+            backgroundColor = ColorScheme(
+                light = ColorInfo.Hex(Color.Green.toArgb()),
+            ),
+            padding = PaddingValues(all = 0.dp),
+            margin = PaddingValues(all = 0.dp),
+            shape = CircleShape,
+            border = null,
+            shadow = null,
+            badge = null,
+            rcPackage = null,
+            overrides = null,
+        ),
+        style = Badge.Style.Overlay,
+        alignment = alignment,
+    )
 }
