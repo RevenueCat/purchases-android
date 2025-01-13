@@ -5,8 +5,10 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -288,19 +290,33 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
 }
 
 private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
+    fun handleException(exception: Exception) {
+        val message = if (exception is ActivityNotFoundException) {
+            getString(R.string.no_browser_cannot_open_link)
+        } else {
+            getString(R.string.cannot_open_link)
+        }
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Logger.e(message, exception)
+    }
+
     when (method) {
-        ButtonComponent.UrlMethod.IN_APP_BROWSER -> TODO()
+        ButtonComponent.UrlMethod.IN_APP_BROWSER -> {
+            val intent = CustomTabsIntent.Builder()
+                .build()
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                intent.launchUrl(this, Uri.parse(url))
+            } catch (e: ActivityNotFoundException) {
+                handleException(e)
+            } catch (e: IllegalArgumentException) {
+                handleException(e)
+            }
+        }
+
         ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
         ButtonComponent.UrlMethod.DEEP_LINK,
-        -> openUriOrElse(url) { exception ->
-            val message = if (exception is ActivityNotFoundException) {
-                getString(R.string.no_browser_cannot_open_link)
-            } else {
-                getString(R.string.cannot_open_link)
-            }
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-            Logger.w(message)
-        }
+        -> openUriOrElse(url, ::handleException)
     }
 }
 
