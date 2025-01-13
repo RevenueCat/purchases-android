@@ -272,9 +272,9 @@ internal class PaywallViewModelImpl(
                 }
                 performPurchase(activity, selectedPackage)
             }
-            else -> {
-                Logger.e("Unexpected state trying to purchase package: $currentState")
-            }
+            is PaywallState.Error,
+            is PaywallState.Loading,
+            -> Logger.e("Unexpected state trying to purchase package: $currentState")
         }
         finishAction()
     }
