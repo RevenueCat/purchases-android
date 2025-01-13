@@ -22,6 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 /**
  * A Composable that can show any [ComponentStyle].
  */
+@Suppress("LongParameterList")
 @JvmSynthetic
 @Composable
 internal fun ComponentView(
@@ -29,24 +30,20 @@ internal fun ComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) = when (style) {
     is StackComponentStyle -> StackComponentView(
         style = style,
         state = state,
         clickHandler = onClick,
         modifier = modifier,
-        selected = selected,
     )
-    is TextComponentStyle -> TextComponentView(style = style, state = state, modifier = modifier, selected = selected)
-    is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier, selected = selected)
-    is ButtonComponentStyle -> ButtonComponentView(
+    is TextComponentStyle -> TextComponentView(
         style = style,
         state = state,
-        onClick = onClick,
         modifier = modifier,
-        selected = selected,
     )
+    is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
+    is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, onClick = onClick, modifier = modifier)
     is StickyFooterComponentStyle -> StickyFooterComponentView(
         style = style,
         state = state,

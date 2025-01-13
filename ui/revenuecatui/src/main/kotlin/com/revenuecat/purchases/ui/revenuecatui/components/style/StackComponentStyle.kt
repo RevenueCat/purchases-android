@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -37,6 +38,12 @@ internal class StackComponentStyle(
     val shadow: Shadow?,
     @get:JvmSynthetic
     val badge: BadgeStyle?,
+    /**
+     * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
+     * available.
+     */
+    @get:JvmSynthetic
+    val rcPackage: Package?,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedStackPartial>?,
 ) : ComponentStyle
