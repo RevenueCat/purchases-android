@@ -346,8 +346,10 @@ private fun Package.currentlySubscribed(
     PackageType.WEEKLY,
     -> activelySubscribedProductIdentifiers.contains(product.id)
 
-    PackageType.LIFETIME, PackageType.CUSTOM,
+    PackageType.LIFETIME,
     -> nonSubscriptionProductIdentifiers.contains(product.id)
 
-    PackageType.UNKNOWN -> false
+    PackageType.CUSTOM,
+    PackageType.UNKNOWN,
+    -> false
 }
