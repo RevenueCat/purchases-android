@@ -30,6 +30,7 @@ import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.CENTER
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -93,12 +94,7 @@ class ButtonComponentViewTests {
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
                     shape = RoundedCornerShape(size = 20.dp),
-                    cornerRadiuses = CornerRadiuses(
-                        topLeading = 20.0,
-                        topTrailing = 20.0,
-                        bottomLeading = 20.0,
-                        bottomTrailing = 20.0,
-                    ),
+                    rcShape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
                     border = Border(width = 2.0, color = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb()))),
                     shadow = Shadow(
                         color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),

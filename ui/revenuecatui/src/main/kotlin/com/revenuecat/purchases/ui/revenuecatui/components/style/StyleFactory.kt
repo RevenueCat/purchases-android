@@ -181,7 +181,7 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             shape = component.shape?.toShape() ?: DEFAULT_SHAPE,
-            cornerRadiuses = (component.shape as? Shape.Rectangle)?.corners,
+            rcShape = component.shape ?: Shape.Rectangle(),
             border = component.border,
             shadow = component.shadow,
             badge = badge,

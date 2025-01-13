@@ -105,8 +105,8 @@ internal class StackComponentState(
     val shape by derivedStateOf { presentedPartial?.partial?.shape?.toShape() ?: style.shape }
 
     @get:JvmSynthetic
-    val cornerRadiuses by derivedStateOf {
-        (presentedPartial?.partial?.shape as? Shape.Rectangle)?.corners ?: style.cornerRadiuses
+    val rcShape by derivedStateOf {
+        (presentedPartial?.partial?.shape as? Shape.Rectangle)?.corners ?: style.rcShape
     }
 
     @get:JvmSynthetic

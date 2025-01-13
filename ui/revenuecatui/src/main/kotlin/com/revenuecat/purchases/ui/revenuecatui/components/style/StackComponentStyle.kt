@@ -6,12 +6,12 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
+import com.revenuecat.purchases.paywalls.components.properties.Shape as RcShape
 
 @Suppress("LongParameterList")
 @Immutable
@@ -33,7 +33,7 @@ internal class StackComponentStyle(
     @get:JvmSynthetic
     val shape: Shape,
     @get:JvmSynthetic
-    val cornerRadiuses: CornerRadiuses?,
+    val rcShape: RcShape,
     @get:JvmSynthetic
     val border: Border?,
     @get:JvmSynthetic
@@ -53,7 +53,7 @@ internal class StackComponentStyle(
         padding: PaddingValues = this.padding,
         margin: PaddingValues = this.margin,
         shape: Shape = this.shape,
-        cornerRadiuses: CornerRadiuses? = this.cornerRadiuses,
+        rcShape: RcShape = this.rcShape,
         border: Border? = this.border,
         shadow: Shadow? = this.shadow,
         badge: BadgeStyle? = this.badge,
@@ -67,7 +67,7 @@ internal class StackComponentStyle(
         padding = padding,
         margin = margin,
         shape = shape,
-        cornerRadiuses = cornerRadiuses,
+        rcShape = rcShape,
         border = border,
         shadow = shadow,
         badge = badge,
