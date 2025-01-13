@@ -58,7 +58,7 @@ internal class IdentityManager(
         val cacheEditor = deviceCache.startEditing()
         deviceCache.cacheAppUserID(appUserIDToUse, cacheEditor)
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse, cacheEditor)
-        invalidateCustomerInfoAndETagCacheIfNeeded(appUserIDToUse)
+        invalidateETagCacheIfNeeded(appUserIDToUse)
         cacheEditor.apply()
 
         enqueue {
@@ -146,7 +146,7 @@ internal class IdentityManager(
         }
     }
 
-    private fun invalidateCustomerInfoAndETagCacheIfNeeded(
+    private fun invalidateETagCacheIfNeeded(
         appUserID: String,
     ) {
         if (backend.verificationMode == SignatureVerificationMode.Disabled) {
