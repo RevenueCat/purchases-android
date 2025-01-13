@@ -110,6 +110,7 @@ internal fun InternalPaywall(
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
             if (state is PaywallState.Loaded.Components) {
+                viewModel.trackPaywallImpressionIfNeeded()
                 LoadedPaywallComponents(
                     state = state,
                     clickHandler = rememberPaywallActionHandler(viewModel),
