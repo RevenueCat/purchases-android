@@ -405,6 +405,7 @@ internal class PaywallViewModelImpl(
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validationResult,
+                storefrontCountryCode = storefrontCountryCode,
             )
         }
     }

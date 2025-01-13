@@ -454,7 +454,10 @@ internal class MockViewModel(
                 shouldDisplayDismissButton = false,
                 storefrontCountryCode = "US",
             )
-            is PaywallValidationResult.Components -> offering.toComponentsPaywallState(validated)
+            is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
+                validationResult = validated,
+                storefrontCountryCode = null,
+            )
         },
     )
 

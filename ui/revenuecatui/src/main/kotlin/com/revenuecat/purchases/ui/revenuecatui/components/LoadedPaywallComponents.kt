@@ -160,7 +160,7 @@ private fun LoadedPaywallComponents_Preview() {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    val state = offering.toComponentsPaywallState(validated)
+    val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
     LoadedPaywallComponents(
         state = state,
         clickHandler = { },
@@ -334,7 +334,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    val state = offering.toComponentsPaywallState(validated)
+    val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 
     LoadedPaywallComponents(
         state = state,
