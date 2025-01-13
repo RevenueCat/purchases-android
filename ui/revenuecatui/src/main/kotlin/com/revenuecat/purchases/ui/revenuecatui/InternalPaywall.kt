@@ -308,7 +308,9 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
             @Suppress("TooGenericExceptionCaught")
             try {
                 intent.launchUrl(this, Uri.parse(url))
-            } catch (e: Exception) {
+            } catch (e: ActivityNotFoundException) {
+                handleException(e)
+            } catch (e: IllegalArgumentException) {
                 handleException(e)
             }
         }
