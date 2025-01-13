@@ -38,6 +38,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
@@ -503,6 +504,65 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             spacing = 16.dp,
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
             padding = PaddingValues(all = 16.dp),
+            margin = PaddingValues(all = 16.dp),
+            shape = RectangleShape,
+            border = null,
+            shadow = null,
+            overrides = null,
+            badge = null,
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+    )
+}
+
+/**
+ * Provides all FlexDistributions, in both Horizontal and Vertical dimensions.
+ */
+private class DistributionProvider : PreviewParameterProvider<Dimension> {
+    override val values: Sequence<Dimension> = FlexDistribution.values().asSequence().flatMap { distribution ->
+        sequenceOf(
+            Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = distribution),
+            Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = distribution),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_Distribution(
+    @PreviewParameter(DistributionProvider::class) dimension: Dimension,
+) {
+    val distribution = when (dimension) {
+        is Dimension.Horizontal -> dimension.distribution
+        is Dimension.Vertical -> dimension.distribution
+        is Dimension.ZLayer -> null
+    }
+    StackComponentView(
+        style = StackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Hello",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
+                    size = Size(width = Fit, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = distribution?.name ?: "null",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Green.toArgb())),
+                    size = Size(width = Fit, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "World",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
+                    size = Size(width = Fit, height = Fit),
+                ),
+            ),
+            dimension = dimension,
+            // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
+            size = Size(width = Fit, height = Fit),
+            spacing = 16.dp,
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 16.dp),
             shape = RectangleShape,
             border = null,
