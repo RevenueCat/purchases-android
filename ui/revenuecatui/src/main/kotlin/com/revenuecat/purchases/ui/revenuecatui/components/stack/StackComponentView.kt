@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +24,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -192,6 +194,7 @@ private fun MainStackComponent(
             .clip(stackState.shape)
             .applyIfNotNull(borderStyle) { border(it, stackState.shape) }
             .padding(stackState.padding)
+            .padding(stackState.dimension, stackState.spacing)
     }
 
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children, selected) {
@@ -242,6 +245,37 @@ private fun MainStackComponent(
         ) { content { child -> Modifier } }
     }
 }
+
+/**
+ * For [FlexDistribution.SPACE_AROUND] and [FlexDistribution.SPACE_EVENLY] we need to add some extra padding, as we
+ * cannot use `Arrangement` to add spacing of a minimum size before or after the content. See
+ * [FlexDistribution.toHorizontalArrangement] and [FlexDistribution.toVerticalArrangement] for more info.
+ */
+@Stable
+private fun Modifier.padding(dimension: Dimension, spacing: Dp): Modifier =
+    when (dimension) {
+        is Dimension.Horizontal -> {
+            when (dimension.distribution) {
+                START,
+                FlexDistribution.END,
+                FlexDistribution.CENTER,
+                FlexDistribution.SPACE_BETWEEN,
+                -> this
+                FlexDistribution.SPACE_AROUND -> this.padding(horizontal = spacing / 2)
+                FlexDistribution.SPACE_EVENLY -> this.padding(horizontal = spacing)
+            }
+        }
+        is Dimension.Vertical -> when (dimension.distribution) {
+            START,
+            FlexDistribution.END,
+            FlexDistribution.CENTER,
+            FlexDistribution.SPACE_BETWEEN,
+            -> this
+            FlexDistribution.SPACE_AROUND -> this.padding(vertical = spacing / 2)
+            FlexDistribution.SPACE_EVENLY -> this.padding(vertical = spacing)
+        }
+        is Dimension.ZLayer -> this
+    }
 
 private fun getOverlaidBadgeOffsetY(height: Int, alignment: TwoDimensionalAlignment) =
     when (alignment) {
