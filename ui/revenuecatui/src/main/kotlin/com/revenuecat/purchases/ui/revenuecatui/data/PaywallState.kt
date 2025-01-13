@@ -66,6 +66,11 @@ internal sealed interface PaywallState {
             val stack: ComponentStyle,
             val stickyFooter: ComponentStyle?,
             val background: Background,
+            /**
+             * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
+             * for that.
+             */
+            val showPricesWithDecimals: Boolean,
             override val offering: Offering,
             /**
              * All locales that this paywall supports, with `locales.head` being the default one.
@@ -84,8 +89,6 @@ internal sealed interface PaywallState {
             var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage)
                 private set
 
-            // TODO Actually determine this.
-            val showZeroDecimalPlacePrices: Boolean = true
             val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
 
             fun update(localeList: FrameworkLocaleList? = null, isEligibleForIntroOffer: Boolean? = null) {

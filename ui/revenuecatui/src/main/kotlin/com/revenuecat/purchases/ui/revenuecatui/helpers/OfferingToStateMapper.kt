@@ -122,6 +122,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
             stickyFooter = stickyFooter,
             background = config.background,
             locales = localizations.keys,
+            zeroDecimalPlaceCountries = paywallComponents.zeroDecimalPlaceCountries.toSet(),
         )
     }
 }
@@ -239,14 +240,21 @@ internal fun Offering.toLegacyPaywallState(
 
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
-): PaywallState.Loaded.Components =
-    PaywallState.Loaded.Components(
+    storefrontCountryCode: String?,
+): PaywallState.Loaded.Components {
+    val showPricesWithDecimals = storefrontCountryCode?.let {
+        !validationResult.zeroDecimalPlaceCountries.contains(it)
+    } ?: true
+
+    return PaywallState.Loaded.Components(
         stack = validationResult.stack,
         stickyFooter = validationResult.stickyFooter,
         background = validationResult.background,
+        showPricesWithDecimals = showPricesWithDecimals,
         offering = this,
         locales = validationResult.locales,
     )
+}
 
 /**
  * Returns an error if any of the variables are invalid, or null if they're all valid

@@ -60,7 +60,6 @@ internal fun ButtonComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     // Get a ButtonComponentState that calculates the stateful properties we should use.
     val buttonState = rememberButtonComponentState(
@@ -82,7 +81,6 @@ internal fun ButtonComponentView(
                 isClickable = true
             }
         },
-        selected = selected,
     )
 }
 
@@ -112,6 +110,7 @@ private fun previewButtonComponentStyle(
                 size = Size(width = Fit, height = Fit),
                 padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
                 margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0).toPaddingValues(),
+                rcPackage = null,
                 overrides = null,
             ),
         ),
@@ -130,6 +129,7 @@ private fun previewButtonComponentStyle(
             y = 3.0,
         ),
         badge = null,
+        rcPackage = null,
         overrides = null,
     ),
     action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,
@@ -167,5 +167,5 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated)
+    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 }

@@ -176,7 +176,7 @@ class PackageComponentViewTests {
             paywallComponents = data,
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-        val state = offering.toComponentsPaywallState(validated)
+        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 
         val styleFactory = StyleFactory(
             localizations = localizations,
@@ -232,6 +232,91 @@ class PackageComponentViewTests {
         onNodeWithText(selectedTextYearly.value)
             .assertIsNotDisplayed()
         onNodeWithText(selectedTextMonthly.value)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun `Should take variable values from the correct package`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocaleIdentifier = LocaleId("en_US")
+        // Both packages use the same unprocessed text.
+        val textKey = LocalizationKey("key")
+        val textWithVariable = LocalizationData.Text("Product: {{ product_name }}")
+        // However the displayed text should be different, as the product names are different.
+        val expectedTextYearly = "Product: ${packageYearly.product.name}"
+        val expectedTextMonthly = "Product: ${packageMonthly.product.name}"
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                textKey to textWithVariable,
+            )
+        )
+        val componentYearly = PackageComponent(
+            packageId = packageYearly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = textKey,
+                        color = textColor,
+                    )
+                ),
+            )
+        )
+        val componentMonthly = PackageComponent(
+            packageId = packageMonthly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = textKey,
+                        color = textColor,
+                    )
+                ),
+            )
+        )
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(componentYearly, componentMonthly)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageYearly, packageMonthly),
+            paywallComponents = data,
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle
+        val styleMonthly = styleFactory.create(componentMonthly).getOrThrow() as PackageComponentStyle
+
+        // Act
+        setContent {
+            Column {
+                PackageComponentView(style = styleYearly, state = state, modifier = Modifier.testTag("yearly"))
+                PackageComponentView(style = styleMonthly, state = state, modifier = Modifier.testTag("monthly"))
+            }
+        }
+
+        // Assert
+        onNodeWithText(expectedTextYearly)
+            .assertIsDisplayed()
+        onNodeWithText(expectedTextMonthly)
             .assertIsDisplayed()
     }
 

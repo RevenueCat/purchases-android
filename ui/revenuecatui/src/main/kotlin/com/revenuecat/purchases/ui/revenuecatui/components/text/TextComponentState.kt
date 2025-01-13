@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
@@ -29,13 +30,12 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-    selected: Boolean,
 ): TextComponentState =
     rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
+        selectedPackageProvider = { paywallState.selectedPackage },
         isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
-        selected = selected,
     )
 
 @JvmSynthetic
@@ -43,8 +43,8 @@ internal fun rememberUpdatedTextComponentState(
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
+    selectedPackageProvider: () -> Package?,
     isEligibleForIntroOffer: Boolean = false,
-    selected: Boolean = false,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -52,15 +52,14 @@ internal fun rememberUpdatedTextComponentState(
         TextComponentState(
             initialWindowSize = windowSize,
             initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
-            initialSelected = selected,
             style = style,
             localeProvider = localeProvider,
+            selectedPackageProvider = selectedPackageProvider,
         )
     }.apply {
         update(
             windowSize = windowSize,
             isEligibleForIntroOffer = isEligibleForIntroOffer,
-            selected = selected,
         )
     }
 }
@@ -69,13 +68,16 @@ internal fun rememberUpdatedTextComponentState(
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialIsEligibleForIntroOffer: Boolean,
-    initialSelected: Boolean,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
+    private val selectedPackageProvider: () -> Package?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
-    private var selected by mutableStateOf(initialSelected)
+    private val selected by derivedStateOf {
+        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
@@ -134,10 +136,8 @@ internal class TextComponentState(
     fun update(
         windowSize: WindowWidthSizeClass? = null,
         isEligibleForIntroOffer: Boolean? = null,
-        selected: Boolean? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
         if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
-        if (selected != null) this.selected = selected
     }
 }

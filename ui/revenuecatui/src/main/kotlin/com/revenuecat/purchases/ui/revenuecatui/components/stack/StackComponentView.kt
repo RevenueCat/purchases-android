@@ -92,13 +92,11 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
         style = style,
         paywallState = state,
-        selected = selected,
     )
 
     if (stackState.visible) {
@@ -113,7 +111,6 @@ internal fun StackComponentView(
                         badge.alignment,
                         clickHandler,
                         modifier,
-                        selected,
                     )
                 }
 
@@ -124,7 +121,7 @@ internal fun StackComponentView(
                 }
             }
         } else {
-            MainStackComponent(stackState, state, clickHandler, modifier, selected)
+            MainStackComponent(stackState, state, clickHandler, modifier)
         }
     }
 }
@@ -138,11 +135,10 @@ private fun StackWithOverlaidBadge(
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     Box(modifier = modifier) {
-        MainStackComponent(stackState, state, clickHandler, selected = selected)
-        OverlaidBadge(badgeStack, state, alignment, selected = selected)
+        MainStackComponent(stackState, state, clickHandler)
+        OverlaidBadge(badgeStack, state, alignment)
     }
 }
 
@@ -152,7 +148,6 @@ private fun BoxScope.OverlaidBadge(
     state: PaywallState.Loaded.Components,
     alignment: TwoDimensionalAlignment,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     StackComponentView(
         badgeStack,
@@ -169,7 +164,6 @@ private fun BoxScope.OverlaidBadge(
                     )
                 }
             },
-        selected = selected,
     )
 }
 
@@ -179,7 +173,6 @@ private fun MainStackComponent(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
@@ -197,7 +190,7 @@ private fun MainStackComponent(
             .padding(stackState.dimension, stackState.spacing)
     }
 
-    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children, selected) {
+    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
         @Composable { modifierProvider ->
             stackState.children.forEach { child ->
                 ComponentView(
@@ -205,7 +198,6 @@ private fun MainStackComponent(
                     state = state,
                     onClick = clickHandler,
                     modifier = modifierProvider(child),
-                    selected = selected,
                 )
             }
         }
@@ -321,6 +313,7 @@ private fun StackComponentView_Preview_Vertical() {
                     y = 3.0,
                 ),
                 badge = null,
+                rcPackage = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -363,6 +356,7 @@ private fun StackComponentView_Preview_Badge(
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(alignment),
+                rcPackage = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -399,6 +393,7 @@ private fun StackComponentView_Preview_Horizontal() {
                     y = 5.0,
                 ),
                 badge = null,
+                rcPackage = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -435,6 +430,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         size = Size(width = Fit, height = Fit),
                         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
                         margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0).toPaddingValues(),
+                        rcPackage = null,
                         overrides = null,
                     ),
                     TextComponentStyle(
@@ -453,6 +449,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         size = Size(width = Fit, height = Fit),
                         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
                         margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
+                        rcPackage = null,
                         overrides = null,
                     ),
                 ),
@@ -474,6 +471,7 @@ private fun StackComponentView_Preview_ZLayer() {
                     y = 5.0,
                 ),
                 badge = null,
+                rcPackage = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -509,6 +507,7 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             border = null,
             shadow = null,
             overrides = null,
+            rcPackage = null,
             badge = null,
         ),
         state = previewEmptyState(),
@@ -543,6 +542,7 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             border = null,
             shadow = null,
             overrides = null,
+            rcPackage = null,
             badge = null,
         ),
         state = previewEmptyState(),
@@ -627,6 +627,7 @@ private fun previewChildren() = listOf(
         size = Size(width = Fit, height = Fit),
         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
         margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
+        rcPackage = null,
         overrides = null,
     ),
     TextComponentStyle(
@@ -645,6 +646,7 @@ private fun previewChildren() = listOf(
         size = Size(width = Fit, height = Fit),
         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
         margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
+        rcPackage = null,
         overrides = null,
     ),
 )
@@ -676,6 +678,7 @@ private fun previewTextComponentStyle(
         size = size,
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
+        rcPackage = null,
         overrides = null,
     )
 }
@@ -707,7 +710,7 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated)
+    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 }
 
 private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
@@ -738,6 +741,7 @@ private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
                         leading = 0.0,
                         trailing = 0.0,
                     ).toPaddingValues(),
+                    rcPackage = null,
                     overrides = null,
                 ),
             ),
@@ -753,6 +757,7 @@ private fun previewBadge(alignment: TwoDimensionalAlignment): BadgeStyle {
             border = null,
             shadow = null,
             badge = null,
+            rcPackage = null,
             overrides = null,
         ),
         style = Badge.Style.Overlay,

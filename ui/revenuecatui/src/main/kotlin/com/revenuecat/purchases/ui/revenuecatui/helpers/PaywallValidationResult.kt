@@ -34,6 +34,10 @@ internal sealed interface PaywallValidationResult {
          * All locales that this paywall supports, with `locales.head` being the default one.
          */
         val locales: NonEmptySet<LocaleId>,
+        /**
+         * Any countries whose currencies should not show any decimals when displaying prices.
+         */
+        val zeroDecimalPlaceCountries: Set<String>,
     ) : PaywallValidationResult {
         // If a Components Paywall has an error, it will be reflected as a Legacy type so we can use the Legacy
         // fallback.

@@ -118,7 +118,7 @@ internal class LoadedPaywallComponentsLocaleTests {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
                 val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-                val state = offering.toComponentsPaywallState(validated)
+                val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
                 setContent { LoadedPaywallComponents(state = state, clickHandler = { }) }
             }
         }
@@ -135,7 +135,7 @@ internal class LoadedPaywallComponentsLocaleTests {
             localeChangingTest(
                 arrange = {
                     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-                    offering.toComponentsPaywallState(validated)
+                    offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
                 },
                 act = { state -> LoadedPaywallComponents(state = state, clickHandler = { }) },
                 assert = { localeController ->

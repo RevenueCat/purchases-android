@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -40,13 +41,12 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 internal fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-    selected: Boolean,
 ): ImageComponentState =
     rememberUpdatedImageComponentState(
         style = style,
         localeProvider = { paywallState.locale },
+        selectedPackageProvider = { paywallState.selectedPackage },
         isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
-        selected = selected,
     )
 
 @JvmSynthetic
@@ -54,8 +54,8 @@ internal fun rememberUpdatedImageComponentState(
 internal fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     localeProvider: () -> Locale,
+    selectedPackageProvider: () -> Package?,
     isEligibleForIntroOffer: Boolean = false,
-    selected: Boolean = false,
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -65,17 +65,16 @@ internal fun rememberUpdatedImageComponentState(
         ImageComponentState(
             initialWindowSize = windowSize,
             initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
-            initialSelected = selected,
             initialDensity = density,
             initialDarkMode = darkMode,
             style = style,
             localeProvider = localeProvider,
+            selectedPackageProvider = selectedPackageProvider,
         )
     }.apply {
         update(
             windowSize = windowSize,
             isEligibleForIntroOffer = isEligibleForIntroOffer,
-            selected = selected,
             density = density,
             darkMode = darkMode,
         )
@@ -87,15 +86,17 @@ internal fun rememberUpdatedImageComponentState(
 internal class ImageComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialIsEligibleForIntroOffer: Boolean,
-    initialSelected: Boolean,
     initialDensity: Density,
     initialDarkMode: Boolean,
     private val style: ImageComponentStyle,
     private val localeProvider: () -> Locale,
+    private val selectedPackageProvider: () -> Package?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
-    private var selected by mutableStateOf(initialSelected)
+    private val selected by derivedStateOf {
+        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+    }
     private var density by mutableStateOf(initialDensity)
     private var darkMode by mutableStateOf(initialDarkMode)
     private val presentedPartial by derivedStateOf {
@@ -176,13 +177,11 @@ internal class ImageComponentState(
     fun update(
         windowSize: WindowWidthSizeClass? = null,
         isEligibleForIntroOffer: Boolean? = null,
-        selected: Boolean? = null,
         density: Density? = null,
         darkMode: Boolean? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
         if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
-        if (selected != null) this.selected = selected
         if (density != null) this.density = density
         if (darkMode != null) this.darkMode = darkMode
     }
