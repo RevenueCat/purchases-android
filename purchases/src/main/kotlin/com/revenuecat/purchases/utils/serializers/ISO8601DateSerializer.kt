@@ -9,7 +9,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import java.util.Date
 
-internal object ISO8601Serializer : KSerializer<Date> {
+internal object ISO8601DateSerializer : KSerializer<Date> {
 
     override val descriptor: SerialDescriptor
         get() = PrimitiveSerialDescriptor("Date", PrimitiveKind.STRING)

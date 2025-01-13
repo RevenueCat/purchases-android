@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.utils.Iso8601Utils
+import com.revenuecat.purchases.utils.SerializationException
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
 import kotlinx.serialization.json.Json
@@ -110,8 +111,11 @@ internal object CustomerInfoFactory {
                 )
                 subscriptionMap[productId] = SubscriptionInfo(productId, requestDate, subscriptionInfoResponse)
             }
-        } catch (t: Throwable) {
-            errorLog("Error deserializing subscription information", t)
+        } catch (s: SerializationException) {
+            errorLog("Error deserializing subscription information", s)
+            emptyMap<String, SubscriptionInfo>()
+        } catch (i: IllegalArgumentException) {
+            errorLog("Error deserializing subscription information. The input is not a SubscriptionInfo", i)
             emptyMap<String, SubscriptionInfo>()
         }
         return subscriptionMap

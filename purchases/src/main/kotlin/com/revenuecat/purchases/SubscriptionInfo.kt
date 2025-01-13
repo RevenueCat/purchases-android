@@ -5,6 +5,7 @@ import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.EntitlementInfoHelper
 import java.util.Date
 
+@SuppressWarnings("LongParameterList")
 class SubscriptionInfo(
     val productIdentifier: String,
     val purchaseDate: Date,

@@ -3,30 +3,33 @@ package com.revenuecat.purchases.common.responses
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.utils.serializers.ISO8601Serializer
+import com.revenuecat.purchases.utils.serializers.ISO8601DateSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.Date
 
 @Serializable
+@SuppressWarnings("LongParameterList")
 internal class SubscriptionInfoResponse(
-    @SerialName("purchase_date") @Serializable(with = ISO8601Serializer::class) val purchaseDate: Date,
-    @SerialName("original_purchase_date") @Serializable(with = ISO8601Serializer::class) val originalPurchaseDate:
+    @SerialName("purchase_date") @Serializable(with = ISO8601DateSerializer::class) val purchaseDate: Date,
+    @SerialName("original_purchase_date") @Serializable(with = ISO8601DateSerializer::class) val originalPurchaseDate:
     Date?,
-    @SerialName("expires_date") @Serializable(with = ISO8601Serializer::class) val expiresDate: Date?,
+    @SerialName("expires_date") @Serializable(with = ISO8601DateSerializer::class) val expiresDate: Date?,
     @SerialName("store") val store: Store,
     @SerialName("is_sandbox") val isSandbox: Boolean,
-    @SerialName("unsubscribe_detected_at") @Serializable(with = ISO8601Serializer::class) val unsubscribeDetectedAt:
+    @SerialName("unsubscribe_detected_at") @Serializable(with = ISO8601DateSerializer::class) val unsubscribeDetectedAt:
     Date?,
     @SerialName(
         "billing_issues_detected_at",
-    ) @Serializable(with = ISO8601Serializer::class) val billingIssuesDetectedAt:
+    ) @Serializable(with = ISO8601DateSerializer::class) val billingIssuesDetectedAt:
     Date?,
-    @SerialName("grace_period_expires_date") @Serializable(with = ISO8601Serializer::class) val gracePeriodExpiresDate:
+    @SerialName(
+        "grace_period_expires_date",
+    ) @Serializable(with = ISO8601DateSerializer::class) val gracePeriodExpiresDate:
     Date?,
     @SerialName("ownership_type") val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
     @SerialName("period_type") val periodType: PeriodType,
-    @SerialName("refunded_at") @Serializable(with = ISO8601Serializer::class) val refundedAt: Date?,
+    @SerialName("refunded_at") @Serializable(with = ISO8601DateSerializer::class) val refundedAt: Date?,
     @SerialName("store_transaction_id") val storeTransactionId: String?,
 ) {
 
