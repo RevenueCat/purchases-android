@@ -137,7 +137,19 @@ internal fun StackComponentView(
                 }
 
                 Badge.Style.Nested -> {
-                    MainStackComponent(stackState, state, clickHandler, modifier, badge)
+                    val stackModifier = calculateStackModifier(stackState)
+                    Box(modifier = modifier.then(stackModifier)) {
+                        // We avoid applying the same margin, border, shadow and padding twice by
+                        // applying an empty commonModifier
+                        MainStackComponent(stackState, state, clickHandler, Modifier, Modifier)
+                        StackComponentView(
+                            badge.stackStyle,
+                            state,
+                            {},
+                            modifier = Modifier
+                                .align(badge.alignment.toAlignment()),
+                        )
+                    }
                 }
             }
         } else {
@@ -352,25 +364,8 @@ private fun MainStackComponent(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    nestedBadge: BadgeStyle? = null,
+    commonModifier: Modifier = calculateStackModifier(stackState),
 ) {
-    val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
-    val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
-    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
-    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
-
-    // Modifier irrespective of dimension.
-    val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
-        Modifier
-            .padding(stackState.margin)
-            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
-            .clip(composeShape)
-            .applyIfNotNull(borderStyle) { border(it, composeShape) }
-            .padding(stackState.padding)
-            .padding(stackState.dimension, stackState.spacing)
-    }
-
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
         @Composable { modifierProvider ->
             stackState.children.forEach { child ->
@@ -385,54 +380,59 @@ private fun MainStackComponent(
     }
 
     // Show the right container composable depending on the dimension.
-    val stack: @Composable (Modifier) -> Unit = { rootModifier ->
-        when (val dimension = stackState.dimension) {
-            is Dimension.Horizontal -> Row(
-                modifier = modifier
-                    .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
-                    .then(rootModifier),
-                verticalAlignment = dimension.alignment.toAlignment(),
-                horizontalArrangement = dimension.distribution.toHorizontalArrangement(
-                    spacing = stackState.spacing,
-                ),
-            ) { content { child -> if (child.size.width == Fill) Modifier.weight(1f) else Modifier } }
+    when (val dimension = stackState.dimension) {
+        is Dimension.Horizontal -> Row(
+            modifier = modifier
+                .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                .then(commonModifier),
+            verticalAlignment = dimension.alignment.toAlignment(),
+            horizontalArrangement = dimension.distribution.toHorizontalArrangement(
+                spacing = stackState.spacing,
+            ),
+        ) { content { child -> if (child.size.width == Fill) Modifier.weight(1f) else Modifier } }
 
-            is Dimension.Vertical -> Column(
-                modifier = modifier
-                    .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                    .then(rootModifier),
-                verticalArrangement = dimension.distribution.toVerticalArrangement(
-                    spacing = stackState.spacing,
-                ),
-                horizontalAlignment = dimension.alignment.toAlignment(),
-            ) { content { child -> if (child.size.height == Fill) Modifier.weight(1f) else Modifier } }
+        is Dimension.Vertical -> Column(
+            modifier = modifier
+                .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                .then(commonModifier),
+            verticalArrangement = dimension.distribution.toVerticalArrangement(
+                spacing = stackState.spacing,
+            ),
+            horizontalAlignment = dimension.alignment.toAlignment(),
+        ) { content { child -> if (child.size.height == Fill) Modifier.weight(1f) else Modifier } }
 
-            is Dimension.ZLayer -> Box(
-                modifier = modifier
-                    .size(
-                        size = stackState.size,
-                        horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                        verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                    )
-                    .then(rootModifier),
-                contentAlignment = dimension.alignment.toAlignment(),
-            ) { content { child -> Modifier } }
-        }
+        is Dimension.ZLayer -> Box(
+            modifier = modifier
+                .size(
+                    size = stackState.size,
+                    horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                    verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                )
+                .then(commonModifier),
+            contentAlignment = dimension.alignment.toAlignment(),
+        ) { content { child -> Modifier } }
     }
+}
 
-    if (nestedBadge == null) {
-        stack(commonModifier)
-    } else {
-        Box(modifier = modifier.then(commonModifier)) {
-            stack(Modifier)
-            StackComponentView(
-                nestedBadge.stackStyle,
-                state,
-                {},
-                modifier = Modifier
-                    .align(nestedBadge.alignment.toAlignment()),
-            )
-        }
+@Composable
+private fun calculateStackModifier(
+    stackState: StackComponentState,
+): Modifier {
+    val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
+
+    // Modifier irrespective of dimension.
+    return remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
+        Modifier
+            .padding(stackState.margin)
+            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
+            .clip(composeShape)
+            .applyIfNotNull(borderStyle) { border(it, composeShape) }
+            .padding(stackState.padding)
+            .padding(stackState.dimension, stackState.spacing)
     }
 }
 
