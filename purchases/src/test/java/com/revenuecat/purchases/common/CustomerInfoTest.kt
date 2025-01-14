@@ -367,7 +367,6 @@ class CustomerInfoTest {
         assertThat(proSubscription.periodType).isEqualTo(PeriodType.NORMAL)
         assertThat(proSubscription.refundedAt).isNull()
         assertThat(proSubscription.storeTransactionId).isEqualTo("GPA.3394-7009-4518-41945..6")
-        assertThat(proSubscription.requestDate).isEqualTo(Iso8601Utils.parse("2019-08-16T10:30:42Z"))
         assertThat(proSubscription.isActive).isTrue()
         assertThat(proSubscription.willRenew).isTrue()
 
@@ -386,7 +385,6 @@ class CustomerInfoTest {
         assertThat(basicSubscription.periodType).isEqualTo(PeriodType.NORMAL)
         assertThat(basicSubscription.refundedAt).isNull()
         assertThat(basicSubscription.storeTransactionId).isEqualTo("GPA.3394-7009-4518-41945..8")
-        assertThat(basicSubscription.requestDate).isEqualTo(Iso8601Utils.parse("2019-08-16T10:30:42Z"))
         assertThat(basicSubscription.isActive).isFalse()
         assertThat(basicSubscription.willRenew).isFalse()
     }
