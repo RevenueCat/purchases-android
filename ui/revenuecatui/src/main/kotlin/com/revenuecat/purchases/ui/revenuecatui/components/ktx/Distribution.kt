@@ -34,6 +34,12 @@ internal fun FlexDistribution.toHorizontalArrangement(spacing: Dp): Arrangement.
         -> SpaceBetween(spacing)
     }
 
+/**
+ * Converts this [FlexDistribution] to an [Arrangement.Vertical].
+ *
+ * Note that for [FlexDistribution.SPACE_AROUND] and [FlexDistribution.SPACE_EVENLY], you still need to add the
+ * appropriate padding before and after the content manually.
+ */
 @JvmSynthetic
 internal fun FlexDistribution.toVerticalArrangement(spacing: Dp): Arrangement.Vertical =
     when (this) {
