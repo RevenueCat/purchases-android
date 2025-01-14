@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.utils.getDate
 import kotlinx.parcelize.Parcelize
 import org.json.JSONObject
@@ -21,6 +22,8 @@ data class Transaction(
     )
     val productId: String,
     val purchaseDate: Date,
+    val storeTransactionIdentifier: String,
+    val store: Store,
 ) : Parcelable {
 
     internal constructor(productId: String, jsonObject: JSONObject) : this(
@@ -29,5 +32,7 @@ data class Transaction(
         productIdentifier = productId,
         productId = productId,
         purchaseDate = jsonObject.getDate("purchase_date"),
+        storeTransactionIdentifier = jsonObject.getString("store_transaction_identifier"),
+        store = Store.valueOf(jsonObject.getString("store").uppercase()),
     )
 }

@@ -1,11 +1,162 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
-internal data class PurchaseInformation(
+import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
+import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
+import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
+import java.util.Locale
+
+internal class PurchaseInformation(
     val title: String,
     val durationTitle: String,
-    val price: String,
-    val expirationDateString: String?,
-    val willRenew: Boolean,
-    val active: Boolean,
-    val productId: String,
-)
+    val explanation: Explanation,
+    val price: PriceDetails,
+    val expirationOrRenewal: ExpirationOrRenewal?,
+    val productIdentifier: String,
+    val store: Store,
+) {
+
+    constructor(
+        entitlementInfo: EntitlementInfo? = null,
+        subscribedProduct: StoreProduct? = null,
+        transaction: TransactionDetails,
+        dateFormatter: DateFormatter = DefaultDateFormatter(),
+        locale: Locale,
+    ) : this(
+        title = subscribedProduct?.title ?: "",
+        durationTitle = subscribedProduct?.period?.localizedUnitPeriod(locale) ?: "",
+        explanation = entitlementInfo?.explanation() ?: when (transaction) {
+            is TransactionDetails.Subscription -> {
+                if (transaction.expiresDate != null) {
+                    if (transaction.isActive) {
+                        if (transaction.willRenew) Explanation.EARLIEST_RENEWAL else Explanation.EARLIEST_EXPIRATION
+                    } else {
+                        Explanation.EXPIRED
+                    }
+                } else {
+                    Explanation.LIFETIME
+                }
+            }
+
+            is TransactionDetails.NonSubscription -> Explanation.LIFETIME
+        },
+        expirationOrRenewal = entitlementInfo?.expirationOrRenewal(dateFormatter, locale) ?: when (transaction) {
+            is TransactionDetails.Subscription -> {
+                transaction.expiresDate?.let { date ->
+                    val dateString = dateFormatter.format(date, locale)
+                    val label = if (transaction.isActive) {
+                        if (transaction.willRenew) ExpirationOrRenewal.Label.NEXT_BILLING_DATE else ExpirationOrRenewal.Label.EXPIRES
+                    } else {
+                        ExpirationOrRenewal.Label.EXPIRED
+                    }
+                    ExpirationOrRenewal(label, ExpirationOrRenewal.Date.DateString(dateString))
+                }
+            }
+
+            is TransactionDetails.NonSubscription -> null
+        },
+        productIdentifier = entitlementInfo?.productIdentifier ?: transaction.productIdentifier,
+        store = entitlementInfo?.store ?: transaction.store,
+        price = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
+            PriceDetails.Free
+        } else {
+            subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
+        },
+    )
+}
+
+private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): PriceDetails {
+    subscribedProduct?.let {
+        return PriceDetails.Paid(it.price.formatted)
+    }
+    if (store == Store.PROMOTIONAL) {
+        return PriceDetails.Free
+    }
+    return PriceDetails.Unknown
+}
+
+private fun EntitlementInfo.explanation(): Explanation {
+    return when (store) {
+        Store.APP_STORE, Store.MAC_APP_STORE -> {
+            if (expirationDate != null) {
+                if (isActive) {
+                    if (willRenew) Explanation.EARLIEST_RENEWAL else Explanation.EARLIEST_EXPIRATION
+                } else {
+                    Explanation.EXPIRED
+                }
+            } else {
+                Explanation.LIFETIME
+            }
+        }
+
+        Store.PLAY_STORE -> Explanation.GOOGLE
+        Store.STRIPE, Store.RC_BILLING -> Explanation.WEB
+        Store.PROMOTIONAL -> Explanation.PROMOTIONAL
+        Store.EXTERNAL, Store.UNKNOWN_STORE -> Explanation.OTHER_STORE_PURCHASE
+        Store.AMAZON -> Explanation.AMAZON
+    }
+}
+
+private fun EntitlementInfo.expirationOrRenewal(dateFormatter: DateFormatter, locale: Locale): ExpirationOrRenewal? {
+    val date = expirationDateBestEffort(dateFormatter, locale)
+    val label = if (isActive) {
+        if (willRenew) ExpirationOrRenewal.Label.NEXT_BILLING_DATE else ExpirationOrRenewal.Label.EXPIRES
+    } else {
+        ExpirationOrRenewal.Label.EXPIRED
+    }
+    return ExpirationOrRenewal(label, date)
+}
+
+private fun EntitlementInfo.expirationDateBestEffort(
+    dateFormatter: DateFormatter,
+    locale: Locale,
+): ExpirationOrRenewal.Date {
+    expirationDate?.let { expirationDate ->
+        if (store == Store.PROMOTIONAL && productIdentifier.isPromotionalLifetime(store)) {
+            return ExpirationOrRenewal.Date.Never
+        } else {
+            return ExpirationOrRenewal.Date.DateString(dateFormatter.format(expirationDate, locale))
+        }
+    } ?: return ExpirationOrRenewal.Date.Never
+}
+
+private fun String.isPromotionalLifetime(store: Store): Boolean {
+    return store == Store.PROMOTIONAL && this.endsWith("_lifetime")
+}
+
+internal data class ExpirationOrRenewal(
+    val label: Label,
+    val date: Date,
+) {
+    enum class Label {
+        NEXT_BILLING_DATE,
+        EXPIRES,
+        EXPIRED,
+    }
+
+    sealed class Date {
+        object Never : Date()
+        data class DateString(val date: String) : Date()
+    }
+}
+
+internal sealed class PriceDetails {
+    object Free : PriceDetails()
+    data class Paid(val price: String) : PriceDetails()
+    object Unknown : PriceDetails()
+}
+
+internal enum class Explanation {
+    PROMOTIONAL,
+    GOOGLE,
+    WEB,
+    OTHER_STORE_PURCHASE,
+    AMAZON,
+    EARLIEST_RENEWAL,
+    EARLIEST_EXPIRATION,
+    EXPIRED,
+    LIFETIME,
+}

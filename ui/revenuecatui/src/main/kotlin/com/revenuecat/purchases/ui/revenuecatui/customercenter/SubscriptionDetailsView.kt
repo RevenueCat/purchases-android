@@ -22,14 +22,24 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.Explanation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.icons.CalendarMonth
 import com.revenuecat.purchases.ui.revenuecatui.icons.CurrencyExchange
 import com.revenuecat.purchases.ui.revenuecatui.icons.UniversalCurrencyAlt
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun SubscriptionDetailsView(
     details: PurchaseInformation,
+    localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -45,13 +55,7 @@ internal fun SubscriptionDetailsView(
                 style = MaterialTheme.typography.titleMedium,
             )
 
-            val explanation = remember(details.active, details.willRenew) {
-                when {
-                    details.active && details.willRenew -> "This is your subscription with the earliest billing date."
-                    details.active -> "This is your subscription with the earliest expiration date."
-                    else -> "This subscription has expired."
-                }
-            }
+            val explanation = remember { getSubscriptionExplanation(details, localization) }
 
             Text(
                 text = explanation,
@@ -73,30 +77,81 @@ internal fun SubscriptionDetailsView(
 
             Spacer(modifier = Modifier.size(PaddingVertical))
 
-            SubscriptionDetailRow(
-                icon = UniversalCurrencyAlt,
-                overline = "Current price",
-                text = details.price,
-            )
+            val price = remember { getPrice(details, localization) }
 
-            if (details.expirationDateString != null) {
-                val expirationOverline = remember(details.active, details.willRenew) {
-                    when {
-                        details.active && details.willRenew -> "Next billing date"
-                        details.active -> "Expires"
-                        else -> "Expired"
+            if (price != null) {
+                SubscriptionDetailRow(
+                    icon = UniversalCurrencyAlt,
+                    overline = "Current price",
+                    text = price,
+                )
+            }
+
+            details.expirationOrRenewal?.let { expirationOrRenewal ->
+                val expirationOverline = labelForExpirationOrRenewal(expirationOrRenewal, localization)
+
+                val expirationValue =
+                    when (expirationOrRenewal.date) {
+                        is ExpirationOrRenewal.Date.DateString -> expirationOrRenewal.date.date
+                        ExpirationOrRenewal.Date.Never -> localization.commonLocalizedString(
+                            CommonLocalizedString.NEVER,
+                        )
                     }
-                }
 
                 Spacer(modifier = Modifier.size(PaddingVertical))
 
                 SubscriptionDetailRow(
                     icon = CalendarMonth,
                     overline = expirationOverline,
-                    text = details.expirationDateString,
+                    text = expirationValue,
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+private fun labelForExpirationOrRenewal(
+    expirationOrRenewal: ExpirationOrRenewal,
+    localization: CustomerCenterConfigData.Localization,
+): String {
+    return when (expirationOrRenewal.label) {
+        ExpirationOrRenewal.Label.EXPIRES -> localization.commonLocalizedString(CommonLocalizedString.EXPIRES)
+        ExpirationOrRenewal.Label.EXPIRED -> localization.commonLocalizedString(CommonLocalizedString.EXPIRED)
+        ExpirationOrRenewal.Label.NEXT_BILLING_DATE ->
+            localization.commonLocalizedString(CommonLocalizedString.NEXT_BILLING_DATE)
+    }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+private fun getPrice(
+    purchaseInformation: PurchaseInformation,
+    localization: CustomerCenterConfigData.Localization,
+): String? {
+    return when (purchaseInformation.price) {
+        PriceDetails.Free -> localization.commonLocalizedString(CommonLocalizedString.FREE)
+        is PriceDetails.Paid -> purchaseInformation.price.price
+        PriceDetails.Unknown -> null
+    }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+private fun getSubscriptionExplanation(
+    purchaseInformation: PurchaseInformation,
+    localization: CustomerCenterConfigData.Localization,
+): String {
+    return when (purchaseInformation.explanation) {
+        Explanation.PROMOTIONAL -> localization.commonLocalizedString(CommonLocalizedString.YOU_HAVE_PROMO)
+        Explanation.GOOGLE -> localization.commonLocalizedString(CommonLocalizedString.GOOGLE_SUBSCRIPTION_MANAGE)
+        Explanation.WEB -> localization.commonLocalizedString(CommonLocalizedString.WEB_SUBSCRIPTION_MANAGE)
+        Explanation.OTHER_STORE_PURCHASE ->
+            localization.commonLocalizedString(CommonLocalizedString.PLEASE_CONTACT_SUPPORT)
+        Explanation.AMAZON -> localization.commonLocalizedString(CommonLocalizedString.AMAZON_SUBSCRIPTION_MANAGE)
+        Explanation.EARLIEST_RENEWAL -> localization.commonLocalizedString(CommonLocalizedString.SUB_EARLIEST_RENEWAL)
+        Explanation.EARLIEST_EXPIRATION ->
+            localization.commonLocalizedString(CommonLocalizedString.SUB_EARLIEST_EXPIRATION)
+        Explanation.EXPIRED -> localization.commonLocalizedString(CommonLocalizedString.SUB_EXPIRED)
+        Explanation.LIFETIME -> localization.commonLocalizedString(CommonLocalizedString.YOU_HAVE_LIFETIME)
     }
 }
 
@@ -144,33 +199,46 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
         PurchaseInformation(
             title = "Basic",
             durationTitle = "Monthly",
-            price = "$4.99",
-            expirationDateString = "June 1st, 2024",
-            willRenew = true,
-            active = true,
-            productId = "basic_monthly",
+            productIdentifier = "basic_monthly",
+            price = PriceDetails.Paid("$4.99"),
+            explanation = Explanation.EARLIEST_RENEWAL,
+            expirationOrRenewal =
+            ExpirationOrRenewal(
+                ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
+                ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
+            ),
+            store = Store.PLAY_STORE,
         ),
         PurchaseInformation(
             title = "Basic",
             durationTitle = "Yearly",
-            price = "$49.99",
-            expirationDateString = "June 1st, 2024",
-            willRenew = false,
-            active = true,
-            productId = "basic_yearly",
+            productIdentifier = "basic_yearly",
+            price = PriceDetails.Paid("$49.99"),
+            explanation = Explanation.EARLIEST_EXPIRATION,
+            expirationOrRenewal =
+            ExpirationOrRenewal(
+                ExpirationOrRenewal.Label.EXPIRED,
+                ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
+            ),
+            store = Store.PLAY_STORE,
         ),
         PurchaseInformation(
             title = "Basic",
             durationTitle = "Weekly",
-            price = "$1.99",
-            expirationDateString = "June 1st, 2024",
-            willRenew = false,
-            active = false,
-            productId = "basic_weekly",
+            productIdentifier = "basic_weekly",
+            price = PriceDetails.Paid("$1.99"),
+            explanation = Explanation.EXPIRED,
+            expirationOrRenewal =
+            ExpirationOrRenewal(
+                ExpirationOrRenewal.Label.EXPIRED,
+                ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
+            ),
+            store = Store.PLAY_STORE,
         ),
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(group = "scale = 1", fontScale = 1F)
 // Unrealistically long device to make the Column fit. Can be removed once Emerge Snapshot Test supports
 // @PreviewParameter.
@@ -186,6 +254,8 @@ internal fun SubscriptionDetailsView_Preview() {
         SubscriptionInformationProvider().values.forEach { details ->
             SubscriptionDetailsView(
                 details = details,
+                localization =
+                CustomerCenterConfigTestData.customerCenterData(shouldWarnCustomerToUpdate = false).localization,
             )
         }
     }
