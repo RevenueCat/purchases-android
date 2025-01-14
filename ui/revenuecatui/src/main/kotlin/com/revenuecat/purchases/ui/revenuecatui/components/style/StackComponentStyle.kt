@@ -64,6 +64,7 @@ internal class StackComponentStyle(
         border: Border? = this.border,
         shadow: Shadow? = this.shadow,
         badge: BadgeStyle? = this.badge,
+        rcPackage: Package? = this.rcPackage,
         overrides: PresentedOverrides<PresentedStackPartial>? = this.overrides,
     ): StackComponentStyle = StackComponentStyle(
         children = children,
@@ -78,6 +79,7 @@ internal class StackComponentStyle(
         border = border,
         shadow = shadow,
         badge = badge,
+        rcPackage = rcPackage,
         overrides = overrides,
     )
 }

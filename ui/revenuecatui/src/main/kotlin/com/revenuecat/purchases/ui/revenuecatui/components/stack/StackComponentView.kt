@@ -381,7 +381,7 @@ private val TwoDimensionalAlignment.isTop: Boolean
         TwoDimensionalAlignment.TOP_LEADING,
         TwoDimensionalAlignment.TOP,
         TwoDimensionalAlignment.TOP_TRAILING,
-            -> true
+        -> true
 
         TwoDimensionalAlignment.CENTER,
         TwoDimensionalAlignment.LEADING,
@@ -389,7 +389,7 @@ private val TwoDimensionalAlignment.isTop: Boolean
         TwoDimensionalAlignment.BOTTOM,
         TwoDimensionalAlignment.BOTTOM_LEADING,
         TwoDimensionalAlignment.BOTTOM_TRAILING,
-            -> false
+        -> false
     }
 
 /**
