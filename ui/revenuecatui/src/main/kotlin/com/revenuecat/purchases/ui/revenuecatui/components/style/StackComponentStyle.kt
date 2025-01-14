@@ -16,7 +16,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape as RcShape
 
 @Suppress("LongParameterList")
 @Immutable
-internal class StackComponentStyle(
+internal data class StackComponentStyle(
     @get:JvmSynthetic
     val children: List<ComponentStyle>,
     @get:JvmSynthetic
@@ -49,37 +49,4 @@ internal class StackComponentStyle(
     val rcPackage: Package?,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedStackPartial>?,
-) : ComponentStyle {
-    @JvmSynthetic
-    internal fun copy(
-        children: List<ComponentStyle> = this.children,
-        dimension: Dimension = this.dimension,
-        size: Size = this.size,
-        spacing: Dp = this.spacing,
-        backgroundColor: ColorScheme? = this.backgroundColor,
-        padding: PaddingValues = this.padding,
-        margin: PaddingValues = this.margin,
-        shape: Shape = this.shape,
-        rcShape: RcShape = this.rcShape,
-        border: Border? = this.border,
-        shadow: Shadow? = this.shadow,
-        badge: BadgeStyle? = this.badge,
-        rcPackage: Package? = this.rcPackage,
-        overrides: PresentedOverrides<PresentedStackPartial>? = this.overrides,
-    ): StackComponentStyle = StackComponentStyle(
-        children = children,
-        dimension = dimension,
-        size = size,
-        spacing = spacing,
-        backgroundColor = backgroundColor,
-        padding = padding,
-        margin = margin,
-        shape = shape,
-        rcShape = rcShape,
-        border = border,
-        shadow = shadow,
-        badge = badge,
-        rcPackage = rcPackage,
-        overrides = overrides,
-    )
-}
+) : ComponentStyle
