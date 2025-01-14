@@ -244,7 +244,11 @@ internal class StyleFactory(
         ImageComponentStyle(
             sources,
             size = component.size,
+            padding = component.padding.toPaddingValues(),
+            margin = component.margin.toPaddingValues(),
             shape = component.maskShape?.toShape(),
+            border = component.border,
+            shadow = component.shadow,
             overlay = component.colorOverlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
