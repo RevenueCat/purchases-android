@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class CustomerInfoHelperTest {
+class EntitlementInfoHelperTest {
 
     private val mockCache = mockk<DeviceCache>()
     private val mockBackend = mockk<Backend>()
