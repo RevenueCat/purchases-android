@@ -126,14 +126,28 @@ internal fun StackComponentView(
                 }
 
                 Badge.Style.EdgeToEdge -> {
-                    StackWithEdgeToEdgeBadge(
-                        stackState,
-                        state,
-                        badge.stackStyle,
-                        badge.alignment.isTop,
-                        clickHandler,
-                        modifier,
-                    )
+                    when (badge.alignment) {
+                        TwoDimensionalAlignment.TOP,
+                        TwoDimensionalAlignment.BOTTOM
+                        -> StackWithLongEdgeToEdgeBadge(
+                            stackState,
+                            state,
+                            badge.stackStyle,
+                            badge.alignment.isTop,
+                            clickHandler,
+                            modifier,
+                        )
+                        else
+                        -> StackWithShortEdgeToEdgeBadge(
+                            stackState,
+                            state,
+                            badge.stackStyle,
+                            badge.alignment,
+                            clickHandler,
+                            modifier,
+                        )
+                    }
+
                 }
 
                 Badge.Style.Nested -> {
@@ -167,7 +181,7 @@ private fun StackWithOverlaidBadge(
  */
 @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 @Composable
-private fun StackWithEdgeToEdgeBadge(
+private fun StackWithLongEdgeToEdgeBadge(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     badgeStack: StackComponentStyle,
@@ -317,6 +331,55 @@ private fun StackWithEdgeToEdgeBadge(
                 yPosition += badgePlaceable.height
             }
         }
+    }
+}
+
+@Composable
+private fun StackWithShortEdgeToEdgeBadge(
+    stackState: StackComponentState,
+    state: PaywallState.Loaded.Components,
+    badgeStack: StackComponentStyle,
+    alignment: TwoDimensionalAlignment,
+    clickHandler: suspend (PaywallAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val stackStateRectangleCorners = (stackState.shape as? Shape.Rectangle)?.corners ?: CornerRadiuses(all = 0.0)
+    val adjustedCorners = when (alignment) {
+        TwoDimensionalAlignment.TOP_LEADING -> CornerRadiuses(
+            topLeading = stackStateRectangleCorners.topLeading,
+            topTrailing = 0.0,
+            bottomLeading = 0.0,
+            bottomTrailing = stackStateRectangleCorners.bottomTrailing,
+        )
+        TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses(
+            topLeading = 0.0,
+            topTrailing = stackStateRectangleCorners.topTrailing,
+            bottomLeading = stackStateRectangleCorners.bottomLeading,
+            bottomTrailing = 0.0,
+        )
+        TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses(
+            topLeading = 0.0,
+            topTrailing = stackStateRectangleCorners.topTrailing,
+            bottomLeading = stackStateRectangleCorners.bottomLeading,
+            bottomTrailing = 0.0,
+        )
+        TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses(
+            topLeading = stackStateRectangleCorners.topLeading,
+            topTrailing = 0.0,
+            bottomLeading = 0.0,
+            bottomTrailing = stackStateRectangleCorners.bottomTrailing,
+        )
+        else -> CornerRadiuses(all = 0.0)
+    }
+    val badgeShape = Shape.Rectangle(corners = adjustedCorners)
+    Box(modifier = modifier) {
+        MainStackComponent(stackState, state, clickHandler)
+        StackComponentView(
+            badgeStack.copy(shape = badgeShape),
+            state,
+            clickHandler,
+            modifier = Modifier.align(alignment.toAlignment()),
+        )
     }
 }
 
