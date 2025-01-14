@@ -11,6 +11,12 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Shape as RcShape
 
+/**
+ * The scale factor to use on the Y axis when drawing a Concave or Convex shape. This will be multiplied by Y to
+ * determine the start and end point of the curve from the bottom of the shape.
+ */
+private const val SCALE_Y_OFFSET_CONCAVE_CONVEX = 0.2f
+
 @JvmSynthetic
 internal fun RcShape.toShape(): Shape =
     when (this) {
@@ -39,20 +45,22 @@ internal fun MaskShape.toShape(): Shape =
 
         is MaskShape.Pill -> RoundedCornerShape(percent = 50)
         is MaskShape.Concave -> GenericShape { size, _ ->
-            // TODO Actually implement a Concave shape.
-            // This is just a rectangle.
+            val yOffset = SCALE_Y_OFFSET_CONCAVE_CONVEX * size.height * 2f
+
+            moveTo(x = 0f, y = 0f)
             lineTo(x = size.width, y = 0f)
             lineTo(x = size.width, y = size.height)
-            lineTo(x = 0f, y = size.height)
+            quadraticTo(x1 = size.width / 2, y1 = size.height - yOffset, x2 = 0f, y2 = size.height)
             lineTo(x = 0f, y = 0f)
         }
 
         is MaskShape.Convex -> GenericShape { size, _ ->
-            // TODO Actually implement a Convex shape.
-            // This is just a rectangle.
+            val yOffset = SCALE_Y_OFFSET_CONCAVE_CONVEX * size.height
+
+            moveTo(x = 0f, y = 0f)
             lineTo(x = size.width, y = 0f)
-            lineTo(x = size.width, y = size.height)
-            lineTo(x = 0f, y = size.height)
+            lineTo(x = size.width, y = size.height - yOffset)
+            quadraticTo(x1 = size.width / 2, y1 = size.height + yOffset, x2 = 0f, y2 = size.height - yOffset)
             lineTo(x = 0f, y = 0f)
         }
         is MaskShape.Circle -> CircleShape
