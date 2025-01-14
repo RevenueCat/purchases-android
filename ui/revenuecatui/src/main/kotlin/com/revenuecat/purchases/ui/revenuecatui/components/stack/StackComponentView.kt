@@ -198,13 +198,26 @@ private fun StackWithEdgeToEdgeBadge(
         }.first()
         val badgePlaceable = badgeMeasurable.measure(constraints)
         val badgeHeight = badgePlaceable.height
-        // We are extending the background to the half of the height of the stack so it covers all rounded corners cases
-        val halfStackHeight = stackPlaceable.height / 2
+
+        val backgroundCornerRadiusExtension = when (stackState.rcShape) {
+            is Shape.Pill -> stackPlaceable.height / 2
+            is Shape.Rectangle -> {
+                (
+                    (stackState.rcShape as? Shape.Rectangle)?.let { rcShape ->
+                        if (topBadge) {
+                            maxOf(rcShape.corners?.topLeading ?: 0.0, rcShape.corners?.topTrailing ?: 0.0)
+                        } else {
+                            maxOf(rcShape.corners?.bottomLeading ?: 0.0, rcShape.corners?.bottomTrailing ?: 0.0)
+                        }
+                    } ?: 0.0
+                    ).dp.toPx().roundToInt()
+            }
+        }
 
         // Decide the final size of this layout
         val totalWidth = stackPlaceable.width
         val totalHeight = stackPlaceable.height + badgeHeight
-        val backgroundHeight = badgeHeight + halfStackHeight
+        val backgroundHeight = badgeHeight + backgroundCornerRadiusExtension
 
         // Subcompose the background
         val backgroundMeasurable = subcompose("background") {
@@ -258,7 +271,7 @@ private fun StackWithEdgeToEdgeBadge(
             if (topBadge) {
                 backgroundPlaceable.placeRelative(0, 0)
             } else {
-                backgroundPlaceable.placeRelative(0, halfStackHeight)
+                backgroundPlaceable.placeRelative(0, totalHeight - backgroundHeight)
             }
 
             var yPosition = 0
