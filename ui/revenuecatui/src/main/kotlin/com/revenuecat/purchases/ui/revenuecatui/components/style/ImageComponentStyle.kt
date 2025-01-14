@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -24,6 +25,12 @@ internal class ImageComponentStyle(
     val overlay: ColorScheme?,
     @get:JvmSynthetic
     val contentScale: ContentScale,
+    /**
+     * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
+     * available.
+     */
+    @get:JvmSynthetic
+    val rcPackage: Package?,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedImagePartial>?,
 ) : ComponentStyle

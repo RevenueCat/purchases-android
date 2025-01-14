@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -66,13 +67,11 @@ internal fun TextComponentView(
     style: TextComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     // Get a TextComponentState that calculates the overridden properties we should use.
     val textState = rememberUpdatedTextComponentState(
         style = style,
         paywallState = state,
-        selected = selected,
     )
 
     // Process any variables in the text.
@@ -82,6 +81,7 @@ internal fun TextComponentView(
         state = state,
         textState = textState,
         variables = variableDataProvider,
+        fixedPackage = style.rcPackage,
     )
 
     val colorStyle = rememberColorStyle(scheme = textState.color)
@@ -123,28 +123,32 @@ internal fun TextComponentView(
     }
 }
 
+/**
+ * @param fixedPackage If provided, this package will be used to take values from instead of the selected package.
+ */
 @Composable
 private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
     variables: VariableDataProvider,
+    fixedPackage: Package?,
 ): String {
-    val processedText by remember(state, textState) {
+    val processedText by remember(state, textState, fixedPackage) {
         derivedStateOf {
-            state.selectedPackage?.let { selectedPackage ->
+            (fixedPackage ?: state.selectedPackage)?.let { packageToUse ->
                 val discount = discountPercentage(
-                    pricePerMonthMicros = selectedPackage.product.pricePerMonth()?.amountMicros,
+                    pricePerMonthMicros = packageToUse.product.pricePerMonth()?.amountMicros,
                     mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
                 )
                 val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
-                    showZeroDecimalPlacePrices = state.showZeroDecimalPlacePrices,
+                    showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
                 )
                 VariableProcessor.processVariables(
                     variableDataProvider = variables,
                     context = variableContext,
                     originalString = textState.text,
-                    rcPackage = selectedPackage,
+                    rcPackage = packageToUse,
                     locale = java.util.Locale.forLanguageTag(state.locale.toLanguageTag()),
                 )
             } ?: textState.text
@@ -414,6 +418,7 @@ private fun previewTextComponentStyle(
         size = size,
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
+        rcPackage = null,
         overrides = null,
     )
 }
@@ -445,5 +450,5 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated)
+    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 }

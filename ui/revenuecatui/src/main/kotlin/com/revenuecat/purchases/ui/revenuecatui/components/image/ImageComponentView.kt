@@ -75,14 +75,12 @@ internal fun ImageComponentView(
     style: ImageComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
     previewImageLoader: ImageLoader? = null,
 ) {
     // Get an ImageComponentState that calculates the overridden properties we should use.
     val imageState = rememberUpdatedImageComponentState(
         style = style,
         paywallState = state,
-        selected = selected,
     )
 
     if (imageState.visible) {
@@ -299,6 +297,7 @@ private fun previewImageComponentStyle(
     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 20.dp),
     overlay = overlay,
     contentScale = fitMode.toContentScale(),
+    rcPackage = null,
     overrides = null,
 )
 
@@ -329,7 +328,7 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated)
+    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 }
 
 @Composable
