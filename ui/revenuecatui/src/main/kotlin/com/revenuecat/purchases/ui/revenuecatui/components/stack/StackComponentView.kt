@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -20,12 +21,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
@@ -88,6 +92,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 import kotlin.math.roundToInt
+import androidx.compose.ui.geometry.Size as ComposeSize
 
 @Suppress("LongMethod")
 @Composable
@@ -225,7 +230,27 @@ private fun StackWithEdgeToEdgeBadge(
             val borderStyle = badgeStack.border?.let { rememberBorderStyle(border = it) }
             val shadowStyle = badgeStack.shadow?.let { rememberShadowStyle(shadow = it) }
             val backgroundShape = when (badgeStack.rcShape) {
-                is Shape.Pill -> null // Pill badges not supported in edgeToEdge
+                is Shape.Pill -> {
+                    // We have to make sure our badge uses absolute corner sizes. If it's using relative corner sizes,
+                    // i.e. pill-shaped, we need to use the stack to calculate the absolute size to use.
+                    (badgeStack.shape as? RoundedCornerShape)?.let { shape ->
+                        if (topBadge) {
+                            RoundedCornerShape(
+                                topStart = shape.topStart.makeAbsolute(stackPlaceable, LocalDensity.current),
+                                topEnd = shape.topEnd.makeAbsolute(stackPlaceable, LocalDensity.current),
+                                bottomEnd = CornerSize(0.dp),
+                                bottomStart = CornerSize(0.dp),
+                            )
+                        } else {
+                            RoundedCornerShape(
+                                topStart = CornerSize(0.dp),
+                                topEnd = CornerSize(0.dp),
+                                bottomEnd = shape.bottomEnd.makeAbsolute(stackPlaceable, LocalDensity.current),
+                                bottomStart = shape.bottomStart.makeAbsolute(stackPlaceable, LocalDensity.current),
+                            )
+                        }
+                    } ?: RectangleShape
+                }
                 is Shape.Rectangle -> if (topBadge) {
                     Shape.Rectangle(
                         corners = CornerRadiuses(
@@ -452,6 +477,26 @@ private fun getOverlaidBadgeOffsetY(height: Int, alignment: TwoDimensionalAlignm
         -> (height.toFloat() / 2).roundToInt()
     }
 
+/**
+ * Make this CornerSize absolute, based on the provided [placeable]. This is useful for turning relative
+ * (percentage-based) corners into absolute ones.
+ */
+private fun CornerSize.makeAbsolute(placeable: Placeable, density: Density) =
+    makeAbsolute(
+        shapeSize = ComposeSize(
+            width = placeable.width.toFloat(),
+            height = placeable.height.toFloat(),
+        ),
+        density = density,
+    )
+
+/**
+ * Make this CornerSize absolute, based on the provided [shapeSize]. This is useful for turning relative
+ * (percentage-based) corners into absolute ones.
+ */
+private fun CornerSize.makeAbsolute(shapeSize: ComposeSize, density: Density) =
+    CornerSize(size = toPx(shapeSize, density))
+
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
@@ -583,6 +628,42 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, badgeShape),
+                rcPackage = null,
+                overrides = null,
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
+    @PreviewParameter(BadgeAlignmentProvider::class) alignment: TwoDimensionalAlignment,
+) {
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                children = previewChildren(),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.CENTER,
+                    distribution = FlexDistribution.START,
+                ),
+                size = Size(width = Fixed(200u), height = Fit),
+                spacing = 16.dp,
+                backgroundColor = ColorScheme(
+                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                ),
+                padding = PaddingValues(all = 0.dp),
+                margin = PaddingValues(all = 0.dp),
+                shape = RoundedCornerShape(percent = 50),
+                rcShape = Shape.Pill,
+                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                shadow = null,
+                badge = previewBadge(Badge.Style.EdgeToEdge, alignment, Shape.Pill),
                 rcPackage = null,
                 overrides = null,
             ),
