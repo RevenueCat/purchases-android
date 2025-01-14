@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -52,7 +51,6 @@ internal class StyleFactory(
 
     private companion object {
         private const val DEFAULT_SPACING = 0f
-        private val DEFAULT_SHAPE = RectangleShape
     }
 
     fun create(
@@ -190,8 +188,7 @@ internal class StyleFactory(
             backgroundColor = component.backgroundColor,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
-            shape = component.shape?.toShape() ?: DEFAULT_SHAPE,
-            rcShape = component.shape ?: Shape.Rectangle(),
+            shape = component.shape ?: Shape.Rectangle(),
             border = component.border,
             shadow = component.shadow,
             badge = badge,

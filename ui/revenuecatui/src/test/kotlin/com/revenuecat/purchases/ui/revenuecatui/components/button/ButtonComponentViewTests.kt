@@ -94,8 +94,7 @@ class ButtonComponentViewTests {
                     backgroundColor = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
-                    shape = RoundedCornerShape(size = 20.dp),
-                    rcShape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                    shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
                     border = Border(width = 2.0, color = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb()))),
                     shadow = Shadow(
                         color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),

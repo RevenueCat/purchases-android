@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -204,18 +206,18 @@ private fun StackWithEdgeToEdgeBadge(
         val badgePlaceable = badgeMeasurable.measure(constraints)
         val badgeHeight = badgePlaceable.height
 
-        val backgroundCornerRadiusExtension = when (stackState.rcShape) {
+        val backgroundCornerRadiusExtension = when (stackState.shape) {
             is Shape.Pill -> stackPlaceable.height / 2
             is Shape.Rectangle -> {
                 (
-                    (stackState.rcShape as? Shape.Rectangle)?.let { rcShape ->
+                    (stackState.shape as? Shape.Rectangle)?.let { rcShape ->
                         if (topBadge) {
                             maxOf(rcShape.corners?.topLeading ?: 0.0, rcShape.corners?.topTrailing ?: 0.0)
                         } else {
                             maxOf(rcShape.corners?.bottomLeading ?: 0.0, rcShape.corners?.bottomTrailing ?: 0.0)
                         }
                     } ?: 0.0
-                    ).dp.toPx().roundToInt()
+                    ).dp.roundToPx()
             }
         }
 
@@ -229,11 +231,11 @@ private fun StackWithEdgeToEdgeBadge(
             val backgroundColorStyle = badgeStack.backgroundColor?.let { rememberColorStyle(scheme = it) }
             val borderStyle = badgeStack.border?.let { rememberBorderStyle(border = it) }
             val shadowStyle = badgeStack.shadow?.let { rememberShadowStyle(shadow = it) }
-            val backgroundShape = when (badgeStack.rcShape) {
+            val backgroundShape = when (badgeStack.shape) {
                 is Shape.Pill -> {
                     // We have to make sure our badge uses absolute corner sizes. If it's using relative corner sizes,
                     // i.e. pill-shaped, we need to use the stack to calculate the absolute size to use.
-                    (badgeStack.shape as? RoundedCornerShape)?.let { shape ->
+                    (badgeStack.shape.toShape() as? RoundedCornerShape)?.let { shape ->
                         if (topBadge) {
                             RoundedCornerShape(
                                 topStart = shape.topStart.makeAbsolute(stackPlaceable, LocalDensity.current),
@@ -254,8 +256,8 @@ private fun StackWithEdgeToEdgeBadge(
                 is Shape.Rectangle -> if (topBadge) {
                     Shape.Rectangle(
                         corners = CornerRadiuses(
-                            topLeading = badgeStack.rcShape.corners?.topLeading ?: 0.0,
-                            topTrailing = badgeStack.rcShape.corners?.topTrailing ?: 0.0,
+                            topLeading = badgeStack.shape.corners?.topLeading ?: 0.0,
+                            topTrailing = badgeStack.shape.corners?.topTrailing ?: 0.0,
                             bottomLeading = 0.0,
                             bottomTrailing = 0.0,
                         ),
@@ -265,8 +267,8 @@ private fun StackWithEdgeToEdgeBadge(
                         corners = CornerRadiuses(
                             topLeading = 0.0,
                             topTrailing = 0.0,
-                            bottomLeading = badgeStack.rcShape.corners?.bottomLeading ?: 0.0,
-                            bottomTrailing = badgeStack.rcShape.corners?.bottomTrailing ?: 0.0,
+                            bottomLeading = badgeStack.shape.corners?.bottomLeading ?: 0.0,
+                            bottomTrailing = badgeStack.shape.corners?.bottomTrailing ?: 0.0,
                         ),
                     ).toShape()
                 }
@@ -275,9 +277,9 @@ private fun StackWithEdgeToEdgeBadge(
             val backgroundModifier = remember(badgeStack, backgroundColorStyle, borderStyle, shadowStyle) {
                 Modifier
                     .padding(badgeStack.margin)
-                    .applyIfNotNull(backgroundColorStyle) { background(it, backgroundShape ?: RectangleShape) }
+                    .applyIfNotNull(backgroundColorStyle) { background(it, backgroundShape) }
                     .applyIfNotNull(backgroundShape) { clip(it) }
-                    .applyIfNotNull(borderStyle) { border(it, badgeStack.shape) }
+                    .applyIfNotNull(borderStyle) { border(it, badgeStack.shape.toShape()) }
             }
 
             Box(
@@ -353,15 +355,16 @@ private fun MainStackComponent(
     val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
 
     // Modifier irrespective of dimension.
     val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
         Modifier
             .padding(stackState.margin)
-            .applyIfNotNull(shadowStyle) { shadow(it, stackState.shape) }
-            .applyIfNotNull(backgroundColorStyle) { background(it, stackState.shape) }
-            .clip(stackState.shape)
-            .applyIfNotNull(borderStyle) { border(it, stackState.shape) }
+            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
+            .clip(composeShape)
+            .applyIfNotNull(borderStyle) { border(it, composeShape) }
             .padding(stackState.padding)
             .padding(stackState.dimension, stackState.spacing)
     }
@@ -519,8 +522,7 @@ private fun StackComponentView_Preview_Vertical() {
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
-                shape = RoundedCornerShape(size = 20.dp),
-                rcShape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -579,8 +581,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 ),
                 padding = PaddingValues(all = 12.dp),
                 margin = PaddingValues(all = 0.dp),
-                shape = RoundedCornerShape(size = 20.dp),
-                rcShape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Overlay, alignment, badgeShape),
@@ -623,8 +624,7 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
                 ),
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
-                shape = RoundedCornerShape(size = 20.dp),
-                rcShape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, badgeShape),
@@ -659,8 +659,7 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 ),
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
-                shape = RoundedCornerShape(percent = 50),
-                rcShape = Shape.Pill,
+                shape = Shape.Pill,
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, Shape.Pill),
@@ -695,8 +694,7 @@ private fun StackComponentView_Preview_Horizontal() {
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
-                shape = RoundedCornerShape(size = 20.dp),
-                rcShape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -774,8 +772,7 @@ private fun StackComponentView_Preview_ZLayer() {
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
-                shape = RoundedCornerShape(size = 20.dp),
-                rcShape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -819,8 +816,7 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
-            shape = RectangleShape,
-            rcShape = Shape.Rectangle(corners = null),
+            shape = Shape.Rectangle(corners = null),
             border = null,
             shadow = null,
             overrides = null,
@@ -858,8 +854,7 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
-            shape = RectangleShape,
-            rcShape = Shape.Rectangle(),
+            shape = Shape.Rectangle(),
             border = null,
             shadow = null,
             overrides = null,
@@ -919,8 +914,7 @@ private fun StackComponentView_Preview_Distribution(
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 16.dp),
-            shape = RectangleShape,
-            rcShape = Shape.Rectangle(),
+            shape = Shape.Rectangle(),
             border = null,
             shadow = null,
             badge = null,
@@ -1036,6 +1030,7 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
     return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
 }
 
+@Suppress("LongMethod")
 private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment, shape: Shape): BadgeStyle {
     return BadgeStyle(
         stackStyle = StackComponentStyle(
@@ -1075,12 +1070,17 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
             size = Size(width = Fit, height = Fit),
             spacing = 0.dp,
             backgroundColor = ColorScheme(
-                light = ColorInfo.Hex(Color.Green.toArgb()),
+                light = ColorInfo.Gradient.Linear(
+                    degrees = 45f,
+                    points = listOf(
+                        ColorInfo.Gradient.Point(Color.Green.toArgb(), percent = 0f),
+                        ColorInfo.Gradient.Point(Color.Yellow.toArgb(), percent = 80f),
+                    ),
+                ),
             ),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 0.dp),
-            shape = shape.toShape(),
-            rcShape = shape,
+            shape = shape,
             border = null,
             shadow = null,
             badge = null,
