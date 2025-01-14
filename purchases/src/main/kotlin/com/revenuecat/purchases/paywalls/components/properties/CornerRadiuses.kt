@@ -42,4 +42,15 @@ class CornerRadiuses(
 
         @get:JvmSynthetic val default = zero
     }
+
+    constructor(all: Double) : this(all, all, all, all)
+
+    fun copy(
+        topLeading: Double = this.topLeading,
+        topTrailing: Double = this.topTrailing,
+        bottomLeading: Double = this.bottomLeading,
+        bottomTrailing: Double = this.bottomTrailing,
+    ): CornerRadiuses {
+        return CornerRadiuses(topLeading, topTrailing, bottomLeading, bottomTrailing)
+    }
 }

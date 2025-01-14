@@ -4,7 +4,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
@@ -35,6 +35,7 @@ import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -120,7 +121,7 @@ private fun previewButtonComponentStyle(
         backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
         padding = PaddingValues(all = 16.dp),
         margin = PaddingValues(all = 16.dp),
-        shape = RoundedCornerShape(size = 20.dp),
+        shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
         border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
         shadow = Shadow(
             color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
