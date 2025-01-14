@@ -35,9 +35,13 @@ private fun <T : PresentedPartial<T>> PresentedPartial<T>?.combineOrReplace(with
 @Poko
 internal class PresentedOverrides<T : PresentedPartial<T>>(
     /**
-     * Override for different selection states.
+     * Override when the user is eligible for a single offer.
      */
     @get:JvmSynthetic val introOffer: T?,
+    /**
+     * Override when the user is eligible for multiple offers.
+     */
+    @get:JvmSynthetic val multipleIntroOffers: T?,
     /**
      * Override for different selection states.
      */
@@ -89,6 +93,9 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
     val introOffer = introOffer?.let(transform)
         ?.getOrElse { return Result.Error(it.head) }
 
+    val multipleIntroOffers = multipleIntroOffers?.let(transform)
+        ?.getOrElse { return Result.Error(it.head) }
+
     val selectedState = states?.selected?.let(transform)
         ?.getOrElse { return Result.Error(it.head) }
 
@@ -105,6 +112,7 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
     return Result.Success(
         PresentedOverrides(
             introOffer = introOffer,
+            multipleIntroOffers = multipleIntroOffers,
             states = states,
             conditions = conditions,
         ),

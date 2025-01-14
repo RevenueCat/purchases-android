@@ -57,6 +57,14 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 )
             )
         ).getOrThrow()
+        private val multipleIntroOffersPartial = LocalizedTextPartial(
+            from = PartialTextComponent(),
+            using = nonEmptyMapOf(
+                localeId to nonEmptyMapOf(
+                    LocalizationKey("key") to LocalizationData.Text("Hello multiple intros"),
+                )
+            )
+        ).getOrThrow()
         private val compactPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
@@ -82,6 +90,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             )
         ).getOrThrow()
 
+        // FIXME Add/adjust test cases here!!
+
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
@@ -91,6 +101,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -111,6 +122,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -131,6 +143,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -151,6 +164,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -171,6 +185,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -191,6 +206,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = null,
                         conditions = PresentedConditions(
                             compact = compactPartial,
@@ -209,6 +225,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = PresentedConditions(
                             compact = compactPartial,
@@ -228,6 +245,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = PresentedConditions(
                             compact = compactPartial,
@@ -247,6 +265,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = PresentedConditions(
                             compact = compactPartial,
@@ -266,6 +285,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = PresentedConditions(
                             compact = null,
@@ -284,6 +304,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = null,
                     ),
@@ -298,6 +319,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = PresentedStates(
                             selected = null
                         ),
@@ -314,6 +336,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -330,6 +353,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -342,10 +366,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "should pick intro when all overrides applicable, but window and intro overrides unavailable",
+                "should pick intro when all overrides applicable, but window and selected overrides unavailable",
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = null
                         ),
@@ -362,6 +387,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = PresentedStates(
                             selected = null
                         ),
@@ -464,8 +490,24 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 backgroundColor = null,
                                 fontName = null,
                                 fontWeight = null,
-                                fontSize = FontSize.BODY_XL,
+                                fontSize = null,
                                 horizontalAlignment = HorizontalAlignment.CENTER,
+                                size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
+                                padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
+                                margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
+                            ),
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                        ).getOrThrow(),
+                        multipleIntroOffers =  LocalizedTextPartial(
+                            from = PartialTextComponent(
+                                visible = true,
+                                text = null,
+                                color = null,
+                                backgroundColor = null,
+                                fontName = null,
+                                fontWeight = null,
+                                fontSize = FontSize.BODY_XL,
+                                horizontalAlignment = null,
                                 size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
                                 padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
                                 margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),

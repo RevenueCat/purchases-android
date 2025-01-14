@@ -53,6 +53,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 Args(
                     availableOverrides = ComponentOverrides(
                         introOffer = PartialTextComponent(fontName = "introOffer"),
+                        multipleIntroOffers = PartialTextComponent(fontName = "multipleIntroOffers"),
                         states = ComponentStates(
                             selected = PartialTextComponent(fontName = "selected"),
                         ),
@@ -74,10 +75,37 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 )
             ),
             arrayOf(
+                "Should fail if transforming multipleIntroOffers fails",
+                Args(
+                    availableOverrides = ComponentOverrides(
+                        introOffer = PartialTextComponent(fontName = "introOffer"),
+                        multipleIntroOffers = PartialTextComponent(fontName = "multipleIntroOffers"),
+                        states = ComponentStates(
+                            selected = PartialTextComponent(fontName = "selected"),
+                        ),
+                        conditions = ComponentConditions(
+                            compact = PartialTextComponent(fontName = "compact"),
+                            medium = PartialTextComponent(fontName = "medium"),
+                            expanded = PartialTextComponent(fontName = "expanded"),
+                        ),
+                    ),
+                    transform = { partial ->
+                        if (partial.fontName == "multipleIntroOffers")
+                            Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
+                        else LocalizedTextPartial(
+                            from = partial,
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                        )
+                    },
+                    expected = Result.Error(InvalidTemplate("multipleIntroOffers"))
+                )
+            ),
+            arrayOf(
                 "Should fail if transforming selected fails",
                 Args(
                     availableOverrides = ComponentOverrides(
                         introOffer = PartialTextComponent(fontName = "introOffer"),
+                        multipleIntroOffers = PartialTextComponent(fontName = "multipleIntroOffers"),
                         states = ComponentStates(
                             selected = PartialTextComponent(fontName = "selected"),
                         ),
@@ -103,6 +131,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 Args(
                     availableOverrides = ComponentOverrides(
                         introOffer = PartialTextComponent(fontName = "introOffer"),
+                        multipleIntroOffers = PartialTextComponent(fontName = "multipleIntroOffers"),
                         states = ComponentStates(
                             selected = PartialTextComponent(fontName = "selected"),
                         ),
@@ -128,6 +157,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 Args(
                     availableOverrides = ComponentOverrides(
                         introOffer = PartialTextComponent(fontName = "introOffer"),
+                        multipleIntroOffers = PartialTextComponent(fontName = "multipleIntroOffers"),
                         states = ComponentStates(
                             selected = PartialTextComponent(fontName = "selected"),
                         ),
@@ -153,6 +183,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 Args(
                     availableOverrides = ComponentOverrides(
                         introOffer = PartialTextComponent(fontName = "introOffer"),
+                        multipleIntroOffers = PartialTextComponent(fontName = "multipleIntroOffers"),
                         states = ComponentStates(
                             selected = PartialTextComponent(fontName = "selected"),
                         ),
@@ -178,6 +209,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 Args(
                     availableOverrides = ComponentOverrides(
                         introOffer = PartialTextComponent(fontName = "introOffer"),
+                        multipleIntroOffers = PartialTextComponent(fontName = "multipleIntroOffers"),
                         states = ComponentStates(
                             selected = PartialTextComponent(fontName = "selected"),
                         ),
@@ -195,6 +227,10 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                         PresentedOverrides(
                             introOffer = LocalizedTextPartial(
                                 from = PartialTextComponent(fontName = "introOffer"),
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                            ).getOrThrow(),
+                            multipleIntroOffers = LocalizedTextPartial(
+                                from = PartialTextComponent(fontName = "multipleIntroOffers"),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
                             ).getOrThrow(),
                             states = PresentedStates(
