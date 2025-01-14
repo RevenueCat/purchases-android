@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.responses.EntitlementsResponseJsonKeys
 import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.DateHelper
+import com.revenuecat.purchases.utils.EntitlementInfoHelper
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
@@ -92,7 +93,7 @@ internal fun JSONObject.buildEntitlementInfo(
     return EntitlementInfo(
         identifier = identifier,
         isActive = isDateActive(identifier, expirationDate, requestDate),
-        willRenew = getWillRenew(
+        willRenew = EntitlementInfoHelper.getWillRenew(
             store,
             expirationDate,
             unsubscribeDetectedAt,
@@ -126,17 +127,4 @@ private fun isDateActive(
         )
     }
     return dateActive.isActive
-}
-
-private fun getWillRenew(
-    store: Store,
-    expirationDate: Date?,
-    unsubscribeDetectedAt: Date?,
-    billingIssueDetectedAt: Date?,
-): Boolean {
-    val isPromo = store == Store.PROMOTIONAL
-    val isLifetime = expirationDate == null
-    val hasUnsubscribed = unsubscribeDetectedAt != null
-    val hasBillingIssues = billingIssueDetectedAt != null
-    return !(isPromo || isLifetime || hasUnsubscribed || hasBillingIssues)
 }

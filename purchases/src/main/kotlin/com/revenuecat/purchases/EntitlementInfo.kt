@@ -6,6 +6,8 @@ import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.json.JSONObject
 import java.util.Date
 
@@ -173,89 +175,107 @@ data class EntitlementInfo(
 /**
  * Enum of supported stores
  */
+@Serializable
 enum class Store {
     /**
      * For entitlements granted via Apple App Store.
      */
+    @SerialName("app_store")
     APP_STORE,
 
     /**
      * For entitlements granted via Apple Mac App Store.
      */
+    @SerialName("mac_app_store")
     MAC_APP_STORE,
 
     /**
      * For entitlements granted via Google Play Store.
      */
+    @SerialName("play_store")
     PLAY_STORE,
 
     /**
      * For entitlements granted via Stripe.
      */
+    @SerialName("stripe")
     STRIPE,
 
     /**
      * For entitlements granted via a promo in RevenueCat.
      */
+    @SerialName("promotional")
     PROMOTIONAL,
 
     /**
      * For entitlements granted via an unknown store.
      */
+    @SerialName("unknown")
     UNKNOWN_STORE,
 
     /**
      * For entitlements granted via Amazon store.
      */
+    @SerialName("amazon")
     AMAZON,
 
     /**
      * For entitlements granted via RC Billing.
      */
+    @SerialName("rc_billing")
     RC_BILLING,
 
     /**
      * For entitlements granted via RevenueCat's External Purchases API.
      */
+    @SerialName("external")
     EXTERNAL,
 }
 
 /**
  * Enum of supported period types for an entitlement.
  */
+@Serializable
 enum class PeriodType {
     /**
      * If the entitlement is not under an introductory or trial period.
      */
+    @SerialName("normal")
     NORMAL,
 
     /**
      * If the entitlement is under a introductory price period.
      */
+    @SerialName("intro")
     INTRO,
 
     /**
      * If the entitlement is under a trial period.
      */
+    @SerialName("trial")
     TRIAL,
 }
 
 /**
  * Enum of supported ownership types for an entitlement.
  */
+@Serializable
 enum class OwnershipType {
     /**
      * The purchase was made directly by this user.
      */
+    @SerialName("purchased")
     PURCHASED,
 
     /**
      * The purchase has been shared to this user by a family member.
      */
+    @SerialName("family_shared")
     FAMILY_SHARED,
 
     /**
      * The purchase has no or an unknown ownership type.
      */
+    @SerialName("unknown")
     UNKNOWN,
 }
