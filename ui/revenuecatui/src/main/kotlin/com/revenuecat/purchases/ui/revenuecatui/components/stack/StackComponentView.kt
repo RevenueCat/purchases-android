@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +24,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -38,6 +40,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
@@ -184,6 +187,7 @@ private fun MainStackComponent(
             .clip(stackState.shape)
             .applyIfNotNull(borderStyle) { border(it, stackState.shape) }
             .padding(stackState.padding)
+            .padding(stackState.dimension, stackState.spacing)
     }
 
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
@@ -233,6 +237,37 @@ private fun MainStackComponent(
         ) { content { child -> Modifier } }
     }
 }
+
+/**
+ * For [FlexDistribution.SPACE_AROUND] and [FlexDistribution.SPACE_EVENLY] we need to add some extra padding, as we
+ * cannot use `Arrangement` to add spacing of a minimum size before or after the content. See
+ * [FlexDistribution.toHorizontalArrangement] and [FlexDistribution.toVerticalArrangement] for more info.
+ */
+@Stable
+private fun Modifier.padding(dimension: Dimension, spacing: Dp): Modifier =
+    when (dimension) {
+        is Dimension.Horizontal -> {
+            when (dimension.distribution) {
+                START,
+                FlexDistribution.END,
+                FlexDistribution.CENTER,
+                FlexDistribution.SPACE_BETWEEN,
+                -> this
+                FlexDistribution.SPACE_AROUND -> this.padding(horizontal = spacing / 2)
+                FlexDistribution.SPACE_EVENLY -> this.padding(horizontal = spacing)
+            }
+        }
+        is Dimension.Vertical -> when (dimension.distribution) {
+            START,
+            FlexDistribution.END,
+            FlexDistribution.CENTER,
+            FlexDistribution.SPACE_BETWEEN,
+            -> this
+            FlexDistribution.SPACE_AROUND -> this.padding(vertical = spacing / 2)
+            FlexDistribution.SPACE_EVENLY -> this.padding(vertical = spacing)
+        }
+        is Dimension.ZLayer -> this
+    }
 
 private fun getOverlaidBadgeOffsetY(height: Int, alignment: TwoDimensionalAlignment) =
     when (alignment) {
@@ -509,6 +544,66 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             overrides = null,
             rcPackage = null,
             badge = null,
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+    )
+}
+
+/**
+ * Provides all FlexDistributions, in both Horizontal and Vertical dimensions.
+ */
+private class DistributionProvider : PreviewParameterProvider<Dimension> {
+    override val values: Sequence<Dimension> = FlexDistribution.values().asSequence().flatMap { distribution ->
+        sequenceOf(
+            Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = distribution),
+            Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = distribution),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_Distribution(
+    @PreviewParameter(DistributionProvider::class) dimension: Dimension,
+) {
+    val distribution = when (dimension) {
+        is Dimension.Horizontal -> dimension.distribution
+        is Dimension.Vertical -> dimension.distribution
+        is Dimension.ZLayer -> null
+    }
+    StackComponentView(
+        style = StackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Hello",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
+                    size = Size(width = Fit, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = distribution?.name ?: "null",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Green.toArgb())),
+                    size = Size(width = Fit, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "World",
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
+                    size = Size(width = Fit, height = Fit),
+                ),
+            ),
+            dimension = dimension,
+            // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
+            size = Size(width = Fit, height = Fit),
+            spacing = 16.dp,
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            padding = PaddingValues(all = 0.dp),
+            margin = PaddingValues(all = 16.dp),
+            shape = RectangleShape,
+            border = null,
+            shadow = null,
+            badge = null,
+            rcPackage = null,
+            overrides = null,
         ),
         state = previewEmptyState(),
         clickHandler = { },
