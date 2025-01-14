@@ -110,12 +110,38 @@ internal fun StackComponentView(
         paywallState = state,
     )
 
-    if (stackState.visible) {
-        val badge = stackState.badge
-        if (badge != null) {
-            when (badge.style) {
-                Badge.Style.Overlay -> {
-                    StackWithOverlaidBadge(
+    if (!stackState.visible) {
+        return
+    }
+
+    val badge = stackState.badge
+    if (badge != null) {
+        when (badge.style) {
+            Badge.Style.Overlay -> {
+                StackWithOverlaidBadge(
+                    stackState,
+                    state,
+                    badge.stackStyle,
+                    badge.alignment,
+                    clickHandler,
+                    modifier,
+                )
+            }
+
+            Badge.Style.EdgeToEdge -> {
+                when (badge.alignment) {
+                    TwoDimensionalAlignment.TOP,
+                    TwoDimensionalAlignment.BOTTOM,
+                    -> StackWithLongEdgeToEdgeBadge(
+                        stackState,
+                        state,
+                        badge.stackStyle,
+                        badge.alignment.isTop,
+                        clickHandler,
+                        modifier,
+                    )
+                    else
+                    -> StackWithShortEdgeToEdgeBadge(
                         stackState,
                         state,
                         badge.stackStyle,
@@ -124,39 +150,13 @@ internal fun StackComponentView(
                         modifier,
                     )
                 }
-
-                Badge.Style.EdgeToEdge -> {
-                    when (badge.alignment) {
-                        TwoDimensionalAlignment.TOP,
-                        TwoDimensionalAlignment.BOTTOM
-                        -> StackWithLongEdgeToEdgeBadge(
-                            stackState,
-                            state,
-                            badge.stackStyle,
-                            badge.alignment.isTop,
-                            clickHandler,
-                            modifier,
-                        )
-                        else
-                        -> StackWithShortEdgeToEdgeBadge(
-                            stackState,
-                            state,
-                            badge.stackStyle,
-                            badge.alignment,
-                            clickHandler,
-                            modifier,
-                        )
-                    }
-
-                }
-
-                Badge.Style.Nested -> {
-                    MainStackComponent(stackState, state, clickHandler, modifier, badge)
-                }
             }
-        } else {
-            MainStackComponent(stackState, state, clickHandler, modifier)
+
+            Badge.Style.Nested ->
+                MainStackComponent(stackState, state, clickHandler, modifier, badge)
         }
+    } else {
+        MainStackComponent(stackState, state, clickHandler, modifier)
     }
 }
 
@@ -334,6 +334,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun StackWithShortEdgeToEdgeBadge(
     stackState: StackComponentState,
@@ -343,35 +344,41 @@ private fun StackWithShortEdgeToEdgeBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val stackStateRectangleCorners = (stackState.shape as? Shape.Rectangle)?.corners ?: CornerRadiuses(all = 0.0)
-    val adjustedCorners = when (alignment) {
-        TwoDimensionalAlignment.TOP_LEADING -> CornerRadiuses(
-            topLeading = stackStateRectangleCorners.topLeading,
-            topTrailing = 0.0,
-            bottomLeading = 0.0,
-            bottomTrailing = stackStateRectangleCorners.bottomTrailing,
-        )
-        TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses(
-            topLeading = 0.0,
-            topTrailing = stackStateRectangleCorners.topTrailing,
-            bottomLeading = stackStateRectangleCorners.bottomLeading,
-            bottomTrailing = 0.0,
-        )
-        TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses(
-            topLeading = 0.0,
-            topTrailing = stackStateRectangleCorners.topTrailing,
-            bottomLeading = stackStateRectangleCorners.bottomLeading,
-            bottomTrailing = 0.0,
-        )
-        TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses(
-            topLeading = stackStateRectangleCorners.topLeading,
-            topTrailing = 0.0,
-            bottomLeading = 0.0,
-            bottomTrailing = stackStateRectangleCorners.bottomTrailing,
-        )
-        else -> CornerRadiuses(all = 0.0)
+    val badgeShape = when (stackState.shape) {
+        is Shape.Rectangle -> {
+            val stackStateRectangleCorners = (stackState.shape as? Shape.Rectangle)?.corners
+                ?: CornerRadiuses(all = 0.0)
+            val adjustedCorners = when (alignment) {
+                TwoDimensionalAlignment.TOP_LEADING -> CornerRadiuses(
+                    topLeading = stackStateRectangleCorners.topLeading,
+                    topTrailing = 0.0,
+                    bottomLeading = 0.0,
+                    bottomTrailing = stackStateRectangleCorners.bottomTrailing,
+                )
+                TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses(
+                    topLeading = 0.0,
+                    topTrailing = stackStateRectangleCorners.topTrailing,
+                    bottomLeading = stackStateRectangleCorners.bottomLeading,
+                    bottomTrailing = 0.0,
+                )
+                TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses(
+                    topLeading = 0.0,
+                    topTrailing = stackStateRectangleCorners.topTrailing,
+                    bottomLeading = stackStateRectangleCorners.bottomLeading,
+                    bottomTrailing = 0.0,
+                )
+                TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses(
+                    topLeading = stackStateRectangleCorners.topLeading,
+                    topTrailing = 0.0,
+                    bottomLeading = 0.0,
+                    bottomTrailing = stackStateRectangleCorners.bottomTrailing,
+                )
+                else -> CornerRadiuses(all = 0.0)
+            }
+            Shape.Rectangle(corners = adjustedCorners)
+        }
+        Shape.Pill -> badgeStack.shape // If the stack is pill, we just default to the badge shape
     }
-    val badgeShape = Shape.Rectangle(corners = adjustedCorners)
     Box(modifier = modifier) {
         MainStackComponent(stackState, state, clickHandler)
         StackComponentView(
