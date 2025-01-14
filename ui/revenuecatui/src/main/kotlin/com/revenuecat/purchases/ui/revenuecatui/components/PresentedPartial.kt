@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -133,14 +134,23 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildPresentedPartial(
     windowSize: ScreenCondition,
-    isEligibleForIntroOffer: Boolean,
+    introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
 ): T? {
     var conditionPartial = buildScreenConditionPartial(windowSize)
 
-    if (isEligibleForIntroOffer) {
-        // If conditionPartial is null here, we want to continue with the introOffer partial.
-        conditionPartial = conditionPartial.combineOrReplace(introOffer)
+    when (introOfferEligibility) {
+        IntroOfferEligibility.INELIGIBLE -> {
+            // Nothing to do.
+        }
+        IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> {
+            // If conditionPartial is null here, we want to continue with the introOffer partial.
+            conditionPartial = conditionPartial.combineOrReplace(introOffer)
+        }
+        IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> {
+            // If conditionPartial is null here, we want to continue with the multipleIntroOffers partial.
+            conditionPartial = conditionPartial.combineOrReplace(multipleIntroOffers)
+        }
     }
 
     when (state) {
