@@ -344,43 +344,38 @@ private fun StackWithShortEdgeToEdgeBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val badgeShape = when (stackState.shape) {
-        is Shape.Rectangle -> {
-            val stackStateRectangleCorners = (stackState.shape as? Shape.Rectangle)?.corners
-                ?: CornerRadiuses(all = 0.0)
-            val adjustedCorners = when (alignment) {
-                TwoDimensionalAlignment.TOP_LEADING -> CornerRadiuses(
-                    topLeading = stackStateRectangleCorners.topLeading,
-                    topTrailing = 0.0,
-                    bottomLeading = 0.0,
-                    bottomTrailing = stackStateRectangleCorners.bottomTrailing,
-                )
-                TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses(
-                    topLeading = 0.0,
-                    topTrailing = stackStateRectangleCorners.topTrailing,
-                    bottomLeading = stackStateRectangleCorners.bottomLeading,
-                    bottomTrailing = 0.0,
-                )
-                TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses(
-                    topLeading = 0.0,
-                    topTrailing = stackStateRectangleCorners.topTrailing,
-                    bottomLeading = stackStateRectangleCorners.bottomLeading,
-                    bottomTrailing = 0.0,
-                )
-                TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses(
-                    topLeading = stackStateRectangleCorners.topLeading,
-                    topTrailing = 0.0,
-                    bottomLeading = 0.0,
-                    bottomTrailing = stackStateRectangleCorners.bottomTrailing,
-                )
-                else -> CornerRadiuses(all = 0.0)
-            }
-            Shape.Rectangle(corners = adjustedCorners)
-        }
-        Shape.Pill -> badgeStack.shape // If the stack is pill, we just default to the badge shape
-    }
-    Box(modifier = modifier) {
-        MainStackComponent(stackState, state, clickHandler)
+    val badgeRectangleCorners = (badgeStack.shape as? Shape.Rectangle)?.corners
+        ?: CornerRadiuses(all = 20.0) // For pill badge shape default to a "medium" rounded corner.
+    val badgeShape = Shape.Rectangle(
+        corners = when (alignment) {
+            TwoDimensionalAlignment.TOP_LEADING -> CornerRadiuses(
+                topLeading = 0.0,
+                topTrailing = 0.0,
+                bottomLeading = 0.0,
+                bottomTrailing = badgeRectangleCorners.bottomTrailing,
+            )
+            TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses(
+                topLeading = 0.0,
+                topTrailing = 0.0,
+                bottomLeading = badgeRectangleCorners.bottomLeading,
+                bottomTrailing = 0.0,
+            )
+            TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses(
+                topLeading = 0.0,
+                topTrailing = badgeRectangleCorners.topTrailing,
+                bottomLeading = 0.0,
+                bottomTrailing = 0.0,
+            )
+            TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses(
+                topLeading = badgeRectangleCorners.topLeading,
+                topTrailing = 0.0,
+                bottomLeading = 0.0,
+                bottomTrailing = 0.0,
+            )
+            else -> CornerRadiuses(all = 0.0)
+        },
+    )
+    MainStackComponent(stackState, state, clickHandler, modifier) {
         StackComponentView(
             badgeStack.copy(shape = badgeShape),
             state,
@@ -415,7 +410,7 @@ private fun BoxScope.OverlaidBadge(
     )
 }
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun MainStackComponent(
     stackState: StackComponentState,
@@ -423,24 +418,8 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
+    overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
-    val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
-    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
-    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
-
-    // Modifier irrespective of dimension.
-    val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
-        Modifier
-            .padding(stackState.margin)
-            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
-            .clip(composeShape)
-            .applyIfNotNull(borderStyle) { border(it, composeShape) }
-            .padding(stackState.padding)
-            .padding(stackState.dimension, stackState.spacing)
-    }
-
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
         @Composable { modifierProvider ->
             stackState.children.forEach { child ->
@@ -490,9 +469,30 @@ private fun MainStackComponent(
         }
     }
 
-    if (nestedBadge == null) {
-        stack(commonModifier)
-    } else {
+    val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
+
+    val outerShapeModifier = remember(backgroundColorStyle, shadowStyle) {
+        Modifier
+            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
+            .clip(composeShape)
+    }
+
+    val innerShapeModifier = remember(stackState, borderStyle) {
+        Modifier
+            .applyIfNotNull(borderStyle) { border(it, composeShape) }
+            .padding(stackState.padding)
+            .padding(stackState.dimension, stackState.spacing)
+    }
+
+    val commonModifier = outerShapeModifier.then(innerShapeModifier)
+
+    if (nestedBadge == null && overlay == null) {
+        stack(outerShapeModifier.then(innerShapeModifier))
+    } else if (nestedBadge != null) {
         Box(modifier = modifier.then(commonModifier)) {
             stack(Modifier)
             StackComponentView(
@@ -502,6 +502,11 @@ private fun MainStackComponent(
                 modifier = Modifier
                     .align(nestedBadge.alignment.toAlignment()),
             )
+        }
+    } else if (overlay != null) {
+        Box(modifier = modifier.then(outerShapeModifier)) {
+            stack(innerShapeModifier)
+            overlay()
         }
     }
 }
