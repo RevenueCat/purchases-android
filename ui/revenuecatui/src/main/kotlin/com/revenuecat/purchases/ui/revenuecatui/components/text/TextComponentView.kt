@@ -19,7 +19,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -83,7 +82,6 @@ internal fun TextComponentView(
         state = state,
         textState = textState,
         variables = variableDataProvider,
-        fixedPackage = style.rcPackage,
     )
 
     val colorStyle = rememberColorStyle(scheme = textState.color)
@@ -133,11 +131,10 @@ private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
     variables: VariableDataProvider,
-    fixedPackage: Package?,
 ): String {
-    val processedText by remember(state, textState, fixedPackage) {
+    val processedText by remember(state, textState) {
         derivedStateOf {
-            (fixedPackage ?: state.selectedPackage)?.let { packageToUse ->
+            textState.applicablePackage?.let { packageToUse ->
 
                 val introEligibility = packageToUse.introEligibility
 
