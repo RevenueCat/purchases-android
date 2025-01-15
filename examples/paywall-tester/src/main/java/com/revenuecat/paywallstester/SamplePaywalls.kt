@@ -27,7 +27,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertical
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.ZLayer
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.END
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.LEADING
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -776,7 +775,7 @@ object SamplePaywalls {
                                             text = LocalizationKey("title"),
                                             color = textColor,
                                             fontWeight = FontWeight.SEMI_BOLD,
-                                            fontSize = FontSize.HEADING_L,
+                                            fontSize = 28,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 0.0, bottom = 40.0, leading = 0.0, trailing = 0.0),
