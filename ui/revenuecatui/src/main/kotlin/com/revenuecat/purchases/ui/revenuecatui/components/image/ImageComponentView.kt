@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -50,8 +49,10 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
@@ -60,6 +61,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
@@ -202,6 +204,14 @@ private fun ImageComponentView_Preview(
                 themeImageUrls = themeImageUrls,
                 size = parameters.viewSize,
                 fitMode = parameters.fitMode,
+                shape = MaskShape.Rectangle(
+                    corners = CornerRadiuses(
+                        topLeading = 20.0,
+                        topTrailing = 20.0,
+                        bottomLeading = 20.0,
+                        bottomTrailing = 20.0,
+                    ),
+                ),
             ),
             state = previewEmptyState(),
             previewImageLoader = previewImageLoader(themeImageUrls),
@@ -223,6 +233,14 @@ private fun ImageComponentView_Preview_SmallerContainer() {
                 themeImageUrls = themeImageUrls,
                 size = Size(width = Fixed(400u), height = Fixed(400u)),
                 fitMode = FitMode.FIT,
+                shape = MaskShape.Rectangle(
+                    corners = CornerRadiuses(
+                        topLeading = 20.0,
+                        topTrailing = 20.0,
+                        bottomLeading = 20.0,
+                        bottomTrailing = 20.0,
+                    ),
+                ),
             ),
             state = previewEmptyState(),
             previewImageLoader = previewImageLoader(themeImageUrls),
@@ -246,6 +264,14 @@ private fun ImageComponentView_Preview_Margin_Padding() {
                 paddingValues = PaddingValues(20.dp),
                 marginValues = PaddingValues(20.dp),
                 fitMode = FitMode.FIT,
+                shape = MaskShape.Rectangle(
+                    corners = CornerRadiuses(
+                        topLeading = 20.0,
+                        topTrailing = 20.0,
+                        bottomLeading = 20.0,
+                        bottomTrailing = 20.0,
+                    ),
+                ),
                 shadow = null,
             ),
             state = previewEmptyState(),
@@ -265,6 +291,14 @@ private fun ImageComponentView_Preview_LinearGradient() {
                 themeImageUrls = themeImageUrls,
                 size = Size(width = Fixed(400u), height = Fit),
                 fitMode = FitMode.FIT,
+                shape = MaskShape.Rectangle(
+                    corners = CornerRadiuses(
+                        topLeading = 20.0,
+                        topTrailing = 20.0,
+                        bottomLeading = 20.0,
+                        bottomTrailing = 20.0,
+                    ),
+                ),
                 overlay = ColorScheme(
                     light = ColorInfo.Gradient.Linear(
                         degrees = -90f,
@@ -302,6 +336,14 @@ private fun ImageComponentView_Preview_RadialGradient() {
                 themeImageUrls = themeImageUrls,
                 size = Size(width = Fixed(400u), height = Fit),
                 fitMode = FitMode.FIT,
+                shape = MaskShape.Rectangle(
+                    corners = CornerRadiuses(
+                        topLeading = 20.0,
+                        topTrailing = 20.0,
+                        bottomLeading = 20.0,
+                        bottomTrailing = 20.0,
+                    ),
+                ),
                 overlay = ColorScheme(
                     light = ColorInfo.Gradient.Radial(
                         listOf(
@@ -327,12 +369,50 @@ private fun ImageComponentView_Preview_RadialGradient() {
     }
 }
 
+private class MaskShapeProvider : PreviewParameterProvider<MaskShape> {
+    override val values: Sequence<MaskShape> = sequenceOf(
+        MaskShape.Rectangle(
+            corners = CornerRadiuses(
+                topLeading = 30.0,
+                topTrailing = 50.0,
+                bottomLeading = 20.0,
+                bottomTrailing = 40.0,
+            ),
+        ),
+        MaskShape.Pill,
+        MaskShape.Concave,
+        MaskShape.Convex,
+        MaskShape.Circle,
+    )
+}
+
+@Preview
+@Composable
+private fun ImageComponentView_Preview_MaskShape(
+    @PreviewParameter(MaskShapeProvider::class) maskShape: MaskShape,
+) {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 200u)
+    Box(modifier = Modifier.background(ComposeColor.Blue)) {
+        ImageComponentView(
+            style = previewImageComponentStyle(
+                themeImageUrls = themeImageUrls,
+                size = Size(width = Fixed(400u), height = Fixed(200u)),
+                fitMode = FitMode.FIT,
+                shape = maskShape,
+            ),
+            state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(themeImageUrls),
+        )
+    }
+}
+
 @Suppress("LongParameterList")
 @Composable
 private fun previewImageComponentStyle(
     themeImageUrls: ThemeImageUrls,
     size: Size,
     fitMode: FitMode,
+    shape: MaskShape,
     overlay: ColorScheme? = null,
     paddingValues: PaddingValues = PaddingValues(0.dp),
     marginValues: PaddingValues = PaddingValues(0.dp),
@@ -353,9 +433,9 @@ private fun previewImageComponentStyle(
 ) = ImageComponentStyle(
     sources = nonEmptyMapOf(LocaleId("en_US") to themeImageUrls),
     size = size,
+    shape = shape.toShape(),
     padding = paddingValues,
     margin = marginValues,
-    shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 20.dp),
     border = border,
     shadow = shadow,
     overlay = overlay,
