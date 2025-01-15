@@ -38,7 +38,6 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
@@ -261,8 +260,8 @@ class TextComponentViewTests {
         val textId = localizations.getValue(localeIdEnUs).keys.first()
         val color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val size = Size(Fit, Fit)
-        val largeTextComponent = TextComponent(text = textId, color = color, fontSize = FontSize.HEADING_L, size = size)
-        val smallTextComponent = TextComponent(text = textId, color = color, fontSize = FontSize.BODY_S, size = size)
+        val largeTextComponent = TextComponent(text = textId, color = color, fontSize = 28, size = size)
+        val smallTextComponent = TextComponent(text = textId, color = color, fontSize = 13, size = size)
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,

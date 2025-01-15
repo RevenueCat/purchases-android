@@ -50,7 +50,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -790,7 +789,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
-                        fontSize = FontSize.BODY_M,
+                        fontSize = 15,
                         fontWeight = FontWeight.REGULAR.toFontWeight(),
                         fontFamily = null,
                         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
@@ -810,7 +809,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         color = ColorScheme(
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
-                        fontSize = FontSize.BODY_M,
+                        fontSize = 15,
                         fontWeight = FontWeight.REGULAR.toFontWeight(),
                         fontFamily = null,
                         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
@@ -995,7 +994,7 @@ private fun previewChildren() = listOf(
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),
-        fontSize = FontSize.BODY_M,
+        fontSize = 15,
         fontWeight = FontWeight.REGULAR.toFontWeight(),
         fontFamily = null,
         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
@@ -1014,7 +1013,7 @@ private fun previewChildren() = listOf(
         color = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),
-        fontSize = FontSize.BODY_M,
+        fontSize = 15,
         fontWeight = FontWeight.REGULAR.toFontWeight(),
         fontFamily = null,
         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
@@ -1034,7 +1033,7 @@ private fun previewChildren() = listOf(
 private fun previewTextComponentStyle(
     text: String,
     color: ColorScheme = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-    fontSize: FontSize = FontSize.BODY_M,
+    fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
     fontFamily: String? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
@@ -1102,7 +1101,7 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
                     color = ColorScheme(
                         light = ColorInfo.Hex(Color.Black.toArgb()),
                     ),
-                    fontSize = FontSize.BODY_M,
+                    fontSize = 15,
                     fontWeight = FontWeight.REGULAR.toFontWeight(),
                     fontFamily = null,
                     textAlign = HorizontalAlignment.CENTER.toTextAlign(),

@@ -5,7 +5,6 @@ import com.revenuecat.purchases.paywalls.colorInt
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -54,7 +53,7 @@ internal class TextComponentTests {
                           },
                           "components": [],
                           "font_name": "some font",
-                          "font_size": "body_l",
+                          "font_size": 17,
                           "font_weight": "bold",
                           "horizontal_alignment": "leading",
                           "id": "xmpgCrN9Rb",
@@ -95,7 +94,7 @@ internal class TextComponentTests {
                             ),
                             fontName = "some font",
                             fontWeight = FontWeight.BOLD,
-                            fontSize = FontSize.BODY_L,
+                            fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
                             size = Size(height = SizeConstraint.Fill, width = SizeConstraint.Fill),
                             padding = Padding(top = 12.0, bottom = 16.0, leading = 14.0, trailing = 10.0),
@@ -159,6 +158,34 @@ internal class TextComponentTests {
                         )
                     )
                 ),
+                arrayOf(
+                    "font size as string",
+                    Args(
+                        json = """
+                        {
+                          "color": {
+                            "light": {
+                              "type": "hex",
+                              "value": "#000000"
+                            }
+                          },
+                          "components": [],
+                          "font_size": "body_l",
+                          "id": "xmpgCrN9Rb",
+                          "name": "Text",
+                          "text_lid": "7bkohQjzIE",
+                          "type": "text"
+                        }
+                        """.trimIndent(),
+                        expected = TextComponent(
+                            text = LocalizationKey("7bkohQjzIE"),
+                            color = ColorScheme(
+                                light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0, green = 0, blue = 0))
+                            ),
+                            fontSize = 17,
+                        )
+                    )
+                ),
             )
         }
 
@@ -218,7 +245,7 @@ internal class TextComponentTests {
                             }
                           },
                           "font_name": "some font",
-                          "font_size": "body_l",
+                          "font_size": 17,
                           "font_weight": "bold",
                           "horizontal_alignment": "leading",
                           "margin": {
@@ -257,7 +284,7 @@ internal class TextComponentTests {
                             ),
                             fontName = "some font",
                             fontWeight = FontWeight.BOLD,
-                            fontSize = FontSize.BODY_L,
+                            fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
                             size = Size(height = SizeConstraint.Fill, width = SizeConstraint.Fill),
                             padding = Padding(top = 12.0, bottom = 16.0, leading = 14.0, trailing = 10.0),
@@ -286,6 +313,19 @@ internal class TextComponentTests {
                         expected = PartialTextComponent(
                             padding = Padding.zero,
                             margin = Padding.zero,
+                        )
+                    )
+                ),
+                arrayOf(
+                    "font size as string",
+                    Args(
+                        json = """
+                        {
+                          "font_size": "body_l"
+                        }
+                        """.trimIndent(),
+                        expected = PartialTextComponent(
+                            fontSize = 17,
                         )
                     )
                 ),

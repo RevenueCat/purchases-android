@@ -30,7 +30,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -100,7 +99,7 @@ private fun previewButtonComponentStyle(
                 color = ColorScheme(
                     light = ColorInfo.Hex(Color.Black.toArgb()),
                 ),
-                fontSize = FontSize.BODY_M,
+                fontSize = 15,
                 fontWeight = FontWeight.REGULAR.toFontWeight(),
                 fontFamily = null,
                 textAlign = HorizontalAlignment.CENTER.toTextAlign(),

@@ -6,7 +6,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -481,7 +480,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
                                     fontName = "compactFont",
                                     fontWeight = FontWeight.LIGHT,
-                                    fontSize = FontSize.BODY_S,
+                                    fontSize = 13,
                                     horizontalAlignment = HorizontalAlignment.LEADING,
                                     size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                     padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
@@ -501,7 +500,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     backgroundColor = null,
                                     fontName = "mediumFont",
                                     fontWeight = FontWeight.MEDIUM,
-                                    fontSize = FontSize.BODY_M,
+                                    fontSize = 15,
                                     horizontalAlignment = HorizontalAlignment.CENTER,
                                     size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                     padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
@@ -545,7 +544,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
                             fontName = "mediumFont",
                             fontWeight = FontWeight.MEDIUM,
-                            fontSize = FontSize.BODY_M,
+                            fontSize = 15,
                             horizontalAlignment = HorizontalAlignment.CENTER,
                             size = Size(width = Fixed(30.toUInt()), height = Fixed(30.toUInt())),
                             padding = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
@@ -571,7 +570,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 backgroundColor = null,
                                 fontName = null,
                                 fontWeight = null,
-                                fontSize = FontSize.BODY_XL,
+                                fontSize = 18,
                                 horizontalAlignment = HorizontalAlignment.CENTER,
                                 size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
                                 padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
@@ -587,7 +586,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 backgroundColor = null,
                                 fontName = null,
                                 fontWeight = null,
-                                fontSize = FontSize.HEADING_XL,
+                                fontSize = 34,
                                 horizontalAlignment = HorizontalAlignment.CENTER,
                                 size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
                                 padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
@@ -622,7 +621,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
                                     fontName = "compactFont",
                                     fontWeight = FontWeight.LIGHT,
-                                    fontSize = FontSize.BODY_S,
+                                    fontSize = 13,
                                     horizontalAlignment = HorizontalAlignment.LEADING,
                                     size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                     padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
@@ -642,7 +641,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     backgroundColor = ColorScheme(light = ColorInfo.Alias("mediumBgColor")),
                                     fontName = "mediumFont",
                                     fontWeight = FontWeight.MEDIUM,
-                                    fontSize = FontSize.BODY_M,
+                                    fontSize = 15,
                                     horizontalAlignment = HorizontalAlignment.CENTER,
                                     size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                     padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
@@ -658,7 +657,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     backgroundColor = null,
                                     fontName = "expandedFont",
                                     fontWeight = FontWeight.BOLD,
-                                    fontSize = FontSize.BODY_L,
+                                    fontSize = 17,
                                     horizontalAlignment = HorizontalAlignment.TRAILING,
                                     size = Size(width = Fixed(40.toUInt()), height = Fixed(40.toUInt())),
                                     padding = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
@@ -679,7 +678,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             backgroundColor = ColorScheme(light = ColorInfo.Alias("mediumBgColor")),
                             fontName = "expandedFont",
                             fontWeight = FontWeight.BOLD,
-                            fontSize = FontSize.HEADING_XL,
+                            fontSize = 34,
                             horizontalAlignment = HorizontalAlignment.CENTER,
                             size = Size(width = Fixed(60.toUInt()), height = Fixed(60.toUInt())),
                             padding = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
