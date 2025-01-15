@@ -1,11 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
@@ -20,7 +23,15 @@ internal class ImageComponentStyle(
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
+    val padding: PaddingValues,
+    @get:JvmSynthetic
+    val margin: PaddingValues,
+    @get:JvmSynthetic
     val shape: Shape?,
+    @get:JvmSynthetic
+    val border: Border?,
+    @get:JvmSynthetic
+    val shadow: Shadow?,
     @get:JvmSynthetic
     val overlay: ColorScheme?,
     @get:JvmSynthetic

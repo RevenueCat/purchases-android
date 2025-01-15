@@ -14,8 +14,13 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.Px
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
@@ -41,12 +46,14 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
+import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -57,9 +64,13 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.aspectRatio
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -87,13 +98,21 @@ internal fun ImageComponentView(
 
     if (imageState.visible) {
         val overlay = imageState.overlay?.let { rememberColorStyle(it) }
+        val borderStyle = imageState.border?.let { rememberBorderStyle(border = it) }
+        val shadowStyle = imageState.shadow?.let { rememberShadowStyle(shadow = it) }
+        val composeShape by remember(imageState.shape) { derivedStateOf { imageState.shape ?: RectangleShape } }
+
         RemoteImage(
             urlString = imageState.imageUrls.webp.toString(),
             modifier = modifier
                 .size(imageState.size)
                 .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
-                .applyIfNotNull(overlay) { overlay(it, imageState.shape ?: RectangleShape) }
-                .applyIfNotNull(imageState.shape) { clip(it) },
+                .padding(imageState.margin)
+                .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+                .applyIfNotNull(overlay) { overlay(it, composeShape) }
+                .clip(composeShape)
+                .applyIfNotNull(borderStyle) { border(it, composeShape) }
+                .padding(imageState.padding),
             placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
             contentScale = imageState.contentScale,
             previewImageLoader = previewImageLoader,
@@ -222,6 +241,38 @@ private fun ImageComponentView_Preview_SmallerContainer() {
                         bottomTrailing = 20.0,
                     ),
                 ),
+            ),
+            state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(themeImageUrls),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ImageComponentView_Preview_Margin_Padding() {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
+    Box(
+        modifier = Modifier
+            .height(200.dp)
+            .background(ComposeColor.Gray),
+    ) {
+        ImageComponentView(
+            style = previewImageComponentStyle(
+                themeImageUrls = themeImageUrls,
+                size = Size(width = Fixed(400u), height = Fixed(400u)),
+                paddingValues = PaddingValues(20.dp),
+                marginValues = PaddingValues(20.dp),
+                fitMode = FitMode.FIT,
+                shape = MaskShape.Rectangle(
+                    corners = CornerRadiuses(
+                        topLeading = 20.0,
+                        topTrailing = 20.0,
+                        bottomLeading = 20.0,
+                        bottomTrailing = 20.0,
+                    ),
+                ),
+                shadow = null,
             ),
             state = previewEmptyState(),
             previewImageLoader = previewImageLoader(themeImageUrls),
@@ -363,10 +414,30 @@ private fun previewImageComponentStyle(
     fitMode: FitMode,
     shape: MaskShape,
     overlay: ColorScheme? = null,
+    paddingValues: PaddingValues = PaddingValues(0.dp),
+    marginValues: PaddingValues = PaddingValues(0.dp),
+    border: Border? = Border(
+        width = 2.0,
+        color = ColorScheme(
+            light = ColorInfo.Hex(
+                ComposeColor.Cyan.toArgb(),
+            ),
+        ),
+    ),
+    shadow: Shadow? = Shadow(
+        color = ColorScheme(ColorInfo.Hex(ComposeColor.Black.toArgb())),
+        radius = 10.0,
+        x = 0.0,
+        y = 3.0,
+    ),
 ) = ImageComponentStyle(
     sources = nonEmptyMapOf(LocaleId("en_US") to themeImageUrls),
     size = size,
     shape = shape.toShape(),
+    padding = paddingValues,
+    margin = marginValues,
+    border = border,
+    shadow = shadow,
     overlay = overlay,
     contentScale = fitMode.toContentScale(),
     rcPackage = null,
@@ -382,7 +453,7 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
                 // This would normally contain at least one ImageComponent, but that's not needed for previews.
                 stack = StackComponent(components = emptyList()),
                 background = Background.Color(
-                    ColorScheme(light = ColorInfo.Hex(androidx.compose.ui.graphics.Color.White.toArgb())),
+                    ColorScheme(light = ColorInfo.Hex(ComposeColor.White.toArgb())),
                 ),
                 stickyFooter = null,
             ),
