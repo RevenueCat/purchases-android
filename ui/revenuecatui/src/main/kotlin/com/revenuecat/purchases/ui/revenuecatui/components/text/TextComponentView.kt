@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -29,7 +30,6 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -43,7 +43,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextUnit
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -113,7 +112,7 @@ internal fun TextComponentView(
                 .applyIfNotNull(backgroundColorStyle) { background(it) }
                 .padding(textState.padding),
             color = color,
-            fontSize = textState.fontSize.toTextUnit(),
+            fontSize = textState.fontSize.sp,
             fontWeight = textState.fontWeight,
             fontFamily = textState.fontFamily,
             horizontalAlignment = textState.horizontalAlignment,
@@ -198,7 +197,7 @@ private fun TextComponentView_Preview_HeadingXlExtraBold() {
             style = previewTextComponentStyle(
                 text = "Experience Pro today!",
                 color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-                fontSize = FontSize.HEADING_XL,
+                fontSize = 34,
                 fontWeight = FontWeight.EXTRA_BOLD,
             ),
             state = previewEmptyState(),
@@ -269,7 +268,7 @@ private fun TextComponentView_Preview_FontSize() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            fontSize = FontSize.HEADING_L,
+            fontSize = 28,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -299,7 +298,7 @@ private fun TextComponentView_Preview_Customizations() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorScheme(light = ColorInfo.Hex(Color(red = 0xff, green = 0x00, blue = 0x00).toArgb())),
-            fontSize = FontSize.BODY_S,
+            fontSize = 13,
             fontWeight = FontWeight.BLACK,
             textAlign = HorizontalAlignment.LEADING,
             horizontalAlignment = HorizontalAlignment.LEADING,
@@ -350,7 +349,7 @@ private fun TextComponentView_Preview_LinearGradient() {
                     ),
                 ),
             ),
-            fontSize = FontSize.BODY_M,
+            fontSize = 15,
             fontWeight = FontWeight.MEDIUM,
             textAlign = HorizontalAlignment.LEADING,
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
@@ -387,7 +386,7 @@ private fun TextComponentView_Preview_RadialGradient() {
                     ),
                 ),
             ),
-            fontSize = FontSize.BODY_M,
+            fontSize = 15,
             fontWeight = FontWeight.MEDIUM,
             textAlign = HorizontalAlignment.LEADING,
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
@@ -403,7 +402,7 @@ private fun TextComponentView_Preview_RadialGradient() {
 private fun previewTextComponentStyle(
     text: String,
     color: ColorScheme,
-    fontSize: FontSize = FontSize.BODY_M,
+    fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
     fontFamily: String? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,

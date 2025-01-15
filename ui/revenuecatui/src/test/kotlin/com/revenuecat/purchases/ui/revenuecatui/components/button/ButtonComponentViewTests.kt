@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import android.os.LocaleList
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.assertHasClickAction
@@ -25,7 +24,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.CENTER
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -72,7 +70,7 @@ class ButtonComponentViewTests {
                             color = ColorScheme(
                                 light = ColorInfo.Hex(Color.Black.toArgb()),
                             ),
-                            fontSize = FontSize.BODY_M,
+                            fontSize = 15,
                             fontWeight = FontWeight.REGULAR.toFontWeight(),
                             fontFamily = null,
                             textAlign = CENTER.toTextAlign(),
