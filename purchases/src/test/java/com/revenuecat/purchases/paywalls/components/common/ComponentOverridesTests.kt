@@ -38,8 +38,11 @@ internal class ComponentOverridesTests {
                     Args(
                         json = """
                         {
-                          "introOffer": {
+                          "intro_offer": {
                             "font_name": "intro font"
+                          },
+                          "multiple_intro_offers": {
+                            "font_name": "multiple intros font"
                           },
                           "states": {
                             "selected": {
@@ -61,6 +64,7 @@ internal class ComponentOverridesTests {
                         """.trimIndent(),
                         expected = ComponentOverrides(
                             introOffer = PartialTextComponent(fontName = "intro font"),
+                            multipleIntroOffers = PartialTextComponent(fontName = "multiple intros font"),
                             states = ComponentStates(
                                 selected = PartialTextComponent(fontName = "selected font")
                             ),
@@ -117,8 +121,11 @@ internal class ComponentOverridesTests {
                     Args(
                         json = """
                         {
-                          "introOffer": {
+                          "intro_offer": {
                             "override_source_lid": "intro"
+                          },
+                          "multiple_intro_offers": {
+                            "override_source_lid": "multiple_intros"
                           },
                           "states": {
                             "selected": {
@@ -140,6 +147,9 @@ internal class ComponentOverridesTests {
                         """.trimIndent(),
                         expected = ComponentOverrides(
                             introOffer = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
+                            multipleIntroOffers = PartialImageComponent(
+                                overrideSourceLid = LocalizationKey("multiple_intros")
+                            ),
                             states = ComponentStates(
                                 selected = PartialImageComponent(overrideSourceLid = LocalizationKey("selected"))
                             ),

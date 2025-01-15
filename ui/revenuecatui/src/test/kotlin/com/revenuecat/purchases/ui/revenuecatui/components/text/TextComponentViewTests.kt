@@ -49,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
@@ -129,23 +130,29 @@ class TextComponentViewTests {
         offering = offeringId,
         product = productMonthlyMxn,
     )
+    private val packageWithoutIntroOffer = TestData.Packages.monthly
+    private val packageWithSingleIntroOffer = TestData.Packages.annual
+    private val packageWithMultipleIntroOffers = TestData.Packages.quarterly
     private val localeIdEnUs = LocaleId("en_US")
     private val localeIdNlNl = LocaleId("nl_NL")
     private val unselectedLocalizationKey = LocalizationKey("unselected key")
     private val selectedLocalizationKey = LocalizationKey("selected key")
     private val ineligibleLocalizationKey = LocalizationKey("ineligible key")
-    private val eligibleLocalizationKey = LocalizationKey("eligible key")
+    private val singleEligibleLocalizationKey = LocalizationKey("single eligible key")
+    private val multipleEligibleLocalizationKey = LocalizationKey("multiple eligible key")
     private val expectedTextUnselected = "unselected text"
     private val expectedTextSelected = "selected text"
     private val expectedTextIneligibleEnUs = "ineligible text"
-    private val expectedTextEligibleEnUs = "eligible text"
+    private val expectedTextSingleEligibleEnUs = "single eligible text"
+    private val expectedTextMultipleEligibleEnUs = "multiple eligible text"
     private val localizations = nonEmptyMapOf(
         localeIdEnUs to nonEmptyMapOf(
             LocalizationKey("text1") to LocalizationData.Text("this is text 1"),
             unselectedLocalizationKey to LocalizationData.Text(expectedTextUnselected),
             selectedLocalizationKey to LocalizationData.Text(expectedTextSelected),
             ineligibleLocalizationKey to LocalizationData.Text(expectedTextIneligibleEnUs),
-            eligibleLocalizationKey to LocalizationData.Text(expectedTextEligibleEnUs),
+            singleEligibleLocalizationKey to LocalizationData.Text(expectedTextSingleEligibleEnUs),
+            multipleEligibleLocalizationKey to LocalizationData.Text(expectedTextMultipleEligibleEnUs),
         ),
     )
     private val styleFactory = StyleFactory(
@@ -384,28 +391,36 @@ class TextComponentViewTests {
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
-    fun `Should use the intro offer overrides`(): Unit = with(composeTestRule) {
+    fun `Should use the intro offer overrides for the selected package`(): Unit = with(composeTestRule) {
         // Arrange
         val expectedIneligibleTextColor = Color.Black
-        val expectedEligibleTextColor = Color.White
         val expectedIneligibleBackgroundColor = Color.Yellow
-        val expectedEligibleBackgroundColor = Color.Red
+        val expectedSingleEligibleTextColor = Color.White
+        val expectedSingleEligibleBackgroundColor = Color.Red
+        val expectedMultiEligibleTextColor = Color.Blue
+        val expectedMultiEligibleBackgroundColor = Color.Green
         val component = TextComponent(
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleTextColor.toArgb())),
             backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
             overrides = ComponentOverrides(
                 introOffer = PartialTextComponent(
-                    text = eligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedEligibleBackgroundColor.toArgb())),
+                    text = singleEligibleLocalizationKey,
+                    color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
+                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
                 ),
+                multipleIntroOffers = PartialTextComponent(
+                    text = multipleEligibleLocalizationKey,
+                    color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
+                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
+                )
             )
         )
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            component
+            components = listOf(component),
+            packages = listOf(packageWithoutIntroOffer, packageWithSingleIntroOffer, packageWithMultipleIntroOffers)
         )
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
 
@@ -413,17 +428,161 @@ class TextComponentViewTests {
         setContent { TextComponentView(style = style, state = state) }
 
         // Assert
-        state.update(isEligibleForIntroOffer = false)
+        state.update(selectedPackage = packageWithoutIntroOffer)
         onNodeWithText(expectedTextIneligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedIneligibleTextColor)
             .assertPixelColorPercentage(expectedIneligibleBackgroundColor) { percentage -> percentage > 0.4 }
 
-        state.update(isEligibleForIntroOffer = true)
-        onNodeWithText(expectedTextEligibleEnUs)
+        state.update(selectedPackage = packageWithSingleIntroOffer)
+        onNodeWithText(expectedTextSingleEligibleEnUs)
             .assertIsDisplayed()
-            .assertTextColorEquals(expectedEligibleTextColor)
-            .assertPixelColorPercentage(expectedEligibleBackgroundColor) { percentage -> percentage > 0.4 }
+            .assertTextColorEquals(expectedSingleEligibleTextColor)
+            .assertPixelColorPercentage(expectedSingleEligibleBackgroundColor) { percentage -> percentage > 0.4 }
+
+        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        onNodeWithText(expectedTextMultipleEligibleEnUs)
+            .assertIsDisplayed()
+            .assertTextColorEquals(expectedMultiEligibleTextColor)
+            .assertPixelColorPercentage(expectedMultiEligibleBackgroundColor) { percentage -> percentage > 0.4 }
+    }
+
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
+    @Test
+    fun `Should use the intro offer overrides as child of PackageComponentView`(): Unit = with(composeTestRule) {
+        // Arrange
+        val expectedIneligibleTextColor = Color.Black
+        val expectedIneligibleBackgroundColor = Color.Yellow
+        val expectedSingleEligibleTextColor = Color.White
+        val expectedSingleEligibleBackgroundColor = Color.Red
+        val expectedMultiEligibleTextColor = Color.Blue
+        val expectedMultiEligibleBackgroundColor = Color.Green
+        val textComponent = TextComponent(
+            text = ineligibleLocalizationKey,
+            color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleTextColor.toArgb())),
+            backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
+            overrides = ComponentOverrides(
+                introOffer = PartialTextComponent(
+                    text = singleEligibleLocalizationKey,
+                    color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
+                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+                ),
+                multipleIntroOffers = PartialTextComponent(
+                    text = multipleEligibleLocalizationKey,
+                    color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
+                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
+                )
+            )
+        )
+        val noIntroOfferPackageComponent = PackageComponent(
+            packageId = packageWithoutIntroOffer.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = listOf(textComponent)),
+        )
+        val singleIntroOfferPackageComponent = PackageComponent(
+            packageId = packageWithSingleIntroOffer.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = listOf(textComponent)),
+        )
+        val multipleIntroOffersPackageComponent = PackageComponent(
+            packageId = packageWithMultipleIntroOffers.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = listOf(textComponent)),
+        )
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            noIntroOfferPackageComponent,
+                            singleIntroOfferPackageComponent,
+                            multipleIntroOffersPackageComponent
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            ),
+            paywallComponents = data,
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val noIntroOfferPackageComponentStyle =
+            styleFactory.create(noIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+        val singleIntroOfferPackageComponentStyle =
+            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+        val multipleIntroOffersPackageComponentStyle =
+            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow() as PackageComponentStyle
+
+        // Act
+        setContent {
+            Column {
+                PackageComponentView(
+                    style = noIntroOfferPackageComponentStyle,
+                    state = state,
+                    modifier = Modifier.testTag("noIntroOffer")
+                )
+                PackageComponentView(
+                    style = singleIntroOfferPackageComponentStyle,
+                    state = state,
+                    modifier = Modifier.testTag("singleIntroOffer")
+                )
+                PackageComponentView(
+                    style = multipleIntroOffersPackageComponentStyle,
+                    state = state,
+                    modifier = Modifier.testTag("multipleIntroOffers")
+                )
+            }
+        }
+
+        // Assert
+        fun assertAll() {
+            onNodeWithTag("noIntroOffer")
+                .assertIsDisplayed()
+                .assertTextEquals(expectedTextIneligibleEnUs)
+                .assertTextColorEquals(expectedIneligibleTextColor)
+                .assertPixelColorPercentage(expectedIneligibleBackgroundColor) { percentage -> percentage > 0.4 }
+
+            onNodeWithTag("singleIntroOffer")
+                .assertIsDisplayed()
+                .assertTextEquals(expectedTextSingleEligibleEnUs)
+                .assertTextColorEquals(expectedSingleEligibleTextColor)
+                .assertPixelColorPercentage(expectedSingleEligibleBackgroundColor) { percentage -> percentage > 0.4 }
+
+            onNodeWithTag("multipleIntroOffers")
+                .assertIsDisplayed()
+                .assertTextEquals(expectedTextMultipleEligibleEnUs)
+                .assertTextColorEquals(expectedMultiEligibleTextColor)
+                .assertPixelColorPercentage(expectedMultiEligibleBackgroundColor) { percentage -> percentage > 0.4 }
+        }
+
+        // Make sure the selected package does not influence the package used to pick the override properties.
+        assertAll()
+        state.update(selectedPackage = packageWithoutIntroOffer)
+        assertAll()
+        state.update(selectedPackage = packageWithSingleIntroOffer)
+        assertAll()
+        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        assertAll()
     }
 
     @Test
@@ -477,18 +636,18 @@ class TextComponentViewTests {
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
             overrides = ComponentOverrides(
                 introOffer = PartialTextComponent(
-                    text = eligibleLocalizationKey,
+                    text = singleEligibleLocalizationKey,
                 ),
             )
         )
         val localizations = nonEmptyMapOf(
             localeIdEnUs to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
-                eligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
+                singleEligibleLocalizationKey to LocalizationData.Text(expectedTextEnUs),
             ),
             localeIdNlNl to nonEmptyMapOf(
                 ineligibleLocalizationKey to LocalizationData.Text(unexpectedText),
-                eligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
+                singleEligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
         val offering = Offering(
@@ -502,9 +661,10 @@ class TextComponentViewTests {
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            component
+            components = listOf(component),
+            packages = listOf(packageWithSingleIntroOffer)
         ).apply {
-            update(isEligibleForIntroOffer = true)
+            update(selectedPackage = packageWithSingleIntroOffer)
         }
 
         // Act

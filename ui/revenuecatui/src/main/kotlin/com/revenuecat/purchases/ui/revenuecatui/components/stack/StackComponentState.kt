@@ -19,7 +19,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @JvmSynthetic
 @Composable
@@ -29,7 +31,6 @@ internal fun rememberUpdatedStackComponentState(
 ): StackComponentState =
     rememberUpdatedStackComponentState(
         style = style,
-        isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
         selectedPackageProvider = { paywallState.selectedPackage },
     )
 
@@ -37,7 +38,6 @@ internal fun rememberUpdatedStackComponentState(
 @Composable
 internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
-    isEligibleForIntroOffer: Boolean = false,
     selectedPackageProvider: () -> Package?,
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
@@ -45,14 +45,12 @@ internal fun rememberUpdatedStackComponentState(
     return remember(style) {
         StackComponentState(
             initialWindowSize = windowSize,
-            initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
         )
     }.apply {
         update(
             windowSize = windowSize,
-            isEligibleForIntroOffer = isEligibleForIntroOffer,
         )
     }
 }
@@ -60,20 +58,26 @@ internal fun rememberUpdatedStackComponentState(
 @Stable
 internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialIsEligibleForIntroOffer: Boolean,
     private val style: StackComponentStyle,
     private val selectedPackageProvider: () -> Package?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-    private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
     private val selected by derivedStateOf {
         if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+    }
+
+    /**
+     * The package to consider for intro offer eligibility.
+     */
+    private val applicablePackage by derivedStateOf {
+        style.rcPackage ?: selectedPackageProvider()
     }
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides?.buildPresentedPartial(windowCondition, isEligibleForIntroOffer, componentState)
+        style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
 
     @get:JvmSynthetic
@@ -123,9 +127,7 @@ internal class StackComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
-        isEligibleForIntroOffer: Boolean? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
-        if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
     }
 }

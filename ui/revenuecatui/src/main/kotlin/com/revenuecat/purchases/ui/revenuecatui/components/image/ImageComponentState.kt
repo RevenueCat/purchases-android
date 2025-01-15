@@ -35,7 +35,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @JvmSynthetic
 @Composable
@@ -47,7 +49,6 @@ internal fun rememberUpdatedImageComponentState(
         style = style,
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackage },
-        isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
     )
 
 @JvmSynthetic
@@ -56,7 +57,6 @@ internal fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
-    isEligibleForIntroOffer: Boolean = false,
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -65,7 +65,6 @@ internal fun rememberUpdatedImageComponentState(
     return remember(style) {
         ImageComponentState(
             initialWindowSize = windowSize,
-            initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
             initialDensity = density,
             initialDarkMode = darkMode,
             style = style,
@@ -75,7 +74,6 @@ internal fun rememberUpdatedImageComponentState(
     }.apply {
         update(
             windowSize = windowSize,
-            isEligibleForIntroOffer = isEligibleForIntroOffer,
             density = density,
             darkMode = darkMode,
         )
@@ -86,7 +84,6 @@ internal fun rememberUpdatedImageComponentState(
 @Stable
 internal class ImageComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialIsEligibleForIntroOffer: Boolean,
     initialDensity: Density,
     initialDarkMode: Boolean,
     private val style: ImageComponentStyle,
@@ -94,17 +91,25 @@ internal class ImageComponentState(
     private val selectedPackageProvider: () -> Package?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-    private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
     private val selected by derivedStateOf {
         if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
     }
     private var density by mutableStateOf(initialDensity)
     private var darkMode by mutableStateOf(initialDarkMode)
+
+    /**
+     * The package to consider for intro offer eligibility.
+     */
+    private val applicablePackage by derivedStateOf {
+        style.rcPackage ?: selectedPackageProvider()
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides?.buildPresentedPartial(windowCondition, isEligibleForIntroOffer, componentState)
+        style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
     private val themeImageUrls: ThemeImageUrls by derivedStateOf {
         val localeId = localeProvider().toLocaleId()
@@ -189,12 +194,10 @@ internal class ImageComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
-        isEligibleForIntroOffer: Boolean? = null,
         density: Density? = null,
         darkMode: Boolean? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
-        if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
         if (density != null) this.density = density
         if (darkMode != null) this.darkMode = darkMode
     }
