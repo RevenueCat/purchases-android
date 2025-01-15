@@ -196,21 +196,20 @@ internal class CustomerCenterViewModelImpl(
         val hasActiveProducts = customerInfo.activeSubscriptions.isNotEmpty() ||
             customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
-        if (!hasActiveProducts) {
-            return null
+        if (hasActiveProducts) {
+            val activeTransactionDetails = findActiveTransaction(customerInfo)
+
+            if (activeTransactionDetails != null) {
+                val entitlement = customerInfo.entitlements.all.values
+                    .firstOrNull { it.productIdentifier == activeTransactionDetails.productIdentifier }
+
+                return createPurchaseInformation(activeTransactionDetails, entitlement, dateFormatter, locale)
+            } else {
+                Logger.w("Could not find subscription information")
+            }
         }
 
-        val activeTransactionDetails = findActiveTransaction(customerInfo)
-
-        if (activeTransactionDetails == null) {
-            Logger.w("Could not find subscription information")
-            return null
-        }
-
-        val entitlement = customerInfo.entitlements.all.values
-            .firstOrNull { it.productIdentifier == activeTransactionDetails.productIdentifier }
-
-        return createPurchaseInformation(activeTransactionDetails, entitlement, dateFormatter, locale)
+        return null
     }
 
     private fun findActiveTransaction(customerInfo: CustomerInfo): TransactionDetails? {
@@ -252,31 +251,22 @@ internal class CustomerCenterViewModelImpl(
         dateFormatter: DateFormatter,
         locale: Locale,
     ): PurchaseInformation {
-        if (transaction.store == Store.PLAY_STORE) {
-            val product = purchases.awaitGetProduct(transaction.productIdentifier).firstOrNull()
-            if (product != null) {
-                return PurchaseInformation(
-                    entitlementInfo = entitlement,
-                    subscribedProduct = product,
-                    transaction = transaction,
-                    dateFormatter = dateFormatter,
-                    locale = locale,
-                )
-            } else {
-                Logger.w(
-                    "Could not find product, loading without product information: ${transaction.productIdentifier}",
-                )
-                return PurchaseInformation(
-                    entitlementInfo = entitlement,
-                    transaction = transaction,
-                    dateFormatter = dateFormatter,
-                    locale = locale,
-                )
+        val product = if (transaction.store == Store.PLAY_STORE) {
+            purchases.awaitGetProduct(transaction.productIdentifier).firstOrNull().also {
+                if (it == null) {
+                    Logger.w(
+                        "Could not find product, loading without product information: ${transaction.productIdentifier}",
+                    )
+                }
             }
+        } else {
+            Logger.w("Active product is not from Google, loading without product information: ${transaction.store}")
+            null
         }
-        Logger.w("Active product is not from Google, loading without product information: ${transaction.store}")
+
         return PurchaseInformation(
             entitlementInfo = entitlement,
+            subscribedProduct = product,
             transaction = transaction,
             dateFormatter = dateFormatter,
             locale = locale,

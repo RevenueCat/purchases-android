@@ -33,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 @Composable
 internal fun ManageSubscriptionsView(
     screen: CustomerCenterConfigData.Screen,
+    localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     purchaseInformation: PurchaseInformation? = null,
     onPathButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
@@ -50,6 +51,7 @@ internal fun ManageSubscriptionsView(
             purchaseInformation?.let { purchaseInformation ->
                 ActiveUserManagementView(
                     screen = screen,
+                    localization = localization,
                     purchaseInformation = purchaseInformation,
                     onDetermineFlow = onPathButtonPress,
                 )
@@ -65,6 +67,7 @@ internal fun ManageSubscriptionsView(
 @Composable
 private fun ActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
+    localization: CustomerCenterConfigData.Localization,
     purchaseInformation: PurchaseInformation,
     onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
@@ -94,7 +97,7 @@ private fun ActiveUserManagementView(
                         defaultElevation = 4.dp,
                     ),
                 ) {
-                    SubscriptionDetailsView(details = purchaseInformation)
+                    SubscriptionDetailsView(details = purchaseInformation, localization = localization)
                 }
             }
 
@@ -172,6 +175,7 @@ private fun ManageSubscriptionsViewPreview() {
     val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
     ManageSubscriptionsView(
         screen = managementScreen,
+        localization = testData.localization,
         purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
         onPathButtonPress = {},
     )
@@ -186,6 +190,7 @@ private fun NoActiveSubscriptionsViewPreview() {
 
     ManageSubscriptionsView(
         screen = noActiveScreen,
+        localization = testData.localization,
         purchaseInformation = null,
         onPathButtonPress = {},
     )

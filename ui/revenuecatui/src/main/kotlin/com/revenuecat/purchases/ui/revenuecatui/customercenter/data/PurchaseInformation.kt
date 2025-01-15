@@ -9,6 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import java.util.Locale
 
+@SuppressWarnings("LongParameterList")
 internal class PurchaseInformation(
     val title: String,
     val durationTitle: String,
@@ -48,7 +49,11 @@ internal class PurchaseInformation(
                 transaction.expiresDate?.let { date ->
                     val dateString = dateFormatter.format(date, locale)
                     val label = if (transaction.isActive) {
-                        if (transaction.willRenew) ExpirationOrRenewal.Label.NEXT_BILLING_DATE else ExpirationOrRenewal.Label.EXPIRES
+                        if (transaction.willRenew) {
+                            ExpirationOrRenewal.Label.NEXT_BILLING_DATE
+                        } else {
+                            ExpirationOrRenewal.Label.EXPIRES
+                        }
                     } else {
                         ExpirationOrRenewal.Label.EXPIRED
                     }
@@ -69,34 +74,31 @@ internal class PurchaseInformation(
 }
 
 private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): PriceDetails {
-    subscribedProduct?.let {
-        return PriceDetails.Paid(it.price.formatted)
+    return subscribedProduct?.let {
+        PriceDetails.Paid(it.price.formatted)
+    } ?: if (store == Store.PROMOTIONAL) {
+        PriceDetails.Free
+    } else {
+        PriceDetails.Unknown
     }
-    if (store == Store.PROMOTIONAL) {
-        return PriceDetails.Free
-    }
-    return PriceDetails.Unknown
 }
 
 private fun EntitlementInfo.explanation(): Explanation {
     return when (store) {
-        Store.APP_STORE, Store.MAC_APP_STORE -> {
-            if (expirationDate != null) {
-                if (isActive) {
-                    if (willRenew) Explanation.EARLIEST_RENEWAL else Explanation.EARLIEST_EXPIRATION
-                } else {
-                    Explanation.EXPIRED
-                }
-            } else {
-                Explanation.LIFETIME
-            }
-        }
-
-        Store.PLAY_STORE -> Explanation.GOOGLE
+        Store.APP_STORE, Store.MAC_APP_STORE -> Explanation.APPLE
+        Store.PLAY_STORE -> explanationForPlayStore()
         Store.STRIPE, Store.RC_BILLING -> Explanation.WEB
         Store.PROMOTIONAL -> Explanation.PROMOTIONAL
         Store.EXTERNAL, Store.UNKNOWN_STORE -> Explanation.OTHER_STORE_PURCHASE
         Store.AMAZON -> Explanation.AMAZON
+    }
+}
+
+private fun EntitlementInfo.explanationForPlayStore(): Explanation {
+    return when {
+        expirationDate == null -> Explanation.LIFETIME
+        isActive -> if (willRenew) Explanation.EARLIEST_RENEWAL else Explanation.EARLIEST_EXPIRATION
+        else -> Explanation.EXPIRED
     }
 }
 
@@ -114,13 +116,13 @@ private fun EntitlementInfo.expirationDateBestEffort(
     dateFormatter: DateFormatter,
     locale: Locale,
 ): ExpirationOrRenewal.Date {
-    expirationDate?.let { expirationDate ->
+    return expirationDate?.let { expirationDate ->
         if (store == Store.PROMOTIONAL && productIdentifier.isPromotionalLifetime(store)) {
-            return ExpirationOrRenewal.Date.Never
+            ExpirationOrRenewal.Date.Never
         } else {
-            return ExpirationOrRenewal.Date.DateString(dateFormatter.format(expirationDate, locale))
+            ExpirationOrRenewal.Date.DateString(dateFormatter.format(expirationDate, locale))
         }
-    } ?: return ExpirationOrRenewal.Date.Never
+    } ?: ExpirationOrRenewal.Date.Never
 }
 
 private fun String.isPromotionalLifetime(store: Store): Boolean {
@@ -150,8 +152,8 @@ internal sealed class PriceDetails {
 }
 
 internal enum class Explanation {
+    APPLE,
     PROMOTIONAL,
-    GOOGLE,
     WEB,
     OTHER_STORE_PURCHASE,
     AMAZON,

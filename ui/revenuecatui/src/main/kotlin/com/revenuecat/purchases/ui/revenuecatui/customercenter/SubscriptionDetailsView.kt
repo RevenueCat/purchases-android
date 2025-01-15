@@ -141,8 +141,8 @@ private fun getSubscriptionExplanation(
     localization: CustomerCenterConfigData.Localization,
 ): String {
     return when (purchaseInformation.explanation) {
+        Explanation.APPLE -> localization.commonLocalizedString(CommonLocalizedString.APPLE_SUBSCRIPTION_MANAGE)
         Explanation.PROMOTIONAL -> localization.commonLocalizedString(CommonLocalizedString.YOU_HAVE_PROMO)
-        Explanation.GOOGLE -> localization.commonLocalizedString(CommonLocalizedString.GOOGLE_SUBSCRIPTION_MANAGE)
         Explanation.WEB -> localization.commonLocalizedString(CommonLocalizedString.WEB_SUBSCRIPTION_MANAGE)
         Explanation.OTHER_STORE_PURCHASE ->
             localization.commonLocalizedString(CommonLocalizedString.PLEASE_CONTACT_SUPPORT)
