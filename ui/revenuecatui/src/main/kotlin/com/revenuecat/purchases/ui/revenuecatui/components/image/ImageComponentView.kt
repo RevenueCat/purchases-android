@@ -100,23 +100,17 @@ internal fun ImageComponentView(
         val shadowStyle = imageState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(imageState.shape) { derivedStateOf { imageState.shape ?: RectangleShape } }
 
-        // Modifier irrespective of dimension.
-        val commonModifier = remember(imageState, borderStyle, shadowStyle) {
-            Modifier
-                .padding(imageState.margin)
-                .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-                .applyIfNotNull(overlay) { overlay(it, composeShape) }
-                .clip(composeShape)
-                .applyIfNotNull(borderStyle) { border(it, composeShape) }
-                .padding(imageState.padding)
-        }
-
         RemoteImage(
             urlString = imageState.imageUrls.webp.toString(),
             modifier = modifier
                 .size(imageState.size)
                 .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
-                .then(commonModifier),
+                .padding(imageState.margin)
+                .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+                .applyIfNotNull(overlay) { overlay(it, composeShape) }
+                .clip(composeShape)
+                .applyIfNotNull(borderStyle) { border(it, composeShape) }
+                .padding(imageState.padding),
             placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
             contentScale = imageState.contentScale,
             previewImageLoader = previewImageLoader,
@@ -346,12 +340,12 @@ private fun previewImageComponentStyle(
         width = 2.0,
         color = ColorScheme(
             light = ColorInfo.Hex(
-                androidx.compose.ui.graphics.Color.Cyan.toArgb(),
+                ComposeColor.Cyan.toArgb(),
             ),
         ),
     ),
     shadow: Shadow? = Shadow(
-        color = ColorScheme(ColorInfo.Hex(androidx.compose.ui.graphics.Color.Black.toArgb())),
+        color = ColorScheme(ColorInfo.Hex(ComposeColor.Black.toArgb())),
         radius = 10.0,
         x = 0.0,
         y = 3.0,
@@ -379,7 +373,7 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
                 // This would normally contain at least one ImageComponent, but that's not needed for previews.
                 stack = StackComponent(components = emptyList()),
                 background = Background.Color(
-                    ColorScheme(light = ColorInfo.Hex(androidx.compose.ui.graphics.Color.White.toArgb())),
+                    ColorScheme(light = ColorInfo.Hex(ComposeColor.White.toArgb())),
                 ),
                 stickyFooter = null,
             ),
