@@ -2,20 +2,20 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 
 @Suppress("LongParameterList")
 @Immutable
-internal class StackComponentStyle(
+internal data class StackComponentStyle(
     @get:JvmSynthetic
     val children: List<ComponentStyle>,
     @get:JvmSynthetic

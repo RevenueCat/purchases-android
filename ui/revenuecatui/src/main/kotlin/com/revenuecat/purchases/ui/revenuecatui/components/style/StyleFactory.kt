@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -14,6 +13,7 @@ import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
@@ -51,7 +51,6 @@ internal class StyleFactory(
 
     private companion object {
         private const val DEFAULT_SPACING = 0f
-        private val DEFAULT_SHAPE = RectangleShape
     }
 
     fun create(
@@ -189,7 +188,7 @@ internal class StyleFactory(
             backgroundColor = component.backgroundColor,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
-            shape = component.shape?.toShape() ?: DEFAULT_SHAPE,
+            shape = component.shape ?: Shape.Rectangle(),
             border = component.border,
             shadow = component.shadow,
             badge = badge,
@@ -245,7 +244,11 @@ internal class StyleFactory(
         ImageComponentStyle(
             sources,
             size = component.size,
+            padding = component.padding.toPaddingValues(),
+            margin = component.margin.toPaddingValues(),
             shape = component.maskShape?.toShape(),
+            border = component.border,
+            shadow = component.shadow,
             overlay = component.colorOverlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
