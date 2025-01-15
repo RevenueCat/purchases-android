@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -11,6 +13,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
@@ -64,8 +68,9 @@ class StackComponentViewTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private val localeIdEnUs = LocaleId("en_US")
     private val localizations = nonEmptyMapOf(
-        LocaleId("en_US") to nonEmptyMapOf(
+        localeIdEnUs to nonEmptyMapOf(
             LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
         )
     )
@@ -78,6 +83,9 @@ class StackComponentViewTests {
             availablePackages = emptyList(),
         )
     )
+    private val packageWithoutIntroOffer = TestData.Packages.monthly
+    private val packageWithSingleIntroOffer = TestData.Packages.annual
+    private val packageWithMultipleIntroOffers = TestData.Packages.quarterly
 
     @Test
     fun `Should change background color based on theme`(): Unit = with(composeTestRule) {
@@ -312,7 +320,7 @@ class StackComponentViewTests {
                 ),
             ),
             componentsLocalizations = localizations,
-            defaultLocaleIdentifier = LocaleId("en_US"),
+            defaultLocaleIdentifier = localeIdEnUs,
         )
         val offering = Offering(
             identifier = "offering-id",
@@ -377,18 +385,25 @@ class StackComponentViewTests {
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
-    fun `Should use the intro offer overrides`(): Unit = with(composeTestRule) {
+    fun `Should use the intro offer overrides for the selected package`(): Unit = with(composeTestRule) {
         // Arrange
         val parentSizeDp = 200
         val stackSizeDp = 100
         val expectedIneligibleBorderColor = Color.Black
-        val expectedEligibleBorderColor = Color.Cyan
         val expectedIneligibleBorderWidth = 2.0
-        val expectedEligibleBorderWidth = 4.0
         val expectedIneligibleShadowColor = Color.Yellow
-        val expectedEligibleShadowColor = Color.Red
-        val expectedEligibleBackgroundColor = Color.Blue
         val expectedIneligibleBackgroundColor = Color.Green
+
+        val expectedSingleEligibleBorderColor = Color.Green
+        val expectedSingleEligibleBorderWidth = 4.0
+        val expectedSingleEligibleShadowColor = Color.Red
+        val expectedSingleEligibleBackgroundColor = Color.Blue
+
+        val expectedMultipleEligibleBorderColor = Color.Magenta
+        val expectedMultipleEligibleBorderWidth = 6.0
+        val expectedMultipleEligibleShadowColor = Color.Cyan
+        val expectedMultipleEligibleBackgroundColor = Color.Black
+
         val parentBackgroundColor = Color.Magenta
         val component = StackComponent(
             components = emptyList(),
@@ -406,13 +421,30 @@ class StackComponentViewTests {
             ),
             overrides = ComponentOverrides(
                 introOffer = PartialStackComponent(
-                    backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedEligibleBackgroundColor.toArgb())),
+                    backgroundColor = ColorScheme(
+                        light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
+                    ),
                     border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedEligibleBorderColor.toArgb())),
-                        width = expectedEligibleBorderWidth
+                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
+                        width = expectedSingleEligibleBorderWidth
                     ),
                     shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedEligibleShadowColor.toArgb())),
+                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
+                        radius = 5.0,
+                        x = 10.0,
+                        y = 10.0,
+                    ),
+                ),
+                multipleIntroOffers = PartialStackComponent(
+                    backgroundColor = ColorScheme(
+                        light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
+                    ),
+                    border = Border(
+                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
+                        width = expectedMultipleEligibleBorderWidth
+                    ),
+                    shadow = Shadow(
+                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
                         radius = 5.0,
                         x = 10.0,
                         y = 10.0,
@@ -420,7 +452,14 @@ class StackComponentViewTests {
                 ),
             )
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(
+            components = listOf(component),
+            packages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            )
+        )
         val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
 
         // Act
@@ -443,7 +482,7 @@ class StackComponentViewTests {
         }
 
         // Assert
-        state.update(isEligibleForIntroOffer = false)
+        state.update(selectedPackage = packageWithoutIntroOffer)
         onNodeWithTag("stack")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
@@ -454,19 +493,259 @@ class StackComponentViewTests {
         onNodeWithTag("parent")
             .assertIsDisplayed()
             .assertPixelColorPercentage(expectedIneligibleShadowColor) { it > 0f }
-            .assertNoPixelColorEquals(expectedEligibleShadowColor)
+            .assertNoPixelColorEquals(expectedSingleEligibleShadowColor)
+            .assertNoPixelColorEquals(expectedMultipleEligibleShadowColor)
 
-        state.update(isEligibleForIntroOffer = true)
+        state.update(selectedPackage = packageWithSingleIntroOffer)
         onNodeWithTag("stack")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
-                borderWidth = expectedEligibleBorderWidth.dp,
-                expectedBorderColor = expectedEligibleBorderColor,
-                expectedBackgroundColor = expectedEligibleBackgroundColor,
+                borderWidth = expectedSingleEligibleBorderWidth.dp,
+                expectedBorderColor = expectedSingleEligibleBorderColor,
+                expectedBackgroundColor = expectedSingleEligibleBackgroundColor,
             )
         onNodeWithTag("parent")
             .assertIsDisplayed()
-            .assertPixelColorPercentage(expectedEligibleShadowColor) { it > 0f }
+            .assertPixelColorPercentage(expectedSingleEligibleShadowColor) { it > 0f }
             .assertNoPixelColorEquals(expectedIneligibleShadowColor)
+            .assertNoPixelColorEquals(expectedMultipleEligibleShadowColor)
+
+        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        onNodeWithTag("stack")
+            .assertIsDisplayed()
+            .assertRectangularBorderColor(
+                borderWidth = expectedMultipleEligibleBorderWidth.dp,
+                expectedBorderColor = expectedMultipleEligibleBorderColor,
+                expectedBackgroundColor = expectedMultipleEligibleBackgroundColor,
+            )
+        onNodeWithTag("parent")
+            .assertIsDisplayed()
+            .assertPixelColorPercentage(expectedMultipleEligibleShadowColor) { it > 0f }
+            .assertNoPixelColorEquals(expectedIneligibleShadowColor)
+            .assertNoPixelColorEquals(expectedSingleEligibleShadowColor)
+    }
+
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
+    @Test
+    fun `Should use the intro offer overrides as child of PackageComponentView`(): Unit = with(composeTestRule) {
+        // Arrange
+        val parentSize = 100.dp
+        val stackSize = DpSize(width = 50.dp, height = 50.dp)
+        // For some reason, the PackageComponentView's node is measured to be as wide as its parent, even if the inner
+        // stack isn't. This makes testing difficult, because we can only add a testTag to the PackageComponentView.
+        // Fortunately we know exactly where the StackComponentView is going to be drawn, and so we can use that info
+        // to assert the StackComponentView's border (used below).
+        val stackOffsetInParent = DpOffset(
+            x = (parentSize - stackSize.width) / 2,
+            y = (parentSize - stackSize.height) / 2,
+        )
+        val expectedIneligibleBorderColor = Color.Black
+        val expectedIneligibleBorderWidth = 2.0
+        val expectedIneligibleShadowColor = Color.Yellow
+        val expectedIneligibleBackgroundColor = Color.Green
+
+        val expectedSingleEligibleBorderColor = Color.Green
+        val expectedSingleEligibleBorderWidth = 4.0
+        val expectedSingleEligibleShadowColor = Color.Red
+        val expectedSingleEligibleBackgroundColor = Color.Blue
+
+        val expectedMultipleEligibleBorderColor = Color.Magenta
+        val expectedMultipleEligibleBorderWidth = 6.0
+        val expectedMultipleEligibleShadowColor = Color.Cyan
+        val expectedMultipleEligibleBackgroundColor = Color.Black
+
+        val parentBackgroundColor = Color.Magenta
+        val stackComponent = StackComponent(
+            components = emptyList(),
+            size = Size(Fixed(stackSize.width.value.toUInt()), Fixed(stackSize.height.value.toUInt())),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
+            border = Border(
+                color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleBorderColor.toArgb())),
+                width = expectedIneligibleBorderWidth
+            ),
+            shadow = Shadow(
+                color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleShadowColor.toArgb())),
+                radius = 5.0,
+                x = 10.0,
+                y = 10.0,
+            ),
+            overrides = ComponentOverrides(
+                introOffer = PartialStackComponent(
+                    backgroundColor = ColorScheme(
+                        light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
+                    ),
+                    border = Border(
+                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
+                        width = expectedSingleEligibleBorderWidth
+                    ),
+                    shadow = Shadow(
+                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
+                        radius = 5.0,
+                        x = 10.0,
+                        y = 10.0,
+                    ),
+                ),
+                multipleIntroOffers = PartialStackComponent(
+                    backgroundColor = ColorScheme(
+                        light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
+                    ),
+                    border = Border(
+                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
+                        width = expectedMultipleEligibleBorderWidth
+                    ),
+                    shadow = Shadow(
+                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
+                        radius = 5.0,
+                        x = 10.0,
+                        y = 10.0,
+                    ),
+                ),
+            )
+        )
+        val noIntroOfferPackageComponent = PackageComponent(
+            packageId = packageWithoutIntroOffer.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = listOf(stackComponent)),
+        )
+        val singleIntroOfferPackageComponent = PackageComponent(
+            packageId = packageWithSingleIntroOffer.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = listOf(stackComponent)),
+        )
+        val multipleIntroOffersPackageComponent = PackageComponent(
+            packageId = packageWithMultipleIntroOffers.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = listOf(stackComponent)),
+        )
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            noIntroOfferPackageComponent,
+                            singleIntroOfferPackageComponent,
+                            multipleIntroOffersPackageComponent
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+        )
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            ),
+            paywallComponents = data,
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val noIntroOfferPackageComponentStyle =
+            styleFactory.create(noIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+        val singleIntroOfferPackageComponentStyle =
+            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+        val multipleIntroOffersPackageComponentStyle =
+            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow() as PackageComponentStyle
+
+        // Act
+        setContent {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(50.dp)
+            ) {
+                // An outer box, because a shadow draws outside the Composable's bounds.
+                Box(
+                    modifier = Modifier
+                        .testTag(tag = "noIntroOfferParent")
+                        .requiredSize(parentSize)
+                        .background(parentBackgroundColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    PackageComponentView(style = noIntroOfferPackageComponentStyle, state = state)
+                }
+                Box(
+                    modifier = Modifier
+                        .testTag(tag = "singleIntroOfferParent")
+                        .requiredSize(parentSize)
+                        .background(parentBackgroundColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    PackageComponentView(style = singleIntroOfferPackageComponentStyle, state = state)
+                }
+                Box(
+                    modifier = Modifier
+                        .testTag(tag = "multipleIntroOffersParent")
+                        .requiredSize(parentSize)
+                        .background(parentBackgroundColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    PackageComponentView(style = multipleIntroOffersPackageComponentStyle, state = state)
+                }
+            }
+        }
+
+        // Assert
+        fun assertAll() {
+            onNodeWithTag("noIntroOfferParent")
+                .assertIsDisplayed()
+                .assertRectangularBorderColor(
+                    borderWidth = expectedIneligibleBorderWidth.dp,
+                    expectedBorderColor = expectedIneligibleBorderColor,
+                    expectedBackgroundColor = expectedIneligibleBackgroundColor,
+                    size = stackSize,
+                    offset = stackOffsetInParent,
+                )
+                .assertPixelColorPercentage(expectedIneligibleShadowColor) { it > 0f }
+                .assertNoPixelColorEquals(expectedSingleEligibleShadowColor)
+                .assertNoPixelColorEquals(expectedMultipleEligibleShadowColor)
+
+            onNodeWithTag("singleIntroOfferParent")
+                .assertIsDisplayed()
+                .assertRectangularBorderColor(
+                    borderWidth = expectedSingleEligibleBorderWidth.dp,
+                    expectedBorderColor = expectedSingleEligibleBorderColor,
+                    expectedBackgroundColor = expectedSingleEligibleBackgroundColor,
+                    size = stackSize,
+                    offset = stackOffsetInParent,
+                )
+                .assertPixelColorPercentage(expectedSingleEligibleShadowColor) { it > 0f }
+                .assertNoPixelColorEquals(expectedIneligibleShadowColor)
+                .assertNoPixelColorEquals(expectedMultipleEligibleShadowColor)
+
+            onNodeWithTag("multipleIntroOffersParent")
+                .assertIsDisplayed()
+                .assertRectangularBorderColor(
+                    borderWidth = expectedMultipleEligibleBorderWidth.dp,
+                    expectedBorderColor = expectedMultipleEligibleBorderColor,
+                    expectedBackgroundColor = expectedMultipleEligibleBackgroundColor,
+                    size = stackSize,
+                    offset = stackOffsetInParent,
+                )
+                .assertPixelColorPercentage(expectedMultipleEligibleShadowColor) { it > 0f }
+                .assertNoPixelColorEquals(expectedIneligibleShadowColor)
+                .assertNoPixelColorEquals(expectedSingleEligibleShadowColor)
+        }
+
+        // Make sure the selected package does not influence the package used to pick the override properties.
+        assertAll()
+        state.update(selectedPackage = packageWithoutIntroOffer)
+        assertAll()
+        state.update(selectedPackage = packageWithSingleIntroOffer)
+        assertAll()
+        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        assertAll()
     }
 }

@@ -50,11 +50,13 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
@@ -136,6 +138,15 @@ private fun rememberProcessedText(
     val processedText by remember(state, textState, fixedPackage) {
         derivedStateOf {
             (fixedPackage ?: state.selectedPackage)?.let { packageToUse ->
+
+                val introEligibility = packageToUse.introEligibility
+
+                when (introEligibility) {
+                    IntroOfferEligibility.INELIGIBLE -> textState.text
+                    IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textState.text
+                    IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> textState.text
+                }
+
                 val discount = discountPercentage(
                     pricePerMonthMicros = packageToUse.product.pricePerMonth()?.amountMicros,
                     mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,

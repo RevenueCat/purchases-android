@@ -125,7 +125,7 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
  * is eligible for an intro offer.
  *
  * @param windowSize Current screen condition (compact / medium / expanded).
- * @param isEligibleForIntroOffer Whether the user is eligible for an intro offer.
+ * @param introOfferEligibility Whether the user is eligible for an intro offer.
  * @param state Current view state (selected / unselected).
  *
  * @return A presentable partial component, or null if [this] [PresentedOverrides] did not contain any

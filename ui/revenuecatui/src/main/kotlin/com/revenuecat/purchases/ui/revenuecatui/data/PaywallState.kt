@@ -77,23 +77,19 @@ internal sealed interface PaywallState {
              */
             private val locales: NonEmptySet<LocaleId>,
             initialLocaleList: LocaleList = LocaleList.current,
-            initialIsEligibleForIntroOffer: Boolean = false,
             initialSelectedPackage: Package? = null,
         ) : Loaded {
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
             val locale by derivedStateOf { localeId.toComposeLocale() }
 
-            var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
-                private set
             var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage)
                 private set
 
             val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
 
-            fun update(localeList: FrameworkLocaleList? = null, isEligibleForIntroOffer: Boolean? = null) {
+            fun update(localeList: FrameworkLocaleList? = null) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
-                if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
             }
 
             fun update(selectedPackage: Package?) {
