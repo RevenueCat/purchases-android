@@ -137,7 +137,7 @@ internal fun StackComponentView(
                 }
 
                 Badge.Style.Nested -> {
-                    MainStackComponent(stackState, state, clickHandler, modifier)
+                    MainStackComponent(stackState, state, clickHandler, modifier, badge)
                 }
             }
         } else {
@@ -345,12 +345,14 @@ private fun BoxScope.OverlaidBadge(
     )
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun MainStackComponent(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    nestedBadge: BadgeStyle? = null,
 ) {
     val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
@@ -383,37 +385,54 @@ private fun MainStackComponent(
     }
 
     // Show the right container composable depending on the dimension.
-    when (val dimension = stackState.dimension) {
-        is Dimension.Horizontal -> Row(
-            modifier = modifier
-                .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
-                .then(commonModifier),
-            verticalAlignment = dimension.alignment.toAlignment(),
-            horizontalArrangement = dimension.distribution.toHorizontalArrangement(
-                spacing = stackState.spacing,
-            ),
-        ) { content { child -> if (child.size.width == Fill) Modifier.weight(1f) else Modifier } }
+    val stack: @Composable (Modifier) -> Unit = { rootModifier ->
+        when (val dimension = stackState.dimension) {
+            is Dimension.Horizontal -> Row(
+                modifier = modifier
+                    .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                    .then(rootModifier),
+                verticalAlignment = dimension.alignment.toAlignment(),
+                horizontalArrangement = dimension.distribution.toHorizontalArrangement(
+                    spacing = stackState.spacing,
+                ),
+            ) { content { child -> if (child.size.width == Fill) Modifier.weight(1f) else Modifier } }
 
-        is Dimension.Vertical -> Column(
-            modifier = modifier
-                .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                .then(commonModifier),
-            verticalArrangement = dimension.distribution.toVerticalArrangement(
-                spacing = stackState.spacing,
-            ),
-            horizontalAlignment = dimension.alignment.toAlignment(),
-        ) { content { child -> if (child.size.height == Fill) Modifier.weight(1f) else Modifier } }
+            is Dimension.Vertical -> Column(
+                modifier = modifier
+                    .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                    .then(rootModifier),
+                verticalArrangement = dimension.distribution.toVerticalArrangement(
+                    spacing = stackState.spacing,
+                ),
+                horizontalAlignment = dimension.alignment.toAlignment(),
+            ) { content { child -> if (child.size.height == Fill) Modifier.weight(1f) else Modifier } }
 
-        is Dimension.ZLayer -> Box(
-            modifier = modifier
-                .size(
-                    size = stackState.size,
-                    horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                    verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                )
-                .then(commonModifier),
-            contentAlignment = dimension.alignment.toAlignment(),
-        ) { content { child -> Modifier } }
+            is Dimension.ZLayer -> Box(
+                modifier = modifier
+                    .size(
+                        size = stackState.size,
+                        horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                        verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                    )
+                    .then(rootModifier),
+                contentAlignment = dimension.alignment.toAlignment(),
+            ) { content { child -> Modifier } }
+        }
+    }
+
+    if (nestedBadge == null) {
+        stack(commonModifier)
+    } else {
+        Box(modifier = modifier.then(commonModifier)) {
+            stack(Modifier)
+            StackComponentView(
+                nestedBadge.stackStyle,
+                state,
+                {},
+                modifier = Modifier
+                    .align(nestedBadge.alignment.toAlignment()),
+            )
+        }
     }
 }
 
@@ -663,6 +682,49 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, Shape.Pill),
+                rcPackage = null,
+                overrides = null,
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_Nested_Badge(
+    @PreviewParameter(BadgeAlignmentProvider::class) alignment: TwoDimensionalAlignment,
+) {
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        val badgeShape = Shape.Rectangle(
+            corners = CornerRadiuses(
+                topLeading = 20.0,
+                topTrailing = 20.0,
+                bottomLeading = 20.0,
+                bottomTrailing = 20.0,
+            ),
+        )
+        StackComponentView(
+            style = StackComponentStyle(
+                children = previewChildren(),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.CENTER,
+                    distribution = FlexDistribution.START,
+                ),
+                size = Size(width = Fixed(200u), height = Fit),
+                spacing = 16.dp,
+                backgroundColor = ColorScheme(
+                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                ),
+                padding = PaddingValues(all = 0.dp),
+                margin = PaddingValues(all = 0.dp),
+                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))),
+                shadow = null,
+                badge = previewBadge(Badge.Style.Nested, alignment, badgeShape),
                 rcPackage = null,
                 overrides = null,
             ),
