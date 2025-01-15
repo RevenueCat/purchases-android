@@ -522,6 +522,9 @@ class IdentityManagerTests {
             true
         )
         identityManager.configure(userId)
+        verify(exactly = 0) {
+            mockDeviceCache.clearCustomerInfoCache(userId, mockEditor)
+        }
         verify(exactly = 1) {
             mockBackend.clearCaches()
         }
@@ -537,6 +540,9 @@ class IdentityManagerTests {
             true
         )
         identityManager.configure(userId)
+        verify(exactly = 0) {
+            mockDeviceCache.clearCustomerInfoCache(userId, mockEditor)
+        }
         verify(exactly = 1) {
             mockBackend.clearCaches()
         }
