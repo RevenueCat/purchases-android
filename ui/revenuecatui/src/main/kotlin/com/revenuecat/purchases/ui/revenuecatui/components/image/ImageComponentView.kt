@@ -379,7 +379,6 @@ private class MaskShapeProvider : PreviewParameterProvider<MaskShape> {
                 bottomTrailing = 40.0,
             ),
         ),
-        MaskShape.Pill,
         MaskShape.Concave,
         MaskShape.Convex,
         MaskShape.Circle,
