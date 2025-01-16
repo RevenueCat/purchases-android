@@ -88,7 +88,7 @@ object Responses {
                         "unsubscribe_detected_at": null,
                         "refunded_at": null,
                         "expires_date": "${Iso8601Utils.format(oneMonthFreeTrialExpirationDate)}",
-                        "ownership_type": "purchased",
+                        "ownership_type": "PURCHASED",
                         "store_transaction_id" : "GPA.3394-7009-4518-41945..6",
                         "period_type": "normal"
                       },
@@ -104,7 +104,7 @@ object Responses {
                         "unsubscribe_detected_at": "2023-07-26T23:45:40Z",
                         "refunded_at": null,
                         "period_type": "normal",
-                        "ownership_type": "purchased",
+                        "ownership_type": "PURCHASED",
                         "store_transaction_id" : "GPA.3394-7009-4518-41945..8",
                         "expires_date": "${Iso8601Utils.format(threeMonthFreeTrialExpirationDate)}"
                       }
