@@ -17,10 +17,6 @@ sealed interface MaskShape {
     ) : MaskShape
 
     @Serializable
-    @SerialName("pill")
-    object Pill : MaskShape
-
-    @Serializable
     @SerialName("concave")
     object Concave : MaskShape
 

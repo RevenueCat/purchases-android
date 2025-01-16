@@ -43,7 +43,6 @@ internal fun MaskShape.toShape(): Shape =
             )
         } ?: RectangleShape
 
-        is MaskShape.Pill -> RoundedCornerShape(percent = 50)
         is MaskShape.Concave -> GenericShape { size, _ ->
             val yOffset = SCALE_Y_OFFSET_CONCAVE_CONVEX * size.height * 2f
 

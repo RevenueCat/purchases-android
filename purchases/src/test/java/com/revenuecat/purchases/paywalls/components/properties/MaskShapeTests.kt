@@ -73,17 +73,6 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                 )
             ),
             arrayOf(
-                "pill",
-                Args(
-                    json = """
-                        {
-                          "type": "pill"
-                        }
-                        """.trimIndent(),
-                    expected = MaskShape.Pill
-                )
-            ),
-            arrayOf(
                 "concave",
                 Args(
                     json = """
