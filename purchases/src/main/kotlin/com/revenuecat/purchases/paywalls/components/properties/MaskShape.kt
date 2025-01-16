@@ -13,7 +13,7 @@ sealed interface MaskShape {
     @Serializable
     @SerialName("rectangle")
     class Rectangle(
-        @get:JvmSynthetic val corners: CornerRadiuses? = null,
+        @get:JvmSynthetic @Serializable(with = CornerRadiusesSerializer::class) val corners: CornerRadiuses? = null,
     ) : MaskShape
 
     @Serializable

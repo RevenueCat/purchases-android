@@ -36,7 +36,7 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                         }
                         """.trimIndent(),
                     expected = MaskShape.Rectangle(
-                        corners = CornerRadiuses(
+                        corners = CornerRadiuses.Dp(
                             topLeading = 1.0,
                             topTrailing = 2.0,
                             bottomLeading = 3.0,

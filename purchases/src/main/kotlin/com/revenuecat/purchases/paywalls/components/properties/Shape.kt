@@ -13,10 +13,16 @@ sealed interface Shape {
     @Poko
     @SerialName("rectangle")
     class Rectangle(
-        @get:JvmSynthetic val corners: CornerRadiuses? = null,
+        @get:JvmSynthetic @Serializable(with = CornerRadiusesSerializer::class) val corners: CornerRadiuses? = null,
     ) : Shape
 
     @Serializable
     @SerialName("pill")
     object Pill : Shape
+
+    val cornerRadiuses: CornerRadiuses
+        get() = when (this) {
+            is Rectangle -> corners ?: CornerRadiuses.Dp.zero
+            else -> CornerRadiuses.Percentage(all = 50)
+        }
 }

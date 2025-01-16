@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import android.os.LocaleList
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.assertHasClickAction
@@ -94,7 +93,7 @@ class ButtonComponentViewTests {
                     backgroundColor = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
-                    shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                     border = Border(width = 2.0, color = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb()))),
                     shadow = Shadow(
                         color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
