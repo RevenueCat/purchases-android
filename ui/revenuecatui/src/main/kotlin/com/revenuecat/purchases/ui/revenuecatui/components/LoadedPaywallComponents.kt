@@ -32,7 +32,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertica
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.ZLayer
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.END
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.CENTER
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.LEADING
@@ -220,7 +219,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                                     text = LocalizationKey("title"),
                                     color = textColor,
                                     fontWeight = FontWeight.SEMI_BOLD,
-                                    fontSize = FontSize.HEADING_L,
+                                    fontSize = 28,
                                     horizontalAlignment = LEADING,
                                     size = Size(width = Fill, height = Fit),
                                     margin = Padding(top = 0.0, bottom = 40.0, leading = 0.0, trailing = 0.0),

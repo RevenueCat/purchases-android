@@ -9,7 +9,6 @@ import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
@@ -23,7 +22,7 @@ internal class TextComponentStyle(
     @get:JvmSynthetic
     val color: ColorScheme,
     @get:JvmSynthetic
-    val fontSize: FontSize,
+    val fontSize: Int,
     @get:JvmSynthetic
     val fontWeight: FontWeight?,
     @get:JvmSynthetic
