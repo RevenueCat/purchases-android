@@ -160,7 +160,12 @@ private fun LoadedPaywallComponents_Preview() {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
     LoadedPaywallComponents(
         state = state,
         clickHandler = { },
@@ -334,7 +339,12 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
 
     LoadedPaywallComponents(
         state = state,

@@ -456,6 +456,8 @@ internal class MockViewModel(
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validated,
+                activelySubscribedProductIds = emptySet(),
+                purchasedNonSubscriptionProductIds = emptySet(),
                 storefrontCountryCode = null,
             )
         },

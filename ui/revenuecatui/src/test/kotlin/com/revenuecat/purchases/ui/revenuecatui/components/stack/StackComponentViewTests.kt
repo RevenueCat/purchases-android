@@ -46,11 +46,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponen
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.junit.Rule
 import org.junit.Test
@@ -330,7 +330,7 @@ class StackComponentViewTests {
             paywallComponents = data,
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+        val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
             offering = offering,
@@ -649,7 +649,7 @@ class StackComponentViewTests {
             paywallComponents = data,
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+        val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
             offering = offering,

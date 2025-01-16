@@ -240,6 +240,8 @@ internal fun Offering.toLegacyPaywallState(
 
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
+    activelySubscribedProductIds: Set<String>,
+    purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
@@ -253,6 +255,8 @@ internal fun Offering.toComponentsPaywallState(
         showPricesWithDecimals = showPricesWithDecimals,
         offering = this,
         locales = validationResult.locales,
+        activelySubscribedProductIds = activelySubscribedProductIds,
+        purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
     )
 }
 

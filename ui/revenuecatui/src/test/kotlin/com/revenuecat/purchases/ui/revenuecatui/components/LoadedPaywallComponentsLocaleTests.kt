@@ -25,9 +25,9 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.localeChangingTest
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.junit.Rule
 import org.junit.Test
@@ -118,7 +118,7 @@ internal class LoadedPaywallComponentsLocaleTests {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
                 val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-                val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+                val state = offering.toComponentsPaywallState(validated)
                 setContent { LoadedPaywallComponents(state = state, clickHandler = { }) }
             }
         }
@@ -135,7 +135,7 @@ internal class LoadedPaywallComponentsLocaleTests {
             localeChangingTest(
                 arrange = {
                     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-                    offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+                    offering.toComponentsPaywallState(validated)
                 },
                 act = { state -> LoadedPaywallComponents(state = state, clickHandler = { }) },
                 assert = { localeController ->
