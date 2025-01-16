@@ -42,7 +42,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.service).isNull()
         assertThat(purchasesConfiguration.store).isEqualTo(Store.PLAY_STORE)
         assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
-        assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.DISABLED)
+        assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.INFORMATIONAL)
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
         assertThat(purchasesConfiguration.showInAppMessagesAutomatically).isTrue
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
