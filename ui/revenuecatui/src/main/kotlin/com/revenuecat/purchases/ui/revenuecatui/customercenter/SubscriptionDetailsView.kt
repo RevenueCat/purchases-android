@@ -50,10 +50,12 @@ internal fun SubscriptionDetailsView(
             modifier = Modifier
                 .padding(all = PaddingContent),
         ) {
-            Text(
-                text = details.title,
-                style = MaterialTheme.typography.titleMedium,
-            )
+            details.title?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
 
             val explanation = remember { getSubscriptionExplanation(details, localization) }
 
@@ -67,36 +69,31 @@ internal fun SubscriptionDetailsView(
 
             HorizontalDivider()
 
-            Spacer(modifier = Modifier.size(PaddingVertical))
+            details.durationTitle?.let {
+                Spacer(modifier = Modifier.size(PaddingVertical))
 
-            SubscriptionDetailRow(
-                icon = CurrencyExchange,
-                overline = "Billing cycle",
-                text = details.durationTitle,
-            )
+                SubscriptionDetailRow(
+                    icon = CurrencyExchange,
+                    overline = "Billing cycle",
+                    text = it,
+                )
+            }
 
             Spacer(modifier = Modifier.size(PaddingVertical))
 
             val price = remember { getPrice(details, localization) }
 
-            if (price != null) {
+            price?.let {
                 SubscriptionDetailRow(
                     icon = UniversalCurrencyAlt,
                     overline = "Current price",
-                    text = price,
+                    text = it,
                 )
             }
 
             details.expirationOrRenewal?.let { expirationOrRenewal ->
-                val expirationOverline = labelForExpirationOrRenewal(expirationOrRenewal, localization)
-
-                val expirationValue =
-                    when (expirationOrRenewal.date) {
-                        is ExpirationOrRenewal.Date.DateString -> expirationOrRenewal.date.date
-                        ExpirationOrRenewal.Date.Never -> localization.commonLocalizedString(
-                            CommonLocalizedString.NEVER,
-                        )
-                    }
+                val expirationValue = remember { getExpirationValue(expirationOrRenewal, localization) }
+                val expirationOverline = remember { labelForExpirationOrRenewal(expirationOrRenewal, localization) }
 
                 Spacer(modifier = Modifier.size(PaddingVertical))
 
@@ -108,6 +105,21 @@ internal fun SubscriptionDetailsView(
             }
         }
     }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+private fun getExpirationValue(
+    expirationOrRenewal: ExpirationOrRenewal,
+    localization: CustomerCenterConfigData.Localization
+): String {
+    val expirationValue =
+        when (expirationOrRenewal.date) {
+            is ExpirationOrRenewal.Date.DateString -> expirationOrRenewal.date.date
+            ExpirationOrRenewal.Date.Never -> localization.commonLocalizedString(
+                CommonLocalizedString.NEVER,
+            )
+        }
+    return expirationValue
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

@@ -22,7 +22,7 @@ data class Transaction(
     )
     val productId: String,
     val purchaseDate: Date,
-    val storeTransactionIdentifier: String,
+    val storeTransactionId: String?,
     val store: Store,
 ) : Parcelable {
 
@@ -32,7 +32,8 @@ data class Transaction(
         productIdentifier = productId,
         productId = productId,
         purchaseDate = jsonObject.getDate("purchase_date"),
-        storeTransactionIdentifier = jsonObject.getString("store_transaction_identifier"),
+        storeTransactionId = jsonObject.optString("store_transaction_id").takeIf {
+            it.isNotBlank()},
         store = Store.valueOf(jsonObject.getString("store").uppercase()),
     )
 }

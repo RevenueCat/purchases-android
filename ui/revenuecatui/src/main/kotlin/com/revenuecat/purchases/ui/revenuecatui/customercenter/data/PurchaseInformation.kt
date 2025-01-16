@@ -11,8 +11,8 @@ import java.util.Locale
 
 @SuppressWarnings("LongParameterList")
 internal class PurchaseInformation(
-    val title: String,
-    val durationTitle: String,
+    val title: String?,
+    val durationTitle: String?,
     val explanation: Explanation,
     val price: PriceDetails,
     val expirationOrRenewal: ExpirationOrRenewal?,
@@ -27,8 +27,8 @@ internal class PurchaseInformation(
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
     ) : this(
-        title = subscribedProduct?.title ?: "",
-        durationTitle = subscribedProduct?.period?.localizedUnitPeriod(locale) ?: "",
+        title = subscribedProduct?.title,
+        durationTitle = subscribedProduct?.period?.localizedUnitPeriod(locale),
         explanation = entitlementInfo?.explanation() ?: when (transaction) {
             is TransactionDetails.Subscription -> {
                 if (transaction.expiresDate != null) {
@@ -61,7 +61,8 @@ internal class PurchaseInformation(
                 }
             }
 
-            is TransactionDetails.NonSubscription -> null
+            is TransactionDetails.NonSubscription ->
+                ExpirationOrRenewal(ExpirationOrRenewal.Label.EXPIRES, ExpirationOrRenewal.Date.Never)
         },
         productIdentifier = entitlementInfo?.productIdentifier ?: transaction.productIdentifier,
         store = entitlementInfo?.store ?: transaction.store,

@@ -25,12 +25,12 @@ internal class DefaultDateFormatter : DateFormatter {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun formatUsingDateTimeFormatter(date: Date, locale: Locale): String {
         val localDate = date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", locale)
+        val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", locale)
         return localDate.format(formatter)
     }
 
     private fun formatUsingSimpleDateFormat(date: Date, locale: Locale): String {
-        val formatter = SimpleDateFormat("yyyy-MM-dd", locale)
+        val formatter = SimpleDateFormat("dd MMM yyyy", locale)
         return formatter.format(date)
     }
 }
