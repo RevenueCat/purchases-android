@@ -110,7 +110,7 @@ internal fun SubscriptionDetailsView(
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun getExpirationValue(
     expirationOrRenewal: ExpirationOrRenewal,
-    localization: CustomerCenterConfigData.Localization
+    localization: CustomerCenterConfigData.Localization,
 ): String {
     val expirationValue =
         when (expirationOrRenewal.date) {

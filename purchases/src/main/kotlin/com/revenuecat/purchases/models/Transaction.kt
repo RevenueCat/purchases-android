@@ -33,7 +33,8 @@ data class Transaction(
         productId = productId,
         purchaseDate = jsonObject.getDate("purchase_date"),
         storeTransactionId = jsonObject.optString("store_transaction_id").takeIf {
-            it.isNotBlank()},
+            it.isNotBlank()
+        },
         store = Store.valueOf(jsonObject.getString("store").uppercase()),
     )
 }
