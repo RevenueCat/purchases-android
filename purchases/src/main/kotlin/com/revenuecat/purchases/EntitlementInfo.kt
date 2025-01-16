@@ -264,18 +264,18 @@ enum class OwnershipType {
     /**
      * The purchase was made directly by this user.
      */
-    @SerialName("purchased")
+    @SerialName("PURCHASED")
     PURCHASED,
 
     /**
      * The purchase has been shared to this user by a family member.
      */
-    @SerialName("family_shared")
+    @SerialName("FAMILY_SHARED")
     FAMILY_SHARED,
 
     /**
      * The purchase has no or an unknown ownership type.
      */
-    @SerialName("unknown")
+    @SerialName("UNKNOWN")
     UNKNOWN,
 }
