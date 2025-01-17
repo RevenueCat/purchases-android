@@ -31,7 +31,7 @@ internal fun rememberUpdatedStackComponentState(
 ): StackComponentState =
     rememberUpdatedStackComponentState(
         style = style,
-        selectedPackageProvider = { paywallState.selectedPackage },
+        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
     )
 
 @JvmSynthetic
