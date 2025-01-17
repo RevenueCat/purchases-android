@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.net.Uri
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -122,6 +123,7 @@ internal object CustomerCenterConfigTestData {
         ),
         productIdentifier = "monthly_product_id",
         store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -136,5 +138,6 @@ internal object CustomerCenterConfigTestData {
         ),
         productIdentifier = "yearly_product_id",
         store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
     )
 }

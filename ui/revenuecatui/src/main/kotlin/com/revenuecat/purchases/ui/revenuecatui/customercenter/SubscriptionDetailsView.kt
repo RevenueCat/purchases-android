@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -219,6 +220,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
             ),
             store = Store.PLAY_STORE,
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         ),
         PurchaseInformation(
             title = "Basic",
@@ -232,6 +234,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
             ),
             store = Store.PLAY_STORE,
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         ),
         PurchaseInformation(
             title = "Basic",
@@ -245,6 +248,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
             ),
             store = Store.PLAY_STORE,
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         ),
     )
 }

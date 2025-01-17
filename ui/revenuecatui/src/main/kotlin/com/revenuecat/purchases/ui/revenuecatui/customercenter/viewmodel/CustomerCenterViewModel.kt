@@ -42,6 +42,7 @@ internal interface CustomerCenterViewModel {
     fun contactSupport(context: Context, supportEmail: String)
     fun onNavigationButtonPressed()
     suspend fun loadCustomerCenter()
+    fun openURL(context: Context, url: Uri)
 }
 
 internal sealed class TransactionDetails(
@@ -203,7 +204,13 @@ internal class CustomerCenterViewModelImpl(
                 val entitlement = customerInfo.entitlements.all.values
                     .firstOrNull { it.productIdentifier == activeTransactionDetails.productIdentifier }
 
-                return createPurchaseInformation(activeTransactionDetails, entitlement, dateFormatter, locale)
+                return createPurchaseInformation(
+                    activeTransactionDetails,
+                    entitlement,
+                    customerInfo.managementURL,
+                    dateFormatter,
+                    locale,
+                )
             } else {
                 Logger.w("Could not find subscription information")
             }
@@ -248,6 +255,7 @@ internal class CustomerCenterViewModelImpl(
     private suspend fun createPurchaseInformation(
         transaction: TransactionDetails,
         entitlement: EntitlementInfo?,
+        managementURL: Uri?,
         dateFormatter: DateFormatter,
         locale: Locale,
     ): PurchaseInformation {
@@ -268,6 +276,7 @@ internal class CustomerCenterViewModelImpl(
             entitlementInfo = entitlement,
             subscribedProduct = product,
             transaction = transaction,
+            managementURL = managementURL,
             dateFormatter = dateFormatter,
             locale = locale,
         )
@@ -280,6 +289,16 @@ internal class CustomerCenterViewModelImpl(
             putExtra(Intent.EXTRA_TEXT, "Support request details...")
         }
         context.startActivity(Intent.createChooser(intent, "Contact Support"))
+    }
+
+    @SuppressWarnings("ForbiddenComment")
+    override fun openURL(context: Context, url: Uri) {
+        // TODO: Handle In-App Browser
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, url))
+        } catch (e: ActivityNotFoundException) {
+            Logger.e("Error opening URL", e)
+        }
     }
 
     override fun onNavigationButtonPressed() {
