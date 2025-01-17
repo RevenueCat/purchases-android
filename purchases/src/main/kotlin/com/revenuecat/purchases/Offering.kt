@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import dev.drewhamilton.poko.Poko
 
 /**
  * An offering is a collection of [Package] available for the user to purchase.
@@ -27,8 +28,14 @@ constructor(
     val availablePackages: List<Package>,
     val paywall: PaywallData? = null,
     @InternalRevenueCatAPI
-    val paywallComponents: PaywallComponentsData? = null,
+    val paywallComponents: PaywallComponents? = null,
 ) {
+    @InternalRevenueCatAPI
+    @Poko
+    class PaywallComponents(
+        val uiConfig: UiConfig,
+        val data: PaywallComponentsData,
+    )
 
     /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.

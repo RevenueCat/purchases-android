@@ -46,10 +46,22 @@ internal abstract class OfferingParser {
         val jsonOfferings = offeringsJson.getJSONArray("offerings")
         val currentOfferingID = offeringsJson.getString("current_offering_id")
 
+        val uiConfigJson = offeringsJson.optJSONObject("ui_config")
+
+        @Suppress("TooGenericExceptionCaught")
+        val uiConfig: UiConfig? = uiConfigJson?.let {
+            try {
+                json.decodeFromString<UiConfig>(it.toString())
+            } catch (e: Throwable) {
+                errorLog("Error deserializing ui_config", e)
+                null
+            }
+        }
+
         val offerings = mutableMapOf<String, Offering>()
         for (i in 0 until jsonOfferings.length()) {
             val offeringJson = jsonOfferings.getJSONObject(i)
-            createOffering(offeringJson, productsById)?.let {
+            createOffering(offeringJson, productsById, uiConfig)?.let {
                 offerings[it.identifier] = it
 
                 if (it.availablePackages.isEmpty()) {
@@ -86,30 +98,21 @@ internal abstract class OfferingParser {
             }
         }
 
-        val uiConfigJson = offeringsJson.optJSONObject("ui_config")
-
-        @Suppress("TooGenericExceptionCaught")
-        val uiConfig: UiConfig? = uiConfigJson?.let {
-            try {
-                json.decodeFromString<UiConfig>(it.toString())
-            } catch (e: Throwable) {
-                errorLog("Error deserializing ui_config", e)
-                null
-            }
-        }
-
         return Offerings(
             current = offerings[currentOfferingID]?.withPresentedContext(null, targeting),
             all = offerings,
             placements = placements,
             targeting = targeting,
-            uiConfig = uiConfig,
         )
     }
 
     @OptIn(InternalRevenueCatAPI::class)
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun createOffering(offeringJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offering? {
+    fun createOffering(
+        offeringJson: JSONObject,
+        productsById: Map<String, List<StoreProduct>>,
+        uiConfig: UiConfig?,
+    ): Offering? {
         val offeringIdentifier = offeringJson.getString("identifier")
         val metadata = offeringJson.optJSONObject("metadata")?.toMap<Any>(deep = true) ?: emptyMap()
         val jsonPackages = offeringJson.getJSONArray("packages")
@@ -150,6 +153,12 @@ internal abstract class OfferingParser {
                 null
             }
 
+        val paywallComponents = if (paywallComponentsData != null && uiConfig != null) {
+            Offering.PaywallComponents(uiConfig, paywallComponentsData)
+        } else {
+            null
+        }
+
         return if (availablePackages.isNotEmpty()) {
             Offering(
                 offeringIdentifier,
@@ -157,7 +166,7 @@ internal abstract class OfferingParser {
                 metadata,
                 availablePackages,
                 paywallData,
-                paywallComponentsData,
+                paywallComponents,
             )
         } else {
             null

@@ -20,6 +20,7 @@ import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
@@ -221,7 +222,7 @@ class OfferingsTest {
         val products = mapOf(productId to listOf(storeProductAnnual))
 
         val offeringWithOneMonthlyPackageJson = getOfferingJSON()
-        val offering = offeringsParser.createOffering(offeringWithOneMonthlyPackageJson, products)
+        val offering = offeringsParser.createOffering(offeringWithOneMonthlyPackageJson, products, null)
         assertThat(offering).isNull()
     }
 
@@ -270,7 +271,7 @@ class OfferingsTest {
             metadata = metadata
         )
 
-        val offering = offeringsParser.createOffering(offeringJSON, products)
+        val offering = offeringsParser.createOffering(offeringJSON, products, null)
         assertThat(offering).isNotNull
         assertThat(offering!!.identifier).isEqualTo(offeringId)
         assertThat(offering!!.metadata).isEqualTo(metadata)
@@ -571,27 +572,27 @@ class OfferingsTest {
             variableCompatibilityMap = mapOf("new var" to "guaranteed var"),
             functionCompatibilityMap = mapOf("new fun" to "guaranteed fun")
         )
-        val offeringsJson = getOfferingsJSON(uiConfig = uiConfigJson)
+        val offeringJson = getOfferingJSON(paywallComponents = getPaywallComponentsDataJson())
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
 
         // Act
         val offerings = offeringsParser.createOfferings(offeringsJson, products)
 
         // Assert
         assertThat(offerings).isNotNull
-        assertThat(offerings.all.size).isEqualTo(2)
-        assertThat(offerings.current!!.identifier).isEqualTo(offeringsJson.getString("current_offering_id"))
-        assertThat(offerings["offering_a"]).isNotNull
-        assertThat(offerings["offering_b"]).isNotNull
+        assertThat(offerings.all.size).isEqualTo(1)
+        val offering = offerings.all.values.first()
 
-        assertThat(offerings.uiConfig).isNotNull
-        val colorInfo = offerings.uiConfig!!.app.colors[ColorAlias("primary")]!!.light as ColorInfo.Hex
+        val paywallComponents = offering.paywallComponents ?: fail("paywallComponents is null")
+        val uiConfig = paywallComponents.uiConfig
+        val colorInfo = uiConfig.app.colors[ColorAlias("primary")]!!.light as ColorInfo.Hex
         assertThat(colorInfo.value).isEqualTo(parseRGBAColor("#ff00ff"))
-        val fontInfo = offerings.uiConfig.app.fonts[FontAlias("primary")]!!.android as FontInfo.Name
+        val fontInfo = uiConfig.app.fonts[FontAlias("primary")]!!.android as FontInfo.Name
         assertThat(fontInfo.value).isEqualTo("Roboto")
-        assertThat(offerings.uiConfig.localizations[LocaleId("en_US")]!![VariableLocalizationKey.MONTHLY])
+        assertThat(uiConfig.localizations[LocaleId("en_US")]!![VariableLocalizationKey.MONTHLY])
             .isEqualTo("monthly")
-        assertThat(offerings.uiConfig.variableConfig.variableCompatibilityMap["new var"]).isEqualTo("guaranteed var")
-        assertThat(offerings.uiConfig.variableConfig.functionCompatibilityMap["new fun"]).isEqualTo("guaranteed fun")
+        assertThat(uiConfig.variableConfig.variableCompatibilityMap["new var"]).isEqualTo("guaranteed var")
+        assertThat(uiConfig.variableConfig.functionCompatibilityMap["new fun"]).isEqualTo("guaranteed fun")
     }
 
     private fun testPackageType(packageType: PackageType) {
@@ -686,14 +687,29 @@ class OfferingsTest {
 
         val offeringsJsonArray = JSONArray(offeringJsons)
 
-        return JSONObject().apply {
-            put("offerings", offeringsJsonArray)
+        return getOfferingsJSON(
+            offerings = offeringsJsonArray,
+            currentOfferingId = currentOfferingId,
+            placements = placements,
+            targeting = targeting,
+            uiConfig = uiConfig,
+        )
+    }
+
+    private fun getOfferingsJSON(
+        offerings: JSONArray,
+        currentOfferingId: String = "offering_a",
+        placements: JSONObject? = null,
+        targeting: JSONObject? = null,
+        uiConfig: JSONObject? = null,
+    ): JSONObject =
+        JSONObject().apply {
+            put("offerings", offerings)
             put("current_offering_id", currentOfferingId)
             placements?.let { put("placements", placements) }
             targeting?.let { put("targeting", placements) }
             uiConfig?.let { put("ui_config", uiConfig) }
         }
-    }
 
     private fun getPlacementsJSON(
         fallbackOfferingId: String?,
@@ -813,6 +829,39 @@ class OfferingsTest {
         }
     }
 
+    private fun getPaywallComponentsDataJson() = JSONObject(
+        // language=json
+        """
+        {
+          "template_name": "components",
+          "asset_base_url": "https://assets.pawwalls.com",
+          "components_config": {
+            "base": {
+              "stack": {
+                "type": "stack",
+                "components": []
+              },
+              "background": {
+                "type": "color",
+                "value": {
+                  "light": {
+                    "type": "alias",
+                    "value": "primary"
+                  }
+                }
+              }
+            }
+          },
+          "components_localizations": {
+            "en_US": {
+              "ZvS4Ck5hGM": "Hello"
+            }
+          },
+          "default_locale": "en_US"
+        }
+        """.trimIndent()
+    )
+
     private fun getOfferingJSON(
         offeringIdentifier: String = "offering_a",
         packagesJSON: List<JSONObject> = listOf(
@@ -822,17 +871,15 @@ class OfferingsTest {
                 monthlyBasePlanId
             ),
         ),
-        metadata: Map<String, Any>? = null
-    ) = JSONObject(
-        """
-            {
-                'description': 'This is the base offering',
-                'identifier': '$offeringIdentifier',
-                'packages': $packagesJSON,
-                'metadata': ${if (metadata != null) JSONObject(metadata).toString() else "null"}
-            }
-        """.trimIndent()
-    )
+        metadata: Map<String, Any>? = null,
+        paywallComponents: JSONObject? = null,
+    ) = JSONObject().apply {
+        put("description", "This is the base offering")
+        put("identifier", offeringIdentifier)
+        put("packages", JSONArray(packagesJSON))
+        if (metadata != null) put("metadata", JSONObject(metadata)) else put("metadata", "null")
+        if (paywallComponents != null) put("paywall_components", paywallComponents)
+    }
 
     private fun getOfferingJSONWithoutMetadata(
         offeringIdentifier: String = "offering_a",
