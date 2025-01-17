@@ -5,6 +5,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PolymorphicKind
@@ -63,4 +64,135 @@ private object LocalizationDataSerializer : KSerializer<LocalizationData> {
         } catch (e: SerializationException) {
             decoder.decodeSerializableValue(LocalizationData.Image.serializer())
         }
+}
+
+/**
+ * Keys for localized strings used as variable values.
+ */
+@InternalRevenueCatAPI
+@Serializable
+enum class VariableLocalizationKey {
+
+    @SerialName("day")
+    DAY,
+
+    @SerialName("daily")
+    DAILY,
+
+    @SerialName("day_short")
+    DAY_SHORT,
+
+    @SerialName("week")
+    WEEK,
+
+    @SerialName("weekly")
+    WEEKLY,
+
+    @SerialName("week_short")
+    WEEK_SHORT,
+
+    @SerialName("month")
+    MONTH,
+
+    @SerialName("monthly")
+    MONTHLY,
+
+    @SerialName("month_short")
+    MONTH_SHORT,
+
+    @SerialName("year")
+    YEAR,
+
+    @SerialName("yearly")
+    YEARLY,
+
+    @SerialName("year_short")
+    YEAR_SHORT,
+
+    @SerialName("annual")
+    ANNUAL,
+
+    @SerialName("annually")
+    ANNUALLY,
+
+    @SerialName("annual_short")
+    ANNUAL_SHORT,
+
+    @SerialName("free_price")
+    FREE_PRICE,
+
+    @SerialName("percent")
+    PERCENT,
+
+    @SerialName("num_day_zero")
+    NUM_DAY_ZERO,
+
+    @SerialName("num_day_one")
+    NUM_DAY_ONE,
+
+    @SerialName("num_day_two")
+    NUM_DAY_TWO,
+
+    @SerialName("num_day_few")
+    NUM_DAY_FEW,
+
+    @SerialName("num_day_many")
+    NUM_DAY_MANY,
+
+    @SerialName("num_day_other")
+    NUM_DAY_OTHER,
+
+    @SerialName("num_week_zero")
+    NUM_WEEK_ZERO,
+
+    @SerialName("num_week_one")
+    NUM_WEEK_ONE,
+
+    @SerialName("num_week_two")
+    NUM_WEEK_TWO,
+
+    @SerialName("num_week_few")
+    NUM_WEEK_FEW,
+
+    @SerialName("num_week_many")
+    NUM_WEEK_MANY,
+
+    @SerialName("num_week_other")
+    NUM_WEEK_OTHER,
+
+    @SerialName("num_month_zero")
+    NUM_MONTH_ZERO,
+
+    @SerialName("num_month_one")
+    NUM_MONTH_ONE,
+
+    @SerialName("num_month_two")
+    NUM_MONTH_TWO,
+
+    @SerialName("num_month_few")
+    NUM_MONTH_FEW,
+
+    @SerialName("num_month_many")
+    NUM_MONTH_MANY,
+
+    @SerialName("num_month_other")
+    NUM_MONTH_OTHER,
+
+    @SerialName("num_year_zero")
+    NUM_YEAR_ZERO,
+
+    @SerialName("num_year_one")
+    NUM_YEAR_ONE,
+
+    @SerialName("num_year_two")
+    NUM_YEAR_TWO,
+
+    @SerialName("num_year_few")
+    NUM_YEAR_FEW,
+
+    @SerialName("num_year_many")
+    NUM_YEAR_MANY,
+
+    @SerialName("num_year_other")
+    NUM_YEAR_OTHER,
 }

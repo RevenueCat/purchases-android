@@ -7,6 +7,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -38,6 +39,7 @@ internal abstract class OfferingParser {
     /**
      * Note: this may return an empty Offerings.
      */
+    @OptIn(InternalRevenueCatAPI::class)
     fun createOfferings(offeringsJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offerings {
         log(LogIntent.DEBUG, OfferingStrings.BUILDING_OFFERINGS.format(productsById.size))
 
@@ -84,11 +86,24 @@ internal abstract class OfferingParser {
             }
         }
 
+        val uiConfigJson = offeringsJson.optJSONObject("ui_config")
+
+        @Suppress("TooGenericExceptionCaught")
+        val uiConfig: UiConfig? = uiConfigJson?.let {
+            try {
+                json.decodeFromString<UiConfig>(it.toString())
+            } catch (e: Throwable) {
+                errorLog("Error deserializing ui_config", e)
+                null
+            }
+        }
+
         return Offerings(
             current = offerings[currentOfferingID]?.withPresentedContext(null, targeting),
             all = offerings,
             placements = placements,
             targeting = targeting,
+            uiConfig = uiConfig,
         )
     }
 

@@ -7,8 +7,13 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.parseRGBAColor
 import com.revenuecat.purchases.utils.getLifetimePackageJSON
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
@@ -553,6 +558,42 @@ class OfferingsTest {
         assertThat(offerings.targeting.ruleId).isEqualTo("abc123")
     }
 
+    @Test
+    fun `createOfferings creates UiConfig object`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = mapOf("primary" to FontInfo.Name("Roboto")),
+            localizations = mapOf("en_US" to mapOf(VariableLocalizationKey.MONTHLY to "monthly")),
+            variableCompatibilityMap = mapOf("new var" to "guaranteed var"),
+            functionCompatibilityMap = mapOf("new fun" to "guaranteed fun")
+        )
+        val offeringsJson = getOfferingsJSON(uiConfig = uiConfigJson)
+
+        // Act
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+
+        // Assert
+        assertThat(offerings).isNotNull
+        assertThat(offerings.all.size).isEqualTo(2)
+        assertThat(offerings.current!!.identifier).isEqualTo(offeringsJson.getString("current_offering_id"))
+        assertThat(offerings["offering_a"]).isNotNull
+        assertThat(offerings["offering_b"]).isNotNull
+
+        assertThat(offerings.uiConfig).isNotNull
+        val colorInfo = offerings.uiConfig!!.app.colors[ColorAlias("primary")]!!.light as ColorInfo.Hex
+        assertThat(colorInfo.value).isEqualTo(parseRGBAColor("#ff00ff"))
+        val fontInfo = offerings.uiConfig.app.fonts[FontAlias("primary")]!!.android as FontInfo.Name
+        assertThat(fontInfo.value).isEqualTo("Roboto")
+        assertThat(offerings.uiConfig.localizations[LocaleId("en_US")]!![VariableLocalizationKey.MONTHLY])
+            .isEqualTo("monthly")
+        assertThat(offerings.uiConfig.variableConfig.variableCompatibilityMap["new var"]).isEqualTo("guaranteed var")
+        assertThat(offerings.uiConfig.variableConfig.functionCompatibilityMap["new fun"]).isEqualTo("guaranteed fun")
+    }
+
     private fun testPackageType(packageType: PackageType) {
         var identifier = packageType.identifier
         if (identifier == null) {
@@ -630,6 +671,7 @@ class OfferingsTest {
             ),
         placements: JSONObject? = null,
         targeting: JSONObject? = null,
+        uiConfig: JSONObject? = null,
     ): JSONObject {
         val offeringJsons = mutableListOf<JSONObject>()
         offeringPackagesById.forEach { (offeringId, packages) ->
@@ -649,6 +691,7 @@ class OfferingsTest {
             put("current_offering_id", currentOfferingId)
             placements?.let { put("placements", placements) }
             targeting?.let { put("targeting", placements) }
+            uiConfig?.let { put("ui_config", uiConfig) }
         }
     }
 
@@ -673,6 +716,100 @@ class OfferingsTest {
         return JSONObject().apply {
             put("revision", revision)
             put("rule_id", ruleId)
+        }
+    }
+
+    /**
+     * @param colors Color alias (e.g. "primary") to hex color. In reality we support an entire ColorScheme.
+     * @param fonts Font alias (e.g. "primary") to FontInfo.
+     * @param localizations LocaleId (e.g. "en_US") to a map of VariableLocalizationKey to its localized value.
+     * @param variableCompatibilityMap Map of new variables to guaranteed-to-be-available variables.
+     * @param functionCompatibilityMap Map of new functions to guaranteed-to-be-available functions.
+     */
+    private fun getUiConfigJson(
+        colors: Map<String, String>,
+        fonts: Map<String, FontInfo>,
+        localizations: Map<String, Map<VariableLocalizationKey, String>>,
+        variableCompatibilityMap: Map<String, String> = emptyMap(),
+        functionCompatibilityMap: Map<String, String> = emptyMap(),
+    ): JSONObject {
+        return JSONObject().apply {
+            put(
+                "app",
+                JSONObject().apply {
+                    put(
+                        "colors",
+                        JSONObject().apply {
+                            colors.forEach { (colorAlias, color) ->
+                                put(
+                                    colorAlias,
+                                    JSONObject().apply {
+                                        put(
+                                            "light",
+                                            JSONObject().apply {
+                                                put("type", "hex")
+                                                put("value", color)
+                                            }
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    )
+                    put(
+                        "fonts",
+                        JSONObject().apply {
+                            fonts.forEach { (fontAlias, fontInfo) ->
+                                put(
+                                    fontAlias,
+                                    JSONObject().apply {
+                                        val fontInfoJson = JSONObject().apply {
+                                            when (fontInfo) {
+                                                is FontInfo.Name -> {
+                                                    put("type", "name")
+                                                    put("value", fontInfo.value)
+                                                }
+
+                                                is FontInfo.GoogleFonts -> {
+                                                    put("type", "google_fonts")
+                                                    put("value", fontInfo.value)
+                                                }
+                                            }
+                                        }
+                                        put("android", fontInfoJson)
+                                    }
+                                )
+                            }
+                        }
+                    )
+                }
+            )
+            put(
+                "localizations",
+                JSONObject().apply {
+                    localizations.forEach { (localeId, variableLocalizations) ->
+                        put(
+                            localeId,
+                            JSONObject().apply {
+                                variableLocalizations.forEach { (key, value) -> put(key.name.lowercase(), value) }
+                            }
+                        )
+                    }
+                }
+            )
+            put(
+                "variable_config",
+                JSONObject().apply {
+                    put(
+                        "variable_compatibility_map",
+                        JSONObject().apply { variableCompatibilityMap.forEach { (key, value) -> put(key, value) } }
+                    )
+                    put(
+                        "function_compatibility_map",
+                        JSONObject().apply { functionCompatibilityMap.forEach { (key, value) -> put(key, value) } }
+                    )
+                }
+            )
         }
     }
 
