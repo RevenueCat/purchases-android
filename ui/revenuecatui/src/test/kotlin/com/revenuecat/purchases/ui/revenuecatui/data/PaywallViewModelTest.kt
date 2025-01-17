@@ -16,6 +16,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -629,7 +630,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-            paywallComponents = emptyPaywallComponentsData,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
@@ -694,7 +695,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-            paywallComponents = emptyPaywallComponentsData,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
@@ -756,7 +757,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-            paywallComponents = emptyPaywallComponentsData,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -800,7 +801,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-            paywallComponents = emptyPaywallComponentsData,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(
             offering = offering,
@@ -840,7 +841,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-            paywallComponents = emptyPaywallComponentsData,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(
             offering = offering,
@@ -897,7 +898,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-            paywallComponents = emptyPaywallComponentsData,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -1039,7 +1040,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-            paywallComponents = emptyPaywallComponentsData,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering).apply {
             val state = state.value as PaywallState.Loaded.Components
@@ -1059,7 +1060,7 @@ class PaywallViewModelTest {
             eventType = PaywallEventType.CANCEL,
             times = 1,
             offeringIdentifier = offering.identifier,
-            paywallRevision = offering.paywallComponents!!.revision
+            paywallRevision = offering.paywallComponents!!.data.revision
         )
         assertThat(model.actionError.value).isNull()
         verify(exactly = 0) { listener.onPurchaseError(any()) }
@@ -1088,7 +1089,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-            paywallComponents = emptyPaywallComponentsData,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
         model.trackPaywallImpressionIfNeeded()

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -454,7 +455,7 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
     return offering.toComponentsPaywallState(

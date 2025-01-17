@@ -22,12 +22,12 @@ value class FontAlias(@get:JvmSynthetic val value: String)
 @Serializable
 class UiConfig(
     @get:JvmSynthetic
-    val app: AppConfig,
+    val app: AppConfig = AppConfig(),
     @get:JvmSynthetic
     val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
     @SerialName("variable_config")
     @get:JvmSynthetic
-    val variableConfig: VariableConfig,
+    val variableConfig: VariableConfig = VariableConfig(),
 ) {
 
     @InternalRevenueCatAPI

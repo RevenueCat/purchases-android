@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -327,7 +328,7 @@ class StackComponentViewTests {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(rcPackage),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)
@@ -646,7 +647,7 @@ class StackComponentViewTests {
                 packageWithSingleIntroOffer,
                 packageWithMultipleIntroOffers
             ),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)

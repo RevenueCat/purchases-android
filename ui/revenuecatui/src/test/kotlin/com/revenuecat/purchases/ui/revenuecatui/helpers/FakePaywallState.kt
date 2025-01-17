@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -71,7 +72,7 @@ internal fun FakePaywallState(
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = packages,
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
     return offering.toComponentsPaywallState(validated)

@@ -507,7 +507,7 @@ internal class PaywallViewModelImpl(
         }
         return PaywallEvent.Data(
             offeringIdentifier = offering.identifier,
-            paywallRevision = paywallData.revision,
+            paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
