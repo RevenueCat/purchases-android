@@ -634,7 +634,7 @@ class PaywallViewModelTest {
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
         state.update(selectedPackage = TestData.Packages.monthly)
-        val selectedPackage = state.selectedPackage ?: error("selectedPackage is null")
+        val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val transaction = mockk<StoreTransaction>()
         coEvery {
             purchases.awaitPurchase(any())
@@ -699,7 +699,7 @@ class PaywallViewModelTest {
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
         state.update(selectedPackage = TestData.Packages.monthly)
-        val selectedPackage = state.selectedPackage ?: error("selectedPackage is null")
+        val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
 
         coEvery {

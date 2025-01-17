@@ -19,6 +19,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import java.net.URL
 
 internal fun FakePaywallState(vararg pkg: Package): PaywallState.Loaded.Components =
@@ -73,5 +74,5 @@ internal fun FakePaywallState(
         paywallComponents = data,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+    return offering.toComponentsPaywallState(validated)
 }

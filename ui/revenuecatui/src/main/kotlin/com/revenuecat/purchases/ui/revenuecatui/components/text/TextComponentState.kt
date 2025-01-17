@@ -36,7 +36,7 @@ internal fun rememberUpdatedTextComponentState(
     rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
-        selectedPackageProvider = { paywallState.selectedPackage },
+        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
     )
 
 @JvmSynthetic
