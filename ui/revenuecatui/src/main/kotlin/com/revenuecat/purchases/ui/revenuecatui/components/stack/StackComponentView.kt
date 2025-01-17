@@ -1203,7 +1203,7 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
                     padding = Padding(
                         top = 8.0,
                         bottom = 8.0,
-                        leading = 32.0,
+                        leading = 8.0,
                         trailing = 8.0,
                     ).toPaddingValues(),
                     margin = Padding(
