@@ -18,6 +18,7 @@ import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Date
 import java.util.Locale
 import kotlin.time.Duration.Companion.days
 
@@ -34,42 +35,25 @@ class PurchaseInformationTest {
     @Test
     fun `test PurchaseInformation with active Google subscription and entitlement`() {
         val expiresDate = oneDayFromNow
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "3 Oct 2063")
 
-        val isActive = true
-        val willRenew = true
-        val productIdentifier = "test_product"
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = true,
             store = Store.PLAY_STORE,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+            productIdentifier = "test_product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
             store = Store.PLAY_STORE,
-            isActive = isActive,
-            willRenew = willRenew,
+            productIdentifier = "test_product",
             expiresDate = expiresDate
         )
 
         val storeProduct = TestStoreProduct(
-            productIdentifier,
+            "test_product",
             "name",
             "Monthly Product",
             "description",
@@ -85,58 +69,41 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isEqualTo("Monthly Product")
-        assertThat(purchaseInformation.durationTitle).isEqualTo("Month")
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.EARLIEST_RENEWAL)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Paid("$1.99"))
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.NEXT_BILLING_DATE)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(Store.PLAY_STORE)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Monthly Product",
+            durationTitle = "Month",
+            explanation = Explanation.EARLIEST_RENEWAL,
+            price = PriceDetails.Paid("$1.99"),
+            expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "test_product",
+            store = Store.PLAY_STORE
+        )
     }
 
     @Test
     fun `test PurchaseInformation with non-renewing Google subscription and entitlement`() {
         val expiresDate = oneDayFromNow
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
-        val isActive = true
-        val willRenew = false
-        val productIdentifier = "test_product"
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = false,
             store = Store.PLAY_STORE,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+            productIdentifier = "test_product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
             store = Store.PLAY_STORE,
-            isActive = isActive,
-            willRenew = willRenew,
+            productIdentifier = "test_product",
             expiresDate = expiresDate
         )
 
         val storeProduct = TestStoreProduct(
-            productIdentifier,
+            "test_product",
             "name",
             "Monthly Product",
             "description",
@@ -152,58 +119,41 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isEqualTo("Monthly Product")
-        assertThat(purchaseInformation.durationTitle).isEqualTo("Month")
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.EARLIEST_EXPIRATION)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Paid("$1.99"))
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.EXPIRES)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(Store.PLAY_STORE)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Monthly Product",
+            durationTitle = "Month",
+            explanation = Explanation.EARLIEST_EXPIRATION,
+            price = PriceDetails.Paid("$1.99"),
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "test_product",
+            store = Store.PLAY_STORE
+        )
     }
 
     @Test
     fun `test PurchaseInformation with expired Google subscription and entitlement`() {
         val expiresDate = oneDayAgo
-        val expirationDateString = "2 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
-        val isActive = false
-        val willRenew = false
-        val productIdentifier = "test_product"
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
+        setupDateFormatter(expiresDate, "2 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = false,
+            willRenew = false,
             store = Store.PLAY_STORE,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+            productIdentifier = "test_product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
+        val transaction = createTransactionDetails(
+            isActive = false,
+            willRenew = false,
             store = Store.PLAY_STORE,
-            isActive = isActive,
-            willRenew = willRenew,
+            productIdentifier = "test_product",
             expiresDate = expiresDate
         )
 
         val storeProduct = TestStoreProduct(
-            productIdentifier,
+            "test_product",
             "name",
             "Monthly Product",
             "description",
@@ -219,54 +169,36 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isEqualTo("Monthly Product")
-        assertThat(purchaseInformation.durationTitle).isEqualTo("Month")
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.EXPIRED)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Paid("$1.99"))
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.EXPIRED)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(Store.PLAY_STORE)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Monthly Product",
+            durationTitle = "Month",
+            explanation = Explanation.EXPIRED,
+            price = PriceDetails.Paid("$1.99"),
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
+            expirationDateString = "2 Oct 2063",
+            productIdentifier = "test_product",
+            store = Store.PLAY_STORE
+        )
     }
 
     @Test
     fun `test PurchaseInformation with active Apple subscription and entitlement`() {
         val expiresDate = oneDayFromNow
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "3 Oct 2063")
 
-        val isActive = true
-        val willRenew = true
-        val productIdentifier = "test_product"
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = true,
             store = Store.APP_STORE,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+            productIdentifier = "test_product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
             store = Store.APP_STORE,
-            isActive = isActive,
-            willRenew = willRenew,
+            productIdentifier = "test_product",
             expiresDate = expiresDate
         )
 
@@ -278,54 +210,36 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isNull()
-        assertThat(purchaseInformation.durationTitle).isNull()
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.APPLE)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Unknown)
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.NEXT_BILLING_DATE)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(Store.APP_STORE)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.APPLE,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "test_product",
+            store = Store.APP_STORE
+        )
     }
 
     @Test
     fun `test PurchaseInformation with non-renewing Apple subscription and entitlement`() {
         val expiresDate = oneDayFromNow
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "3 Oct 2063")
 
-        val isActive = true
-        val willRenew = false
-        val productIdentifier = "test_product"
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = false,
             store = Store.APP_STORE,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+            productIdentifier = "test_product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
             store = Store.APP_STORE,
-            isActive = isActive,
-            willRenew = willRenew,
+            productIdentifier = "test_product",
             expiresDate = expiresDate
         )
 
@@ -337,54 +251,36 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isNull()
-        assertThat(purchaseInformation.durationTitle).isNull()
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.APPLE)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Unknown)
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.EXPIRES)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(Store.APP_STORE)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.APPLE,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "test_product",
+            store = Store.APP_STORE
+        )
     }
 
     @Test
     fun `test PurchaseInformation with expired Apple subscription and entitlement`() {
         val expiresDate = oneDayAgo
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "3 Oct 2063")
 
-        val isActive = false
-        val willRenew = false
-        val productIdentifier = "test_product"
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
+        val entitlementInfo = createEntitlementInfo(
+            isActive = false,
+            willRenew = false,
             store = Store.APP_STORE,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+            productIdentifier = "test_product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
+        val transaction = createTransactionDetails(
+            isActive = false,
+            willRenew = false,
             store = Store.APP_STORE,
-            isActive = isActive,
-            willRenew = willRenew,
+            productIdentifier = "test_product",
             expiresDate = expiresDate
         )
 
@@ -396,55 +292,36 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isNull()
-        assertThat(purchaseInformation.durationTitle).isNull()
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.APPLE)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Unknown)
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.EXPIRED)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(Store.APP_STORE)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.APPLE,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "test_product",
+            store = Store.APP_STORE
+        )
     }
 
     @Test
     fun `test PurchaseInformation with promotional entitlement`() {
         val expiresDate = oneDayFromNow
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "3 Oct 2063")
 
-        val isActive = true
-        val willRenew = false
-        val productIdentifier = "rc_promo_pro_cat_yearly"
-        val store = Store.PROMOTIONAL
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
-            store = store,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = false,
+            store = Store.PROMOTIONAL,
+            productIdentifier = "rc_promo_pro_cat_yearly",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
-            store = store,
-            isActive = isActive,
-            willRenew = willRenew,
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
+            store = Store.PROMOTIONAL,
+            productIdentifier = "rc_promo_pro_cat_yearly",
             expiresDate = expiresDate
         )
 
@@ -456,53 +333,36 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isNull()
-        assertThat(purchaseInformation.durationTitle).isNull()
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.PROMOTIONAL)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Free)
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.EXPIRES)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(Store.PROMOTIONAL)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.PROMOTIONAL,
+            price = PriceDetails.Free,
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "rc_promo_pro_cat_yearly",
+            store = Store.PROMOTIONAL
+        )
     }
 
     @Test
     fun `test PurchaseInformation with promotional lifetime entitlement`() {
         val expiresDate = null
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "")
 
-        val isActive = true
-        val willRenew = false
-        val productIdentifier = "rc_promo_pro_cat_yearly"
-        val store = Store.PROMOTIONAL
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
-            store = store,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = false,
+            store = Store.PROMOTIONAL,
+            productIdentifier = "rc_promo_pro_cat_yearly",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
-            store = store,
-            isActive = isActive,
-            willRenew = willRenew,
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
+            store = Store.PROMOTIONAL,
+            productIdentifier = "rc_promo_pro_cat_yearly",
             expiresDate = expiresDate
         )
 
@@ -514,54 +374,37 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isNull()
-        assertThat(purchaseInformation.durationTitle).isNull()
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.PROMOTIONAL)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Free)
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.EXPIRES)
-        assertThat(purchaseInformation.expirationOrRenewal.date).isEqualTo(ExpirationOrRenewal.Date.Never)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(Store.PROMOTIONAL)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.PROMOTIONAL,
+            price = PriceDetails.Free,
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
+            expirationDateString = "",
+            productIdentifier = "rc_promo_pro_cat_yearly",
+            store = Store.PROMOTIONAL
+        )
+        assertThat(purchaseInformation.expirationOrRenewal!!.date).isEqualTo(ExpirationOrRenewal.Date.Never)
     }
 
     @Test
     fun `test PurchaseInformation with stripe entitlement`() {
         val expiresDate = oneDayAgo
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "3 Oct 2063")
 
-        val isActive = true
-        val willRenew = true
-        val productIdentifier = "com.revenuecat.product"
-        val store = Store.STRIPE
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
-            store = store,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = true,
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
-            store = store,
-            isActive = isActive,
-            willRenew = willRenew,
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
 
@@ -573,55 +416,36 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isNull()
-        assertThat(purchaseInformation.durationTitle).isNull()
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.WEB)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Unknown)
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.NEXT_BILLING_DATE)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(store)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.WEB,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "com.revenuecat.product",
+            store = Store.STRIPE
+        )
     }
 
     @Test
     fun `test PurchaseInformation with non-renewing stripe entitlement`() {
         val expiresDate = oneDayAgo
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "3 Oct 2063")
 
-        val isActive = true
-        val willRenew = false
-        val productIdentifier = "com.revenuecat.product"
-        val store = Store.STRIPE
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
-            store = store,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = false,
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
-            store = store,
-            isActive = isActive,
-            willRenew = willRenew,
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
 
@@ -633,55 +457,36 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isNull()
-        assertThat(purchaseInformation.durationTitle).isNull()
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.WEB)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Unknown)
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.EXPIRES)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
-        assertThat(purchaseInformation.store).isEqualTo(store)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.WEB,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "com.revenuecat.product",
+            store = Store.STRIPE
+        )
     }
 
     @Test
     fun `test PurchaseInformation with expired stripe entitlement`() {
         val expiresDate = oneDayAgo
-        val expirationDateString = "3 Oct 2063"
-        every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
-        val purchaseDate = twoDaysAgo
-        every { dateFormatter.format(purchaseDate, any()) } returns "1 Oct 2063"
+        setupDateFormatter(expiresDate, "3 Oct 2063")
 
-        val isActive = false
-        val willRenew = false
-        val productIdentifier = "com.revenuecat.product"
-        val store = Store.STRIPE
-        val entitlementInfo = EntitlementInfo(
-            identifier = "test_entitlement",
-            isActive = isActive,
-            willRenew = willRenew,
-            periodType = PeriodType.NORMAL,
-            latestPurchaseDate = purchaseDate,
-            originalPurchaseDate = purchaseDate,
-            expirationDate = expiresDate,
-            store = store,
-            productIdentifier = productIdentifier,
-            productPlanIdentifier = null,
-            isSandbox = false,
-            unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
-            jsonObject = mockk(),
-            verification = VerificationResult.NOT_REQUESTED
+        val entitlementInfo = createEntitlementInfo(
+            isActive = false,
+            willRenew = false,
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
         )
-        val transaction = TransactionDetails.Subscription(
-            productIdentifier = productIdentifier,
-            store = store,
-            isActive = isActive,
-            willRenew = willRenew,
+        val transaction = createTransactionDetails(
+            isActive = false,
+            willRenew = false,
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
 
@@ -693,18 +498,92 @@ class PurchaseInformationTest {
             locale = locale
         )
 
-        assertThat(purchaseInformation.title).isNull()
-        assertThat(purchaseInformation.durationTitle).isNull()
-        assertThat(purchaseInformation.explanation).isEqualTo(Explanation.WEB)
-        assertThat(purchaseInformation.price).isEqualTo(PriceDetails.Unknown)
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.WEB,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
+            expirationDateString = "3 Oct 2063",
+            productIdentifier = "com.revenuecat.product",
+            store = Store.STRIPE
+        )
+    }
+
+    private fun assertPurchaseInformation(
+        purchaseInformation: PurchaseInformation,
+        title: String?,
+        durationTitle: String?,
+        explanation: Explanation,
+        price: PriceDetails,
+        expirationLabel: ExpirationOrRenewal.Label,
+        expirationDateString: String,
+        productIdentifier: String,
+        store: Store
+    ) {
+        assertThat(purchaseInformation.title).isEqualTo(title)
+        assertThat(purchaseInformation.durationTitle).isEqualTo(durationTitle)
+        assertThat(purchaseInformation.explanation).isEqualTo(explanation)
+        assertThat(purchaseInformation.price).isEqualTo(price)
 
         assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label)
-            .isEqualTo(ExpirationOrRenewal.Label.EXPIRED)
-        assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-            .isEqualTo(expirationDateString)
+        assertThat(purchaseInformation.expirationOrRenewal!!.label).isEqualTo(expirationLabel)
+        if (expirationDateString.isNotEmpty()) {
+            assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
+                .isEqualTo(expirationDateString)
+        }
         assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
         assertThat(purchaseInformation.store).isEqualTo(store)
     }
 
+    private fun createEntitlementInfo(
+        isActive: Boolean,
+        willRenew: Boolean,
+        store: Store,
+        productIdentifier: String,
+        expiresDate: Date?
+    ): EntitlementInfo {
+        return EntitlementInfo(
+            identifier = "test_entitlement",
+            isActive = isActive,
+            willRenew = willRenew,
+            periodType = PeriodType.NORMAL,
+            latestPurchaseDate = twoDaysAgo,
+            originalPurchaseDate = twoDaysAgo,
+            expirationDate = expiresDate,
+            store = store,
+            productIdentifier = productIdentifier,
+            productPlanIdentifier = null,
+            isSandbox = false,
+            unsubscribeDetectedAt = null,
+            billingIssueDetectedAt = null,
+            ownershipType = OwnershipType.PURCHASED,
+            jsonObject = mockk(),
+            verification = VerificationResult.NOT_REQUESTED
+        )
+    }
+
+    private fun createTransactionDetails(
+        isActive: Boolean,
+        willRenew: Boolean,
+        store: Store,
+        productIdentifier: String,
+        expiresDate: Date?
+    ): TransactionDetails.Subscription {
+        return TransactionDetails.Subscription(
+            productIdentifier = productIdentifier,
+            store = store,
+            isActive = isActive,
+            willRenew = willRenew,
+            expiresDate = expiresDate
+        )
+    }
+
+    private fun setupDateFormatter(expiresDate: Date?, expirationDateString: String) {
+        if (expiresDate != null) {
+            every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
+        }
+        every { dateFormatter.format(twoDaysAgo, any()) } returns "1 Oct 2063"
+    }
 }
