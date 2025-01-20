@@ -492,6 +492,7 @@ private fun MainStackComponent(
 
     val outerShapeModifier = remember(backgroundColorStyle, shadowStyle) {
         Modifier
+            .padding(stackState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
             .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
             .clip(composeShape)
