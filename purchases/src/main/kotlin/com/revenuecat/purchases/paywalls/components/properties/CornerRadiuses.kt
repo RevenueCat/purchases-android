@@ -2,7 +2,6 @@ package com.revenuecat.purchases.paywalls.components.properties
 
 import androidx.annotation.IntRange
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.errorLog
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -118,11 +117,6 @@ internal object CornerRadiusesSerializer : KSerializer<CornerRadiuses> {
      * are done with that serializer.
      */
     override fun deserialize(decoder: Decoder): CornerRadiuses {
-        return try {
-            decoder.decodeSerializableValue(serializer)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-            errorLog("Failed to deserialize CornerRadiuses", e)
-            CornerRadiuses.Dp.zero
-        }
+        return decoder.decodeSerializableValue(serializer)
     }
 }

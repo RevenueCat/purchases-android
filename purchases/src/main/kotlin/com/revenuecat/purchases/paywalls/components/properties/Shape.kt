@@ -19,7 +19,7 @@ sealed interface Shape {
     class Rectangle(
         @get:JvmSynthetic
         @Serializable
-        val corners: CornerRadiuses = CornerRadiuses.Dp.zero,
+        val corners: CornerRadiuses? = null,
     ) : Shape
 
     @Serializable
@@ -28,7 +28,7 @@ sealed interface Shape {
 
     val cornerRadiuses: CornerRadiuses
         get() = when (this) {
-            is Rectangle -> corners
+            is Rectangle -> corners ?: CornerRadiuses.Dp.zero
             else -> pillCornerRadiuses
         }
 }

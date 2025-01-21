@@ -4,9 +4,9 @@ import com.revenuecat.purchases.common.OfferingParser
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.ParameterizedRobolectricTestRunner
+import org.junit.runners.Parameterized
 
-@RunWith(ParameterizedRobolectricTestRunner::class)
+@RunWith(Parameterized::class)
 internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
     class Args(
@@ -19,7 +19,7 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
 
         @Suppress("LongMethod")
         @JvmStatic
-        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        @Parameterized.Parameters(name = "{0}")
         fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "rectangle - corners present",
