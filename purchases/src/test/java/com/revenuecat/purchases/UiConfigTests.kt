@@ -79,6 +79,20 @@ internal class UiConfigTests {
                       "type": "google_fonts",
                       "value": "Gothic"
                     }
+                  },
+                  "secondary": {
+                    "ios": {
+                      "type": "name",
+                      "value": "Roboto"
+                    },
+                    "android": {
+                      "type": "google_fonts",
+                      "value": "Gothic"
+                    },
+                    "web": {
+                      "type": "name",
+                      "value": "SF Pro"
+                    }
                   }
                 }
               },
@@ -147,7 +161,10 @@ internal class UiConfigTests {
                 fonts = mapOf(
                     FontAlias("primary") to UiConfig.AppConfig.FontsConfig(
                         android = UiConfig.AppConfig.FontsConfig.FontInfo.Name("Roboto"),
-                    )
+                    ),
+                    FontAlias("secondary") to UiConfig.AppConfig.FontsConfig(
+                        android = UiConfig.AppConfig.FontsConfig.FontInfo.GoogleFonts("Gothic"),
+                    ),
                 )
             ),
             localizations = mapOf(
