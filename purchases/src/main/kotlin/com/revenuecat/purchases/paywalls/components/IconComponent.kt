@@ -41,17 +41,19 @@ class IconComponent(
     val margin: Padding = zero,
     @get:JvmSynthetic
     @SerialName("icon_background")
-    val iconBackground: IconBackground,
+    val iconBackground: IconBackground? = null,
     @get:JvmSynthetic
     val overrides: ComponentOverrides<PartialIconComponent>? = null,
 ) : PaywallComponent {
 
+    @Poko
     @Serializable
     class Formats(
         @get:JvmSynthetic
         val webp: String,
     )
 
+    @Poko
     @Serializable
     class IconBackground(
         @get:JvmSynthetic

@@ -84,7 +84,7 @@ internal class IconComponentState(
     private val formats: IconComponent.Formats by derivedStateOf {
         presentedPartial?.partial?.formats ?: style.formats
     }
-    private val iconBackground: IconComponent.IconBackground by derivedStateOf {
+    private val iconBackground: IconComponent.IconBackground? by derivedStateOf {
         presentedPartial?.partial?.iconBackground ?: style.iconBackground
     }
 
@@ -108,16 +108,16 @@ internal class IconComponentState(
     val margin by derivedStateOf { presentedPartial?.partial?.margin?.toPaddingValues() ?: style.margin }
 
     @get:JvmSynthetic
-    val shape: Shape? by derivedStateOf { iconBackground.shape.toShape() }
+    val shape: Shape? by derivedStateOf { iconBackground?.shape?.toShape() }
 
     @get:JvmSynthetic
-    val border by derivedStateOf { iconBackground.border }
+    val border by derivedStateOf { iconBackground?.border }
 
     @get:JvmSynthetic
-    val shadow by derivedStateOf { iconBackground.shadow }
+    val shadow by derivedStateOf { iconBackground?.shadow }
 
     @get:JvmSynthetic
-    val backgroundColorScheme by derivedStateOf { iconBackground.color }
+    val backgroundColorScheme by derivedStateOf { iconBackground?.color }
 
     val tintColor by derivedStateOf { presentedPartial?.partial?.color ?: style.color }
 

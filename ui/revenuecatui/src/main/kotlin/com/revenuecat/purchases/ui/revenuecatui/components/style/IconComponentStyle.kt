@@ -28,7 +28,7 @@ internal class IconComponentStyle(
     @get:JvmSynthetic
     val margin: PaddingValues,
     @get:JvmSynthetic
-    val iconBackground: IconBackground,
+    val iconBackground: IconBackground?,
     /**
      * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
      * available.

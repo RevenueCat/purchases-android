@@ -79,7 +79,7 @@ internal fun IconComponentView(
     val borderStyle = iconState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = iconState.shadow?.let { rememberShadowStyle(shadow = it) }
     val composeShape by remember(iconState.shape) { derivedStateOf { iconState.shape ?: RectangleShape } }
-    val backgroundColor = rememberColorStyle(iconState.backgroundColorScheme)
+    val backgroundColor = iconState.backgroundColorScheme?.let { rememberColorStyle(it) }
     val tintColor = iconState.tintColor?.let { rememberColorStyle(it) }
     val colorFilter by remember(tintColor) {
         derivedStateOf {
@@ -94,7 +94,7 @@ internal fun IconComponentView(
             .size(iconState.size)
             .padding(iconState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-            .background(backgroundColor, composeShape)
+            .applyIfNotNull(backgroundColor) { background(it, composeShape) }
             .clip(composeShape)
             .applyIfNotNull(borderStyle) { border(it, composeShape) }
             .padding(iconState.padding),
