@@ -180,7 +180,7 @@ jobs:
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
       - run:
           name: Run Tests
-          command: ./gradlew lint test
+          command: java --version && echo $JAVA_HOME && ./gradlew lint test
       - run:
           name: Consolidate artifacts
           command: |
