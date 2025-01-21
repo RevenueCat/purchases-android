@@ -231,7 +231,8 @@ internal class UiConfigTests {
     @Test
     fun `Should deserialize all known VariableLocalizationKeys`() {
         // Arrange
-        // When new VariableLocalizationKeys are added, they should be added to the `serialized` JSON below.
+        // When new VariableLocalizationKeys are added, this test will fail. Make it pass by adding the new keys to the
+        // `serialized` JSON below.
         // language=json
         val serialized = """
             {
