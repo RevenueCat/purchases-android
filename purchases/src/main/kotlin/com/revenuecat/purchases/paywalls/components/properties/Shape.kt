@@ -9,11 +9,17 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface Shape {
 
+    companion object {
+        private val pillCornerRadiuses = CornerRadiuses.Percentage(all = 50)
+    }
+
     @Serializable
     @Poko
     @SerialName("rectangle")
     class Rectangle(
-        @get:JvmSynthetic @Serializable(with = CornerRadiusesSerializer::class) val corners: CornerRadiuses? = null,
+        @get:JvmSynthetic
+        @Serializable
+        val corners: CornerRadiuses = CornerRadiuses.Dp.zero,
     ) : Shape
 
     @Serializable
@@ -22,7 +28,7 @@ sealed interface Shape {
 
     val cornerRadiuses: CornerRadiuses
         get() = when (this) {
-            is Rectangle -> corners ?: CornerRadiuses.Dp.zero
-            else -> CornerRadiuses.Percentage(all = 50)
+            is Rectangle -> corners
+            else -> pillCornerRadiuses
         }
 }

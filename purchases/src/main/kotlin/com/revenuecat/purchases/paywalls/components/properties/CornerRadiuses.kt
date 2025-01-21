@@ -2,8 +2,8 @@ package com.revenuecat.purchases.paywalls.components.properties
 
 import androidx.annotation.IntRange
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.errorLog
 import dev.drewhamilton.poko.Poko
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,7 +12,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = CornerRadiusesSerializer::class)
 sealed interface CornerRadiuses {
 
     /**
@@ -104,24 +104,25 @@ sealed interface CornerRadiuses {
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class, ExperimentalSerializationApi::class)
-internal object CornerRadiusesSerializer : KSerializer<CornerRadiuses?> {
-    override val descriptor: SerialDescriptor = CornerRadiuses.Dp.serializer().descriptor
+@OptIn(InternalRevenueCatAPI::class)
+internal object CornerRadiusesSerializer : KSerializer<CornerRadiuses> {
+    private val serializer = CornerRadiuses.Dp.serializer()
+    override val descriptor: SerialDescriptor = serializer.descriptor
 
-    override fun serialize(encoder: Encoder, value: CornerRadiuses?) {
-        when (value) {
-            is CornerRadiuses.Dp -> encoder.encodeSerializableValue(CornerRadiuses.Dp.serializer(), value)
-            is CornerRadiuses.Percentage ->
-                encoder.encodeSerializableValue(CornerRadiuses.Percentage.serializer(), value)
-            null -> encoder.encodeNull()
-        }
+    override fun serialize(encoder: Encoder, value: CornerRadiuses) {
+        // We don't need to serialize CornerRadiuses.
     }
 
     /**
      * For now, the backend will always return corner radiuses in Dp, so this will assume all serializations
      * are done with that serializer.
      */
-    override fun deserialize(decoder: Decoder): CornerRadiuses? {
-        return decoder.decodeNullableSerializableValue(CornerRadiuses.Dp.serializer())
+    override fun deserialize(decoder: Decoder): CornerRadiuses {
+        return try {
+            decoder.decodeSerializableValue(serializer)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            errorLog("Failed to deserialize CornerRadiuses", e)
+            CornerRadiuses.Dp.zero
+        }
     }
 }

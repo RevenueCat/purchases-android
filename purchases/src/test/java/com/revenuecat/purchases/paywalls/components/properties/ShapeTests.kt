@@ -4,9 +4,9 @@ import com.revenuecat.purchases.common.OfferingParser
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
+import org.robolectric.ParameterizedRobolectricTestRunner
 
-@RunWith(Parameterized::class)
+@RunWith(ParameterizedRobolectricTestRunner::class)
 internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
     class Args(
@@ -19,7 +19,7 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
 
         @Suppress("LongMethod")
         @JvmStatic
-        @Parameterized.Parameters(name = "{0}")
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
         fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "rectangle - corners present",
@@ -53,9 +53,7 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
                           "type": "rectangle"
                         }
                         """.trimIndent(),
-                    expected = Shape.Rectangle(
-                        corners = null
-                    )
+                    expected = Shape.Rectangle()
                 )
             ),
             arrayOf(
@@ -67,9 +65,7 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
                           "type": "rectangle"
                         }
                         """.trimIndent(),
-                    expected = Shape.Rectangle(
-                        corners = null
-                    )
+                    expected = Shape.Rectangle()
                 )
             ),
             arrayOf(
