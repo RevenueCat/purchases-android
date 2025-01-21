@@ -8,6 +8,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -46,7 +47,12 @@ class SamplePaywallsLoader {
             emptyMap(),
             SamplePaywalls.packages,
             paywall = (paywallForTemplate(template) as? SampleData.Legacy)?.data,
-            paywallComponents = (paywallForTemplate(template) as? SampleData.Components)?.data,
+            paywallComponents = (paywallForTemplate(template) as? SampleData.Components)?.data?.let { data ->
+                Offering.PaywallComponents(
+                    uiConfig = UiConfig(),
+                    data = data,
+                )
+            },
         )
     }
 
