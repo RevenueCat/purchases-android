@@ -174,4 +174,107 @@ internal class UiConfigTests {
         // Assert
         assertThat(actual).isEqualTo(expected)
     }
+
+    @Test
+    fun `Should ignore unknown VariableLocalizationKeys`() {
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "localizations": {
+                "en_US": {
+                  "monthly": "monthly",
+                  "a_very_futuristic_key_we_dont_know_about": "unknown"
+                },
+                "es_ES": {
+                  "monthly": "mensual",
+                  "a_very_futuristic_key_we_dont_know_about": "desconocido"
+                }
+              }
+            }
+            """.trimIndent()
+        val expected = UiConfig(
+            localizations = mapOf(
+                LocaleId("en_US") to mapOf(
+                    VariableLocalizationKey.MONTHLY to "monthly"
+                ),
+                LocaleId("es_ES") to mapOf(
+                    VariableLocalizationKey.MONTHLY to "mensual"
+                )
+            ),
+        )
+
+        // Act
+        val actual = OfferingParser.json.decodeFromString<UiConfig>(serialized)
+
+        // Assert
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Should deserialize all known VariableLocalizationKeys`() {
+        // Arrange
+        // When new VariableLocalizationKeys are added, they should be added to the `serialized` JSON below.
+        // language=json
+        val serialized = """
+            {
+              "localizations": {
+                "en_US": {
+                  "day": "DAY",
+                  "daily": "DAILY",
+                  "day_short": "DAY_SHORT",
+                  "week": "WEEK",
+                  "weekly": "WEEKLY",
+                  "week_short": "WEEK_SHORT",
+                  "month": "MONTH",
+                  "monthly": "MONTHLY",
+                  "month_short": "MONTH_SHORT",
+                  "year": "YEAR",
+                  "yearly": "YEARLY",
+                  "year_short": "YEAR_SHORT",
+                  "annual": "ANNUAL",
+                  "annually": "ANNUALLY",
+                  "annual_short": "ANNUAL_SHORT",
+                  "free_price": "FREE_PRICE",
+                  "percent": "PERCENT",
+                  "num_day_zero": "NUM_DAY_ZERO",
+                  "num_day_one": "NUM_DAY_ONE",
+                  "num_day_two": "NUM_DAY_TWO",
+                  "num_day_few": "NUM_DAY_FEW",
+                  "num_day_many": "NUM_DAY_MANY",
+                  "num_day_other": "NUM_DAY_OTHER",
+                  "num_week_zero": "NUM_WEEK_ZERO",
+                  "num_week_one": "NUM_WEEK_ONE",
+                  "num_week_two": "NUM_WEEK_TWO",
+                  "num_week_few": "NUM_WEEK_FEW",
+                  "num_week_many": "NUM_WEEK_MANY",
+                  "num_week_other": "NUM_WEEK_OTHER",
+                  "num_month_zero": "NUM_MONTH_ZERO",
+                  "num_month_one": "NUM_MONTH_ONE",
+                  "num_month_two": "NUM_MONTH_TWO",
+                  "num_month_few": "NUM_MONTH_FEW",
+                  "num_month_many": "NUM_MONTH_MANY",
+                  "num_month_other": "NUM_MONTH_OTHER",
+                  "num_year_zero": "NUM_YEAR_ZERO",
+                  "num_year_one": "NUM_YEAR_ONE",
+                  "num_year_two": "NUM_YEAR_TWO",
+                  "num_year_few": "NUM_YEAR_FEW",
+                  "num_year_many": "NUM_YEAR_MANY",
+                  "num_year_other": "NUM_YEAR_OTHER"
+                }
+              }
+            }
+            """.trimIndent()
+        val expected = UiConfig(
+            localizations = mapOf(
+                LocaleId("en_US") to VariableLocalizationKey.values().associateWith { key -> key.name },
+            ),
+        )
+
+        // Act
+        val actual = OfferingParser.json.decodeFromString<UiConfig>(serialized)
+
+        // Assert
+        assertThat(actual).isEqualTo(expected)
+    }
 }

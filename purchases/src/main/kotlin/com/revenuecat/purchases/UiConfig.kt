@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizedVariableLocalizationKeyMapSerializer
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import dev.drewhamilton.poko.Poko
@@ -23,6 +24,7 @@ value class FontAlias(@get:JvmSynthetic val value: String)
 class UiConfig(
     @get:JvmSynthetic
     val app: AppConfig = AppConfig(),
+    @Serializable(with = LocalizedVariableLocalizationKeyMapSerializer::class)
     @get:JvmSynthetic
     val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
     @SerialName("variable_config")

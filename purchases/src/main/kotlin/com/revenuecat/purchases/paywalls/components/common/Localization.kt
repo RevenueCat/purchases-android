@@ -2,12 +2,15 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.utils.mapNotNullKeys
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildSerialDescriptor
@@ -67,12 +70,59 @@ private object LocalizationDataSerializer : KSerializer<LocalizationData> {
 }
 
 /**
+ * Deserializes a map of [LocaleId] to [VariableLocalizationKey] maps. The [VariableLocalizationKey] maps ignore unknown
+ * [VariableLocalizationKey]s.
+ */
+@Suppress("MaxLineLength")
+@InternalRevenueCatAPI
+internal object LocalizedVariableLocalizationKeyMapSerializer : KSerializer<Map<LocaleId, Map<VariableLocalizationKey, String>>> {
+    private val delegate = MapSerializer(
+        keySerializer = LocaleId.serializer(),
+        valueSerializer = VariableLocalizationKeyMapSerializer,
+    )
+    override val descriptor: SerialDescriptor = delegate.descriptor
+
+    override fun serialize(encoder: Encoder, value: Map<LocaleId, Map<VariableLocalizationKey, String>>) {
+        // Serialization is not implemented as it is not needed.
+    }
+
+    override fun deserialize(decoder: Decoder): Map<LocaleId, Map<VariableLocalizationKey, String>> =
+        delegate.deserialize(decoder)
+}
+
+/**
+ * Deserializes a map of [VariableLocalizationKey]s to String, ignoring unknown [VariableLocalizationKey]s.
+ */
+@InternalRevenueCatAPI
+internal object VariableLocalizationKeyMapSerializer : KSerializer<Map<VariableLocalizationKey, String>> {
+    private val delegate = MapSerializer(String.serializer(), String.serializer())
+
+    // We can use mapSerialDescriptor<VariableLocalizationKey, String>() when that is no longer experimental. For now
+    // using the delegate's descriptor is good enough, even though that has String keys.
+    override val descriptor: SerialDescriptor = delegate.descriptor
+
+    override fun serialize(encoder: Encoder, value: Map<VariableLocalizationKey, String>) {
+        // Serialization is not implemented as it is not needed.
+    }
+
+    override fun deserialize(decoder: Decoder): Map<VariableLocalizationKey, String> =
+        decoder.decodeSerializableValue(delegate).mapNotNullKeys { (stringKey, _) ->
+            @Suppress("SwallowedException")
+            try {
+                VariableLocalizationKey.valueOf(stringKey.uppercase())
+            } catch (e: IllegalArgumentException) {
+                // Ignoring unknown VariableLocalizationKey.
+                null
+            }
+        }
+}
+
+/**
  * Keys for localized strings used as variable values.
  */
 @InternalRevenueCatAPI
 @Serializable
 enum class VariableLocalizationKey {
-
     @SerialName("day")
     DAY,
 
