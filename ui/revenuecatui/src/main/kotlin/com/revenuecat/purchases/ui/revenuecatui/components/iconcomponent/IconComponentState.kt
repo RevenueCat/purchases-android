@@ -119,6 +119,8 @@ internal class IconComponentState(
     @get:JvmSynthetic
     val backgroundColorScheme by derivedStateOf { iconBackground.color }
 
+    val tintColor by derivedStateOf { presentedPartial?.partial?.color ?: style.color }
+
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,

@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
@@ -78,6 +80,13 @@ internal fun IconComponentView(
     val shadowStyle = iconState.shadow?.let { rememberShadowStyle(shadow = it) }
     val composeShape by remember(iconState.shape) { derivedStateOf { iconState.shape ?: RectangleShape } }
     val backgroundColor = rememberColorStyle(iconState.backgroundColorScheme)
+    val tintColor = iconState.tintColor?.let { rememberColorStyle(it) }
+    val colorFilter by remember(tintColor) {
+        derivedStateOf {
+            // TODO Support gradient tints
+            (tintColor as? ColorStyle.Solid)?.let { ColorFilter.tint(it.color) }
+        }
+    }
 
     RemoteImage(
         urlString = iconState.url,
@@ -89,6 +98,7 @@ internal fun IconComponentView(
             .clip(composeShape)
             .applyIfNotNull(borderStyle) { border(it, composeShape) }
             .padding(iconState.padding),
+        colorFilter = colorFilter,
         previewImageLoader = previewImageLoader,
     )
 }
@@ -96,7 +106,7 @@ internal fun IconComponentView(
 @Preview
 @Composable
 private fun IconComponentView_Preview() {
-    Box(modifier = Modifier.background(Color.Red)) {
+    Box(modifier = Modifier.background(Color.LightGray)) {
         IconComponentView(
             style = previewIconComponentStyle(
                 size = Size(
@@ -124,8 +134,8 @@ private fun previewIconComponentStyle(
             Color.Red.toArgb(),
         ),
     ),
-    paddingValues: PaddingValues = PaddingValues(0.dp),
-    marginValues: PaddingValues = PaddingValues(0.dp),
+    paddingValues: PaddingValues = PaddingValues(10.dp),
+    marginValues: PaddingValues = PaddingValues(10.dp),
     border: Border? = Border(
         width = 2.0,
         color = ColorScheme(
