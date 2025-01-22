@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -111,7 +112,7 @@ internal class ImageComponentTests {
                                 )
                             ),
                             colorOverlay = ColorScheme(
-                                light = ColorInfo.Alias("primary")
+                                light = ColorInfo.Alias(ColorAlias("primary"))
                             ),
                             fitMode = FitMode.FILL,
                         )
@@ -259,7 +260,7 @@ internal class ImageComponentTests {
                                     bottomTrailing = 2.0,
                                 )
                             ),
-                            colorOverlay = ColorScheme(light = ColorInfo.Alias("primary"))
+                            colorOverlay = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                         )
                     )
                 ),

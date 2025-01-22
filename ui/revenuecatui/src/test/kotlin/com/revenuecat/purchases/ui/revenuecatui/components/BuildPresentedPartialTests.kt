@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -476,8 +477,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = LocalizationKey("compactKey"),
-                                    color = ColorScheme(light = ColorInfo.Alias("compactColor")),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactColor"))),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactBgColor"))),
                                     fontName = "compactFont",
                                     fontWeight = FontWeight.LIGHT,
                                     fontSize = 13,
@@ -540,8 +541,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         from = PartialTextComponent(
                             visible = true,
                             text = LocalizationKey("compactKey"),
-                            color = ColorScheme(light = ColorInfo.Alias("compactColor")),
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
+                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactColor"))),
+                            backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactBgColor"))),
                             fontName = "mediumFont",
                             fontWeight = FontWeight.MEDIUM,
                             fontSize = 15,
@@ -617,8 +618,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = LocalizationKey("compactKey"),
-                                    color = ColorScheme(light = ColorInfo.Alias("compactColor")),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactColor"))),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactBgColor"))),
                                     fontName = "compactFont",
                                     fontWeight = FontWeight.LIGHT,
                                     fontSize = 13,
@@ -637,8 +638,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = null,
-                                    color = ColorScheme(light = ColorInfo.Alias("mediumColor")),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias("mediumBgColor")),
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("mediumColor"))),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("mediumBgColor"))),
                                     fontName = "mediumFont",
                                     fontWeight = FontWeight.MEDIUM,
                                     fontSize = 15,
@@ -674,8 +675,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         from = PartialTextComponent(
                             visible = true,
                             text = LocalizationKey("compactKey"),
-                            color = ColorScheme(light = ColorInfo.Alias("mediumColor")),
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias("mediumBgColor")),
+                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("mediumColor"))),
+                            backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("mediumBgColor"))),
                             fontName = "expandedFont",
                             fontWeight = FontWeight.BOLD,
                             fontSize = 34,
