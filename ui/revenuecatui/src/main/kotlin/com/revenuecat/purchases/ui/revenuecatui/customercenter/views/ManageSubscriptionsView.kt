@@ -216,7 +216,6 @@ private fun ManageSubscriptionButton(
     val buttonContent: @Composable (Modifier) -> Unit = { modifier ->
         Text(
             text = path.title,
-            color = MaterialTheme.colorScheme.primary,
             modifier = modifier,
             textAlign = TextAlign.Start,
             style = MaterialTheme.typography.bodyLarge,
@@ -227,6 +226,7 @@ private fun ManageSubscriptionButton(
         OutlinedButton(
             onClick = { onDetermineFlow(path) },
             modifier = buttonModifier,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         ) {
             buttonContent(Modifier)
         }
