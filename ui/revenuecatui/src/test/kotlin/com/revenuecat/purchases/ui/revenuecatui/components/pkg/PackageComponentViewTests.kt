@@ -16,6 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -173,7 +174,7 @@ class PackageComponentViewTests {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(packageYearly, packageMonthly),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)
@@ -293,7 +294,7 @@ class PackageComponentViewTests {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(packageYearly, packageMonthly),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)

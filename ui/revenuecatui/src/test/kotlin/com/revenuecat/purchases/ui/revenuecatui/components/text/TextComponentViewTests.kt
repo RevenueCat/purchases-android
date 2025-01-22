@@ -20,6 +20,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -356,7 +357,7 @@ class TextComponentViewTests {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(rcPackage),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)
@@ -517,7 +518,7 @@ class TextComponentViewTests {
                 packageWithSingleIntroOffer,
                 packageWithMultipleIntroOffers
             ),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)
@@ -713,7 +714,7 @@ class TextComponentViewTests {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(packageYearly, packageMonthly),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)
@@ -790,7 +791,7 @@ class TextComponentViewTests {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(usdPackage, mxnPackage),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         // We create 3 PaywallStates for different country codes. Also make sure our package is the selected one, so

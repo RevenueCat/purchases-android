@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -79,7 +80,7 @@ internal class LoadedPaywallComponentsLocaleTests {
             serverDescription = "serverDescription",
             metadata = emptyMap(),
             availablePackages = emptyList(),
-            paywallComponents = paywallComponents,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), paywallComponents),
         )
     }
 
