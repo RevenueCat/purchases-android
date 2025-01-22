@@ -11,12 +11,15 @@ import java.util.UUID
  * Type representing a customer center event and associated data. Meant for RevenueCatUI use.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@Poko
 @Serializable
-data class CustomerCenterEvent(
+class CustomerCenterEvent(
     val creationData: CreationData,
-    val eventData: Data
+    val eventData: Data,
 ) {
 
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @Poko
     @Serializable
     data class CreationData(
         @Serializable(with = UUIDSerializer::class)
@@ -25,8 +28,10 @@ data class CustomerCenterEvent(
         val date: Date,
     )
 
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @Poko
     @Serializable
-    data class Data(
+    class Data(
         @Serializable(with = UUIDSerializer::class)
         val id: UUID?,
         val type: CustomerCenterEventType,
@@ -35,11 +40,14 @@ data class CustomerCenterEvent(
         val darkMode: Boolean,
         val locale: String,
         val isSandbox: Boolean,
+    ) {
+        @Transient
+        var version: Int = 1
 
-        var version: Int = 1,
-        // Always full screen in Android
-        val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
-        // We don't support revisions in the backend yet so hardcoding to 1 for now
+        @Transient
+        val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN
+
+        @Transient
         val revisionId: Int = 1
-    )
+    }
 }

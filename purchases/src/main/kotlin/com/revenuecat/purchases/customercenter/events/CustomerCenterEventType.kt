@@ -1,23 +1,22 @@
 package com.revenuecat.purchases.customercenter.events
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Types of events that can be tracked in the Customer Center. Meant for RevenueCatUI use.
  */
+@Serializable
+@ExperimentalPreviewRevenueCatPurchasesAPI
 enum class CustomerCenterEventType(val value: String) {
     /**
      * The customer center was shown to the user.
      */
-    IMPRESSION("customer_center_impression"),
+    @SerialName("customer_center_impression")
+    IMPRESSION,
 
     /**
      * The customer center was closed by the user.
      */
-    SURVEY_OPTION_CHOSEN("customer_center_survey_option_chosen") // Fixed typo
-}
-
-/**
- * Display mode for the Customer Center. Meant for RevenueCatUI use.
- */
-enum class CustomerCenterDisplayMode {
-    FULL_SCREEN
+    @SerialName("customer_center_survey_option_chosen")
+    SURVEY_OPTION_CHOSEN,
 }
