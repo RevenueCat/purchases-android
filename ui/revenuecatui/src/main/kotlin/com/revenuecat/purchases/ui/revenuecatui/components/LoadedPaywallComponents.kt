@@ -123,7 +123,7 @@ private fun LoadedPaywallComponents_Preview() {
                         dimension = Vertical(alignment = CENTER, distribution = START),
                         backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
                         shape = Shape.Rectangle(
-                            corners = CornerRadiuses(
+                            corners = CornerRadiuses.Dp(
                                 topLeading = 10.0,
                                 topTrailing = 10.0,
                                 bottomLeading = 0.0,

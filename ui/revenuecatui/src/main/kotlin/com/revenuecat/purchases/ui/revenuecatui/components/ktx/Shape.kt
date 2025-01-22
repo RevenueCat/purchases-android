@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Shape as RcShape
 
@@ -18,30 +19,12 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape as RcShape
 private const val SCALE_Y_OFFSET_CONCAVE_CONVEX = 0.2f
 
 @JvmSynthetic
-internal fun RcShape.toShape(): Shape =
-    when (this) {
-        is RcShape.Rectangle -> corners?.run {
-            RoundedCornerShape(
-                topStart = topLeading.dp,
-                topEnd = topTrailing.dp,
-                bottomEnd = bottomTrailing.dp,
-                bottomStart = bottomLeading.dp,
-            )
-        } ?: RectangleShape
-        is RcShape.Pill -> RoundedCornerShape(percent = 50)
-    }
+internal fun RcShape.toShape(): Shape = cornerRadiuses.convertCornerRadiusesToShape()
 
 @JvmSynthetic
 internal fun MaskShape.toShape(): Shape =
     when (this) {
-        is MaskShape.Rectangle -> corners?.run {
-            RoundedCornerShape(
-                topStart = topLeading.dp,
-                topEnd = topTrailing.dp,
-                bottomEnd = bottomTrailing.dp,
-                bottomStart = bottomLeading.dp,
-            )
-        } ?: RectangleShape
+        is MaskShape.Rectangle -> corners?.convertCornerRadiusesToShape() ?: RectangleShape
 
         is MaskShape.Concave -> GenericShape { size, _ ->
             val yOffset = SCALE_Y_OFFSET_CONCAVE_CONVEX * size.height * 2f
@@ -64,3 +47,18 @@ internal fun MaskShape.toShape(): Shape =
         }
         is MaskShape.Circle -> CircleShape
     }
+
+private fun CornerRadiuses.convertCornerRadiusesToShape(): Shape = when (this) {
+    is CornerRadiuses.Percentage -> RoundedCornerShape(
+        topStartPercent = topLeading,
+        topEndPercent = topTrailing,
+        bottomEndPercent = bottomTrailing,
+        bottomStartPercent = bottomLeading,
+    )
+    is CornerRadiuses.Dp -> RoundedCornerShape(
+        topStart = topLeading.dp,
+        topEnd = topTrailing.dp,
+        bottomEnd = bottomTrailing.dp,
+        bottomStart = bottomLeading.dp,
+    )
+}
