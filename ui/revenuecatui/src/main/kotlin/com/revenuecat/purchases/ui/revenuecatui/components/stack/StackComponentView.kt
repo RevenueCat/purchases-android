@@ -170,8 +170,10 @@ private fun StackWithOverlaidBadge(
 ) {
     Box(modifier = modifier) {
         MainStackComponent(stackState, state, clickHandler)
-        val mainStackBorderWidth = with(LocalDensity.current) { stackState.border?.width?.dp?.toPx() }
-        OverlaidBadge(badgeStack, state, alignment, mainStackBorderWidth)
+        val mainStackBorderWidthPx = with(LocalDensity.current) {
+            stackState.border?.width?.dp?.toPx()
+        }
+        OverlaidBadge(badgeStack, state, alignment, mainStackBorderWidthPx)
     }
 }
 
@@ -407,7 +409,7 @@ private fun BoxScope.OverlaidBadge(
     badgeStack: StackComponentStyle,
     state: PaywallState.Loaded.Components,
     alignment: TwoDimensionalAlignment,
-    mainStackBorderWidth: Float?,
+    mainStackBorderWidthPx: Float?,
     modifier: Modifier = Modifier,
 ) {
     StackComponentView(
@@ -421,7 +423,7 @@ private fun BoxScope.OverlaidBadge(
                 layout(placeable.width, placeable.height) {
                     placeable.placeRelative(
                         x = 0,
-                        y = getOverlaidBadgeOffsetY(placeable.height, alignment, mainStackBorderWidth ?: 0f),
+                        y = getOverlaidBadgeOffsetY(placeable.height, alignment, mainStackBorderWidthPx ?: 0f),
                     )
                 }
             },
@@ -583,7 +585,7 @@ private fun Modifier.padding(dimension: Dimension, spacing: Dp): Modifier =
 private fun getOverlaidBadgeOffsetY(
     height: Int,
     alignment: TwoDimensionalAlignment,
-    mainStackBorderWidth: Float = 0f,
+    mainStackBorderWidthPx: Float = 0f,
 ) = when (alignment) {
     TwoDimensionalAlignment.CENTER,
     TwoDimensionalAlignment.LEADING,
@@ -592,11 +594,11 @@ private fun getOverlaidBadgeOffsetY(
     TwoDimensionalAlignment.TOP,
     TwoDimensionalAlignment.TOP_LEADING,
     TwoDimensionalAlignment.TOP_TRAILING,
-    -> (-((height.toFloat() - mainStackBorderWidth) / 2)).roundToInt()
+    -> (-((height.toFloat() - mainStackBorderWidthPx) / 2)).roundToInt()
     TwoDimensionalAlignment.BOTTOM,
     TwoDimensionalAlignment.BOTTOM_LEADING,
     TwoDimensionalAlignment.BOTTOM_TRAILING,
-    -> ((height.toFloat() - mainStackBorderWidth) / 2).roundToInt()
+    -> ((height.toFloat() - mainStackBorderWidthPx) / 2).roundToInt()
 }
 
 /**
@@ -721,14 +723,7 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
     Box(
         modifier = Modifier.padding(all = 32.dp),
     ) {
-        val badgeShape = Shape.Rectangle(
-            corners = CornerRadiuses.Dp(
-                topLeading = 20.0,
-                topTrailing = 20.0,
-                bottomLeading = 20.0,
-                bottomTrailing = 20.0,
-            ),
-        )
+        val badgeShape = Shape.Pill
         StackComponentView(
             style = StackComponentStyle(
                 children = previewChildren(),
