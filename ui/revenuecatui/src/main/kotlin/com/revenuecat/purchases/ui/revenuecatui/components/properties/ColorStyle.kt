@@ -133,7 +133,7 @@ internal fun ColorInfo.toColorStyle(
             when (aliasedInfo) {
                 is ColorInfo.Gradient,
                 is ColorInfo.Hex,
-                -> toColorStyle(aliases, useLightAlias)
+                -> aliasedInfo.toColorStyle(aliases, useLightAlias)
                 is ColorInfo.Alias -> Result.Error(PaywallValidationError.AliasedColorIsAlias(value, aliasedInfo.value))
                 null -> Result.Error(PaywallValidationError.MissingColorAlias(value))
             }
