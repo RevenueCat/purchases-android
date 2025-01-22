@@ -43,6 +43,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -118,7 +120,7 @@ private fun previewButtonComponentStyle(
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
         size = Size(width = Fit, height = Fit),
         spacing = 16.dp,
-        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+        backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
         padding = PaddingValues(all = 16.dp),
         margin = PaddingValues(all = 16.dp),
         shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),

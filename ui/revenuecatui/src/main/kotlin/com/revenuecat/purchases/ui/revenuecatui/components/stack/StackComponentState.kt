@@ -96,7 +96,7 @@ internal class StackComponentState(
     val spacing by derivedStateOf { presentedPartial?.partial?.spacing?.dp ?: style.spacing }
 
     @get:JvmSynthetic
-    val backgroundColor by derivedStateOf { presentedPartial?.partial?.backgroundColor ?: style.backgroundColor }
+    val backgroundColor by derivedStateOf { presentedPartial?.backgroundColorStyles ?: style.backgroundColor }
 
     @get:JvmSynthetic
     val padding by derivedStateOf { presentedPartial?.partial?.padding?.toPaddingValues() ?: style.padding }

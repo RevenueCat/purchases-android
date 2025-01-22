@@ -109,7 +109,11 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
         .getOrElse { error -> return RcResult.Error(error) }
 
     // Create the StyleFactory to recursively create and validate all ComponentStyles.
-    val styleFactory = StyleFactory(localizations = localizations, offering = this)
+    val styleFactory = StyleFactory(
+        localizations = localizations,
+        uiConfig = paywallComponents.uiConfig,
+        offering = this,
+    )
     val config = paywallComponents.data.componentsConfig.base
 
     // Combine the main stack with the stickyFooter, or accumulate the encountered errors.
