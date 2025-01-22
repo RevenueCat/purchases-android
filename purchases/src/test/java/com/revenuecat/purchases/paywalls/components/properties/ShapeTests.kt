@@ -5,7 +5,6 @@ import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import org.robolectric.ParameterizedRobolectricTestRunner
 
 @RunWith(Parameterized::class)
 internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {

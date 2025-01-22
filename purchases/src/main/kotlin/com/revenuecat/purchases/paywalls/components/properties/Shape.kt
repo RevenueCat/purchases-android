@@ -18,7 +18,6 @@ sealed interface Shape {
     @SerialName("rectangle")
     class Rectangle(
         @get:JvmSynthetic
-        @Serializable
         val corners: CornerRadiuses? = null,
     ) : Shape
 
