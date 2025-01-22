@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -19,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -231,9 +234,19 @@ private fun ManageSubscriptionButton(
             buttonContent(Modifier)
         }
     } else {
+        val layoutDirection = LocalLayoutDirection.current
+        val totalHorizontalButtonPadding = 16.dp
+
+        val startPadding = totalHorizontalButtonPadding -
+            ButtonDefaults.TextButtonContentPadding.calculateStartPadding(layoutDirection)
+        val endPadding = totalHorizontalButtonPadding -
+            ButtonDefaults.TextButtonContentPadding.calculateEndPadding(layoutDirection)
+
         TextButton(
             onClick = { onDetermineFlow(path) },
-            modifier = buttonModifier.heightIn(60.dp),
+            modifier = buttonModifier
+                .heightIn(60.dp)
+                .padding(start = startPadding, end = endPadding),
             // It's a rectangle so it gets clipped by the parent Surface.
             shape = RectangleShape,
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
