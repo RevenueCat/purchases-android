@@ -179,6 +179,9 @@ jobs:
           name: Verify purchases-ui target SDK compatibility (currently 34)
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
       - run:
+          name: Enable the Paywall Components build flag
+          command: echo 'revenuecat.flag.paywallComponents=true' >> local.properties
+      - run:
           name: Run Tests
           command: java --version && echo $JAVA_HOME && ./gradlew lint test
       - run:
