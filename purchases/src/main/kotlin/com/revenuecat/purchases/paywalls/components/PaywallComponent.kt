@@ -43,6 +43,7 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "stack" -> jsonDecoder.json.decodeFromString<StackComponent>(json.toString())
             "sticky_footer" -> jsonDecoder.json.decodeFromString<StickyFooterComponent>(json.toString())
             "text" -> jsonDecoder.json.decodeFromString<TextComponent>(json.toString())
+            "icon" -> jsonDecoder.json.decodeFromString<IconComponent>(json.toString())
             else -> json["fallback"]
                 ?.let { it as? JsonObject }
                 ?.toString()

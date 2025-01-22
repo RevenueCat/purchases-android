@@ -142,7 +142,7 @@ internal class IconComponentTests {
                                     light = ColorInfo.Alias("secondary")
                                 ),
                                 shape = MaskShape.Rectangle(
-                                    corners = CornerRadiuses(
+                                    corners = CornerRadiuses.Dp(
                                         topLeading = 3.0,
                                         topTrailing = 4.0,
                                         bottomLeading = 1.0,
@@ -339,7 +339,7 @@ internal class IconComponentTests {
                                     light = ColorInfo.Alias("secondary")
                                 ),
                                 shape = MaskShape.Rectangle(
-                                    corners = CornerRadiuses(
+                                    corners = CornerRadiuses.Dp(
                                         topLeading = 3.0,
                                         topTrailing = 4.0,
                                         bottomLeading = 1.0,
