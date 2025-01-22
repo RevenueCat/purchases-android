@@ -186,6 +186,7 @@ jobs:
           command: |
             mkdir -p build/reports/
             find . -type f -path "*/build/reports/*" | grep -v 'paparazzi' | xargs -I {} cp --parents {} build/reports/
+          when: always
       - run:
           name: Kover HTML
           command: ./gradlew purchases:koverHtmlReportDefaultsRelease
