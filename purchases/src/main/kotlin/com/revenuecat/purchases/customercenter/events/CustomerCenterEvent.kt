@@ -38,8 +38,8 @@ data class CustomerCenterEvent(
 
         var version: Int = 1,
         // Always full screen in Android
-        val displayMode: CustomerCenterDisplayMode = .FULL_SCREEN,
+        val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
         // We don't support revisions in the backend yet so hardcoding to 1 for now
         val revisionId: Int = 1
     )
-} 
+}
