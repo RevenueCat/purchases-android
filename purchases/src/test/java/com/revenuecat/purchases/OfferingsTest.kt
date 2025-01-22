@@ -575,21 +575,13 @@ class OfferingsTest {
         val offeringJson = getOfferingJSON(paywallComponents = getPaywallComponentsDataJson())
         val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
 
-        println("DEBUGGING - offeringsJson")
-        offeringsJson.toString(2).lines().forEach { println(it) }
-
         // Act
         val offerings = offeringsParser.createOfferings(offeringsJson, products)
-        println("DEBUGGING - offerings")
-        offerings.toString().chunked(200).forEach { println(it) }
 
         // Assert
         assertThat(offerings).isNotNull
         assertThat(offerings.all.size).isEqualTo(1)
         val offering = offerings.all.values.first()
-
-        println("DEBUGGING - offering")
-        offerings.toString().chunked(200).forEach { println(it) }
 
         val paywallComponents = offering.paywallComponents ?: fail("paywallComponents is null")
         val uiConfig = paywallComponents.uiConfig
