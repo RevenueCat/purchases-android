@@ -205,7 +205,7 @@ private fun ImageComponentView_Preview(
                 size = parameters.viewSize,
                 fitMode = parameters.fitMode,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -234,7 +234,7 @@ private fun ImageComponentView_Preview_SmallerContainer() {
                 size = Size(width = Fixed(400u), height = Fixed(400u)),
                 fitMode = FitMode.FIT,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -265,7 +265,7 @@ private fun ImageComponentView_Preview_Margin_Padding() {
                 marginValues = PaddingValues(20.dp),
                 fitMode = FitMode.FIT,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -292,7 +292,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
                 size = Size(width = Fixed(400u), height = Fit),
                 fitMode = FitMode.FIT,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -337,7 +337,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
                 size = Size(width = Fixed(400u), height = Fit),
                 fitMode = FitMode.FIT,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -372,7 +372,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
 private class MaskShapeProvider : PreviewParameterProvider<MaskShape> {
     override val values: Sequence<MaskShape> = sequenceOf(
         MaskShape.Rectangle(
-            corners = CornerRadiuses(
+            corners = CornerRadiuses.Dp(
                 topLeading = 30.0,
                 topTrailing = 50.0,
                 bottomLeading = 20.0,
