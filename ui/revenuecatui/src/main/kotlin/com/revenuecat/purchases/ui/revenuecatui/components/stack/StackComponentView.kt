@@ -735,7 +735,9 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
     Box(
         modifier = Modifier.padding(all = 32.dp),
     ) {
-        val badgeShape = Shape.Pill
+        val badgeShape = Shape.Rectangle(
+            corners = CornerRadiuses.Dp(all = 20.0),
+        )
         StackComponentView(
             style = StackComponentStyle(
                 children = previewChildren(),
