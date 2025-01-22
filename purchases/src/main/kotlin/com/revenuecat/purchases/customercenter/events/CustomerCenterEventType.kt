@@ -12,7 +12,7 @@ enum class CustomerCenterEventType(val value: String) {
     /**
      * The customer center was closed by the user.
      */
-    SURVER_OPTION_CHOSEN("customer_center_survey_option_chosen")
+    SURVEY_OPTION_CHOSEN("customer_center_survey_option_chosen") // Fixed typo
 }
 
 /**
