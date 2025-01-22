@@ -4,6 +4,7 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
@@ -65,6 +67,7 @@ internal class StyleFactory(
             is StackComponent -> createStackComponentStyle(component, rcPackage)
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component, rcPackage)
+            is IconComponent -> createIconComponentStyle(component, rcPackage)
         }
 
     private fun createStickyFooterComponentStyle(
@@ -254,6 +257,30 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             overrides = presentedOverrides,
         )
+    }
+
+    private fun createIconComponentStyle(
+        component: IconComponent,
+        rcPackage: Package?,
+    ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> {
+        return component.overrides
+            ?.toPresentedOverrides { partial -> Result.Success(PresentedIconPartial(partial)) }
+            .orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) }
+            .map { presentedOverrides ->
+                IconComponentStyle(
+                    baseUrl = component.baseUrl,
+                    iconName = component.iconName,
+                    formats = component.formats,
+                    size = component.size,
+                    color = component.color,
+                    padding = component.padding.toPaddingValues(),
+                    margin = component.margin.toPaddingValues(),
+                    iconBackground = component.iconBackground,
+                    rcPackage = rcPackage,
+                    overrides = presentedOverrides,
+                )
+            }
     }
 
     private fun ThemeImageUrls.withLocalizedOverrides(
