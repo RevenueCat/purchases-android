@@ -74,7 +74,6 @@ private fun ActiveUserManagementView(
         Text(
             text = screen.title,
             style = MaterialTheme.typography.titleLarge,
-            // fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(end = 16.dp, top = 32.dp),
         )
 
