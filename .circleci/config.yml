@@ -183,7 +183,7 @@ jobs:
           command: echo 'revenuecat.flag.paywallComponents=true' >> local.properties
       - run:
           name: Run Tests
-          command: java --version && echo $JAVA_HOME && ./gradlew lint test
+          command: ./gradlew lint test
       - run:
           name: Consolidate artifacts
           command: |
