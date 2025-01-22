@@ -187,8 +187,8 @@ jobs:
       - run:
           name: Consolidate artifacts
           command: |
-            mkdir -p build/reports/
-            find . -type f -path "*/build/reports/*" | grep -v 'paparazzi' | xargs -I {} cp --parents {} build/reports/
+              mkdir -p build/test-results/
+              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - run:
           name: Kover HTML
           command: ./gradlew purchases:koverHtmlReportDefaultsRelease
