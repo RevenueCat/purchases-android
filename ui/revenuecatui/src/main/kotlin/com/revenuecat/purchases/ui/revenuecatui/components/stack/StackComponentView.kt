@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -169,7 +170,10 @@ private fun StackWithOverlaidBadge(
 ) {
     Box(modifier = modifier) {
         MainStackComponent(stackState, state, clickHandler)
-        OverlaidBadge(badgeStack, state, alignment)
+        val mainStackBorderWidthPx = with(LocalDensity.current) {
+            stackState.border?.width?.dp?.toPx()
+        }
+        OverlaidBadge(badgeStack, state, alignment, mainStackBorderWidthPx)
     }
 }
 
@@ -405,6 +409,7 @@ private fun BoxScope.OverlaidBadge(
     badgeStack: StackComponentStyle,
     state: PaywallState.Loaded.Components,
     alignment: TwoDimensionalAlignment,
+    mainStackBorderWidthPx: Float?,
     modifier: Modifier = Modifier,
 ) {
     StackComponentView(
@@ -418,7 +423,7 @@ private fun BoxScope.OverlaidBadge(
                 layout(placeable.width, placeable.height) {
                     placeable.placeRelative(
                         x = 0,
-                        y = getOverlaidBadgeOffsetY(placeable.height, alignment),
+                        y = getOverlaidBadgeOffsetY(placeable.height, alignment, mainStackBorderWidthPx ?: 0f),
                     )
                 }
             },
@@ -499,7 +504,10 @@ private fun MainStackComponent(
 
     val innerShapeModifier = remember(stackState, borderStyle) {
         Modifier
-            .applyIfNotNull(borderStyle) { border(it, composeShape) }
+            .applyIfNotNull(borderStyle) {
+                border(it, composeShape)
+                    .padding(it.width)
+            }
             .padding(stackState.padding)
             .padding(stackState.dimension, stackState.spacing)
     }
@@ -574,21 +582,24 @@ private fun Modifier.padding(dimension: Dimension, spacing: Dp): Modifier =
         is Dimension.ZLayer -> this
     }
 
-private fun getOverlaidBadgeOffsetY(height: Int, alignment: TwoDimensionalAlignment) =
-    when (alignment) {
-        TwoDimensionalAlignment.CENTER,
-        TwoDimensionalAlignment.LEADING,
-        TwoDimensionalAlignment.TRAILING,
-        -> 0
-        TwoDimensionalAlignment.TOP,
-        TwoDimensionalAlignment.TOP_LEADING,
-        TwoDimensionalAlignment.TOP_TRAILING,
-        -> (-(height.toFloat() / 2)).roundToInt()
-        TwoDimensionalAlignment.BOTTOM,
-        TwoDimensionalAlignment.BOTTOM_LEADING,
-        TwoDimensionalAlignment.BOTTOM_TRAILING,
-        -> (height.toFloat() / 2).roundToInt()
-    }
+private fun getOverlaidBadgeOffsetY(
+    height: Int,
+    alignment: TwoDimensionalAlignment,
+    mainStackBorderWidthPx: Float = 0f,
+) = when (alignment) {
+    TwoDimensionalAlignment.CENTER,
+    TwoDimensionalAlignment.LEADING,
+    TwoDimensionalAlignment.TRAILING,
+    -> 0
+    TwoDimensionalAlignment.TOP,
+    TwoDimensionalAlignment.TOP_LEADING,
+    TwoDimensionalAlignment.TOP_TRAILING,
+    -> (-((height.toFloat() - mainStackBorderWidthPx) / 2)).roundToInt()
+    TwoDimensionalAlignment.BOTTOM,
+    TwoDimensionalAlignment.BOTTOM_LEADING,
+    TwoDimensionalAlignment.BOTTOM_TRAILING,
+    -> ((height.toFloat() - mainStackBorderWidthPx) / 2).roundToInt()
+}
 
 /**
  * Make this CornerSize absolute, based on the provided [placeable]. This is useful for turning relative
@@ -692,7 +703,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 padding = PaddingValues(all = 12.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                border = Border(width = 10.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Overlay, alignment, badgeShape),
                 rcPackage = null,
@@ -712,14 +723,7 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
     Box(
         modifier = Modifier.padding(all = 32.dp),
     ) {
-        val badgeShape = Shape.Rectangle(
-            corners = CornerRadiuses.Dp(
-                topLeading = 20.0,
-                topTrailing = 20.0,
-                bottomLeading = 20.0,
-                bottomTrailing = 20.0,
-            ),
-        )
+        val badgeShape = Shape.Pill
         StackComponentView(
             style = StackComponentStyle(
                 children = previewChildren(),
@@ -813,7 +817,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))),
+                border = Border(width = 10.0, color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Nested, alignment, badgeShape),
                 rcPackage = null,
