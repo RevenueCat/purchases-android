@@ -14,9 +14,13 @@ import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -614,5 +618,135 @@ internal class LocalizedTextPartialTests {
             // Assert
             assert(actualResult.isSuccess)
         }
+
+        @Test
+        fun `Should accumulate errors if the ColorAlias is not found`() {
+            // Arrange
+            val missingColorKey = ColorAlias("missing-color-key")
+            val missingBackgroundKey = ColorAlias("missing-background-key")
+            val expected = nonEmptyListOf(
+                PaywallValidationError.MissingColorAlias(missingColorKey),
+                PaywallValidationError.MissingColorAlias(missingBackgroundKey),
+            )
+
+            // Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    color = ColorScheme(light = ColorInfo.Alias(missingColorKey)),
+                    backgroundColor = ColorScheme(light = ColorInfo.Alias(missingBackgroundKey)),
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = mapOf(
+                    ColorAlias("existing-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                    ColorAlias("existing-background-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                )
+            )
+
+            // Assert
+            assert(actualResult.isError)
+            val actual = actualResult.errorOrNull()!!
+            assert(actual == expected)
+        }
+
+        @Test
+        fun `Should accumulate errors if the ColorAlias points to another alias`() {
+            // Arrange
+            val firstColorKey = ColorAlias("first-color-key")
+            val firstBackgroundKey = ColorAlias("first-background-key")
+            val secondColorKey = ColorAlias("second-color-key")
+            val secondBackgroundKey = ColorAlias("second-background-key")
+            val expected = nonEmptyListOf(
+                PaywallValidationError.AliasedColorIsAlias(firstColorKey, secondColorKey),
+                PaywallValidationError.AliasedColorIsAlias(firstBackgroundKey, secondBackgroundKey),
+            )
+
+            // Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    color = ColorScheme(light = ColorInfo.Alias(firstColorKey)),
+                    backgroundColor = ColorScheme(light = ColorInfo.Alias(firstBackgroundKey)),
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = mapOf(
+                    firstColorKey to ColorScheme(light = ColorInfo.Alias(secondColorKey)),
+                    firstBackgroundKey to ColorScheme(light = ColorInfo.Alias(secondBackgroundKey)),
+                )
+            )
+
+            // Assert
+            assert(actualResult.isError)
+            val actual = actualResult.errorOrNull()!!
+            assert(actual == expected)
+        }
+
+        @Test
+        fun `Should create successfully if the ColorAlias is found`() {
+            // Arrange
+            val existingColorKey = ColorAlias("existing-color-key")
+            val existingBackgroundKey = ColorAlias("existing-background-key")
+            val expectedColor = Color.Red
+            val expectedBackgroundColor = Color.Blue
+
+            // Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    color = ColorScheme(light = ColorInfo.Alias(existingColorKey)),
+                    backgroundColor = ColorScheme(light = ColorInfo.Alias(existingBackgroundKey)),
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = mapOf(
+                    existingColorKey to ColorScheme(light = ColorInfo.Hex(expectedColor.toArgb())),
+                    existingBackgroundKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb()))
+                )
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+            val actual = actualResult.getOrThrow()
+            val actualColor = actual.color?.light ?: error("Actual color is null")
+            val actualBackgroundColor = actual.backgroundColor?.light ?: error("Actual background color is null")
+            actualColor.let { it as ColorStyle.Solid }.also {
+                assert(it.color == expectedColor)
+            }
+            actualBackgroundColor.let { it as ColorStyle.Solid }.also {
+                assert(it.color == expectedBackgroundColor)
+            }
+        }
+
+        @Test
+        fun `Should create successfully if the PartialTextComponent has no ColorAlias`() {
+            // Arrange, Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = mapOf(
+                    ColorAlias("existing-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                )
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+        }
+
+        @Suppress("MaxLineLength")
+        @Test
+        fun `Should create successfully if the PartialTextComponent has no ColorAlias, alias map is empty`() {
+            // Arrange, Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = emptyMap()
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+        }
+        
     }
 }
