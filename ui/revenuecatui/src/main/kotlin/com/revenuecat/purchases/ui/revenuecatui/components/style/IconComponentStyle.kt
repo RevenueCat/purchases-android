@@ -5,10 +5,10 @@ import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.IconComponent.Formats
 import com.revenuecat.purchases.paywalls.components.IconComponent.IconBackground
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 
 @Suppress("LongParameterList")
 @Immutable
@@ -22,7 +22,7 @@ internal class IconComponentStyle(
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
-    val color: ColorScheme?,
+    val color: ColorStyles?,
     @get:JvmSynthetic
     val padding: PaddingValues,
     @get:JvmSynthetic

@@ -47,6 +47,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
@@ -81,7 +83,7 @@ internal fun IconComponentView(
     val shadowStyle = iconState.shadow?.let { rememberShadowStyle(shadow = it) }
     val composeShape by remember(iconState.shape) { derivedStateOf { iconState.shape ?: RectangleShape } }
     val backgroundColor = iconState.backgroundColorScheme?.let { rememberColorStyle(it) }
-    val tintColor = iconState.tintColor?.let { rememberColorStyle(it) }
+    val tintColor = iconState.tintColor?.forCurrentTheme
     val colorFilter by remember(tintColor) {
         derivedStateOf {
             // TODO Support gradient tints
@@ -125,10 +127,8 @@ private fun IconComponentView_Preview() {
 @Composable
 private fun previewIconComponentStyle(
     size: Size,
-    color: ColorScheme = ColorScheme(
-        light = ColorInfo.Hex(
-            Color.Cyan.toArgb(),
-        ),
+    color: ColorStyles = ColorStyles(
+        light = ColorStyle.Solid(Color.Cyan),
     ),
     backgroundColor: ColorScheme = ColorScheme(
         light = ColorInfo.Hex(

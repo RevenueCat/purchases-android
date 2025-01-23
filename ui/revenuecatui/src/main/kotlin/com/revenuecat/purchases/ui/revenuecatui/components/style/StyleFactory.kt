@@ -266,26 +266,29 @@ internal class StyleFactory(
     private fun createIconComponentStyle(
         component: IconComponent,
         rcPackage: Package?,
-    ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> {
-        return component.overrides
-            ?.toPresentedOverrides { partial -> Result.Success(PresentedIconPartial(partial)) }
-            .orSuccessfullyNull()
-            .mapError { nonEmptyListOf(it) }
-            .map { presentedOverrides ->
-                IconComponentStyle(
-                    baseUrl = component.baseUrl,
-                    iconName = component.iconName,
-                    formats = component.formats,
-                    size = component.size,
-                    color = component.color,
-                    padding = component.padding.toPaddingValues(),
-                    margin = component.margin.toPaddingValues(),
-                    iconBackground = component.iconBackground,
-                    rcPackage = rcPackage,
-                    overrides = presentedOverrides,
-                )
-            }
-    }
+    ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
+        zipOrAccumulate(
+            first = component.overrides
+                ?.toPresentedOverrides { partial -> PresentedIconPartial(partial, uiConfig.app.colors) }
+                .orSuccessfullyNull()
+                .mapError { nonEmptyListOf(it) },
+            second = component.color
+                ?.toColorStyles(aliases = uiConfig.app.colors)
+                .orSuccessfullyNull(),
+        ) { presentedOverrides, colorStyles ->
+            IconComponentStyle(
+                baseUrl = component.baseUrl,
+                iconName = component.iconName,
+                formats = component.formats,
+                size = component.size,
+                color = colorStyles,
+                padding = component.padding.toPaddingValues(),
+                margin = component.margin.toPaddingValues(),
+                iconBackground = component.iconBackground,
+                rcPackage = rcPackage,
+                overrides = presentedOverrides,
+            )
+        }
 
     private fun ThemeImageUrls.withLocalizedOverrides(
         overrideSourceLid: LocalizationKey?,
