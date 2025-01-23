@@ -58,6 +58,8 @@ internal class StyleFactory(
         private const val DEFAULT_SPACING = 0f
     }
 
+    private val colorAliases = uiConfig.app.colors
+
     fun create(
         component: PaywallComponent,
         rcPackage: Package? = null,
@@ -168,7 +170,7 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            ?.toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = uiConfig.app.colors) }
+            ?.toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = colorAliases) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
@@ -185,7 +187,7 @@ internal class StyleFactory(
                     )
                 }
         }.orSuccessfullyNull(),
-        fourth = component.backgroundColor?.toColorStyles(uiConfig.app.colors).orSuccessfullyNull(),
+        fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, children, badge, backgroundColorStyles ->
         StackComponentStyle(
             children = children,
@@ -269,13 +271,16 @@ internal class StyleFactory(
     ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
         zipOrAccumulate(
             first = component.overrides
-                ?.toPresentedOverrides { partial -> PresentedIconPartial(partial, uiConfig.app.colors) }
+                ?.toPresentedOverrides { partial -> PresentedIconPartial(partial, colorAliases) }
                 .orSuccessfullyNull()
                 .mapError { nonEmptyListOf(it) },
             second = component.color
-                ?.toColorStyles(aliases = uiConfig.app.colors)
+                ?.toColorStyles(aliases = colorAliases)
                 .orSuccessfullyNull(),
-        ) { presentedOverrides, colorStyles ->
+            third = component.iconBackground
+                ?.toBackground(aliases = colorAliases)
+                .orSuccessfullyNull(),
+        ) { presentedOverrides, colorStyles, background ->
             IconComponentStyle(
                 baseUrl = component.baseUrl,
                 iconName = component.iconName,
@@ -284,7 +289,7 @@ internal class StyleFactory(
                 color = colorStyles,
                 padding = component.padding.toPaddingValues(),
                 margin = component.margin.toPaddingValues(),
-                iconBackground = component.iconBackground,
+                iconBackground = background,
                 rcPackage = rcPackage,
                 overrides = presentedOverrides,
             )
