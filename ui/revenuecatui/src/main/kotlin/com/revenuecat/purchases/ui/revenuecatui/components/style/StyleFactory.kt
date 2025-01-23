@@ -168,7 +168,7 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            ?.toPresentedOverrides { partial -> PresentedStackPartial(from = partial, using = uiConfig.app.colors) }
+            ?.toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = uiConfig.app.colors) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
