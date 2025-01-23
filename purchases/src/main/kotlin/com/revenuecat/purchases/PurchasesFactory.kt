@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
+import androidx.core.os.UserManagerCompat
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -56,7 +57,7 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
-    @Suppress("LongMethod", "LongParameterList")
+    @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
@@ -84,7 +85,24 @@ internal class PurchasesFactory(
                 forceSigningError,
             )
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(application)
+            val isUserUnlocked = UserManagerCompat.isUserUnlocked(context)
+            val prefs = try {
+                PreferenceManager.getDefaultSharedPreferences(if (isUserUnlocked) application else context)
+            } catch (e: IllegalStateException) {
+                @Suppress("MaxLineLength")
+                if (!isUserUnlocked) {
+                    throw IllegalStateException(
+                        "Trying to configure Purchases while the device is locked. If you need to support this " +
+                            "scenario, ensure you provide a Context created with " +
+                            "`createDeviceProtectedStorageContext()`.\nSee " +
+                            "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
+                            "for more info.",
+                        e,
+                    )
+                } else {
+                    throw e
+                }
+            }
 
             val eTagManager = ETagManager(context)
 
