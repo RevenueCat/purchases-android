@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -123,7 +124,7 @@ internal class IconComponentTests {
                                 width = SizeConstraint.Fixed(200u),
                             ),
                             color = ColorScheme(
-                                light = ColorInfo.Alias("primary")
+                                light = ColorInfo.Alias(ColorAlias("primary"))
                             ),
                             padding = Padding(
                                 bottom = 16.0,
@@ -139,7 +140,7 @@ internal class IconComponentTests {
                             ),
                             iconBackground = IconComponent.IconBackground(
                                 color = ColorScheme(
-                                    light = ColorInfo.Alias("secondary")
+                                    light = ColorInfo.Alias(ColorAlias("secondary"))
                                 ),
                                 shape = MaskShape.Rectangle(
                                     corners = CornerRadiuses.Dp(
@@ -151,7 +152,7 @@ internal class IconComponentTests {
                                 ),
                                 shadow = Shadow(
                                     color = ColorScheme(
-                                        light = ColorInfo.Alias("tertiary")
+                                        light = ColorInfo.Alias(ColorAlias("tertiary"))
                                     ),
                                     radius = 20.1,
                                     x = 23.6,
@@ -159,7 +160,7 @@ internal class IconComponentTests {
                                 ),
                                 border = Border(
                                     color = ColorScheme(
-                                        light = ColorInfo.Alias("secondary")
+                                        light = ColorInfo.Alias(ColorAlias("secondary"))
                                     ),
                                     width = 123.0,
                                 ),
@@ -320,7 +321,7 @@ internal class IconComponentTests {
                                 width = SizeConstraint.Fixed(200u),
                             ),
                             color = ColorScheme(
-                                light = ColorInfo.Alias("primary")
+                                light = ColorInfo.Alias(ColorAlias("primary"))
                             ),
                             padding = Padding(
                                 bottom = 16.0,
@@ -336,7 +337,7 @@ internal class IconComponentTests {
                             ),
                             iconBackground = IconComponent.IconBackground(
                                 color = ColorScheme(
-                                    light = ColorInfo.Alias("secondary")
+                                    light = ColorInfo.Alias(ColorAlias("secondary"))
                                 ),
                                 shape = MaskShape.Rectangle(
                                     corners = CornerRadiuses.Dp(
@@ -348,7 +349,7 @@ internal class IconComponentTests {
                                 ),
                                 shadow = Shadow(
                                     color = ColorScheme(
-                                        light = ColorInfo.Alias("tertiary")
+                                        light = ColorInfo.Alias(ColorAlias("tertiary"))
                                     ),
                                     radius = 20.1,
                                     x = 23.6,
@@ -356,7 +357,7 @@ internal class IconComponentTests {
                                 ),
                                 border = Border(
                                     color = ColorScheme(
-                                        light = ColorInfo.Alias("secondary")
+                                        light = ColorInfo.Alias(ColorAlias("secondary"))
                                     ),
                                     width = 123.0,
                                 ),

@@ -1,6 +1,9 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
@@ -18,9 +21,17 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.colorsForCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import dev.drewhamilton.poko.Poko
 import kotlin.math.abs
 import kotlin.math.cos
@@ -44,12 +55,24 @@ internal sealed interface ColorStyle {
     value class Gradient(@JvmSynthetic val brush: Brush) : ColorStyle
 }
 
+/**
+ * [ColorStyle]s for light and dark mode.
+ */
+internal data class ColorStyles(
+    @get:JvmSynthetic val light: ColorStyle,
+    @get:JvmSynthetic val dark: ColorStyle? = null,
+)
+
 @JvmSynthetic
 @Composable
 internal fun rememberColorStyle(scheme: ColorScheme): ColorStyle {
     val colorInfo = scheme.colorsForCurrentTheme
     return remember(colorInfo) { colorInfo.toColorStyle() }
 }
+
+internal val ColorStyles.forCurrentTheme: ColorStyle
+    @JvmSynthetic @Composable
+    get() = if (isSystemInDarkTheme()) dark ?: light else light
 
 @JvmSynthetic
 @Composable
@@ -71,6 +94,64 @@ internal fun ColorInfo.toColorStyle(): ColorStyle {
                     colorStops = points.toColorStops(),
                 )
             },
+        )
+    }
+}
+
+@JvmSynthetic
+internal fun ColorScheme.toColorStyles(
+    aliases: Map<ColorAlias, ColorScheme>,
+): Result<ColorStyles, NonEmptyList<PaywallValidationError>> =
+    zipOrAccumulate(
+        first = light.toColorStyle(aliases, useLightAlias = true)
+            .mapError { nonEmptyListOf(it) },
+        second = dark?.toColorStyle(aliases, useLightAlias = false)
+            .orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+    ) { light, dark ->
+        ColorStyles(light = light, dark = dark)
+    }
+
+/**
+ * Converts a [ColorInfo] to a [ColorStyle], using [aliases] for lookup if this is a [ColorInfo.Alias].
+ *
+ * @param useLightAlias Since [aliases] maps to entire [ColorScheme]s, we need to know which [ColorInfo] to get from
+ * that scheme. If this is true, we'll use the light one. If this is false, we'll use the dark one if available, and
+ * light otherwise.
+ */
+@JvmSynthetic
+internal fun ColorInfo.toColorStyle(
+    aliases: Map<ColorAlias, ColorScheme>,
+    useLightAlias: Boolean,
+): Result<ColorStyle, PaywallValidationError> {
+    return when (this) {
+        is ColorInfo.Alias -> {
+            val aliasedScheme = aliases[value]
+            val aliasedInfo = aliasedScheme?.let {
+                if (useLightAlias) aliasedScheme.light else aliasedScheme.dark ?: aliasedScheme.light
+            }
+            when (aliasedInfo) {
+                is ColorInfo.Gradient,
+                is ColorInfo.Hex,
+                -> aliasedInfo.toColorStyle(aliases, useLightAlias)
+                is ColorInfo.Alias -> Result.Error(PaywallValidationError.AliasedColorIsAlias(value, aliasedInfo.value))
+                null -> Result.Error(PaywallValidationError.MissingColorAlias(value))
+            }
+        }
+        is ColorInfo.Hex -> Result.Success(ColorStyle.Solid(Color(color = value)))
+        is ColorInfo.Gradient -> Result.Success(
+            ColorStyle.Gradient(
+                when (this) {
+                    is ColorInfo.Gradient.Linear -> relativeLinearGradient(
+                        colorStops = points.toColorStops(),
+                        degrees = degrees,
+                    )
+
+                    is ColorInfo.Gradient.Radial -> Brush.radialGradient(
+                        colorStops = points.toColorStops(),
+                    )
+                },
+            ),
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -39,7 +40,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 0.0,
                         x = 0.0,
@@ -65,7 +66,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 10.0,
                         x = 20.0,
@@ -91,7 +92,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 10.0,
                         x = -21.0,
@@ -117,7 +118,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 0.0,
                         x = 0.0,
@@ -143,7 +144,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 10.4,
                         x = 20.3,
@@ -169,7 +170,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 10.1,
                         x = -21.2,
@@ -195,7 +196,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 0.0,
                         x = 0.0,
@@ -221,7 +222,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 10.0,
                         x = 20.0,
@@ -247,7 +248,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 10.0,
                         x = -21.0,
@@ -273,7 +274,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 0.0,
                         x = 0.0,
@@ -299,7 +300,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 10.4,
                         x = 20.3,
@@ -325,7 +326,7 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         """.trimIndent(),
                     expected = Shadow(
                         color = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         ),
                         radius = 10.1,
                         x = -21.2,

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import androidx.annotation.ColorInt
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.parseRGBAColor
 import dev.drewhamilton.poko.Poko
@@ -29,7 +30,7 @@ sealed interface ColorInfo {
     @Poko
     @Serializable
     @SerialName("alias")
-    class Alias(@get:JvmSynthetic val value: String) : ColorInfo
+    class Alias(@get:JvmSynthetic val value: ColorAlias) : ColorInfo
 
     sealed interface Gradient : ColorInfo {
 

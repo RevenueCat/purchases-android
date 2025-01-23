@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -50,8 +51,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("baseColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("baseBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseBgColor"))),
                                 fontName = "baseFont",
                                 fontWeight = FontWeight.LIGHT,
                                 fontSize = 13,
@@ -70,8 +71,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("overrideBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideBgColor"))),
                                 fontName = "overrideFont",
                                 fontWeight = FontWeight.MEDIUM,
                                 fontSize = 15,
@@ -90,8 +91,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("overrideBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideBgColor"))),
                                 fontName = "overrideFont",
                                 fontWeight = FontWeight.MEDIUM,
                                 fontSize = 15,
@@ -168,8 +169,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("baseColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("baseBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseBgColor"))),
                                 fontName = "baseFont",
                                 fontWeight = FontWeight.LIGHT,
                                 fontSize = 13,
@@ -189,8 +190,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("baseColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("baseBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseBgColor"))),
                                 fontName = "baseFont",
                                 fontWeight = FontWeight.LIGHT,
                                 fontSize = 13,
@@ -214,8 +215,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("baseColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("baseBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseBgColor"))),
                                 fontName = "baseFont",
                                 fontWeight = FontWeight.LIGHT,
                                 fontSize = 13,
@@ -234,8 +235,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("overrideBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideBgColor"))),
                                 fontName = "overrideFont",
                                 fontWeight = null,
                                 fontSize = null,
@@ -254,8 +255,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("overrideBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideBgColor"))),
                                 fontName = "overrideFont",
                                 fontWeight = FontWeight.LIGHT,
                                 fontSize = 13,
@@ -294,8 +295,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("overrideBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideBgColor"))),
                                 fontName = "overrideFont",
                                 fontWeight = null,
                                 fontSize = null,
@@ -314,8 +315,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("overrideBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("overrideBgColor"))),
                                 fontName = "overrideFont",
                                 fontWeight = FontWeight.LIGHT,
                                 fontSize = 13,
@@ -339,8 +340,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("baseColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("baseBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseBgColor"))),
                                 fontName = "baseFont",
                                 fontWeight = FontWeight.LIGHT,
                                 fontSize = 13,
@@ -375,8 +376,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("baseColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("baseBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseBgColor"))),
                                 fontName = "baseFont",
                                 fontWeight = FontWeight.MEDIUM,
                                 fontSize = 15,
@@ -400,8 +401,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("baseColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("baseBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseBgColor"))),
                                 fontName = "baseFont",
                                 fontWeight = null,
                                 fontSize = null,
@@ -436,8 +437,8 @@ internal class LocalizedTextPartialTests {
                             from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
-                                color = ColorScheme(light = ColorInfo.Alias("baseColor")),
-                                backgroundColor = ColorScheme(light = ColorInfo.Alias("baseBgColor")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseColor"))),
+                                backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("baseBgColor"))),
                                 fontName = "baseFont",
                                 fontWeight = FontWeight.MEDIUM,
                                 fontSize = 15,
