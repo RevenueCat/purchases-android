@@ -69,9 +69,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -98,7 +100,7 @@ internal fun ImageComponentView(
     )
 
     if (imageState.visible) {
-        val overlay = imageState.overlay?.let { rememberColorStyle(it) }
+        val overlay = imageState.overlay?.forCurrentTheme
         val borderStyle = imageState.border?.let { rememberBorderStyle(border = it) }
         val shadowStyle = imageState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(imageState.shape) { derivedStateOf { imageState.shape ?: RectangleShape } }
@@ -300,7 +302,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
                         bottomTrailing = 20.0,
                     ),
                 ),
-                overlay = ColorScheme(
+                overlay = ColorStyles(
                     light = ColorInfo.Gradient.Linear(
                         degrees = -90f,
                         points = listOf(
@@ -317,7 +319,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
                                 percent = 100f,
                             ),
                         ),
-                    ),
+                    ).toColorStyle(),
                 ),
             ),
             state = previewEmptyState(),
@@ -345,7 +347,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
                         bottomTrailing = 20.0,
                     ),
                 ),
-                overlay = ColorScheme(
+                overlay = ColorStyles(
                     light = ColorInfo.Gradient.Radial(
                         listOf(
                             ColorInfo.Gradient.Point(
@@ -361,7 +363,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
                                 percent = 100f,
                             ),
                         ),
-                    ),
+                    ).toColorStyle(),
                 ),
             ),
             state = previewEmptyState(),
@@ -413,7 +415,7 @@ private fun previewImageComponentStyle(
     size: Size,
     fitMode: FitMode,
     shape: MaskShape,
-    overlay: ColorScheme? = null,
+    overlay: ColorStyles? = null,
     paddingValues: PaddingValues = PaddingValues(0.dp),
     marginValues: PaddingValues = PaddingValues(0.dp),
     border: Border? = Border(

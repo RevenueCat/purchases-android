@@ -18,7 +18,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -34,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -184,7 +184,7 @@ internal class ImageComponentState(
     val shadow by derivedStateOf { presentedPartial?.partial?.shadow ?: style.shadow }
 
     @get:JvmSynthetic
-    val overlay: ColorScheme? by derivedStateOf { presentedPartial?.partial?.colorOverlay ?: style.overlay }
+    val overlay: ColorStyles? by derivedStateOf { presentedPartial?.overlay ?: style.overlay }
 
     @get:JvmSynthetic
     val contentScale: ContentScale by derivedStateOf {

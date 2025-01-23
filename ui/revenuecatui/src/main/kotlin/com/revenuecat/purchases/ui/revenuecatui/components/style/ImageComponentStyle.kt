@@ -7,12 +7,12 @@ import androidx.compose.ui.layout.ContentScale
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Border
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 
 @Suppress("LongParameterList")
@@ -33,7 +33,7 @@ internal class ImageComponentStyle(
     @get:JvmSynthetic
     val shadow: Shadow?,
     @get:JvmSynthetic
-    val overlay: ColorScheme?,
+    val overlay: ColorStyles?,
     @get:JvmSynthetic
     val contentScale: ContentScale,
     /**
