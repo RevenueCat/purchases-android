@@ -78,7 +78,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -106,7 +106,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -134,7 +134,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow()
                     )
                 ),
@@ -155,7 +155,7 @@ internal class PresentedStackPartialTests {
                                 shadow = null,
                                 badge = null
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -171,7 +171,7 @@ internal class PresentedStackPartialTests {
                                 shadow = null,
                                 badge = null
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -187,7 +187,7 @@ internal class PresentedStackPartialTests {
                                 shadow = null,
                                 badge = null
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -220,7 +220,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         override = null,
                         expected = PresentedStackPartial(
@@ -249,7 +249,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -282,7 +282,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -298,7 +298,7 @@ internal class PresentedStackPartialTests {
                                 shadow = null,
                                 badge = null,
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -326,7 +326,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -359,7 +359,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -375,7 +375,7 @@ internal class PresentedStackPartialTests {
                                 shadow = null,
                                 badge = null,
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -403,7 +403,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -436,7 +436,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -464,7 +464,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -492,7 +492,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -513,7 +513,7 @@ internal class PresentedStackPartialTests {
                                 shadow = null,
                                 badge = null
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -541,7 +541,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -569,7 +569,7 @@ internal class PresentedStackPartialTests {
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
                             ),
-                            using = emptyMap(),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -595,7 +595,7 @@ internal class PresentedStackPartialTests {
                 from = PartialStackComponent(
                     backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("missing-key")))
                 ),
-                using = mapOf(
+                aliases = mapOf(
                     ColorAlias("existing-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))
                 )
             )
@@ -611,7 +611,7 @@ internal class PresentedStackPartialTests {
                 from = PartialStackComponent(
                     backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("existing-key"))),
                 ),
-                using = mapOf(
+                aliases = mapOf(
                     ColorAlias("existing-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))
                 )
             )
@@ -627,7 +627,7 @@ internal class PresentedStackPartialTests {
                 from = PartialStackComponent(
                     backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                 ),
-                using = mapOf(
+                aliases = mapOf(
                     ColorAlias("existing-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
                 )
             )
@@ -644,7 +644,7 @@ internal class PresentedStackPartialTests {
                 from = PartialStackComponent(
                     backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                 ),
-                using = emptyMap()
+                aliases = emptyMap()
             )
 
             // Assert
@@ -683,7 +683,7 @@ internal class PresentedStackPartialTests {
             // Act
             val actualResult = PresentedStackPartial(
                 from = partial,
-                using = colorAliases,
+                aliases = colorAliases,
             )
 
             // Assert
@@ -722,7 +722,7 @@ internal class PresentedStackPartialTests {
             // Act
             val actualResult = PresentedStackPartial(
                 from = partial,
-                using = colorAliases,
+                aliases = colorAliases,
             )
 
             // Assert
@@ -759,7 +759,7 @@ internal class PresentedStackPartialTests {
             // Act
             val actualResult = PresentedStackPartial(
                 from = partial,
-                using = colorAliases,
+                aliases = colorAliases,
             )
 
             // Assert
@@ -794,7 +794,7 @@ internal class PresentedStackPartialTests {
             // Act
             val actualResult = PresentedStackPartial(
                 from = partial,
-                using = colorAliases,
+                aliases = colorAliases,
             )
 
             // Assert
