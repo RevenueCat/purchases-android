@@ -47,7 +47,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
@@ -84,8 +86,8 @@ internal fun TextComponentView(
         variables = variableDataProvider,
     )
 
-    val colorStyle = rememberColorStyle(scheme = textState.color)
-    val backgroundColorStyle = textState.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val colorStyle = textState.color.forCurrentTheme
+    val backgroundColorStyle = textState.backgroundColor?.forCurrentTheme
 
     // Get the text color if it's solid.
     val color = when (colorStyle) {
@@ -183,7 +185,7 @@ private fun TextComponentView_Preview_Default() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
         ),
         state = previewEmptyState(),
     )
@@ -197,7 +199,7 @@ private fun TextComponentView_Preview_HeadingXlExtraBold() {
         TextComponentView(
             style = previewTextComponentStyle(
                 text = "Experience Pro today!",
-                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
                 fontSize = 34,
                 fontWeight = FontWeight.EXTRA_BOLD,
             ),
@@ -212,7 +214,7 @@ private fun TextComponentView_Preview_SerifFont() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontFamily = "serif",
             size = Size(width = Fit, height = Fit),
         ),
@@ -226,7 +228,7 @@ private fun TextComponentView_Preview_SansSerifFont() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontFamily = "sans-serif",
             size = Size(width = Fit, height = Fit),
         ),
@@ -240,7 +242,7 @@ private fun TextComponentView_Preview_MonospaceFont() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontFamily = "monospace",
             size = Size(width = Fit, height = Fit),
         ),
@@ -254,7 +256,7 @@ private fun TextComponentView_Preview_CursiveFont() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontFamily = "cursive",
             size = Size(width = Fit, height = Fit),
         ),
@@ -268,7 +270,7 @@ private fun TextComponentView_Preview_FontSize() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontSize = 28,
             size = Size(width = Fit, height = Fit),
         ),
@@ -282,7 +284,7 @@ private fun TextComponentView_Preview_HorizontalAlignment() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             size = Size(width = Fit, height = Fit),
             horizontalAlignment = HorizontalAlignment.TRAILING,
         ),
@@ -298,12 +300,12 @@ private fun TextComponentView_Preview_Customizations() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color(red = 0xff, green = 0x00, blue = 0x00).toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color(red = 0xff, green = 0x00, blue = 0x00))),
             fontSize = 13,
             fontWeight = FontWeight.BLACK,
             textAlign = HorizontalAlignment.LEADING,
             horizontalAlignment = HorizontalAlignment.LEADING,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(red = 0xde, green = 0xde, blue = 0xde).toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color(red = 0xde, green = 0xde, blue = 0xde))),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
@@ -318,7 +320,7 @@ private fun TextComponentView_Preview_Markdown() {
         style = previewTextComponentStyle(
             text = "Hello, **bold**, *italic* or _italic2_ with ~strikethrough~, ~~strikethrough2~~ and `monospace`. " +
                 "Click [here](https://revenuecat.com)",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
         ),
         state = previewEmptyState(),
     )
@@ -331,7 +333,7 @@ private fun TextComponentView_Preview_LinearGradient() {
         style = previewTextComponentStyle(
             text = "Do not allow people to dim your shine because they are blinded. " +
                 "Tell them to put some sunglasses on.",
-            color = ColorScheme(
+            color = ColorStyles(
                 light = ColorInfo.Gradient.Linear(
                     degrees = -45f,
                     points = listOf(
@@ -348,12 +350,12 @@ private fun TextComponentView_Preview_LinearGradient() {
                             percent = 80f,
                         ),
                     ),
-                ),
+                ).toColorStyle(),
             ),
             fontSize = 15,
             fontWeight = FontWeight.MEDIUM,
             textAlign = HorizontalAlignment.LEADING,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
@@ -369,7 +371,7 @@ private fun TextComponentView_Preview_RadialGradient() {
         style = previewTextComponentStyle(
             text = "Do not allow people to dim your shine because they are blinded. " +
                 "Tell them to put some sunglasses on.",
-            color = ColorScheme(
+            color = ColorStyles(
                 light = ColorInfo.Gradient.Radial(
                     points = listOf(
                         ColorInfo.Gradient.Point(
@@ -385,12 +387,12 @@ private fun TextComponentView_Preview_RadialGradient() {
                             percent = 100f,
                         ),
                     ),
-                ),
+                ).toColorStyle(),
             ),
             fontSize = 15,
             fontWeight = FontWeight.MEDIUM,
             textAlign = HorizontalAlignment.LEADING,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
@@ -402,13 +404,13 @@ private fun TextComponentView_Preview_RadialGradient() {
 @Suppress("LongParameterList")
 private fun previewTextComponentStyle(
     text: String,
-    color: ColorScheme,
+    color: ColorStyles,
     fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
     fontFamily: String? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
-    backgroundColor: ColorScheme? = null,
+    backgroundColor: ColorStyles? = null,
     size: Size = Size(width = Fill, height = Fit),
     padding: Padding = zero,
     margin: Padding = zero,

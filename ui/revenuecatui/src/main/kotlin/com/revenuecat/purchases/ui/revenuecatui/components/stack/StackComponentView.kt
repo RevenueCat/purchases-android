@@ -84,7 +84,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -900,17 +900,17 @@ private fun StackComponentView_Preview_ZLayer() {
                 children = listOf(
                     TextComponentStyle(
                         texts = nonEmptyMapOf(LocaleId("en_US") to "Hello"),
-                        color = ColorScheme(
-                            light = ColorInfo.Hex(Color.Black.toArgb()),
+                        color = ColorStyles(
+                            light = ColorStyle.Solid(Color.Black),
                         ),
                         fontSize = 15,
                         fontWeight = FontWeight.REGULAR.toFontWeight(),
                         fontFamily = null,
                         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                         horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
-                        backgroundColor = ColorScheme(
-                            light = ColorInfo.Hex(Color.Yellow.toArgb()),
-                            dark = ColorInfo.Hex(Color.Red.toArgb()),
+                        backgroundColor = ColorStyles(
+                            light = ColorStyle.Solid(Color.Yellow),
+                            dark = ColorStyle.Solid(Color.Red),
                         ),
                         size = Size(width = Fit, height = Fit),
                         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
@@ -920,16 +920,16 @@ private fun StackComponentView_Preview_ZLayer() {
                     ),
                     TextComponentStyle(
                         texts = nonEmptyMapOf(LocaleId("en_US") to "World"),
-                        color = ColorScheme(
-                            light = ColorInfo.Hex(Color.Black.toArgb()),
+                        color = ColorStyles(
+                            light = ColorStyle.Solid(Color.Black),
                         ),
                         fontSize = 15,
                         fontWeight = FontWeight.REGULAR.toFontWeight(),
                         fontFamily = null,
                         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                         horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
-                        backgroundColor = ColorScheme(
-                            light = ColorInfo.Hex(Color.Blue.toArgb()),
+                        backgroundColor = ColorStyles(
+                            light = ColorStyle.Solid(Color.Blue),
                         ),
                         size = Size(width = Fit, height = Fit),
                         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
@@ -973,12 +973,12 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             children = listOf(
                 previewTextComponentStyle(
                     text = "Hello",
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
                     size = Size(width = Fill, height = Fit),
                 ),
                 previewTextComponentStyle(
                     text = "World",
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
                     size = Size(width = Fill, height = Fit),
                 ),
             ),
@@ -1011,12 +1011,12 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             children = listOf(
                 previewTextComponentStyle(
                     text = "Hello",
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
                     size = Size(width = Fit, height = Fill),
                 ),
                 previewTextComponentStyle(
                     text = "World",
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
                     size = Size(width = Fit, height = Fill),
                 ),
             ),
@@ -1068,17 +1068,17 @@ private fun StackComponentView_Preview_Distribution(
             children = listOf(
                 previewTextComponentStyle(
                     text = "Hello",
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
                     size = Size(width = Fit, height = Fit),
                 ),
                 previewTextComponentStyle(
                     text = distribution?.name ?: "null",
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Green.toArgb())),
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Green)),
                     size = Size(width = Fit, height = Fit),
                 ),
                 previewTextComponentStyle(
                     text = "World",
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
                     size = Size(width = Fit, height = Fit),
                 ),
             ),
@@ -1105,16 +1105,16 @@ private fun StackComponentView_Preview_Distribution(
 private fun previewChildren() = listOf(
     TextComponentStyle(
         texts = nonEmptyMapOf(LocaleId("en_US") to "Hello"),
-        color = ColorScheme(
-            light = ColorInfo.Hex(Color.Black.toArgb()),
+        color = ColorStyles(
+            light = ColorStyle.Solid(Color.Black),
         ),
         fontSize = 15,
         fontWeight = FontWeight.REGULAR.toFontWeight(),
         fontFamily = null,
         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
         horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
-        backgroundColor = ColorScheme(
-            light = ColorInfo.Hex(Color.Blue.toArgb()),
+        backgroundColor = ColorStyles(
+            light = ColorStyle.Solid(Color.Blue),
         ),
         size = Size(width = Fit, height = Fit),
         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
@@ -1124,16 +1124,16 @@ private fun previewChildren() = listOf(
     ),
     TextComponentStyle(
         texts = nonEmptyMapOf(LocaleId("en_US") to "World"),
-        color = ColorScheme(
-            light = ColorInfo.Hex(Color.Black.toArgb()),
+        color = ColorStyles(
+            light = ColorStyle.Solid(Color.Black),
         ),
         fontSize = 15,
         fontWeight = FontWeight.REGULAR.toFontWeight(),
         fontFamily = null,
         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
         horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
-        backgroundColor = ColorScheme(
-            light = ColorInfo.Hex(Color.Blue.toArgb()),
+        backgroundColor = ColorStyles(
+            light = ColorStyle.Solid(Color.Blue),
         ),
         size = Size(width = Fit, height = Fit),
         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
@@ -1146,13 +1146,13 @@ private fun previewChildren() = listOf(
 @Suppress("LongParameterList")
 private fun previewTextComponentStyle(
     text: String,
-    color: ColorScheme = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+    color: ColorStyles = ColorStyles(ColorStyle.Solid(Color.Black)),
     fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
     fontFamily: String? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
-    backgroundColor: ColorScheme? = null,
+    backgroundColor: ColorStyles? = null,
     size: Size = Size(width = Fill, height = Fit),
     padding: Padding = zero,
     margin: Padding = zero,
@@ -1217,8 +1217,8 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
             children = listOf(
                 TextComponentStyle(
                     texts = nonEmptyMapOf(LocaleId("en_US") to "Badge"),
-                    color = ColorScheme(
-                        light = ColorInfo.Hex(Color.Black.toArgb()),
+                    color = ColorStyles(
+                        light = ColorStyle.Solid(Color.Black),
                     ),
                     fontSize = 15,
                     fontWeight = FontWeight.REGULAR.toFontWeight(),
@@ -1249,15 +1249,15 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
             ),
             size = Size(width = Fit, height = Fit),
             spacing = 0.dp,
-            backgroundColor = ColorScheme(
+            backgroundColor = ColorStyles(
                 light = ColorInfo.Gradient.Linear(
                     degrees = 45f,
                     points = listOf(
                         ColorInfo.Gradient.Point(Color.Green.toArgb(), percent = 0f),
                         ColorInfo.Gradient.Point(Color.Yellow.toArgb(), percent = 80f),
                     ),
-                ),
-            ).toColorStyles(aliases = emptyMap()).getOrThrow(),
+                ).toColorStyle(),
+            ),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 0.dp),
             shape = shape,
