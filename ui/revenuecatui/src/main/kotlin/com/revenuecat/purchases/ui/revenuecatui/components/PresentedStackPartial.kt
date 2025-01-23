@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
-import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
@@ -21,9 +20,9 @@ internal class PresentedStackPartial(
 
     companion object {
         /**
-         * Creates a [LocalizedTextPartial] from the provided [PartialTextComponent] and [LocalizationDictionary]. If
-         * [PartialTextComponent.text] is non null, it should exist in the [LocalizationDictionary]. If it doesn't,
-         * this function will return a failure result.
+         * Creates a [PresentedStackPartial] from the provided [PartialStackComponent] and [using] map. If
+         * [PartialStackComponent.backgroundColor] is non null and contains a color alias, it should exist in the
+         * [using] map. If it doesn't, this function will return a failure result.
          */
         @JvmSynthetic
         operator fun invoke(
