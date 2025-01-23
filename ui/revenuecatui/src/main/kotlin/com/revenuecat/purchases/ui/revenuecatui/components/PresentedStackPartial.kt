@@ -20,17 +20,17 @@ internal class PresentedStackPartial(
 
     companion object {
         /**
-         * Creates a [PresentedStackPartial] from the provided [PartialStackComponent] and [using] map. If
+         * Creates a [PresentedStackPartial] from the provided [PartialStackComponent] and [aliases] map. If
          * [PartialStackComponent.backgroundColor] is non null and contains a color alias, it should exist in the
-         * [using] map. If it doesn't, this function will return a failure result.
+         * [aliases] map. If it doesn't, this function will return a failure result.
          */
         @JvmSynthetic
         operator fun invoke(
             from: PartialStackComponent,
-            using: Map<ColorAlias, ColorScheme>,
+            aliases: Map<ColorAlias, ColorScheme>,
         ): Result<PresentedStackPartial, NonEmptyList<PaywallValidationError>> =
             from.backgroundColor
-                ?.toColorStyles(aliases = using)
+                ?.toColorStyles(aliases = aliases)
                 .orSuccessfullyNull()
                 .map { backgroundColorStyles ->
                     PresentedStackPartial(
