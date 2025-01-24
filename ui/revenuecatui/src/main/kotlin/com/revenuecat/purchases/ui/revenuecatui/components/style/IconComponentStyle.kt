@@ -10,14 +10,15 @@ import com.revenuecat.purchases.paywalls.components.IconComponent.Formats
 import com.revenuecat.purchases.paywalls.components.IconComponent.IconBackground
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -61,7 +62,7 @@ internal class IconComponentStyle(
         @get:JvmSynthetic
         val border: BorderStyles? = null,
         @get:JvmSynthetic
-        val shadow: Shadow? = null,
+        val shadow: ShadowStyles? = null,
     )
 }
 
@@ -72,7 +73,8 @@ internal fun IconBackground.toBackground(
     zipOrAccumulate(
         first = color.toColorStyles(aliases),
         second = border?.toBorderStyles(aliases).orSuccessfullyNull(),
-    ) { color, border ->
+        third = shadow?.toShadowStyles(aliases).orSuccessfullyNull(),
+    ) { color, border, shadow ->
         IconComponentStyle.Background(
             color = color,
             shape = shape,
