@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @ExperimentalPreviewRevenueCatPurchasesAPI
-enum class CustomerCenterEventType(val value: String) {
+enum class CustomerCenterEventType {
     /**
      * The customer center was shown to the user.
      */
