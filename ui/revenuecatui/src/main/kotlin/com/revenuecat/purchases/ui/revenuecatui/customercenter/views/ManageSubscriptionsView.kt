@@ -38,6 +38,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 @Composable
 internal fun ManageSubscriptionsView(
     screen: CustomerCenterConfigData.Screen,
+    localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     purchaseInformation: PurchaseInformation? = null,
     onPathButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
@@ -55,6 +56,7 @@ internal fun ManageSubscriptionsView(
             purchaseInformation?.let { purchaseInformation ->
                 ActiveUserManagementView(
                     screen = screen,
+                    localization = localization,
                     purchaseInformation = purchaseInformation,
                     onDetermineFlow = onPathButtonPress,
                 )
@@ -70,6 +72,7 @@ internal fun ManageSubscriptionsView(
 @Composable
 private fun ActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
+    localization: CustomerCenterConfigData.Localization,
     purchaseInformation: PurchaseInformation,
     onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
@@ -89,7 +92,7 @@ private fun ActiveUserManagementView(
         }
         Spacer(modifier = Modifier.size(32.dp))
 
-        SubscriptionDetailsView(details = purchaseInformation)
+        SubscriptionDetailsView(details = purchaseInformation, localization = localization)
 
         Spacer(modifier = Modifier.size(32.dp))
 
@@ -168,6 +171,7 @@ private fun ManageSubscriptionsViewPreview() {
     val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
     ManageSubscriptionsView(
         screen = managementScreen,
+        localization = testData.localization,
         purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
         onPathButtonPress = {},
     )
@@ -182,6 +186,7 @@ private fun NoActiveSubscriptionsViewPreview() {
 
     ManageSubscriptionsView(
         screen = noActiveScreen,
+        localization = testData.localization,
         purchaseInformation = null,
         onPathButtonPress = {},
     )
