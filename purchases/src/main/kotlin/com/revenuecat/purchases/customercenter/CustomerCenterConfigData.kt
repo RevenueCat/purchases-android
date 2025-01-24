@@ -136,6 +136,21 @@ data class CustomerCenterConfigData(
 
             @SerialName("purchases_not_recovered")
             PURCHASES_NOT_RECOVERED,
+
+            @SerialName("you_have_promo")
+            YOU_HAVE_PROMO,
+
+            @SerialName("you_have_lifetime")
+            YOU_HAVE_LIFETIME,
+
+            @SerialName("web_subscription_manage")
+            WEB_SUBSCRIPTION_MANAGE,
+
+            @SerialName("free")
+            FREE,
+
+            @SerialName("never")
+            NEVER,
             ;
 
             val defaultValue: String
@@ -171,9 +186,10 @@ data class CustomerCenterConfigData(
                     APPLE_SUBSCRIPTION_MANAGE ->
                         "You can manage your subscription by using the App Store app on an Apple device."
                     GOOGLE_SUBSCRIPTION_MANAGE ->
-                        "You can manage your subscription by using the Play Store app on an Android device"
+                        "You have an active subscription from the Google Play Store"
                     AMAZON_SUBSCRIPTION_MANAGE ->
-                        "You can manage your subscription in the Amazon Appstore app on an Amazon device."
+                        "You have an active subscription from the Amazon Appstore. " +
+                            "You can manage your subscription in the Amazon Appstore app."
                     GOING_TO_CHECK_PURCHASES ->
                         "Let’s take a look! We’re going to check your account for missing purchases."
                     CHECK_PAST_PURCHASES -> "Check past purchases"
@@ -183,6 +199,13 @@ data class CustomerCenterConfigData(
                     PURCHASES_NOT_RECOVERED ->
                         "We couldn't find any additional purchases under this account. " +
                             "Contact support for assistance if you think this is an error."
+                    YOU_HAVE_PROMO -> "You've been granted a subscription that doesn’t renew"
+                    YOU_HAVE_LIFETIME -> "Your active lifetime subscription"
+                    WEB_SUBSCRIPTION_MANAGE ->
+                        "You have an active subscription that was created on the web. " +
+                            "You can manage your subscription by visiting your account."
+                    FREE -> "Free"
+                    NEVER -> "Never"
                 }
         }
 
