@@ -347,12 +347,24 @@ internal class StyleFactory(
         second = createTextComponentStyle(item.title, rcPackage),
         third = item.description?.let { createTextComponentStyle(it, rcPackage) }.orSuccessfullyNull(),
         fourth = createIconComponentStyle(item.icon, rcPackage),
-    ) { presentedOverrides, title, description, icon ->
+        fifth = item.connector?.color?.toColorStyles(uiConfig.app.colors).orSuccessfullyNull(),
+    ) { presentedOverrides, title, description, icon, connectorColor ->
+        val connectorStyle = item.connector?.let { connector ->
+            if (connectorColor != null) {
+                TimelineComponentStyle.ConnectorStyle(
+                    width = connector.width,
+                    margin = connector.margin.toPaddingValues(),
+                    color = connectorColor,
+                )
+            } else {
+                null
+            }
+        }
         TimelineComponentStyle.ItemStyle(
             title = title,
             description = description,
             icon = icon,
-            connector = item.connector,
+            connector = connectorStyle,
             rcPackage = rcPackage,
             overrides = presentedOverrides,
         )
