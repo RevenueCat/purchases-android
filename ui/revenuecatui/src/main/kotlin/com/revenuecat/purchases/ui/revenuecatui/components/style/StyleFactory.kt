@@ -259,7 +259,8 @@ internal class StyleFactory(
             .mapError { nonEmptyListOf(it) },
         third = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
         fourth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
-    ) { sources, presentedOverrides, overlay, border ->
+        fifth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, presentedOverrides, overlay, border, shadow ->
         ImageComponentStyle(
             sources,
             size = component.size,
@@ -267,7 +268,7 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             shape = component.maskShape?.toShape(),
             border = border,
-            shadow = component.shadow,
+            shadow = shadow,
             overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,

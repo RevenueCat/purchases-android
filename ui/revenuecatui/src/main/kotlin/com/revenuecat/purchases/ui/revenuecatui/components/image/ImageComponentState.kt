@@ -181,7 +181,7 @@ internal class ImageComponentState(
     val border by derivedStateOf { presentedPartial?.border ?: style.border }
 
     @get:JvmSynthetic
-    val shadow by derivedStateOf { presentedPartial?.partial?.shadow ?: style.shadow }
+    val shadow by derivedStateOf { presentedPartial?.shadow ?: style.shadow }
 
     @get:JvmSynthetic
     val overlay: ColorStyles? by derivedStateOf { presentedPartial?.overlay ?: style.overlay }
