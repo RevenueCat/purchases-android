@@ -9,6 +9,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -116,15 +117,16 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
     )
     val config = paywallComponents.data.componentsConfig.base
 
-    // Combine the main stack with the stickyFooter, or accumulate the encountered errors.
+    // Combine the main stack with the stickyFooter and the background, or accumulate the encountered errors.
     return zipOrAccumulate(
-        styleFactory.create(config.stack),
-        config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
-    ) { stack, stickyFooter ->
+        first = styleFactory.create(config.stack),
+        second = config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
+        third = config.background.toBackgroundStyles(aliases = paywallComponents.uiConfig.app.colors),
+    ) { stack, stickyFooter, background ->
         PaywallValidationResult.Components(
             stack = stack,
             stickyFooter = stickyFooter,
-            background = config.background,
+            background = background,
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
         )
