@@ -34,7 +34,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
@@ -46,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
@@ -134,13 +134,9 @@ private fun previewIconComponentStyle(
     ),
     paddingValues: PaddingValues = PaddingValues(10.dp),
     marginValues: PaddingValues = PaddingValues(10.dp),
-    border: Border? = Border(
-        width = 2.0,
-        color = ColorScheme(
-            light = ColorInfo.Hex(
-                Color.Cyan.toArgb(),
-            ),
-        ),
+    border: BorderStyles? = BorderStyles(
+        width = 2.dp,
+        colors = ColorStyles(light = ColorStyle.Solid(Color.Cyan)),
     ),
     shadow: Shadow? = Shadow(
         color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),

@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.PartialIconComponent
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
@@ -24,9 +25,11 @@ internal class PresentedIconPartialTests {
         // Arrange
         val missingColorKey = ColorAlias("missing-color-key")
         val missingBackgroundKey = ColorAlias("missing-background-key")
+        val missingBorderKey = ColorAlias("missing-border-key")
         val expected = nonEmptyListOf(
             PaywallValidationError.MissingColorAlias(missingColorKey),
             PaywallValidationError.MissingColorAlias(missingBackgroundKey),
+            PaywallValidationError.MissingColorAlias(missingBorderKey),
         )
 
         // Act
@@ -36,11 +39,13 @@ internal class PresentedIconPartialTests {
                 iconBackground = IconComponent.IconBackground(
                     color = ColorScheme(light = ColorInfo.Alias(missingBackgroundKey)),
                     shape = MaskShape.Circle,
+                    border = Border(color = ColorScheme(light = ColorInfo.Alias(missingBorderKey)), width = 2.0)
                 )
             ),
             aliases = mapOf(
                 ColorAlias("existing-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
-                ColorAlias("existing-background-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                ColorAlias("existing-background-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                ColorAlias("existing-border-key") to ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb())),
             )
         )
 
@@ -55,11 +60,14 @@ internal class PresentedIconPartialTests {
         // Arrange
         val firstColorKey = ColorAlias("first-color-key")
         val firstBackgroundKey = ColorAlias("first-background-key")
+        val firstBorderKey = ColorAlias("first-border-key")
         val secondColorKey = ColorAlias("second-color-key")
         val secondBackgroundKey = ColorAlias("second-background-key")
+        val secondBorderKey = ColorAlias("second-border-key")
         val expected = nonEmptyListOf(
             PaywallValidationError.AliasedColorIsAlias(firstColorKey, secondColorKey),
             PaywallValidationError.AliasedColorIsAlias(firstBackgroundKey, secondBackgroundKey),
+            PaywallValidationError.AliasedColorIsAlias(firstBorderKey, secondBorderKey),
         )
 
         // Act
@@ -69,11 +77,13 @@ internal class PresentedIconPartialTests {
                 iconBackground = IconComponent.IconBackground(
                     color = ColorScheme(light = ColorInfo.Alias(firstBackgroundKey)),
                     shape = MaskShape.Circle,
+                    border = Border(color = ColorScheme(light = ColorInfo.Alias(firstBorderKey)), width = 2.0)
                 )
             ),
             aliases = mapOf(
                 firstColorKey to ColorScheme(light = ColorInfo.Alias(secondColorKey)),
                 firstBackgroundKey to ColorScheme(light = ColorInfo.Alias(secondBackgroundKey)),
+                firstBorderKey to ColorScheme(light = ColorInfo.Alias(secondBorderKey)),
             )
         )
 
@@ -88,8 +98,10 @@ internal class PresentedIconPartialTests {
         // Arrange
         val existingColorKey = ColorAlias("existing-color-key")
         val existingBackgroundKey = ColorAlias("existing-background-key")
+        val existingBorderKey = ColorAlias("existing-border-key")
         val expectedColor = Color.Red
         val expectedBackgroundColor = Color.Blue
+        val expectedBorderColor = Color.Green
 
         // Act
         val actualResult = PresentedIconPartial(
@@ -98,11 +110,13 @@ internal class PresentedIconPartialTests {
                 iconBackground = IconComponent.IconBackground(
                     color = ColorScheme(light = ColorInfo.Alias(existingBackgroundKey)),
                     shape = MaskShape.Circle,
+                    border = Border(color = ColorScheme(light = ColorInfo.Alias(existingBorderKey)), width = 2.0)
                 )
             ),
             aliases = mapOf(
                 existingColorKey to ColorScheme(light = ColorInfo.Hex(expectedColor.toArgb())),
-                existingBackgroundKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb()))
+                existingBackgroundKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
+                existingBorderKey to ColorScheme(light = ColorInfo.Hex(expectedBorderColor.toArgb())),
             )
         )
 
@@ -111,11 +125,15 @@ internal class PresentedIconPartialTests {
         val actual = actualResult.getOrThrow()
         val actualColor = actual.colorStyles?.light ?: error("Actual color is null")
         val actualBackgroundColor = actual.background?.color?.light ?: error("Actual background color is null")
+        val actualBorderColor = actual.background.border?.colors?.light ?: error("Actual border color is null")
         actualColor.let { it as ColorStyle.Solid }.also {
             assert(it.color == expectedColor)
         }
         actualBackgroundColor.let { it as ColorStyle.Solid }.also {
             assert(it.color == expectedBackgroundColor)
+        }
+        actualBorderColor.let { it as ColorStyle.Solid }.also {
+            assert(it.color == expectedBorderColor)
         }
     }
 
@@ -128,6 +146,7 @@ internal class PresentedIconPartialTests {
                 iconBackground = IconComponent.IconBackground(
                     color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                     shape = MaskShape.Circle,
+                    border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())), width = 2.0),
                 )
             ),
             aliases = mapOf(
@@ -149,6 +168,7 @@ internal class PresentedIconPartialTests {
                 iconBackground = IconComponent.IconBackground(
                     color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                     shape = MaskShape.Circle,
+                    border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())), width = 2.0),
                 )
             ),
             aliases = emptyMap()
