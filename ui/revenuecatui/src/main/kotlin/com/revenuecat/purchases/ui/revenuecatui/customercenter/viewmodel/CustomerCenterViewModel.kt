@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
@@ -15,11 +16,13 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
@@ -293,11 +296,14 @@ internal class CustomerCenterViewModelImpl(
 
     @SuppressWarnings("ForbiddenComment")
     override fun openURL(context: Context, url: Uri) {
-        // TODO: Handle In-App Browser
-        try {
-            context.startActivity(Intent(Intent.ACTION_VIEW, url))
-        } catch (e: ActivityNotFoundException) {
-            Logger.e("Error opening URL", e)
+        context.openUriOrElse(url.toString()) { exception ->
+            val msg = if (exception is ActivityNotFoundException) {
+                context.getString(R.string.no_browser_cannot_open_link)
+            } else {
+                context.getString(R.string.cannot_open_link)
+            }
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            Logger.w(msg)
         }
     }
 

@@ -299,8 +299,8 @@ private fun ManageSubscriptionButton(
 @Composable
 private fun CustomerCenterButton(
     onClick: () -> Unit,
-    useOutlinedButton: Boolean = false,
     modifier: Modifier = Modifier,
+    useOutlinedButton: Boolean = false,
     buttonContent: @Composable (Modifier) -> Unit,
 ) {
     val buttonModifier = modifier
