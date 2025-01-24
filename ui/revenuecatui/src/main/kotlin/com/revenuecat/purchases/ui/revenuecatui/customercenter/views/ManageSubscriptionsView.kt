@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -240,48 +239,37 @@ private fun OtherPlatformSubscriptionButtonsView(
     support: CustomerCenterConfigData.Support,
     managementURL: Uri?,
     onAction: (CustomerCenterAction) -> Unit,
-    useOutlinedButton: Boolean = false,
 ) {
-    val buttonModifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 4.dp)
-
     Column {
         managementURL?.let {
-            Button(
+            CustomerCenterButton(
                 onClick = { onAction(CustomerCenterAction.OpenURL(it)) },
-                modifier = buttonModifier,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            ) {
-                Text(
-                    text = localization.commonLocalizedString(
-                        CustomerCenterConfigData.Localization.CommonLocalizedString.MANAGE_SUBSCRIPTION,
-                    ),
-                    color = if (useOutlinedButton) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onPrimary
-                    },
-                )
-            }
+                buttonContent = { modifier ->
+                    Text(
+                        text = localization.commonLocalizedString(
+                            CustomerCenterConfigData.Localization.CommonLocalizedString.MANAGE_SUBSCRIPTION,
+                        ),
+                        modifier = modifier,
+                        textAlign = TextAlign.Start,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                },
+            )
         }
         support.email?.let {
-            Button(
+            CustomerCenterButton(
                 onClick = { onAction(CustomerCenterAction.ContactSupport(it)) },
-                modifier = buttonModifier,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            ) {
-                Text(
-                    text = localization.commonLocalizedString(
-                        CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
-                    ),
-                    color = if (useOutlinedButton) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onPrimary
-                    },
-                )
-            }
+                buttonContent = { modifier ->
+                    Text(
+                        text = localization.commonLocalizedString(
+                            CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
+                        ),
+                        modifier = modifier,
+                        textAlign = TextAlign.Start,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                },
+            )
         }
     }
 }
@@ -293,22 +281,35 @@ private fun ManageSubscriptionButton(
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
     useOutlinedButton: Boolean,
 ) {
-    val buttonModifier = Modifier
+    CustomerCenterButton(
+        onClick = { onButtonPress(path) },
+        useOutlinedButton = useOutlinedButton,
+        buttonContent = { modifier ->
+            Text(
+                text = path.title,
+                modifier = modifier,
+                textAlign = TextAlign.Start,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        },
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Composable
+private fun CustomerCenterButton(
+    onClick: () -> Unit,
+    useOutlinedButton: Boolean = false,
+    modifier: Modifier = Modifier,
+    buttonContent: @Composable (Modifier) -> Unit,
+) {
+    val buttonModifier = modifier
         .fillMaxWidth()
         .padding(vertical = 4.dp)
 
-    val buttonContent: @Composable (Modifier) -> Unit = { modifier ->
-        Text(
-            text = path.title,
-            modifier = modifier,
-            textAlign = TextAlign.Start,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-
     if (useOutlinedButton) {
         OutlinedButton(
-            onClick = { onButtonPress(path) },
+            onClick = onClick,
             modifier = buttonModifier,
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         ) {
@@ -324,7 +325,7 @@ private fun ManageSubscriptionButton(
             ButtonDefaults.TextButtonContentPadding.calculateEndPadding(layoutDirection)
 
         TextButton(
-            onClick = { onButtonPress(path) },
+            onClick = onClick,
             modifier = buttonModifier
                 .heightIn(60.dp)
                 .padding(start = startPadding, end = endPadding),
