@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.colorInt
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -149,7 +150,7 @@ internal class TimelineComponentTests {
                                             bottom = 11.0,
                                             trailing = 12.0
                                         ),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     ),
                                 )
                             ),
@@ -312,7 +313,7 @@ internal class TimelineComponentTests {
                                             bottom = 11.0,
                                             trailing = 12.0
                                         ),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     ),
                                 )
                             ),
