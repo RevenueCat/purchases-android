@@ -103,33 +103,6 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
         }
     }
 
-@JvmSynthetic
-@Composable
-internal fun Background.toBackgroundStyle(): BackgroundStyle =
-    when (this) {
-        is Background.Color -> BackgroundStyle.Color(color = value.toColorStyle())
-        is Background.Image -> {
-            val imageUrls = value.urlsForCurrentTheme
-            val contentScale = fitMode.toContentScale()
-            BackgroundStyle.Image(
-                painter = rememberAsyncImagePainter(
-                    model = imageUrls.webp.toString(),
-                    placeholder = rememberAsyncImagePainter(
-                        model = imageUrls.webpLowRes.toString(),
-                        error = null,
-                        fallback = null,
-                        contentScale = contentScale,
-                    ),
-                    error = null,
-                    fallback = null,
-                    contentScale = contentScale,
-                ),
-                contentScale = contentScale,
-                colorOverlay = colorOverlay?.toColorStyle(),
-            )
-        }
-    }
-
 @Composable
 private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter =
     rememberAsyncImagePainter(
@@ -151,13 +124,7 @@ private fun Background_Preview_ColorHex() {
     Box(
         modifier = Modifier
             .requiredSize(100.dp)
-            .background(
-                Background.Color(
-                    ColorScheme(
-                        light = ColorInfo.Hex(Color.Red.toArgb()),
-                    ),
-                ).toBackgroundStyle(),
-            ),
+            .background(BackgroundStyle.Color(ColorStyle.Solid(Color.Red))),
     )
 }
 
@@ -168,27 +135,25 @@ private fun Background_Preview_ColorGradientLinear() {
         modifier = Modifier
             .requiredSize(100.dp)
             .background(
-                Background.Color(
-                    ColorScheme(
-                        light = ColorInfo.Gradient.Linear(
-                            degrees = 0f,
-                            points = listOf(
-                                ColorInfo.Gradient.Point(
-                                    color = Color.Red.toArgb(),
-                                    percent = 0f,
-                                ),
-                                ColorInfo.Gradient.Point(
-                                    color = Color.Green.toArgb(),
-                                    percent = 50f,
-                                ),
-                                ColorInfo.Gradient.Point(
-                                    color = Color.Blue.toArgb(),
-                                    percent = 100f,
-                                ),
+                BackgroundStyle.Color(
+                    ColorInfo.Gradient.Linear(
+                        degrees = 0f,
+                        points = listOf(
+                            ColorInfo.Gradient.Point(
+                                color = Color.Red.toArgb(),
+                                percent = 0f,
+                            ),
+                            ColorInfo.Gradient.Point(
+                                color = Color.Green.toArgb(),
+                                percent = 50f,
+                            ),
+                            ColorInfo.Gradient.Point(
+                                color = Color.Blue.toArgb(),
+                                percent = 100f,
                             ),
                         ),
-                    ),
-                ).toBackgroundStyle(),
+                    ).toColorStyle(),
+                ),
             ),
     )
 }
@@ -200,26 +165,24 @@ private fun Background_Preview_ColorGradientRadial() {
         modifier = Modifier
             .requiredSize(100.dp)
             .background(
-                Background.Color(
-                    ColorScheme(
-                        light = ColorInfo.Gradient.Radial(
-                            points = listOf(
-                                ColorInfo.Gradient.Point(
-                                    color = Color.Red.toArgb(),
-                                    percent = 0f,
-                                ),
-                                ColorInfo.Gradient.Point(
-                                    color = Color.Green.toArgb(),
-                                    percent = 50f,
-                                ),
-                                ColorInfo.Gradient.Point(
-                                    color = Color.Blue.toArgb(),
-                                    percent = 100f,
-                                ),
+                BackgroundStyle.Color(
+                    ColorInfo.Gradient.Radial(
+                        points = listOf(
+                            ColorInfo.Gradient.Point(
+                                color = Color.Red.toArgb(),
+                                percent = 0f,
+                            ),
+                            ColorInfo.Gradient.Point(
+                                color = Color.Green.toArgb(),
+                                percent = 50f,
+                            ),
+                            ColorInfo.Gradient.Point(
+                                color = Color.Blue.toArgb(),
+                                percent = 100f,
                             ),
                         ),
-                    ),
-                ).toBackgroundStyle(),
+                    ).toColorStyle(),
+                ),
             ),
     )
 }

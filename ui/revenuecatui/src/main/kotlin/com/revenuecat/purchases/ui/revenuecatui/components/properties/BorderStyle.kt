@@ -45,16 +45,6 @@ internal fun Border.toBorderStyles(
 
 @Composable
 @JvmSynthetic
-internal fun rememberBorderStyle(border: Border): BorderStyle {
-    val colorStyle = rememberColorStyle(border.color)
-    return BorderStyle(
-        width = border.width.dp,
-        color = colorStyle,
-    )
-}
-
-@Composable
-@JvmSynthetic
 internal fun rememberBorderStyle(border: BorderStyles): BorderStyle {
     val colorStyle = border.colors.forCurrentTheme
     return remember(colorStyle) {

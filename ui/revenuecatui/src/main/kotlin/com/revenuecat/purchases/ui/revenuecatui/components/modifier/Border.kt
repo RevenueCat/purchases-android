@@ -16,12 +16,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 
 @JvmSynthetic
 @Stable
@@ -118,29 +116,25 @@ private fun Border_Preview_LinearGradient(shape: Shape) {
             .requiredSize(100.dp)
             .background(Color.Red)
             .border(
-                border = rememberBorderStyle(
-                    Border(
-                        width = 10.0,
-                        color = ColorScheme(
-                            light = ColorInfo.Gradient.Linear(
-                                degrees = -45f,
-                                points = listOf(
-                                    ColorInfo.Gradient.Point(
-                                        color = Color.Cyan.toArgb(),
-                                        percent = 10f,
-                                    ),
-                                    ColorInfo.Gradient.Point(
-                                        color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                                        percent = 30f,
-                                    ),
-                                    ColorInfo.Gradient.Point(
-                                        color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                                        percent = 80f,
-                                    ),
-                                ),
+                border = BorderStyle(
+                    width = 10.dp,
+                    color = ColorInfo.Gradient.Linear(
+                        degrees = -45f,
+                        points = listOf(
+                            ColorInfo.Gradient.Point(
+                                color = Color.Cyan.toArgb(),
+                                percent = 10f,
+                            ),
+                            ColorInfo.Gradient.Point(
+                                color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
+                                percent = 30f,
+                            ),
+                            ColorInfo.Gradient.Point(
+                                color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
+                                percent = 80f,
                             ),
                         ),
-                    ),
+                    ).toColorStyle(),
                 ),
                 shape = shape,
             ),
@@ -155,28 +149,24 @@ private fun Border_Preview_RadialGradient(shape: Shape) {
             .requiredSize(100.dp)
             .background(Color.Red)
             .border(
-                border = rememberBorderStyle(
-                    Border(
-                        width = 10.0,
-                        color = ColorScheme(
-                            light = ColorInfo.Gradient.Radial(
-                                points = listOf(
-                                    ColorInfo.Gradient.Point(
-                                        color = Color.Cyan.toArgb(),
-                                        percent = 80f,
-                                    ),
-                                    ColorInfo.Gradient.Point(
-                                        color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                                        percent = 90f,
-                                    ),
-                                    ColorInfo.Gradient.Point(
-                                        color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                                        percent = 96f,
-                                    ),
-                                ),
+                border = BorderStyle(
+                    width = 10.dp,
+                    color = ColorInfo.Gradient.Radial(
+                        points = listOf(
+                            ColorInfo.Gradient.Point(
+                                color = Color.Cyan.toArgb(),
+                                percent = 80f,
+                            ),
+                            ColorInfo.Gradient.Point(
+                                color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
+                                percent = 90f,
+                            ),
+                            ColorInfo.Gradient.Point(
+                                color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
+                                percent = 96f,
                             ),
                         ),
-                    ),
+                    ).toColorStyle(),
                 ),
                 shape = shape,
             ),

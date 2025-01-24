@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -27,6 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import coil.Coil
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
+import coil.compose.rememberAsyncImagePainter
 import coil.test.FakeImageLoaderEngine
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -38,7 +40,10 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEqu
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorCount
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -267,4 +272,27 @@ class BackgroundTests {
                 )
             }
         }
+
+    @JvmSynthetic
+    @Composable
+    internal fun Background.Image.toBackgroundStyle(colorOverlay: Color? = null): BackgroundStyle {
+        val imageUrls = value.urlsForCurrentTheme
+        val contentScale = fitMode.toContentScale()
+        return BackgroundStyle.Image(
+            painter = rememberAsyncImagePainter(
+                model = imageUrls.webp.toString(),
+                placeholder = rememberAsyncImagePainter(
+                    model = imageUrls.webpLowRes.toString(),
+                    error = null,
+                    fallback = null,
+                    contentScale = contentScale,
+                ),
+                error = null,
+                fallback = null,
+                contentScale = contentScale,
+            ),
+            contentScale = contentScale,
+            colorOverlay = colorOverlay?.let { ColorStyle.Solid(it) }
+        )
+    }
 }
