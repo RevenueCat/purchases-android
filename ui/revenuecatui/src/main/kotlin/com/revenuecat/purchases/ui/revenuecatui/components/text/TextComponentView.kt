@@ -19,24 +19,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
-import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
+import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
@@ -49,7 +42,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
-import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 
 @Composable
@@ -385,37 +377,5 @@ private fun TextComponentView_Preview_RadialGradient() {
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
         state = previewEmptyState(),
-    )
-}
-
-@Suppress("LongParameterList")
-private fun previewTextComponentStyle(
-    text: String,
-    color: ColorStyles,
-    fontSize: Int = 15,
-    fontWeight: FontWeight = FontWeight.REGULAR,
-    fontFamily: String? = null,
-    textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
-    horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
-    backgroundColor: ColorStyles? = null,
-    size: Size = Size(width = Fill, height = Fit),
-    padding: Padding = zero,
-    margin: Padding = zero,
-): TextComponentStyle {
-    val weight = fontWeight.toFontWeight()
-    return TextComponentStyle(
-        texts = nonEmptyMapOf(LocaleId("en_US") to text),
-        color = color,
-        fontSize = fontSize,
-        fontWeight = weight,
-        fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
-        textAlign = textAlign.toTextAlign(),
-        horizontalAlignment = horizontalAlignment.toAlignment(),
-        backgroundColor = backgroundColor,
-        size = size,
-        padding = padding.toPaddingValues(),
-        margin = margin.toPaddingValues(),
-        rcPackage = null,
-        overrides = null,
     )
 }
