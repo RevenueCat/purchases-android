@@ -3,6 +3,7 @@ package com.revenuecat.purchases.customercenter.events
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.Serializable
 import java.util.Date
 import java.util.UUID
@@ -21,7 +22,7 @@ class CustomerCenterEvent(
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @Poko
     @Serializable
-    data class CreationData(
+    class CreationData(
         @Serializable(with = UUIDSerializer::class)
         val id: UUID,
         @Serializable(with = DateSerializer::class)
@@ -31,23 +32,16 @@ class CustomerCenterEvent(
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @Poko
     @Serializable
+    @SuppressWarnings("LongParameterList")
     class Data(
-        @Serializable(with = UUIDSerializer::class)
-        val id: UUID?,
         val type: CustomerCenterEventType,
         @Serializable(with = DateSerializer::class)
         val timestamp: Date,
         val darkMode: Boolean,
         val locale: String,
         val isSandbox: Boolean,
-    ) {
-        @Transient
-        var version: Int = 1
-
-        @Transient
-        val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN
-
-        @Transient
-        val revisionId: Int = 1
-    }
+        val version: Int = 1,
+        val revisionId: Int = 1,
+        val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
+    )
 }

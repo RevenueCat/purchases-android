@@ -1,4 +1,5 @@
 package com.revenuecat.purchases.customercenter.events
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
