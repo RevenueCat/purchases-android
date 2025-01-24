@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -20,6 +21,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
@@ -654,28 +656,56 @@ internal class PresentedStackPartialTests {
         @Test
         fun `Should properly combine light and dark ColorAliases using different aliases`() {
             // Arrange
-            val expectedLightColor = Color.Red
-            val expectedDarkColor = Color.Cyan
+            val expectedLightBackgroundColor = Color.Red
+            val expectedDarkBackgroundColor = Color.Cyan
+            val expectedLightBorderColor = Color.Blue
+            val expectedDarkBorderColor = Color.Yellow
+            val lightBackgroundKey = ColorAlias("existing-light-background-key")
+            val darkBackgroundKey = ColorAlias("existing-dark-background-key")
+            val lightBorderColorKey = ColorAlias("existing-light-border-key")
+            val darkBorderColorKey = ColorAlias("existing-dark-border-key")
             val partial = PartialStackComponent(
                 backgroundColor = ColorScheme(
-                    light = ColorInfo.Alias(ColorAlias("existing-light-key")),
-                    dark = ColorInfo.Alias(ColorAlias("existing-dark-key"))
+                    light = ColorInfo.Alias(lightBackgroundKey),
+                    dark = ColorInfo.Alias(darkBackgroundKey)
+                ),
+                border = Border(
+                    color = ColorScheme(
+                        light = ColorInfo.Alias(lightBorderColorKey),
+                        dark = ColorInfo.Alias(darkBorderColorKey),
+                    ),
+                    width = 2.0,
                 ),
             )
             val colorAliases = mapOf(
-                ColorAlias("existing-light-key") to ColorScheme(
-                    light = ColorInfo.Hex(expectedLightColor.toArgb()),
+                lightBackgroundKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedLightBackgroundColor.toArgb()),
                     dark = ColorInfo.Hex(Color.Blue.toArgb())
                 ),
-                ColorAlias("existing-dark-key") to ColorScheme(
+                darkBackgroundKey to ColorScheme(
                     light = ColorInfo.Hex(Color.Yellow.toArgb()),
-                    dark = ColorInfo.Hex(expectedDarkColor.toArgb())
+                    dark = ColorInfo.Hex(expectedDarkBackgroundColor.toArgb())
+                ),
+                lightBorderColorKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedLightBorderColor.toArgb()),
+                    dark = ColorInfo.Hex(Color.Black.toArgb())
+                ),
+                darkBorderColorKey to ColorScheme(
+                    light = ColorInfo.Hex(Color.White.toArgb()),
+                    dark = ColorInfo.Hex(expectedDarkBorderColor.toArgb())
                 ),
             )
             val expected = PresentedStackPartial(
                 backgroundColorStyles = ColorStyles(
-                    light = ColorStyle.Solid(expectedLightColor),
-                    dark = ColorStyle.Solid(expectedDarkColor),
+                    light = ColorStyle.Solid(expectedLightBackgroundColor),
+                    dark = ColorStyle.Solid(expectedDarkBackgroundColor),
+                ),
+                borderStyles = BorderStyles(
+                    width = 2.dp,
+                    colors = ColorStyles(
+                        light = ColorStyle.Solid(expectedLightBorderColor),
+                        dark = ColorStyle.Solid(expectedDarkBorderColor),
+                    ),
                 ),
                 partial = partial,
             )
@@ -695,26 +725,52 @@ internal class PresentedStackPartialTests {
         @Test
         fun `Should properly combine light and dark ColorAliases using different aliases - aliased scheme only has light`() {
             // Arrange
-            val expectedLightColor = Color.Red
-            val expectedDarkColor = Color.Cyan
+            val expectedLightBackgroundColor = Color.Red
+            val expectedDarkBackgroundColor = Color.Cyan
+            val expectedLightBorderColor = Color.Blue
+            val expectedDarkBorderColor = Color.Yellow
+            val lightBackgroundKey = ColorAlias("existing-light-background-key")
+            val darkBackgroundKey = ColorAlias("existing-dark-background-key")
+            val lightBorderColorKey = ColorAlias("existing-light-border-key")
+            val darkBorderColorKey = ColorAlias("existing-dark-border-key")
             val partial = PartialStackComponent(
                 backgroundColor = ColorScheme(
-                    light = ColorInfo.Alias(ColorAlias("existing-light-key")),
-                    dark = ColorInfo.Alias(ColorAlias("existing-dark-key"))
+                    light = ColorInfo.Alias(lightBackgroundKey),
+                    dark = ColorInfo.Alias(darkBackgroundKey)
+                ),
+                border = Border(
+                    color = ColorScheme(
+                        light = ColorInfo.Alias(lightBorderColorKey),
+                        dark = ColorInfo.Alias(darkBorderColorKey),
+                    ),
+                    width = 2.0,
                 ),
             )
             val colorAliases = mapOf(
-                ColorAlias("existing-light-key") to ColorScheme(
-                    light = ColorInfo.Hex(expectedLightColor.toArgb()),
+                lightBackgroundKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedLightBackgroundColor.toArgb()),
                 ),
-                ColorAlias("existing-dark-key") to ColorScheme(
-                    light = ColorInfo.Hex(expectedDarkColor.toArgb()),
+                darkBackgroundKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedDarkBackgroundColor.toArgb()),
+                ),
+                lightBorderColorKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedLightBorderColor.toArgb()),
+                ),
+                darkBorderColorKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedDarkBorderColor.toArgb()),
                 ),
             )
             val expected = PresentedStackPartial(
                 backgroundColorStyles = ColorStyles(
-                    light = ColorStyle.Solid(expectedLightColor),
-                    dark = ColorStyle.Solid(expectedDarkColor),
+                    light = ColorStyle.Solid(expectedLightBackgroundColor),
+                    dark = ColorStyle.Solid(expectedDarkBackgroundColor),
+                ),
+                borderStyles = BorderStyles(
+                    width = 2.dp,
+                    colors = ColorStyles(
+                        light = ColorStyle.Solid(expectedLightBorderColor),
+                        dark = ColorStyle.Solid(expectedDarkBorderColor),
+                    ),
                 ),
                 partial = partial,
             )
@@ -734,24 +790,46 @@ internal class PresentedStackPartialTests {
         @Test
         fun `Should properly combine light and dark ColorAliases using the same alias`() {
             // Arrange
-            val expectedLightColor = Color.Red
-            val expectedDarkColor = Color.Cyan
+            val expectedLightBackgroundColor = Color.Red
+            val expectedDarkBackgroundColor = Color.Cyan
+            val expectedLightBorderColor = Color.Blue
+            val expectedDarkBorderColor = Color.Yellow
+            val backgroundKey = ColorAlias("existing-background-key")
+            val borderKey = ColorAlias("existing-border-key")
             val partial = PartialStackComponent(
                 backgroundColor = ColorScheme(
-                    light = ColorInfo.Alias(ColorAlias("existing-key")),
-                    dark = ColorInfo.Alias(ColorAlias("existing-key"))
+                    light = ColorInfo.Alias(backgroundKey),
+                    dark = ColorInfo.Alias(backgroundKey)
                 ),
+                border = Border(
+                    color = ColorScheme(
+                        light = ColorInfo.Alias(borderKey),
+                        dark = ColorInfo.Alias(borderKey)
+                    ),
+                    width = 2.0,
+                )
             )
             val colorAliases = mapOf(
-                ColorAlias("existing-key") to ColorScheme(
-                    light = ColorInfo.Hex(expectedLightColor.toArgb()),
-                    dark = ColorInfo.Hex(expectedDarkColor.toArgb())
+                backgroundKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedLightBackgroundColor.toArgb()),
+                    dark = ColorInfo.Hex(expectedDarkBackgroundColor.toArgb())
+                ),
+                borderKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedLightBorderColor.toArgb()),
+                    dark = ColorInfo.Hex(expectedDarkBorderColor.toArgb())
                 ),
             )
             val expected = PresentedStackPartial(
                 backgroundColorStyles = ColorStyles(
-                    light = ColorStyle.Solid(expectedLightColor),
-                    dark = ColorStyle.Solid(expectedDarkColor),
+                    light = ColorStyle.Solid(expectedLightBackgroundColor),
+                    dark = ColorStyle.Solid(expectedDarkBackgroundColor),
+                ),
+                borderStyles = BorderStyles(
+                    width = 2.dp,
+                    colors = ColorStyles(
+                        light = ColorStyle.Solid(expectedLightBorderColor),
+                        dark = ColorStyle.Solid(expectedDarkBorderColor),
+                    ),
                 ),
                 partial = partial,
             )
@@ -771,22 +849,42 @@ internal class PresentedStackPartialTests {
         @Test
         fun `Should properly combine light and dark ColorAliases using the same alias - aliased scheme only has light`() {
             // Arrange
-            val expectedColor = Color.Red
+            val expectedBackgroundColor = Color.Red
+            val expectedBorderColor = Color.Blue
+            val backgroundKey = ColorAlias("existing-background-key")
+            val borderKey = ColorAlias("existing-border-key")
             val partial = PartialStackComponent(
                 backgroundColor = ColorScheme(
-                    light = ColorInfo.Alias(ColorAlias("existing-key")),
-                    dark = ColorInfo.Alias(ColorAlias("existing-key"))
+                    light = ColorInfo.Alias(backgroundKey),
+                    dark = ColorInfo.Alias(backgroundKey)
+                ),
+                border = Border(
+                    color = ColorScheme(
+                        light = ColorInfo.Alias(borderKey),
+                        dark = ColorInfo.Alias(borderKey)
+                    ),
+                    width = 2.0,
                 ),
             )
             val colorAliases = mapOf(
-                ColorAlias("existing-key") to ColorScheme(
-                    light = ColorInfo.Hex(expectedColor.toArgb()),
+                backgroundKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedBackgroundColor.toArgb()),
+                ),
+                borderKey to ColorScheme(
+                    light = ColorInfo.Hex(expectedBorderColor.toArgb()),
                 ),
             )
             val expected = PresentedStackPartial(
                 backgroundColorStyles = ColorStyles(
-                    light = ColorStyle.Solid(expectedColor),
-                    dark = ColorStyle.Solid(expectedColor),
+                    light = ColorStyle.Solid(expectedBackgroundColor),
+                    dark = ColorStyle.Solid(expectedBackgroundColor),
+                ),
+                borderStyles = BorderStyles(
+                    width = 2.dp,
+                    colors = ColorStyles(
+                        light = ColorStyle.Solid(expectedBorderColor),
+                        dark = ColorStyle.Solid(expectedBorderColor),
+                    ),
                 ),
                 partial = partial,
             )

@@ -45,7 +45,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Badge
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -79,6 +78,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
@@ -176,7 +176,7 @@ private fun StackWithOverlaidBadge(
     Box(modifier = modifier) {
         MainStackComponent(stackState, state, clickHandler)
         val mainStackBorderWidthPx = with(LocalDensity.current) {
-            stackState.border?.width?.dp?.toPx()
+            stackState.border?.width?.toPx()
         }
         OverlaidBadge(badgeStack, state, alignment, mainStackBorderWidthPx)
     }
@@ -660,7 +660,7 @@ private fun StackComponentView_Preview_Vertical() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
                     radius = 10.0,
@@ -719,7 +719,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 padding = PaddingValues(all = 12.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = Border(width = 10.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                border = BorderStyles(width = 10.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Overlay, alignment, badgeShape),
                 rcPackage = null,
@@ -757,7 +757,7 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, badgeShape),
                 rcPackage = null,
@@ -792,7 +792,7 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Pill,
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, Shape.Pill),
                 rcPackage = null,
@@ -835,7 +835,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = Border(width = 10.0, color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))),
+                border = BorderStyles(width = 10.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Yellow))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Nested, alignment, badgeShape),
                 rcPackage = null,
@@ -870,7 +870,7 @@ private fun StackComponentView_Preview_Horizontal() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
                     radius = 30.0,
@@ -948,7 +948,7 @@ private fun StackComponentView_Preview_ZLayer() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
                     radius = 20.0,

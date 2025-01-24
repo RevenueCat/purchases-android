@@ -118,11 +118,11 @@ internal fun <A, B> Result<A, B>?.orSuccessfullyNull(): Result<A?, B> =
  * one is a [Result.Error].
  */
 @JvmSynthetic
-internal inline fun <A, B, E, F> zipOrAccumulate(
-    first: Result<A, NonEmptyList<F>>,
-    second: Result<B, NonEmptyList<F>>,
-    transform: (A, B) -> E,
-): Result<E, NonEmptyList<F>> = zipOrAccumulate(
+internal inline fun <A, B, G, H> zipOrAccumulate(
+    first: Result<A, NonEmptyList<H>>,
+    second: Result<B, NonEmptyList<H>>,
+    transform: (A, B) -> G,
+): Result<G, NonEmptyList<H>> = zipOrAccumulate(
     first = first,
     second = second,
     third = Result.Success(Unit),
@@ -134,12 +134,12 @@ internal inline fun <A, B, E, F> zipOrAccumulate(
  * one is a [Result.Error].
  */
 @JvmSynthetic
-internal inline fun <A, B, C, E, F> zipOrAccumulate(
-    first: Result<A, NonEmptyList<F>>,
-    second: Result<B, NonEmptyList<F>>,
-    third: Result<C, NonEmptyList<F>>,
-    transform: (A, B, C) -> E,
-): Result<E, NonEmptyList<F>> = zipOrAccumulate(
+internal inline fun <A, B, C, G, H> zipOrAccumulate(
+    first: Result<A, NonEmptyList<H>>,
+    second: Result<B, NonEmptyList<H>>,
+    third: Result<C, NonEmptyList<H>>,
+    transform: (A, B, C) -> G,
+): Result<G, NonEmptyList<H>> = zipOrAccumulate(
     first = first,
     second = second,
     third = third,
@@ -152,15 +152,61 @@ internal inline fun <A, B, C, E, F> zipOrAccumulate(
  * one is a [Result.Error].
  */
 @JvmSynthetic
-internal inline fun <A, B, C, D, E, F> zipOrAccumulate(
-    first: Result<A, NonEmptyList<F>>,
-    second: Result<B, NonEmptyList<F>>,
-    third: Result<C, NonEmptyList<F>>,
-    fourth: Result<D, NonEmptyList<F>>,
-    transform: (A, B, C, D) -> E,
-): Result<E, NonEmptyList<F>> {
+internal inline fun <A, B, C, D, G, H> zipOrAccumulate(
+    first: Result<A, NonEmptyList<H>>,
+    second: Result<B, NonEmptyList<H>>,
+    third: Result<C, NonEmptyList<H>>,
+    fourth: Result<D, NonEmptyList<H>>,
+    transform: (A, B, C, D) -> G,
+): Result<G, NonEmptyList<H>> = zipOrAccumulate(
+    first = first,
+    second = second,
+    third = third,
+    fourth = fourth,
+    fifth = Result.Success(Unit),
+    transform = { a, b, c, d, _ -> transform(a, b, c, d) },
+)
+
+/**
+ * Combines the values from the provided Results using [transform], or accumulates the errors if at least
+ * one is a [Result.Error].
+ */
+@Suppress("LongParameterList")
+@JvmSynthetic
+internal inline fun <A, B, C, D, E, G, H> zipOrAccumulate(
+    first: Result<A, NonEmptyList<H>>,
+    second: Result<B, NonEmptyList<H>>,
+    third: Result<C, NonEmptyList<H>>,
+    fourth: Result<D, NonEmptyList<H>>,
+    fifth: Result<E, NonEmptyList<H>>,
+    transform: (A, B, C, D, E) -> G,
+): Result<G, NonEmptyList<H>> = zipOrAccumulate(
+    first = first,
+    second = second,
+    third = third,
+    fourth = fourth,
+    fifth = fifth,
+    sixth = Result.Success(Unit),
+    transform = { a, b, c, d, e, _ -> transform(a, b, c, d, e) },
+)
+
+/**
+ * Combines the values from the provided Results using [transform], or accumulates the errors if at least
+ * one is a [Result.Error].
+ */
+@Suppress("LongParameterList")
+@JvmSynthetic
+internal inline fun <A, B, C, D, E, F, G, H> zipOrAccumulate(
+    first: Result<A, NonEmptyList<H>>,
+    second: Result<B, NonEmptyList<H>>,
+    third: Result<C, NonEmptyList<H>>,
+    fourth: Result<D, NonEmptyList<H>>,
+    fifth: Result<E, NonEmptyList<H>>,
+    sixth: Result<F, NonEmptyList<H>>,
+    transform: (A, B, C, D, E, F) -> G,
+): Result<G, NonEmptyList<H>> {
     // This one can be extended to support as many parameters as we need.
-    val results = listOf(first, second, third, fourth)
+    val results = listOf(first, second, third, fourth, fifth, sixth)
     val errors = results.collectErrors()
 
     return errors.toNonEmptyListOrNull()
@@ -172,6 +218,8 @@ internal inline fun <A, B, C, D, E, F> zipOrAccumulate(
                 (second as Result.Success<B>).value,
                 (third as Result.Success<C>).value,
                 (fourth as Result.Success<D>).value,
+                (fifth as Result.Success<E>).value,
+                (sixth as Result.Success<F>).value,
             ),
         )
 }

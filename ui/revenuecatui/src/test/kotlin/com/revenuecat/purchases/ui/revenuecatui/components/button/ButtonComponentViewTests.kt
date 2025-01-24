@@ -19,7 +19,6 @@ import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -38,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
@@ -96,7 +96,7 @@ class ButtonComponentViewTests {
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
                     shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                    border = Border(width = 2.0, color = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb()))),
+                    border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
                     shadow = Shadow(
                         color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
                         radius = 10.0,

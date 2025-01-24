@@ -31,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -188,7 +189,8 @@ internal class StyleFactory(
                 }
         }.orSuccessfullyNull(),
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
-    ) { presentedOverrides, children, badge, backgroundColorStyles ->
+        fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+    ) { presentedOverrides, children, badge, backgroundColorStyles, borderStyles ->
         StackComponentStyle(
             children = children,
             dimension = component.dimension,
@@ -198,7 +200,7 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             shape = component.shape ?: Shape.Rectangle(),
-            border = component.border,
+            border = borderStyles,
             shadow = component.shadow,
             badge = badge,
             rcPackage = rcPackage,
