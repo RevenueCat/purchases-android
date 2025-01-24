@@ -3,23 +3,28 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -33,6 +38,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 @Composable
 internal fun ManageSubscriptionsView(
     screen: CustomerCenterConfigData.Screen,
+    localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     purchaseInformation: PurchaseInformation? = null,
     onPathButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
@@ -50,6 +56,7 @@ internal fun ManageSubscriptionsView(
             purchaseInformation?.let { purchaseInformation ->
                 ActiveUserManagementView(
                     screen = screen,
+                    localization = localization,
                     purchaseInformation = purchaseInformation,
                     onDetermineFlow = onPathButtonPress,
                 )
@@ -65,42 +72,34 @@ internal fun ManageSubscriptionsView(
 @Composable
 private fun ActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
+    localization: CustomerCenterConfigData.Localization,
     purchaseInformation: PurchaseInformation,
     onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column {
         Text(
             text = screen.title,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(end = 16.dp, top = 32.dp),
         )
 
         screen.subtitle?.let { subtitle ->
+            Spacer(modifier = Modifier.size(4.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(bottom = 24.dp),
             )
         }
+        Spacer(modifier = Modifier.size(32.dp))
 
-        LazyColumn {
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 4.dp,
-                    ),
-                ) {
-                    SubscriptionDetailsView(details = purchaseInformation)
-                }
-            }
+        SubscriptionDetailsView(details = purchaseInformation, localization = localization)
 
-            item {
-                ManageSubscriptionsButtonsView(screen = screen, onDetermineFlow = onDetermineFlow)
-            }
+        Spacer(modifier = Modifier.size(32.dp))
+
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+        ) {
+            ManageSubscriptionsButtonsView(screen = screen, onDetermineFlow = onDetermineFlow)
         }
     }
 }
@@ -172,6 +171,7 @@ private fun ManageSubscriptionsViewPreview() {
     val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
     ManageSubscriptionsView(
         screen = managementScreen,
+        localization = testData.localization,
         purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
         onPathButtonPress = {},
     )
@@ -186,6 +186,7 @@ private fun NoActiveSubscriptionsViewPreview() {
 
     ManageSubscriptionsView(
         screen = noActiveScreen,
+        localization = testData.localization,
         purchaseInformation = null,
         onPathButtonPress = {},
     )
@@ -220,10 +221,12 @@ private fun ManageSubscriptionButton(
         .fillMaxWidth()
         .padding(vertical = 4.dp)
 
-    val buttonContent: @Composable () -> Unit = {
+    val buttonContent: @Composable (Modifier) -> Unit = { modifier ->
         Text(
             text = path.title,
-            color = if (useOutlinedButton) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary,
+            modifier = modifier,
+            textAlign = TextAlign.Start,
+            style = MaterialTheme.typography.bodyLarge,
         )
     }
 
@@ -231,16 +234,29 @@ private fun ManageSubscriptionButton(
         OutlinedButton(
             onClick = { onDetermineFlow(path) },
             modifier = buttonModifier,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         ) {
-            buttonContent()
+            buttonContent(Modifier)
         }
     } else {
-        Button(
+        val layoutDirection = LocalLayoutDirection.current
+        val totalHorizontalButtonPadding = 16.dp
+
+        val startPadding = totalHorizontalButtonPadding -
+            ButtonDefaults.TextButtonContentPadding.calculateStartPadding(layoutDirection)
+        val endPadding = totalHorizontalButtonPadding -
+            ButtonDefaults.TextButtonContentPadding.calculateEndPadding(layoutDirection)
+
+        TextButton(
             onClick = { onDetermineFlow(path) },
-            modifier = buttonModifier,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            modifier = buttonModifier
+                .heightIn(60.dp)
+                .padding(start = startPadding, end = endPadding),
+            // It's a rectangle so it gets clipped by the parent Surface.
+            shape = RectangleShape,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
         ) {
-            buttonContent()
+            buttonContent(Modifier.fillMaxWidth())
         }
     }
 }

@@ -53,7 +53,12 @@
         "update_warning_description":"Downloading the latest version of the app may help solve the problem.",
         "update_warning_ignore":"Continue",
         "update_warning_title":"Update available",
-        "update_warning_update":"Update"
+        "update_warning_update":"Update",
+        "you_have_promo": "You've been granted a subscription that doesn’t renew",
+        "you_have_lifetime": "Your active lifetime subscription",
+        "web_subscription_manage": "You have an active subscription that was created on the web. You can manage your subscription by visiting your account.",
+        "free": "Free",
+        "never": "Never"
       }
     },
     "screens":{

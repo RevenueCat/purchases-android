@@ -230,6 +230,17 @@ enum class Store {
      */
     @SerialName("external")
     EXTERNAL,
+
+    ;
+
+    internal companion object {
+        @JvmSynthetic
+        fun fromString(text: String): Store {
+            return runCatching {
+                enumValueOf<Store>(text.uppercase())
+            }.getOrDefault(UNKNOWN_STORE)
+        }
+    }
 }
 
 /**
