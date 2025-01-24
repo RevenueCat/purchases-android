@@ -35,8 +35,6 @@ data class Transaction(
         storeTransactionId = jsonObject.optString("store_transaction_id").takeIf {
             it.isNotBlank()
         },
-        store = runCatching {
-            Store.valueOf(jsonObject.getString("store").uppercase())
-        }.getOrDefault(Store.UNKNOWN),
+        store = jsonObject.getString("store").let { Store.fromString(it) },
     )
 }
