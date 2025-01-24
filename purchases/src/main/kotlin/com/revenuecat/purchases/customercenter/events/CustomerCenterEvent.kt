@@ -5,6 +5,8 @@ import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.Date
 import java.util.UUID
 
@@ -18,6 +20,14 @@ class CustomerCenterEvent(
     val creationData: CreationData,
     val eventData: Data,
 ) {
+
+    companion object {
+        val json = Json.Default
+
+        fun fromString(string: String): CustomerCenterEvent {
+            return json.decodeFromString(string)
+        }
+    }
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @Poko
@@ -44,4 +54,8 @@ class CustomerCenterEvent(
         val revisionId: Int = 1,
         val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
     )
+
+    override fun toString(): String {
+        return CustomerCenterEvent.json.encodeToString(this)
+    }
 }
