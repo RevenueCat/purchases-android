@@ -5,12 +5,14 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stickyfooter.StickyFooterComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -51,4 +53,5 @@ internal fun ComponentView(
         modifier = modifier,
     )
     is PackageComponentStyle -> PackageComponentView(style = style, state = state, modifier = modifier)
+    is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
 }

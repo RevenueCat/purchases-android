@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -103,7 +104,7 @@ internal class ImageComponentTests {
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             overrideSourceLid = LocalizationKey("abc123"),
                             maskShape = MaskShape.Rectangle(
-                                corners = CornerRadiuses(
+                                corners = CornerRadiuses.Dp(
                                     topLeading = 3.0,
                                     topTrailing = 4.0,
                                     bottomLeading = 1.0,
@@ -111,7 +112,7 @@ internal class ImageComponentTests {
                                 )
                             ),
                             colorOverlay = ColorScheme(
-                                light = ColorInfo.Alias("primary")
+                                light = ColorInfo.Alias(ColorAlias("primary"))
                             ),
                             fitMode = FitMode.FILL,
                         )
@@ -252,14 +253,14 @@ internal class ImageComponentTests {
                             overrideSourceLid = LocalizationKey("abc123"),
                             fitMode = FitMode.FILL,
                             maskShape = MaskShape.Rectangle(
-                                corners = CornerRadiuses(
+                                corners = CornerRadiuses.Dp(
                                     topLeading = 3.0,
                                     topTrailing = 4.0,
                                     bottomLeading = 1.0,
                                     bottomTrailing = 2.0,
                                 )
                             ),
-                            colorOverlay = ColorScheme(light = ColorInfo.Alias("primary"))
+                            colorOverlay = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                         )
                     )
                 ),

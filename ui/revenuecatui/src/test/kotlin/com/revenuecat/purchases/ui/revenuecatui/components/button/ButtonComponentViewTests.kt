@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -37,6 +38,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
@@ -89,10 +92,10 @@ class ButtonComponentViewTests {
                     dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
                     size = Size(width = Fill, height = Fill),
                     spacing = 16.dp,
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Red)),
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
-                    shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                     border = Border(width = 2.0, color = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb()))),
                     shadow = Shadow(
                         color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -170,7 +173,7 @@ class ButtonComponentViewTests {
             metadata = emptyMap(),
             availablePackages = emptyList(),
         )
-        val styleFactory = StyleFactory(localizations, offering)
+        val styleFactory = StyleFactory(localizations, UiConfig(), offering)
         val style = styleFactory.create(component).getOrThrow() as ButtonComponentStyle
         val state = FakePaywallState(
             localizations = localizations,

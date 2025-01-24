@@ -10,8 +10,8 @@ internal object IdentityStrings {
     const val SETTING_NEW_ANON_ID = "Setting new anonymous App User ID - %s"
     const val LOG_OUT_CALLED_ON_ANONYMOUS_USER = "Called logOut but the current user is anonymous"
     const val LOG_OUT_SUCCESSFUL = "Logged out successfully"
-    const val INVALIDATING_CACHED_CUSTOMER_INFO = "Detected unverified cached CustomerInfo but verification " +
-        "is enabled. Invalidating cache."
+    const val INVALIDATING_CACHED_ETAG_CACHE = "Detected unverified cached CustomerInfo but verification " +
+        "is enabled. Invalidating Etag cache."
     const val SWITCHING_USER = "Switching to user %s."
     const val SWITCHING_USER_SAME_APP_USER_ID = "switchUser called with the same appUserID as the current user %s. " +
         "This has no effect."

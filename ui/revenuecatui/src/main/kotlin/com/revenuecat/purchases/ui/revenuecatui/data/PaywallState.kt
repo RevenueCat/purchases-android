@@ -18,6 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscribed
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
@@ -76,15 +77,34 @@ internal sealed interface PaywallState {
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
+            private val activelySubscribedProductIds: Set<String>,
+            private val purchasedNonSubscriptionProductIds: Set<String>,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedPackage: Package? = null,
         ) : Loaded {
+
+            data class SelectedPackageInfo(
+                val rcPackage: Package,
+                val currentlySubscribed: Boolean,
+            )
+
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
             val locale by derivedStateOf { localeId.toComposeLocale() }
 
-            var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage)
-                private set
+            private var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage)
+
+            val selectedPackageInfo by derivedStateOf {
+                selectedPackage?.let { rcPackage ->
+                    SelectedPackageInfo(
+                        rcPackage = rcPackage,
+                        currentlySubscribed = rcPackage.currentlySubscribed(
+                            activelySubscribedProductIdentifiers = activelySubscribedProductIds,
+                            nonSubscriptionProductIdentifiers = purchasedNonSubscriptionProductIds,
+                        ),
+                    )
+                }
+            }
 
             val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
 

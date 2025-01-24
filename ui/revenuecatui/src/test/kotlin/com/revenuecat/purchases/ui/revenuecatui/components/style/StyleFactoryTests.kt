@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
@@ -50,6 +51,7 @@ class StyleFactoryTests {
             LOCALIZATION_KEY_TEXT_2 to LocalizationData.Text("this is text 2"),
         )
     )
+    private val uiConfig = UiConfig()
     private val offering = Offering(
         identifier = "identifier",
         serverDescription = "description",
@@ -59,7 +61,7 @@ class StyleFactoryTests {
 
     @Before
     fun setup() {
-        styleFactory = StyleFactory(localizations, offering)
+        styleFactory = StyleFactory(localizations, uiConfig, offering)
     }
 
     @Test
@@ -137,6 +139,7 @@ class StyleFactoryTests {
                     otherLocalizationKey to LocalizationData.Text(unexpectedText)
                 ),
             ),
+            uiConfig = uiConfig,
             offering = offering,
         )
 
@@ -176,6 +179,7 @@ class StyleFactoryTests {
                     // otherLocale is missing the overrideLocalizationKey.
                 ),
             ),
+            uiConfig = uiConfig,
             offering = offering,
         )
 
@@ -217,6 +221,7 @@ class StyleFactoryTests {
                     otherLocalizationKey to LocalizationData.Text(unexpectedText)
                 ),
             ),
+            uiConfig = uiConfig,
             offering = offering,
         )
 
@@ -272,6 +277,7 @@ class StyleFactoryTests {
                     LocalizationKey("key-text") to LocalizationData.Text("value-text"),
                 ),
             ),
+            uiConfig = uiConfig,
             offering = offering,
         )
 

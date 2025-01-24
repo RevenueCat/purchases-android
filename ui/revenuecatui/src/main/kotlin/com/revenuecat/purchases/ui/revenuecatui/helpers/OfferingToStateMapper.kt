@@ -90,15 +90,15 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
     val paywallComponents = paywallComponents ?: return null
 
     // Check that the default localization is present in the localizations map.
-    val defaultLocalization = paywallComponents.defaultLocalization
-        .errorIfNull(PaywallValidationError.AllLocalizationsMissing(paywallComponents.defaultLocaleIdentifier))
+    val defaultLocalization = paywallComponents.data.defaultLocalization
+        .errorIfNull(PaywallValidationError.AllLocalizationsMissing(paywallComponents.data.defaultLocaleIdentifier))
         .mapError { nonEmptyListOf(it) }
         .getOrElse { error -> return RcResult.Error(error) }
 
     // Build a NonEmptyMap of localizations, ensuring that we always have the default localization as fallback.
     val localizations = nonEmptyMapOf(
-        paywallComponents.defaultLocaleIdentifier to defaultLocalization,
-        paywallComponents.componentsLocalizations,
+        paywallComponents.data.defaultLocaleIdentifier to defaultLocalization,
+        paywallComponents.data.componentsLocalizations,
     ).mapValues { (locale, map) ->
         // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>. If a certain locale
         // has an empty Map, we add an AllLocalizationsMissing error for that locale to our list of errors.
@@ -109,8 +109,12 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
         .getOrElse { error -> return RcResult.Error(error) }
 
     // Create the StyleFactory to recursively create and validate all ComponentStyles.
-    val styleFactory = StyleFactory(localizations = localizations, offering = this)
-    val config = paywallComponents.componentsConfig.base
+    val styleFactory = StyleFactory(
+        localizations = localizations,
+        uiConfig = paywallComponents.uiConfig,
+        offering = this,
+    )
+    val config = paywallComponents.data.componentsConfig.base
 
     // Combine the main stack with the stickyFooter, or accumulate the encountered errors.
     return zipOrAccumulate(
@@ -122,7 +126,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
             stickyFooter = stickyFooter,
             background = config.background,
             locales = localizations.keys,
-            zeroDecimalPlaceCountries = paywallComponents.zeroDecimalPlaceCountries.toSet(),
+            zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
         )
     }
 }
@@ -240,6 +244,8 @@ internal fun Offering.toLegacyPaywallState(
 
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
+    activelySubscribedProductIds: Set<String>,
+    purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
@@ -253,6 +259,8 @@ internal fun Offering.toComponentsPaywallState(
         showPricesWithDecimals = showPricesWithDecimals,
         offering = this,
         locales = validationResult.locales,
+        activelySubscribedProductIds = activelySubscribedProductIds,
+        purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
     )
 }
 

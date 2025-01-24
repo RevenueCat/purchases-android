@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -49,6 +50,7 @@ internal fun LocalImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
+    colorFilter: ColorFilter? = null,
 ) {
     Image(
         source = ImageSource.Local(resource),
@@ -58,6 +60,7 @@ internal fun LocalImage(
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
+        colorFilter = colorFilter,
         previewImageLoader = null,
     )
 }
@@ -76,6 +79,7 @@ internal fun RemoteImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
+    colorFilter: ColorFilter? = null,
     previewImageLoader: ImageLoader? = null,
 ) {
     Image(
@@ -86,6 +90,7 @@ internal fun RemoteImage(
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
+        colorFilter = colorFilter,
         previewImageLoader = previewImageLoader,
     )
 }
@@ -111,6 +116,7 @@ private fun Image(
     contentDescription: String?,
     transformation: Transformation?,
     alpha: Float,
+    colorFilter: ColorFilter?,
     previewImageLoader: ImageLoader?,
 ) {
     // Previews don't support images
@@ -141,6 +147,7 @@ private fun Image(
             modifier = modifier,
             contentScale = contentScale,
             alpha = alpha,
+            colorFilter = colorFilter,
             onError = {
                 Logger.w("Image failed to load. Will try again disabling cache")
                 useCache = false
@@ -156,6 +163,7 @@ private fun Image(
             modifier = modifier,
             contentScale = contentScale,
             alpha = alpha,
+            colorFilter = colorFilter,
         )
     }
 }
@@ -171,6 +179,7 @@ private fun AsyncImage(
     contentScale: ContentScale,
     contentDescription: String?,
     alpha: Float,
+    colorFilter: ColorFilter? = null,
     onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
 ) {
     AsyncImage(
@@ -191,6 +200,7 @@ private fun AsyncImage(
         modifier = modifier,
         contentScale = contentScale,
         alpha = alpha,
+        colorFilter = colorFilter,
         onError = {
             val error = when (source) {
                 is ImageSource.Local -> "Error loading local image: '${source.resource}'"

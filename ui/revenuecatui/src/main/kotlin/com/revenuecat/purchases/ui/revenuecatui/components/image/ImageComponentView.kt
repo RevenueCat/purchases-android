@@ -38,6 +38,7 @@ import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.SuccessResult
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -205,7 +206,7 @@ private fun ImageComponentView_Preview(
                 size = parameters.viewSize,
                 fitMode = parameters.fitMode,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -234,7 +235,7 @@ private fun ImageComponentView_Preview_SmallerContainer() {
                 size = Size(width = Fixed(400u), height = Fixed(400u)),
                 fitMode = FitMode.FIT,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -265,7 +266,7 @@ private fun ImageComponentView_Preview_Margin_Padding() {
                 marginValues = PaddingValues(20.dp),
                 fitMode = FitMode.FIT,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -292,7 +293,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
                 size = Size(width = Fixed(400u), height = Fit),
                 fitMode = FitMode.FIT,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -337,7 +338,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
                 size = Size(width = Fixed(400u), height = Fit),
                 fitMode = FitMode.FIT,
                 shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses(
+                    corners = CornerRadiuses.Dp(
                         topLeading = 20.0,
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
@@ -372,14 +373,13 @@ private fun ImageComponentView_Preview_RadialGradient() {
 private class MaskShapeProvider : PreviewParameterProvider<MaskShape> {
     override val values: Sequence<MaskShape> = sequenceOf(
         MaskShape.Rectangle(
-            corners = CornerRadiuses(
+            corners = CornerRadiuses.Dp(
                 topLeading = 30.0,
                 topTrailing = 50.0,
                 bottomLeading = 20.0,
                 bottomTrailing = 40.0,
             ),
         ),
-        MaskShape.Pill,
         MaskShape.Concave,
         MaskShape.Convex,
         MaskShape.Circle,
@@ -468,10 +468,15 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+    return offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
 }
 
 @Composable

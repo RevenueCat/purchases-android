@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -44,7 +45,7 @@ internal class BackgroundTests(@Suppress("UNUSED_PARAMETER") name: String, priva
                         """.trimIndent(),
                     expected = Background.Color(
                         value = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         )
                     ),
                 ),

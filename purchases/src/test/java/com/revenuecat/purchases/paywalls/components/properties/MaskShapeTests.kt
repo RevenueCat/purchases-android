@@ -36,7 +36,7 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                         }
                         """.trimIndent(),
                     expected = MaskShape.Rectangle(
-                        corners = CornerRadiuses(
+                        corners = CornerRadiuses.Dp(
                             topLeading = 1.0,
                             topTrailing = 2.0,
                             bottomLeading = 3.0,
@@ -53,9 +53,7 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                           "type": "rectangle"
                         }
                         """.trimIndent(),
-                    expected = MaskShape.Rectangle(
-                        corners = null
-                    )
+                    expected = MaskShape.Rectangle()
                 )
             ),
             arrayOf(
@@ -67,20 +65,7 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                           "type": "rectangle"
                         }
                         """.trimIndent(),
-                    expected = MaskShape.Rectangle(
-                        corners = null
-                    )
-                )
-            ),
-            arrayOf(
-                "pill",
-                Args(
-                    json = """
-                        {
-                          "type": "pill"
-                        }
-                        """.trimIndent(),
-                    expected = MaskShape.Pill
+                    expected = MaskShape.Rectangle()
                 )
             ),
             arrayOf(

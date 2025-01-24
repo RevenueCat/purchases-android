@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -57,7 +58,7 @@ class PaywallComponentDataValidationTests {
             serverDescription = "serverDescription",
             metadata = emptyMap(),
             availablePackages = emptyList(),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
         // Act
@@ -91,7 +92,7 @@ class PaywallComponentDataValidationTests {
             serverDescription = "serverDescription",
             metadata = emptyMap(),
             availablePackages = emptyList(),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
         // Act
@@ -149,7 +150,7 @@ class PaywallComponentDataValidationTests {
             serverDescription = "serverDescription",
             metadata = emptyMap(),
             availablePackages = emptyList(),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
         // Act
@@ -204,7 +205,7 @@ class PaywallComponentDataValidationTests {
             serverDescription = "serverDescription",
             metadata = emptyMap(),
             availablePackages = emptyList(),
-            paywallComponents = data,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
         // Act

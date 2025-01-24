@@ -21,6 +21,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -113,9 +114,16 @@ internal class PurchasesFactory(
                 warnLog("Diagnostics are only supported on Android N or newer.")
             }
 
-            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
-                verificationMode,
-            )
+            val signatureVerificationMode = try {
+                SignatureVerificationMode.fromEntitlementVerificationMode(
+                    verificationMode,
+                )
+            } catch (e: IllegalStateException) {
+                // If we're not able to create the signature verifier, we should disable signature verification
+                // instead of crashing
+                errorLog("Error creating signature verifier: ${e.message}. Disabling signature verification.")
+                SignatureVerificationMode.Disabled
+            }
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val cache = DeviceCache(prefs, apiKey)

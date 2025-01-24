@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -42,6 +43,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -117,10 +120,10 @@ private fun previewButtonComponentStyle(
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
         size = Size(width = Fit, height = Fit),
         spacing = 16.dp,
-        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+        backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
         padding = PaddingValues(all = 16.dp),
         margin = PaddingValues(all = 16.dp),
-        shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+        shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
         border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
         shadow = Shadow(
             color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -164,8 +167,13 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+    return offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
 }

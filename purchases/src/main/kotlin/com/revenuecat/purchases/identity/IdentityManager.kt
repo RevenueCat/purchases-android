@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.identity
 
-import android.content.SharedPreferences
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -59,7 +58,7 @@ internal class IdentityManager(
         val cacheEditor = deviceCache.startEditing()
         deviceCache.cacheAppUserID(appUserIDToUse, cacheEditor)
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse, cacheEditor)
-        invalidateCustomerInfoAndETagCacheIfNeeded(appUserIDToUse, cacheEditor)
+        invalidateETagCacheIfNeeded(appUserIDToUse)
         cacheEditor.apply()
 
         enqueue {
@@ -147,23 +146,21 @@ internal class IdentityManager(
         }
     }
 
-    private fun invalidateCustomerInfoAndETagCacheIfNeeded(
+    private fun invalidateETagCacheIfNeeded(
         appUserID: String,
-        cacheEditor: SharedPreferences.Editor,
     ) {
         if (backend.verificationMode == SignatureVerificationMode.Disabled) {
             return
         }
         val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
-        if (shouldInvalidateCustomerInfoAndETagCache(cachedCustomerInfo)) {
-            infoLog(IdentityStrings.INVALIDATING_CACHED_CUSTOMER_INFO)
-            deviceCache.clearCustomerInfoCache(appUserID, cacheEditor)
+        if (shouldInvalidateETagCache(cachedCustomerInfo)) {
+            infoLog(IdentityStrings.INVALIDATING_CACHED_ETAG_CACHE)
             backend.clearCaches()
         }
     }
 
     @Suppress("UnusedPrivateMember", "FunctionOnlyReturningConstant")
-    private fun shouldInvalidateCustomerInfoAndETagCache(customerInfo: CustomerInfo?): Boolean {
+    private fun shouldInvalidateETagCache(customerInfo: CustomerInfo?): Boolean {
         return customerInfo != null &&
             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
             backend.verificationMode != SignatureVerificationMode.Disabled

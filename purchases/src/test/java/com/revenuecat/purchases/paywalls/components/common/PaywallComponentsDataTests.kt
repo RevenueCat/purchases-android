@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.properties.Badge
@@ -89,7 +90,7 @@ internal class PaywallComponentsDataTests(
                                 ),
                                 background = Background.Color(
                                     value = ColorScheme(
-                                        light = ColorInfo.Alias("primary")
+                                        light = ColorInfo.Alias(ColorAlias("primary"))
                                     )
                                 )
                             )
@@ -147,7 +148,7 @@ internal class PaywallComponentsDataTests(
                                 ),
                                 background = Background.Color(
                                     value = ColorScheme(
-                                        light = ColorInfo.Alias("primary")
+                                        light = ColorInfo.Alias(ColorAlias("primary"))
                                     )
                                 )
                             )
@@ -219,7 +220,7 @@ internal class PaywallComponentsDataTests(
                                 ),
                                 background = Background.Color(
                                     value = ColorScheme(
-                                        light = ColorInfo.Alias("primary")
+                                        light = ColorInfo.Alias(ColorAlias("primary"))
                                     )
                                 )
                             )

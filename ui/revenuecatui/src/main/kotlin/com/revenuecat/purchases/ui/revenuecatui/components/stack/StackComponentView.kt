@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -78,9 +79,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -109,12 +113,38 @@ internal fun StackComponentView(
         paywallState = state,
     )
 
-    if (stackState.visible) {
-        val badge = stackState.badge
-        if (badge != null) {
-            when (badge.style) {
-                Badge.Style.Overlay -> {
-                    StackWithOverlaidBadge(
+    if (!stackState.visible) {
+        return
+    }
+
+    val badge = stackState.badge
+    if (badge != null) {
+        when (badge.style) {
+            Badge.Style.Overlay -> {
+                StackWithOverlaidBadge(
+                    stackState,
+                    state,
+                    badge.stackStyle,
+                    badge.alignment,
+                    clickHandler,
+                    modifier,
+                )
+            }
+
+            Badge.Style.EdgeToEdge -> {
+                when (badge.alignment) {
+                    TwoDimensionalAlignment.TOP,
+                    TwoDimensionalAlignment.BOTTOM,
+                    -> StackWithLongEdgeToEdgeBadge(
+                        stackState,
+                        state,
+                        badge.stackStyle,
+                        badge.alignment.isTop,
+                        clickHandler,
+                        modifier,
+                    )
+                    else
+                    -> StackWithShortEdgeToEdgeBadge(
                         stackState,
                         state,
                         badge.stackStyle,
@@ -123,25 +153,13 @@ internal fun StackComponentView(
                         modifier,
                     )
                 }
-
-                Badge.Style.EdgeToEdge -> {
-                    StackWithEdgeToEdgeBadge(
-                        stackState,
-                        state,
-                        badge.stackStyle,
-                        badge.alignment.isTop,
-                        clickHandler,
-                        modifier,
-                    )
-                }
-
-                Badge.Style.Nested -> {
-                    MainStackComponent(stackState, state, clickHandler, modifier, badge)
-                }
             }
-        } else {
-            MainStackComponent(stackState, state, clickHandler, modifier)
+
+            Badge.Style.Nested ->
+                MainStackComponent(stackState, state, clickHandler, modifier, badge)
         }
+    } else {
+        MainStackComponent(stackState, state, clickHandler, modifier)
     }
 }
 
@@ -157,7 +175,10 @@ private fun StackWithOverlaidBadge(
 ) {
     Box(modifier = modifier) {
         MainStackComponent(stackState, state, clickHandler)
-        OverlaidBadge(badgeStack, state, alignment)
+        val mainStackBorderWidthPx = with(LocalDensity.current) {
+            stackState.border?.width?.dp?.toPx()
+        }
+        OverlaidBadge(badgeStack, state, alignment, mainStackBorderWidthPx)
     }
 }
 
@@ -166,7 +187,7 @@ private fun StackWithOverlaidBadge(
  */
 @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 @Composable
-private fun StackWithEdgeToEdgeBadge(
+private fun StackWithLongEdgeToEdgeBadge(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     badgeStack: StackComponentStyle,
@@ -205,71 +226,75 @@ private fun StackWithEdgeToEdgeBadge(
         val badgePlaceable = badgeMeasurable.measure(constraints)
         val badgeHeight = badgePlaceable.height
 
-        val backgroundCornerRadiusExtension = when (stackState.shape) {
-            is Shape.Pill -> stackPlaceable.height / 2
-            is Shape.Rectangle -> {
-                (
-                    (stackState.shape as? Shape.Rectangle)?.let { rcShape ->
-                        if (topBadge) {
-                            maxOf(rcShape.corners?.topLeading ?: 0.0, rcShape.corners?.topTrailing ?: 0.0)
-                        } else {
-                            maxOf(rcShape.corners?.bottomLeading ?: 0.0, rcShape.corners?.bottomTrailing ?: 0.0)
-                        }
-                    } ?: 0.0
-                    ).dp.roundToPx()
-            }
-        }
-
         // Decide the final size of this layout
         val totalWidth = stackPlaceable.width
         val totalHeight = stackPlaceable.height + badgeHeight
-        val backgroundHeight = badgeHeight + backgroundCornerRadiusExtension
 
         // Subcompose the background
         val backgroundMeasurable = subcompose("background") {
-            val backgroundColorStyle = badgeStack.backgroundColor?.let { rememberColorStyle(scheme = it) }
+            val backgroundColorStyle = badgeStack.backgroundColor?.forCurrentTheme
             val borderStyle = badgeStack.border?.let { rememberBorderStyle(border = it) }
             val shadowStyle = badgeStack.shadow?.let { rememberShadowStyle(shadow = it) }
-            val backgroundShape = when (badgeStack.shape) {
-                is Shape.Pill -> {
-                    // We have to make sure our badge uses absolute corner sizes. If it's using relative corner sizes,
-                    // i.e. pill-shaped, we need to use the stack to calculate the absolute size to use.
-                    (badgeStack.shape.toShape() as? RoundedCornerShape)?.let { shape ->
-                        if (topBadge) {
-                            RoundedCornerShape(
-                                topStart = shape.topStart.makeAbsolute(stackPlaceable, LocalDensity.current),
-                                topEnd = shape.topEnd.makeAbsolute(stackPlaceable, LocalDensity.current),
-                                bottomEnd = CornerSize(0.dp),
-                                bottomStart = CornerSize(0.dp),
-                            )
-                        } else {
-                            RoundedCornerShape(
-                                topStart = CornerSize(0.dp),
-                                topEnd = CornerSize(0.dp),
-                                bottomEnd = shape.bottomEnd.makeAbsolute(stackPlaceable, LocalDensity.current),
-                                bottomStart = shape.bottomStart.makeAbsolute(stackPlaceable, LocalDensity.current),
-                            )
-                        }
+            val backgroundShape = when (val badgeCornerRadiuses = badgeStack.shape.cornerRadiuses) {
+                is CornerRadiuses.Percentage -> {
+                    (badgeStack.shape.toShape() as? RoundedCornerShape)?.let { composeShape ->
+                        RoundedCornerShape(
+                            topStart = composeShape.topStart.makeAbsolute(stackPlaceable, LocalDensity.current),
+                            topEnd = composeShape.topEnd.makeAbsolute(stackPlaceable, LocalDensity.current),
+                            bottomEnd = composeShape.bottomEnd.makeAbsolute(stackPlaceable, LocalDensity.current),
+                            bottomStart = composeShape.bottomStart.makeAbsolute(stackPlaceable, LocalDensity.current),
+                        )
                     } ?: RectangleShape
                 }
-                is Shape.Rectangle -> if (topBadge) {
-                    Shape.Rectangle(
-                        corners = CornerRadiuses(
-                            topLeading = badgeStack.shape.corners?.topLeading ?: 0.0,
-                            topTrailing = badgeStack.shape.corners?.topTrailing ?: 0.0,
-                            bottomLeading = 0.0,
-                            bottomTrailing = 0.0,
-                        ),
-                    ).toShape()
-                } else {
-                    Shape.Rectangle(
-                        corners = CornerRadiuses(
-                            topLeading = 0.0,
-                            topTrailing = 0.0,
-                            bottomLeading = badgeStack.shape.corners?.bottomLeading ?: 0.0,
-                            bottomTrailing = badgeStack.shape.corners?.bottomTrailing ?: 0.0,
-                        ),
-                    ).toShape()
+                is CornerRadiuses.Dp -> {
+                    when (val mainStackCornerRadiuses = stackState.shape.cornerRadiuses) {
+                        is CornerRadiuses.Dp -> if (topBadge) {
+                            Shape.Rectangle(
+                                corners = CornerRadiuses.Dp(
+                                    topLeading = badgeCornerRadiuses.topLeading,
+                                    topTrailing = badgeCornerRadiuses.topTrailing,
+                                    bottomLeading = mainStackCornerRadiuses.bottomLeading,
+                                    bottomTrailing = mainStackCornerRadiuses.bottomTrailing,
+                                ),
+                            ).toShape()
+                        } else {
+                            Shape.Rectangle(
+                                corners = CornerRadiuses.Dp(
+                                    topLeading = mainStackCornerRadiuses.topLeading,
+                                    topTrailing = mainStackCornerRadiuses.topTrailing,
+                                    bottomLeading = badgeCornerRadiuses.bottomLeading,
+                                    bottomTrailing = badgeCornerRadiuses.bottomTrailing,
+                                ),
+                            ).toShape()
+                        }
+                        is CornerRadiuses.Percentage ->
+                            (stackState.shape.toShape() as? RoundedCornerShape)?.let { composeShape ->
+                                if (topBadge) {
+                                    RoundedCornerShape(
+                                        topStart = CornerSize(badgeCornerRadiuses.topLeading.dp),
+                                        topEnd = CornerSize(badgeCornerRadiuses.topTrailing.dp),
+                                        bottomEnd = composeShape.bottomEnd.makeAbsolute(
+                                            stackPlaceable,
+                                            LocalDensity.current,
+                                        ),
+                                        bottomStart = composeShape.bottomStart.makeAbsolute(
+                                            stackPlaceable,
+                                            LocalDensity.current,
+                                        ),
+                                    )
+                                } else {
+                                    RoundedCornerShape(
+                                        topStart = composeShape.topStart.makeAbsolute(
+                                            stackPlaceable,
+                                            LocalDensity.current,
+                                        ),
+                                        topEnd = composeShape.topEnd.makeAbsolute(stackPlaceable, LocalDensity.current),
+                                        bottomEnd = CornerSize(badgeCornerRadiuses.bottomTrailing.dp),
+                                        bottomStart = CornerSize(badgeCornerRadiuses.bottomLeading.dp),
+                                    )
+                                }
+                            } ?: RectangleShape
+                    }
                 }
             }
 
@@ -289,16 +314,12 @@ private fun StackWithEdgeToEdgeBadge(
         }.first()
         val backgroundPlaceable = backgroundMeasurable.measure(
             // We know exactly how big this needs to be.
-            Constraints.fixed(width = totalWidth, height = backgroundHeight),
+            Constraints.fixed(width = totalWidth, height = totalHeight),
         )
 
         // Lay it all out
         layout(totalWidth, totalHeight) {
-            if (topBadge) {
-                backgroundPlaceable.placeRelative(0, 0)
-            } else {
-                backgroundPlaceable.placeRelative(0, totalHeight - backgroundHeight)
-            }
+            backgroundPlaceable.placeRelative(0, 0)
 
             var yPosition = 0
 
@@ -319,11 +340,92 @@ private fun StackWithEdgeToEdgeBadge(
     }
 }
 
+@Suppress("LongParameterList", "LongMethod")
+@Composable
+private fun StackWithShortEdgeToEdgeBadge(
+    stackState: StackComponentState,
+    state: PaywallState.Loaded.Components,
+    badgeStack: StackComponentStyle,
+    alignment: TwoDimensionalAlignment,
+    clickHandler: suspend (PaywallAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val adjustedCornerRadiuses: CornerRadiuses = when (val badgeRectangleCorners = badgeStack.shape.cornerRadiuses) {
+        is CornerRadiuses.Percentage -> {
+            when (alignment) {
+                TwoDimensionalAlignment.TOP_LEADING -> CornerRadiuses.Percentage(
+                    topLeading = 0,
+                    topTrailing = 0,
+                    bottomLeading = 0,
+                    bottomTrailing = badgeRectangleCorners.bottomTrailing,
+                )
+                TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses.Percentage(
+                    topLeading = 0,
+                    topTrailing = 0,
+                    bottomLeading = badgeRectangleCorners.bottomLeading,
+                    bottomTrailing = 0,
+                )
+                TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses.Percentage(
+                    topLeading = 0,
+                    topTrailing = badgeRectangleCorners.topTrailing,
+                    bottomLeading = 0,
+                    bottomTrailing = 0,
+                )
+                TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses.Percentage(
+                    topLeading = badgeRectangleCorners.topLeading,
+                    topTrailing = 0,
+                    bottomLeading = 0,
+                    bottomTrailing = 0,
+                )
+                else -> CornerRadiuses.Percentage(all = 0)
+            }
+        }
+        is CornerRadiuses.Dp -> {
+            when (alignment) {
+                TwoDimensionalAlignment.TOP_LEADING -> CornerRadiuses.Dp(
+                    topLeading = 0.0,
+                    topTrailing = 0.0,
+                    bottomLeading = 0.0,
+                    bottomTrailing = badgeRectangleCorners.bottomTrailing,
+                )
+                TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses.Dp(
+                    topLeading = 0.0,
+                    topTrailing = 0.0,
+                    bottomLeading = badgeRectangleCorners.bottomLeading,
+                    bottomTrailing = 0.0,
+                )
+                TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses.Dp(
+                    topLeading = 0.0,
+                    topTrailing = badgeRectangleCorners.topTrailing,
+                    bottomLeading = 0.0,
+                    bottomTrailing = 0.0,
+                )
+                TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses.Dp(
+                    topLeading = badgeRectangleCorners.topLeading,
+                    topTrailing = 0.0,
+                    bottomLeading = 0.0,
+                    bottomTrailing = 0.0,
+                )
+                else -> CornerRadiuses.Dp(all = 0.0)
+            }
+        }
+    }
+    MainStackComponent(stackState, state, clickHandler, modifier) {
+        StackComponentView(
+            badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
+            state,
+            clickHandler,
+            modifier = Modifier.align(alignment.toAlignment()),
+        )
+    }
+}
+
 @Composable
 private fun BoxScope.OverlaidBadge(
     badgeStack: StackComponentStyle,
     state: PaywallState.Loaded.Components,
     alignment: TwoDimensionalAlignment,
+    mainStackBorderWidthPx: Float?,
     modifier: Modifier = Modifier,
 ) {
     StackComponentView(
@@ -337,14 +439,14 @@ private fun BoxScope.OverlaidBadge(
                 layout(placeable.width, placeable.height) {
                     placeable.placeRelative(
                         x = 0,
-                        y = getOverlaidBadgeOffsetY(placeable.height, alignment),
+                        y = getOverlaidBadgeOffsetY(placeable.height, alignment, mainStackBorderWidthPx ?: 0f),
                     )
                 }
             },
     )
 }
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun MainStackComponent(
     stackState: StackComponentState,
@@ -352,24 +454,8 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
+    overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val backgroundColorStyle = stackState.backgroundColor?.let { rememberColorStyle(scheme = it) }
-    val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
-    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
-    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
-
-    // Modifier irrespective of dimension.
-    val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
-        Modifier
-            .padding(stackState.margin)
-            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
-            .clip(composeShape)
-            .applyIfNotNull(borderStyle) { border(it, composeShape) }
-            .padding(stackState.padding)
-            .padding(stackState.dimension, stackState.spacing)
-    }
-
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
         @Composable { modifierProvider ->
             stackState.children.forEach { child ->
@@ -419,9 +505,34 @@ private fun MainStackComponent(
         }
     }
 
-    if (nestedBadge == null) {
-        stack(commonModifier)
-    } else {
+    val backgroundColorStyle = stackState.backgroundColor?.forCurrentTheme
+    val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
+
+    val outerShapeModifier = remember(backgroundColorStyle, shadowStyle) {
+        Modifier
+            .padding(stackState.margin)
+            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
+            .clip(composeShape)
+    }
+
+    val innerShapeModifier = remember(stackState, borderStyle) {
+        Modifier
+            .applyIfNotNull(borderStyle) {
+                border(it, composeShape)
+                    .padding(it.width)
+            }
+            .padding(stackState.padding)
+            .padding(stackState.dimension, stackState.spacing)
+    }
+
+    val commonModifier = outerShapeModifier.then(innerShapeModifier)
+
+    if (nestedBadge == null && overlay == null) {
+        stack(outerShapeModifier.then(innerShapeModifier))
+    } else if (nestedBadge != null) {
         Box(modifier = modifier.then(commonModifier)) {
             stack(Modifier)
             StackComponentView(
@@ -431,6 +542,11 @@ private fun MainStackComponent(
                 modifier = Modifier
                     .align(nestedBadge.alignment.toAlignment()),
             )
+        }
+    } else if (overlay != null) {
+        Box(modifier = modifier.then(outerShapeModifier)) {
+            stack(innerShapeModifier)
+            overlay()
         }
     }
 }
@@ -482,21 +598,24 @@ private fun Modifier.padding(dimension: Dimension, spacing: Dp): Modifier =
         is Dimension.ZLayer -> this
     }
 
-private fun getOverlaidBadgeOffsetY(height: Int, alignment: TwoDimensionalAlignment) =
-    when (alignment) {
-        TwoDimensionalAlignment.CENTER,
-        TwoDimensionalAlignment.LEADING,
-        TwoDimensionalAlignment.TRAILING,
-        -> 0
-        TwoDimensionalAlignment.TOP,
-        TwoDimensionalAlignment.TOP_LEADING,
-        TwoDimensionalAlignment.TOP_TRAILING,
-        -> (-(height.toFloat() / 2)).roundToInt()
-        TwoDimensionalAlignment.BOTTOM,
-        TwoDimensionalAlignment.BOTTOM_LEADING,
-        TwoDimensionalAlignment.BOTTOM_TRAILING,
-        -> (height.toFloat() / 2).roundToInt()
-    }
+private fun getOverlaidBadgeOffsetY(
+    height: Int,
+    alignment: TwoDimensionalAlignment,
+    mainStackBorderWidthPx: Float = 0f,
+) = when (alignment) {
+    TwoDimensionalAlignment.CENTER,
+    TwoDimensionalAlignment.LEADING,
+    TwoDimensionalAlignment.TRAILING,
+    -> 0
+    TwoDimensionalAlignment.TOP,
+    TwoDimensionalAlignment.TOP_LEADING,
+    TwoDimensionalAlignment.TOP_TRAILING,
+    -> (-((height.toFloat() - mainStackBorderWidthPx) / 2)).roundToInt()
+    TwoDimensionalAlignment.BOTTOM,
+    TwoDimensionalAlignment.BOTTOM_LEADING,
+    TwoDimensionalAlignment.BOTTOM_TRAILING,
+    -> ((height.toFloat() - mainStackBorderWidthPx) / 2).roundToInt()
+}
 
 /**
  * Make this CornerSize absolute, based on the provided [placeable]. This is useful for turning relative
@@ -534,13 +653,13 @@ private fun StackComponentView_Preview_Vertical() {
                 ),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Red.toArgb()),
-                    dark = ColorInfo.Hex(Color.Yellow.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Red),
+                    dark = ColorStyle.Solid(Color.Yellow),
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
-                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -578,7 +697,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
         modifier = Modifier.padding(all = 32.dp),
     ) {
         val badgeShape = Shape.Rectangle(
-            corners = CornerRadiuses(
+            corners = CornerRadiuses.Dp(
                 topLeading = 20.0,
                 topTrailing = 20.0,
                 bottomLeading = 20.0,
@@ -594,13 +713,13 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 ),
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Red),
                 ),
                 padding = PaddingValues(all = 12.dp),
                 margin = PaddingValues(all = 0.dp),
-                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+                border = Border(width = 10.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Overlay, alignment, badgeShape),
                 rcPackage = null,
@@ -621,12 +740,7 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
         modifier = Modifier.padding(all = 32.dp),
     ) {
         val badgeShape = Shape.Rectangle(
-            corners = CornerRadiuses(
-                topLeading = 20.0,
-                topTrailing = 20.0,
-                bottomLeading = 20.0,
-                bottomTrailing = 20.0,
-            ),
+            corners = CornerRadiuses.Dp(all = 20.0),
         )
         StackComponentView(
             style = StackComponentStyle(
@@ -637,12 +751,12 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
                 ),
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Red),
                 ),
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
-                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, badgeShape),
@@ -672,8 +786,8 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 ),
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Red),
                 ),
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
@@ -699,7 +813,7 @@ private fun StackComponentView_Preview_Nested_Badge(
         modifier = Modifier.padding(all = 32.dp),
     ) {
         val badgeShape = Shape.Rectangle(
-            corners = CornerRadiuses(
+            corners = CornerRadiuses.Dp(
                 topLeading = 20.0,
                 topTrailing = 20.0,
                 bottomLeading = 20.0,
@@ -715,13 +829,13 @@ private fun StackComponentView_Preview_Nested_Badge(
                 ),
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Red),
                 ),
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
-                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
-                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+                border = Border(width = 10.0, color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Nested, alignment, badgeShape),
                 rcPackage = null,
@@ -749,13 +863,13 @@ private fun StackComponentView_Preview_Horizontal() {
                 ),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Red.toArgb()),
-                    dark = ColorInfo.Hex(Color.Yellow.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Red),
+                    dark = ColorStyle.Solid(Color.Yellow),
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
-                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -827,13 +941,13 @@ private fun StackComponentView_Preview_ZLayer() {
                 dimension = Dimension.ZLayer(alignment = TwoDimensionalAlignment.BOTTOM_TRAILING),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Red.toArgb()),
-                    dark = ColorInfo.Hex(Color.Yellow.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Red),
+                    dark = ColorStyle.Solid(Color.Yellow),
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
-                shape = Shape.Rectangle(CornerRadiuses(all = 20.0)),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = Shadow(
                     color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
@@ -874,7 +988,7 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             ),
             size = Size(width = Fixed(200u), height = Fit),
             spacing = 16.dp,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
             shape = Shape.Rectangle(corners = null),
@@ -912,7 +1026,7 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             ),
             size = Size(width = Fit, height = Fixed(200u)),
             spacing = 16.dp,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
             shape = Shape.Rectangle(),
@@ -972,7 +1086,7 @@ private fun StackComponentView_Preview_Distribution(
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fit, height = Fit),
             spacing = 16.dp,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 16.dp),
             shape = Shape.Rectangle(),
@@ -1085,10 +1199,15 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated, storefrontCountryCode = null)
+    return offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
 }
 
 @Suppress("LongMethod")
@@ -1138,7 +1257,7 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
                         ColorInfo.Gradient.Point(Color.Yellow.toArgb(), percent = 80f),
                     ),
                 ),
-            ),
+            ).toColorStyles(aliases = emptyMap()).getOrThrow(),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 0.dp),
             shape = shape,

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -58,7 +59,7 @@ internal class PurchaseButtonComponentTests(
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                 )
                             ),
                         )

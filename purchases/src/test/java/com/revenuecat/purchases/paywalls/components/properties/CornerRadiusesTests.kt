@@ -12,7 +12,7 @@ internal class CornerRadiusesTests(@Suppress("UNUSED_PARAMETER") name: String, p
     class Args(
         @Language("json")
         val json: String,
-        val expected: CornerRadiuses,
+        val expected: CornerRadiuses.Dp,
     )
 
     companion object {
@@ -32,7 +32,7 @@ internal class CornerRadiusesTests(@Suppress("UNUSED_PARAMETER") name: String, p
                           "bottom_trailing": 4
                         }
                         """.trimIndent(),
-                    expected = CornerRadiuses(
+                    expected = CornerRadiuses.Dp(
                         topLeading = 1.0,
                         topTrailing = 2.0,
                         bottomLeading = 3.0,
@@ -51,7 +51,7 @@ internal class CornerRadiusesTests(@Suppress("UNUSED_PARAMETER") name: String, p
                           "bottom_trailing": 4.5
                         }
                         """.trimIndent(),
-                    expected = CornerRadiuses(
+                    expected = CornerRadiuses.Dp(
                         topLeading = 1.2,
                         topTrailing = 2.3,
                         bottomLeading = 3.4,
@@ -65,7 +65,7 @@ internal class CornerRadiusesTests(@Suppress("UNUSED_PARAMETER") name: String, p
     @Test
     fun `Should properly deserialize CornerRadiuses`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<CornerRadiuses>(args.json)
+        val actual = OfferingParser.json.decodeFromString<CornerRadiuses.Dp>(args.json)
 
         // Assert
         assert(actual == args.expected)
