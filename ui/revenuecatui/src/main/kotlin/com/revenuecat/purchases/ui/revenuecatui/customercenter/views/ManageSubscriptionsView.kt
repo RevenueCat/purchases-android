@@ -104,6 +104,8 @@ private fun ActiveUserManagementView(
 
         SubscriptionDetailsView(details = purchaseInformation, localization = localization)
 
+        Spacer(modifier = Modifier.size(32.dp))
+
         Surface(
             shape = MaterialTheme.shapes.medium,
         ) {
@@ -224,7 +226,7 @@ private fun ManageSubscriptionsButtonsView(
         screen.supportedPaths.forEach { path ->
             ManageSubscriptionButton(
                 path = path,
-                onDetermineFlow = onButtonPress,
+                onButtonPress = onButtonPress,
                 useOutlinedButton = useOutlinedButton,
             )
         }
@@ -288,7 +290,7 @@ private fun OtherPlatformSubscriptionButtonsView(
 @Composable
 private fun ManageSubscriptionButton(
     path: CustomerCenterConfigData.HelpPath,
-    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
     useOutlinedButton: Boolean,
 ) {
     val buttonModifier = Modifier
@@ -306,7 +308,7 @@ private fun ManageSubscriptionButton(
 
     if (useOutlinedButton) {
         OutlinedButton(
-            onClick = { onDetermineFlow(path) },
+            onClick = { onButtonPress(path) },
             modifier = buttonModifier,
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         ) {
@@ -322,7 +324,7 @@ private fun ManageSubscriptionButton(
             ButtonDefaults.TextButtonContentPadding.calculateEndPadding(layoutDirection)
 
         TextButton(
-            onClick = { onDetermineFlow(path) },
+            onClick = { onButtonPress(path) },
             modifier = buttonModifier
                 .heightIn(60.dp)
                 .padding(start = startPadding, end = endPadding),
