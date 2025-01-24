@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -20,19 +21,23 @@ internal class PresentedImagePartialTests {
     @Test
     fun `Should accumulate errors if the ColorAlias is not found`() {
         // Arrange
-        val missingColorKey = ColorAlias("missing-color-key")
+        val missingColorOverlayKey = ColorAlias("missing-color-overlay-key")
+        val missingBorderKey = ColorAlias("missing-border-key")
         val expected = nonEmptyListOf(
-            PaywallValidationError.MissingColorAlias(missingColorKey),
+            PaywallValidationError.MissingColorAlias(missingColorOverlayKey),
+            PaywallValidationError.MissingColorAlias(missingBorderKey),
         )
 
         // Act
         val actualResult = PresentedImagePartial(
             from = PartialImageComponent(
-                colorOverlay = ColorScheme(light = ColorInfo.Alias(missingColorKey)),
+                colorOverlay = ColorScheme(light = ColorInfo.Alias(missingColorOverlayKey)),
+                border = Border(color = ColorScheme(light = ColorInfo.Alias(missingBorderKey)), width = 2.0)
             ),
             sources = null,
             aliases = mapOf(
-                ColorAlias("existing-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                ColorAlias("existing-color-overlay-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                ColorAlias("existing-border-key") to ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb())),
             )
         )
 
@@ -45,20 +50,25 @@ internal class PresentedImagePartialTests {
     @Test
     fun `Should accumulate errors if the ColorAlias points to another alias`() {
         // Arrange
-        val firstColorKey = ColorAlias("first-color-key")
-        val secondColorKey = ColorAlias("second-color-key")
+        val firstColorOverlayKey = ColorAlias("first-color-overlay-key")
+        val secondColorOverlayKey = ColorAlias("second-color-overlay-key")
+        val firstBorderKey = ColorAlias("first-border-key")
+        val secondBorderKey = ColorAlias("second-border-key")
         val expected = nonEmptyListOf(
-            PaywallValidationError.AliasedColorIsAlias(firstColorKey, secondColorKey),
+            PaywallValidationError.AliasedColorIsAlias(firstColorOverlayKey, secondColorOverlayKey),
+            PaywallValidationError.AliasedColorIsAlias(firstBorderKey, secondBorderKey),
         )
 
         // Act
         val actualResult = PresentedImagePartial(
             from = PartialImageComponent(
-                colorOverlay = ColorScheme(light = ColorInfo.Alias(firstColorKey)),
+                colorOverlay = ColorScheme(light = ColorInfo.Alias(firstColorOverlayKey)),
+                border = Border(color = ColorScheme(light = ColorInfo.Alias(firstBorderKey)), width = 2.0)
             ),
             sources = null,
             aliases = mapOf(
-                firstColorKey to ColorScheme(light = ColorInfo.Alias(secondColorKey)),
+                firstColorOverlayKey to ColorScheme(light = ColorInfo.Alias(secondColorOverlayKey)),
+                firstBorderKey to ColorScheme(light = ColorInfo.Alias(secondBorderKey)),
             )
         )
 
@@ -71,26 +81,34 @@ internal class PresentedImagePartialTests {
     @Test
     fun `Should create successfully if the ColorAlias is found`() {
         // Arrange
-        val existingColorKey = ColorAlias("existing-color-key")
-        val expectedColor = Color.Red
+        val existingColorOverlayKey = ColorAlias("existing-color-overlay-key")
+        val existingBorderKey = ColorAlias("existing-border-key")
+        val expectedOverlayColor = Color.Red
+        val expectedBorderColor = Color.Green
 
         // Act
         val actualResult = PresentedImagePartial(
             from = PartialImageComponent(
-                colorOverlay = ColorScheme(light = ColorInfo.Alias(existingColorKey)),
+                colorOverlay = ColorScheme(light = ColorInfo.Alias(existingColorOverlayKey)),
+                border = Border(color = ColorScheme(light = ColorInfo.Alias(existingBorderKey)), width = 2.0)
             ),
             sources = null,
             aliases = mapOf(
-                existingColorKey to ColorScheme(light = ColorInfo.Hex(expectedColor.toArgb())),
+                existingColorOverlayKey to ColorScheme(light = ColorInfo.Hex(expectedOverlayColor.toArgb())),
+                existingBorderKey to ColorScheme(light = ColorInfo.Hex(expectedBorderColor.toArgb())),
             )
         )
 
         // Assert
         assert(actualResult.isSuccess)
         val actual = actualResult.getOrThrow()
-        val actualColor = actual.overlay?.light ?: error("Actual color is null")
-        actualColor.let { it as ColorStyle.Solid }.also {
-            assert(it.color == expectedColor)
+        val actualOverlayColor = actual.overlay?.light ?: error("Actual color is null")
+        val actualBorderColor = actual.border?.colors?.light ?: error("Actual border color is null")
+        actualOverlayColor.let { it as ColorStyle.Solid }.also {
+            assert(it.color == expectedOverlayColor)
+        }
+        actualBorderColor.let { it as ColorStyle.Solid }.also {
+            assert(it.color == expectedBorderColor)
         }
     }
 
@@ -100,10 +118,11 @@ internal class PresentedImagePartialTests {
         val actualResult = PresentedImagePartial(
             from = PartialImageComponent(
                 colorOverlay = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb())), width = 2.0)
             ),
             sources = null,
             aliases = mapOf(
-                ColorAlias("existing-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                ColorAlias("existing-color-overlay-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
             )
         )
 
@@ -118,6 +137,7 @@ internal class PresentedImagePartialTests {
         val actualResult = PresentedImagePartial(
             from = PartialImageComponent(
                 colorOverlay = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb())), width = 2.0)
             ),
             sources = null,
             aliases = emptyMap()

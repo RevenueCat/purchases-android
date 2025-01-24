@@ -256,14 +256,15 @@ internal class StyleFactory(
             }.orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         third = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
-    ) { sources, presentedOverrides, overlay ->
+        fourth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, presentedOverrides, overlay, border ->
         ImageComponentStyle(
             sources,
             size = component.size,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             shape = component.maskShape?.toShape(),
-            border = component.border,
+            border = border,
             shadow = component.shadow,
             overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
