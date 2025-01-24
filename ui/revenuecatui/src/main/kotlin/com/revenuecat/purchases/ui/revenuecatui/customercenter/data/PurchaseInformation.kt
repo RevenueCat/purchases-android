@@ -28,7 +28,9 @@ internal class PurchaseInformation(
         locale: Locale,
     ) : this(
         title = subscribedProduct?.title,
-        durationTitle = subscribedProduct?.period?.localizedUnitPeriod(locale),
+        durationTitle = subscribedProduct?.period?.localizedUnitPeriod(locale)?.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(locale) else it.toString()
+        },
         explanation = entitlementInfo?.explanation() ?: when (transaction) {
             is TransactionDetails.Subscription -> {
                 if (transaction.expiresDate != null) {

@@ -42,7 +42,6 @@ private fun Period.localized(
     var formattedPeriod = localizedPeriod(locale, width)
     if (value == 1 && formattedPeriod.startsWith("1")) {
         formattedPeriod = formattedPeriod.substring(startIndex = 1).trim()
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
     }
     return formattedPeriod
 }
