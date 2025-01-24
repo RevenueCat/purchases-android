@@ -74,7 +74,7 @@ internal fun SubscriptionDetailsView(
 
                 SubscriptionDetailRow(
                     icon = CurrencyExchange,
-                    overline = "Billing cycle",
+                    overline = localization.commonLocalizedString(CommonLocalizedString.BILLING_CYCLE),
                     text = it,
                 )
             }
@@ -86,7 +86,7 @@ internal fun SubscriptionDetailsView(
             price?.let {
                 SubscriptionDetailRow(
                     icon = UniversalCurrencyAlt,
-                    overline = "Current price",
+                    overline = localization.commonLocalizedString(CommonLocalizedString.CURRENT_PRICE),
                     text = it,
                 )
             }
