@@ -193,10 +193,10 @@ internal class CustomerCenterViewModelImpl(
     ): PurchaseInformation? {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
-        val hasActiveProducts = customerInfo.activeSubscriptions.isNotEmpty() ||
-            customerInfo.nonSubscriptionTransactions.isNotEmpty()
+        val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
+        val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
-        if (hasActiveProducts) {
+        if (hasActiveSubscriptions || hasNonSubscriptionTransactions) {
             val activeTransactionDetails = findActiveTransaction(customerInfo)
 
             if (activeTransactionDetails != null) {
