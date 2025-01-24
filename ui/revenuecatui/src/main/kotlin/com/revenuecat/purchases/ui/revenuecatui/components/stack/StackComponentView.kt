@@ -54,7 +54,6 @@ import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
@@ -81,6 +80,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
@@ -661,11 +661,11 @@ private fun StackComponentView_Preview_Vertical() {
                 margin = PaddingValues(all = 16.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
-                shadow = Shadow(
-                    color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-                    radius = 10.0,
-                    x = 0.0,
-                    y = 3.0,
+                shadow = ShadowStyles(
+                    colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                    radius = 10.dp,
+                    x = 0.dp,
+                    y = 3.dp,
                 ),
                 badge = null,
                 rcPackage = null,
@@ -871,11 +871,11 @@ private fun StackComponentView_Preview_Horizontal() {
                 margin = PaddingValues(all = 16.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
-                shadow = Shadow(
-                    color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-                    radius = 30.0,
-                    x = 0.0,
-                    y = 5.0,
+                shadow = ShadowStyles(
+                    colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                    radius = 30.dp,
+                    x = 0.dp,
+                    y = 5.dp,
                 ),
                 badge = null,
                 rcPackage = null,
@@ -949,11 +949,11 @@ private fun StackComponentView_Preview_ZLayer() {
                 margin = PaddingValues(all = 16.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
-                shadow = Shadow(
-                    color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-                    radius = 20.0,
-                    x = 5.0,
-                    y = 5.0,
+                shadow = ShadowStyles(
+                    colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                    radius = 20.dp,
+                    x = 5.dp,
+                    y = 5.dp,
                 ),
                 badge = null,
                 rcPackage = null,
