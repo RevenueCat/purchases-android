@@ -16,6 +16,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
@@ -1159,7 +1160,9 @@ class PaywallViewModelTest {
                     UUID.randomUUID().toString(),
                     it,
                     it,
-                    Date()
+                    Date(),
+                    UUID.randomUUID().toString(),
+                    Store.PLAY_STORE,
                 )
             }
     }
