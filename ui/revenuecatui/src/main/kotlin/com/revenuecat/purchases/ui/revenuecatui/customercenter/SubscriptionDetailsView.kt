@@ -127,12 +127,12 @@ private fun labelForExpirationOrRenewal(
     expirationOrRenewal: ExpirationOrRenewal,
     localization: CustomerCenterConfigData.Localization,
 ): String {
-    return when (expirationOrRenewal.label) {
-        ExpirationOrRenewal.Label.EXPIRES -> localization.commonLocalizedString(CommonLocalizedString.EXPIRES)
-        ExpirationOrRenewal.Label.EXPIRED -> localization.commonLocalizedString(CommonLocalizedString.EXPIRED)
-        ExpirationOrRenewal.Label.NEXT_BILLING_DATE ->
-            localization.commonLocalizedString(CommonLocalizedString.NEXT_BILLING_DATE)
+    val stringKey = when (expirationOrRenewal.label) {
+        ExpirationOrRenewal.Label.EXPIRES -> CommonLocalizedString.EXPIRES
+        ExpirationOrRenewal.Label.EXPIRED -> CommonLocalizedString.EXPIRED
+        ExpirationOrRenewal.Label.NEXT_BILLING_DATE -> CommonLocalizedString.NEXT_BILLING_DATE
     }
+    return localization.commonLocalizedString(stringKey)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -152,19 +152,18 @@ private fun getSubscriptionExplanation(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
 ): String {
-    return when (purchaseInformation.explanation) {
-        Explanation.APPLE -> localization.commonLocalizedString(CommonLocalizedString.APPLE_SUBSCRIPTION_MANAGE)
-        Explanation.PROMOTIONAL -> localization.commonLocalizedString(CommonLocalizedString.YOU_HAVE_PROMO)
-        Explanation.WEB -> localization.commonLocalizedString(CommonLocalizedString.WEB_SUBSCRIPTION_MANAGE)
-        Explanation.OTHER_STORE_PURCHASE ->
-            localization.commonLocalizedString(CommonLocalizedString.PLEASE_CONTACT_SUPPORT)
-        Explanation.AMAZON -> localization.commonLocalizedString(CommonLocalizedString.AMAZON_SUBSCRIPTION_MANAGE)
-        Explanation.EARLIEST_RENEWAL -> localization.commonLocalizedString(CommonLocalizedString.SUB_EARLIEST_RENEWAL)
-        Explanation.EARLIEST_EXPIRATION ->
-            localization.commonLocalizedString(CommonLocalizedString.SUB_EARLIEST_EXPIRATION)
-        Explanation.EXPIRED -> localization.commonLocalizedString(CommonLocalizedString.SUB_EXPIRED)
-        Explanation.LIFETIME -> localization.commonLocalizedString(CommonLocalizedString.YOU_HAVE_LIFETIME)
+    val stringKey = when (purchaseInformation.explanation) {
+        Explanation.APPLE -> CommonLocalizedString.APPLE_SUBSCRIPTION_MANAGE
+        Explanation.PROMOTIONAL -> CommonLocalizedString.YOU_HAVE_PROMO
+        Explanation.WEB -> CommonLocalizedString.WEB_SUBSCRIPTION_MANAGE
+        Explanation.OTHER_STORE_PURCHASE -> CommonLocalizedString.PLEASE_CONTACT_SUPPORT
+        Explanation.AMAZON -> CommonLocalizedString.AMAZON_SUBSCRIPTION_MANAGE
+        Explanation.EARLIEST_RENEWAL -> CommonLocalizedString.SUB_EARLIEST_RENEWAL
+        Explanation.EARLIEST_EXPIRATION -> CommonLocalizedString.SUB_EARLIEST_EXPIRATION
+        Explanation.EXPIRED -> CommonLocalizedString.SUB_EXPIRED
+        Explanation.LIFETIME -> CommonLocalizedString.YOU_HAVE_LIFETIME
     }
+    return localization.commonLocalizedString(stringKey)
 }
 
 @Composable
