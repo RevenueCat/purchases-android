@@ -5,13 +5,13 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 
 @Suppress("LongParameterList")
 @Immutable
@@ -35,7 +35,7 @@ internal data class StackComponentStyle(
     @get:JvmSynthetic
     val border: BorderStyles?,
     @get:JvmSynthetic
-    val shadow: Shadow?,
+    val shadow: ShadowStyles?,
     @get:JvmSynthetic
     val badge: BadgeStyle?,
     /**

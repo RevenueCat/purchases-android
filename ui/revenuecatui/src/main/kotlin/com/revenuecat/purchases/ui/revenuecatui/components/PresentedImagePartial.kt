@@ -7,8 +7,10 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
@@ -22,6 +24,7 @@ internal class PresentedImagePartial(
     @get:JvmSynthetic val sources: NonEmptyMap<LocaleId, ThemeImageUrls>?,
     @get:JvmSynthetic val overlay: ColorStyles?,
     @get:JvmSynthetic val border: BorderStyles?,
+    @get:JvmSynthetic val shadow: ShadowStyles?,
     @get:JvmSynthetic val partial: PartialImageComponent,
 ) : PresentedPartial<PresentedImagePartial> {
 
@@ -37,17 +40,21 @@ internal class PresentedImagePartial(
             sources: NonEmptyMap<LocaleId, ThemeImageUrls>?,
             aliases: Map<ColorAlias, ColorScheme>,
         ): Result<PresentedImagePartial, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-            from.colorOverlay
+            first = from.colorOverlay
                 ?.toColorStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-            from.border
+            second = from.border
                 ?.toBorderStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-        ) { colorOverlay, border ->
+            third = from.shadow
+                ?.toShadowStyles(aliases = aliases)
+                .orSuccessfullyNull(),
+        ) { colorOverlay, border, shadow ->
             PresentedImagePartial(
                 sources = sources,
                 overlay = colorOverlay,
                 border = border,
+                shadow = shadow,
                 partial = from,
             )
         }
@@ -61,6 +68,7 @@ internal class PresentedImagePartial(
             sources = otherSources ?: sources,
             overlay = with?.overlay ?: overlay,
             border = with?.border ?: border,
+            shadow = with?.shadow ?: shadow,
             partial = PartialImageComponent(
                 visible = otherPartial?.visible ?: partial.visible,
                 source = otherPartial?.source ?: partial.source,

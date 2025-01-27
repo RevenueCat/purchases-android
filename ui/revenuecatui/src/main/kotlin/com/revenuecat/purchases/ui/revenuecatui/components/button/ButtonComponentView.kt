@@ -33,7 +33,6 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -45,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -125,11 +125,11 @@ private fun previewButtonComponentStyle(
         margin = PaddingValues(all = 16.dp),
         shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
         border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
-        shadow = Shadow(
-            color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-            radius = 10.0,
-            x = 0.0,
-            y = 3.0,
+        shadow = ShadowStyles(
+            colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+            radius = 10.dp,
+            x = 0.dp,
+            y = 3.dp,
         ),
         badge = null,
         rcPackage = null,

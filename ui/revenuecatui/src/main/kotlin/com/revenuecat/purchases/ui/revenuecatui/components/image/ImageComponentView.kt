@@ -53,7 +53,6 @@ import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -71,6 +70,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
@@ -423,11 +423,11 @@ private fun previewImageComponentStyle(
         width = 2.dp,
         colors = ColorStyles(light = ColorStyle.Solid(ComposeColor.Cyan)),
     ),
-    shadow: Shadow? = Shadow(
-        color = ColorScheme(ColorInfo.Hex(ComposeColor.Black.toArgb())),
-        radius = 10.0,
-        x = 0.0,
-        y = 3.0,
+    shadow: ShadowStyles? = ShadowStyles(
+        colors = ColorStyles(ColorStyle.Solid(ComposeColor.Black)),
+        radius = 10.dp,
+        x = 0.dp,
+        y = 3.dp,
     ),
 ) = ImageComponentStyle(
     sources = nonEmptyMapOf(LocaleId("en_US") to themeImageUrls),

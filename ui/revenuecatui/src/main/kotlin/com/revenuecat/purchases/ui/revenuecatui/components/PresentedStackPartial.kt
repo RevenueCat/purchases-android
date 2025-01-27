@@ -5,8 +5,10 @@ import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -18,14 +20,16 @@ import dev.drewhamilton.poko.Poko
 internal class PresentedStackPartial(
     @get:JvmSynthetic val backgroundColorStyles: ColorStyles?,
     @get:JvmSynthetic val borderStyles: BorderStyles?,
+    @get:JvmSynthetic val shadowStyles: ShadowStyles?,
     @get:JvmSynthetic val partial: PartialStackComponent,
 ) : PresentedPartial<PresentedStackPartial> {
 
     companion object {
         /**
          * Creates a [PresentedStackPartial] from the provided [PartialStackComponent] and [aliases] map. If
-         * [PartialStackComponent.backgroundColor] or [PartialStackComponent.border] is non null and contains a color
-         * alias, it should exist in the [aliases] map. If it doesn't, this function will return a failure result.
+         * [PartialStackComponent.backgroundColor], [PartialStackComponent.border] or [PartialStackComponent.shadow] is
+         * non null and contains a color alias, it should exist in the [aliases] map. If it doesn't, this function will
+         * return a failure result.
          */
         @JvmSynthetic
         operator fun invoke(
@@ -38,21 +42,27 @@ internal class PresentedStackPartial(
             second = from.border
                 ?.toBorderStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-        ) { backgroundColorStyles, borderStyles ->
+            third = from.shadow
+                ?.toShadowStyles(aliases = aliases)
+                .orSuccessfullyNull(),
+        ) { backgroundColorStyles, borderStyles, shadowStyles ->
             PresentedStackPartial(
                 backgroundColorStyles = backgroundColorStyles,
                 borderStyles = borderStyles,
+                shadowStyles = shadowStyles,
                 partial = from,
             )
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     override fun combine(with: PresentedStackPartial?): PresentedStackPartial {
         val otherPartial = with?.partial
 
         return PresentedStackPartial(
             backgroundColorStyles = with?.backgroundColorStyles ?: backgroundColorStyles,
             borderStyles = with?.borderStyles ?: borderStyles,
+            shadowStyles = with?.shadowStyles ?: shadowStyles,
             partial = PartialStackComponent(
                 visible = otherPartial?.visible ?: partial.visible,
                 dimension = otherPartial?.dimension ?: partial.dimension,

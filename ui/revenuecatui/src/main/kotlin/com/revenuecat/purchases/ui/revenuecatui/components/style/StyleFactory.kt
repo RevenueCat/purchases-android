@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -192,7 +193,8 @@ internal class StyleFactory(
         }.orSuccessfullyNull(),
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
         fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
-    ) { presentedOverrides, children, badge, backgroundColorStyles, borderStyles ->
+        sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+    ) { presentedOverrides, children, badge, backgroundColorStyles, borderStyles, shadowStyles ->
         StackComponentStyle(
             children = children,
             dimension = component.dimension,
@@ -203,7 +205,7 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             shape = component.shape ?: Shape.Rectangle(),
             border = borderStyles,
-            shadow = component.shadow,
+            shadow = shadowStyles,
             badge = badge,
             rcPackage = rcPackage,
             overrides = presentedOverrides,
@@ -259,7 +261,8 @@ internal class StyleFactory(
             .mapError { nonEmptyListOf(it) },
         third = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
         fourth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
-    ) { sources, presentedOverrides, overlay, border ->
+        fifth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, presentedOverrides, overlay, border, shadow ->
         ImageComponentStyle(
             sources,
             size = component.size,
@@ -267,7 +270,7 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             shape = component.maskShape?.toShape(),
             border = border,
-            shadow = component.shadow,
+            shadow = shadow,
             overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
