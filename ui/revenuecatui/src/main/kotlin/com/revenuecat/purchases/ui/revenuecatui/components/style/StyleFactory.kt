@@ -246,10 +246,13 @@ internal class StyleFactory(
                 it.source
                     ?.withLocalizedOverrides(it.overrideSourceLid)
                     .orSuccessfullyNull()
-                    .map { sources -> PresentedImagePartial(sources = sources, partial = it) }
+                    .flatMap { sources ->
+                        PresentedImagePartial(from = it, sources = sources, aliases = colorAliases)
+                    }
             }.orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
-    ) { sources, presentedOverrides ->
+        third = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, presentedOverrides, overlay ->
         ImageComponentStyle(
             sources,
             size = component.size,
@@ -258,7 +261,7 @@ internal class StyleFactory(
             shape = component.maskShape?.toShape(),
             border = component.border,
             shadow = component.shadow,
-            overlay = component.colorOverlay,
+            overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
             overrides = presentedOverrides,

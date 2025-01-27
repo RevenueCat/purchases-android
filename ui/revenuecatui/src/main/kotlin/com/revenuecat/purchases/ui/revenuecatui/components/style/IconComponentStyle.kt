@@ -51,7 +51,7 @@ internal class IconComponentStyle(
     val overrides: PresentedOverrides<PresentedIconPartial>?,
 ) : ComponentStyle {
     @Immutable
-    class Background(
+    internal class Background(
         @get:JvmSynthetic
         val color: ColorStyles,
         @get:JvmSynthetic
