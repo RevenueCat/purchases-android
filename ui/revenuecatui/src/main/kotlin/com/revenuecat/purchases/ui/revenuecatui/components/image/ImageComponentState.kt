@@ -178,7 +178,7 @@ internal class ImageComponentState(
     val shape: Shape? by derivedStateOf { presentedPartial?.partial?.maskShape?.toShape() ?: style.shape }
 
     @get:JvmSynthetic
-    val border by derivedStateOf { presentedPartial?.partial?.border ?: style.border }
+    val border by derivedStateOf { presentedPartial?.border ?: style.border }
 
     @get:JvmSynthetic
     val shadow by derivedStateOf { presentedPartial?.partial?.shadow ?: style.shadow }

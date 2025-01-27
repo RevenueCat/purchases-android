@@ -8,19 +8,21 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.IconComponent.Formats
 import com.revenuecat.purchases.paywalls.components.IconComponent.IconBackground
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
-import com.revenuecat.purchases.ui.revenuecatui.helpers.map
+import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
 @Suppress("LongParameterList")
 @Immutable
@@ -57,7 +59,7 @@ internal class IconComponentStyle(
         @get:JvmSynthetic
         val shape: MaskShape,
         @get:JvmSynthetic
-        val border: Border? = null,
+        val border: BorderStyles? = null,
         @get:JvmSynthetic
         val shadow: Shadow? = null,
     )
@@ -67,9 +69,12 @@ internal class IconComponentStyle(
 internal fun IconBackground.toBackground(
     aliases: Map<ColorAlias, ColorScheme>,
 ): Result<IconComponentStyle.Background, NonEmptyList<PaywallValidationError>> =
-    color.toColorStyles(aliases).map { colorStyles ->
+    zipOrAccumulate(
+        first = color.toColorStyles(aliases),
+        second = border?.toBorderStyles(aliases).orSuccessfullyNull(),
+    ) { color, border ->
         IconComponentStyle.Background(
-            color = colorStyles,
+            color = color,
             shape = shape,
             border = border,
             shadow = shadow,
