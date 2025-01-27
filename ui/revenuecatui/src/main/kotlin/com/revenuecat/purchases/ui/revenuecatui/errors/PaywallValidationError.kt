@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.errors
 
 import com.revenuecat.purchases.ColorAlias
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -33,6 +34,7 @@ internal sealed class PaywallValidationError : Throwable() {
             is MissingPackage -> message
             is MissingColorAlias -> message
             is AliasedColorIsAlias -> message
+            is MissingFontAlias -> message
         }
     }
 
@@ -82,5 +84,10 @@ internal sealed class PaywallValidationError : Throwable() {
     ) : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.ALIASED_COLOR_IS_ALIAS
             .format(alias.value, aliasedValue.value)
+    }
+    data class MissingFontAlias(
+        val alias: FontAlias,
+    ) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.MISSING_FONT_ALIAS.format(alias.value)
     }
 }

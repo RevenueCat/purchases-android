@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
@@ -23,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
@@ -34,6 +34,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.resolve
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
@@ -228,14 +230,19 @@ internal class StyleFactory(
             .mapError { nonEmptyListOf(it) },
         third = component.color.toColorStyles(colorAliases),
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
-    ) { texts, presentedOverrides, color, backgroundColor ->
+        fifth = component.fontName
+            ?.let { fontName -> FontAlias(fontName) }
+            ?.let { fontAlias -> fontAliases.getFontSpec(fontAlias) }
+            .orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+    ) { texts, presentedOverrides, color, backgroundColor, fontSpec ->
         val weight = component.fontWeight.toFontWeight()
         TextComponentStyle(
             texts = texts,
             color = color,
             fontSize = component.fontSize,
             fontWeight = weight,
-            fontFamily = component.fontName?.let { SystemFontFamily(it, weight) },
+            fontFamily = fontSpec?.resolve(weight = weight, style = FontStyle.Normal),
             textAlign = component.horizontalAlignment.toTextAlign(),
             horizontalAlignment = component.horizontalAlignment.toAlignment(),
             backgroundColor = backgroundColor,

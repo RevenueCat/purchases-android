@@ -3,12 +3,28 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
 import android.annotation.SuppressLint
+import androidx.compose.ui.text.font.DeviceFontFamilyName
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+
+@get:JvmSynthetic
+private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs,
+)
 
 /**
  * A `FontSpec` is a more detailed version of [FontInfo]. A [FontInfo.Name] can be resolved to a generic font
@@ -40,6 +56,37 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
     }
     // Create a map of FontAliases to FontSpecs.
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
+}
+
+@JvmSynthetic
+internal fun Map<FontAlias, FontSpec>.getFontSpec(
+    alias: FontAlias,
+): Result<FontSpec, PaywallValidationError> =
+    this[alias]
+        ?.let { spec ->
+            Result.Success(spec)
+        } ?: Result.Error(PaywallValidationError.MissingFontAlias(alias))
+
+@JvmSynthetic
+internal fun FontSpec.resolve(
+    weight: FontWeight,
+    style: FontStyle,
+): FontFamily = when (this) {
+    is FontSpec.Resource -> FontFamily(Font(resId = id, weight = weight, style = style))
+    is FontSpec.Google -> FontFamily(
+        Font(googleFont = GoogleFont(name), fontProvider = GoogleFontsProvider, weight = weight, style = style),
+    )
+
+    is FontSpec.Generic -> when (this) {
+        FontSpec.Generic.SansSerif -> FontFamily.SansSerif
+        FontSpec.Generic.Serif -> FontFamily.Serif
+        FontSpec.Generic.Monospace -> FontFamily.Monospace
+        FontSpec.Generic.Cursive -> FontFamily.Cursive
+    }
+
+    is FontSpec.Device -> FontFamily(
+        Font(familyName = DeviceFontFamilyName(name), weight = weight, style = style),
+    )
 }
 
 private fun ResourceProvider.determineFontSpec(info: FontInfo): FontSpec =
