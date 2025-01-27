@@ -45,7 +45,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
@@ -63,7 +63,7 @@ internal fun LoadedPaywallComponents(
 
     val style = state.stack
     val footerComponentStyle = state.stickyFooter
-    val background = state.background.toBackgroundStyle()
+    val background = rememberBackgroundStyle(state.background)
 
     Column(modifier = modifier.background(background)) {
         ComponentView(
