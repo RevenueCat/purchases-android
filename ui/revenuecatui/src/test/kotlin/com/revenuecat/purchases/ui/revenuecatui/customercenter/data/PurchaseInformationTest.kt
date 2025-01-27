@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.OwnershipType
@@ -31,6 +32,8 @@ class PurchaseInformationTest {
 
     private val dateFormatter = mockk<DateFormatter>()
     private val locale = Locale.US
+
+    private const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
 
     @Test
     fun `test PurchaseInformation with active Google subscription and entitlement`() {
@@ -65,8 +68,9 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
         )
 
         assertPurchaseInformation(
@@ -115,6 +119,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -165,6 +170,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -206,6 +212,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -247,6 +254,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -288,6 +296,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -329,6 +338,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -370,6 +380,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -412,6 +423,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -453,6 +465,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -494,6 +507,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
