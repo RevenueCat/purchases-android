@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -53,6 +55,7 @@ class StyleFactoryTests {
         )
     )
     private val uiConfig = UiConfig()
+    private val fontAliases = emptyMap<FontAlias, FontSpec>()
     private val offering = Offering(
         identifier = "identifier",
         serverDescription = "description",
@@ -62,7 +65,7 @@ class StyleFactoryTests {
 
     @Before
     fun setup() {
-        styleFactory = StyleFactory(localizations, uiConfig, offering)
+        styleFactory = StyleFactory(localizations, uiConfig, fontAliases, offering)
     }
 
     @Test
@@ -142,6 +145,7 @@ class StyleFactoryTests {
                 ),
             ),
             uiConfig = uiConfig,
+            fontAliases = fontAliases,
             offering = offering,
         )
 
@@ -182,6 +186,7 @@ class StyleFactoryTests {
                 ),
             ),
             uiConfig = uiConfig,
+            fontAliases = fontAliases,
             offering = offering,
         )
 
@@ -224,6 +229,7 @@ class StyleFactoryTests {
                 ),
             ),
             uiConfig = uiConfig,
+            fontAliases = fontAliases,
             offering = offering,
         )
 
@@ -280,11 +286,12 @@ class StyleFactoryTests {
                 ),
             ),
             uiConfig = uiConfig,
+            fontAliases = fontAliases,
             offering = offering,
         )
 
         val imageComponentStyle = styleFactory.create(component).getOrThrow() as ImageComponentStyle
-        with (imageComponentStyle) {
+        with(imageComponentStyle) {
             assertThat(sources.size).isEqualTo(1)
             assertThat(sources.getValue(defaultLocale)).isEqualTo(expectedBaseSource)
             assertThat(overrides?.introOffer?.sources?.size).isEqualTo(1)

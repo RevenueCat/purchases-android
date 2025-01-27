@@ -109,6 +109,7 @@ internal class TextComponentViewWindowTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = Offering(
             identifier = "identifier",
             serverDescription = "description",

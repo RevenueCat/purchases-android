@@ -173,7 +173,7 @@ class ButtonComponentViewTests {
             metadata = emptyMap(),
             availablePackages = emptyList(),
         )
-        val styleFactory = StyleFactory(localizations, UiConfig(), offering)
+        val styleFactory = StyleFactory(localizations, UiConfig(), emptyMap(), offering)
         val style = styleFactory.create(component).getOrThrow() as ButtonComponentStyle
         val state = FakePaywallState(
             localizations = localizations,

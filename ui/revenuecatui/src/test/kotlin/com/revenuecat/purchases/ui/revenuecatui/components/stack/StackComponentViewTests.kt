@@ -78,6 +78,7 @@ class StackComponentViewTests {
     private val styleFactory = StyleFactory(
         localizations = localizations,
         uiConfig = UiConfig(),
+        fontAliases = emptyMap(),
         offering = Offering(
             identifier = "identifier",
             serverDescription = "description",
@@ -336,6 +337,7 @@ class StackComponentViewTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = offering,
         )
         val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
@@ -656,6 +658,7 @@ class StackComponentViewTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
