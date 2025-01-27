@@ -234,6 +234,7 @@ private fun previewStyle(
     )
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun previewItems(
     connectorMargins: PaddingValues = PaddingValues(0.dp),

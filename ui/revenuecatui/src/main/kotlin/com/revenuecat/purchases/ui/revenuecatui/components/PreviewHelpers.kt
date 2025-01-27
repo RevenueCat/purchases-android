@@ -23,7 +23,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
