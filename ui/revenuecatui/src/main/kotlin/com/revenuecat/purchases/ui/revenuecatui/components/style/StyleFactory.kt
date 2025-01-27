@@ -13,6 +13,7 @@ import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Shape
@@ -74,6 +75,7 @@ internal class StyleFactory(
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component, rcPackage)
             is IconComponent -> createIconComponentStyle(component, rcPackage)
+            is TimelineComponent -> TODO()
         }
 
     private fun createStickyFooterComponentStyle(
