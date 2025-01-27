@@ -58,7 +58,8 @@
         "you_have_lifetime": "Your active lifetime subscription",
         "web_subscription_manage": "You have an active subscription that was created on the web. You can manage your subscription by visiting your account.",
         "free": "Free",
-        "never": "Never"
+        "never": "Never",
+        "manage_subscription": "Manage your subscription"
       }
     },
     "screens":{
