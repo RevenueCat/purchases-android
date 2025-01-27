@@ -23,6 +23,8 @@ import java.util.Date
 import java.util.Locale
 import kotlin.time.Duration.Companion.days
 
+private const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
+
 @RunWith(AndroidJUnit4::class)
 class PurchaseInformationTest {
 
@@ -32,8 +34,6 @@ class PurchaseInformationTest {
 
     private val dateFormatter = mockk<DateFormatter>()
     private val locale = Locale.US
-
-    private const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
 
     @Test
     fun `test PurchaseInformation with active Google subscription and entitlement`() {
