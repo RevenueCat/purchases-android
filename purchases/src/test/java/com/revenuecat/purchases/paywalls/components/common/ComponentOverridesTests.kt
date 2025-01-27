@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -63,15 +64,15 @@ internal class ComponentOverridesTests {
                         }
                         """.trimIndent(),
                         expected = ComponentOverrides(
-                            introOffer = PartialTextComponent(fontName = "intro font"),
-                            multipleIntroOffers = PartialTextComponent(fontName = "multiple intros font"),
+                            introOffer = PartialTextComponent(fontName = FontAlias("intro font")),
+                            multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multiple intros font")),
                             states = ComponentStates(
-                                selected = PartialTextComponent(fontName = "selected font")
+                                selected = PartialTextComponent(fontName = FontAlias("selected font"))
                             ),
                             conditions = ComponentConditions(
-                                compact = PartialTextComponent(fontName = "compact font"),
-                                medium = PartialTextComponent(fontName = "medium font"),
-                                expanded = PartialTextComponent(fontName = "expanded font"),
+                                compact = PartialTextComponent(fontName = FontAlias("compact font")),
+                                medium = PartialTextComponent(fontName = FontAlias("medium font")),
+                                expanded = PartialTextComponent(fontName = FontAlias("expanded font")),
                             )
                         )
                     )

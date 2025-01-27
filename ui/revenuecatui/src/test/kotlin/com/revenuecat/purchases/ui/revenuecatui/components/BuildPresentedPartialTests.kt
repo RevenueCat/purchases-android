@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -486,7 +487,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     text = LocalizationKey("compactKey"),
                                     color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                     backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
-                                    fontName = "compactFont",
+                                    fontName = FontAlias("compactFont"),
                                     fontWeight = FontWeight.LIGHT,
                                     fontSize = 13,
                                     horizontalAlignment = HorizontalAlignment.LEADING,
@@ -507,7 +508,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     text = null,
                                     color = null,
                                     backgroundColor = null,
-                                    fontName = "mediumFont",
+                                    fontName = FontAlias("mediumFont"),
                                     fontWeight = FontWeight.MEDIUM,
                                     fontSize = 15,
                                     horizontalAlignment = HorizontalAlignment.CENTER,
@@ -553,7 +554,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             text = LocalizationKey("compactKey"),
                             color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
-                            fontName = "mediumFont",
+                            fontName = FontAlias("mediumFont"),
                             fontWeight = FontWeight.MEDIUM,
                             fontSize = 15,
                             horizontalAlignment = HorizontalAlignment.CENTER,
@@ -634,7 +635,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     text = LocalizationKey("compactKey"),
                                     color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                     backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
-                                    fontName = "compactFont",
+                                    fontName = FontAlias("compactFont"),
                                     fontWeight = FontWeight.LIGHT,
                                     fontSize = 13,
                                     horizontalAlignment = HorizontalAlignment.LEADING,
@@ -655,7 +656,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     text = null,
                                     color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
                                     backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
-                                    fontName = "mediumFont",
+                                    fontName = FontAlias("mediumFont"),
                                     fontWeight = FontWeight.MEDIUM,
                                     fontSize = 15,
                                     horizontalAlignment = HorizontalAlignment.CENTER,
@@ -672,7 +673,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     text = null,
                                     color = null,
                                     backgroundColor = null,
-                                    fontName = "expandedFont",
+                                    fontName = FontAlias("expandedFont"),
                                     fontWeight = FontWeight.BOLD,
                                     fontSize = 17,
                                     horizontalAlignment = HorizontalAlignment.TRAILING,
@@ -694,7 +695,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             text = LocalizationKey("compactKey"),
                             color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
                             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
-                            fontName = "expandedFont",
+                            fontName = FontAlias("expandedFont"),
                             fontWeight = FontWeight.BOLD,
                             fontSize = 34,
                             horizontalAlignment = HorizontalAlignment.CENTER,

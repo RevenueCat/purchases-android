@@ -111,7 +111,7 @@ internal class TextComponentState(
 
     @get:JvmSynthetic
     val fontFamily by derivedStateOf {
-        presentedPartial?.partial?.fontName?.let { SystemFontFamily(it, fontWeight) } ?: style.fontFamily
+        presentedPartial?.partial?.fontName?.let { SystemFontFamily(it.value, fontWeight) } ?: style.fontFamily
     }
 
     @get:JvmSynthetic

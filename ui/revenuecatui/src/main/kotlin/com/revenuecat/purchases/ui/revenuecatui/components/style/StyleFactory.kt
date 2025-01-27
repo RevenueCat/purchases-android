@@ -231,7 +231,6 @@ internal class StyleFactory(
         third = component.color.toColorStyles(colorAliases),
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
         fifth = component.fontName
-            ?.let { fontName -> FontAlias(fontName) }
             ?.let { fontAlias -> fontAliases.getFontSpec(fontAlias) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
