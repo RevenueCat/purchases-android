@@ -16,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
@@ -77,6 +78,9 @@ internal class LocalizedTextPartialTests {
                                 ColorAlias("baseColor") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                 ColorAlias("baseBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                             ),
+                            fontAliases = mapOf(
+                                FontAlias("baseFont") to FontSpec.Device("baseFont"),
+                            ),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -100,6 +104,9 @@ internal class LocalizedTextPartialTests {
                             aliases = mapOf(
                                 ColorAlias("overrideColor") to ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                                 ColorAlias("overrideBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                            ),
+                            fontAliases = mapOf(
+                                FontAlias("overrideFont") to FontSpec.Device("overrideFont"),
                             ),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
@@ -125,6 +132,9 @@ internal class LocalizedTextPartialTests {
                                 ColorAlias("overrideColor") to ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                                 ColorAlias("overrideBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
                             ),
+                            fontAliases = mapOf(
+                                FontAlias("overrideFont") to FontSpec.Device("overrideFont"),
+                            )
                         ).getOrThrow(),
                     )
                 ),
@@ -147,6 +157,7 @@ internal class LocalizedTextPartialTests {
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = emptyMap(),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -164,6 +175,7 @@ internal class LocalizedTextPartialTests {
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -181,6 +193,7 @@ internal class LocalizedTextPartialTests {
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -210,6 +223,9 @@ internal class LocalizedTextPartialTests {
                                 ColorAlias("baseColor") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                 ColorAlias("baseBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                             ),
+                            fontAliases = mapOf(
+                                FontAlias("baseFont") to FontSpec.Device("baseFont"),
+                            ),
                         ).getOrThrow(),
                         override = null,
                         expected = LocalizedTextPartial(
@@ -234,6 +250,9 @@ internal class LocalizedTextPartialTests {
                             aliases = mapOf(
                                 ColorAlias("baseColor") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                 ColorAlias("baseBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            ),
+                            fontAliases = mapOf(
+                                FontAlias("baseFont") to FontSpec.Device("baseFont"),
                             ),
                         ).getOrThrow(),
                     )
@@ -264,6 +283,9 @@ internal class LocalizedTextPartialTests {
                                 ColorAlias("baseColor") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                 ColorAlias("baseBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                             ),
+                            fontAliases = mapOf(
+                                FontAlias("baseFont") to FontSpec.Device("baseFont"),
+                            ),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -288,6 +310,9 @@ internal class LocalizedTextPartialTests {
                                 ColorAlias("overrideColor") to ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                                 ColorAlias("overrideBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
                             ),
+                            fontAliases = mapOf(
+                                FontAlias("overrideFont") to FontSpec.Device("overrideFont"),
+                            ),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -311,6 +336,9 @@ internal class LocalizedTextPartialTests {
                             aliases = mapOf(
                                 ColorAlias("overrideColor") to ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                                 ColorAlias("overrideBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                            ),
+                            fontAliases = mapOf(
+                                FontAlias("overrideFont") to FontSpec.Device("overrideFont"),
                             ),
                         ).getOrThrow(),
                     )
@@ -333,6 +361,7 @@ internal class LocalizedTextPartialTests {
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = emptyMap(),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -357,6 +386,9 @@ internal class LocalizedTextPartialTests {
                                 ColorAlias("overrideColor") to ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                                 ColorAlias("overrideBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
                             ),
+                            fontAliases = mapOf(
+                                FontAlias("overrideFont") to FontSpec.Device("overrideFont"),
+                            ),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -380,6 +412,9 @@ internal class LocalizedTextPartialTests {
                             aliases = mapOf(
                                 ColorAlias("overrideColor") to ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                                 ColorAlias("overrideBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                            ),
+                            fontAliases = mapOf(
+                                FontAlias("overrideFont") to FontSpec.Device("overrideFont"),
                             ),
                         ).getOrThrow(),
                     )
@@ -410,6 +445,9 @@ internal class LocalizedTextPartialTests {
                                 ColorAlias("baseColor") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                 ColorAlias("baseBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                             ),
+                            fontAliases = mapOf(
+                                FontAlias("baseFont") to FontSpec.Device("baseFont"),
+                            ),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -427,6 +465,7 @@ internal class LocalizedTextPartialTests {
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -450,6 +489,9 @@ internal class LocalizedTextPartialTests {
                             aliases = mapOf(
                                 ColorAlias("baseColor") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                 ColorAlias("baseBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            ),
+                            fontAliases = mapOf(
+                                FontAlias("baseFont") to FontSpec.Device("baseFont"),
                             ),
                         ).getOrThrow(),
                     )
@@ -480,6 +522,9 @@ internal class LocalizedTextPartialTests {
                                 ColorAlias("baseColor") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                 ColorAlias("baseBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                             ),
+                            fontAliases = mapOf(
+                                FontAlias("baseFont") to FontSpec.Device("baseFont"),
+                            ),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -497,6 +542,7 @@ internal class LocalizedTextPartialTests {
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -520,6 +566,9 @@ internal class LocalizedTextPartialTests {
                             aliases = mapOf(
                                 ColorAlias("baseColor") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                                 ColorAlias("baseBgColor") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            ),
+                            fontAliases = mapOf(
+                                FontAlias("baseFont") to FontSpec.Device("baseFont"),
                             ),
                         ).getOrThrow(),
                     )
@@ -560,6 +609,7 @@ internal class LocalizedTextPartialTests {
                     )
                 ),
                 aliases = emptyMap(),
+                fontAliases = emptyMap(),
             )
 
             // Assert
@@ -579,6 +629,7 @@ internal class LocalizedTextPartialTests {
                     )
                 ),
                 aliases = emptyMap(),
+                fontAliases = emptyMap(),
             )
 
             // Assert
@@ -598,6 +649,7 @@ internal class LocalizedTextPartialTests {
                     )
                 ),
                 aliases = emptyMap(),
+                fontAliases = emptyMap(),
             )
 
             // Assert
@@ -614,6 +666,7 @@ internal class LocalizedTextPartialTests {
                 ),
                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                 aliases = emptyMap(),
+                fontAliases = emptyMap(),
             )
 
             // Assert
@@ -640,7 +693,8 @@ internal class LocalizedTextPartialTests {
                 aliases = mapOf(
                     ColorAlias("existing-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                     ColorAlias("existing-background-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
-                )
+                ),
+                fontAliases = emptyMap(),
             )
 
             // Assert
@@ -671,7 +725,8 @@ internal class LocalizedTextPartialTests {
                 aliases = mapOf(
                     firstColorKey to ColorScheme(light = ColorInfo.Alias(secondColorKey)),
                     firstBackgroundKey to ColorScheme(light = ColorInfo.Alias(secondBackgroundKey)),
-                )
+                ),
+                fontAliases = emptyMap(),
             )
 
             // Assert
@@ -698,7 +753,8 @@ internal class LocalizedTextPartialTests {
                 aliases = mapOf(
                     existingColorKey to ColorScheme(light = ColorInfo.Hex(expectedColor.toArgb())),
                     existingBackgroundKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb()))
-                )
+                ),
+                fontAliases = emptyMap(),
             )
 
             // Assert
@@ -725,7 +781,8 @@ internal class LocalizedTextPartialTests {
                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                 aliases = mapOf(
                     ColorAlias("existing-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
-                )
+                ),
+                fontAliases = emptyMap(),
             )
 
             // Assert
@@ -742,12 +799,13 @@ internal class LocalizedTextPartialTests {
                     backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                 ),
                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                aliases = emptyMap()
+                aliases = emptyMap(),
+                fontAliases = emptyMap(),
             )
 
             // Assert
             assert(actualResult.isSuccess)
         }
-        
+
     }
 }
