@@ -51,12 +51,12 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
         private val expanded = FontAlias("expanded")
         
         private val allFontAliases = mapOf(
-            introOffer to FontSpec.Device("introOffer"),
-            multipleIntroOffers to FontSpec.Device("multipleIntroOffers"),
-            selected to FontSpec.Device("selected"),
-            compact to FontSpec.Device("compact"),
-            medium to FontSpec.Device("medium"),
-            expanded to FontSpec.Device("expanded"),
+            introOffer to FontSpec.System("introOffer"),
+            multipleIntroOffers to FontSpec.System("multipleIntroOffers"),
+            selected to FontSpec.System("selected"),
+            compact to FontSpec.System("compact"),
+            medium to FontSpec.System("medium"),
+            expanded to FontSpec.System("expanded"),
         )
             
         @Suppress("LongMethod")

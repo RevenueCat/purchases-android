@@ -509,7 +509,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ),
                                 aliases = emptyMap(),
                                 fontAliases = mapOf(
-                                    FontAlias("compactFont") to FontSpec.Device("compactFont"),
+                                    FontAlias("compactFont") to FontSpec.System("compactFont"),
                                 ),
                             ).getOrThrow(),
                             medium = LocalizedTextPartial(
@@ -529,7 +529,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                 aliases = emptyMap(),
                                 fontAliases = mapOf(
-                                    FontAlias("mediumFont") to FontSpec.Device("mediumFont"),
+                                    FontAlias("mediumFont") to FontSpec.System("mediumFont"),
                                 ),
                             ).getOrThrow(),
                             expanded = LocalizedTextPartial(
@@ -583,7 +583,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                         aliases = emptyMap(),
                         fontAliases = mapOf(
-                            FontAlias("mediumFont") to FontSpec.Device("mediumFont"),
+                            FontAlias("mediumFont") to FontSpec.System("mediumFont"),
                         ),
                     ).getOrThrow(),
                 ),
@@ -670,7 +670,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ),
                                 aliases = emptyMap(),
                                 fontAliases = mapOf(
-                                    FontAlias("compactFont") to FontSpec.Device("compactFont"),
+                                    FontAlias("compactFont") to FontSpec.System("compactFont"),
                                 ),
                             ).getOrThrow(),
                             medium = LocalizedTextPartial(
@@ -690,7 +690,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                 aliases = emptyMap(),
                                 fontAliases = mapOf(
-                                    FontAlias("mediumFont") to FontSpec.Device("mediumFont"),
+                                    FontAlias("mediumFont") to FontSpec.System("mediumFont"),
                                 ),
                             ).getOrThrow(),
                             expanded = LocalizedTextPartial(
@@ -710,7 +710,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                 aliases = emptyMap(),
                                 fontAliases = mapOf(
-                                    FontAlias("expandedFont") to FontSpec.Device("expandedFont"),
+                                    FontAlias("expandedFont") to FontSpec.System("expandedFont"),
                                 ),
                             ).getOrThrow(),
                         ),
@@ -739,7 +739,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                         aliases = emptyMap(),
                         fontAliases = mapOf(
-                            FontAlias("expandedFont") to FontSpec.Device("expandedFont"),
+                            FontAlias("expandedFont") to FontSpec.System("expandedFont"),
                         ),
                     ).getOrThrow(),
                 ),

@@ -31,7 +31,11 @@ private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
  * (e.g. "sans-serif"), a font resource provided by the app, or a device font provided by the OEM.
  *
  * Determining this is relatively costly for font resources. So this abstraction allows us to perform this logic only
- * once for each one (see [determineFontSpecs]), before resolving the actual font where needed.
+ * once for each one (see [determineFontSpecs]) in the validation step, before resolving the actual font where needed.
+ *
+ * It also allows us to defer resolving the actual font to the UI layer, as only at that time do we know the exact
+ * override that's being used. We need to know this, because we need to know the [FontWeight] for which to resolve the
+ * font.
  */
 internal sealed interface FontSpec {
     data class Resource(@get:JvmSynthetic val id: Int) : FontSpec
@@ -43,7 +47,7 @@ internal sealed interface FontSpec {
         object Cursive : Generic
     }
 
-    data class Device(@get:JvmSynthetic val name: String) : FontSpec
+    data class System(@get:JvmSynthetic val name: String) : FontSpec
 }
 
 @JvmSynthetic
@@ -84,7 +88,7 @@ internal fun FontSpec.resolve(
         FontSpec.Generic.Cursive -> FontFamily.Cursive
     }
 
-    is FontSpec.Device -> FontFamily(
+    is FontSpec.System -> FontFamily(
         Font(familyName = DeviceFontFamilyName(name), weight = weight, style = style),
     )
 }
@@ -108,7 +112,7 @@ private fun ResourceProvider.determineFontSpec(info: FontInfo): FontSpec =
                             "If it isn't, make sure the font exists in the `res/font` folder. See for more info: " +
                             "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
                     )
-                    FontSpec.Device(name = info.value)
+                    FontSpec.System(name = info.value)
                 }
             }
         }
