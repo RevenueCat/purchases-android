@@ -4,23 +4,20 @@ package com.revenuecat.purchases.ui.revenuecatui.components.timeline
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import coil.ImageLoader
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -43,8 +40,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 @Composable
 internal fun TimelineComponentView(
@@ -65,9 +60,6 @@ internal fun TimelineComponentView(
     Column(
         modifier = modifier
             .size(timelineState.size)
-            .conditional(timelineState.size.height is SizeConstraint.Fit) {
-                height(IntrinsicSize.Min)
-            }
             .padding(timelineState.margin)
             .padding(timelineState.padding),
     ) {
@@ -82,6 +74,7 @@ internal fun TimelineComponentView(
     }
 }
 
+@Suppress("LongMethod", "DestructuringDeclarationWithTooManyEntries")
 @Composable
 private fun TimelineItem(
     item: TimelineComponentStyle.ItemStyle,
@@ -90,54 +83,110 @@ private fun TimelineItem(
     modifier: Modifier = Modifier,
     previewImageLoader: ImageLoader? = null,
 ) {
-    Row(modifier = modifier.height(IntrinsicSize.Min)) {
-        Box {
-            item.connector?.let { connector ->
-                val connectorOffset = (item.icon.size.height as? SizeConstraint.Fixed)?.let {
+    ConstraintLayout(
+        modifier = modifier,
+    ) {
+        val (icon, title, description, connectorRefs, itemSpacingRefs) = createRefs()
+
+        val bottomContentBarrier = createBottomBarrier(icon, title, description)
+
+        Spacer(
+            modifier = Modifier.height(timelineState.itemSpacing.dp)
+                .constrainAs(itemSpacingRefs) {
+                    top.linkTo(bottomContentBarrier)
+                },
+        )
+
+        item.connector?.let { connector ->
+            val offsets = remember(item.icon.size, connector) {
+                val itemIconWidth = item.icon.size.width as? SizeConstraint.Fixed
+                val itemIconHeight = item.icon.size.height as? SizeConstraint.Fixed
+                val connectorVerticalOffset = itemIconHeight?.let {
                     it.value.toInt().dp / 2
-                }
-                Box(
-                    modifier = Modifier
-                        .align(alignment = Alignment.Center)
-                        .fillMaxHeight()
-                        .applyIfNotNull(connectorOffset) { offset(y = it) }
-                        .width(connector.width.dp)
-                        .padding(connector.margin)
-                        .overlay(connector.color.forCurrentTheme),
-                )
+                } ?: 0.dp
+                val connectorStartOffset = itemIconWidth?.let {
+                    (it.value.toInt() - connector.width).dp / 2
+                } ?: 0.dp
+                (connectorStartOffset to connectorVerticalOffset)
             }
-            IconComponentView(
-                style = item.icon,
-                state = state,
-                previewImageLoader = previewImageLoader,
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(connector.margin)
+                    .constrainAs(connectorRefs) {
+                        start.linkTo(parent.start, margin = offsets.first)
+                        width = Dimension.value(connector.width.dp)
+                        height = Dimension.percent(1f)
+                        top.linkTo(icon.top, margin = offsets.second)
+                    }
+                    .overlay(connector.color.forCurrentTheme),
             )
         }
-        Spacer(modifier = Modifier.width(timelineState.columnGutter.dp))
-        Column {
+
+        IconComponentView(
+            style = item.icon,
+            state = state,
+            modifier = Modifier.constrainAs(icon) {
+                when (timelineState.iconAlignment) {
+                    TimelineComponent.IconAlignment.Title -> {
+                        top.linkTo(title.top)
+                        bottom.linkTo(title.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(title.start)
+                    }
+                    TimelineComponent.IconAlignment.TitleAndDescription -> {
+                        top.linkTo(title.top)
+                        bottom.linkTo(description.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(title.start)
+                    }
+                }
+            },
+            previewImageLoader = previewImageLoader,
+        )
+
+        TextComponentView(
+            style = item.title,
+            state = state,
+            modifier = Modifier.constrainAs(title) {
+                top.linkTo(parent.top)
+                start.linkTo(icon.end, margin = timelineState.columnGutter.dp)
+            },
+        )
+
+        item.description?.let {
             TextComponentView(
-                style = item.title,
+                style = it,
                 state = state,
-                modifier = Modifier.width(IntrinsicSize.Max),
+                modifier = Modifier.constrainAs(description) {
+                    top.linkTo(title.bottom, margin = timelineState.textSpacing.dp)
+                    start.linkTo(title.start)
+                    end.linkTo(title.end)
+                },
             )
-            item.description?.let {
-                Spacer(modifier = Modifier.height(timelineState.textSpacing.dp))
-                TextComponentView(
-                    style = it,
-                    state = state,
-                    modifier = Modifier.width(IntrinsicSize.Max),
-                )
-            }
-            Spacer(modifier = Modifier.height(timelineState.itemSpacing.dp))
         }
     }
 }
 
 @Preview
 @Composable
-private fun TimelineComponentView_Preview() {
+private fun TimelineComponentView_Align_Title_Preview() {
     Box {
         TimelineComponentView(
-            style = previewStyle(),
+            style = previewStyle(iconAlignment = TimelineComponent.IconAlignment.Title),
+            state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun TimelineComponentView_Align_TitleAndDescription_Preview() {
+    Box {
+        TimelineComponentView(
+            style = previewStyle(iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription),
             state = previewEmptyState(),
             previewImageLoader = previewImageLoader(),
         )
@@ -150,6 +199,7 @@ private fun TimelineComponentView_Connector_Margin_Preview() {
     Box {
         TimelineComponentView(
             style = previewStyle(
+                iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
                 items = previewItems(connectorMargins = PaddingValues(0.dp, 12.dp, 0.dp, 12.dp)),
             ),
             state = previewEmptyState(),
@@ -164,10 +214,10 @@ private fun previewStyle(
     itemSpacing: Int = 24,
     textSpacing: Int = 4,
     columnGutter: Int = 8,
-    iconAlignment: TimelineComponent.IconAlignment = TimelineComponent.IconAlignment.Title,
+    iconAlignment: TimelineComponent.IconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
     size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
-    padding: PaddingValues = PaddingValues(all = 0.dp),
-    margin: PaddingValues = PaddingValues(all = 0.dp),
+    padding: PaddingValues = PaddingValues(all = 5.dp),
+    margin: PaddingValues = PaddingValues(all = 5.dp),
     items: List<TimelineComponentStyle.ItemStyle> = previewItems(),
 ): TimelineComponentStyle {
     return TimelineComponentStyle(
@@ -192,10 +242,12 @@ private fun previewItems(
         TimelineComponentStyle.ItemStyle(
             title = previewTextComponentStyle(
                 text = "Today",
+                horizontalAlignment = HorizontalAlignment.LEADING,
                 fontWeight = FontWeight.BOLD,
             ),
             description = previewTextComponentStyle(
                 text = "Description of what you get today if you subscribe",
+                horizontalAlignment = HorizontalAlignment.LEADING,
             ),
             icon = previewIcon(),
             connector = previewConnectorStyle(margin = connectorMargins),
@@ -205,11 +257,13 @@ private fun previewItems(
         TimelineComponentStyle.ItemStyle(
             title = previewTextComponentStyle(
                 text = "Day X",
+                horizontalAlignment = HorizontalAlignment.LEADING,
                 fontWeight = FontWeight.BOLD,
                 textAlign = HorizontalAlignment.LEADING,
             ),
             description = previewTextComponentStyle(
                 text = "We'll remind you that your trial is ending soon",
+                horizontalAlignment = HorizontalAlignment.LEADING,
             ),
             icon = previewIcon(),
             connector = previewConnectorStyle(margin = connectorMargins),
@@ -219,11 +273,13 @@ private fun previewItems(
         TimelineComponentStyle.ItemStyle(
             title = previewTextComponentStyle(
                 text = "Day Y",
+                horizontalAlignment = HorizontalAlignment.LEADING,
                 fontWeight = FontWeight.BOLD,
                 textAlign = HorizontalAlignment.LEADING,
             ),
             description = previewTextComponentStyle(
                 text = "You'll be charged. You can cancel anytime before.",
+                horizontalAlignment = HorizontalAlignment.LEADING,
             ),
             icon = previewIcon(color = Color.Black, backgroundColor = Color(color = 0xFF0FD483)),
             connector = previewConnectorStyle(
