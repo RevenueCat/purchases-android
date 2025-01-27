@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -24,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.colorsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -63,40 +61,28 @@ internal data class ColorStyles(
     @get:JvmSynthetic val dark: ColorStyle? = null,
 )
 
-@JvmSynthetic
-@Composable
-internal fun rememberColorStyle(scheme: ColorScheme): ColorStyle {
-    val colorInfo = scheme.colorsForCurrentTheme
-    return remember(colorInfo) { colorInfo.toColorStyle() }
-}
-
 internal val ColorStyles.forCurrentTheme: ColorStyle
     @JvmSynthetic @Composable
     get() = if (isSystemInDarkTheme()) dark ?: light else light
 
+/**
+ * This is just a convenience method that can be used in previews or tests, as it is easier to specify a gradient in
+ * color stops in a [ColorInfo.Gradient] than it is to create a brush to be used in [ColorStyle.Gradient].
+ */
 @JvmSynthetic
-@Composable
-internal fun ColorScheme.toColorStyle(): ColorStyle = colorsForCurrentTheme.toColorStyle()
+internal fun ColorInfo.Gradient.toColorStyle(): ColorStyle =
+    ColorStyle.Gradient(
+        when (this) {
+            is ColorInfo.Gradient.Linear -> relativeLinearGradient(
+                colorStops = points.toColorStops(),
+                degrees = degrees,
+            )
 
-@JvmSynthetic
-internal fun ColorInfo.toColorStyle(): ColorStyle {
-    return when (this) {
-        is ColorInfo.Alias -> TODO("Color aliases are not yet implemented.")
-        is ColorInfo.Hex -> ColorStyle.Solid(Color(color = value))
-        is ColorInfo.Gradient -> ColorStyle.Gradient(
-            when (this) {
-                is ColorInfo.Gradient.Linear -> relativeLinearGradient(
-                    colorStops = points.toColorStops(),
-                    degrees = degrees,
-                )
-
-                is ColorInfo.Gradient.Radial -> Brush.radialGradient(
-                    colorStops = points.toColorStops(),
-                )
-            },
-        )
-    }
-}
+            is ColorInfo.Gradient.Radial -> Brush.radialGradient(
+                colorStops = points.toColorStops(),
+            )
+        },
+    )
 
 @JvmSynthetic
 internal fun ColorScheme.toColorStyles(

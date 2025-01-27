@@ -49,18 +49,6 @@ internal fun Shadow.toShadowStyles(
             )
         }
 
-@JvmSynthetic
-@Composable
-internal fun rememberShadowStyle(shadow: Shadow): ShadowStyle {
-    val colorStyle = rememberColorStyle(shadow.color)
-    return ShadowStyle(
-        color = colorStyle,
-        radius = shadow.radius.dp,
-        x = shadow.x.dp,
-        y = shadow.y.dp,
-    )
-}
-
 @Composable
 @JvmSynthetic
 internal fun rememberShadowStyle(shadow: ShadowStyles): ShadowStyle {
