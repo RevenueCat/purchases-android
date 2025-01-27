@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
-import com.revenuecat.purchases.ColorAlias
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -52,7 +53,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello selected"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val introOfferPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -60,7 +62,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello intro"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val multipleIntroOffersPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -68,7 +71,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello multiple intros"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val compactPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -76,7 +80,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello compact"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val mediumPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -84,7 +89,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello medium"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val expandedPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -92,7 +98,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello expanded"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
 
         @Suppress("LongMethod")
@@ -477,8 +484,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = LocalizationKey("compactKey"),
-                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactColor"))),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactBgColor"))),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                                     fontName = "compactFont",
                                     fontWeight = FontWeight.LIGHT,
                                     fontSize = 13,
@@ -491,7 +498,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     localeId to nonEmptyMapOf(
                                         LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                     )
-                                )
+                                ),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             medium = LocalizedTextPartial(
                                 from = PartialTextComponent(
@@ -508,6 +516,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                 ),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             expanded = LocalizedTextPartial(
                                 from = PartialTextComponent(
@@ -528,6 +537,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                         LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                     )
                                 ),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                         ),
                     ),
@@ -541,8 +551,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         from = PartialTextComponent(
                             visible = true,
                             text = LocalizationKey("compactKey"),
-                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactColor"))),
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactBgColor"))),
+                            color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                             fontName = "mediumFont",
                             fontWeight = FontWeight.MEDIUM,
                             fontSize = 15,
@@ -555,7 +565,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             localeId to nonEmptyMapOf(
                                 LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                             )
-                        )
+                        ),
+                        aliases = emptyMap(),
                     ).getOrThrow(),
                 ),
             ),
@@ -578,6 +589,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         multipleIntroOffers =  LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -594,6 +606,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         states = PresentedStates(
                             selected = LocalizedTextPartial(
@@ -611,6 +624,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     margin = Padding(top = 70.0, bottom = 70.0, leading = 70.0, trailing = 70.0),
                                 ),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                         ),
                         conditions = PresentedConditions(
@@ -618,8 +632,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = LocalizationKey("compactKey"),
-                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactColor"))),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("compactBgColor"))),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                                     fontName = "compactFont",
                                     fontWeight = FontWeight.LIGHT,
                                     fontSize = 13,
@@ -632,14 +646,15 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     localeId to nonEmptyMapOf(
                                         LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                     )
-                                )
+                                ),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             medium = LocalizedTextPartial(
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = null,
-                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("mediumColor"))),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("mediumBgColor"))),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                                     fontName = "mediumFont",
                                     fontWeight = FontWeight.MEDIUM,
                                     fontSize = 15,
@@ -649,6 +664,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                 ),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             expanded = LocalizedTextPartial(
                                 from = PartialTextComponent(
@@ -665,6 +681,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     margin = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
                                 ),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                         ),
                     ),
@@ -675,8 +692,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         from = PartialTextComponent(
                             visible = true,
                             text = LocalizationKey("compactKey"),
-                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("mediumColor"))),
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("mediumBgColor"))),
+                            color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                             fontName = "expandedFont",
                             fontWeight = FontWeight.BOLD,
                             fontSize = 34,
@@ -689,7 +706,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             localeId to nonEmptyMapOf(
                                 LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                             )
-                        )
+                        ),
+                        aliases = emptyMap(),
                     ).getOrThrow(),
                 ),
             ),

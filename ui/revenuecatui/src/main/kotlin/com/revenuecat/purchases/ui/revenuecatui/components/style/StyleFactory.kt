@@ -216,20 +216,22 @@ internal class StyleFactory(
         first = localizations.stringForAllLocales(component.text),
         second = component.overrides
             // Map all overrides to PresentedOverrides.
-            ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizations) }
+            ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizations, aliases = colorAliases) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
-    ) { texts, presentedOverrides ->
+        third = component.color.toColorStyles(colorAliases),
+        fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+    ) { texts, presentedOverrides, color, backgroundColor ->
         val weight = component.fontWeight.toFontWeight()
         TextComponentStyle(
             texts = texts,
-            color = component.color,
+            color = color,
             fontSize = component.fontSize,
             fontWeight = weight,
             fontFamily = component.fontName?.let { SystemFontFamily(it, weight) },
             textAlign = component.horizontalAlignment.toTextAlign(),
             horizontalAlignment = component.horizontalAlignment.toAlignment(),
-            backgroundColor = component.backgroundColor,
+            backgroundColor = backgroundColor,
             size = component.size,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),

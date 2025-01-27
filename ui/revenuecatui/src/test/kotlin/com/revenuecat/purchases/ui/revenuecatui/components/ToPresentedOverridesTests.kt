@@ -68,7 +68,8 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
                         else LocalizedTextPartial(
                             from = partial,
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("introOffer"))
@@ -94,7 +95,8 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
                         else LocalizedTextPartial(
                             from = partial,
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("multipleIntroOffers"))
@@ -120,7 +122,8 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
                         else LocalizedTextPartial(
                             from = partial,
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("selected"))
@@ -146,7 +149,8 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
                         else LocalizedTextPartial(
                             from = partial,
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("compact"))
@@ -172,7 +176,8 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
                         else LocalizedTextPartial(
                             from = partial,
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("medium"))
@@ -198,7 +203,8 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!)))
                         else LocalizedTextPartial(
                             from = partial,
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("expanded"))
@@ -221,36 +227,43 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     ),
                     transform = { partial -> LocalizedTextPartial(
                         from = partial,
-                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                        aliases = emptyMap(),
                     ) },
                     expected = Result.Success(
                         PresentedOverrides(
                             introOffer = LocalizedTextPartial(
                                 from = PartialTextComponent(fontName = "introOffer"),
-                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             multipleIntroOffers = LocalizedTextPartial(
                                 from = PartialTextComponent(fontName = "multipleIntroOffers"),
-                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             states = PresentedStates(
                                 selected = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "selected"),
-                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
                                 ).getOrThrow(),
                             ),
                             conditions = PresentedConditions(
                                 compact = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "compact"),
-                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
                                 ).getOrThrow(),
                                 medium = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "medium"),
-                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
                                 ).getOrThrow(),
                                 expanded = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = "expanded"),
-                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary)
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
                                 ).getOrThrow(),
                             ),
                         )

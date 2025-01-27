@@ -70,16 +70,16 @@ class ButtonComponentViewTests {
                     children = listOf(
                         TextComponentStyle(
                             texts = nonEmptyMapOf(LocaleId("en_US") to "Purchase"),
-                            color = ColorScheme(
-                                light = ColorInfo.Hex(Color.Black.toArgb()),
+                            color = ColorStyles(
+                                light = ColorStyle.Solid(Color.Black),
                             ),
                             fontSize = 15,
                             fontWeight = FontWeight.REGULAR.toFontWeight(),
                             fontFamily = null,
                             textAlign = CENTER.toTextAlign(),
                             horizontalAlignment = CENTER.toAlignment(),
-                            backgroundColor = ColorScheme(
-                                light = ColorInfo.Hex(Color.Yellow.toArgb()),
+                            backgroundColor = ColorStyles(
+                                light = ColorStyle.Solid(Color.Yellow),
                             ),
                             size = Size(width = Fill, height = Fill),
                             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),

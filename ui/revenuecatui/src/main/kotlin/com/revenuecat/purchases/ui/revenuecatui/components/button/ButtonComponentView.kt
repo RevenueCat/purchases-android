@@ -99,16 +99,16 @@ private fun previewButtonComponentStyle(
         children = listOf(
             TextComponentStyle(
                 texts = nonEmptyMapOf(LocaleId("en_US") to "Restore purchases"),
-                color = ColorScheme(
-                    light = ColorInfo.Hex(Color.Black.toArgb()),
+                color = ColorStyles(
+                    light = ColorStyle.Solid(Color.Black),
                 ),
                 fontSize = 15,
                 fontWeight = FontWeight.REGULAR.toFontWeight(),
                 fontFamily = null,
                 textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                 horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Yellow.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Yellow),
                 ),
                 size = Size(width = Fit, height = Fit),
                 padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
