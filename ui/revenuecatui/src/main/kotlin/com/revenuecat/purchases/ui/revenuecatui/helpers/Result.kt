@@ -225,38 +225,6 @@ internal inline fun <A, B, C, D, E, F, G, H> zipOrAccumulate(
 }
 
 /**
- * Combines the values from the provided Results using [transform], or accumulates the errors if at least
- * one is a [Result.Error].
- */
-@Suppress("LongParameterList")
-@JvmSynthetic
-internal inline fun <A, B, C, D, E, F, G> zipOrAccumulate(
-    first: Result<A, NonEmptyList<G>>,
-    second: Result<B, NonEmptyList<G>>,
-    third: Result<C, NonEmptyList<G>>,
-    fourth: Result<D, NonEmptyList<G>>,
-    fifth: Result<E, NonEmptyList<G>>,
-    transform: (A, B, C, D, E) -> F,
-): Result<F, NonEmptyList<G>> {
-    // This one can be extended to support as many parameters as we need.
-    val results = listOf(first, second, third, fourth, fifth)
-    val errors = results.collectErrors()
-
-    return errors.toNonEmptyListOrNull()
-        ?.let { Result.Error(it) }
-        // We know they're all successful here.
-        ?: Result.Success(
-            transform(
-                (first as Result.Success<A>).value,
-                (second as Result.Success<B>).value,
-                (third as Result.Success<C>).value,
-                (fourth as Result.Success<D>).value,
-                (fifth as Result.Success<E>).value,
-            ),
-        )
-}
-
-/**
  * Maps the values from these Results using [transform], or accumulates the errors if at least one is a [Result.Error].
  */
 @JvmSynthetic
