@@ -30,6 +30,7 @@ import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberAsyncImagePainter
 import coil.test.FakeImageLoaderEngine
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -43,7 +44,9 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPerce
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -275,9 +278,13 @@ class BackgroundTests {
 
     @JvmSynthetic
     @Composable
-    internal fun Background.Image.toBackgroundStyle(colorOverlay: Color? = null): BackgroundStyle {
+    internal fun Background.Image.toBackgroundStyle(
+        aliases: Map<ColorAlias, ColorScheme> = emptyMap()
+    ): BackgroundStyle {
         val imageUrls = value.urlsForCurrentTheme
         val contentScale = fitMode.toContentScale()
+        val overlay = colorOverlay?.toColorStyles(aliases)?.getOrThrow()?.forCurrentTheme
+
         return BackgroundStyle.Image(
             painter = rememberAsyncImagePainter(
                 model = imageUrls.webp.toString(),
@@ -292,7 +299,7 @@ class BackgroundTests {
                 contentScale = contentScale,
             ),
             contentScale = contentScale,
-            colorOverlay = colorOverlay?.let { ColorStyle.Solid(it) }
+            colorOverlay = overlay,
         )
     }
 }
