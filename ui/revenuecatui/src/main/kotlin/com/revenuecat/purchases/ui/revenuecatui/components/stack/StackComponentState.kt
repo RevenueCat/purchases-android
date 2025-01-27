@@ -108,10 +108,10 @@ internal class StackComponentState(
     val shape by derivedStateOf { presentedPartial?.partial?.shape ?: style.shape }
 
     @get:JvmSynthetic
-    val border by derivedStateOf { presentedPartial?.partial?.border ?: style.border }
+    val border by derivedStateOf { presentedPartial?.borderStyles ?: style.border }
 
     @get:JvmSynthetic
-    val shadow by derivedStateOf { presentedPartial?.partial?.shadow ?: style.shadow }
+    val shadow by derivedStateOf { presentedPartial?.shadowStyles ?: style.shadow }
 
     @get:JvmSynthetic
     val badge by derivedStateOf {

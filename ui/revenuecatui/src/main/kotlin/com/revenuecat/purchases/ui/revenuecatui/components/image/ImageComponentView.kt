@@ -47,14 +47,12 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -69,9 +67,14 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -98,7 +101,7 @@ internal fun ImageComponentView(
     )
 
     if (imageState.visible) {
-        val overlay = imageState.overlay?.let { rememberColorStyle(it) }
+        val overlay = imageState.overlay?.forCurrentTheme
         val borderStyle = imageState.border?.let { rememberBorderStyle(border = it) }
         val shadowStyle = imageState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(imageState.shape) { derivedStateOf { imageState.shape ?: RectangleShape } }
@@ -300,7 +303,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
                         bottomTrailing = 20.0,
                     ),
                 ),
-                overlay = ColorScheme(
+                overlay = ColorStyles(
                     light = ColorInfo.Gradient.Linear(
                         degrees = -90f,
                         points = listOf(
@@ -317,7 +320,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
                                 percent = 100f,
                             ),
                         ),
-                    ),
+                    ).toColorStyle(),
                 ),
             ),
             state = previewEmptyState(),
@@ -345,7 +348,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
                         bottomTrailing = 20.0,
                     ),
                 ),
-                overlay = ColorScheme(
+                overlay = ColorStyles(
                     light = ColorInfo.Gradient.Radial(
                         listOf(
                             ColorInfo.Gradient.Point(
@@ -361,7 +364,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
                                 percent = 100f,
                             ),
                         ),
-                    ),
+                    ).toColorStyle(),
                 ),
             ),
             state = previewEmptyState(),
@@ -413,22 +416,18 @@ private fun previewImageComponentStyle(
     size: Size,
     fitMode: FitMode,
     shape: MaskShape,
-    overlay: ColorScheme? = null,
+    overlay: ColorStyles? = null,
     paddingValues: PaddingValues = PaddingValues(0.dp),
     marginValues: PaddingValues = PaddingValues(0.dp),
-    border: Border? = Border(
-        width = 2.0,
-        color = ColorScheme(
-            light = ColorInfo.Hex(
-                ComposeColor.Cyan.toArgb(),
-            ),
-        ),
+    border: BorderStyles? = BorderStyles(
+        width = 2.dp,
+        colors = ColorStyles(light = ColorStyle.Solid(ComposeColor.Cyan)),
     ),
-    shadow: Shadow? = Shadow(
-        color = ColorScheme(ColorInfo.Hex(ComposeColor.Black.toArgb())),
-        radius = 10.0,
-        x = 0.0,
-        y = 3.0,
+    shadow: ShadowStyles? = ShadowStyles(
+        colors = ColorStyles(ColorStyle.Solid(ComposeColor.Black)),
+        radius = 10.dp,
+        x = 0.dp,
+        y = 3.dp,
     ),
 ) = ImageComponentStyle(
     sources = nonEmptyMapOf(LocaleId("en_US") to themeImageUrls),

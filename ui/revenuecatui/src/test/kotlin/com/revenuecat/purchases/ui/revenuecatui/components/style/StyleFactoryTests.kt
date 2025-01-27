@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
@@ -67,10 +68,10 @@ class StyleFactoryTests {
     @Test
     fun `Should create a single TextComponentStyle for a single TextComponent`() {
         // Arrange
-        val expectedColorScheme = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))
+        val expectedColor = Color.Red
         val textComponent = TextComponent(
             text = LOCALIZATION_KEY_TEXT_1,
-            color = expectedColorScheme,
+            color = ColorScheme(light = ColorInfo.Hex(expectedColor.toArgb())),
         )
 
         // Act
@@ -81,7 +82,8 @@ class StyleFactoryTests {
         val style = (result as Result.Success).value as TextComponentStyle
         assertThat(style.texts[localeId])
             .isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
-        assertThat(style.color).isEqualTo(expectedColorScheme)
+        val colorStyle = style.color.light as ColorStyle.Solid
+        assertThat(colorStyle.color).isEqualTo(expectedColor)
     }
 
     @Test

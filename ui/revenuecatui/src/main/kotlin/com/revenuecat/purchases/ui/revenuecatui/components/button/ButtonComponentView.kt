@@ -25,7 +25,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -34,7 +33,6 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -43,8 +41,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -99,16 +99,16 @@ private fun previewButtonComponentStyle(
         children = listOf(
             TextComponentStyle(
                 texts = nonEmptyMapOf(LocaleId("en_US") to "Restore purchases"),
-                color = ColorScheme(
-                    light = ColorInfo.Hex(Color.Black.toArgb()),
+                color = ColorStyles(
+                    light = ColorStyle.Solid(Color.Black),
                 ),
                 fontSize = 15,
                 fontWeight = FontWeight.REGULAR.toFontWeight(),
                 fontFamily = null,
                 textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                 horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Yellow.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Yellow),
                 ),
                 size = Size(width = Fit, height = Fit),
                 padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
@@ -124,12 +124,12 @@ private fun previewButtonComponentStyle(
         padding = PaddingValues(all = 16.dp),
         margin = PaddingValues(all = 16.dp),
         shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-        border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
-        shadow = Shadow(
-            color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-            radius = 10.0,
-            x = 0.0,
-            y = 3.0,
+        border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
+        shadow = ShadowStyles(
+            colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+            radius = 10.dp,
+            x = 0.dp,
+            y = 3.dp,
         ),
         badge = null,
         rcPackage = null,

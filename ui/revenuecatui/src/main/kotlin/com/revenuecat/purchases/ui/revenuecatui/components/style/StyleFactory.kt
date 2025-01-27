@@ -13,6 +13,7 @@ import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Shape
@@ -31,7 +32,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -58,6 +61,8 @@ internal class StyleFactory(
         private const val DEFAULT_SPACING = 0f
     }
 
+    private val colorAliases = uiConfig.app.colors
+
     fun create(
         component: PaywallComponent,
         rcPackage: Package? = null,
@@ -71,6 +76,7 @@ internal class StyleFactory(
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component, rcPackage)
             is IconComponent -> createIconComponentStyle(component, rcPackage)
+            is TimelineComponent -> TODO()
         }
 
     private fun createStickyFooterComponentStyle(
@@ -168,7 +174,7 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            ?.toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = uiConfig.app.colors) }
+            ?.toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = colorAliases) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
@@ -185,8 +191,10 @@ internal class StyleFactory(
                     )
                 }
         }.orSuccessfullyNull(),
-        fourth = component.backgroundColor?.toColorStyles(uiConfig.app.colors).orSuccessfullyNull(),
-    ) { presentedOverrides, children, badge, backgroundColorStyles ->
+        fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+        fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+        sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+    ) { presentedOverrides, children, badge, backgroundColorStyles, borderStyles, shadowStyles ->
         StackComponentStyle(
             children = children,
             dimension = component.dimension,
@@ -196,8 +204,8 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             shape = component.shape ?: Shape.Rectangle(),
-            border = component.border,
-            shadow = component.shadow,
+            border = borderStyles,
+            shadow = shadowStyles,
             badge = badge,
             rcPackage = rcPackage,
             overrides = presentedOverrides,
@@ -212,20 +220,22 @@ internal class StyleFactory(
         first = localizations.stringForAllLocales(component.text),
         second = component.overrides
             // Map all overrides to PresentedOverrides.
-            ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizations) }
+            ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizations, aliases = colorAliases) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
-    ) { texts, presentedOverrides ->
+        third = component.color.toColorStyles(colorAliases),
+        fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+    ) { texts, presentedOverrides, color, backgroundColor ->
         val weight = component.fontWeight.toFontWeight()
         TextComponentStyle(
             texts = texts,
-            color = component.color,
+            color = color,
             fontSize = component.fontSize,
             fontWeight = weight,
             fontFamily = component.fontName?.let { SystemFontFamily(it, weight) },
             textAlign = component.horizontalAlignment.toTextAlign(),
             horizontalAlignment = component.horizontalAlignment.toAlignment(),
-            backgroundColor = component.backgroundColor,
+            backgroundColor = backgroundColor,
             size = component.size,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
@@ -244,19 +254,24 @@ internal class StyleFactory(
                 it.source
                     ?.withLocalizedOverrides(it.overrideSourceLid)
                     .orSuccessfullyNull()
-                    .map { sources -> PresentedImagePartial(sources = sources, partial = it) }
+                    .flatMap { sources ->
+                        PresentedImagePartial(from = it, sources = sources, aliases = colorAliases)
+                    }
             }.orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
-    ) { sources, presentedOverrides ->
+        third = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
+        fourth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
+        fifth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, presentedOverrides, overlay, border, shadow ->
         ImageComponentStyle(
             sources,
             size = component.size,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             shape = component.maskShape?.toShape(),
-            border = component.border,
-            shadow = component.shadow,
-            overlay = component.colorOverlay,
+            border = border,
+            shadow = shadow,
+            overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
             overrides = presentedOverrides,
@@ -266,26 +281,32 @@ internal class StyleFactory(
     private fun createIconComponentStyle(
         component: IconComponent,
         rcPackage: Package?,
-    ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> {
-        return component.overrides
-            ?.toPresentedOverrides { partial -> Result.Success(PresentedIconPartial(partial)) }
-            .orSuccessfullyNull()
-            .mapError { nonEmptyListOf(it) }
-            .map { presentedOverrides ->
-                IconComponentStyle(
-                    baseUrl = component.baseUrl,
-                    iconName = component.iconName,
-                    formats = component.formats,
-                    size = component.size,
-                    color = component.color,
-                    padding = component.padding.toPaddingValues(),
-                    margin = component.margin.toPaddingValues(),
-                    iconBackground = component.iconBackground,
-                    rcPackage = rcPackage,
-                    overrides = presentedOverrides,
-                )
-            }
-    }
+    ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
+        zipOrAccumulate(
+            first = component.overrides
+                ?.toPresentedOverrides { partial -> PresentedIconPartial(partial, colorAliases) }
+                .orSuccessfullyNull()
+                .mapError { nonEmptyListOf(it) },
+            second = component.color
+                ?.toColorStyles(aliases = colorAliases)
+                .orSuccessfullyNull(),
+            third = component.iconBackground
+                ?.toBackground(aliases = colorAliases)
+                .orSuccessfullyNull(),
+        ) { presentedOverrides, colorStyles, background ->
+            IconComponentStyle(
+                baseUrl = component.baseUrl,
+                iconName = component.iconName,
+                formats = component.formats,
+                size = component.size,
+                color = colorStyles,
+                padding = component.padding.toPaddingValues(),
+                margin = component.margin.toPaddingValues(),
+                iconBackground = background,
+                rcPackage = rcPackage,
+                overrides = presentedOverrides,
+            )
+        }
 
     private fun ThemeImageUrls.withLocalizedOverrides(
         overrideSourceLid: LocalizationKey?,

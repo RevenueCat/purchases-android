@@ -34,11 +34,9 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -46,9 +44,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
@@ -80,8 +81,8 @@ internal fun IconComponentView(
     val borderStyle = iconState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = iconState.shadow?.let { rememberShadowStyle(shadow = it) }
     val composeShape by remember(iconState.shape) { derivedStateOf { iconState.shape ?: RectangleShape } }
-    val backgroundColor = iconState.backgroundColorScheme?.let { rememberColorStyle(it) }
-    val tintColor = iconState.tintColor?.let { rememberColorStyle(it) }
+    val backgroundColor = iconState.backgroundColorStyles?.forCurrentTheme
+    val tintColor = iconState.tintColor?.forCurrentTheme
     val colorFilter by remember(tintColor) {
         derivedStateOf {
             // TODO Support gradient tints
@@ -125,31 +126,23 @@ private fun IconComponentView_Preview() {
 @Composable
 private fun previewIconComponentStyle(
     size: Size,
-    color: ColorScheme = ColorScheme(
-        light = ColorInfo.Hex(
-            Color.Cyan.toArgb(),
-        ),
+    color: ColorStyles = ColorStyles(
+        light = ColorStyle.Solid(Color.Cyan),
     ),
-    backgroundColor: ColorScheme = ColorScheme(
-        light = ColorInfo.Hex(
-            Color.Red.toArgb(),
-        ),
+    backgroundColor: ColorStyles = ColorStyles(
+        light = ColorStyle.Solid(Color.Red),
     ),
     paddingValues: PaddingValues = PaddingValues(10.dp),
     marginValues: PaddingValues = PaddingValues(10.dp),
-    border: Border? = Border(
-        width = 2.0,
-        color = ColorScheme(
-            light = ColorInfo.Hex(
-                Color.Cyan.toArgb(),
-            ),
-        ),
+    border: BorderStyles? = BorderStyles(
+        width = 2.dp,
+        colors = ColorStyles(light = ColorStyle.Solid(Color.Cyan)),
     ),
-    shadow: Shadow? = Shadow(
-        color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-        radius = 10.0,
-        x = 0.0,
-        y = 3.0,
+    shadow: ShadowStyles? = ShadowStyles(
+        colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+        radius = 10.dp,
+        x = 0.dp,
+        y = 3.dp,
     ),
     shape: MaskShape = MaskShape.Circle,
 ) = IconComponentStyle(
@@ -162,7 +155,7 @@ private fun previewIconComponentStyle(
     color = color,
     padding = paddingValues,
     margin = marginValues,
-    iconBackground = IconComponent.IconBackground(
+    iconBackground = IconComponentStyle.Background(
         shape = shape,
         border = border,
         shadow = shadow,

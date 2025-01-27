@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         paywallActivityLauncher = PaywallActivityLauncher(this, this)
         setContent {
             PaywallTesterAndroidTheme(dynamicColor = false) {
-                Box(modifier = Modifier.fillMaxSize().background(color = MaterialTheme.colorScheme.background)) {
+                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     PaywallTesterApp()
                 }
             }

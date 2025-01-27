@@ -8,10 +8,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 
 @Suppress("LongParameterList")
@@ -20,7 +20,7 @@ internal class TextComponentStyle(
     @get:JvmSynthetic
     val texts: NonEmptyMap<LocaleId, String>,
     @get:JvmSynthetic
-    val color: ColorScheme,
+    val color: ColorStyles,
     @get:JvmSynthetic
     val fontSize: Int,
     @get:JvmSynthetic
@@ -32,7 +32,7 @@ internal class TextComponentStyle(
     @get:JvmSynthetic
     val horizontalAlignment: Alignment.Horizontal,
     @get:JvmSynthetic
-    val backgroundColor: ColorScheme?,
+    val backgroundColor: ColorStyles?,
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic

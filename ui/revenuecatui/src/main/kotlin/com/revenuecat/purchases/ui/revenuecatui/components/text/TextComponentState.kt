@@ -101,7 +101,7 @@ internal class TextComponentState(
     }
 
     @get:JvmSynthetic
-    val color by derivedStateOf { presentedPartial?.partial?.color ?: style.color }
+    val color by derivedStateOf { presentedPartial?.color ?: style.color }
 
     @get:JvmSynthetic
     val fontSize by derivedStateOf { presentedPartial?.partial?.fontSize ?: style.fontSize }
@@ -125,7 +125,7 @@ internal class TextComponentState(
     }
 
     @get:JvmSynthetic
-    val backgroundColor by derivedStateOf { presentedPartial?.partial?.backgroundColor ?: style.backgroundColor }
+    val backgroundColor by derivedStateOf { presentedPartial?.backgroundColor ?: style.backgroundColor }
 
     @get:JvmSynthetic
     val size by derivedStateOf { presentedPartial?.partial?.size ?: style.size }

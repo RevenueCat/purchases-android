@@ -31,6 +31,7 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
         // Serialization is not implemented as it is not needed.
     }
 
+    @Suppress("CyclomaticComplexMethod")
     override fun deserialize(decoder: Decoder): PaywallComponent {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("Can only deserialize PaywallComponent from JSON, got: ${decoder::class}")
@@ -44,6 +45,7 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "sticky_footer" -> jsonDecoder.json.decodeFromString<StickyFooterComponent>(json.toString())
             "text" -> jsonDecoder.json.decodeFromString<TextComponent>(json.toString())
             "icon" -> jsonDecoder.json.decodeFromString<IconComponent>(json.toString())
+            "timeline" -> jsonDecoder.json.decodeFromString<TimelineComponent>(json.toString())
             else -> json["fallback"]
                 ?.let { it as? JsonObject }
                 ?.toString()
