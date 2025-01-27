@@ -22,7 +22,7 @@ enum class FontWeight {
     @SerialName("medium")
     MEDIUM,
 
-    @SerialName("semi_bold")
+    @SerialName("semibold")
     SEMI_BOLD,
 
     @SerialName("bold")
@@ -35,6 +35,10 @@ enum class FontWeight {
     BLACK,
 }
 
+@Deprecated(
+    "Font sizes are just integers now. Remove after 2025-03-01 when we are sure no more paywalls are using this.",
+)
+@Suppress("MagicNumber")
 @InternalRevenueCatAPI
 @Serializable
 enum class FontSize {

@@ -44,7 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberSh
 internal fun Modifier.shadow(
     shadow: ShadowStyle,
     shape: Shape,
-) = this then drawBehind {
+) = this.drawBehind {
     // Where to draw
     val outline = shape.createOutline(size, layoutDirection, this)
     val offset = Offset(x = shadow.x.toPx(), y = shadow.y.toPx())
@@ -157,15 +157,15 @@ private fun Shadow_Preview_Gradient_CustomShape() {
                                     points = listOf(
                                         ColorInfo.Gradient.Point(
                                             color = Color.Red.toArgb(),
-                                            percent = 0.1f,
+                                            percent = 10f,
                                         ),
                                         ColorInfo.Gradient.Point(
                                             color = Color.Green.toArgb(),
-                                            percent = 0.5f,
+                                            percent = 50f,
                                         ),
                                         ColorInfo.Gradient.Point(
                                             color = Color.Blue.toArgb(),
-                                            percent = 0.9f,
+                                            percent = 90f,
                                         ),
                                     ),
                                 ),

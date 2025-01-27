@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
@@ -22,20 +23,20 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @JvmSynthetic
 @Composable
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-    selected: Boolean,
 ): TextComponentState =
     rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
-        isEligibleForIntroOffer = paywallState.isEligibleForIntroOffer,
-        selected = selected,
+        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
     )
 
 @JvmSynthetic
@@ -43,24 +44,20 @@ internal fun rememberUpdatedTextComponentState(
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
-    isEligibleForIntroOffer: Boolean = false,
-    selected: Boolean = false,
+    selectedPackageProvider: () -> Package?,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
     return remember(style) {
         TextComponentState(
             initialWindowSize = windowSize,
-            initialIsEligibleForIntroOffer = isEligibleForIntroOffer,
-            initialSelected = selected,
             style = style,
             localeProvider = localeProvider,
+            selectedPackageProvider = selectedPackageProvider,
         )
     }.apply {
         update(
             windowSize = windowSize,
-            isEligibleForIntroOffer = isEligibleForIntroOffer,
-            selected = selected,
         )
     }
 }
@@ -68,19 +65,28 @@ internal fun rememberUpdatedTextComponentState(
 @Stable
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialIsEligibleForIntroOffer: Boolean,
-    initialSelected: Boolean,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
+    private val selectedPackageProvider: () -> Package?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-    private var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
-    private var selected by mutableStateOf(initialSelected)
+    private val selected by derivedStateOf {
+        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+    }
+
+    /**
+     * The package to take variable values from and to consider for intro offer eligibility.
+     */
+    val applicablePackage by derivedStateOf {
+        style.rcPackage ?: selectedPackageProvider()
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides?.buildPresentedPartial(windowCondition, isEligibleForIntroOffer, componentState)
+        style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
 
     @get:JvmSynthetic
@@ -95,7 +101,7 @@ internal class TextComponentState(
     }
 
     @get:JvmSynthetic
-    val color by derivedStateOf { presentedPartial?.partial?.color ?: style.color }
+    val color by derivedStateOf { presentedPartial?.color ?: style.color }
 
     @get:JvmSynthetic
     val fontSize by derivedStateOf { presentedPartial?.partial?.fontSize ?: style.fontSize }
@@ -119,7 +125,7 @@ internal class TextComponentState(
     }
 
     @get:JvmSynthetic
-    val backgroundColor by derivedStateOf { presentedPartial?.partial?.backgroundColor ?: style.backgroundColor }
+    val backgroundColor by derivedStateOf { presentedPartial?.backgroundColor ?: style.backgroundColor }
 
     @get:JvmSynthetic
     val size by derivedStateOf { presentedPartial?.partial?.size ?: style.size }
@@ -133,11 +139,7 @@ internal class TextComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
-        isEligibleForIntroOffer: Boolean? = null,
-        selected: Boolean? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
-        if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
-        if (selected != null) this.selected = selected
     }
 }

@@ -1,12 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -17,6 +18,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.SE
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.COMPACT
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.EXPANDED
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.MEDIUM
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.INELIGIBLE
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Test
@@ -31,11 +36,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
     class Args(
         val availableOverrides: PresentedOverrides<LocalizedTextPartial>,
         val windowSize: ScreenCondition,
-        val isEligibleForIntroOffer: Boolean,
+        val introOfferEligibility: IntroOfferEligibility,
         val state: ComponentViewState,
         val expected: LocalizedTextPartial?,
     )
 
+    @Suppress("LargeClass")
     companion object {
         private val localeId = LocaleId("en_US")
         private val dummyLocalizationDictionary = nonEmptyMapOf(
@@ -47,7 +53,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello selected"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val introOfferPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -55,7 +62,17 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello intro"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
+        ).getOrThrow()
+        private val multipleIntroOffersPartial = LocalizedTextPartial(
+            from = PartialTextComponent(),
+            using = nonEmptyMapOf(
+                localeId to nonEmptyMapOf(
+                    LocalizationKey("key") to LocalizationData.Text("Hello multiple intros"),
+                )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val compactPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -63,7 +80,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello compact"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val mediumPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -71,7 +89,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello medium"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
         private val expandedPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -79,7 +98,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello expanded"),
                 )
-            )
+            ),
+            aliases = emptyMap(),
         ).getOrThrow()
 
         @Suppress("LongMethod")
@@ -91,6 +111,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -101,16 +122,17 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = selectedPartial,
                 ),
             ),
             arrayOf(
-                "should pick intro when all overrides available and state is not selected",
+                "should pick multiple intros when all overrides available and state is not selected",
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -121,7 +143,28 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = multipleIntroOffersPartial,
+                ),
+            ),
+            arrayOf(
+                "should pick intro when all overrides available and state is not selected and eligibility is single",
+                Args(
+                    availableOverrides = PresentedOverrides(
+                        introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
+                        states = PresentedStates(
+                            selected = selectedPartial
+                        ),
+                        conditions = PresentedConditions(
+                            compact = compactPartial,
+                            medium = mediumPartial,
+                            expanded = expandedPartial,
+                        )
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = introOfferPartial,
                 ),
@@ -131,6 +174,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -141,7 +185,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = COMPACT,
-                    isEligibleForIntroOffer = false,
+                    introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
                 ),
@@ -151,6 +195,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -161,7 +206,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = false,
+                    introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = mediumPartial,
                 ),
@@ -171,6 +216,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
@@ -181,16 +227,17 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = EXPANDED,
-                    isEligibleForIntroOffer = false,
+                    introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = expandedPartial,
                 ),
             ),
             arrayOf(
-                "should pick intro when all overrides applicable, but selected override unavailable",
+                "should pick multiple intros when all overrides applicable, but selected override unavailable",
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = null,
                         conditions = PresentedConditions(
                             compact = compactPartial,
@@ -199,9 +246,48 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    state = SELECTED,
+                    expected = multipleIntroOffersPartial,
+                ),
+            ),
+            arrayOf(
+                "should pick intro when all overrides applicable, but selected and multiple intro override unavailable",
+                Args(
+                    availableOverrides = PresentedOverrides(
+                        introOffer = introOfferPartial,
+                        multipleIntroOffers = null,
+                        states = null,
+                        conditions = PresentedConditions(
+                            compact = compactPartial,
+                            medium = mediumPartial,
+                            expanded = expandedPartial,
+                        )
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = SELECTED,
                     expected = introOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "should pick medium when all overrides applicable, eligibility is multiple, but only single override " +
+                    "available",
+                Args(
+                    availableOverrides = PresentedOverrides(
+                        introOffer = introOfferPartial,
+                        multipleIntroOffers = null,
+                        states = null,
+                        conditions = PresentedConditions(
+                            compact = compactPartial,
+                            medium = mediumPartial,
+                            expanded = expandedPartial,
+                        )
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    state = SELECTED,
+                    expected = mediumPartial,
                 ),
             ),
             arrayOf(
@@ -209,6 +295,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = PresentedConditions(
                             compact = compactPartial,
@@ -217,7 +304,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = mediumPartial,
                 ),
@@ -228,6 +315,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = PresentedConditions(
                             compact = compactPartial,
@@ -236,7 +324,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = EXPANDED,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = mediumPartial,
                 ),
@@ -247,6 +335,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = PresentedConditions(
                             compact = compactPartial,
@@ -255,7 +344,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = compactPartial,
                 ),
@@ -266,6 +355,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = PresentedConditions(
                             compact = null,
@@ -274,7 +364,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         )
                     ),
                     windowSize = COMPACT,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = null,
                 ),
@@ -284,11 +374,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = null,
                         conditions = null,
                     ),
                     windowSize = COMPACT,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = SELECTED,
                     expected = null,
                 ),
@@ -298,13 +389,14 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = PresentedStates(
                             selected = null
                         ),
                         conditions = null,
                     ),
                     windowSize = COMPACT,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = null,
                 ),
@@ -314,13 +406,14 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
                         conditions = null,
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = selectedPartial,
                 ),
@@ -330,29 +423,49 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = PresentedStates(
                             selected = selectedPartial
                         ),
                         conditions = null,
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = selectedPartial,
                 ),
             ),
             arrayOf(
-                "should pick intro when all overrides applicable, but window and intro overrides unavailable",
+                "should pick multiple intros when all overrides applicable, but window and selected overrides " +
+                    "unavailable",
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
                         states = PresentedStates(
                             selected = null
                         ),
                         conditions = null,
                     ),
                     windowSize = MEDIUM,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    state = SELECTED,
+                    expected = introOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "should pick intro when all overrides applicable, but window and selected overrides unavailable",
+                Args(
+                    availableOverrides = PresentedOverrides(
+                        introOffer = introOfferPartial,
+                        multipleIntroOffers = multipleIntroOffersPartial,
+                        states = PresentedStates(
+                            selected = null
+                        ),
+                        conditions = null,
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = SELECTED,
                     expected = introOfferPartial,
                 ),
@@ -362,6 +475,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = null,
+                        multipleIntroOffers = null,
                         states = PresentedStates(
                             selected = null
                         ),
@@ -370,11 +484,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = LocalizationKey("compactKey"),
-                                    color = ColorScheme(light = ColorInfo.Alias("compactColor")),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                                     fontName = "compactFont",
                                     fontWeight = FontWeight.LIGHT,
-                                    fontSize = FontSize.BODY_S,
+                                    fontSize = 13,
                                     horizontalAlignment = HorizontalAlignment.LEADING,
                                     size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                     padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
@@ -384,7 +498,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     localeId to nonEmptyMapOf(
                                         LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                     )
-                                )
+                                ),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             medium = LocalizedTextPartial(
                                 from = PartialTextComponent(
@@ -394,13 +509,14 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     backgroundColor = null,
                                     fontName = "mediumFont",
                                     fontWeight = FontWeight.MEDIUM,
-                                    fontSize = FontSize.BODY_M,
+                                    fontSize = 15,
                                     horizontalAlignment = HorizontalAlignment.CENTER,
                                     size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                     padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                     margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                 ),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             expanded = LocalizedTextPartial(
                                 from = PartialTextComponent(
@@ -421,11 +537,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                         LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                     )
                                 ),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                         ),
                     ),
                     windowSize = EXPANDED,
-                    isEligibleForIntroOffer = false,
+                    introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     // We expect all of the non-null properties from the expanded override, the non-null properties
                     // from the medium override that are null in expanded, and the non-null properties from the compact
@@ -434,11 +551,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         from = PartialTextComponent(
                             visible = true,
                             text = LocalizationKey("compactKey"),
-                            color = ColorScheme(light = ColorInfo.Alias("compactColor")),
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
+                            color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                             fontName = "mediumFont",
                             fontWeight = FontWeight.MEDIUM,
-                            fontSize = FontSize.BODY_M,
+                            fontSize = 15,
                             horizontalAlignment = HorizontalAlignment.CENTER,
                             size = Size(width = Fixed(30.toUInt()), height = Fixed(30.toUInt())),
                             padding = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
@@ -448,7 +565,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             localeId to nonEmptyMapOf(
                                 LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                             )
-                        )
+                        ),
+                        aliases = emptyMap(),
                     ).getOrThrow(),
                 ),
             ),
@@ -464,13 +582,31 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 backgroundColor = null,
                                 fontName = null,
                                 fontWeight = null,
-                                fontSize = FontSize.BODY_XL,
+                                fontSize = 18,
                                 horizontalAlignment = HorizontalAlignment.CENTER,
                                 size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
                                 padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
                                 margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
                             ),
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
+                        ).getOrThrow(),
+                        multipleIntroOffers =  LocalizedTextPartial(
+                            from = PartialTextComponent(
+                                visible = true,
+                                text = null,
+                                color = null,
+                                backgroundColor = null,
+                                fontName = null,
+                                fontWeight = null,
+                                fontSize = 34,
+                                horizontalAlignment = HorizontalAlignment.CENTER,
+                                size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
+                                padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
+                                margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
+                            ),
+                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                            aliases = emptyMap(),
                         ).getOrThrow(),
                         states = PresentedStates(
                             selected = LocalizedTextPartial(
@@ -488,6 +624,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     margin = Padding(top = 70.0, bottom = 70.0, leading = 70.0, trailing = 70.0),
                                 ),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                         ),
                         conditions = PresentedConditions(
@@ -495,11 +632,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = LocalizationKey("compactKey"),
-                                    color = ColorScheme(light = ColorInfo.Alias("compactColor")),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias("compactBgColor")),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                                     fontName = "compactFont",
                                     fontWeight = FontWeight.LIGHT,
-                                    fontSize = FontSize.BODY_S,
+                                    fontSize = 13,
                                     horizontalAlignment = HorizontalAlignment.LEADING,
                                     size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                     padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
@@ -509,23 +646,25 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     localeId to nonEmptyMapOf(
                                         LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                     )
-                                )
+                                ),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             medium = LocalizedTextPartial(
                                 from = PartialTextComponent(
                                     visible = true,
                                     text = null,
-                                    color = ColorScheme(light = ColorInfo.Alias("mediumColor")),
-                                    backgroundColor = ColorScheme(light = ColorInfo.Alias("mediumBgColor")),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                                     fontName = "mediumFont",
                                     fontWeight = FontWeight.MEDIUM,
-                                    fontSize = FontSize.BODY_M,
+                                    fontSize = 15,
                                     horizontalAlignment = HorizontalAlignment.CENTER,
                                     size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                     padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                     margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                 ),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                             expanded = LocalizedTextPartial(
                                 from = PartialTextComponent(
@@ -535,28 +674,29 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     backgroundColor = null,
                                     fontName = "expandedFont",
                                     fontWeight = FontWeight.BOLD,
-                                    fontSize = FontSize.BODY_L,
+                                    fontSize = 17,
                                     horizontalAlignment = HorizontalAlignment.TRAILING,
                                     size = Size(width = Fixed(40.toUInt()), height = Fixed(40.toUInt())),
                                     padding = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
                                     margin = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
                                 ),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                aliases = emptyMap(),
                             ).getOrThrow(),
                         ),
                     ),
                     windowSize = EXPANDED,
-                    isEligibleForIntroOffer = true,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = LocalizedTextPartial(
                         from = PartialTextComponent(
                             visible = true,
                             text = LocalizationKey("compactKey"),
-                            color = ColorScheme(light = ColorInfo.Alias("mediumColor")),
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias("mediumBgColor")),
+                            color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
                             fontName = "expandedFont",
                             fontWeight = FontWeight.BOLD,
-                            fontSize = FontSize.BODY_XL,
+                            fontSize = 34,
                             horizontalAlignment = HorizontalAlignment.CENTER,
                             size = Size(width = Fixed(60.toUInt()), height = Fixed(60.toUInt())),
                             padding = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
@@ -566,7 +706,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             localeId to nonEmptyMapOf(
                                 LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                             )
-                        )
+                        ),
+                        aliases = emptyMap(),
                     ).getOrThrow(),
                 ),
             ),
@@ -578,7 +719,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         // Arrange, Act
         val actual: LocalizedTextPartial? = args.availableOverrides.buildPresentedPartial(
             windowSize = args.windowSize,
-            isEligibleForIntroOffer = args.isEligibleForIntroOffer,
+            introOfferEligibility = args.introOfferEligibility,
             state = args.state,
         )
 

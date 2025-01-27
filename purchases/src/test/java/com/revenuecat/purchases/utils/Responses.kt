@@ -78,24 +78,34 @@ object Responses {
                     "subscriptions": {
                       "pro": {
                         "billing_issues_detected_at": null,
+                        "grace_period_expires_date": null,
+                        "auto_resume_date": null,
                         "is_sandbox": true,
                         "original_purchase_date": "2019-07-26T23:30:41Z",
                         "purchase_date": "2019-07-26T23:45:40Z",
                         "product_plan_identifier": "monthly",
                         "store": "app_store",
                         "unsubscribe_detected_at": null,
+                        "refunded_at": null,
                         "expires_date": "${Iso8601Utils.format(oneMonthFreeTrialExpirationDate)}",
+                        "ownership_type": "PURCHASED",
+                        "store_transaction_id" : "GPA.3394-7009-4518-41945..6",
                         "period_type": "normal"
                       },
                       "basic": {
                         "billing_issues_detected_at": null,
+                        "grace_period_expires_date": null,
+                        "auto_resume_date": null,
                         "is_sandbox": true,
                         "original_purchase_date": "2019-07-26T23:30:41Z",
                         "purchase_date": "2019-07-26T23:45:40Z",
                         "product_plan_identifier": "monthly",
                         "store": "app_store",
-                        "unsubscribe_detected_at": null,
+                        "unsubscribe_detected_at": "2023-07-26T23:45:40Z",
+                        "refunded_at": null,
                         "period_type": "normal",
+                        "ownership_type": "PURCHASED",
+                        "store_transaction_id" : "GPA.3394-7009-4518-41945..8",
                         "expires_date": "${Iso8601Utils.format(threeMonthFreeTrialExpirationDate)}"
                       }
                     },

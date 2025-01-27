@@ -1,10 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
@@ -31,8 +36,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -42,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -102,7 +110,11 @@ internal fun InternalPaywall(
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
             if (state is PaywallState.Loaded.Components) {
-                LoadedPaywallComponents(state = state)
+                viewModel.trackPaywallImpressionIfNeeded()
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = rememberPaywallActionHandler(viewModel),
+                )
             } else {
                 Logger.e(
                     "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
@@ -246,6 +258,67 @@ private fun ErrorDialog(
             Text(text = error)
         },
     )
+}
+
+@Composable
+private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction) -> Unit {
+    val context: Context = LocalContext.current
+    val activity: Activity? = context.getActivity()
+    return remember(viewModel) {
+        {
+                action ->
+            when (action) {
+                is PaywallAction.RestorePurchases -> viewModel.handleRestorePurchases()
+                is PaywallAction.PurchasePackage ->
+                    if (activity == null) {
+                        Logger.e("Activity is null, not initiating package purchase")
+                    } else {
+                        viewModel.handlePackagePurchase(activity)
+                    }
+
+                is PaywallAction.NavigateBack -> viewModel.closePaywall()
+                is PaywallAction.NavigateTo -> when (val destination = action.destination) {
+                    is PaywallAction.NavigateTo.Destination.CustomerCenter ->
+                        Logger.w("Customer Center is not yet implemented on Android.")
+                    is PaywallAction.NavigateTo.Destination.Url -> context.handleUrlDestination(
+                        url = destination.url,
+                        method = destination.method,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
+    fun handleException(exception: Exception) {
+        val message = if (exception is ActivityNotFoundException) {
+            getString(R.string.no_browser_cannot_open_link)
+        } else {
+            getString(R.string.cannot_open_link)
+        }
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Logger.e(message, exception)
+    }
+
+    when (method) {
+        ButtonComponent.UrlMethod.IN_APP_BROWSER -> {
+            val intent = CustomTabsIntent.Builder()
+                .build()
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                intent.launchUrl(this, Uri.parse(url))
+            } catch (e: ActivityNotFoundException) {
+                handleException(e)
+            } catch (e: IllegalArgumentException) {
+                handleException(e)
+            }
+        }
+
+        ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        ButtonComponent.UrlMethod.DEEP_LINK,
+        -> openUriOrElse(url, ::handleException)
+    }
 }
 
 /**

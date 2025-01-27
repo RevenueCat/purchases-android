@@ -143,7 +143,7 @@ private fun OfferingsListScreen(
                             offering.paywall?.also {
                                 Text("Template ${it.templateName}")
                             } ?: offering.paywallComponents?.also {
-                                Text("Components ${it.templateName}")
+                                Text("Components ${it.data.templateName}")
                             } ?: Text("No paywall")
                         }
                     }

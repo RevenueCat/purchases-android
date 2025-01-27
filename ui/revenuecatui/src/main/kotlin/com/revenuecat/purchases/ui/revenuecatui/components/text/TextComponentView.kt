@@ -6,6 +6,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.text
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -15,8 +16,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -27,7 +31,6 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -41,22 +44,25 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextUnit
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
 @Composable
@@ -64,13 +70,11 @@ internal fun TextComponentView(
     style: TextComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
 ) {
     // Get a TextComponentState that calculates the overridden properties we should use.
     val textState = rememberUpdatedTextComponentState(
         style = style,
         paywallState = state,
-        selected = selected,
     )
 
     // Process any variables in the text.
@@ -82,8 +86,8 @@ internal fun TextComponentView(
         variables = variableDataProvider,
     )
 
-    val colorStyle = rememberColorStyle(scheme = textState.color)
-    val backgroundColorStyle = textState.backgroundColor?.let { rememberColorStyle(scheme = it) }
+    val colorStyle = textState.color.forCurrentTheme
+    val backgroundColorStyle = textState.backgroundColor?.forCurrentTheme
 
     // Get the text color if it's solid.
     val color = when (colorStyle) {
@@ -91,9 +95,13 @@ internal fun TextComponentView(
         is ColorStyle.Gradient -> Color.Unspecified
     }
     // Create a TextStyle with gradient if necessary.
+    // Remove the line height, as that's not configurable anyway, so we should let Text decide the line height.
     val textStyle = when (colorStyle) {
-        is ColorStyle.Solid -> LocalTextStyle.current
+        is ColorStyle.Solid -> LocalTextStyle.current.copy(
+            lineHeight = TextUnit.Unspecified,
+        )
         is ColorStyle.Gradient -> LocalTextStyle.current.copy(
+            lineHeight = TextUnit.Unspecified,
             brush = colorStyle.brush,
         )
     }
@@ -107,7 +115,7 @@ internal fun TextComponentView(
                 .applyIfNotNull(backgroundColorStyle) { background(it) }
                 .padding(textState.padding),
             color = color,
-            fontSize = textState.fontSize.toTextUnit(),
+            fontSize = textState.fontSize.sp,
             fontWeight = textState.fontWeight,
             fontFamily = textState.fontFamily,
             horizontalAlignment = textState.horizontalAlignment,
@@ -117,6 +125,9 @@ internal fun TextComponentView(
     }
 }
 
+/**
+ * @param fixedPackage If provided, this package will be used to take values from instead of the selected package.
+ */
 @Composable
 private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
@@ -125,20 +136,29 @@ private fun rememberProcessedText(
 ): String {
     val processedText by remember(state, textState) {
         derivedStateOf {
-            state.selectedPackage?.let { selectedPackage ->
+            textState.applicablePackage?.let { packageToUse ->
+
+                val introEligibility = packageToUse.introEligibility
+
+                when (introEligibility) {
+                    IntroOfferEligibility.INELIGIBLE -> textState.text
+                    IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textState.text
+                    IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> textState.text
+                }
+
                 val discount = discountPercentage(
-                    pricePerMonthMicros = selectedPackage.product.pricePerMonth()?.amountMicros,
+                    pricePerMonthMicros = packageToUse.product.pricePerMonth()?.amountMicros,
                     mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
                 )
                 val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
-                    showZeroDecimalPlacePrices = state.showZeroDecimalPlacePrices,
+                    showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
                 )
                 VariableProcessor.processVariables(
                     variableDataProvider = variables,
                     context = variableContext,
                     originalString = textState.text,
-                    rcPackage = selectedPackage,
+                    rcPackage = packageToUse,
                     locale = java.util.Locale.forLanguageTag(state.locale.toLanguageTag()),
                 )
             } ?: textState.text
@@ -165,10 +185,27 @@ private fun TextComponentView_Preview_Default() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
         ),
         state = previewEmptyState(),
     )
+}
+
+@Preview
+@Composable
+private fun TextComponentView_Preview_HeadingXlExtraBold() {
+    // Since we use LocalTextStyle, a MaterialTheme can influence the rendering.
+    MaterialTheme {
+        TextComponentView(
+            style = previewTextComponentStyle(
+                text = "Experience Pro today!",
+                color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
+                fontSize = 34,
+                fontWeight = FontWeight.EXTRA_BOLD,
+            ),
+            state = previewEmptyState(),
+        )
+    }
 }
 
 @Preview(name = "SerifFont")
@@ -177,7 +214,7 @@ private fun TextComponentView_Preview_SerifFont() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontFamily = "serif",
             size = Size(width = Fit, height = Fit),
         ),
@@ -191,7 +228,7 @@ private fun TextComponentView_Preview_SansSerifFont() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontFamily = "sans-serif",
             size = Size(width = Fit, height = Fit),
         ),
@@ -205,7 +242,7 @@ private fun TextComponentView_Preview_MonospaceFont() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontFamily = "monospace",
             size = Size(width = Fit, height = Fit),
         ),
@@ -219,7 +256,7 @@ private fun TextComponentView_Preview_CursiveFont() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontFamily = "cursive",
             size = Size(width = Fit, height = Fit),
         ),
@@ -233,8 +270,8 @@ private fun TextComponentView_Preview_FontSize() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            fontSize = FontSize.HEADING_L,
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
+            fontSize = 28,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -247,7 +284,7 @@ private fun TextComponentView_Preview_HorizontalAlignment() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             size = Size(width = Fit, height = Fit),
             horizontalAlignment = HorizontalAlignment.TRAILING,
         ),
@@ -263,12 +300,12 @@ private fun TextComponentView_Preview_Customizations() {
     TextComponentView(
         style = previewTextComponentStyle(
             text = "Hello, world",
-            color = ColorScheme(light = ColorInfo.Hex(Color(red = 0xff, green = 0x00, blue = 0x00).toArgb())),
-            fontSize = FontSize.BODY_S,
+            color = ColorStyles(light = ColorStyle.Solid(Color(red = 0xff, green = 0x00, blue = 0x00))),
+            fontSize = 13,
             fontWeight = FontWeight.BLACK,
             textAlign = HorizontalAlignment.LEADING,
             horizontalAlignment = HorizontalAlignment.LEADING,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(red = 0xde, green = 0xde, blue = 0xde).toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color(red = 0xde, green = 0xde, blue = 0xde))),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
@@ -281,9 +318,9 @@ private fun TextComponentView_Preview_Customizations() {
 private fun TextComponentView_Preview_Markdown() {
     TextComponentView(
         style = previewTextComponentStyle(
-            text = "Hello, **bold**, *italic* or _italic2_ with ~strikethrough~ and `monospace`. " +
+            text = "Hello, **bold**, *italic* or _italic2_ with ~strikethrough~, ~~strikethrough2~~ and `monospace`. " +
                 "Click [here](https://revenuecat.com)",
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
         ),
         state = previewEmptyState(),
     )
@@ -296,29 +333,29 @@ private fun TextComponentView_Preview_LinearGradient() {
         style = previewTextComponentStyle(
             text = "Do not allow people to dim your shine because they are blinded. " +
                 "Tell them to put some sunglasses on.",
-            color = ColorScheme(
+            color = ColorStyles(
                 light = ColorInfo.Gradient.Linear(
                     degrees = -45f,
                     points = listOf(
                         ColorInfo.Gradient.Point(
                             color = Color.Cyan.toArgb(),
-                            percent = 0.1f,
+                            percent = 10f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                            percent = 0.3f,
+                            percent = 30f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                            percent = 0.8f,
+                            percent = 80f,
                         ),
                     ),
-                ),
+                ).toColorStyle(),
             ),
-            fontSize = FontSize.BODY_M,
+            fontSize = 15,
             fontWeight = FontWeight.MEDIUM,
             textAlign = HorizontalAlignment.LEADING,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
@@ -334,28 +371,28 @@ private fun TextComponentView_Preview_RadialGradient() {
         style = previewTextComponentStyle(
             text = "Do not allow people to dim your shine because they are blinded. " +
                 "Tell them to put some sunglasses on.",
-            color = ColorScheme(
+            color = ColorStyles(
                 light = ColorInfo.Gradient.Radial(
                     points = listOf(
                         ColorInfo.Gradient.Point(
                             color = Color.Cyan.toArgb(),
-                            percent = 0.1f,
+                            percent = 10f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                            percent = 0.8f,
+                            percent = 80f,
                         ),
                         ColorInfo.Gradient.Point(
                             color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                            percent = 1f,
+                            percent = 100f,
                         ),
                     ),
-                ),
+                ).toColorStyle(),
             ),
-            fontSize = FontSize.BODY_M,
+            fontSize = 15,
             fontWeight = FontWeight.MEDIUM,
             textAlign = HorizontalAlignment.LEADING,
-            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
@@ -365,16 +402,15 @@ private fun TextComponentView_Preview_RadialGradient() {
 }
 
 @Suppress("LongParameterList")
-@Composable
 private fun previewTextComponentStyle(
     text: String,
-    color: ColorScheme,
-    fontSize: FontSize = FontSize.BODY_M,
+    color: ColorStyles,
+    fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
     fontFamily: String? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
-    backgroundColor: ColorScheme? = null,
+    backgroundColor: ColorStyles? = null,
     size: Size = Size(width = Fill, height = Fit),
     padding: Padding = zero,
     margin: Padding = zero,
@@ -392,6 +428,7 @@ private fun previewTextComponentStyle(
         size = size,
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
+        rcPackage = null,
         overrides = null,
     )
 }
@@ -420,8 +457,13 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
-
-    return offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
 }

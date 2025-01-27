@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
@@ -129,7 +130,7 @@ internal class StackComponentTests {
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                 )
                             ),
                             dimension = Dimension.Vertical(
@@ -138,13 +139,13 @@ internal class StackComponentTests {
                             ),
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             spacing = 8f,
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias("secondary")),
+                            backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
                             padding = Padding(top = 12.0, leading = 14.0, bottom = 16.0, trailing = 10.0),
                             margin = Padding(top = 14.0, leading = 12.0, bottom = 10.0, trailing = 16.0),
                             shape = Shape.Pill,
-                            border = Border(color = ColorScheme(light = ColorInfo.Alias("primary")), width = 123.0),
+                            border = Border(color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))), width = 123.0),
                             shadow = Shadow(
-                                color = ColorScheme(light = ColorInfo.Alias("tertiary")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("tertiary"))),
                                 radius = 20.1,
                                 x = 23.6,
                                 y = 45.2
@@ -181,9 +182,47 @@ internal class StackComponentTests {
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                 )
                             ),
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "empty margin and padding",
+                    Args(
+                        json = """
+                        {
+                          "components": [
+                            {
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "primary"
+                                }
+                              },
+                              "components": [],
+                              "id": "xmpgCrN9Rb",
+                              "name": "Text",
+                              "text_lid": "7bkohQjzIE",
+                              "type": "text"
+                            }
+                          ],
+                          "margin": {},
+                          "name": "Stack",
+                          "padding": {},
+                          "type": "stack"
+                        }
+                        """.trimIndent(),
+                        expected = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("7bkohQjzIE"),
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                )
+                            ),
+                            margin = Padding.zero,
+                            padding = Padding.zero,
                         )
                     ),
                 ),
@@ -300,16 +339,16 @@ internal class StackComponentTests {
                             ),
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             spacing = 8f,
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias("primary")),
+                            backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
                             padding = Padding(top = 1.0, bottom = 2.0, leading = 3.0, trailing = 4.0),
                             margin = Padding(top = 4.0, bottom = 3.0, leading = 2.0, trailing = 1.0),
                             shape = Shape.Pill,
                             border = Border(
-                                color = ColorScheme(light = ColorInfo.Alias("secondary")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
                                 width = 23.0
                             ),
                             shadow = Shadow(
-                                color = ColorScheme(light = ColorInfo.Alias("tertiary")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("tertiary"))),
                                 radius = 20.1,
                                 x = 23.6,
                                 y = 45.2
@@ -324,6 +363,21 @@ internal class StackComponentTests {
                         { }
                         """.trimIndent(),
                         expected = PartialStackComponent()
+                    )
+                ),
+                arrayOf(
+                    "empty padding and margin",
+                    Args(
+                        json = """
+                        {
+                          "padding": {},
+                          "margin": {}
+                        }
+                        """.trimIndent(),
+                        expected = PartialStackComponent(
+                            padding = Padding.zero,
+                            margin = Padding.zero,
+                        )
                     )
                 ),
             )

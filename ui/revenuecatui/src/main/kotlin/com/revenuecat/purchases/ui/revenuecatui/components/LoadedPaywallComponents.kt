@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -32,7 +33,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertica
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.ZLayer
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.END
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.CENTER
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.LEADING
@@ -45,16 +45,17 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
@@ -62,12 +63,13 @@ internal fun LoadedPaywallComponents(
 
     val style = state.stack
     val footerComponentStyle = state.stickyFooter
-    val background = state.background.toBackgroundStyle()
+    val background = rememberBackgroundStyle(state.background)
 
     Column(modifier = modifier.background(background)) {
         ComponentView(
             style = style,
             state = state,
+            onClick = clickHandler,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -77,6 +79,7 @@ internal fun LoadedPaywallComponents(
             ComponentView(
                 style = it,
                 state = state,
+                onClick = clickHandler,
                 modifier = Modifier
                     .fillMaxWidth(),
             )
@@ -121,7 +124,7 @@ private fun LoadedPaywallComponents_Preview() {
                         dimension = Vertical(alignment = CENTER, distribution = START),
                         backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
                         shape = Shape.Rectangle(
-                            corners = CornerRadiuses(
+                            corners = CornerRadiuses.Dp(
                                 topLeading = 10.0,
                                 topTrailing = 10.0,
                                 bottomLeading = 0.0,
@@ -154,11 +157,18 @@ private fun LoadedPaywallComponents_Preview() {
         serverDescription = "description",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
-    val state = offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
     LoadedPaywallComponents(
         state = state,
+        clickHandler = { },
         modifier = Modifier
             .fillMaxSize(),
     )
@@ -194,11 +204,11 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                                         ColorInfo.Gradient.Point(
                                             color = Color(red = 0xFF, green = 0xFF, blue = 0xFF, alpha = 0xFF)
                                                 .toArgb(),
-                                            percent = 0.4f,
+                                            percent = 40f,
                                         ),
                                         ColorInfo.Gradient.Point(
                                             color = Color(red = 5, green = 124, blue = 91).toArgb(),
-                                            percent = 1f,
+                                            percent = 100f,
                                         ),
                                     ),
                                 ),
@@ -210,7 +220,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                                     text = LocalizationKey("title"),
                                     color = textColor,
                                     fontWeight = FontWeight.SEMI_BOLD,
-                                    fontSize = FontSize.HEADING_L,
+                                    fontSize = 28,
                                     horizontalAlignment = LEADING,
                                     size = Size(width = Fill, height = Fit),
                                     margin = Padding(top = 0.0, bottom = 40.0, leading = 0.0, trailing = 0.0),
@@ -326,12 +336,19 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         serverDescription = "description",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
-    val state = offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
 
     LoadedPaywallComponents(
         state = state,
+        clickHandler = { },
         modifier = Modifier
             .fillMaxSize(),
     )

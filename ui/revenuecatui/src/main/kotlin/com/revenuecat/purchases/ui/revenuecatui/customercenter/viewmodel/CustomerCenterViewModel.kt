@@ -8,9 +8,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
@@ -18,15 +23,17 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalO
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
-import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.utils.getDefaultLocales
+import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
+import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
@@ -47,10 +54,30 @@ internal interface CustomerCenterViewModel {
     suspend fun loadCustomerCenter()
 }
 
+internal sealed class TransactionDetails(
+    open val productIdentifier: String,
+    open val store: Store,
+) {
+    data class Subscription(
+        override val productIdentifier: String,
+        override val store: Store,
+        val isActive: Boolean,
+        val willRenew: Boolean,
+        val expiresDate: Date?,
+    ) : TransactionDetails(productIdentifier, store)
+
+    data class NonSubscription(
+        override val productIdentifier: String,
+        override val store: Store,
+    ) : TransactionDetails(productIdentifier, store)
+}
+
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
 internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
+    private val dateFormatter: DateFormatter = DefaultDateFormatter(),
+    private val locale: Locale = Locale.getDefault(),
 ) : ViewModel(), CustomerCenterViewModel {
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
@@ -197,30 +224,91 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    @Suppress("ReturnCount")
-    private suspend fun loadPurchaseInformation(): PurchaseInformation? {
+    private suspend fun loadPurchaseInformation(
+        dateFormatter: DateFormatter,
+        locale: Locale,
+    ): PurchaseInformation? {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
-        // Customer Center WIP: update when we have subscription information in CustomerInfo
-        val activeEntitlement = customerInfo.entitlements.active.values.firstOrNull()
-        if (activeEntitlement != null) {
-            val product =
-                purchases.awaitGetProduct(activeEntitlement.productIdentifier, activeEntitlement.productPlanIdentifier)
-                    ?: return null
-            val locale = getDefaultLocales().first()
-            val purchaseInformation = PurchaseInformation(
-                title = product?.description ?: "",
-                durationTitle = product?.period?.localizedPeriod(locale) ?: "",
-                price = product?.price?.formatted ?: "",
-                expirationDateString = activeEntitlement.expirationDate.toString(),
-                willRenew = activeEntitlement.willRenew,
-                active = activeEntitlement.isActive,
-                product = product,
-            )
-            return purchaseInformation
+        val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
+        val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
+
+        if (hasActiveSubscriptions || hasNonSubscriptionTransactions) {
+            val activeTransactionDetails = findActiveTransaction(customerInfo)
+
+            if (activeTransactionDetails != null) {
+                val entitlement = customerInfo.entitlements.all.values
+                    .firstOrNull { it.productIdentifier == activeTransactionDetails.productIdentifier }
+
+                return createPurchaseInformation(activeTransactionDetails, entitlement, dateFormatter, locale)
+            } else {
+                Logger.w("Could not find subscription information")
+            }
         }
 
         return null
+    }
+
+    private fun findActiveTransaction(customerInfo: CustomerInfo): TransactionDetails? {
+        val activeSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
+            .filter { it.isActive }
+            .sortedBy { it.expiresDate }
+
+        val activeGoogleSubscriptions = activeSubscriptions.filter { it.store == Store.PLAY_STORE }
+        val googleNonSubscriptions = customerInfo.nonSubscriptionTransactions.filter { it.store == Store.PLAY_STORE }
+        val otherActiveSubscriptions = activeSubscriptions.filter { it.store != Store.PLAY_STORE }
+        val otherNonSubscriptions = customerInfo.nonSubscriptionTransactions.filter { it.store != Store.PLAY_STORE }
+
+        val transaction = activeGoogleSubscriptions.firstOrNull()
+            ?: googleNonSubscriptions.firstOrNull()
+            ?: otherActiveSubscriptions.firstOrNull()
+            ?: otherNonSubscriptions.firstOrNull()
+
+        return transaction?.let {
+            when (it) {
+                is SubscriptionInfo -> TransactionDetails.Subscription(
+                    productIdentifier = it.productIdentifier,
+                    store = it.store,
+                    isActive = it.isActive,
+                    willRenew = it.willRenew,
+                    expiresDate = it.expiresDate,
+                )
+                is Transaction -> TransactionDetails.NonSubscription(
+                    productIdentifier = it.productIdentifier,
+                    store = it.store,
+                )
+                else -> null
+            }
+        }
+    }
+
+    private suspend fun createPurchaseInformation(
+        transaction: TransactionDetails,
+        entitlement: EntitlementInfo?,
+        dateFormatter: DateFormatter,
+        locale: Locale,
+    ): PurchaseInformation {
+        val product = if (transaction.store == Store.PLAY_STORE) {
+            purchases.awaitGetProduct(transaction.productIdentifier, entitlement.productPlanIdentifier).firstOrNull().also {
+                if (it == null) {
+                    Logger.w(
+                        "Could not find product, loading without product information: ${transaction.productIdentifier}",
+                    )
+                }
+            }
+        } else {
+            Logger.w("Active product is not from Google, loading without product information: ${transaction.store}")
+            null
+        }
+
+        return PurchaseInformation(
+            entitlementInfo = entitlement,
+            subscribedProduct = product,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            product = product,
+        )
     }
 
     override fun contactSupport(context: Context, supportEmail: String) {
@@ -287,7 +375,7 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformation = loadPurchaseInformation()
+            val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
             _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
         } catch (e: PurchasesException) {
             _state.value = CustomerCenterState.Error(e.error)

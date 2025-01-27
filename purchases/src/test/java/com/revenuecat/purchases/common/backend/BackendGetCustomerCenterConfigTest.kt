@@ -180,6 +180,12 @@ class BackendGetCustomerCenterConfigTest {
                 "update_warning_ignore" to "Continue",
                 "update_warning_title" to "Update available",
                 "update_warning_update" to "Update",
+                "you_have_promo" to "You've been granted a subscription that doesn’t renew",
+                "you_have_lifetime" to "Your active lifetime subscription",
+                "web_subscription_manage" to "You have an active subscription that was created on the web. " +
+                    "You can manage your subscription by visiting your account.",
+                "free" to "Free",
+                "never" to "Never",
             )
         ),
         support = CustomerCenterConfigData.Support(
@@ -230,7 +236,8 @@ class BackendGetCustomerCenterConfigTest {
             onErrorHandler = { error -> fail("Expected success. Got error: $error") },
         )
         assertThat(customerCenterConfigData).isEqualTo(expectedCustomerCenterConfigData)
-        val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { it.name.lowercase() }.toTypedArray()
+        val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values()
+            .map { it.name.lowercase() }.toTypedArray()
         assertThat(customerCenterConfigData!!.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
     }
 

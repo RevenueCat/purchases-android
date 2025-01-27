@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -36,7 +37,7 @@ internal class BorderTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         }
                         """.trimIndent(),
                     expected = Border(
-                        color = ColorScheme(light = ColorInfo.Alias("primary")),
+                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
                         width = 123.0
                     )
                 )
@@ -56,7 +57,7 @@ internal class BorderTests(@Suppress("UNUSED_PARAMETER") name: String, private v
                         }
                         """.trimIndent(),
                     expected = Border(
-                        color = ColorScheme(light = ColorInfo.Alias("primary")),
+                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
                         width = 456.34
                     )
                 )

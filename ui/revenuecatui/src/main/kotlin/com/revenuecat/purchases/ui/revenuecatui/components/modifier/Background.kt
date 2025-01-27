@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @JvmSynthetic
 @Stable
@@ -19,8 +20,8 @@ internal fun Modifier.background(
     shape: Shape = RectangleShape,
 ): Modifier =
     when (color) {
-        is ColorStyle.Solid -> this then background(color.color, shape)
-        is ColorStyle.Gradient -> this then background(color.brush, shape, alpha = 1f)
+        is ColorStyle.Solid -> this.background(color.color, shape)
+        is ColorStyle.Gradient -> this.background(color.brush, shape, alpha = 1f)
     }
 
 @JvmSynthetic
@@ -30,6 +31,12 @@ internal fun Modifier.background(
     shape: Shape = RectangleShape,
 ): Modifier =
     when (background) {
-        is BackgroundStyle.Color -> this then background(color = background.color, shape = shape)
-        is BackgroundStyle.Image -> this then paint(background.painter) then clip(shape)
+        is BackgroundStyle.Color -> this.background(color = background.color, shape = shape)
+        is BackgroundStyle.Image ->
+            this.paint(
+                painter = background.painter,
+                contentScale = background.contentScale,
+            )
+                .applyIfNotNull(background.colorOverlay) { underlay(it, shape) }
+                .clip(shape)
     }

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -64,7 +65,7 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             )
@@ -106,7 +107,7 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             )
@@ -151,7 +152,7 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             )
@@ -195,7 +196,7 @@ internal class ButtonComponentTests {
                         expected = ButtonComponent(
                             action = ButtonComponent.Action.NavigateTo(
                                 destination = ButtonComponent.Destination.PrivacyPolicy(
-                                    urlLid = "ef54",
+                                    urlLid = LocalizationKey("ef54"),
                                     method = ButtonComponent.UrlMethod.IN_APP_BROWSER
                                 )
                             ),
@@ -203,7 +204,7 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             )
@@ -247,7 +248,7 @@ internal class ButtonComponentTests {
                         expected = ButtonComponent(
                             action = ButtonComponent.Action.NavigateTo(
                                 destination = ButtonComponent.Destination.Terms(
-                                    urlLid = "ef64",
+                                    urlLid = LocalizationKey("ef64"),
                                     method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER
                                 )
                             ),
@@ -255,7 +256,7 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             )
@@ -299,7 +300,7 @@ internal class ButtonComponentTests {
                         expected = ButtonComponent(
                             action = ButtonComponent.Action.NavigateTo(
                                 destination = ButtonComponent.Destination.Url(
-                                    urlLid = "ef74",
+                                    urlLid = LocalizationKey("ef74"),
                                     method = ButtonComponent.UrlMethod.DEEP_LINK
                                 )
                             ),
@@ -307,7 +308,7 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             )
@@ -432,7 +433,7 @@ internal class ButtonComponentTests {
                         """.trimIndent(),
                         deserialized = ButtonComponent.Action.NavigateTo(
                             destination = ButtonComponent.Destination.PrivacyPolicy(
-                                urlLid = "ef54",
+                                urlLid = LocalizationKey("ef54"),
                                 method = ButtonComponent.UrlMethod.IN_APP_BROWSER
                             )
                         ),
@@ -453,7 +454,7 @@ internal class ButtonComponentTests {
                         """.trimIndent(),
                         deserialized = ButtonComponent.Action.NavigateTo(
                             destination = ButtonComponent.Destination.Terms(
-                                urlLid = "ef64",
+                                urlLid = LocalizationKey("ef64"),
                                 method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER
                             )
                         )
@@ -474,7 +475,7 @@ internal class ButtonComponentTests {
                         """.trimIndent(),
                         deserialized = ButtonComponent.Action.NavigateTo(
                             destination = ButtonComponent.Destination.Url(
-                                urlLid = "ef74",
+                                urlLid = LocalizationKey("ef74"),
                                 method = ButtonComponent.UrlMethod.DEEP_LINK
                             )
                         )

@@ -58,8 +58,10 @@ internal interface PaywallViewModel {
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(activity: Activity?)
+    suspend fun handlePackagePurchase(activity: Activity)
 
     fun restorePurchases()
+    suspend fun handleRestorePurchases()
 
     fun clearActionError()
 }
@@ -154,86 +156,14 @@ internal class PaywallViewModelImpl(
             Logger.e("Activity is null, not initiating package purchase")
             return
         }
-        if (verifyNoActionInProgressOrStartAction()) {
-            return
-        }
         viewModelScope.launch {
             handlePackagePurchase(activity)
-            finishAction()
         }
     }
 
-    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     override fun restorePurchases() {
-        if (verifyNoActionInProgressOrStartAction()) {
-            return
-        }
         viewModelScope.launch {
-            try {
-                val customRestoreHandler = purchaseLogic?.let { it::performRestore }
-
-                when (purchases.purchasesAreCompletedBy) {
-                    PurchasesAreCompletedBy.MY_APP -> {
-                        checkNotNull(customRestoreHandler) {
-                            "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
-                                "is PurchasesAreCompletedBy.MY_APP"
-                        }
-                        val customerInfo = purchases.awaitCustomerInfo()
-                        when (val result = customRestoreHandler(customerInfo)) {
-                            is PurchaseLogicResult.Success -> {
-                                purchases.syncPurchases()
-
-                                shouldDisplayBlock?.let {
-                                    if (!it(customerInfo)) {
-                                        Logger.d(
-                                            "Dismissing paywall after restore since display " +
-                                                "condition has not been met",
-                                        )
-                                        options.dismissRequest()
-                                    }
-                                }
-                            }
-                            is PurchaseLogicResult.Cancellation -> {
-                                // silently ignore
-                            }
-                            is PurchaseLogicResult.Error -> {
-                                result.errorDetails?.let { _actionError.value = it }
-                            }
-                        }
-                    }
-
-                    PurchasesAreCompletedBy.REVENUECAT -> {
-                        listener?.onRestoreStarted()
-                        if (customRestoreHandler != null) {
-                            Logger.w(
-                                "myAppPurchaseLogic expected be null when " +
-                                    "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
-                                    "myAppPurchaseLogic.performRestore will not be executed.",
-                            )
-                        }
-                        val customerInfo = purchases.awaitRestore()
-                        Logger.i("Restore purchases successful: $customerInfo")
-                        listener?.onRestoreCompleted(customerInfo)
-
-                        shouldDisplayBlock?.let {
-                            if (!it(customerInfo)) {
-                                Logger.d("Dismissing paywall after restore since display condition has not been met")
-                                options.dismissRequest()
-                            }
-                        }
-                    }
-
-                    else -> {
-                        Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
-                    }
-                }
-            } catch (e: PurchasesException) {
-                Logger.e("Error restoring purchases: $e")
-                listener?.onRestoreError(e.error)
-                _actionError.value = e.error
-            }
-
-            finishAction()
+            handleRestorePurchases()
         }
     }
 
@@ -248,7 +178,83 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private suspend fun handlePackagePurchase(activity: Activity) {
+    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
+    override suspend fun handleRestorePurchases() {
+        if (verifyNoActionInProgressOrStartAction()) {
+            return
+        }
+        try {
+            val customRestoreHandler: (suspend (CustomerInfo) -> PurchaseLogicResult)? =
+                purchaseLogic?.let { it::performRestore }
+
+            when (purchases.purchasesAreCompletedBy) {
+                PurchasesAreCompletedBy.MY_APP -> {
+                    checkNotNull(customRestoreHandler) {
+                        "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
+                            "is PurchasesAreCompletedBy.MY_APP"
+                    }
+                    val customerInfo = purchases.awaitCustomerInfo()
+                    when (val result = customRestoreHandler(customerInfo)) {
+                        is PurchaseLogicResult.Success -> {
+                            purchases.syncPurchases()
+
+                            shouldDisplayBlock?.let {
+                                if (!it(customerInfo)) {
+                                    Logger.d(
+                                        "Dismissing paywall after restore since display " +
+                                            "condition has not been met",
+                                    )
+                                    options.dismissRequest()
+                                }
+                            }
+                        }
+                        is PurchaseLogicResult.Cancellation -> {
+                            // silently ignore
+                        }
+                        is PurchaseLogicResult.Error -> {
+                            result.errorDetails?.let { _actionError.value = it }
+                        }
+                    }
+                }
+
+                PurchasesAreCompletedBy.REVENUECAT -> {
+                    listener?.onRestoreStarted()
+                    if (customRestoreHandler != null) {
+                        Logger.w(
+                            "myAppPurchaseLogic expected be null when " +
+                                "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
+                                "myAppPurchaseLogic.performRestore will not be executed.",
+                        )
+                    }
+                    val customerInfo = purchases.awaitRestore()
+                    Logger.i("Restore purchases successful: $customerInfo")
+                    listener?.onRestoreCompleted(customerInfo)
+
+                    shouldDisplayBlock?.let {
+                        if (!it(customerInfo)) {
+                            Logger.d("Dismissing paywall after restore since display condition has not been met")
+                            options.dismissRequest()
+                        }
+                    }
+                }
+
+                else -> {
+                    Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
+                }
+            }
+        } catch (e: PurchasesException) {
+            Logger.e("Error restoring purchases: $e")
+            listener?.onRestoreError(e.error)
+            _actionError.value = e.error
+        }
+
+        finishAction()
+    }
+
+    override suspend fun handlePackagePurchase(activity: Activity) {
+        if (verifyNoActionInProgressOrStartAction()) {
+            return
+        }
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
@@ -258,10 +264,21 @@ internal class PaywallViewModelImpl(
                     Logger.d("Ignoring purchase request for already subscribed package")
                 }
             }
-            else -> {
-                Logger.e("Unexpected state trying to purchase package: $currentState")
+            is PaywallState.Loaded.Components -> {
+                val selectedPackageInfo = currentState.selectedPackageInfo
+                if (selectedPackageInfo == null) {
+                    Logger.w("Ignoring purchase request as no package is selected")
+                } else if (selectedPackageInfo.currentlySubscribed) {
+                    Logger.d("Ignoring purchase request for already subscribed package")
+                } else {
+                    performPurchase(activity, selectedPackageInfo.rcPackage)
+                }
             }
+            is PaywallState.Error,
+            is PaywallState.Loading,
+            -> Logger.e("Unexpected state trying to purchase package: $currentState")
         }
+        finishAction()
     }
 
     @Suppress("LongMethod", "NestedBlockDepth")
@@ -383,13 +400,15 @@ internal class PaywallViewModelImpl(
             Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
 
+        val activelySubscribedProductIds = customerInfo.activeSubscriptions
+        val purchasedNonSubscriptionProductIds: Set<String> = customerInfo.nonSubscriptionTransactions
+            .mapTo(mutableSetOf()) { it.productIdentifier }
+
         return when (validationResult) {
             is PaywallValidationResult.Legacy -> offering.toLegacyPaywallState(
                 variableDataProvider = variableDataProvider,
-                activelySubscribedProductIdentifiers = customerInfo.activeSubscriptions,
-                nonSubscriptionProductIdentifiers = customerInfo.nonSubscriptionTransactions
-                    .map { it.productIdentifier }
-                    .toSet(),
+                activelySubscribedProductIdentifiers = activelySubscribedProductIds,
+                nonSubscriptionProductIdentifiers = purchasedNonSubscriptionProductIds,
                 mode = mode,
                 validatedPaywallData = validationResult.displayablePaywall,
                 template = validationResult.template,
@@ -398,6 +417,9 @@ internal class PaywallViewModelImpl(
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validationResult,
+                activelySubscribedProductIds = activelySubscribedProductIds,
+                purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
+                storefrontCountryCode = storefrontCountryCode,
             )
         }
     }
@@ -446,14 +468,23 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private fun createEventData(): PaywallEvent.Data? {
-        val currentState = state.value
-        if (currentState !is PaywallState.Loaded.Legacy) {
-            Logger.e("Unexpected state trying to create event data: $currentState")
-            return null
+    private fun createEventData(): PaywallEvent.Data? =
+        when (val currentState = state.value) {
+            is PaywallState.Loaded.Legacy -> currentState.createEventData()
+
+            is PaywallState.Loaded.Components -> currentState.createEventData()
+
+            is PaywallState.Error,
+            is PaywallState.Loading,
+            -> {
+                Logger.e("Unexpected state trying to create event data: $currentState")
+                null
+            }
         }
-        val offering = currentState.offering
-        val paywallData = currentState.offering.paywall ?: kotlin.run {
+
+    private fun PaywallState.Loaded.Legacy.createEventData(): PaywallEvent.Data? {
+        val offering = offering
+        val paywallData = this.offering.paywall ?: run {
             Logger.e("Null paywall revision trying to create event data")
             return null
         }
@@ -461,6 +492,22 @@ internal class PaywallViewModelImpl(
         return PaywallEvent.Data(
             offeringIdentifier = offering.identifier,
             paywallRevision = paywallData.revision,
+            sessionIdentifier = UUID.randomUUID(),
+            displayMode = mode.name.lowercase(),
+            localeIdentifier = locale.toString(),
+            darkMode = isDarkMode,
+        )
+    }
+
+    private fun PaywallState.Loaded.Components.createEventData(): PaywallEvent.Data? {
+        val offering = offering
+        val paywallData = this.offering.paywallComponents ?: run {
+            Logger.e("Null paywall revision trying to create event data")
+            return null
+        }
+        return PaywallEvent.Data(
+            offeringIdentifier = offering.identifier,
+            paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),

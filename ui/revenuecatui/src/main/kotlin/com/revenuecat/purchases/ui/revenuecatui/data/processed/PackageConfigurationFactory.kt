@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
@@ -334,7 +336,8 @@ internal object PackageConfigurationFactory {
     }
 }
 
-private fun Package.currentlySubscribed(
+@JvmSynthetic
+internal fun Package.currentlySubscribed(
     activelySubscribedProductIdentifiers: Set<String>,
     nonSubscriptionProductIdentifiers: Set<String>,
 ): Boolean = when (packageType) {
@@ -346,8 +349,10 @@ private fun Package.currentlySubscribed(
     PackageType.WEEKLY,
     -> activelySubscribedProductIdentifiers.contains(product.id)
 
-    PackageType.LIFETIME, PackageType.CUSTOM,
+    PackageType.LIFETIME,
     -> nonSubscriptionProductIdentifiers.contains(product.id)
 
-    PackageType.UNKNOWN -> false
+    PackageType.CUSTOM,
+    PackageType.UNKNOWN,
+    -> false
 }

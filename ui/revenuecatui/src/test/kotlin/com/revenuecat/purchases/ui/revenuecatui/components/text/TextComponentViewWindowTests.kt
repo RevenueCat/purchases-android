@@ -15,6 +15,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
@@ -104,8 +106,17 @@ internal class TextComponentViewWindowTests {
             defaultLocaleIdentifier = localeId,
             component
         )
-        val styleFactory = StyleFactory(localizations)
-        val style = styleFactory.create(component, { }).getOrThrow() as TextComponentStyle
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            uiConfig = UiConfig(),
+            offering = Offering(
+            identifier = "identifier",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+        )
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
     }
 
     @GraphicsMode(GraphicsMode.Mode.NATIVE)

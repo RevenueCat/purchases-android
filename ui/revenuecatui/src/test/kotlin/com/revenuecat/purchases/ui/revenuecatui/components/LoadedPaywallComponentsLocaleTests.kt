@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -25,10 +26,10 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.localeChangingTest
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -79,7 +80,7 @@ internal class LoadedPaywallComponentsLocaleTests {
             serverDescription = "serverDescription",
             metadata = emptyMap(),
             availablePackages = emptyList(),
-            paywallComponents = paywallComponents,
+            paywallComponents = Offering.PaywallComponents(UiConfig(), paywallComponents),
         )
     }
 
@@ -117,8 +118,9 @@ internal class LoadedPaywallComponentsLocaleTests {
         class TestActivity : ComponentActivity() {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                val state = offering.toComponentsPaywallState(paywallComponents.validate().getOrThrow())
-                setContent { LoadedPaywallComponents(state = state) }
+                val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+                val state = offering.toComponentsPaywallState(validated)
+                setContent { LoadedPaywallComponents(state = state, clickHandler = { }) }
             }
         }
     }
@@ -132,8 +134,11 @@ internal class LoadedPaywallComponentsLocaleTests {
         @Test
         fun `Should propagate locale changes without Activity recreation`(): Unit = with(composeTestRule) {
             localeChangingTest(
-                arrange = { offering.toComponentsPaywallState(paywallComponents.validate().getOrThrow()) },
-                act = { state -> LoadedPaywallComponents(state = state) },
+                arrange = {
+                    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+                    offering.toComponentsPaywallState(validated)
+                },
+                act = { state -> LoadedPaywallComponents(state = state, clickHandler = { }) },
                 assert = { localeController ->
                     localeController.setLocale("en-US")
                     onNodeWithText(EXPECTED_TEXT_EN)

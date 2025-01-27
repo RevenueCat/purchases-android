@@ -30,8 +30,8 @@ internal fun Modifier.border(
     shape: Shape = RectangleShape,
 ): Modifier =
     when (border.color) {
-        is ColorStyle.Solid -> this then border(width = border.width, color = border.color.color, shape = shape)
-        is ColorStyle.Gradient -> this then border(width = border.width, brush = border.color.brush, shape = shape)
+        is ColorStyle.Solid -> this.border(width = border.width, color = border.color.color, shape = shape)
+        is ColorStyle.Gradient -> this.border(width = border.width, brush = border.color.brush, shape = shape)
     }
 
 @Suppress("MagicNumber")
@@ -127,15 +127,15 @@ private fun Border_Preview_LinearGradient(shape: Shape) {
                                 points = listOf(
                                     ColorInfo.Gradient.Point(
                                         color = Color.Cyan.toArgb(),
-                                        percent = 0.1f,
+                                        percent = 10f,
                                     ),
                                     ColorInfo.Gradient.Point(
                                         color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                                        percent = 0.3f,
+                                        percent = 30f,
                                     ),
                                     ColorInfo.Gradient.Point(
                                         color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                                        percent = 0.8f,
+                                        percent = 80f,
                                     ),
                                 ),
                             ),
@@ -163,15 +163,15 @@ private fun Border_Preview_RadialGradient(shape: Shape) {
                                 points = listOf(
                                     ColorInfo.Gradient.Point(
                                         color = Color.Cyan.toArgb(),
-                                        percent = 0.8f,
+                                        percent = 80f,
                                     ),
                                     ColorInfo.Gradient.Point(
                                         color = Color(red = 0x00, green = 0x66, blue = 0xff).toArgb(),
-                                        percent = 0.9f,
+                                        percent = 90f,
                                     ),
                                     ColorInfo.Gradient.Point(
                                         color = Color(red = 0xA0, green = 0x00, blue = 0xA0).toArgb(),
-                                        percent = 0.96f,
+                                        percent = 96f,
                                     ),
                                 ),
                             ),

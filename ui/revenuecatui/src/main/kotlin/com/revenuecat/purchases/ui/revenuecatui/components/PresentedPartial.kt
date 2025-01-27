@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -35,9 +36,13 @@ private fun <T : PresentedPartial<T>> PresentedPartial<T>?.combineOrReplace(with
 @Poko
 internal class PresentedOverrides<T : PresentedPartial<T>>(
     /**
-     * Override for different selection states.
+     * Override when the user is eligible for a single offer.
      */
     @get:JvmSynthetic val introOffer: T?,
+    /**
+     * Override when the user is eligible for multiple offers.
+     */
+    @get:JvmSynthetic val multipleIntroOffers: T?,
     /**
      * Override for different selection states.
      */
@@ -89,6 +94,9 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
     val introOffer = introOffer?.let(transform)
         ?.getOrElse { return Result.Error(it.head) }
 
+    val multipleIntroOffers = multipleIntroOffers?.let(transform)
+        ?.getOrElse { return Result.Error(it.head) }
+
     val selectedState = states?.selected?.let(transform)
         ?.getOrElse { return Result.Error(it.head) }
 
@@ -105,6 +113,7 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
     return Result.Success(
         PresentedOverrides(
             introOffer = introOffer,
+            multipleIntroOffers = multipleIntroOffers,
             states = states,
             conditions = conditions,
         ),
@@ -116,7 +125,7 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
  * is eligible for an intro offer.
  *
  * @param windowSize Current screen condition (compact / medium / expanded).
- * @param isEligibleForIntroOffer Whether the user is eligible for an intro offer.
+ * @param introOfferEligibility Whether the user is eligible for an intro offer.
  * @param state Current view state (selected / unselected).
  *
  * @return A presentable partial component, or null if [this] [PresentedOverrides] did not contain any
@@ -125,14 +134,23 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildPresentedPartial(
     windowSize: ScreenCondition,
-    isEligibleForIntroOffer: Boolean,
+    introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
 ): T? {
     var conditionPartial = buildScreenConditionPartial(windowSize)
 
-    if (isEligibleForIntroOffer) {
-        // If conditionPartial is null here, we want to continue with the introOffer partial.
-        conditionPartial = conditionPartial.combineOrReplace(introOffer)
+    when (introOfferEligibility) {
+        IntroOfferEligibility.INELIGIBLE -> {
+            // Nothing to do.
+        }
+        IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> {
+            // If conditionPartial is null here, we want to continue with the introOffer partial.
+            conditionPartial = conditionPartial.combineOrReplace(introOffer)
+        }
+        IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> {
+            // If conditionPartial is null here, we want to continue with the multipleIntroOffers partial.
+            conditionPartial = conditionPartial.combineOrReplace(multipleIntroOffers)
+        }
     }
 
     when (state) {

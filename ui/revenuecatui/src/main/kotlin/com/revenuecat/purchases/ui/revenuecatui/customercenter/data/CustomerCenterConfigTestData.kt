@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.RCColor
 import com.revenuecat.purchases.models.Period
@@ -124,10 +125,14 @@ internal object CustomerCenterConfigTestData {
     val purchaseInformationMonthlyRenewing = PurchaseInformation(
         title = "Basic",
         durationTitle = "1 Month",
-        price = "$4.99",
-        expirationDateString = "June 1st, 2024",
-        willRenew = true,
-        active = true,
+        price = PriceDetails.Paid("$4.99"),
+        explanation = Explanation.EARLIEST_RENEWAL,
+        expirationOrRenewal =
+        ExpirationOrRenewal(
+            ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
+            ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
+        ),
+        store = Store.PLAY_STORE,
         product = TestStoreProduct(
             "monthly_product_id",
             "Basic",
@@ -141,10 +146,14 @@ internal object CustomerCenterConfigTestData {
     val purchaseInformationYearlyExpiring = PurchaseInformation(
         title = "Basic",
         durationTitle = "1 Year",
-        price = "$40.99",
-        expirationDateString = "June 1st, 2025",
-        willRenew = false,
-        active = true,
+        price = PriceDetails.Paid("$40.99"),
+        explanation = Explanation.EARLIEST_EXPIRATION,
+        expirationOrRenewal =
+        ExpirationOrRenewal(
+            ExpirationOrRenewal.Label.EXPIRES,
+            ExpirationOrRenewal.Date.DateString("June 1st, 2025"),
+        ),
+        store = Store.PLAY_STORE,
         product = TestStoreProduct(
             "yearly_product_id",
             "Basic",

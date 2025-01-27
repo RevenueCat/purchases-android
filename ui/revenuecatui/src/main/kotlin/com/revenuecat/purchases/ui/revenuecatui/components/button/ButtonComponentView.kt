@@ -4,7 +4,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,6 +16,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -25,16 +25,15 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -42,6 +41,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -50,7 +53,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import kotlinx.coroutines.launch
 import java.net.URL
 
@@ -58,17 +61,26 @@ import java.net.URL
 internal fun ButtonComponentView(
     style: ButtonComponentStyle,
     state: PaywallState.Loaded.Components,
+    onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Get a ButtonComponentState that calculates the stateful properties we should use.
+    val buttonState = rememberButtonComponentState(
+        style = style,
+        paywallState = state,
+    )
+
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
     StackComponentView(
-        style.stackComponentStyle,
-        state,
-        modifier.clickable(enabled = isClickable) {
+        style = style.stackComponentStyle,
+        state = state,
+        // We're the button, so we're handling the click already.
+        clickHandler = { },
+        modifier = modifier.clickable(enabled = isClickable) {
             isClickable = false
             coroutineScope.launch {
-                style.actionHandler(style.action)
+                onClick(buttonState.action)
                 isClickable = true
             }
         },
@@ -78,7 +90,7 @@ internal fun ButtonComponentView(
 @Preview
 @Composable
 private fun ButtonComponentView_Preview_Default() {
-    ButtonComponentView(previewButtonComponentStyle(), previewEmptyState())
+    ButtonComponentView(previewButtonComponentStyle(), previewEmptyState(), { })
 }
 
 @Composable
@@ -87,46 +99,47 @@ private fun previewButtonComponentStyle(
         children = listOf(
             TextComponentStyle(
                 texts = nonEmptyMapOf(LocaleId("en_US") to "Restore purchases"),
-                color = ColorScheme(
-                    light = ColorInfo.Hex(Color.Black.toArgb()),
+                color = ColorStyles(
+                    light = ColorStyle.Solid(Color.Black),
                 ),
-                fontSize = FontSize.BODY_M,
+                fontSize = 15,
                 fontWeight = FontWeight.REGULAR.toFontWeight(),
                 fontFamily = null,
                 textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                 horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Yellow.toArgb()),
+                backgroundColor = ColorStyles(
+                    light = ColorStyle.Solid(Color.Yellow),
                 ),
                 size = Size(width = Fit, height = Fit),
                 padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
                 margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0).toPaddingValues(),
+                rcPackage = null,
                 overrides = null,
             ),
         ),
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
         size = Size(width = Fit, height = Fit),
         spacing = 16.dp,
-        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+        backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
         padding = PaddingValues(all = 16.dp),
         margin = PaddingValues(all = 16.dp),
-        shape = RoundedCornerShape(size = 20.dp),
-        border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
-        shadow = Shadow(
-            color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-            radius = 10.0,
-            x = 0.0,
-            y = 3.0,
+        shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+        border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
+        shadow = ShadowStyles(
+            colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+            radius = 10.dp,
+            x = 0.dp,
+            y = 3.dp,
         ),
+        badge = null,
+        rcPackage = null,
         overrides = null,
     ),
-    action: PaywallAction = PaywallAction.RestorePurchases,
-    actionHandler: (PaywallAction) -> Unit = {},
+    action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,
 ): ButtonComponentStyle {
     return ButtonComponentStyle(
         stackComponentStyle = stackComponentStyle,
         action = action,
-        actionHandler = actionHandler,
     )
 }
 
@@ -154,8 +167,13 @@ private fun previewEmptyState(): PaywallState.Loaded.Components {
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = data,
+        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
-
-    return offering.toComponentsPaywallState(data.validate().getOrThrow())
+    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+    )
 }

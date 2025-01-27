@@ -36,7 +36,7 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
                         }
                         """.trimIndent(),
                     expected = Shape.Rectangle(
-                        corners = CornerRadiuses(
+                        corners = CornerRadiuses.Dp(
                             topLeading = 1.0,
                             topTrailing = 2.0,
                             bottomLeading = 3.0,
@@ -53,9 +53,7 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
                           "type": "rectangle"
                         }
                         """.trimIndent(),
-                    expected = Shape.Rectangle(
-                        corners = null
-                    )
+                    expected = Shape.Rectangle()
                 )
             ),
             arrayOf(
@@ -67,9 +65,7 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
                           "type": "rectangle"
                         }
                         """.trimIndent(),
-                    expected = Shape.Rectangle(
-                        corners = null
-                    )
+                    expected = Shape.Rectangle()
                 )
             ),
             arrayOf(

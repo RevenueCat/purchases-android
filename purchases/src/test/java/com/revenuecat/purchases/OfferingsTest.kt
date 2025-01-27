@@ -7,14 +7,20 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.parseRGBAColor
 import com.revenuecat.purchases.utils.getLifetimePackageJSON
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
@@ -216,7 +222,7 @@ class OfferingsTest {
         val products = mapOf(productId to listOf(storeProductAnnual))
 
         val offeringWithOneMonthlyPackageJson = getOfferingJSON()
-        val offering = offeringsParser.createOffering(offeringWithOneMonthlyPackageJson, products)
+        val offering = offeringsParser.createOffering(offeringWithOneMonthlyPackageJson, products, null)
         assertThat(offering).isNull()
     }
 
@@ -265,7 +271,7 @@ class OfferingsTest {
             metadata = metadata
         )
 
-        val offering = offeringsParser.createOffering(offeringJSON, products)
+        val offering = offeringsParser.createOffering(offeringJSON, products, null)
         assertThat(offering).isNotNull
         assertThat(offering!!.identifier).isEqualTo(offeringId)
         assertThat(offering!!.metadata).isEqualTo(metadata)
@@ -553,6 +559,42 @@ class OfferingsTest {
         assertThat(offerings.targeting.ruleId).isEqualTo("abc123")
     }
 
+    @Test
+    fun `createOfferings creates UiConfig object`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = mapOf("primary" to FontInfo.Name("Roboto")),
+            localizations = mapOf("en_US" to mapOf(VariableLocalizationKey.MONTHLY to "monthly")),
+            variableCompatibilityMap = mapOf("new var" to "guaranteed var"),
+            functionCompatibilityMap = mapOf("new fun" to "guaranteed fun")
+        )
+        val offeringJson = getOfferingJSON(paywallComponents = getPaywallComponentsDataJson())
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
+
+        // Act
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+
+        // Assert
+        assertThat(offerings).isNotNull
+        assertThat(offerings.all.size).isEqualTo(1)
+        val offering = offerings.all.values.first()
+
+        val paywallComponents = offering.paywallComponents ?: fail("paywallComponents is null")
+        val uiConfig = paywallComponents.uiConfig
+        val colorInfo = uiConfig.app.colors[ColorAlias("primary")]!!.light as ColorInfo.Hex
+        assertThat(colorInfo.value).isEqualTo(parseRGBAColor("#ff00ff"))
+        val fontInfo = uiConfig.app.fonts[FontAlias("primary")]!!.android as FontInfo.Name
+        assertThat(fontInfo.value).isEqualTo("Roboto")
+        assertThat(uiConfig.localizations[LocaleId("en_US")]!![VariableLocalizationKey.MONTHLY])
+            .isEqualTo("monthly")
+        assertThat(uiConfig.variableConfig.variableCompatibilityMap["new var"]).isEqualTo("guaranteed var")
+        assertThat(uiConfig.variableConfig.functionCompatibilityMap["new fun"]).isEqualTo("guaranteed fun")
+    }
+
     private fun testPackageType(packageType: PackageType) {
         var identifier = packageType.identifier
         if (identifier == null) {
@@ -630,6 +672,7 @@ class OfferingsTest {
             ),
         placements: JSONObject? = null,
         targeting: JSONObject? = null,
+        uiConfig: JSONObject? = null,
     ): JSONObject {
         val offeringJsons = mutableListOf<JSONObject>()
         offeringPackagesById.forEach { (offeringId, packages) ->
@@ -644,13 +687,29 @@ class OfferingsTest {
 
         val offeringsJsonArray = JSONArray(offeringJsons)
 
-        return JSONObject().apply {
-            put("offerings", offeringsJsonArray)
+        return getOfferingsJSON(
+            offerings = offeringsJsonArray,
+            currentOfferingId = currentOfferingId,
+            placements = placements,
+            targeting = targeting,
+            uiConfig = uiConfig,
+        )
+    }
+
+    private fun getOfferingsJSON(
+        offerings: JSONArray,
+        currentOfferingId: String = "offering_a",
+        placements: JSONObject? = null,
+        targeting: JSONObject? = null,
+        uiConfig: JSONObject? = null,
+    ): JSONObject =
+        JSONObject().apply {
+            put("offerings", offerings)
             put("current_offering_id", currentOfferingId)
             placements?.let { put("placements", placements) }
             targeting?.let { put("targeting", placements) }
+            uiConfig?.let { put("ui_config", uiConfig) }
         }
-    }
 
     private fun getPlacementsJSON(
         fallbackOfferingId: String?,
@@ -676,6 +735,133 @@ class OfferingsTest {
         }
     }
 
+    /**
+     * @param colors Color alias (e.g. "primary") to hex color. In reality we support an entire ColorScheme.
+     * @param fonts Font alias (e.g. "primary") to FontInfo.
+     * @param localizations LocaleId (e.g. "en_US") to a map of VariableLocalizationKey to its localized value.
+     * @param variableCompatibilityMap Map of new variables to guaranteed-to-be-available variables.
+     * @param functionCompatibilityMap Map of new functions to guaranteed-to-be-available functions.
+     */
+    private fun getUiConfigJson(
+        colors: Map<String, String>,
+        fonts: Map<String, FontInfo>,
+        localizations: Map<String, Map<VariableLocalizationKey, String>>,
+        variableCompatibilityMap: Map<String, String> = emptyMap(),
+        functionCompatibilityMap: Map<String, String> = emptyMap(),
+    ): JSONObject {
+        return JSONObject().apply {
+            put(
+                "app",
+                JSONObject().apply {
+                    put(
+                        "colors",
+                        JSONObject().apply {
+                            colors.forEach { (colorAlias, color) ->
+                                put(
+                                    colorAlias,
+                                    JSONObject().apply {
+                                        put(
+                                            "light",
+                                            JSONObject().apply {
+                                                put("type", "hex")
+                                                put("value", color)
+                                            }
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    )
+                    put(
+                        "fonts",
+                        JSONObject().apply {
+                            fonts.forEach { (fontAlias, fontInfo) ->
+                                put(
+                                    fontAlias,
+                                    JSONObject().apply {
+                                        val fontInfoJson = JSONObject().apply {
+                                            when (fontInfo) {
+                                                is FontInfo.Name -> {
+                                                    put("type", "name")
+                                                    put("value", fontInfo.value)
+                                                }
+
+                                                is FontInfo.GoogleFonts -> {
+                                                    put("type", "google_fonts")
+                                                    put("value", fontInfo.value)
+                                                }
+                                            }
+                                        }
+                                        put("android", fontInfoJson)
+                                    }
+                                )
+                            }
+                        }
+                    )
+                }
+            )
+            put(
+                "localizations",
+                JSONObject().apply {
+                    localizations.forEach { (localeId, variableLocalizations) ->
+                        put(
+                            localeId,
+                            JSONObject().apply {
+                                variableLocalizations.forEach { (key, value) -> put(key.name.lowercase(), value) }
+                            }
+                        )
+                    }
+                }
+            )
+            put(
+                "variable_config",
+                JSONObject().apply {
+                    put(
+                        "variable_compatibility_map",
+                        JSONObject().apply { variableCompatibilityMap.forEach { (key, value) -> put(key, value) } }
+                    )
+                    put(
+                        "function_compatibility_map",
+                        JSONObject().apply { functionCompatibilityMap.forEach { (key, value) -> put(key, value) } }
+                    )
+                }
+            )
+        }
+    }
+
+    private fun getPaywallComponentsDataJson() = JSONObject(
+        // language=json
+        """
+        {
+          "template_name": "components",
+          "asset_base_url": "https://assets.pawwalls.com",
+          "components_config": {
+            "base": {
+              "stack": {
+                "type": "stack",
+                "components": []
+              },
+              "background": {
+                "type": "color",
+                "value": {
+                  "light": {
+                    "type": "alias",
+                    "value": "primary"
+                  }
+                }
+              }
+            }
+          },
+          "components_localizations": {
+            "en_US": {
+              "ZvS4Ck5hGM": "Hello"
+            }
+          },
+          "default_locale": "en_US"
+        }
+        """.trimIndent()
+    )
+
     private fun getOfferingJSON(
         offeringIdentifier: String = "offering_a",
         packagesJSON: List<JSONObject> = listOf(
@@ -685,17 +871,15 @@ class OfferingsTest {
                 monthlyBasePlanId
             ),
         ),
-        metadata: Map<String, Any>? = null
-    ) = JSONObject(
-        """
-            {
-                'description': 'This is the base offering',
-                'identifier': '$offeringIdentifier',
-                'packages': $packagesJSON,
-                'metadata': ${if (metadata != null) JSONObject(metadata).toString() else "null"}
-            }
-        """.trimIndent()
-    )
+        metadata: Map<String, Any>? = null,
+        paywallComponents: JSONObject? = null,
+    ) = JSONObject().apply {
+        put("description", "This is the base offering")
+        put("identifier", offeringIdentifier)
+        put("packages", JSONArray(packagesJSON))
+        if (metadata != null) put("metadata", JSONObject(metadata)) else put("metadata", "null")
+        if (paywallComponents != null) put("paywall_components", paywallComponents)
+    }
 
     private fun getOfferingJSONWithoutMetadata(
         offeringIdentifier: String = "offering_a",

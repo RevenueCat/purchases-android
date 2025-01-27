@@ -8,5 +8,13 @@ internal sealed interface PaywallAction {
     object NavigateBack : PaywallAction
     object PurchasePackage : PaywallAction
 
-    @Poko class NavigateTo(@get:JvmSynthetic val destination: ButtonComponent.Destination) : PaywallAction
+    @Poko class NavigateTo(@get:JvmSynthetic val destination: Destination) : PaywallAction {
+        sealed interface Destination {
+            object CustomerCenter : Destination
+            data class Url(
+                @get:JvmSynthetic val url: String,
+                @get:JvmSynthetic val method: ButtonComponent.UrlMethod,
+            ) : Destination
+        }
+    }
 }

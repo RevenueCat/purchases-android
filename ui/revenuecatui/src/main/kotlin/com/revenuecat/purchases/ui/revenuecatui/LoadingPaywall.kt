@@ -200,7 +200,15 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override suspend fun handlePackagePurchase(activity: Activity) {
+        // no-op
+    }
+
     override fun restorePurchases() {
+        // no-op
+    }
+
+    override suspend fun handleRestorePurchases() {
         // no-op
     }
 

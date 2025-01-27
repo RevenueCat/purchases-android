@@ -8,6 +8,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -27,7 +28,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertical
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.ZLayer
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.END
-import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.LEADING
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -47,7 +47,12 @@ class SamplePaywallsLoader {
             emptyMap(),
             SamplePaywalls.packages,
             paywall = (paywallForTemplate(template) as? SampleData.Legacy)?.data,
-            paywallComponents = (paywallForTemplate(template) as? SampleData.Components)?.data,
+            paywallComponents = (paywallForTemplate(template) as? SampleData.Components)?.data?.let { data ->
+                Offering.PaywallComponents(
+                    uiConfig = UiConfig(),
+                    data = data,
+                )
+            },
         )
     }
 
@@ -760,11 +765,11 @@ object SamplePaywalls {
                                                 ColorInfo.Gradient.Point(
                                                     color = Color(red = 0xFF, green = 0xFF, blue = 0xFF, alpha = 0xFF)
                                                         .toArgb(),
-                                                    percent = 0.4f,
+                                                    percent = 40f,
                                                 ),
                                                 ColorInfo.Gradient.Point(
                                                     color = Color(red = 5, green = 124, blue = 91).toArgb(),
-                                                    percent = 1f,
+                                                    percent = 100f,
                                                 ),
                                             ),
                                         ),
@@ -776,7 +781,7 @@ object SamplePaywalls {
                                             text = LocalizationKey("title"),
                                             color = textColor,
                                             fontWeight = FontWeight.SEMI_BOLD,
-                                            fontSize = FontSize.HEADING_L,
+                                            fontSize = 28,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 0.0, bottom = 40.0, leading = 0.0, trailing = 0.0),

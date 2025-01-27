@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.errors
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -29,6 +30,9 @@ internal sealed class PaywallValidationError : Throwable() {
             is MissingStringLocalization -> message
             is MissingImageLocalization -> message
             is AllLocalizationsMissing -> message
+            is MissingPackage -> message
+            is MissingColorAlias -> message
+            is AliasedColorIsAlias -> message
         }
     }
 
@@ -59,5 +63,24 @@ internal sealed class PaywallValidationError : Throwable() {
     ) : PaywallValidationError() {
         override val message: String =
             PaywallValidationErrorStrings.ALL_LOCALIZATIONS_MISSING_FOR_LOCALE.format(locale.value)
+    }
+    data class MissingPackage(
+        val offeringId: String,
+        val packageId: String,
+    ) : PaywallValidationError() {
+        override val message: String =
+            PaywallValidationErrorStrings.ALL_LOCALIZATIONS_MISSING_FOR_LOCALE.format(offeringId, packageId)
+    }
+    data class MissingColorAlias(
+        val alias: ColorAlias,
+    ) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.MISSING_COLOR_ALIAS.format(alias.value)
+    }
+    data class AliasedColorIsAlias(
+        val alias: ColorAlias,
+        val aliasedValue: ColorAlias,
+    ) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.ALIASED_COLOR_IS_ALIAS
+            .format(alias.value, aliasedValue.value)
     }
 }

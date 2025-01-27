@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -60,13 +61,13 @@ internal class ComponentsConfigTests {
                         components = listOf(
                             TextComponent(
                                 text = LocalizationKey("7bkohQjzIE"),
-                                color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                             )
                         ),
                     ),
                     background = Background.Color(
                         value = ColorScheme(
-                            light = ColorInfo.Alias("primary")
+                            light = ColorInfo.Alias(ColorAlias("primary"))
                         )
                     )
                 )
@@ -158,13 +159,13 @@ internal class ComponentsConfigTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             ),
                             background = Background.Color(
                                 value = ColorScheme(
-                                    light = ColorInfo.Alias("primary")
+                                    light = ColorInfo.Alias(ColorAlias("primary"))
                                 )
                             ),
                             stickyFooter = StickyFooterComponent(
@@ -172,7 +173,7 @@ internal class ComponentsConfigTests {
                                     components = listOf(
                                         TextComponent(
                                             text = LocalizationKey("7bkohQjzIE"),
-                                            color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                         )
                                     ),
                                 )
@@ -219,13 +220,13 @@ internal class ComponentsConfigTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             ),
                             background = Background.Color(
                                 value = ColorScheme(
-                                    light = ColorInfo.Alias("primary")
+                                    light = ColorInfo.Alias(ColorAlias("primary"))
                                 )
                             )
                         )
@@ -271,13 +272,13 @@ internal class ComponentsConfigTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
                             ),
                             background = Background.Color(
                                 value = ColorScheme(
-                                    light = ColorInfo.Alias("primary")
+                                    light = ColorInfo.Alias(ColorAlias("primary"))
                                 )
                             )
                         )

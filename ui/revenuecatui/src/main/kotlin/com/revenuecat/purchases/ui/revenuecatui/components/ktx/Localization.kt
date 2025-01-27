@@ -46,6 +46,22 @@ internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.stringForAllLocales(
     }.mapValuesOrAccumulate { it }
 
 /**
+ * Retrieves an Image for all locales in this map, associated with the provided [key].
+ *
+ * @return A successful result containing the image keyed by the locale if it was found for all locales, or an error
+ * result containing a [MissingImageLocalization] error for each locale the [key] wasn't found for.
+ */
+@JvmSynthetic
+internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.imageForAllLocales(
+    key: LocalizationKey,
+): Result<NonEmptyMap<LocaleId, ThemeImageUrls>, NonEmptyList<MissingImageLocalization>> =
+    mapValues { (locale, localizationDictionary) ->
+        localizationDictionary
+            .image(key)
+            .mapError { nonEmptyListOf(MissingImageLocalization(key, locale)) }
+    }.mapValuesOrAccumulate { it }
+
+/**
  * Retrieves an image from this [LocalizationDictionary] associated with the provided [key].
  *
  * @return A successful result containing the image if it was found, or an error result containing a

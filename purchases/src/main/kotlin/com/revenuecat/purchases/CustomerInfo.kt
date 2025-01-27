@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import android.net.Uri
 import android.os.Parcelable
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.utils.DateHelper
@@ -39,7 +40,7 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class CustomerInfo constructor(
+data class CustomerInfo(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
@@ -113,6 +114,11 @@ data class CustomerInfo constructor(
             }
         }
         nonSubscriptionTransactionList.sortedBy { it.purchaseDate }
+    }
+
+    @IgnoredOnParcel
+    val subscriptionsByProductIdentifier: Map<String, SubscriptionInfo> by lazy {
+        CustomerInfoFactory.parseSubscriptionInfos(subscriberJSONObject, requestDate)
     }
 
     /**

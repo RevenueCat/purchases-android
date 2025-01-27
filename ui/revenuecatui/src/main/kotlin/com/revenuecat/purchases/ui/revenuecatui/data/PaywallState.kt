@@ -11,13 +11,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscribed
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
@@ -65,32 +66,50 @@ internal sealed interface PaywallState {
         class Components(
             val stack: ComponentStyle,
             val stickyFooter: ComponentStyle?,
-            val background: Background,
+            val background: BackgroundStyles,
+            /**
+             * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
+             * for that.
+             */
+            val showPricesWithDecimals: Boolean,
             override val offering: Offering,
             /**
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
+            private val activelySubscribedProductIds: Set<String>,
+            private val purchasedNonSubscriptionProductIds: Set<String>,
             initialLocaleList: LocaleList = LocaleList.current,
-            initialIsEligibleForIntroOffer: Boolean = false,
             initialSelectedPackage: Package? = null,
         ) : Loaded {
+
+            data class SelectedPackageInfo(
+                val rcPackage: Package,
+                val currentlySubscribed: Boolean,
+            )
+
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
             val locale by derivedStateOf { localeId.toComposeLocale() }
 
-            var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
-                private set
-            var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage)
-                private set
+            private var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage)
 
-            // TODO Actually determine this.
-            val showZeroDecimalPlacePrices: Boolean = true
+            val selectedPackageInfo by derivedStateOf {
+                selectedPackage?.let { rcPackage ->
+                    SelectedPackageInfo(
+                        rcPackage = rcPackage,
+                        currentlySubscribed = rcPackage.currentlySubscribed(
+                            activelySubscribedProductIdentifiers = activelySubscribedProductIds,
+                            nonSubscriptionProductIdentifiers = purchasedNonSubscriptionProductIds,
+                        ),
+                    )
+                }
+            }
+
             val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
 
-            fun update(localeList: FrameworkLocaleList? = null, isEligibleForIntroOffer: Boolean? = null) {
+            fun update(localeList: FrameworkLocaleList? = null) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
-                if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
             }
 
             fun update(selectedPackage: Package?) {

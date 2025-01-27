@@ -3,10 +3,14 @@ package com.revenuecat.purchases.paywalls.components
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.FitMode.FIT
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
+import com.revenuecat.purchases.paywalls.components.properties.Padding
+import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
+import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -20,7 +24,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("image")
-class ImageComponent internal constructor(
+class ImageComponent(
     @get:JvmSynthetic
     val source: ThemeImageUrls,
     @get:JvmSynthetic
@@ -38,6 +42,14 @@ class ImageComponent internal constructor(
     @SerialName("fit_mode")
     val fitMode: FitMode = FIT,
     @get:JvmSynthetic
+    val padding: Padding = zero,
+    @get:JvmSynthetic
+    val margin: Padding = zero,
+    @get:JvmSynthetic
+    val border: Border? = null,
+    @get:JvmSynthetic
+    val shadow: Shadow? = null,
+    @get:JvmSynthetic
     val overrides: ComponentOverrides<PartialImageComponent>? = null,
 ) : PaywallComponent
 
@@ -45,7 +57,7 @@ class ImageComponent internal constructor(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PartialImageComponent internal constructor(
+class PartialImageComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic
@@ -64,4 +76,12 @@ class PartialImageComponent internal constructor(
     @get:JvmSynthetic
     @SerialName("color_overlay")
     val colorOverlay: ColorScheme? = null,
+    @get:JvmSynthetic
+    val padding: Padding? = null,
+    @get:JvmSynthetic
+    val margin: Padding? = null,
+    @get:JvmSynthetic
+    val border: Border? = null,
+    @get:JvmSynthetic
+    val shadow: Shadow? = null,
 ) : PartialComponent

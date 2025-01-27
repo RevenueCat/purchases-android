@@ -235,6 +235,7 @@ private fun MainScreen(
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
                 screen = managementScreen,
+                localization = configuration.localization,
                 purchaseInformation = state.purchaseInformation,
                 onPathButtonPress = { path ->
                     onAction(CustomerCenterAction.PathButtonPressed(path, state.purchaseInformation.product))
@@ -248,6 +249,7 @@ private fun MainScreen(
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
                 screen = noActiveScreen,
+                localization = configuration.localization,
                 onPathButtonPress = { path ->
                     onAction(CustomerCenterAction.PathButtonPressed(path, null))
                 },
