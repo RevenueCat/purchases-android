@@ -157,6 +157,84 @@ internal class TimelineComponentTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "optional values absent",
+                    Args(
+                        json = """
+                        {
+                          "type": "timeline",
+                          "item_spacing": 10,
+                          "text_spacing": 20,
+                          "column_gutter": 30,
+                          "icon_alignment": "title_and_description"
+                        }
+                        """.trimIndent(),
+                        expected = TimelineComponent(
+                            itemSpacing = 10,
+                            textSpacing = 20,
+                            columnGutter = 30,
+                            iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "optional values in item absent",
+                    Args(
+                        json = """
+                        {
+                          "type": "timeline",
+                          "item_spacing": 10,
+                          "text_spacing": 20,
+                          "column_gutter": 30,
+                          "icon_alignment": "title_and_description",
+                          "items": [
+                              {
+                                 "title": {
+                                    "type": "text",
+                                    "text_lid": "title",
+                                    "color": { "light": { "type": "hex", "value": "#000000" } }
+                                 },
+                                 "icon": {
+                                    "type": "icon",
+                                    "base_url": "https://example.com",
+                                    "icon_name": "Test icon name",
+                                    "formats": {
+                                      "webp": "test.webp"
+                                    }
+                                 }
+                              }
+                          ]
+                        }
+                        """.trimIndent(),
+                        expected = TimelineComponent(
+                            itemSpacing = 10,
+                            textSpacing = 20,
+                            columnGutter = 30,
+                            iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
+                            items = listOf(
+                                TimelineComponent.Item(
+                                    title = TextComponent(
+                                        text = LocalizationKey("title"),
+                                        color = ColorScheme(
+                                            light = ColorInfo.Hex(
+                                                colorInt(alpha = 0xff, red = 0, green = 0, blue = 0)
+                                            )
+                                        )
+                                    ),
+                                    description = null,
+                                    icon = IconComponent(
+                                        baseUrl = "https://example.com",
+                                        iconName = "Test icon name",
+                                        formats = IconComponent.Formats(
+                                            webp = "test.webp"
+                                        ),
+                                    ),
+                                    connector = null,
+                                )
+                            ),
+                        )
+                    ),
+                ),
             )
         }
 

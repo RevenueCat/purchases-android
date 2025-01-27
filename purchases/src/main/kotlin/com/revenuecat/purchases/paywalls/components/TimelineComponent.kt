@@ -55,11 +55,11 @@ class TimelineComponent(
         @get:JvmSynthetic
         val title: TextComponent,
         @get:JvmSynthetic
-        val description: TextComponent?,
+        val description: TextComponent? = null,
         @get:JvmSynthetic
         val icon: IconComponent,
         @get:JvmSynthetic
-        val connector: Connector?,
+        val connector: Connector? = null,
     )
 
     @Poko
