@@ -807,5 +807,89 @@ internal class LocalizedTextPartialTests {
             assert(actualResult.isSuccess)
         }
 
+        @Test
+        fun `Should fail if the FontAlias is not found`() {
+            // Arrange
+            val missingFontKey = FontAlias("missing-font-key")
+            val expected = nonEmptyListOf(
+                PaywallValidationError.MissingFontAlias(missingFontKey),
+            )
+
+            // Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    fontName = missingFontKey,
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = emptyMap(),
+                fontAliases = mapOf(
+                    FontAlias("existing-font-key") to FontSpec.Device("existing-font")
+                ),
+            )
+
+            // Assert
+            assert(actualResult.isError)
+            val actual = actualResult.errorOrNull()!!
+            assert(actual == expected)
+        }
+
+        @Test
+        fun `Should create successfully if the FontAlias is found`() {
+            // Arrange
+            val existingFontKey = FontAlias("existing-font-key")
+            val expectedFont = FontSpec.Device("existing-font")
+
+            // Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    fontName = existingFontKey,
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = emptyMap(),
+                fontAliases = mapOf(
+                    existingFontKey to expectedFont
+                ),
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+            val actual = actualResult.getOrThrow()
+            assert(actual.fontSpec == expectedFont)
+        }
+
+        @Test
+        fun `Should create successfully if the PartialTextComponent has no FontAlias`() {
+            // Arrange, Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    fontName = null,
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = emptyMap(),
+                fontAliases = mapOf(
+                    FontAlias("existing-font-key") to FontSpec.Device("existing-font")
+                ),
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+        }
+
+        @Test
+        fun `Should create successfully if the PartialTextComponent has no FontAlias and fontAliases map is empty`() {
+            // Arrange, Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    fontName = null,
+                ),
+                using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                aliases = emptyMap(),
+                fontAliases = emptyMap(),
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+        }
+
     }
 }
