@@ -104,7 +104,7 @@ private fun previewButtonComponentStyle(
                 ),
                 fontSize = 15,
                 fontWeight = FontWeight.REGULAR.toFontWeight(),
-                fontFamily = null,
+                fontSpec = null,
                 textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                 horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
                 backgroundColor = ColorStyles(

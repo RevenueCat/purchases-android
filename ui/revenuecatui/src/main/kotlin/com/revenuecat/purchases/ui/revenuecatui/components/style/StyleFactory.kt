@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
@@ -35,7 +34,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.resolve
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
@@ -225,7 +223,14 @@ internal class StyleFactory(
         first = localizations.stringForAllLocales(component.text),
         second = component.overrides
             // Map all overrides to PresentedOverrides.
-            ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizations, aliases = colorAliases) }
+            ?.toPresentedOverrides {
+                LocalizedTextPartial(
+                    from = it,
+                    using = localizations,
+                    aliases = colorAliases,
+                    fontAliases = fontAliases,
+                )
+            }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         third = component.color.toColorStyles(colorAliases),
@@ -241,7 +246,7 @@ internal class StyleFactory(
             color = color,
             fontSize = component.fontSize,
             fontWeight = weight,
-            fontFamily = fontSpec?.resolve(weight = weight, style = FontStyle.Normal),
+            fontSpec = fontSpec,
             textAlign = component.horizontalAlignment.toTextAlign(),
             horizontalAlignment = component.horizontalAlignment.toAlignment(),
             backgroundColor = backgroundColor,

@@ -8,6 +8,7 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentStates
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.InvalidTemplate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -41,6 +42,22 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
         private val dummyLocalizationDictionary = nonEmptyMapOf(
             LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
         )
+        
+        private val introOffer = FontAlias("introOffer")
+        private val multipleIntroOffers = FontAlias("multipleIntroOffers")
+        private val selected = FontAlias("selected")
+        private val compact = FontAlias("compact")
+        private val medium = FontAlias("medium")
+        private val expanded = FontAlias("expanded")
+        
+        private val allFontAliases = mapOf(
+            introOffer to FontSpec.Device("introOffer"),
+            multipleIntroOffers to FontSpec.Device("multipleIntroOffers"),
+            selected to FontSpec.Device("selected"),
+            compact to FontSpec.Device("compact"),
+            medium to FontSpec.Device("medium"),
+            expanded to FontSpec.Device("expanded"),
+        )
             
         @Suppress("LongMethod")
         @JvmStatic
@@ -53,24 +70,25 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 "Should fail if transforming introOffer fails",
                 Args(
                     availableOverrides = ComponentOverrides(
-                        introOffer = PartialTextComponent(fontName = FontAlias("introOffer")),
-                        multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multipleIntroOffers")),
+                        introOffer = PartialTextComponent(fontName = introOffer),
+                        multipleIntroOffers = PartialTextComponent(fontName = multipleIntroOffers),
                         states = ComponentStates(
-                            selected = PartialTextComponent(fontName = FontAlias("selected")),
+                            selected = PartialTextComponent(fontName = selected),
                         ),
                         conditions = ComponentConditions(
-                            compact = PartialTextComponent(fontName = FontAlias("compact")),
-                            medium = PartialTextComponent(fontName = FontAlias("medium")),
-                            expanded = PartialTextComponent(fontName = FontAlias("expanded")),
+                            compact = PartialTextComponent(fontName = compact),
+                            medium = PartialTextComponent(fontName = medium),
+                            expanded = PartialTextComponent(fontName = expanded),
                         ),
                     ),
                     transform = { partial ->
-                        if (partial.fontName == FontAlias("introOffer"))
+                        if (partial.fontName == introOffer)
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!.value)))
                         else LocalizedTextPartial(
                             from = partial,
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = allFontAliases,
                         )
                     },
                     expected = Result.Error(InvalidTemplate("introOffer"))
@@ -80,24 +98,25 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 "Should fail if transforming multipleIntroOffers fails",
                 Args(
                     availableOverrides = ComponentOverrides(
-                        introOffer = PartialTextComponent(fontName = FontAlias("introOffer")),
-                        multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multipleIntroOffers")),
+                        introOffer = PartialTextComponent(fontName = introOffer),
+                        multipleIntroOffers = PartialTextComponent(fontName = multipleIntroOffers),
                         states = ComponentStates(
-                            selected = PartialTextComponent(fontName = FontAlias("selected")),
+                            selected = PartialTextComponent(fontName = selected),
                         ),
                         conditions = ComponentConditions(
-                            compact = PartialTextComponent(fontName = FontAlias("compact")),
-                            medium = PartialTextComponent(fontName = FontAlias("medium")),
-                            expanded = PartialTextComponent(fontName = FontAlias("expanded")),
+                            compact = PartialTextComponent(fontName = compact),
+                            medium = PartialTextComponent(fontName = medium),
+                            expanded = PartialTextComponent(fontName = expanded),
                         ),
                     ),
                     transform = { partial ->
-                        if (partial.fontName == FontAlias("multipleIntroOffers"))
+                        if (partial.fontName == multipleIntroOffers)
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!.value)))
                         else LocalizedTextPartial(
                             from = partial,
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = allFontAliases,
                         )
                     },
                     expected = Result.Error(InvalidTemplate("multipleIntroOffers"))
@@ -107,24 +126,25 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 "Should fail if transforming selected fails",
                 Args(
                     availableOverrides = ComponentOverrides(
-                        introOffer = PartialTextComponent(fontName = FontAlias("introOffer")),
-                        multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multipleIntroOffers")),
+                        introOffer = PartialTextComponent(fontName = introOffer),
+                        multipleIntroOffers = PartialTextComponent(fontName = multipleIntroOffers),
                         states = ComponentStates(
-                            selected = PartialTextComponent(fontName = FontAlias("selected")),
+                            selected = PartialTextComponent(fontName = selected),
                         ),
                         conditions = ComponentConditions(
-                            compact = PartialTextComponent(fontName = FontAlias("compact")),
-                            medium = PartialTextComponent(fontName = FontAlias("medium")),
-                            expanded = PartialTextComponent(fontName = FontAlias("expanded")),
+                            compact = PartialTextComponent(fontName = compact),
+                            medium = PartialTextComponent(fontName = medium),
+                            expanded = PartialTextComponent(fontName = expanded),
                         ),
                     ),
                     transform = { partial ->
-                        if (partial.fontName == FontAlias("selected"))
+                        if (partial.fontName == selected)
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!.value)))
                         else LocalizedTextPartial(
                             from = partial,
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = allFontAliases,
                         )
                     },
                     expected = Result.Error(InvalidTemplate("selected"))
@@ -134,24 +154,25 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 "Should fail if transforming compact fails",
                 Args(
                     availableOverrides = ComponentOverrides(
-                        introOffer = PartialTextComponent(fontName = FontAlias("introOffer")),
-                        multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multipleIntroOffers")),
+                        introOffer = PartialTextComponent(fontName = introOffer),
+                        multipleIntroOffers = PartialTextComponent(fontName = multipleIntroOffers),
                         states = ComponentStates(
-                            selected = PartialTextComponent(fontName = FontAlias("selected")),
+                            selected = PartialTextComponent(fontName = selected),
                         ),
                         conditions = ComponentConditions(
-                            compact = PartialTextComponent(fontName = FontAlias("compact")),
-                            medium = PartialTextComponent(fontName = FontAlias("medium")),
-                            expanded = PartialTextComponent(fontName = FontAlias("expanded")),
+                            compact = PartialTextComponent(fontName = compact),
+                            medium = PartialTextComponent(fontName = medium),
+                            expanded = PartialTextComponent(fontName = expanded),
                         ),
                     ),
                     transform = { partial ->
-                        if (partial.fontName == FontAlias("compact"))
+                        if (partial.fontName == compact)
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!.value)))
                         else LocalizedTextPartial(
                             from = partial,
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = allFontAliases,
                         )
                     },
                     expected = Result.Error(InvalidTemplate("compact"))
@@ -161,24 +182,25 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 "Should fail if transforming medium fails",
                 Args(
                     availableOverrides = ComponentOverrides(
-                        introOffer = PartialTextComponent(fontName = FontAlias("introOffer")),
-                        multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multipleIntroOffers")),
+                        introOffer = PartialTextComponent(fontName = introOffer),
+                        multipleIntroOffers = PartialTextComponent(fontName = multipleIntroOffers),
                         states = ComponentStates(
-                            selected = PartialTextComponent(fontName = FontAlias("selected")),
+                            selected = PartialTextComponent(fontName = selected),
                         ),
                         conditions = ComponentConditions(
-                            compact = PartialTextComponent(fontName = FontAlias("compact")),
-                            medium = PartialTextComponent(fontName = FontAlias("medium")),
-                            expanded = PartialTextComponent(fontName = FontAlias("expanded")),
+                            compact = PartialTextComponent(fontName = compact),
+                            medium = PartialTextComponent(fontName = medium),
+                            expanded = PartialTextComponent(fontName = expanded),
                         ),
                     ),
                     transform = { partial ->
-                        if (partial.fontName == FontAlias("medium"))
+                        if (partial.fontName == medium)
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!.value)))
                         else LocalizedTextPartial(
                             from = partial,
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = allFontAliases,
                         )
                     },
                     expected = Result.Error(InvalidTemplate("medium"))
@@ -188,24 +210,25 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 "Should fail if transforming expanded fails",
                 Args(
                     availableOverrides = ComponentOverrides(
-                        introOffer = PartialTextComponent(fontName = FontAlias("introOffer")),
-                        multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multipleIntroOffers")),
+                        introOffer = PartialTextComponent(fontName = introOffer),
+                        multipleIntroOffers = PartialTextComponent(fontName = multipleIntroOffers),
                         states = ComponentStates(
-                            selected = PartialTextComponent(fontName = FontAlias("selected")),
+                            selected = PartialTextComponent(fontName = selected),
                         ),
                         conditions = ComponentConditions(
-                            compact = PartialTextComponent(fontName = FontAlias("compact")),
-                            medium = PartialTextComponent(fontName = FontAlias("medium")),
-                            expanded = PartialTextComponent(fontName = FontAlias("expanded")),
+                            compact = PartialTextComponent(fontName = compact),
+                            medium = PartialTextComponent(fontName = medium),
+                            expanded = PartialTextComponent(fontName = expanded),
                         ),
                     ),
                     transform = { partial ->
-                        if (partial.fontName == FontAlias("expanded"))
+                        if (partial.fontName == expanded)
                             Result.Error(nonEmptyListOf(InvalidTemplate(partial.fontName!!.value)))
                         else LocalizedTextPartial(
                             from = partial,
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
+                            fontAliases = allFontAliases,
                         )
                     },
                     expected = Result.Error(InvalidTemplate("expanded"))
@@ -215,56 +238,63 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 "Should succeed if all transformations succeed",
                 Args(
                     availableOverrides = ComponentOverrides(
-                        introOffer = PartialTextComponent(fontName = FontAlias("introOffer")),
-                        multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multipleIntroOffers")),
+                        introOffer = PartialTextComponent(fontName = introOffer),
+                        multipleIntroOffers = PartialTextComponent(fontName = multipleIntroOffers),
                         states = ComponentStates(
-                            selected = PartialTextComponent(fontName = FontAlias("selected")),
+                            selected = PartialTextComponent(fontName = selected),
                         ),
                         conditions = ComponentConditions(
-                            compact = PartialTextComponent(fontName = FontAlias("compact")),
-                            medium = PartialTextComponent(fontName = FontAlias("medium")),
-                            expanded = PartialTextComponent(fontName = FontAlias("expanded")),
+                            compact = PartialTextComponent(fontName = compact),
+                            medium = PartialTextComponent(fontName = medium),
+                            expanded = PartialTextComponent(fontName = expanded),
                         ),
                     ),
                     transform = { partial -> LocalizedTextPartial(
                         from = partial,
                         using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                         aliases = emptyMap(),
+                        fontAliases = allFontAliases,
                     ) },
                     expected = Result.Success(
                         PresentedOverrides(
                             introOffer = LocalizedTextPartial(
-                                from = PartialTextComponent(fontName = FontAlias("introOffer")),
+                                from = PartialTextComponent(fontName = introOffer),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                 aliases = emptyMap(),
+                                fontAliases = allFontAliases,
                             ).getOrThrow(),
                             multipleIntroOffers = LocalizedTextPartial(
-                                from = PartialTextComponent(fontName = FontAlias("multipleIntroOffers")),
+                                from = PartialTextComponent(fontName = multipleIntroOffers),
                                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                 aliases = emptyMap(),
+                                fontAliases = allFontAliases,
                             ).getOrThrow(),
                             states = PresentedStates(
                                 selected = LocalizedTextPartial(
-                                    from = PartialTextComponent(fontName = FontAlias("selected")),
+                                    from = PartialTextComponent(fontName = selected),
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
                                 ).getOrThrow(),
                             ),
                             conditions = PresentedConditions(
                                 compact = LocalizedTextPartial(
-                                    from = PartialTextComponent(fontName = FontAlias("compact")),
+                                    from = PartialTextComponent(fontName = compact),
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
                                 ).getOrThrow(),
                                 medium = LocalizedTextPartial(
-                                    from = PartialTextComponent(fontName = FontAlias("medium")),
+                                    from = PartialTextComponent(fontName = medium),
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
                                 ).getOrThrow(),
                                 expanded = LocalizedTextPartial(
-                                    from = PartialTextComponent(fontName = FontAlias("expanded")),
+                                    from = PartialTextComponent(fontName = expanded),
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
                                 ).getOrThrow(),
                             ),
                         )

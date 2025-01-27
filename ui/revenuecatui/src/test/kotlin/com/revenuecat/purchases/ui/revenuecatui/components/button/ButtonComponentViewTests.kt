@@ -75,7 +75,7 @@ class ButtonComponentViewTests {
                             ),
                             fontSize = 15,
                             fontWeight = FontWeight.REGULAR.toFontWeight(),
-                            fontFamily = null,
+                            fontSpec = null,
                             textAlign = CENTER.toTextAlign(),
                             horizontalAlignment = CENTER.toAlignment(),
                             backgroundColor = ColorStyles(

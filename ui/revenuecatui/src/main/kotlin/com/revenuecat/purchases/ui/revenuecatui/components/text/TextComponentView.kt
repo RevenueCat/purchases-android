@@ -39,7 +39,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
-import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -48,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -215,7 +215,7 @@ private fun TextComponentView_Preview_SerifFont() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontFamily = "serif",
+            fontSpec = FontSpec.Generic.Serif,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -229,7 +229,7 @@ private fun TextComponentView_Preview_SansSerifFont() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontFamily = "sans-serif",
+            fontSpec = FontSpec.Generic.SansSerif,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -243,7 +243,7 @@ private fun TextComponentView_Preview_MonospaceFont() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontFamily = "monospace",
+            fontSpec = FontSpec.Generic.Monospace,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -257,7 +257,7 @@ private fun TextComponentView_Preview_CursiveFont() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontFamily = "cursive",
+            fontSpec = FontSpec.Generic.Cursive,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -407,7 +407,7 @@ private fun previewTextComponentStyle(
     color: ColorStyles,
     fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
-    fontFamily: String? = null,
+    fontSpec: FontSpec? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
@@ -421,7 +421,7 @@ private fun previewTextComponentStyle(
         color = color,
         fontSize = fontSize,
         fontWeight = weight,
-        fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
+        fontSpec = fontSpec,
         textAlign = textAlign.toTextAlign(),
         horizontalAlignment = horizontalAlignment.toAlignment(),
         backgroundColor = backgroundColor,

@@ -63,7 +63,6 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
@@ -80,6 +79,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
@@ -905,7 +905,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         ),
                         fontSize = 15,
                         fontWeight = FontWeight.REGULAR.toFontWeight(),
-                        fontFamily = null,
+                        fontSpec = null,
                         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                         horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
                         backgroundColor = ColorStyles(
@@ -925,7 +925,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         ),
                         fontSize = 15,
                         fontWeight = FontWeight.REGULAR.toFontWeight(),
-                        fontFamily = null,
+                        fontSpec = null,
                         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                         horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
                         backgroundColor = ColorStyles(
@@ -1110,7 +1110,7 @@ private fun previewChildren() = listOf(
         ),
         fontSize = 15,
         fontWeight = FontWeight.REGULAR.toFontWeight(),
-        fontFamily = null,
+        fontSpec = null,
         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
         horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
         backgroundColor = ColorStyles(
@@ -1129,7 +1129,7 @@ private fun previewChildren() = listOf(
         ),
         fontSize = 15,
         fontWeight = FontWeight.REGULAR.toFontWeight(),
-        fontFamily = null,
+        fontSpec = null,
         textAlign = HorizontalAlignment.CENTER.toTextAlign(),
         horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
         backgroundColor = ColorStyles(
@@ -1149,7 +1149,7 @@ private fun previewTextComponentStyle(
     color: ColorStyles = ColorStyles(ColorStyle.Solid(Color.Black)),
     fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
-    fontFamily: String? = null,
+    fontSpec: FontSpec? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
@@ -1163,7 +1163,7 @@ private fun previewTextComponentStyle(
         color = color,
         fontSize = fontSize,
         fontWeight = weight,
-        fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
+        fontSpec = fontSpec,
         textAlign = textAlign.toTextAlign(),
         horizontalAlignment = horizontalAlignment.toAlignment(),
         backgroundColor = backgroundColor,
@@ -1222,7 +1222,7 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
                     ),
                     fontSize = 15,
                     fontWeight = FontWeight.REGULAR.toFontWeight(),
-                    fontFamily = null,
+                    fontSpec = null,
                     textAlign = HorizontalAlignment.CENTER.toTextAlign(),
                     horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
                     backgroundColor = null,
