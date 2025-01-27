@@ -26,13 +26,13 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.Explanation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
-import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.icons.CalendarMonth
 import com.revenuecat.purchases.ui.revenuecatui.icons.CurrencyExchange
@@ -249,7 +249,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 "description",
                 Price("$1.99", 1_990_000, "US"),
                 Period(1, Period.Unit.YEAR, "P1Y"),
-            )
+            ),
         ),
         PurchaseInformation(
             title = "Basic",

@@ -15,8 +15,8 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
@@ -289,7 +289,10 @@ internal class CustomerCenterViewModelImpl(
         locale: Locale,
     ): PurchaseInformation {
         val product = if (transaction.store == Store.PLAY_STORE) {
-            purchases.awaitGetProduct(transaction.productIdentifier, entitlement.productPlanIdentifier).firstOrNull().also {
+            purchases.awaitGetProduct(
+                transaction.productIdentifier,
+                entitlement.productPlanIdentifier,
+            ).firstOrNull().also {
                 if (it == null) {
                     Logger.w(
                         "Could not find product, loading without product information: ${transaction.productIdentifier}",
