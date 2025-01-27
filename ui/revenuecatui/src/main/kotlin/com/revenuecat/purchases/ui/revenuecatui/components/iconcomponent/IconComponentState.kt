@@ -84,8 +84,8 @@ internal class IconComponentState(
     private val formats: IconComponent.Formats by derivedStateOf {
         presentedPartial?.partial?.formats ?: style.formats
     }
-    private val iconBackground: IconComponent.IconBackground? by derivedStateOf {
-        presentedPartial?.partial?.iconBackground ?: style.iconBackground
+    private val iconBackground: IconComponentStyle.Background? by derivedStateOf {
+        presentedPartial?.background ?: style.iconBackground
     }
 
     @get:JvmSynthetic
@@ -117,9 +117,9 @@ internal class IconComponentState(
     val shadow by derivedStateOf { iconBackground?.shadow }
 
     @get:JvmSynthetic
-    val backgroundColorScheme by derivedStateOf { iconBackground?.color }
+    val backgroundColorStyles by derivedStateOf { iconBackground?.color }
 
-    val tintColor by derivedStateOf { presentedPartial?.partial?.color ?: style.color }
+    val tintColor by derivedStateOf { presentedPartial?.colorStyles ?: style.color }
 
     @JvmSynthetic
     fun update(

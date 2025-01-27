@@ -58,6 +58,8 @@ internal class StyleFactory(
         private const val DEFAULT_SPACING = 0f
     }
 
+    private val colorAliases = uiConfig.app.colors
+
     fun create(
         component: PaywallComponent,
         rcPackage: Package? = null,
@@ -168,7 +170,7 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            ?.toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = uiConfig.app.colors) }
+            ?.toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = colorAliases) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
@@ -185,7 +187,7 @@ internal class StyleFactory(
                     )
                 }
         }.orSuccessfullyNull(),
-        fourth = component.backgroundColor?.toColorStyles(uiConfig.app.colors).orSuccessfullyNull(),
+        fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, children, badge, backgroundColorStyles ->
         StackComponentStyle(
             children = children,
@@ -266,26 +268,32 @@ internal class StyleFactory(
     private fun createIconComponentStyle(
         component: IconComponent,
         rcPackage: Package?,
-    ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> {
-        return component.overrides
-            ?.toPresentedOverrides { partial -> Result.Success(PresentedIconPartial(partial)) }
-            .orSuccessfullyNull()
-            .mapError { nonEmptyListOf(it) }
-            .map { presentedOverrides ->
-                IconComponentStyle(
-                    baseUrl = component.baseUrl,
-                    iconName = component.iconName,
-                    formats = component.formats,
-                    size = component.size,
-                    color = component.color,
-                    padding = component.padding.toPaddingValues(),
-                    margin = component.margin.toPaddingValues(),
-                    iconBackground = component.iconBackground,
-                    rcPackage = rcPackage,
-                    overrides = presentedOverrides,
-                )
-            }
-    }
+    ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
+        zipOrAccumulate(
+            first = component.overrides
+                ?.toPresentedOverrides { partial -> PresentedIconPartial(partial, colorAliases) }
+                .orSuccessfullyNull()
+                .mapError { nonEmptyListOf(it) },
+            second = component.color
+                ?.toColorStyles(aliases = colorAliases)
+                .orSuccessfullyNull(),
+            third = component.iconBackground
+                ?.toBackground(aliases = colorAliases)
+                .orSuccessfullyNull(),
+        ) { presentedOverrides, colorStyles, background ->
+            IconComponentStyle(
+                baseUrl = component.baseUrl,
+                iconName = component.iconName,
+                formats = component.formats,
+                size = component.size,
+                color = colorStyles,
+                padding = component.padding.toPaddingValues(),
+                margin = component.margin.toPaddingValues(),
+                iconBackground = background,
+                rcPackage = rcPackage,
+                overrides = presentedOverrides,
+            )
+        }
 
     private fun ThemeImageUrls.withLocalizedOverrides(
         overrideSourceLid: LocalizationKey?,
