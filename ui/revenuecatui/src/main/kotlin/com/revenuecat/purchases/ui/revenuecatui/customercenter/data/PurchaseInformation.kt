@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.net.Uri
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.models.StoreProduct
@@ -18,12 +19,14 @@ internal class PurchaseInformation(
     val expirationOrRenewal: ExpirationOrRenewal?,
     val product: StoreProduct,
     val store: Store,
+    val managementURL: Uri?,
 ) {
 
     constructor(
         entitlementInfo: EntitlementInfo? = null,
         subscribedProduct: StoreProduct? = null,
         transaction: TransactionDetails,
+        managementURL: Uri?,
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
     ) : this(
@@ -73,6 +76,7 @@ internal class PurchaseInformation(
         } else {
             subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
         },
+        managementURL = managementURL,
     )
 }
 

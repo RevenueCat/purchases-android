@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -208,6 +209,8 @@ private val PaddingHorizontal = 8.dp
 private val PaddingVertical = 8.dp
 private const val SizeIconDp = 22
 
+private const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
+
 @Suppress("MagicNumber")
 private class SubscriptionInformationProvider : PreviewParameterProvider<PurchaseInformation> {
     override val values: Sequence<PurchaseInformation> = sequenceOf(
@@ -222,6 +225,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
             ),
             store = Store.PLAY_STORE,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             product = TestStoreProduct(
                 "basic_monthly",
                 "name",
@@ -242,6 +246,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
             ),
             store = Store.PLAY_STORE,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             product = TestStoreProduct(
                 "basic_yearly",
                 "name",
@@ -262,6 +267,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
             ),
             store = Store.PLAY_STORE,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             product = TestStoreProduct(
                 "basic_weekly",
                 "name",

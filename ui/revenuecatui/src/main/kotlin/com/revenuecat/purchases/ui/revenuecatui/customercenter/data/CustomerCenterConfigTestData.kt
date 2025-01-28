@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.net.Uri
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -133,6 +134,7 @@ internal object CustomerCenterConfigTestData {
             ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
         ),
         store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         product = TestStoreProduct(
             "monthly_product_id",
             "Basic",
@@ -154,6 +156,7 @@ internal object CustomerCenterConfigTestData {
             ExpirationOrRenewal.Date.DateString("June 1st, 2025"),
         ),
         store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         product = TestStoreProduct(
             "yearly_product_id",
             "Basic",

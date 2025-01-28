@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.actions
 
+import android.net.Uri
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.StoreProduct
@@ -20,5 +21,6 @@ internal sealed class CustomerCenterAction {
         val onDismissedOffer: () -> Unit,
     ) : CustomerCenterAction()
     object DismissPromotionalOffer : CustomerCenterAction()
+    data class OpenURL(val url: Uri) : CustomerCenterAction()
     object NavigationButtonPressed : CustomerCenterAction()
 }

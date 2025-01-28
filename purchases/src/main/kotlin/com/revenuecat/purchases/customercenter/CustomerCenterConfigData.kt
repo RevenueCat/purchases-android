@@ -137,6 +137,9 @@ data class CustomerCenterConfigData(
             @SerialName("purchases_not_recovered")
             PURCHASES_NOT_RECOVERED,
 
+            @SerialName("manage_subscription")
+            MANAGE_SUBSCRIPTION,
+
             @SerialName("you_have_promo")
             YOU_HAVE_PROMO,
 
@@ -199,6 +202,7 @@ data class CustomerCenterConfigData(
                     PURCHASES_NOT_RECOVERED ->
                         "We couldn't find any additional purchases under this account. " +
                             "Contact support for assistance if you think this is an error."
+                    MANAGE_SUBSCRIPTION -> "Manage your subscription"
                     YOU_HAVE_PROMO -> "You've been granted a subscription that doesn’t renew"
                     YOU_HAVE_LIFETIME -> "Your active lifetime subscription"
                     WEB_SUBSCRIPTION_MANAGE ->

@@ -34,26 +34,15 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.paywalls.components.StackComponent
-import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.LocalizationData
-import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
@@ -63,7 +52,6 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
@@ -77,6 +65,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
+import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -91,11 +81,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
-import java.net.URL
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
@@ -1142,73 +1128,6 @@ private fun previewChildren() = listOf(
         overrides = null,
     ),
 )
-
-@Suppress("LongParameterList")
-private fun previewTextComponentStyle(
-    text: String,
-    color: ColorStyles = ColorStyles(ColorStyle.Solid(Color.Black)),
-    fontSize: Int = 15,
-    fontWeight: FontWeight = FontWeight.REGULAR,
-    fontFamily: String? = null,
-    textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
-    horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
-    backgroundColor: ColorStyles? = null,
-    size: Size = Size(width = Fill, height = Fit),
-    padding: Padding = zero,
-    margin: Padding = zero,
-): TextComponentStyle {
-    val weight = fontWeight.toFontWeight()
-    return TextComponentStyle(
-        texts = nonEmptyMapOf(LocaleId("en_US") to text),
-        color = color,
-        fontSize = fontSize,
-        fontWeight = weight,
-        fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
-        textAlign = textAlign.toTextAlign(),
-        horizontalAlignment = horizontalAlignment.toAlignment(),
-        backgroundColor = backgroundColor,
-        size = size,
-        padding = padding.toPaddingValues(),
-        margin = margin.toPaddingValues(),
-        rcPackage = null,
-        overrides = null,
-    )
-}
-
-private fun previewEmptyState(): PaywallState.Loaded.Components {
-    val data = PaywallComponentsData(
-        templateName = "template",
-        assetBaseURL = URL("https://assets.pawwalls.com"),
-        componentsConfig = ComponentsConfig(
-            base = PaywallComponentsConfig(
-                // This would normally contain at least one StackComponent, but that's not needed for previews.
-                stack = StackComponent(components = emptyList()),
-                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
-                stickyFooter = null,
-            ),
-        ),
-        componentsLocalizations = nonEmptyMapOf(
-            LocaleId("en_US") to nonEmptyMapOf(
-                LocalizationKey("text") to LocalizationData.Text("text"),
-            ),
-        ),
-        defaultLocaleIdentifier = LocaleId("en_US"),
-    )
-    val offering = Offering(
-        identifier = "identifier",
-        serverDescription = "serverDescription",
-        metadata = emptyMap(),
-        availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
-    )
-    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(
-        validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
-        storefrontCountryCode = null,
-    )
-}
 
 @Suppress("LongMethod")
 private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment, shape: Shape): BadgeStyle {

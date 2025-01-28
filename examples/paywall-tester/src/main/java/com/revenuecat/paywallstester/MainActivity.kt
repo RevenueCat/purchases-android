@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         super.onCreate(savedInstanceState)
         paywallActivityLauncher = PaywallActivityLauncher(this, this)
         setContent {
-            PaywallTesterAndroidTheme {
+            PaywallTesterAndroidTheme(dynamicColor = false) {
                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     PaywallTesterApp()
                 }

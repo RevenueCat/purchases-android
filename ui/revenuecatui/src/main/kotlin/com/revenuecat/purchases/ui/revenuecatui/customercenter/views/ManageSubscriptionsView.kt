@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,20 +29,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
+@SuppressWarnings("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun ManageSubscriptionsView(
     screen: CustomerCenterConfigData.Screen,
     localization: CustomerCenterConfigData.Localization,
+    support: CustomerCenterConfigData.Support,
     modifier: Modifier = Modifier,
     purchaseInformation: PurchaseInformation? = null,
-    onPathButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onAction: (CustomerCenterAction) -> Unit,
 ) {
     Box(
         modifier = modifier
@@ -58,11 +63,14 @@ internal fun ManageSubscriptionsView(
                     screen = screen,
                     localization = localization,
                     purchaseInformation = purchaseInformation,
-                    onDetermineFlow = onPathButtonPress,
+                    support = support,
+                    onAction = onAction,
                 )
             } ?: NoActiveUserManagementView(
                 screen = screen,
-                onDetermineFlow = onPathButtonPress,
+                onPathButtonPress = {
+                    onAction(CustomerCenterAction.PathButtonPressed(it))
+                },
             )
         }
     }
@@ -74,7 +82,8 @@ private fun ActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
     localization: CustomerCenterConfigData.Localization,
     purchaseInformation: PurchaseInformation,
-    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
+    support: CustomerCenterConfigData.Support,
+    onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column {
         Text(
@@ -99,7 +108,18 @@ private fun ActiveUserManagementView(
         Surface(
             shape = MaterialTheme.shapes.medium,
         ) {
-            ManageSubscriptionsButtonsView(screen = screen, onDetermineFlow = onDetermineFlow)
+            if (purchaseInformation.store == Store.PLAY_STORE) {
+                ManageSubscriptionsButtonsView(screen = screen, onButtonPress = {
+                    onAction(CustomerCenterAction.PathButtonPressed(it))
+                })
+            } else {
+                OtherPlatformSubscriptionButtonsView(
+                    localization = localization,
+                    support = support,
+                    managementURL = purchaseInformation.managementURL,
+                    onAction = onAction,
+                )
+            }
         }
     }
 }
@@ -108,7 +128,7 @@ private fun ActiveUserManagementView(
 @Composable
 private fun NoActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
-    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onPathButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column {
         CompatibilityContentUnavailableView(
@@ -119,7 +139,7 @@ private fun NoActiveUserManagementView(
 
         ManageSubscriptionsButtonsView(
             screen = screen,
-            onDetermineFlow = onDetermineFlow,
+            onButtonPress = onPathButtonPress,
             useOutlinedButton = true,
         )
     }
@@ -172,8 +192,9 @@ private fun ManageSubscriptionsViewPreview() {
     ManageSubscriptionsView(
         screen = managementScreen,
         localization = testData.localization,
+        support = testData.support,
         purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
-        onPathButtonPress = {},
+        onAction = {},
     )
 }
 
@@ -187,8 +208,9 @@ private fun NoActiveSubscriptionsViewPreview() {
     ManageSubscriptionsView(
         screen = noActiveScreen,
         localization = testData.localization,
+        support = testData.support,
         purchaseInformation = null,
-        onPathButtonPress = {},
+        onAction = {},
     )
 }
 
@@ -196,15 +218,57 @@ private fun NoActiveSubscriptionsViewPreview() {
 @Composable
 private fun ManageSubscriptionsButtonsView(
     screen: CustomerCenterConfigData.Screen,
-    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
     useOutlinedButton: Boolean = false,
 ) {
     Column {
         screen.supportedPaths.forEach { path ->
             ManageSubscriptionButton(
                 path = path,
-                onDetermineFlow = onDetermineFlow,
+                onButtonPress = onButtonPress,
                 useOutlinedButton = useOutlinedButton,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Composable
+private fun OtherPlatformSubscriptionButtonsView(
+    localization: CustomerCenterConfigData.Localization,
+    support: CustomerCenterConfigData.Support,
+    managementURL: Uri?,
+    onAction: (CustomerCenterAction) -> Unit,
+) {
+    Column {
+        managementURL?.let {
+            CustomerCenterButton(
+                onClick = { onAction(CustomerCenterAction.OpenURL(it)) },
+                buttonContent = { modifier ->
+                    Text(
+                        text = localization.commonLocalizedString(
+                            CustomerCenterConfigData.Localization.CommonLocalizedString.MANAGE_SUBSCRIPTION,
+                        ),
+                        modifier = modifier,
+                        textAlign = TextAlign.Start,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                },
+            )
+        }
+        support.email?.let {
+            CustomerCenterButton(
+                onClick = { onAction(CustomerCenterAction.ContactSupport(it)) },
+                buttonContent = { modifier ->
+                    Text(
+                        text = localization.commonLocalizedString(
+                            CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
+                        ),
+                        modifier = modifier,
+                        textAlign = TextAlign.Start,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                },
             )
         }
     }
@@ -214,25 +278,38 @@ private fun ManageSubscriptionsButtonsView(
 @Composable
 private fun ManageSubscriptionButton(
     path: CustomerCenterConfigData.HelpPath,
-    onDetermineFlow: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
     useOutlinedButton: Boolean,
 ) {
-    val buttonModifier = Modifier
+    CustomerCenterButton(
+        onClick = { onButtonPress(path) },
+        useOutlinedButton = useOutlinedButton,
+        buttonContent = { modifier ->
+            Text(
+                text = path.title,
+                modifier = modifier,
+                textAlign = TextAlign.Start,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        },
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Composable
+private fun CustomerCenterButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    useOutlinedButton: Boolean = false,
+    buttonContent: @Composable (Modifier) -> Unit,
+) {
+    val buttonModifier = modifier
         .fillMaxWidth()
         .padding(vertical = 4.dp)
 
-    val buttonContent: @Composable (Modifier) -> Unit = { modifier ->
-        Text(
-            text = path.title,
-            modifier = modifier,
-            textAlign = TextAlign.Start,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-
     if (useOutlinedButton) {
         OutlinedButton(
-            onClick = { onDetermineFlow(path) },
+            onClick = onClick,
             modifier = buttonModifier,
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         ) {
@@ -248,7 +325,7 @@ private fun ManageSubscriptionButton(
             ButtonDefaults.TextButtonContentPadding.calculateEndPadding(layoutDirection)
 
         TextButton(
-            onClick = { onDetermineFlow(path) },
+            onClick = onClick,
             modifier = buttonModifier
                 .heightIn(60.dp)
                 .padding(start = startPadding, end = endPadding),

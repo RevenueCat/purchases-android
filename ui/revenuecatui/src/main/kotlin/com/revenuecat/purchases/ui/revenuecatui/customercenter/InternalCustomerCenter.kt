@@ -99,6 +99,7 @@ internal fun InternalCustomerCenter(
                     action.onDismissedOffer,
                 )
                 is CustomerCenterAction.DismissPromotionalOffer -> viewModel.dismissPromotionalOffer()
+                is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
                 is CustomerCenterAction.NavigationButtonPressed -> {
                     val buttonType = state.navigationButtonType
                     viewModel.onNavigationButtonPressed()
@@ -237,6 +238,8 @@ private fun MainScreen(
                 screen = managementScreen,
                 localization = configuration.localization,
                 purchaseInformation = state.purchaseInformation,
+                support = configuration.support,
+                onAction = onAction,
                 onPathButtonPress = { path ->
                     onAction(CustomerCenterAction.PathButtonPressed(path, state.purchaseInformation.product))
                 },
@@ -250,6 +253,8 @@ private fun MainScreen(
             ManageSubscriptionsView(
                 screen = noActiveScreen,
                 localization = configuration.localization,
+                support = configuration.support,
+                onAction = onAction,
                 onPathButtonPress = { path ->
                     onAction(CustomerCenterAction.PathButtonPressed(path, null))
                 },
