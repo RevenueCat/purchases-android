@@ -2,8 +2,10 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -17,12 +19,18 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
+@Composable
 @JvmSynthetic
 internal fun previewEmptyState(): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
@@ -50,7 +58,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         availablePackages = emptyList(),
         paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
-    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     return offering.toComponentsPaywallState(
         validationResult = validated,
         activelySubscribedProductIds = emptySet(),
@@ -58,3 +66,9 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         storefrontCountryCode = null,
     )
 }
+
+@Composable
+@JvmSynthetic
+@Suppress("MaxLineLength")
+internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? =
+    validatePaywallComponentsDataOrNull(LocalContext.current.toResourceProvider())

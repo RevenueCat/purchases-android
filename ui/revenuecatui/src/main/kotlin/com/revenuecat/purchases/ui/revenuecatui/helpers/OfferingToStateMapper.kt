@@ -21,7 +21,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
@@ -92,7 +91,7 @@ private fun Offering.fallbackPaywall(
 
 @Suppress("MaxLineLength", "ReturnCount")
 internal fun Offering.validatePaywallComponentsDataOrNull(
-    resourceProvider: ResourceProvider = MockResourceProvider(), // FIXME After #2082 is merged.
+    resourceProvider: ResourceProvider,
 ): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? {
     val paywallComponents = paywallComponents ?: return null
 
