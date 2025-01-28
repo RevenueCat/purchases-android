@@ -43,7 +43,8 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import java.net.URL
 
 class SamplePaywallsLoader {
-    private val primaryCustomFont = FontAlias("primary")
+    private val primaryLocalFont = FontAlias("primary")
+    private val secondaryGoogleFont = FontAlias("secondary")
 
     fun offeringForTemplate(template: SamplePaywalls.SampleTemplate): Offering {
         return Offering(
@@ -57,7 +58,8 @@ class SamplePaywallsLoader {
                     uiConfig = UiConfig(
                         app = UiConfig.AppConfig(
                             fonts = mapOf(
-                                primaryCustomFont to FontsConfig(android = FontInfo.Name("lobster_two")),
+                                primaryLocalFont to FontsConfig(android = FontInfo.Name("lobster_two")),
+                                secondaryGoogleFont to FontsConfig(android = FontInfo.GoogleFonts("Barrio")),
                             ),
                         ),
                     ),
@@ -76,7 +78,9 @@ class SamplePaywallsLoader {
             SamplePaywalls.SampleTemplate.TEMPLATE_5 -> SamplePaywalls.template5()
             SamplePaywalls.SampleTemplate.TEMPLATE_7 -> SamplePaywalls.template7()
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS -> SamplePaywalls.bless()
-            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_CUSTOM_FONT -> SamplePaywalls.bless(font = primaryCustomFont)
+            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_LOCAL_FONT -> SamplePaywalls.bless(font = primaryLocalFont)
+            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_GOOGLE_FONT ->
+                SamplePaywalls.bless(font = secondaryGoogleFont)
             SamplePaywalls.SampleTemplate.UNRECOGNIZED_TEMPLATE -> SamplePaywalls.unrecognizedTemplate()
         }
     }
@@ -99,7 +103,8 @@ object SamplePaywalls {
         TEMPLATE_5("#5: Minimalist with small banner"),
         TEMPLATE_7("#7: Multi-tier"),
         COMPONENTS_BLESS("#8: Components - bless."),
-        COMPONENTS_BLESS_CUSTOM_FONT("#9: Components - bless. - custom font"),
+        COMPONENTS_BLESS_LOCAL_FONT("#9: Components - bless. - local font"),
+        COMPONENTS_BLESS_GOOGLE_FONT("#9: Components - bless. - Google font"),
         UNRECOGNIZED_TEMPLATE("Default template"),
     }
 
