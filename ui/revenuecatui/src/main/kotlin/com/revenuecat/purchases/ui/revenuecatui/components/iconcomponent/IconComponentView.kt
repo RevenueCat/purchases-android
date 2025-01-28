@@ -16,26 +16,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.SuccessResult
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.IconComponent
-import com.revenuecat.purchases.paywalls.components.StackComponent
-import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
-import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.LocalizationData
-import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -44,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -55,11 +43,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
-import java.net.URL
 
 @JvmSynthetic
 @Composable
@@ -164,40 +147,6 @@ private fun previewIconComponentStyle(
     rcPackage = null,
     overrides = null,
 )
-
-private fun previewEmptyState(): PaywallState.Loaded.Components {
-    val data = PaywallComponentsData(
-        templateName = "template",
-        assetBaseURL = URL("https://assets.pawwalls.com"),
-        componentsConfig = ComponentsConfig(
-            base = PaywallComponentsConfig(
-                // This would normally contain at least one ImageComponent, but that's not needed for previews.
-                stack = StackComponent(components = emptyList()),
-                background = Background.Color(
-                    ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
-                ),
-            ),
-        ),
-        componentsLocalizations = nonEmptyMapOf(
-            LocaleId("en_US") to nonEmptyMapOf(LocalizationKey("dummy") to LocalizationData.Text("dummy")),
-        ),
-        defaultLocaleIdentifier = LocaleId("en_US"),
-    )
-    val offering = Offering(
-        identifier = "identifier",
-        serverDescription = "serverDescription",
-        metadata = emptyMap(),
-        availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
-    )
-    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(
-        validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
-        storefrontCountryCode = null,
-    )
-}
 
 @Composable
 private fun previewImageLoader(

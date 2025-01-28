@@ -22,6 +22,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineIconPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
@@ -76,7 +78,7 @@ internal class StyleFactory(
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component, rcPackage)
             is IconComponent -> createIconComponentStyle(component, rcPackage)
-            is TimelineComponent -> TODO()
+            is TimelineComponent -> createTimelineComponentStyle(component, rcPackage)
         }
 
     private fun createStickyFooterComponentStyle(
@@ -307,6 +309,66 @@ internal class StyleFactory(
                 overrides = presentedOverrides,
             )
         }
+
+    private fun createTimelineComponentStyle(
+        component: TimelineComponent,
+        rcPackage: Package?,
+    ): Result<TimelineComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = component.overrides
+            ?.toPresentedOverrides { partial -> Result.Success(PresentedTimelinePartial(partial)) }
+            .orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+        second = component.items
+            .map { createTimelineComponentItemStyle(it, rcPackage) }
+            .mapOrAccumulate { it },
+    ) { presentedOverrides, items ->
+        TimelineComponentStyle(
+            itemSpacing = component.itemSpacing,
+            textSpacing = component.textSpacing,
+            columnGutter = component.columnGutter,
+            iconAlignment = component.iconAlignment,
+            size = component.size,
+            padding = component.padding.toPaddingValues(),
+            margin = component.margin.toPaddingValues(),
+            items = items,
+            rcPackage = rcPackage,
+            overrides = presentedOverrides,
+        )
+    }
+
+    private fun createTimelineComponentItemStyle(
+        item: TimelineComponent.Item,
+        rcPackage: Package?,
+    ): Result<TimelineComponentStyle.ItemStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = item.overrides
+            ?.toPresentedOverrides { partial -> Result.Success(PresentedTimelineIconPartial(partial)) }
+            .orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+        second = createTextComponentStyle(item.title, rcPackage),
+        third = item.description?.let { createTextComponentStyle(it, rcPackage) }.orSuccessfullyNull(),
+        fourth = createIconComponentStyle(item.icon, rcPackage),
+        fifth = item.connector?.color?.toColorStyles(uiConfig.app.colors).orSuccessfullyNull(),
+    ) { presentedOverrides, title, description, icon, connectorColor ->
+        val connectorStyle = item.connector?.let { connector ->
+            if (connectorColor != null) {
+                TimelineComponentStyle.ConnectorStyle(
+                    width = connector.width,
+                    margin = connector.margin.toPaddingValues(),
+                    color = connectorColor,
+                )
+            } else {
+                null
+            }
+        }
+        TimelineComponentStyle.ItemStyle(
+            title = title,
+            description = description,
+            icon = icon,
+            connector = connectorStyle,
+            rcPackage = rcPackage,
+            overrides = presentedOverrides,
+        )
+    }
 
     private fun ThemeImageUrls.withLocalizedOverrides(
         overrideSourceLid: LocalizationKey?,

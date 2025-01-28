@@ -18,7 +18,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponen
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.timeline.TimelineComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 /**
@@ -54,4 +56,5 @@ internal fun ComponentView(
     )
     is PackageComponentStyle -> PackageComponentView(style = style, state = state, modifier = modifier)
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
+    is TimelineComponentStyle -> TimelineComponentView(style = style, state = state, modifier = modifier)
 }
