@@ -240,9 +240,6 @@ private fun MainScreen(
                 purchaseInformation = state.purchaseInformation,
                 support = configuration.support,
                 onAction = onAction,
-                onPathButtonPress = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path, state.purchaseInformation.product))
-                },
             )
         } ?: run {
             // Handle missing management screen
@@ -255,9 +252,6 @@ private fun MainScreen(
                 localization = configuration.localization,
                 support = configuration.support,
                 onAction = onAction,
-                onPathButtonPress = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path, null))
-                },
             )
         } ?: run {
             // Fallback with a restore button

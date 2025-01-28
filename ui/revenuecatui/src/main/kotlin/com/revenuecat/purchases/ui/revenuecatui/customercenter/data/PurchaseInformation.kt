@@ -17,7 +17,7 @@ internal class PurchaseInformation(
     val explanation: Explanation,
     val price: PriceDetails,
     val expirationOrRenewal: ExpirationOrRenewal?,
-    val product: StoreProduct,
+    val product: StoreProduct?,
     val store: Store,
     val managementURL: Uri?,
 ) {
@@ -69,7 +69,7 @@ internal class PurchaseInformation(
             is TransactionDetails.NonSubscription ->
                 ExpirationOrRenewal(ExpirationOrRenewal.Label.EXPIRES, ExpirationOrRenewal.Date.Never)
         },
-        productIdentifier = entitlementInfo?.productIdentifier ?: transaction.productIdentifier,
+        product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
         price = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
             PriceDetails.Free

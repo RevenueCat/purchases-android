@@ -145,6 +145,7 @@ internal fun PromotionalOfferViewPreview() {
     PromotionalOfferView(data)
 }
 
+@SuppressWarnings("LongParameterList")
 private fun stubSubscriptionOption(
     id: String,
     productId: String,
@@ -171,6 +172,7 @@ private fun stubSubscriptionOption(
         get() = installmentsInfo
 }
 
+@SuppressWarnings("MagicNumber")
 private fun stubPricingPhase(
     billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
     priceCurrencyCodeValue: String = "USD",

@@ -302,8 +302,8 @@ internal class CustomerCenterViewModelImpl(
         val product = if (transaction.store == Store.PLAY_STORE) {
             purchases.awaitGetProduct(
                 transaction.productIdentifier,
-                entitlement.productPlanIdentifier,
-            ).firstOrNull().also {
+                entitlement?.productPlanIdentifier,
+            ).also {
                 if (it == null) {
                     Logger.w(
                         "Could not find product, loading without product information: ${transaction.productIdentifier}",
@@ -322,7 +322,6 @@ internal class CustomerCenterViewModelImpl(
             managementURL = managementURL,
             dateFormatter = dateFormatter,
             locale = locale,
-            product = product,
         )
     }
 
