@@ -6,7 +6,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineIconPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 
@@ -55,7 +55,7 @@ internal data class TimelineComponentStyle(
         @get:JvmSynthetic
         val rcPackage: Package?,
         @get:JvmSynthetic
-        val overrides: PresentedOverrides<PresentedTimelineIconPartial>?,
+        val overrides: PresentedOverrides<PresentedTimelineItemPartial>?,
     )
 
     @Immutable

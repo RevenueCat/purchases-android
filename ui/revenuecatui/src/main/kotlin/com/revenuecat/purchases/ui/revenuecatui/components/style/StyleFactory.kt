@@ -22,7 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineIconPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
@@ -341,7 +341,7 @@ internal class StyleFactory(
         rcPackage: Package?,
     ): Result<TimelineComponentStyle.ItemStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = item.overrides
-            ?.toPresentedOverrides { partial -> Result.Success(PresentedTimelineIconPartial(partial)) }
+            ?.toPresentedOverrides { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         second = createTextComponentStyle(item.title, rcPackage),

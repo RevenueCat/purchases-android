@@ -305,39 +305,7 @@ internal class TimelineComponentTests {
                             "leading": 6,
                             "bottom": 7,
                             "trailing": 8
-                          },
-                          "items": [
-                            {
-                             "title": {
-                                "type": "text",
-                                "text_lid": "title",
-                                "color": { "light": { "type": "hex", "value": "#000000" } }
-                             },
-                             "description": {
-                                "type": "text",
-                                "text_lid": "description",
-                                "color": { "light": { "type": "hex", "value": "#FFFFFF" } }
-                             },
-                             "icon": {
-                                "type": "icon",
-                                "base_url": "https://example.com",
-                                "icon_name": "Test icon name",
-                                "formats": {
-                                  "webp": "test.webp"
-                                }
-                             },
-                             "connector": {
-                                "width": 40,
-                                "margin": {
-                                  "top": 9,
-                                  "leading": 10,
-                                  "bottom": 11,
-                                  "trailing": 12
-                                },
-                                "color": { "light": { "type": "alias", "value": "primary" } }
-                             }
-                            }
-                          ]
+                          }
                         }
                         """.trimIndent(),
                         expected = PartialTimelineComponent(
