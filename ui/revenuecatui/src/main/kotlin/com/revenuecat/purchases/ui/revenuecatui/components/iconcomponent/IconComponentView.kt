@@ -2,10 +2,8 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -16,26 +14,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import coil.ImageLoader
-import coil.decode.DataSource
-import coil.request.SuccessResult
-import com.revenuecat.purchases.paywalls.components.IconComponent
-import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
-import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.previewIconComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.previewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
@@ -103,65 +93,4 @@ private fun IconComponentView_Preview() {
             previewImageLoader = previewImageLoader(),
         )
     }
-}
-
-@Suppress("LongParameterList")
-@Composable
-private fun previewIconComponentStyle(
-    size: Size,
-    color: ColorStyles = ColorStyles(
-        light = ColorStyle.Solid(Color.Cyan),
-    ),
-    backgroundColor: ColorStyles = ColorStyles(
-        light = ColorStyle.Solid(Color.Red),
-    ),
-    paddingValues: PaddingValues = PaddingValues(10.dp),
-    marginValues: PaddingValues = PaddingValues(10.dp),
-    border: BorderStyles? = BorderStyles(
-        width = 2.dp,
-        colors = ColorStyles(light = ColorStyle.Solid(Color.Cyan)),
-    ),
-    shadow: ShadowStyles? = ShadowStyles(
-        colors = ColorStyles(ColorStyle.Solid(Color.Black)),
-        radius = 10.dp,
-        x = 0.dp,
-        y = 3.dp,
-    ),
-    shape: MaskShape = MaskShape.Circle,
-) = IconComponentStyle(
-    baseUrl = "https://example.com",
-    iconName = "test-icon-name",
-    formats = IconComponent.Formats(
-        webp = "test-webp",
-    ),
-    size = size,
-    color = color,
-    padding = paddingValues,
-    margin = marginValues,
-    iconBackground = IconComponentStyle.Background(
-        shape = shape,
-        border = border,
-        shadow = shadow,
-        color = backgroundColor,
-    ),
-    rcPackage = null,
-    overrides = null,
-)
-
-@Composable
-private fun previewImageLoader(
-    @DrawableRes resource: Int = R.drawable.android,
-): ImageLoader {
-    val context = LocalContext.current
-    return ImageLoader.Builder(context)
-        .components {
-            add { chain ->
-                SuccessResult(
-                    drawable = context.getDrawable(resource)!!,
-                    request = chain.request,
-                    dataSource = DataSource.MEMORY,
-                )
-            }
-        }
-        .build()
 }

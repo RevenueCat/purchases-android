@@ -43,7 +43,6 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
@@ -67,6 +66,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
+import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -1129,38 +1129,6 @@ private fun previewChildren() = listOf(
         overrides = null,
     ),
 )
-
-@Suppress("LongParameterList")
-private fun previewTextComponentStyle(
-    text: String,
-    color: ColorStyles = ColorStyles(ColorStyle.Solid(Color.Black)),
-    fontSize: Int = 15,
-    fontWeight: FontWeight = FontWeight.REGULAR,
-    fontSpec: FontSpec? = null,
-    textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
-    horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
-    backgroundColor: ColorStyles? = null,
-    size: Size = Size(width = Fill, height = Fit),
-    padding: Padding = zero,
-    margin: Padding = zero,
-): TextComponentStyle {
-    val weight = fontWeight.toFontWeight()
-    return TextComponentStyle(
-        texts = nonEmptyMapOf(LocaleId("en_US") to text),
-        color = color,
-        fontSize = fontSize,
-        fontWeight = weight,
-        fontSpec = fontSpec,
-        textAlign = textAlign.toTextAlign(),
-        horizontalAlignment = horizontalAlignment.toAlignment(),
-        backgroundColor = backgroundColor,
-        size = size,
-        padding = padding.toPaddingValues(),
-        margin = margin.toPaddingValues(),
-        rcPackage = null,
-        overrides = null,
-    )
-}
 
 @Suppress("LongMethod")
 private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment, shape: Shape): BadgeStyle {

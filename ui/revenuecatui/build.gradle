@@ -68,6 +68,7 @@ dependencies {
     implementation libs.compose.material
     implementation libs.compose.material3
     implementation libs.compose.material3Adaptive
+    implementation libs.compose.constraintlayout
     implementation libs.window
     implementation libs.window.core
     implementation libs.androidx.lifecycle.runtime.ktx
