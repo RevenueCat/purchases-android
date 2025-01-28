@@ -1,7 +1,17 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialTimelineComponent
 import com.revenuecat.purchases.paywalls.components.PartialTimelineComponentItem
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.map
+import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import dev.drewhamilton.poko.Poko
 
 @Poko
@@ -27,17 +37,44 @@ internal class PresentedTimelinePartial(
 }
 
 @Poko
-internal class PresentedTimelineIconPartial(
+internal class PresentedTimelineItemPartial(
     @get:JvmSynthetic val partial: PartialTimelineComponentItem,
-) : PresentedPartial<PresentedTimelineIconPartial> {
-    override fun combine(with: PresentedTimelineIconPartial?): PresentedTimelineIconPartial {
+    @get:JvmSynthetic val connectorStyle: TimelineComponentStyle.ConnectorStyle?,
+) : PresentedPartial<PresentedTimelineItemPartial> {
+
+    companion object {
+        @JvmSynthetic
+        operator fun invoke(
+            from: PartialTimelineComponentItem,
+            aliases: Map<ColorAlias, ColorScheme>,
+        ): Result<PresentedTimelineItemPartial, NonEmptyList<PaywallValidationError>> {
+            return from.connector?.color?.toColorStyles(aliases = aliases).orSuccessfullyNull().map { colorStyles ->
+                PresentedTimelineItemPartial(
+                    partial = from,
+                    connectorStyle = from.connector?.let { connector ->
+                        if (colorStyles == null) {
+                            return@let null
+                        }
+                        TimelineComponentStyle.ConnectorStyle(
+                            width = connector.width,
+                            margin = connector.margin.toPaddingValues(),
+                            color = colorStyles,
+                        )
+                    },
+                )
+            }
+        }
+    }
+
+    override fun combine(with: PresentedTimelineItemPartial?): PresentedTimelineItemPartial {
         val otherPartial = with?.partial
 
-        return PresentedTimelineIconPartial(
+        return PresentedTimelineItemPartial(
             partial = PartialTimelineComponentItem(
                 visible = otherPartial?.visible ?: partial.visible,
                 connector = otherPartial?.connector ?: partial.connector,
             ),
+            connectorStyle = with?.connectorStyle ?: connectorStyle,
         )
     }
 }

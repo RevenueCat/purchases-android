@@ -146,7 +146,7 @@ internal class TimelineComponentState(
         val icon by derivedStateOf { style.icon }
 
         @get:JvmSynthetic
-        val connector by derivedStateOf { presentedPartial?.partial?.connector ?: style.connector }
+        val connector by derivedStateOf { presentedPartial?.connectorStyle ?: style.connector }
 
         @JvmSynthetic
         fun update(
