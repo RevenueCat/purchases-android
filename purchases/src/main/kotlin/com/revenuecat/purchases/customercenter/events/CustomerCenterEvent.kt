@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.customercenter.events
 
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.Date
 import java.util.UUID
@@ -22,11 +22,8 @@ class CustomerCenterEvent(
 ) {
 
     companion object {
-        val json = Json.Default
-
-        fun fromString(string: String): CustomerCenterEvent {
-            return json.decodeFromString(string)
-        }
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal val json = Json.Default
     }
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -54,8 +51,4 @@ class CustomerCenterEvent(
         val revisionId: Int = 1,
         val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
     )
-
-    override fun toString(): String {
-        return CustomerCenterEvent.json.encodeToString(this)
-    }
 }
