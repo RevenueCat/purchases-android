@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
@@ -79,6 +81,7 @@ internal class StyleFactory(
             is TextComponent -> createTextComponentStyle(component, rcPackage)
             is IconComponent -> createIconComponentStyle(component, rcPackage)
             is TimelineComponent -> createTimelineComponentStyle(component, rcPackage)
+            is CarouselComponent -> createCarouselComponentStyle(component, rcPackage)
         }
 
     private fun createStickyFooterComponentStyle(
@@ -365,6 +368,37 @@ internal class StyleFactory(
             description = description,
             icon = icon,
             connector = connectorStyle,
+            rcPackage = rcPackage,
+            overrides = presentedOverrides,
+        )
+    }
+
+    private fun createCarouselComponentStyle(
+        component: CarouselComponent,
+        rcPackage: Package?,
+    ): Result<CarouselComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = component.overrides
+            ?.toPresentedOverrides { partial -> PresentedCarouselPartial(partial, colorAliases) }
+            .orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+        second = component.slides
+            .map { createStackComponentStyle(it, rcPackage) }
+            .mapOrAccumulate { it },
+        third = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+        fourth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+    ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles ->
+        CarouselComponentStyle(
+            slides = stackComponentStyles,
+            alignment = component.alignment.toAlignment(),
+            size = component.size,
+            spacing = (component.spacing ?: DEFAULT_SPACING).dp,
+            padding = component.padding.toPaddingValues(),
+            margin = component.margin.toPaddingValues(),
+            shape = component.shape ?: Shape.Rectangle(),
+            border = borderStyles,
+            shadow = shadowStyles,
+            loop = component.loop,
+            autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
             overrides = presentedOverrides,
         )
