@@ -54,12 +54,13 @@ internal class PresentedTimelineItemPartial(
                     connectorStyle = from.connector?.let { connector ->
                         if (colorStyles != null) {
                             TimelineComponentStyle.ConnectorStyle(
-                                 width = connector.width,
-                                 margin = connector.margin.toPaddingValues(),
-                                 color = colorStyles,
+                                width = connector.width,
+                                margin = connector.margin.toPaddingValues(),
+                                color = colorStyles,
                             )
-                        } else null
-                        
+                        } else {
+                            null
+                        }
                     },
                 )
             }
