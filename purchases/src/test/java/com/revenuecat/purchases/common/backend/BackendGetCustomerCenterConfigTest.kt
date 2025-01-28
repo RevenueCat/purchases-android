@@ -186,6 +186,7 @@ class BackendGetCustomerCenterConfigTest {
                     "You can manage your subscription by visiting your account.",
                 "free" to "Free",
                 "never" to "Never",
+                "manage_subscription" to "Manage your subscription",
             )
         ),
         support = CustomerCenterConfigData.Support(
