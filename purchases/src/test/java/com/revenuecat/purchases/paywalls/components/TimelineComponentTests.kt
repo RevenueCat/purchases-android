@@ -358,43 +358,6 @@ internal class TimelineComponentTests {
                                 bottom = 7.0,
                                 trailing = 8.0
                             ),
-                            items = listOf(
-                                TimelineComponent.Item(
-                                    title = TextComponent(
-                                        text = LocalizationKey("title"),
-                                        color = ColorScheme(
-                                            light = ColorInfo.Hex(
-                                                colorInt(alpha = 0xff, red = 0, green = 0, blue = 0)
-                                            )
-                                        )
-                                    ),
-                                    description = TextComponent(
-                                        text = LocalizationKey("description"),
-                                        color = ColorScheme(
-                                            light = ColorInfo.Hex(
-                                                colorInt(alpha = 0xff, red = 0xff, green = 0xff, blue = 0xff)
-                                            )
-                                        )
-                                    ),
-                                    icon = IconComponent(
-                                        baseUrl = "https://example.com",
-                                        iconName = "Test icon name",
-                                        formats = IconComponent.Formats(
-                                            webp = "test.webp"
-                                        ),
-                                    ),
-                                    connector = TimelineComponent.Connector(
-                                        width = 40,
-                                        margin = Padding(
-                                            top = 9.0,
-                                            leading = 10.0,
-                                            bottom = 11.0,
-                                            trailing = 12.0
-                                        ),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
-                                    ),
-                                )
-                            ),
                         )
                     )
                 ),
@@ -414,6 +377,79 @@ internal class TimelineComponentTests {
         fun `Should properly deserialize PartialTimelineComponent`() {
             // Arrange, Act
             val actual = OfferingParser.json.decodeFromString<PartialTimelineComponent>(args.json)
+
+            // Assert
+            assert(actual == args.expected)
+        }
+    }
+
+    @RunWith(Parameterized::class)
+    class DeserializePartialTimelineComponentItemTests(
+        @Suppress("UNUSED_PARAMETER") name: String,
+        private val args: Args,
+    ) {
+
+        class Args(
+            @Language("json")
+            val json: String,
+            val expected: PartialTimelineComponentItem,
+        )
+
+        companion object {
+
+            @Suppress("LongMethod")
+            @JvmStatic
+            @Parameterized.Parameters(name = "{0}")
+            fun parameters(): Collection<*> = listOf(
+                arrayOf(
+                    "all values present",
+                    Args(
+                        json = """
+                        {
+                          "visible": true,
+                            "connector": {
+                                "width": 40,
+                                "margin": {
+                                    "top": 9,
+                                    "leading": 10,
+                                    "bottom": 11,
+                                    "trailing": 12
+                                },
+                                "color": { "light": { "type": "alias", "value": "primary" } }
+                            }
+                        }
+                        """.trimIndent(),
+                        expected = PartialTimelineComponentItem(
+                            visible = true,
+                            connector = TimelineComponent.Connector(
+                                width = 40,
+                                margin = Padding(
+                                    top = 9.0,
+                                    leading = 10.0,
+                                    bottom = 11.0,
+                                    trailing = 12.0
+                                ),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                            ),
+                        )
+                    )
+                ),
+                arrayOf(
+                    "all values absent",
+                    Args(
+                        json = """
+                        { }
+                        """.trimIndent(),
+                        expected = PartialTimelineComponentItem()
+                    )
+                ),
+            )
+        }
+
+        @Test
+        fun `Should properly deserialize PartialTimelineComponentItem`() {
+            // Arrange, Act
+            val actual = OfferingParser.json.decodeFromString<PartialTimelineComponentItem>(args.json)
 
             // Assert
             assert(actual == args.expected)
