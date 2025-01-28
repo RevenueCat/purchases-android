@@ -91,6 +91,7 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
+                is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
                 is CustomerCenterAction.NavigationButtonPressed -> {
                     val buttonType = state.navigationButtonType
                     viewModel.onNavigationButtonPressed()
@@ -227,9 +228,8 @@ private fun MainScreen(
                 screen = managementScreen,
                 localization = configuration.localization,
                 purchaseInformation = state.purchaseInformation,
-                onPathButtonPress = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path))
-                },
+                support = configuration.support,
+                onAction = onAction,
             )
         } ?: run {
             // Handle missing management screen
@@ -240,9 +240,8 @@ private fun MainScreen(
             ManageSubscriptionsView(
                 screen = noActiveScreen,
                 localization = configuration.localization,
-                onPathButtonPress = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path))
-                },
+                support = configuration.support,
+                onAction = onAction,
             )
         } ?: run {
             // Fallback with a restore button
