@@ -46,6 +46,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 @Composable
 internal fun PromotionalOfferView(
     promotionalOfferData: PromotionalOfferData,
+    onAccepted: (SubscriptionOption) -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -61,30 +63,22 @@ internal fun PromotionalOfferView(
         )
 
         Text(
-            text = promotionalOfferData.promotionalOffer.title,
+            text = promotionalOfferData.configuredPromotionalOffer.title,
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.padding(top = 16.dp),
         )
         Text(
-            text = promotionalOfferData.promotionalOffer.subtitle,
+            text = promotionalOfferData.configuredPromotionalOffer.subtitle,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(top = 16.dp),
         )
 
         Spacer(modifier = Modifier.weight(1f))
-//
-//                PromoOfferButtonView(
-//                    isLoading = isLoading,
-//                    product = product,
-//                    discount = promotionalOffer.discount,
-//                    onPurchaseComplete = { action ->
-//                        isLoading = false
-//                        onDismissPromotionalOfferView(action)
-//                    }
-//                )
 
         Button(
-            onClick = { promotionalOfferData.onAccepted() },
+            onClick = {
+                onAccepted(promotionalOfferData.subscriptionOption)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
@@ -92,7 +86,7 @@ internal fun PromotionalOfferView(
             Text("Accept offer")
         }
         OutlinedButton(
-            onClick = { promotionalOfferData.onDismiss() },
+            onClick = { onDismiss() },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
@@ -135,14 +129,21 @@ internal fun PromotionalOfferViewPreview() {
         }!!.promotionalOffer!!
     val data = PromotionalOfferData(
         promoOffer,
-        offer = stubSubscriptionOption(
+        subscriptionOption = stubSubscriptionOption(
             "rc-cancel-offer",
             "monthly",
         ),
+        originalPath = CustomerCenterConfigData.HelpPath(
+            id = "1",
+            title = "Didn't receive purchase",
+            type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
+        ),
+    )
+    PromotionalOfferView(
+        data,
         onAccepted = {},
         onDismiss = {},
     )
-    PromotionalOfferView(data)
 }
 
 @SuppressWarnings("LongParameterList")

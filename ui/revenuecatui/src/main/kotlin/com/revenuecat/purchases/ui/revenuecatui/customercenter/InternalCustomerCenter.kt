@@ -46,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubsc
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.helpers.findActivity
 import kotlinx.coroutines.launch
 
 @JvmSynthetic
@@ -92,19 +93,21 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
-                is CustomerCenterAction.DisplayPromotionalOffer -> viewModel.loadAndDisplayPromotionalOffer(
-                    action.product,
-                    action.promotionalOffer,
-                    action.onAcceptedOffer,
-                    action.onDismissedOffer,
-                )
-                is CustomerCenterAction.DismissPromotionalOffer -> viewModel.dismissPromotionalOffer()
                 is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
                 is CustomerCenterAction.NavigationButtonPressed -> {
                     val buttonType = state.navigationButtonType
                     viewModel.onNavigationButtonPressed()
                     if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
                         onDismiss()
+                    }
+                }
+
+                is CustomerCenterAction.DismissPromotionalOffer ->
+                    viewModel.dismissPromotionalOffer(action.originalPath, context)
+                is CustomerCenterAction.PurchasePromotionalOffer -> {
+                    val activity = context.findActivity()
+                    coroutineScope.launch {
+                        viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
                 }
             }
@@ -208,7 +211,17 @@ private fun CustomerCenterLoaded(
     if (state.feedbackSurveyData != null) {
         FeedbackSurveyView(state.feedbackSurveyData)
     } else if (state.promotionalOfferData != null) {
-        PromotionalOfferView(state.promotionalOfferData)
+        state.promotionalOfferData.let { promotionalOfferData ->
+            PromotionalOfferView(
+                promotionalOfferData = promotionalOfferData,
+                onAccepted = { subscriptionOption ->
+                    onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
+                },
+                onDismiss = {
+                    onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
+                },
+            )
+        }
     } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,

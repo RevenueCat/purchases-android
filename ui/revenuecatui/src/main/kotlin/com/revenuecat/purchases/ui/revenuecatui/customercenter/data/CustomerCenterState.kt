@@ -43,8 +43,7 @@ internal data class FeedbackSurveyData(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class PromotionalOfferData(
-    val promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
-    val offer: SubscriptionOption,
-    val onAccepted: () -> Unit,
-    val onDismiss: () -> Unit,
+    val configuredPromotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+    val subscriptionOption: SubscriptionOption,
+    val originalPath: CustomerCenterConfigData.HelpPath,
 )

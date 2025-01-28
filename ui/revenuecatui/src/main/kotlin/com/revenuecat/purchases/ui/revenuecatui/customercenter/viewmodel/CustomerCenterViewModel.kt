@@ -1,10 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,11 +12,14 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
@@ -49,10 +52,10 @@ internal interface CustomerCenterViewModel {
     fun loadAndDisplayPromotionalOffer(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
-        onAccepted: () -> Unit,
-        onDismiss: () -> Unit,
+        originalPath: CustomerCenterConfigData.HelpPath,
     )
-    fun dismissPromotionalOffer()
+    suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity)
+    fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
     fun onNavigationButtonPressed()
     suspend fun loadCustomerCenter()
     fun openURL(context: Context, url: Uri)
@@ -128,13 +131,7 @@ internal class CustomerCenterViewModelImpl(
         loadAndDisplayPromotionalOffer(
             product,
             promotionalOffer,
-            onAccepted = {
-                Log.d("CustomerCenter", "Promotional offer accepted")
-                goBackToMain()
-            },
-            onDismiss = {
-                mainPathAction(path, context)
-            },
+            path,
         )
     }
 
@@ -350,21 +347,52 @@ internal class CustomerCenterViewModelImpl(
     override fun loadAndDisplayPromotionalOffer(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
-        onAccepted: () -> Unit,
-        onDismiss: () -> Unit,
+        originalPath: CustomerCenterConfigData.HelpPath,
     ) {
         val offerIdentifier = promotionalOffer.productMapping[product.id]
-        val offer = product.subscriptionOptions?.firstOrNull { option -> option.id == offerIdentifier }
-        if (offer != null) {
+        val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
+            when (option) {
+                is GoogleSubscriptionOption -> option.offerId == offerIdentifier
+                else -> false
+            }
+        }
+        if (subscriptionOption != null) {
             _state.update {
                 val currentState = _state.value
                 if (currentState is CustomerCenterState.Success) {
                     currentState.copy(
-                        promotionalOfferData = PromotionalOfferData(promotionalOffer, offer, onAccepted, onDismiss),
+                        promotionalOfferData = PromotionalOfferData(
+                            promotionalOffer,
+                            subscriptionOption,
+                            originalPath,
+                        ),
                     )
                 } else {
                     currentState
                 }
+            }
+        }
+    }
+
+    override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity) {
+        val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
+        runCatching { purchases.awaitPurchase(purchaseParams) }.onFailure { e ->
+            // TODO: Handle error
+            Logger.e("Error purchasing promotional offer", e)
+        }
+        goBackToMain()
+    }
+
+    override fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context) {
+        // Continue with the original action and remove the promotional offer data
+        mainPathAction(originalPath, context)
+
+        _state.update {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(promotionalOfferData = null)
+            } else {
+                currentState
             }
         }
     }
@@ -381,17 +409,6 @@ internal class CustomerCenterViewModelImpl(
                 )
             } else {
                 CustomerCenterState.NotLoaded
-            }
-        }
-    }
-
-    override fun dismissPromotionalOffer() {
-        _state.update {
-            val currentState = _state.value
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(promotionalOfferData = null)
-            } else {
-                currentState
             }
         }
     }
