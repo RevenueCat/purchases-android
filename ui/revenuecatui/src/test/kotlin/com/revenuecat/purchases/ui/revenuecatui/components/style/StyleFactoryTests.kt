@@ -4,9 +4,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
@@ -55,7 +55,7 @@ class StyleFactoryTests {
             LOCALIZATION_KEY_TEXT_2 to LocalizationData.Text("this is text 2"),
         )
     )
-    private val uiConfig = UiConfig()
+    private val colorAliases = emptyMap<ColorAlias, ColorScheme>()
     private val fontAliases = emptyMap<FontAlias, FontSpec>()
     private val offering = Offering(
         identifier = "identifier",
@@ -66,7 +66,7 @@ class StyleFactoryTests {
 
     @Before
     fun setup() {
-        styleFactory = StyleFactory(localizations, uiConfig, fontAliases, offering)
+        styleFactory = StyleFactory(localizations, colorAliases, fontAliases, offering)
     }
 
     @Test
@@ -145,7 +145,7 @@ class StyleFactoryTests {
                     otherLocalizationKey to LocalizationData.Text(unexpectedText)
                 ),
             ),
-            uiConfig = uiConfig,
+            colorAliases = colorAliases,
             fontAliases = fontAliases,
             offering = offering,
         )
@@ -186,7 +186,7 @@ class StyleFactoryTests {
                     // otherLocale is missing the overrideLocalizationKey.
                 ),
             ),
-            uiConfig = uiConfig,
+            colorAliases = colorAliases,
             fontAliases = fontAliases,
             offering = offering,
         )
@@ -217,7 +217,7 @@ class StyleFactoryTests {
         )
         val correctStyleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = uiConfig,
+            colorAliases = colorAliases,
             // Both fonts exist.
             fontAliases = mapOf(
                 fontAliasBase to FontSpec.Generic.Serif,
@@ -250,7 +250,7 @@ class StyleFactoryTests {
         )
         val incorrectStyleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = uiConfig,
+            colorAliases = colorAliases,
             // Empty on purpose
             fontAliases = emptyMap(),
             offering = offering,
@@ -278,7 +278,7 @@ class StyleFactoryTests {
         )
         val incorrectStyleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = uiConfig,
+            colorAliases = colorAliases,
             // Empty on purpose
             fontAliases = emptyMap(),
             offering = offering,
@@ -322,7 +322,7 @@ class StyleFactoryTests {
                     otherLocalizationKey to LocalizationData.Text(unexpectedText)
                 ),
             ),
-            uiConfig = uiConfig,
+            colorAliases = colorAliases,
             fontAliases = fontAliases,
             offering = offering,
         )
@@ -379,7 +379,7 @@ class StyleFactoryTests {
                     LocalizationKey("key-text") to LocalizationData.Text("value-text"),
                 ),
             ),
-            uiConfig = uiConfig,
+            colorAliases = colorAliases,
             fontAliases = fontAliases,
             offering = offering,
         )

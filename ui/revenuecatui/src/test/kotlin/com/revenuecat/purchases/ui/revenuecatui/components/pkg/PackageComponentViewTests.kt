@@ -181,7 +181,7 @@ class PackageComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = offering,
         )
@@ -303,7 +303,7 @@ class PackageComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = offering,
         )

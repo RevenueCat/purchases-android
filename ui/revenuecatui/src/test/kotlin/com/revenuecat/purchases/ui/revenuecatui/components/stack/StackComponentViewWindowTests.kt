@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
@@ -137,7 +136,7 @@ internal class StackComponentViewWindowTests {
                     LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
                 )
             ),
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = Offering(
                 identifier = "identifier",
