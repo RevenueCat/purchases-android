@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -100,7 +101,7 @@ internal fun previewTextComponentStyle(
     color: ColorStyles = ColorStyles(ColorStyle.Solid(Color.Black)),
     fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
-    fontFamily: String? = null,
+    fontSpec: FontSpec? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
@@ -114,7 +115,7 @@ internal fun previewTextComponentStyle(
         color = color,
         fontSize = fontSize,
         fontWeight = weight,
-        fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
+        fontSpec = fontSpec,
         textAlign = textAlign.toTextAlign(),
         horizontalAlignment = horizontalAlignment.toAlignment(),
         backgroundColor = backgroundColor,

@@ -70,7 +70,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
