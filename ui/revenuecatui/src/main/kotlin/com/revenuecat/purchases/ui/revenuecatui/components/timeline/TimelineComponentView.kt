@@ -3,11 +3,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.timeline
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -16,7 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import androidx.constraintlayout.compose.ConstrainedLayoutReference
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.ConstraintLayoutBaseScope.HorizontalAnchor
 import androidx.constraintlayout.compose.Dimension
 import coil.ImageLoader
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
@@ -41,6 +43,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
+@Suppress("LongMethod", "CyclomaticComplexMethod", "DestructuringDeclarationWithTooManyEntries")
 @Composable
 internal fun TimelineComponentView(
     style: TimelineComponentStyle,
@@ -57,114 +60,116 @@ internal fun TimelineComponentView(
         return
     }
 
-    Column(
+    ConstraintLayout(
         modifier = modifier
             .size(timelineState.size)
             .padding(timelineState.margin)
             .padding(timelineState.padding),
     ) {
-        style.items.map {
-            TimelineItem(
-                it,
-                timelineState,
-                state,
+        val itemBarriers = mutableListOf<HorizontalAnchor>()
+        val iconRefs = mutableListOf<ConstrainedLayoutReference>()
+        for ((index, item) in timelineState.items.withIndex()) {
+            val isLastItem = index == timelineState.items.size - 1
+            val (iconRef, titleRef, descriptionRef, itemSpacingRef) = createRefs()
+
+            val bottomContentBarrier = createBottomBarrier(iconRef, titleRef, descriptionRef)
+
+            val currentPreviousItem = itemBarriers.lastOrNull()
+
+            iconRefs.add(iconRef)
+            itemBarriers.add(createBottomBarrier(itemSpacingRef))
+
+            Spacer(
+                modifier = Modifier.height(timelineState.itemSpacing.dp)
+                    .constrainAs(itemSpacingRef) {
+                        top.linkTo(bottomContentBarrier)
+                        if (isLastItem) {
+                            bottom.linkTo(parent.bottom)
+                        }
+                    },
+            )
+
+            IconComponentView(
+                style = item.icon,
+                state = state,
+                modifier = Modifier.constrainAs(iconRef) {
+                    when (timelineState.iconAlignment) {
+                        TimelineComponent.IconAlignment.Title -> {
+                            top.linkTo(titleRef.top)
+                            bottom.linkTo(titleRef.bottom)
+                            start.linkTo(parent.start)
+                            end.linkTo(titleRef.start)
+                        }
+                        TimelineComponent.IconAlignment.TitleAndDescription -> {
+                            top.linkTo(titleRef.top)
+                            bottom.linkTo(descriptionRef.bottom)
+                            start.linkTo(parent.start)
+                            end.linkTo(titleRef.start)
+                        }
+                    }
+                },
                 previewImageLoader = previewImageLoader,
             )
-        }
-    }
-}
 
-@Suppress("LongMethod", "DestructuringDeclarationWithTooManyEntries")
-@Composable
-private fun TimelineItem(
-    item: TimelineComponentStyle.ItemStyle,
-    timelineState: TimelineComponentState,
-    state: PaywallState.Loaded.Components,
-    modifier: Modifier = Modifier,
-    previewImageLoader: ImageLoader? = null,
-) {
-    ConstraintLayout(
-        modifier = modifier,
-    ) {
-        val (icon, title, description, connectorRefs, itemSpacingRefs) = createRefs()
-
-        val bottomContentBarrier = createBottomBarrier(icon, title, description)
-
-        Spacer(
-            modifier = Modifier.height(timelineState.itemSpacing.dp)
-                .constrainAs(itemSpacingRefs) {
-                    top.linkTo(bottomContentBarrier)
-                },
-        )
-
-        item.connector?.let { connector ->
-            val offsets = remember(item.icon.size, connector) {
-                val itemIconWidth = item.icon.size.width as? SizeConstraint.Fixed
-                val itemIconHeight = item.icon.size.height as? SizeConstraint.Fixed
-                val connectorVerticalOffset = itemIconHeight?.let {
-                    it.value.toInt().dp / 2
-                } ?: 0.dp
-                val connectorStartOffset = itemIconWidth?.let {
-                    (it.value.toInt() - connector.width).dp / 2
-                } ?: 0.dp
-                (connectorStartOffset to connectorVerticalOffset)
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(connector.margin)
-                    .constrainAs(connectorRefs) {
-                        start.linkTo(parent.start, margin = offsets.first)
-                        width = Dimension.value(connector.width.dp)
-                        height = Dimension.percent(1f)
-                        top.linkTo(icon.top, margin = offsets.second)
-                    }
-                    .overlay(connector.color.forCurrentTheme),
-            )
-        }
-
-        IconComponentView(
-            style = item.icon,
-            state = state,
-            modifier = Modifier.constrainAs(icon) {
-                when (timelineState.iconAlignment) {
-                    TimelineComponent.IconAlignment.Title -> {
-                        top.linkTo(title.top)
-                        bottom.linkTo(title.bottom)
-                        start.linkTo(parent.start)
-                        end.linkTo(title.start)
-                    }
-                    TimelineComponent.IconAlignment.TitleAndDescription -> {
-                        top.linkTo(title.top)
-                        bottom.linkTo(description.bottom)
-                        start.linkTo(parent.start)
-                        end.linkTo(title.start)
-                    }
-                }
-            },
-            previewImageLoader = previewImageLoader,
-        )
-
-        TextComponentView(
-            style = item.title,
-            state = state,
-            modifier = Modifier.constrainAs(title) {
-                top.linkTo(parent.top)
-                start.linkTo(icon.end, margin = timelineState.columnGutter.dp)
-            },
-        )
-
-        item.description?.let {
             TextComponentView(
-                style = it,
+                style = item.title,
                 state = state,
-                modifier = Modifier.constrainAs(description) {
-                    top.linkTo(title.bottom, margin = timelineState.textSpacing.dp)
-                    start.linkTo(title.start)
-                    end.linkTo(title.end)
+                modifier = Modifier.constrainAs(titleRef) {
+                    top.linkTo(currentPreviousItem ?: parent.top)
+                    start.linkTo(iconRef.end, margin = timelineState.columnGutter.dp)
                 },
             )
+
+            item.description?.let {
+                TextComponentView(
+                    style = it,
+                    state = state,
+                    modifier = Modifier.constrainAs(descriptionRef) {
+                        top.linkTo(titleRef.bottom, margin = timelineState.textSpacing.dp)
+                        start.linkTo(titleRef.start)
+                        end.linkTo(titleRef.end)
+                    },
+                )
+            }
+        }
+
+        // Draw connectors
+        for ((index, item) in timelineState.items.withIndex()) {
+            val isLastItem = index == timelineState.items.size - 1
+            val currentIconRef = iconRefs[index]
+            val nextIconRef = iconRefs.getOrNull(index + 1)
+            item.connector?.let { connector ->
+                val connectorRef = createRef()
+                val offsets = remember(item.icon.size, connectorRef) {
+                    val itemIconWidth = item.icon.size.width as? SizeConstraint.Fixed
+                    val itemIconHeight = item.icon.size.height as? SizeConstraint.Fixed
+                    val connectorVerticalOffset = itemIconHeight?.let {
+                        it.value.toInt().dp / 2
+                    } ?: 0.dp
+                    val connectorStartOffset = itemIconWidth?.let {
+                        (it.value.toInt() - (item.connector?.width ?: 0)).dp / 2
+                    } ?: 0.dp
+                    (connectorStartOffset to connectorVerticalOffset)
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(item.connector?.margin ?: PaddingValues(0.dp))
+                        .offset(y = offsets.second)
+                        .zIndex(-1f)
+                        .constrainAs(connectorRef) {
+                            start.linkTo(parent.start, margin = offsets.first)
+                            width = Dimension.value(item.connector?.width?.dp ?: 0.dp)
+                            top.linkTo(currentIconRef.top)
+                            if (isLastItem) {
+                                bottom.linkTo(parent.bottom)
+                            } else {
+                                bottom.linkTo(nextIconRef!!.top)
+                            }
+                            height = Dimension.fillToConstraints
+                        }
+                        .overlay(connector.color.forCurrentTheme),
+                )
+            }
         }
     }
 }
