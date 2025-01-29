@@ -105,7 +105,7 @@ class Purchases internal constructor(
      *
      * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [defaultOption] will be purchased.
      * [defaultOption] is selected via the following logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *

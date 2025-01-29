@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
@@ -13,6 +16,8 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
@@ -45,6 +50,8 @@ import java.util.Locale
 @Suppress("TooManyFunctions")
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
+    val actionError: State<PurchasesError?>
+
     suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath, product: StoreProduct?)
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
@@ -59,6 +66,7 @@ internal interface CustomerCenterViewModel {
     fun onNavigationButtonPressed()
     suspend fun loadCustomerCenter()
     fun openURL(context: Context, url: Uri)
+    fun clearActionError()
 }
 
 internal sealed class TransactionDetails(
@@ -78,6 +86,8 @@ internal sealed class TransactionDetails(
         override val store: Store,
     ) : TransactionDetails(productIdentifier, store)
 }
+
+private const val RC_CUSTOMER_CENTER_TAG = "rc-customer-center"
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
@@ -100,6 +110,10 @@ internal class CustomerCenterViewModelImpl(
             started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
             initialValue = CustomerCenterState.Loading,
         )
+
+    override val actionError: State<PurchasesError?>
+        get() = _actionError
+    private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
 
     override suspend fun pathButtonPressed(
         context: Context,
@@ -344,6 +358,10 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    override fun clearActionError() {
+        _actionError.value = null
+    }
+
     override fun loadAndDisplayPromotionalOffer(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
@@ -352,7 +370,8 @@ internal class CustomerCenterViewModelImpl(
         val offerIdentifier = promotionalOffer.productMapping[product.id]
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
             when (option) {
-                is GoogleSubscriptionOption -> option.offerId == offerIdentifier
+                is GoogleSubscriptionOption ->
+                    option.tags.contains(RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
                 else -> false
             }
         }
@@ -376,9 +395,12 @@ internal class CustomerCenterViewModelImpl(
 
     override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity) {
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
-        runCatching { purchases.awaitPurchase(purchaseParams) }.onFailure { e ->
-            // TODO: Handle error
-            Logger.e("Error purchasing promotional offer", e)
+        try {
+            purchases.awaitPurchase(purchaseParams)
+        } catch (e: PurchasesException) {
+            if (e.code != PurchasesErrorCode.PurchaseCancelledError) {
+                _actionError.value = e.error
+            }
         }
         goBackToMain()
     }

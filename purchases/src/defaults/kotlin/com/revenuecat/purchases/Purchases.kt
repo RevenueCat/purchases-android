@@ -281,7 +281,7 @@ class Purchases internal constructor(
      * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [StoreProduct.defaultOption] will
      * be purchased.
      * [StoreProduct.defaultOption] is selected via the following logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -299,7 +299,7 @@ class Purchases internal constructor(
      * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -329,7 +329,7 @@ class Purchases internal constructor(
      * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *

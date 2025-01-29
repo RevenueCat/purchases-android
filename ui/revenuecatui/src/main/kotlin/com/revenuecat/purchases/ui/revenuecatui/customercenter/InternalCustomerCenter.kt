@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
@@ -72,6 +73,13 @@ internal fun InternalCustomerCenter(
         if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
             onDismiss()
         }
+    }
+
+    viewModel.actionError.value?.let {
+        ErrorDialog(
+            dismissRequest = viewModel::clearActionError,
+            error = it.message,
+        )
     }
 
     InternalCustomerCenter(
@@ -214,7 +222,7 @@ private fun CustomerCenterLoaded(
         state.promotionalOfferData.let { promotionalOfferData ->
             PromotionalOfferView(
                 promotionalOfferData = promotionalOfferData,
-                onAccepted = { subscriptionOption ->
+                onAccept = { subscriptionOption ->
                     onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
                 },
                 onDismiss = {

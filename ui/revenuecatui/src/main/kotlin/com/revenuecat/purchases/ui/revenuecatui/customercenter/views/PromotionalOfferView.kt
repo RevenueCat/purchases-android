@@ -46,7 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 @Composable
 internal fun PromotionalOfferView(
     promotionalOfferData: PromotionalOfferData,
-    onAccepted: (SubscriptionOption) -> Unit,
+    onAccept: (SubscriptionOption) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -77,7 +77,7 @@ internal fun PromotionalOfferView(
 
         Button(
             onClick = {
-                onAccepted(promotionalOfferData.subscriptionOption)
+                onAccept(promotionalOfferData.subscriptionOption)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -141,7 +141,7 @@ internal fun PromotionalOfferViewPreview() {
     )
     PromotionalOfferView(
         data,
-        onAccepted = {},
+        onAccept = {},
         onDismiss = {},
     )
 }
