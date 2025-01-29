@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -23,11 +24,13 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -53,6 +56,7 @@ class StyleFactoryTests {
         )
     )
     private val uiConfig = UiConfig()
+    private val fontAliases = emptyMap<FontAlias, FontSpec>()
     private val offering = Offering(
         identifier = "identifier",
         serverDescription = "description",
@@ -62,7 +66,7 @@ class StyleFactoryTests {
 
     @Before
     fun setup() {
-        styleFactory = StyleFactory(localizations, uiConfig, offering)
+        styleFactory = StyleFactory(localizations, uiConfig, fontAliases, offering)
     }
 
     @Test
@@ -142,6 +146,7 @@ class StyleFactoryTests {
                 ),
             ),
             uiConfig = uiConfig,
+            fontAliases = fontAliases,
             offering = offering,
         )
 
@@ -182,6 +187,7 @@ class StyleFactoryTests {
                 ),
             ),
             uiConfig = uiConfig,
+            fontAliases = fontAliases,
             offering = offering,
         )
 
@@ -194,6 +200,99 @@ class StyleFactoryTests {
         assertThat(errors.size).isEqualTo(1)
         val error = errors[0]
         assertThat(error).isInstanceOf(PaywallValidationError.MissingStringLocalization::class.java)
+    }
+
+    @Test
+    fun `Should successfully create a TextComponentStyle with custom fonts`() {
+        // Arrange
+        val fontAliasBase = FontAlias("serif")
+        val fontAliasOverride = FontAlias("monospace")
+        val expectedBaseFontSpec = FontSpec.Generic.Serif
+        val expectedOverrideFontSpec = FontSpec.Generic.Monospace
+        val component = TextComponent(
+            text = LOCALIZATION_KEY_TEXT_1,
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            fontName = fontAliasBase,
+            overrides = ComponentOverrides(introOffer = PartialTextComponent(fontName = fontAliasOverride))
+        )
+        val correctStyleFactory = StyleFactory(
+            localizations = localizations,
+            uiConfig = uiConfig,
+            // Both fonts exist.
+            fontAliases = mapOf(
+                fontAliasBase to FontSpec.Generic.Serif,
+                fontAliasOverride to FontSpec.Generic.Monospace,
+            ),
+            offering = offering,
+        )
+
+        // Act
+        val result = correctStyleFactory.create(component)
+
+        // Assert
+        assertThat(result.isSuccess).isTrue()
+        val textComponentStyle = result.getOrThrow() as TextComponentStyle
+        val actualBaseFontSpec = textComponentStyle.fontSpec
+        val actualOverrideFontSpec = textComponentStyle.overrides?.introOffer?.fontSpec
+
+        assertThat(actualBaseFontSpec).isEqualTo(expectedBaseFontSpec)
+        assertThat(actualOverrideFontSpec).isEqualTo(expectedOverrideFontSpec)
+    }
+
+    @Test
+    fun `Should fail to create a TextComponentStyle if font is missing`() {
+        // Arrange
+        val expectedMissingFontAlias = FontAlias("does-not-exist")
+        val component = TextComponent(
+            text = LOCALIZATION_KEY_TEXT_1,
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            fontName = expectedMissingFontAlias
+        )
+        val incorrectStyleFactory = StyleFactory(
+            localizations = localizations,
+            uiConfig = uiConfig,
+            // Empty on purpose
+            fontAliases = emptyMap(),
+            offering = offering,
+        )
+
+        // Act
+        val result = incorrectStyleFactory.create(component)
+
+        // Assert
+        assertThat(result.isError).isTrue()
+        val errors = result.errorOrNull()!!
+        assertThat(errors.size).isEqualTo(1)
+        val error = errors[0] as PaywallValidationError.MissingFontAlias
+        assertThat(error.alias).isEqualTo(expectedMissingFontAlias)
+    }
+
+    @Test
+    fun `Should fail to create a TextComponentStyle if font is missing from an override`() {
+        // Arrange
+        val expectedMissingFontAlias = FontAlias("does-not-exist")
+        val component = TextComponent(
+            text = LOCALIZATION_KEY_TEXT_1,
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            overrides = ComponentOverrides(introOffer = PartialTextComponent(fontName = expectedMissingFontAlias))
+        )
+        val incorrectStyleFactory = StyleFactory(
+            localizations = localizations,
+            uiConfig = uiConfig,
+            // Empty on purpose
+            fontAliases = emptyMap(),
+            offering = offering,
+        )
+
+        // Act
+        val result = incorrectStyleFactory.create(component)
+
+        // Assert
+        assertThat(result.isError).isTrue()
+        val errors = result.errorOrNull()!!
+        assertThat(errors.size).isEqualTo(1)
+        val error = errors[0] as PaywallValidationError.MissingFontAlias
+        assertThat(error.alias).isEqualTo(expectedMissingFontAlias)
     }
 
     @Test
@@ -224,6 +323,7 @@ class StyleFactoryTests {
                 ),
             ),
             uiConfig = uiConfig,
+            fontAliases = fontAliases,
             offering = offering,
         )
 
@@ -280,11 +380,12 @@ class StyleFactoryTests {
                 ),
             ),
             uiConfig = uiConfig,
+            fontAliases = fontAliases,
             offering = offering,
         )
 
         val imageComponentStyle = styleFactory.create(component).getOrThrow() as ImageComponentStyle
-        with (imageComponentStyle) {
+        with(imageComponentStyle) {
             assertThat(sources.size).isEqualTo(1)
             assertThat(sources.getValue(defaultLocale)).isEqualTo(expectedBaseSource)
             assertThat(overrides?.introOffer?.sources?.size).isEqualTo(1)

@@ -160,7 +160,7 @@ fun PaywallsScreen(
                         label = "Condenser footer",
                     )
                 }
-                // Custom font is not yet supported by Paywalls V2.
+                // Custom font is set on the paywall level in Paywalls V2.
                 if (offering.paywallComponents == null) {
                     ButtonWithEmoji(
                         onClick = {

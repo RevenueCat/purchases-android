@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.Package
@@ -12,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 
 @Suppress("LongParameterList")
@@ -26,7 +26,7 @@ internal class TextComponentStyle(
     @get:JvmSynthetic
     val fontWeight: FontWeight?,
     @get:JvmSynthetic
-    val fontFamily: FontFamily?,
+    val fontSpec: FontSpec?,
     @get:JvmSynthetic
     val textAlign: TextAlign?,
     @get:JvmSynthetic

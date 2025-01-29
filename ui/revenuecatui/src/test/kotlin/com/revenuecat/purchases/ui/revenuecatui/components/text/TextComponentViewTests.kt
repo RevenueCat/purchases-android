@@ -51,11 +51,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -158,6 +158,7 @@ class TextComponentViewTests {
     private val styleFactory = StyleFactory(
         localizations = localizations,
         uiConfig = UiConfig(),
+        fontAliases = emptyMap(),
         offering = Offering(
             identifier = "identifier",
             serverDescription = "description",
@@ -365,6 +366,7 @@ class TextComponentViewTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = offering,
         )
         val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
@@ -527,6 +529,7 @@ class TextComponentViewTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
@@ -610,7 +613,7 @@ class TextComponentViewTests {
             metadata = emptyMap(),
             availablePackages = emptyList(),
         )
-        val styleFactory = StyleFactory(localizations, UiConfig(), offering)
+        val styleFactory = StyleFactory(localizations, UiConfig(), emptyMap(), offering)
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
@@ -659,7 +662,7 @@ class TextComponentViewTests {
             metadata = emptyMap(),
             availablePackages = emptyList(),
         )
-        val styleFactory = StyleFactory(localizations, UiConfig(), offering)
+        val styleFactory = StyleFactory(localizations, UiConfig(), emptyMap(), offering)
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
@@ -725,6 +728,7 @@ class TextComponentViewTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleSelected = styleFactory.create(selectedComponent).getOrThrow() as TextComponentStyle
@@ -817,6 +821,7 @@ class TextComponentViewTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleSelected = styleFactory.create(component).getOrThrow() as TextComponentStyle

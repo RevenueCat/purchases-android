@@ -138,6 +138,7 @@ internal class StackComponentViewWindowTests {
                 )
             ),
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = Offering(
                 identifier = "identifier",
                 serverDescription = "description",

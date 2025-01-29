@@ -39,9 +39,9 @@ import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignme
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -182,6 +182,7 @@ class PackageComponentViewTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle
@@ -303,6 +304,7 @@ class PackageComponentViewTests {
         val styleFactory = StyleFactory(
             localizations = localizations,
             uiConfig = UiConfig(),
+            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle

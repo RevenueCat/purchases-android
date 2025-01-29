@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig
@@ -24,7 +25,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
-import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
@@ -34,6 +34,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
@@ -56,6 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
     private val uiConfig: UiConfig,
+    private val fontAliases: Map<FontAlias, FontSpec>,
     private val offering: Offering,
 ) {
 
@@ -222,19 +225,30 @@ internal class StyleFactory(
         first = localizations.stringForAllLocales(component.text),
         second = component.overrides
             // Map all overrides to PresentedOverrides.
-            ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizations, aliases = colorAliases) }
+            ?.toPresentedOverrides {
+                LocalizedTextPartial(
+                    from = it,
+                    using = localizations,
+                    aliases = colorAliases,
+                    fontAliases = fontAliases,
+                )
+            }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         third = component.color.toColorStyles(colorAliases),
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
-    ) { texts, presentedOverrides, color, backgroundColor ->
+        fifth = component.fontName
+            ?.let { fontAlias -> fontAliases.getFontSpec(fontAlias) }
+            .orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+    ) { texts, presentedOverrides, color, backgroundColor, fontSpec ->
         val weight = component.fontWeight.toFontWeight()
         TextComponentStyle(
             texts = texts,
             color = color,
             fontSize = component.fontSize,
             fontWeight = weight,
-            fontFamily = component.fontName?.let { SystemFontFamily(it, weight) },
+            fontSpec = fontSpec,
             textAlign = component.horizontalAlignment.toTextAlign(),
             horizontalAlignment = component.horizontalAlignment.toAlignment(),
             backgroundColor = backgroundColor,
