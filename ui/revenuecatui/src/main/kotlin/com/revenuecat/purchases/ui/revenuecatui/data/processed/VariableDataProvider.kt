@@ -40,6 +40,15 @@ internal class VariableDataProvider(
         }
     }
 
+    fun localizedPricePerDay(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+        val pricePerDay = rcPackage.product.pricePerDay(locale) ?: return null
+        return if (showZeroDecimalPlacePrices && pricePerDay.endsIn00Cents()) {
+            pricePerDay.getTruncatedFormatted(locale)
+        } else {
+            pricePerDay.formatted
+        }
+    }
+
     fun localizedPricePerWeek(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
         val pricePerWeek = rcPackage.product.pricePerWeek(locale) ?: return null
 
@@ -56,6 +65,15 @@ internal class VariableDataProvider(
             pricePerMonth.getTruncatedFormatted(locale)
         } else {
             pricePerMonth.formatted
+        }
+    }
+
+    fun localizedPricePerYear(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+        val pricePerYear = rcPackage.product.pricePerYear(locale) ?: return null
+        return if (showZeroDecimalPlacePrices && pricePerYear.endsIn00Cents()) {
+            pricePerYear.getTruncatedFormatted(locale)
+        } else {
+            pricePerYear.formatted
         }
     }
 
