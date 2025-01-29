@@ -114,6 +114,8 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     }.mapValuesOrAccumulate { it }
         .getOrElse { error -> return RcResult.Error(error) }
 
+    val colorAliases = paywallComponents.uiConfig.app.colors
+
     // Build a map of FontAliases to FontSpecs.
     val fontAliases: Map<FontAlias, FontSpec> =
         paywallComponents.uiConfig.app.fonts.determineFontSpecs(resourceProvider)
@@ -121,7 +123,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     // Create the StyleFactory to recursively create and validate all ComponentStyles.
     val styleFactory = StyleFactory(
         localizations = localizations,
-        uiConfig = paywallComponents.uiConfig,
+        colorAliases = colorAliases,
         fontAliases = fontAliases,
         offering = this,
     )
@@ -131,7 +133,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     return zipOrAccumulate(
         first = styleFactory.create(config.stack),
         second = config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
-        third = config.background.toBackgroundStyles(aliases = paywallComponents.uiConfig.app.colors),
+        third = config.background.toBackgroundStyles(aliases = colorAliases),
     ) { stack, stickyFooter, background ->
         PaywallValidationResult.Components(
             stack = stack,

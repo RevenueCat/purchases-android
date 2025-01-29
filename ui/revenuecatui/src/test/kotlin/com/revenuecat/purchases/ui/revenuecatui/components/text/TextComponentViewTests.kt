@@ -157,7 +157,7 @@ class TextComponentViewTests {
     )
     private val styleFactory = StyleFactory(
         localizations = localizations,
-        uiConfig = UiConfig(),
+        colorAliases = emptyMap(),
         fontAliases = emptyMap(),
         offering = Offering(
             identifier = "identifier",
@@ -365,7 +365,7 @@ class TextComponentViewTests {
         val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = offering,
         )
@@ -528,7 +528,7 @@ class TextComponentViewTests {
         val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = offering,
         )
@@ -613,7 +613,7 @@ class TextComponentViewTests {
             metadata = emptyMap(),
             availablePackages = emptyList(),
         )
-        val styleFactory = StyleFactory(localizations, UiConfig(), emptyMap(), offering)
+        val styleFactory = StyleFactory(localizations, emptyMap(), emptyMap(), offering)
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
@@ -662,7 +662,7 @@ class TextComponentViewTests {
             metadata = emptyMap(),
             availablePackages = emptyList(),
         )
-        val styleFactory = StyleFactory(localizations, UiConfig(), emptyMap(), offering)
+        val styleFactory = StyleFactory(localizations, emptyMap(), emptyMap(), offering)
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
@@ -727,7 +727,7 @@ class TextComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = offering,
         )
@@ -820,7 +820,7 @@ class TextComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = offering,
         )

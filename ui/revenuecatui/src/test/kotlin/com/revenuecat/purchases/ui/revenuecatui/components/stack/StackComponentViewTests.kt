@@ -77,7 +77,7 @@ class StackComponentViewTests {
     )
     private val styleFactory = StyleFactory(
         localizations = localizations,
-        uiConfig = UiConfig(),
+        colorAliases = emptyMap(),
         fontAliases = emptyMap(),
         offering = Offering(
             identifier = "identifier",
@@ -336,7 +336,7 @@ class StackComponentViewTests {
         val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = offering,
         )
@@ -657,7 +657,7 @@ class StackComponentViewTests {
         val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
+            colorAliases = emptyMap(),
             fontAliases = emptyMap(),
             offering = offering,
         )
