@@ -17,6 +17,8 @@ internal object PaywallValidationErrorStrings {
         "Missing image localization for property with id: '%s', for locale: '%s'."
     const val ALL_LOCALIZATIONS_MISSING_FOR_LOCALE =
         "All localizations for locale '%s' are missing."
+    const val ALL_VARIABLE_LOCALIZATIONS_MISSING_FOR_LOCALE =
+        "All variable localizations for locale '%s' are missing."
     const val MISSING_PACKAGE =
         "Offering with id '%s' does not have a package with id '%s'."
     const val MISSING_COLOR_ALIAS = "Aliased color '%s' does not exist."
