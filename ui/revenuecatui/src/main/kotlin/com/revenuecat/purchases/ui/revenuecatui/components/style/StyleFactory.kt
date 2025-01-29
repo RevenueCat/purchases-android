@@ -421,7 +421,7 @@ internal class StyleFactory(
             border = borderStyles,
             shadow = shadowStyles,
             pageControl = pageControlStyles,
-            loop = component.loop,
+            loop = component.loop ?: false,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
             overrides = presentedOverrides,

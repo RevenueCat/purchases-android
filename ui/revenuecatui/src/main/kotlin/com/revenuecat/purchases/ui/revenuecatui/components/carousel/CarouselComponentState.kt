@@ -119,6 +119,12 @@ internal class CarouselComponentState(
     @get:JvmSynthetic
     val pageControl by derivedStateOf { presentedPartial?.pageControlStyles ?: style.pageControl }
 
+    @get:JvmSynthetic
+    val loop by derivedStateOf { presentedPartial?.partial?.loop ?: style.loop }
+
+    @get:JvmSynthetic
+    val autoAdvance by derivedStateOf { presentedPartial?.partial?.autoAdvance ?: style.autoAdvance }
+
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
