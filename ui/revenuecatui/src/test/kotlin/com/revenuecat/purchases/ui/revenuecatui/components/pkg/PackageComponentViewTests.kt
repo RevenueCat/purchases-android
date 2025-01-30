@@ -16,7 +16,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -37,9 +36,10 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Rule
@@ -181,8 +181,6 @@ class PackageComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            colorAliases = emptyMap(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle
@@ -303,8 +301,6 @@ class PackageComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            colorAliases = emptyMap(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle

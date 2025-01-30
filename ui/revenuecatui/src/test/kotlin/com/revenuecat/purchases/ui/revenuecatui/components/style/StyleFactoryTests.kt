@@ -32,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.variableLocalizationKeysForEnUs
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -57,6 +58,7 @@ class StyleFactoryTests {
     )
     private val colorAliases = emptyMap<ColorAlias, ColorScheme>()
     private val fontAliases = emptyMap<FontAlias, FontSpec>()
+    private val variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs())
     private val offering = Offering(
         identifier = "identifier",
         serverDescription = "description",
@@ -66,7 +68,13 @@ class StyleFactoryTests {
 
     @Before
     fun setup() {
-        styleFactory = StyleFactory(localizations, colorAliases, fontAliases, offering)
+        styleFactory = StyleFactory(
+            localizations = localizations,
+            colorAliases = colorAliases,
+            fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
+            offering = offering
+        )
     }
 
     @Test
@@ -147,6 +155,7 @@ class StyleFactoryTests {
             ),
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
             offering = offering,
         )
 
@@ -188,6 +197,7 @@ class StyleFactoryTests {
             ),
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
             offering = offering,
         )
 
@@ -223,6 +233,7 @@ class StyleFactoryTests {
                 fontAliasBase to FontSpec.Generic.Serif,
                 fontAliasOverride to FontSpec.Generic.Monospace,
             ),
+            variableLocalizations = variableLocalizations,
             offering = offering,
         )
 
@@ -253,6 +264,7 @@ class StyleFactoryTests {
             colorAliases = colorAliases,
             // Empty on purpose
             fontAliases = emptyMap(),
+            variableLocalizations = variableLocalizations,
             offering = offering,
         )
 
@@ -281,6 +293,7 @@ class StyleFactoryTests {
             colorAliases = colorAliases,
             // Empty on purpose
             fontAliases = emptyMap(),
+            variableLocalizations = variableLocalizations,
             offering = offering,
         )
 
@@ -324,6 +337,7 @@ class StyleFactoryTests {
             ),
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
             offering = offering,
         )
 
@@ -381,6 +395,7 @@ class StyleFactoryTests {
             ),
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
             offering = offering,
         )
 

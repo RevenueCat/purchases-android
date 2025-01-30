@@ -125,6 +125,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         localizations = localizations,
         colorAliases = colorAliases,
         fontAliases = fontAliases,
+        variableLocalizations = paywallComponents.uiConfig.localizations,
         offering = this,
     )
     val config = paywallComponents.data.componentsConfig.base
