@@ -129,6 +129,12 @@ commands:
       - store_test_results:
           path: ~/gsutil/
 
+  enable-paywalls-v2:
+   steps:
+    - run:
+        name: Enable the Paywall Components build flag
+        command: echo 'revenuecat.flag.paywallComponents=true' >> local.properties
+
 jobs:
 
   assemble-magic-weather-compose-sample-app:
@@ -178,9 +184,7 @@ jobs:
       - run:
           name: Verify purchases-ui target SDK compatibility (currently 34)
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
-      - run:
-          name: Enable the Paywall Components build flag
-          command: echo 'revenuecat.flag.paywallComponents=true' >> local.properties
+      - enable-paywalls-v2
       - run:
           name: Run Tests
           command: ./gradlew lint test
@@ -357,6 +361,9 @@ jobs:
 
   publish-paywall-tester-release:
     <<: *android-executor
+    parameters:
+      track:
+        type: string
     steps:
       - checkout
       - install-sdkman
@@ -365,6 +372,7 @@ jobs:
       - android/accept-licenses
       - android/restore-gradle-cache
       - android/restore-build-cache
+      - enable-paywalls-v2
       - run:
           name: Prepare Keystore
           working_directory: examples/paywall-tester
@@ -385,7 +393,7 @@ jobs:
       - run:
             name: Publish aab
             command: |
-              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab'
+              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab' track:'<< parameters.track >>'
 
   integration-tests-build:
     <<: *android-executor
@@ -697,6 +705,7 @@ workflows:
             - docs-deploy
           <<: *release-tags
       - publish-paywall-tester-release:
+          track: "alpha"
           requires:
               - deploy
               - docs-deploy
@@ -708,6 +717,16 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - prepare-next-version: *only-main-branch
+
+  publish-paywall-tester-to-internal-track:
+    when:
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "publish-paywall-tester-to-internal", << pipeline.git.branch >> ]
+    jobs:
+      - publish-paywall-tester-release:
+          track: "internal"
 
   daily-load-shedder-integration-tests:
     when:
@@ -737,7 +756,8 @@ workflows:
     when:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
-        - publish-paywall-tester-release
+        - publish-paywall-tester-release:
+            track: "alpha"
 
   record-revenuecatui-snapshots:
     when:
