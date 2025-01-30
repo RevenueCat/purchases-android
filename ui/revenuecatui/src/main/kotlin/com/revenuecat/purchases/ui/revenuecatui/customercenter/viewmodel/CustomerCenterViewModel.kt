@@ -21,6 +21,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
+import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
@@ -61,7 +62,7 @@ internal interface CustomerCenterViewModel {
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
     )
-    suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity)
+    suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
     fun onNavigationButtonPressed()
     suspend fun loadCustomerCenter()
@@ -86,8 +87,6 @@ internal sealed class TransactionDetails(
         override val store: Store,
     ) : TransactionDetails(productIdentifier, store)
 }
-
-private const val RC_CUSTOMER_CENTER_TAG = "rc-customer-center"
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
@@ -371,7 +370,7 @@ internal class CustomerCenterViewModelImpl(
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
             when (option) {
                 is GoogleSubscriptionOption ->
-                    option.tags.contains(RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
+                    option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
                 else -> false
             }
         }
@@ -393,7 +392,15 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity) {
+    override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
+        if (activity == null) {
+            Logger.e("Activity is null when accepting promotional offer")
+            _actionError.value = PurchasesError(
+                PurchasesErrorCode.PurchaseInvalidError,
+                "Couldn't perform purchase"
+            )
+            return
+        }
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
             purchases.awaitPurchase(purchaseParams)

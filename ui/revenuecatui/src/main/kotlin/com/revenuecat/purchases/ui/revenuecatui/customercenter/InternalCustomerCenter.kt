@@ -47,7 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubsc
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
-import com.revenuecat.purchases.ui.revenuecatui.helpers.findActivity
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
 
 @JvmSynthetic
@@ -113,7 +113,7 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.DismissPromotionalOffer ->
                     viewModel.dismissPromotionalOffer(action.originalPath, context)
                 is CustomerCenterAction.PurchasePromotionalOffer -> {
-                    val activity = context.findActivity()
+                    val activity = context.getActivity()
                     coroutineScope.launch {
                         viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
@@ -219,17 +219,16 @@ private fun CustomerCenterLoaded(
     if (state.feedbackSurveyData != null) {
         FeedbackSurveyView(state.feedbackSurveyData)
     } else if (state.promotionalOfferData != null) {
-        state.promotionalOfferData.let { promotionalOfferData ->
-            PromotionalOfferView(
-                promotionalOfferData = promotionalOfferData,
-                onAccept = { subscriptionOption ->
-                    onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
-                },
-                onDismiss = {
-                    onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
-                },
-            )
-        }
+        val promotionalOfferData = state.promotionalOfferData
+        PromotionalOfferView(
+            promotionalOfferData = promotionalOfferData,
+            onAccept = { subscriptionOption ->
+                onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
+            },
+            onDismiss = {
+                onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
+            },
+        )
     } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,

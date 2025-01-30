@@ -47,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
@@ -289,20 +290,4 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
         ButtonComponent.UrlMethod.DEEP_LINK,
         -> openUriOrElse(url, ::handleException)
     }
-}
-
-/**
- * Returns the activity from a given context. Most times, the context itself will be
- * an activity, but in the case it's not, it will iterate through the context wrappers until it
- * finds one that is an activity.
- */
-private fun Context.getActivity(): Activity? {
-    var currentContext = this
-    while (currentContext is ContextWrapper) {
-        if (currentContext is Activity) {
-            return currentContext
-        }
-        currentContext = currentContext.baseContext
-    }
-    return null
 }
