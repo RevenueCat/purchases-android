@@ -101,38 +101,33 @@ internal object VariableProcessorV2 {
         rcPackage: Package,
         locale: Locale,
         date: Date,
-    ): String {
-        val resultString = handleVariablesAndReplace(template) { variable, functions ->
-            variableValue(
-                variableIdentifier = variable,
-                functionIdentifiers = functions,
-                localizedVariableKeys = localizedVariableKeys,
-                variableConfig = variableConfig,
-                variableDataProvider = variableDataProvider,
-                packageContext = packageContext,
-                rcPackage = rcPackage,
-                locale = locale,
-                date = date,
-            )
-        }
-        return resultString
+    ): String = template.replaceVariablesWithValues { variable, functions ->
+        variableValue(
+            variableIdentifier = variable,
+            functionIdentifiers = functions,
+            localizedVariableKeys = localizedVariableKeys,
+            variableConfig = variableConfig,
+            variableDataProvider = variableDataProvider,
+            packageContext = packageContext,
+            rcPackage = rcPackage,
+            locale = locale,
+            date = date,
+        )
     }
 
-    private fun handleVariablesAndReplace(
-        string: String,
-        executeAndReplaceWith: (variable: String, functions: List<String>) -> String,
+    private fun String.replaceVariablesWithValues(
+        getValue: (variable: String, functions: List<String>) -> String,
     ): String {
-        var resultString = string
-        regex.findAll(string).toList().reversed().forEach { matchResult ->
-            val variableString = matchResult.value
-            val variableWithoutBraces = variableString.substring(2, variableString.length - 2).trim()
+        var resultString = this
+        regex.findAll(this).toList().reversed().forEach { matchResult ->
+            val (variableString) = matchResult.destructured
 
-            val parts = variableWithoutBraces.split("|").map { it.trim() }
+            val parts = variableString.split("|").map { it.trim() }
             val variable = parts[0]
             val functions = if (parts.size > 1) parts.drop(1) else emptyList()
 
-            val replacement = executeAndReplaceWith(variable, functions)
-            resultString = resultString.replaceRange(matchResult.range, replacement)
+            val value = getValue(variable, functions)
+            resultString = resultString.replaceRange(matchResult.range, value)
         }
         return resultString
     }
@@ -157,7 +152,7 @@ internal object VariableProcessorV2 {
             Logger.e("Unknown variable: $variableIdentifier. Defaulting to empty string.")
             ""
         } else {
-            return processVariable(
+            val result = processVariable(
                 variable = variable,
                 localizedVariableKeys = localizedVariableKeys,
                 variableDataProvider = variableDataProvider,
@@ -169,7 +164,11 @@ internal object VariableProcessorV2 {
                 functions.fold(processedVariable) { accumulator, function ->
                     accumulator.processFunction(function, locale)
                 }
-            } ?: run {
+            }
+
+            if (result != null) {
+                result
+            } else {
                 Logger.w(
                     "Could not process value for variable '$variableIdentifier' for " +
                         "package '${rcPackage.identifier}'. Please check that the product for that package " +
