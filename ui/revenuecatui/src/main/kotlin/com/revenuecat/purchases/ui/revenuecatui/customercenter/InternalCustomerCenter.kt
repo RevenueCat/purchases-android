@@ -5,6 +5,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
@@ -143,8 +145,20 @@ private fun InternalCustomerCenter(
         } else {
             appearance.light?.accentColor?.colorInt
         }?.let { Color(it) }
+
+        // Only change background if there is a promotional offer
+        var backgroundColor: Color? = null
+        if (state.promotionalOfferData != null) {
+            backgroundColor = if (isDark) {
+                appearance.dark?.backgroundColor?.colorInt
+            } else {
+                appearance.light?.backgroundColor?.colorInt
+            }?.let { Color(it) }
+        }
+
         colorScheme = MaterialTheme.colorScheme.copy(
             primary = accentColor ?: MaterialTheme.colorScheme.primary,
+            background = backgroundColor ?: MaterialTheme.colorScheme.background,
         )
     } else {
         colorScheme = MaterialTheme.colorScheme
@@ -154,7 +168,8 @@ private fun InternalCustomerCenter(
         colorScheme = colorScheme,
     ) {
         CustomerCenterScaffold(
-            modifier = modifier,
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.background),
             title = title,
             onAction = onAction,
             navigationButtonType =
@@ -246,6 +261,7 @@ private fun CustomerCenterLoaded(
         val promotionalOfferData = state.promotionalOfferData
         PromotionalOfferView(
             promotionalOfferData = promotionalOfferData,
+            appearance = state.customerCenterConfigData.appearance,
             onAccept = { subscriptionOption ->
                 onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
             },

@@ -331,7 +331,7 @@ private fun CustomerCenterButton(
                 .padding(start = startPadding, end = endPadding),
             // It's a rectangle so it gets clipped by the parent Surface.
             shape = RectangleShape,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         ) {
             buttonContent(Modifier.fillMaxWidth())
         }

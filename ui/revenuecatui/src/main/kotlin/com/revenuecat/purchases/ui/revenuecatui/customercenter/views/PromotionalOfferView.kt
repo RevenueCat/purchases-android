@@ -3,6 +3,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,12 +11,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.billingclient.api.ProductDetails
@@ -38,10 +41,28 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalO
 @Composable
 internal fun PromotionalOfferView(
     promotionalOfferData: PromotionalOfferData,
+    appearance: CustomerCenterConfigData.Appearance,
     onAccept: (SubscriptionOption) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = isSystemInDarkTheme()
+    val textColor: Color? = if (isDark) {
+        appearance.dark?.textColor?.colorInt
+    } else {
+        appearance.light?.textColor?.colorInt
+    }?.let { Color(it) }
+    val buttonBackgroundColor: Color? = if (isDark) {
+        appearance.dark?.buttonBackgroundColor?.colorInt
+    } else {
+        appearance.light?.buttonBackgroundColor?.colorInt
+    }?.let { Color(it) }
+    val buttonTextColor: Color? = if (isDark) {
+        appearance.dark?.buttonTextColor?.colorInt
+    } else {
+        appearance.light?.buttonTextColor?.colorInt
+    }?.let { Color(it) }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -57,11 +78,13 @@ internal fun PromotionalOfferView(
         Text(
             text = promotionalOfferData.configuredPromotionalOffer.title,
             style = MaterialTheme.typography.headlineLarge,
+            color = textColor ?: MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(top = 16.dp),
         )
         Text(
             text = promotionalOfferData.configuredPromotionalOffer.subtitle,
             style = MaterialTheme.typography.bodyLarge,
+            color = textColor ?: MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(top = 16.dp),
         )
 
@@ -74,6 +97,10 @@ internal fun PromotionalOfferView(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonBackgroundColor ?: MaterialTheme.colorScheme.primary,
+                contentColor = buttonTextColor ?: MaterialTheme.colorScheme.onPrimary,
+            ),
         ) {
             @Suppress("ForbiddenComment")
             // TODO: modify this to display price of the offer
@@ -84,6 +111,10 @@ internal fun PromotionalOfferView(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.Transparent,
+                contentColor = buttonTextColor ?: MaterialTheme.colorScheme.primary,
+            ),
         ) {
             Text("No Thanks")
         }
@@ -111,6 +142,7 @@ internal fun PromotionalOfferViewPreview() {
     )
     PromotionalOfferView(
         data,
+        appearance = CustomerCenterConfigTestData.customerCenterData().appearance,
         onAccept = {},
         onDismiss = {},
     )
