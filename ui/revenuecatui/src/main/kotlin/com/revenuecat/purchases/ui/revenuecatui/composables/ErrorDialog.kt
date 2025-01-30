@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.material3.AlertDialog
@@ -11,7 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.ui.revenuecatui.R
 
 @Composable
-internal fun ErrorDialog(
+@JvmSynthetic internal fun ErrorDialog(
     dismissRequest: () -> Unit,
     error: String,
 ) {
