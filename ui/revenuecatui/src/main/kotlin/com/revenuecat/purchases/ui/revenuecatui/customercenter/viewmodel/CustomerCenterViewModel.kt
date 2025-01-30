@@ -404,12 +404,13 @@ internal class CustomerCenterViewModelImpl(
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
             purchases.awaitPurchase(purchaseParams)
+            goBackToMain()
         } catch (e: PurchasesException) {
             if (e.code != PurchasesErrorCode.PurchaseCancelledError) {
                 _actionError.value = e.error
+                goBackToMain()
             }
         }
-        goBackToMain()
     }
 
     override fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context) {
