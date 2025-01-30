@@ -20,7 +20,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -47,12 +46,13 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
@@ -157,14 +157,6 @@ class TextComponentViewTests {
     )
     private val styleFactory = StyleFactory(
         localizations = localizations,
-        uiConfig = UiConfig(),
-        fontAliases = emptyMap(),
-        offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
     )
 
     @Test
@@ -607,13 +599,7 @@ class TextComponentViewTests {
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
-        val offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
-        val styleFactory = StyleFactory(localizations, UiConfig(), emptyMap(), offering)
+        val styleFactory = StyleFactory(localizations)
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
@@ -656,13 +642,7 @@ class TextComponentViewTests {
                 singleEligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
-        val offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
-        val styleFactory = StyleFactory(localizations, UiConfig(), emptyMap(), offering)
+        val styleFactory = StyleFactory(localizations)
         val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
@@ -690,9 +670,13 @@ class TextComponentViewTests {
         val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocaleIdentifier = LocaleId("en_US")
         val selectedPackageTextKey = LocalizationKey("key_selected")
-        val selectedPackageTextWithVariable = LocalizationData.Text("Selected product: {{ product_name }}")
-        val expectedTextYearly = "Selected product: ${packageYearly.product.name}"
-        val expectedTextMonthly = "Selected product: ${packageMonthly.product.name}"
+        val selectedPackageTextWithVariable = LocalizationData.Text(
+            "Selected product V1: {{ product_name }}, selected product V2: {{ product.store_product_name }}"
+        )
+        val expectedTextYearly =
+            "Selected product V1: ${packageYearly.product.name}, selected product V2: ${packageYearly.product.name}"
+        val expectedTextMonthly =
+            "Selected product V1: ${packageMonthly.product.name}, selected product V2: ${packageMonthly.product.name}"
         val localizations = nonEmptyMapOf(
             defaultLocaleIdentifier to nonEmptyMapOf(
                 selectedPackageTextKey to selectedPackageTextWithVariable,
@@ -771,9 +755,9 @@ class TextComponentViewTests {
         val mxnPackage = packageMonthlyMxn
         val countryWithoutDecimals = "MX"
         val textKey = LocalizationKey("key_selected")
-        val textWithPriceVariable = LocalizationData.Text("Price: {{ price }}")
-        val expectedTextWithDecimals = "Price: \$ 2.00"
-        val expectedTextWithoutDecimals = "Price: MX\$1"
+        val textWithPriceVariable = LocalizationData.Text("Price V1: {{ price }}, price V2: {{ product.price }}")
+        val expectedTextWithDecimals = "Price V1: \$ 2.00, price V2: \$ 2.00"
+        val expectedTextWithoutDecimals = "Price V1: MX\$1, price V2: MX\$1"
         val localizations = nonEmptyMapOf(
             defaultLocaleIdentifier to nonEmptyMapOf(
                 textKey to textWithPriceVariable,
