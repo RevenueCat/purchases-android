@@ -11,8 +11,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -42,11 +40,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.variableLocalizationKeysForEnUs
 import kotlinx.coroutines.CompletableDeferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -86,6 +85,9 @@ class ButtonComponentViewTests {
                             margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
                                 .toPaddingValues(),
                             rcPackage = null,
+                            variableLocalizations = nonEmptyMapOf(
+                                LocaleId("en_US") to variableLocalizationKeysForEnUs()
+                            ),
                             overrides = null,
                         ),
                     ),
@@ -167,13 +169,7 @@ class ButtonComponentViewTests {
                 localizationKey to LocalizationData.Text(expectedUrlNlNl),
             )
         )
-        val offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
-        val styleFactory = StyleFactory(localizations, UiConfig(), emptyMap(), offering)
+        val styleFactory = StyleFactory(localizations = localizations)
         val style = styleFactory.create(component).getOrThrow() as ButtonComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
