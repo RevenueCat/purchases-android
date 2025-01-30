@@ -1,12 +1,18 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialCarouselComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -16,8 +22,10 @@ import dev.drewhamilton.poko.Poko
 
 @Poko
 internal class PresentedCarouselPartial(
+    @get:JvmSynthetic val backgroundColorStyles: ColorStyles?,
     @get:JvmSynthetic val borderStyles: BorderStyles?,
     @get:JvmSynthetic val shadowStyles: ShadowStyles?,
+    @get:JvmSynthetic val pageControlStyles: CarouselComponentStyle.PageControlStyles?,
     @get:JvmSynthetic val partial: PartialCarouselComponent,
 ) : PresentedPartial<PresentedCarouselPartial> {
 
@@ -27,37 +35,71 @@ internal class PresentedCarouselPartial(
             from: PartialCarouselComponent,
             aliases: Map<ColorAlias, ColorScheme>,
         ): Result<PresentedCarouselPartial, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-            first = from.border
+            first = from.backgroundColor
+                ?.toColorStyles(aliases = aliases)
+                .orSuccessfullyNull(),
+            second = from.border
                 ?.toBorderStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-            second = from.shadow
+            third = from.shadow
                 ?.toShadowStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-        ) { borderStyles, shadowStyles ->
+            fourth = from.pageControl?.let {
+                zipOrAccumulate(
+                    first = it.active.color.toColorStyles(aliases = aliases),
+                    second = it.default.color.toColorStyles(aliases = aliases),
+                ) { activeColor, defaultColor ->
+                    CarouselComponentStyle.PageControlStyles(
+                        alignment = it.alignment.toAlignment(),
+                        active = CarouselComponentStyle.IndicatorStyles(
+                            size = it.active.size,
+                            spacing = it.active.spacing?.dp ?: 0.dp,
+                            color = activeColor,
+                            margin = it.active.margin.toPaddingValues(),
+                        ),
+                        default = CarouselComponentStyle.IndicatorStyles(
+                            size = it.default.size,
+                            spacing = it.default.spacing?.dp ?: 0.dp,
+                            color = defaultColor,
+                            margin = it.default.margin.toPaddingValues(),
+                        ),
+                    )
+                }
+            }.orSuccessfullyNull(),
+        ) { backgroundColor, borderStyles, shadowStyles, pageControlStyles ->
             PresentedCarouselPartial(
+                backgroundColorStyles = backgroundColor,
                 borderStyles = borderStyles,
                 shadowStyles = shadowStyles,
+                pageControlStyles = pageControlStyles,
                 partial = from,
             )
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     override fun combine(with: PresentedCarouselPartial?): PresentedCarouselPartial {
         val otherPartial = with?.partial
 
         return PresentedCarouselPartial(
+            backgroundColorStyles = backgroundColorStyles ?: with?.backgroundColorStyles,
             borderStyles = borderStyles ?: with?.borderStyles,
             shadowStyles = shadowStyles ?: with?.shadowStyles,
+            pageControlStyles = pageControlStyles ?: with?.pageControlStyles,
             partial = PartialCarouselComponent(
                 visible = otherPartial?.visible ?: partial.visible,
+                initialSlideIndex = otherPartial?.initialSlideIndex ?: partial.initialSlideIndex,
                 alignment = otherPartial?.alignment ?: partial.alignment,
                 size = otherPartial?.size ?: partial.size,
+                sidePagePeek = otherPartial?.sidePagePeek ?: partial.sidePagePeek,
                 spacing = otherPartial?.spacing ?: partial.spacing,
+                backgroundColor = otherPartial?.backgroundColor ?: partial.backgroundColor,
                 padding = otherPartial?.padding ?: partial.padding,
                 margin = otherPartial?.margin ?: partial.margin,
                 shape = otherPartial?.shape ?: partial.shape,
                 border = otherPartial?.border ?: partial.border,
                 shadow = otherPartial?.shadow ?: partial.shadow,
+                pageControl = otherPartial?.pageControl ?: partial.pageControl,
                 loop = otherPartial?.loop ?: partial.loop,
                 autoAdvance = otherPartial?.autoAdvance ?: partial.autoAdvance,
             ),

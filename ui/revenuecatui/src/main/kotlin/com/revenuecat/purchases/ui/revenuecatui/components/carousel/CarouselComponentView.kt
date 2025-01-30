@@ -55,9 +55,12 @@ private fun CarouselComponentView_Preview() {
 @Suppress("LongParameterList")
 private fun previewCarouselComponentStyle(
     slides: List<StackComponentStyle> = previewSlides(),
+    initialSlideIndex: Int = 0,
     alignment: Alignment.Vertical = Alignment.CenterVertically,
     size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
+    sidePagePeek: Dp = 8.dp,
     spacing: Dp = 8.dp,
+    backgroundColor: Color = Color.Blue,
     padding: PaddingValues = PaddingValues(0.dp),
     margin: PaddingValues = PaddingValues(0.dp),
     shape: Shape = Shape.Rectangle(),
@@ -68,19 +71,40 @@ private fun previewCarouselComponentStyle(
         x = 0.dp,
         y = 3.dp,
     ),
+    pageControl: CarouselComponentStyle.PageControlStyles? = CarouselComponentStyle.PageControlStyles(
+        alignment = Alignment.Bottom,
+        active = CarouselComponentStyle.IndicatorStyles(
+            size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
+            spacing = 4.dp,
+            color = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
+            margin = PaddingValues(0.dp),
+        ),
+        default = CarouselComponentStyle.IndicatorStyles(
+            size = Size(width = SizeConstraint.Fixed(8u), height = SizeConstraint.Fixed(8u)),
+            spacing = 4.dp,
+            color = ColorStyles(light = ColorStyle.Solid(Color.Gray)),
+            margin = PaddingValues(0.dp),
+        ),
+    ),
     loop: Boolean? = null,
     autoAdvance: CarouselComponent.AutoAdvanceSlides? = null,
 ): CarouselComponentStyle {
     return CarouselComponentStyle(
         slides = slides,
+        initialSlideIndex = initialSlideIndex,
         alignment = alignment,
         size = size,
+        sidePagePeek = sidePagePeek,
         spacing = spacing,
+        backgroundColor = ColorStyles(
+            light = ColorStyle.Solid(backgroundColor),
+        ),
         padding = padding,
         margin = margin,
         shape = shape,
         border = borderStyle,
         shadow = shadowStyle,
+        pageControl = pageControl,
         loop = loop,
         autoAdvance = autoAdvance,
         rcPackage = null,

@@ -81,6 +81,9 @@ internal class CarouselComponentState(
     val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
 
     @get:JvmSynthetic
+    val initialSlideIndex by derivedStateOf { presentedPartial?.partial?.initialSlideIndex ?: style.initialSlideIndex }
+
+    @get:JvmSynthetic
     val slides by derivedStateOf { style.slides }
 
     @get:JvmSynthetic
@@ -88,6 +91,12 @@ internal class CarouselComponentState(
 
     @get:JvmSynthetic
     val size by derivedStateOf { presentedPartial?.partial?.size ?: style.size }
+
+    @get:JvmSynthetic
+    val sidePagePeek by derivedStateOf { presentedPartial?.partial?.sidePagePeek?.dp ?: style.sidePagePeek }
+
+    @get:JvmSynthetic
+    val backgroundColor by derivedStateOf { presentedPartial?.backgroundColorStyles ?: style.backgroundColor }
 
     @get:JvmSynthetic
     val spacing by derivedStateOf { presentedPartial?.partial?.spacing?.dp ?: style.spacing }
@@ -106,6 +115,9 @@ internal class CarouselComponentState(
 
     @get:JvmSynthetic
     val shadow by derivedStateOf { presentedPartial?.shadowStyles ?: style.shadow }
+
+    @get:JvmSynthetic
+    val pageControl by derivedStateOf { presentedPartial?.pageControlStyles ?: style.pageControl }
 
     @JvmSynthetic
     fun update(

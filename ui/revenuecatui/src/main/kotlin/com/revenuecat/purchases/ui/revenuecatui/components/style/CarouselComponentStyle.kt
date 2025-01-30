@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 
 @Suppress("LongParameterList")
@@ -19,11 +20,17 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val slides: List<StackComponentStyle>,
     @get:JvmSynthetic
+    val initialSlideIndex: Int,
+    @get:JvmSynthetic
     val alignment: Alignment.Vertical,
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
+    val sidePagePeek: Dp,
+    @get:JvmSynthetic
     val spacing: Dp,
+    @get:JvmSynthetic
+    val backgroundColor: ColorStyles?,
     @get:JvmSynthetic
     val padding: PaddingValues,
     @get:JvmSynthetic
@@ -34,6 +41,8 @@ internal data class CarouselComponentStyle(
     val border: BorderStyles?,
     @get:JvmSynthetic
     val shadow: ShadowStyles?,
+    @get:JvmSynthetic
+    val pageControl: PageControlStyles?,
     @get:JvmSynthetic
     val loop: Boolean?,
     @get:JvmSynthetic
@@ -46,4 +55,26 @@ internal data class CarouselComponentStyle(
     val rcPackage: Package?,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedCarouselPartial>?,
-) : ComponentStyle
+) : ComponentStyle {
+    @Immutable
+    data class PageControlStyles(
+        @get:JvmSynthetic
+        val alignment: Alignment.Vertical,
+        @get:JvmSynthetic
+        val active: IndicatorStyles,
+        @get:JvmSynthetic
+        val default: IndicatorStyles,
+    )
+
+    @Immutable
+    data class IndicatorStyles(
+        @get:JvmSynthetic
+        val size: Size,
+        @get:JvmSynthetic
+        val spacing: Dp,
+        @get:JvmSynthetic
+        val color: ColorStyles,
+        @get:JvmSynthetic
+        val margin: PaddingValues,
+    )
+}

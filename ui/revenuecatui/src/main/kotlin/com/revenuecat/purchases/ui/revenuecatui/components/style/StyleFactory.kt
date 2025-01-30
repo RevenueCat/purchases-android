@@ -386,17 +386,44 @@ internal class StyleFactory(
             .mapOrAccumulate { it },
         third = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         fourth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
-    ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles ->
+        fifth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+        sixth = component.pageControl?.let { pageControl ->
+            zipOrAccumulate(
+                first = pageControl.active.color.toColorStyles(colorAliases),
+                second = pageControl.default.color.toColorStyles(colorAliases),
+            ) { activeColor, defaultColor ->
+                CarouselComponentStyle.PageControlStyles(
+                    alignment = pageControl.alignment.toAlignment(),
+                    active = CarouselComponentStyle.IndicatorStyles(
+                        size = pageControl.active.size,
+                        spacing = pageControl.active.spacing?.dp ?: 0.dp,
+                        color = activeColor,
+                        margin = pageControl.active.margin.toPaddingValues(),
+                    ),
+                    default = CarouselComponentStyle.IndicatorStyles(
+                        size = pageControl.default.size,
+                        spacing = pageControl.default.spacing?.dp ?: 0.dp,
+                        color = defaultColor,
+                        margin = pageControl.default.margin.toPaddingValues(),
+                    ),
+                )
+            }
+        }.orSuccessfullyNull(),
+    ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles, backgroundColor, pageControlStyles ->
         CarouselComponentStyle(
             slides = stackComponentStyles,
+            initialSlideIndex = component.initialSlideIndex ?: 0,
             alignment = component.alignment.toAlignment(),
             size = component.size,
+            sidePagePeek = component.sidePagePeek?.dp ?: 0.dp,
             spacing = (component.spacing ?: DEFAULT_SPACING).dp,
+            backgroundColor = backgroundColor,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             shape = component.shape ?: Shape.Rectangle(),
             border = borderStyles,
             shadow = shadowStyles,
+            pageControl = pageControlStyles,
             loop = component.loop,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
