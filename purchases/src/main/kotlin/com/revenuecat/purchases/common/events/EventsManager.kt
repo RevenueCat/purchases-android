@@ -10,11 +10,6 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.Event
 import com.revenuecat.purchases.utils.EventsFileHelper
 
-internal interface FeatureEvent
-internal interface StoredEvent
-internal interface BackendEvent
-internal interface EventRequest
-
 internal abstract class EventsManager<FeatureEvent, StoredEvent : Event, BackendEvent, EventRequest>(
     private val fileHelper: EventsFileHelper<StoredEvent>,
     private val identityManager: IdentityManager,

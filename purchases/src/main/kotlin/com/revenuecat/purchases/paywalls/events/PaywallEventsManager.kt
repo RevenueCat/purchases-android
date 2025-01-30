@@ -12,7 +12,7 @@ internal class PaywallEventsManager(
     fileHelper: EventsFileHelper<PaywallStoredEvent>,
     identityManager: IdentityManager,
     eventsDispatcher: Dispatcher,
-    flushCount: Int = 50,
+    flushCount: Int = PaywallEventsManager.FLUSH_COUNT,
     postPaywallEvents: (PaywallEventRequest, () -> Unit, (PurchasesError, Boolean) -> Unit) -> Unit,
 ) : EventsManager<PaywallEvent, PaywallStoredEvent, PaywallBackendEvent, PaywallEventRequest>(
     fileHelper,
@@ -23,6 +23,7 @@ internal class PaywallEventsManager(
 ) {
     companion object {
         const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
+        private const val FLUSH_COUNT = 50
     }
 
     override fun createRequest(events: List<PaywallStoredEvent>): PaywallEventRequest {
