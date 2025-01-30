@@ -83,7 +83,13 @@ class PaywallEventsManagerTest {
             fileHelper,
             identityManager,
             paywallEventsDispatcher,
-            backend,
+            postPaywallEvents = { request, onSuccess, onError ->
+                backend.postPaywallEvents(
+                    paywallEventRequest = request,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError
+                )
+            }
         )
     }
 

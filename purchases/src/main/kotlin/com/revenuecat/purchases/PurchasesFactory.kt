@@ -320,7 +320,13 @@ internal class PurchasesFactory(
                 ),
                 identityManager,
                 eventsDispatcher,
-                backend,
+                postPaywallEvents = { request, onSuccess, onError ->
+                    backend.postPaywallEvents(
+                        paywallEventRequest = request,
+                        onSuccessHandler = onSuccess,
+                        onErrorHandler = onError,
+                    )
+                },
             )
         } else {
             debugLog("Paywall events are only supported on Android N or newer.")
