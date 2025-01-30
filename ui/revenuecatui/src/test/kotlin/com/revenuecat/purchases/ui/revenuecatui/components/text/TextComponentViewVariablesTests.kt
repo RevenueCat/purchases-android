@@ -684,7 +684,8 @@ internal class TextComponentViewVariablesTests(
                         functionCompatibilityMap = emptyMap(),
                     )
                 ),
-                ""
+                // Unknown function, so the value is unprocessed.
+                "Annual"
             ),
             arrayOf(
                 "{{ name_variable_from_the_year_5202 | uppercase_function_from_the_year_5202 }}",

@@ -120,7 +120,7 @@ internal object VariableProcessorV2 {
 
     private fun handleVariablesAndReplace(
         string: String,
-        executeAndReplaceWith: (variable: String, functions: List<String>) -> String?,
+        executeAndReplaceWith: (variable: String, functions: List<String>) -> String,
     ): String {
         var resultString = string
         regex.findAll(string).toList().reversed().forEach { matchResult ->
@@ -132,9 +132,7 @@ internal object VariableProcessorV2 {
             val functions = if (parts.size > 1) parts.drop(1) else emptyList()
 
             val replacement = executeAndReplaceWith(variable, functions)
-            replacement?.let {
-                resultString = resultString.replaceRange(matchResult.range, it)
-            }
+            resultString = resultString.replaceRange(matchResult.range, replacement)
         }
         return resultString
     }
@@ -152,12 +150,12 @@ internal object VariableProcessorV2 {
         rcPackage: Package,
         locale: Locale,
         date: Date,
-    ): String? {
+    ): String {
         val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
         return if (variable == null) {
-            Logger.e("Unknown variable: $variableIdentifier")
-            null
+            Logger.e("Unknown variable: $variableIdentifier. Defaulting to empty string.")
+            ""
         } else {
             return processVariable(
                 variable = variable,
