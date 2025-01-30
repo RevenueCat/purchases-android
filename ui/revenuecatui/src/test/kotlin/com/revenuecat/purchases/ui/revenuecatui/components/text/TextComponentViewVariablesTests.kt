@@ -42,6 +42,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import java.net.URL
+import java.util.Date
 
 @RunWith(ParameterizedRobolectricTestRunner::class)
 internal class TextComponentViewVariablesTests(
@@ -55,9 +56,11 @@ internal class TextComponentViewVariablesTests(
         val locale: String,
         val storefrontCountryCode: String,
         val variableLocalizations: NonEmptyMap<VariableLocalizationKey, String>,
+        val date: Date = Date(),
     )
 
     companion object {
+        private const val MILLIS_2025_01_25 = 1737763200000
         private const val STORE_COUNTRY_WITHOUT_DECIMALS = "MX"
         private val zeroDecimalPlaceCountries = listOf(STORE_COUNTRY_WITHOUT_DECIMALS)
 
@@ -462,8 +465,9 @@ internal class TextComponentViewVariablesTests(
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
+                        date = Date(MILLIS_2025_01_25),
                     ),
-                    "Annual"
+                    "February 1, 2025"
                 )
 
                 Variable.PRODUCT_SECONDARY_OFFER_PRICE -> arrayOf(
@@ -539,6 +543,7 @@ internal class TextComponentViewVariablesTests(
     private val locale = args.locale
     private val storefrontCountryCode = args.storefrontCountryCode
     private val variableLocalizations = args.variableLocalizations
+    private val date = args.date
 
     @get:Rule
     val composeTestRule = createComposeRule()
@@ -580,7 +585,11 @@ internal class TextComponentViewVariablesTests(
             ),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-        val state = offering.toComponentsPaywallState(validated, storefrontCountryCode = storefrontCountryCode)
+        val state = offering.toComponentsPaywallState(
+            validationResult = validated,
+            storefrontCountryCode = storefrontCountryCode,
+            dateProvider = { date },
+        )
 
         val styleFactory = StyleFactory(
             localizations = localizations,
