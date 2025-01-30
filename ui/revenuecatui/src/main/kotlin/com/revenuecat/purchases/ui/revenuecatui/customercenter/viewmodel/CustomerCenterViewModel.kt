@@ -124,29 +124,29 @@ internal class CustomerCenterViewModelImpl(
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 goBackToMain()
                 option?.let {
-                    promotionalOfferOrMainPathAction(product, option.promotionalOffer, path, context)
+                    if (product != null && it.promotionalOffer != null) {
+                        loadAndDisplayPromotionalOffer(
+                            product,
+                            it.promotionalOffer,
+                            path,
+                        )
+                    } else {
+                        mainPathAction(path, context)
+                    }
                 }
             })
             return
         }
-        promotionalOfferOrMainPathAction(product, path.promotionalOffer, path, context)
-    }
 
-    private fun promotionalOfferOrMainPathAction(
-        product: StoreProduct?,
-        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer?,
-        path: CustomerCenterConfigData.HelpPath,
-        context: Context,
-    ) {
-        if (product == null || promotionalOffer == null) {
+        if (product != null && path.promotionalOffer != null) {
+            loadAndDisplayPromotionalOffer(
+                product,
+                path.promotionalOffer,
+                path,
+            )
+        } else {
             mainPathAction(path, context)
-            return
         }
-        loadAndDisplayPromotionalOffer(
-            product,
-            promotionalOffer,
-            path,
-        )
     }
 
     private fun mainPathAction(
