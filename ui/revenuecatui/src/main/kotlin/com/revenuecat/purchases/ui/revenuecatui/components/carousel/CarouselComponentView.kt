@@ -76,7 +76,17 @@ internal fun CarouselComponentView(
 
     val pageCount = style.slides.size
 
-    val pagerState = rememberPagerState(initialPage = carouselState.initialSlideIndex) {
+    val initialPage = if (carouselState.loop) {
+        var currentPage = Int.MAX_VALUE / 2
+        while (currentPage % pageCount != carouselState.initialSlideIndex) {
+            currentPage++
+        }
+        currentPage
+    } else {
+        carouselState.initialSlideIndex
+    }
+
+    val pagerState = rememberPagerState(initialPage = initialPage) {
         if (carouselState.loop) {
             Int.MAX_VALUE
         } else {
@@ -105,17 +115,18 @@ internal fun CarouselComponentView(
             userScrollEnabled = style.autoAdvance == null,
         ) { page ->
             StackComponentView(
-                style = carouselState.slides[page],
+                style = carouselState.slides[page % pageCount],
                 state = state,
                 clickHandler = clickHandler,
             )
         }
 
         carouselState.pageControl?.let {
+            val currentPage = pagerState.currentPage % pageCount
             PagerIndicator(
                 pageControl = it,
                 pageCount = pageCount,
-                currentPageIndex = pagerState.currentPage,
+                currentPageIndex = currentPage,
             )
         }
     }
@@ -163,10 +174,24 @@ private fun CarouselComponentView_Preview() {
     }
 }
 
+@Preview
+@Composable
+private fun CarouselComponentView_Loop_Preview() {
+    Box(modifier = Modifier.background(Color.White)) {
+        CarouselComponentView(
+            style = previewCarouselComponentStyle(
+                loop = true,
+            ),
+            state = previewEmptyState(),
+            clickHandler = {},
+        )
+    }
+}
+
 @Suppress("LongParameterList")
 private fun previewCarouselComponentStyle(
     slides: List<StackComponentStyle> = previewSlides(),
-    initialSlideIndex: Int = 1,
+    initialSlideIndex: Int = 0,
     alignment: Alignment.Vertical = Alignment.CenterVertically,
     size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     sidePagePeek: Dp = 20.dp,
