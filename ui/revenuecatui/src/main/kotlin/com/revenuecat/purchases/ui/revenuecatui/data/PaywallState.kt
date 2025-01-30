@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -72,6 +73,7 @@ internal sealed interface PaywallState {
              * for that.
              */
             val showPricesWithDecimals: Boolean,
+            val variableConfig: VariableConfig,
             override val offering: Offering,
             /**
              * All locales that this paywall supports, with `locales.head` being the default one.

@@ -75,6 +75,7 @@ internal class TextComponentState(
     private val selected by derivedStateOf {
         if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
     }
+    private val localeId by derivedStateOf { localeProvider().toLocaleId() }
 
     /**
      * The package to take variable values from and to consider for intro offer eligibility.
@@ -96,10 +97,13 @@ internal class TextComponentState(
 
     @get:JvmSynthetic
     val text by derivedStateOf {
-        val localeId = localeProvider().toLocaleId()
-
         presentedPartial?.texts?.run { getOrDefault(localeId, entry.value) }
             ?: style.texts.run { getOrDefault(localeId, entry.value) }
+    }
+
+    @get:JvmSynthetic
+    val localizedVariableKeys by derivedStateOf {
+        style.variableLocalizations.run { getOrDefault(localeId, entry.value) }
     }
 
     @get:JvmSynthetic
