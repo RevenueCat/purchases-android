@@ -102,7 +102,7 @@ internal object VariableProcessorV2 {
         locale: Locale,
         date: Date,
     ): String = template.replaceVariablesWithValues { variable, functions ->
-        variableValue(
+        getVariableValue(
             variableIdentifier = variable,
             functionIdentifiers = functions,
             localizedVariableKeys = localizedVariableKeys,
@@ -122,7 +122,7 @@ internal object VariableProcessorV2 {
         var lastIndex = 0
 
         regex.findAll(template).forEach { match ->
-            // Append everything between the previous match and this match
+            // Append everything between the previous match and this match.
             append(template, lastIndex, match.range.first)
 
             val (variableString) = match.destructured
@@ -131,6 +131,7 @@ internal object VariableProcessorV2 {
             val variable = parts[0]
             val functions = if (parts.size > 1) parts.drop(1) else emptyList()
 
+            // Append the value of this variable.
             append(getValue(variable, functions))
 
             lastIndex = match.range.last + 1
@@ -141,7 +142,7 @@ internal object VariableProcessorV2 {
     }
 
     @Suppress("LongParameterList")
-    private fun variableValue(
+    private fun getVariableValue(
         variableIdentifier: String,
         functionIdentifiers: List<String>,
         // Dependencies:
@@ -157,11 +158,10 @@ internal object VariableProcessorV2 {
         val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
         return if (variable == null) {
-            Logger.e("Unknown variable: $variableIdentifier. Defaulting to empty string.")
+            Logger.unknownVariable(variableIdentifier)
             ""
         } else {
-            val result = processVariable(
-                variable = variable,
+            val result = variable.getValue(
                 localizedVariableKeys = localizedVariableKeys,
                 variableDataProvider = variableDataProvider,
                 packageContext = packageContext,
@@ -177,11 +177,7 @@ internal object VariableProcessorV2 {
             if (result != null) {
                 result
             } else {
-                Logger.w(
-                    "Could not process value for variable '$variableIdentifier' for " +
-                        "package '${rcPackage.identifier}'. Please check that the product for that package " +
-                        "matches the requirements for that variable. Defaulting to empty string.",
-                )
+                Logger.failedToGetValue(variableIdentifier, rcPackage)
                 ""
             }
         }
@@ -199,16 +195,10 @@ internal object VariableProcessorV2 {
             if (compatVariableIdentifier != null) {
                 findVariable(compatVariableIdentifier, variableCompatibilityMap)
                     ?.also {
-                        Logger.w(
-                            "Paywall variable '$variableIdentifier' is not supported. Using backwards compatible " +
-                                "'$compatVariableIdentifier' instead.",
-                        )
+                        Logger.usingFallbackVariable(original = variableIdentifier, fallback = compatVariableIdentifier)
                     }
             } else {
-                Logger.e(
-                    "Paywall variable '$variableIdentifier' is not supported and no backwards compatible " +
-                        "replacement found.",
-                )
+                Logger.unsupportedVariableWithoutFallback(variableIdentifier)
                 null
             }
         }
@@ -223,24 +213,48 @@ internal object VariableProcessorV2 {
             if (compatFunctionIdentifier != null) {
                 findFunction(compatFunctionIdentifier, functionCompatibilityMap)
                     ?.also {
-                        Logger.w(
-                            "Paywall function '$functionIdentifier' is not supported. Using backward compatible " +
-                                "'$compatFunctionIdentifier' instead.",
-                        )
+                        Logger.usingFallbackFunction(original = functionIdentifier, fallback = compatFunctionIdentifier)
                     }
             } else {
-                Logger.e(
-                    "Paywall function '$functionIdentifier' is not supported and no backwards compatible " +
-                        "replacement found.",
-                )
+                Logger.unsupportedFunctionWithoutFallback(functionIdentifier)
                 null
             }
         }
     }
 
+    private fun Logger.unknownVariable(variableIdentifier: String): Unit = e(
+        "Unknown variable: $variableIdentifier. Defaulting to empty string.",
+    )
+
+    private fun Logger.failedToGetValue(variableIdentifier: String, rcPackage: Package): Unit = w(
+        "Could not process value for variable '$variableIdentifier' for " +
+            "package '${rcPackage.identifier}'. Please check that the product for that package " +
+            "matches the requirements for that variable. Defaulting to empty string.",
+    )
+
+    private fun Logger.usingFallbackVariable(original: String, fallback: String): Unit = w(
+        "Paywall variable '$original' is not supported. Using backwards compatible " +
+            "'$fallback' instead.",
+    )
+
+    private fun Logger.unsupportedVariableWithoutFallback(variableIdentifier: String): Unit = e(
+        "Paywall variable '$variableIdentifier' is not supported and no backwards compatible " +
+            "replacement found.",
+    )
+
+    private fun Logger.usingFallbackFunction(original: String, fallback: String): Unit = w(
+        "Paywall function '$original' is not supported. Using backward compatible " +
+            "'$fallback' instead.",
+    )
+
+    private fun Logger.unsupportedFunctionWithoutFallback(functionIdentifier: String): Unit =
+        e(
+            "Paywall function '$functionIdentifier' is not supported and no backwards compatible " +
+                "replacement found.",
+        )
+
     @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
-    private fun processVariable(
-        variable: Variable,
+    private fun Variable.getValue(
         // Dependencies:
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
         variableDataProvider: VariableDataProvider,
@@ -249,7 +263,7 @@ internal object VariableProcessorV2 {
         rcPackage: Package,
         locale: Locale,
         date: Date,
-    ): String? = when (variable) {
+    ): String? = when (this) {
         Variable.PRODUCT_CURRENCY_CODE -> rcPackage.product.price.currencyCode
         Variable.PRODUCT_CURRENCY_SYMBOL ->
             Currency
