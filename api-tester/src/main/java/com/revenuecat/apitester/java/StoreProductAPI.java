@@ -30,6 +30,7 @@ final class StoreProductAPI {
         final String description = product.getDescription();
         final Period period = product.getPeriod();
         final String formattedPricePerMonth = product.formattedPricePerMonth(locale);
+        final Price pricePerDay = product.pricePerDay(locale);
         final Price pricePerWeek = product.pricePerWeek(locale);
         final Price pricePerMonth = product.pricePerMonth(locale);
         final Price pricePerYear = product.pricePerYear(locale);
