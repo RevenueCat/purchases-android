@@ -3,12 +3,15 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.material3.ColorScheme
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
@@ -30,7 +33,7 @@ internal fun Offering.validatedPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
 ): PaywallValidationResult =
-    validatePaywallComponentsDataOrNull()?.let { result ->
+    validatePaywallComponentsDataOrNull(resourceProvider)?.let { result ->
         // We need to either unwrap the success value, or wrap the errors in a fallback Paywall.
         when (result) {
             is RcResult.Success -> result.value
@@ -87,7 +90,9 @@ private fun Offering.fallbackPaywall(
     )
 
 @Suppress("MaxLineLength", "ReturnCount")
-internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? {
+internal fun Offering.validatePaywallComponentsDataOrNull(
+    resourceProvider: ResourceProvider,
+): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? {
     val paywallComponents = paywallComponents ?: return null
 
     // Check that the default localization is present in the localizations map.
@@ -109,10 +114,17 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
     }.mapValuesOrAccumulate { it }
         .getOrElse { error -> return RcResult.Error(error) }
 
+    val colorAliases = paywallComponents.uiConfig.app.colors
+
+    // Build a map of FontAliases to FontSpecs.
+    val fontAliases: Map<FontAlias, FontSpec> =
+        paywallComponents.uiConfig.app.fonts.determineFontSpecs(resourceProvider)
+
     // Create the StyleFactory to recursively create and validate all ComponentStyles.
     val styleFactory = StyleFactory(
         localizations = localizations,
-        uiConfig = paywallComponents.uiConfig,
+        colorAliases = colorAliases,
+        fontAliases = fontAliases,
         offering = this,
     )
     val config = paywallComponents.data.componentsConfig.base
@@ -121,7 +133,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
     return zipOrAccumulate(
         first = styleFactory.create(config.stack),
         second = config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
-        third = config.background.toBackgroundStyles(aliases = paywallComponents.uiConfig.app.colors),
+        third = config.background.toBackgroundStyles(aliases = colorAliases),
     ) { stack, stickyFooter, background ->
         PaywallValidationResult.Components(
             stack = stack,

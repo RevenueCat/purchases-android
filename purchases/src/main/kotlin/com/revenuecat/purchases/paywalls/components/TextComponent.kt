@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -44,7 +45,7 @@ constructor(
     val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
     @SerialName("font_name")
-    val fontName: String? = null,
+    val fontName: FontAlias? = null,
     @get:JvmSynthetic
     @SerialName("font_weight")
     val fontWeight: FontWeight = REGULAR,
@@ -83,7 +84,7 @@ constructor(
     val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
     @SerialName("font_name")
-    val fontName: String? = null,
+    val fontName: FontAlias? = null,
     @get:JvmSynthetic
     @SerialName("font_weight")
     val fontWeight: FontWeight? = null,

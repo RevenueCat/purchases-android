@@ -41,16 +41,23 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
+@Composable
 @JvmSynthetic
 internal fun previewEmptyState(): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
@@ -78,7 +85,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         availablePackages = emptyList(),
         paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
-    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     return offering.toComponentsPaywallState(
         validationResult = validated,
         activelySubscribedProductIds = emptySet(),
@@ -94,7 +101,7 @@ internal fun previewTextComponentStyle(
     color: ColorStyles = ColorStyles(ColorStyle.Solid(Color.Black)),
     fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
-    fontFamily: String? = null,
+    fontSpec: FontSpec? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
@@ -108,7 +115,7 @@ internal fun previewTextComponentStyle(
         color = color,
         fontSize = fontSize,
         fontWeight = weight,
-        fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
+        fontSpec = fontSpec,
         textAlign = textAlign.toTextAlign(),
         horizontalAlignment = horizontalAlignment.toAlignment(),
         backgroundColor = backgroundColor,
@@ -181,3 +188,9 @@ internal fun previewImageLoader(
         }
         .build()
 }
+
+@Composable
+@JvmSynthetic
+@Suppress("MaxLineLength")
+internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? =
+    validatePaywallComponentsDataOrNull(LocalContext.current.toResourceProvider())

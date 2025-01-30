@@ -32,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -194,7 +195,7 @@ private fun TextComponentView_Preview_SerifFont() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontFamily = "serif",
+            fontSpec = FontSpec.Generic.Serif,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -208,7 +209,7 @@ private fun TextComponentView_Preview_SansSerifFont() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontFamily = "sans-serif",
+            fontSpec = FontSpec.Generic.SansSerif,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -222,7 +223,7 @@ private fun TextComponentView_Preview_MonospaceFont() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontFamily = "monospace",
+            fontSpec = FontSpec.Generic.Monospace,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),
@@ -236,7 +237,7 @@ private fun TextComponentView_Preview_CursiveFont() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontFamily = "cursive",
+            fontSpec = FontSpec.Generic.Cursive,
             size = Size(width = Fit, height = Fit),
         ),
         state = previewEmptyState(),

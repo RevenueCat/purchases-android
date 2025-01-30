@@ -221,6 +221,7 @@ private fun MDParagraph(
                     .copy(
                         fontWeight = fontWeight,
                         fontSize = if (applyFontSizeToParagraph) fontSize else style.fontSize,
+                        fontFamily = fontFamily,
                     )
                     .toSpanStyle(),
             )

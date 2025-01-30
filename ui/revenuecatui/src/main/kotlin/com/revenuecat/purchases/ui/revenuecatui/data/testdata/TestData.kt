@@ -391,7 +391,18 @@ internal object TestData {
     }
 }
 
-internal class MockResourceProvider : ResourceProvider {
+internal class MockResourceProvider(
+    /**
+     * A map of resource type to a map of resource name to resource ID. For instance, to specify a font resource, do:
+     *
+     * ```kotlin
+     * mapOf(
+     *     "font" to mapOf("Roboto" to 100)
+     * )
+     * ```
+     */
+    private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
+) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
     }
@@ -420,6 +431,9 @@ internal class MockResourceProvider : ResourceProvider {
     override fun getLocale(): Locale {
         return Locale.getDefault()
     }
+
+    override fun getResourceIdentifier(name: String, type: String): Int =
+        resourceIds[type]?.get(name) ?: 0
 }
 
 @Suppress("TooManyFunctions")

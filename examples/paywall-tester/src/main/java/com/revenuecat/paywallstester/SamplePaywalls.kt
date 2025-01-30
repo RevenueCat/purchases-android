@@ -4,11 +4,14 @@ package com.revenuecat.paywallstester
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
+import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -40,6 +43,9 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import java.net.URL
 
 class SamplePaywallsLoader {
+    private val primaryLocalFont = FontAlias("primary")
+    private val secondaryGoogleFont = FontAlias("secondary")
+
     fun offeringForTemplate(template: SamplePaywalls.SampleTemplate): Offering {
         return Offering(
             "$SamplePaywalls.offeringIdentifier_${template.name}",
@@ -49,7 +55,14 @@ class SamplePaywallsLoader {
             paywall = (paywallForTemplate(template) as? SampleData.Legacy)?.data,
             paywallComponents = (paywallForTemplate(template) as? SampleData.Components)?.data?.let { data ->
                 Offering.PaywallComponents(
-                    uiConfig = UiConfig(),
+                    uiConfig = UiConfig(
+                        app = UiConfig.AppConfig(
+                            fonts = mapOf(
+                                primaryLocalFont to FontsConfig(android = FontInfo.Name("lobster_two")),
+                                secondaryGoogleFont to FontsConfig(android = FontInfo.GoogleFonts("Barrio")),
+                            ),
+                        ),
+                    ),
                     data = data,
                 )
             },
@@ -65,6 +78,9 @@ class SamplePaywallsLoader {
             SamplePaywalls.SampleTemplate.TEMPLATE_5 -> SamplePaywalls.template5()
             SamplePaywalls.SampleTemplate.TEMPLATE_7 -> SamplePaywalls.template7()
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS -> SamplePaywalls.bless()
+            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_LOCAL_FONT -> SamplePaywalls.bless(font = primaryLocalFont)
+            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_GOOGLE_FONT ->
+                SamplePaywalls.bless(font = secondaryGoogleFont)
             SamplePaywalls.SampleTemplate.UNRECOGNIZED_TEMPLATE -> SamplePaywalls.unrecognizedTemplate()
         }
     }
@@ -87,6 +103,8 @@ object SamplePaywalls {
         TEMPLATE_5("#5: Minimalist with small banner"),
         TEMPLATE_7("#7: Multi-tier"),
         COMPONENTS_BLESS("#8: Components - bless."),
+        COMPONENTS_BLESS_LOCAL_FONT("#9: Components - bless. - local font"),
+        COMPONENTS_BLESS_GOOGLE_FONT("#9: Components - bless. - Google font"),
         UNRECOGNIZED_TEMPLATE("Default template"),
     }
 
@@ -736,7 +754,7 @@ object SamplePaywalls {
     /**
      * [Inspiration](https://mobbin.com/screens/fd110266-4c8b-4673-9b51-48de70a4ae51)
      */
-    fun bless(): SampleData.Components {
+    fun bless(font: FontAlias? = null): SampleData.Components {
         val textColor = ColorScheme(
             light = ColorInfo.Hex(Color.Black.toArgb()),
             dark = ColorInfo.Hex(Color.White.toArgb()),
@@ -780,7 +798,8 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("title"),
                                             color = textColor,
-                                            fontWeight = FontWeight.SEMI_BOLD,
+                                            fontName = font,
+                                            fontWeight = FontWeight.BOLD,
                                             fontSize = 28,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
@@ -789,6 +808,7 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("feature-1"),
                                             color = textColor,
+                                            fontName = font,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
@@ -796,6 +816,7 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("feature-2"),
                                             color = textColor,
+                                            fontName = font,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
@@ -803,6 +824,7 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("feature-3"),
                                             color = textColor,
+                                            fontName = font,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
@@ -810,6 +832,7 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("feature-4"),
                                             color = textColor,
+                                            fontName = font,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
@@ -817,6 +840,7 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("feature-5"),
                                             color = textColor,
+                                            fontName = font,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
@@ -824,6 +848,7 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("feature-6"),
                                             color = textColor,
+                                            fontName = font,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
@@ -831,6 +856,7 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("offer"),
                                             color = textColor,
+                                            fontName = font,
                                             horizontalAlignment = LEADING,
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 48.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
@@ -842,6 +868,7 @@ object SamplePaywalls {
                                                     color = ColorScheme(
                                                         light = ColorInfo.Hex(Color.White.toArgb()),
                                                     ),
+                                                    fontName = font,
                                                     fontWeight = FontWeight.BOLD,
                                                 ),
                                             ),
@@ -857,6 +884,7 @@ object SamplePaywalls {
                                         TextComponent(
                                             text = LocalizationKey("terms"),
                                             color = textColor,
+                                            fontName = font,
                                         ),
                                     ),
                                     dimension = Vertical(alignment = LEADING, distribution = END),

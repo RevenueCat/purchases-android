@@ -9,6 +9,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ago
@@ -81,8 +82,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            product = storeProduct
         )
     }
 
@@ -132,8 +133,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            product = storeProduct
         )
     }
 
@@ -183,8 +184,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
             expirationDateString = "2 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            product = storeProduct,
         )
     }
 
@@ -225,8 +226,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.APP_STORE
+            store = Store.APP_STORE,
+            product = null,
         )
     }
 
@@ -267,8 +268,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.APP_STORE
+            store = Store.APP_STORE,
+            product = null,
         )
     }
 
@@ -309,8 +310,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.APP_STORE
+            store = Store.APP_STORE,
+            product = null,
         )
     }
 
@@ -351,8 +352,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Free,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "rc_promo_pro_cat_yearly",
-            store = Store.PROMOTIONAL
+            store = Store.PROMOTIONAL,
+            product = null,
         )
     }
 
@@ -393,8 +394,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Free,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "",
-            productIdentifier = "rc_promo_pro_cat_yearly",
-            store = Store.PROMOTIONAL
+            store = Store.PROMOTIONAL,
+            product = null,
         )
         assertThat(purchaseInformation.expirationOrRenewal!!.date).isEqualTo(ExpirationOrRenewal.Date.Never)
     }
@@ -436,8 +437,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "com.revenuecat.product",
-            store = Store.STRIPE
+            store = Store.STRIPE,
+            product = null,
         )
     }
 
@@ -478,8 +479,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "com.revenuecat.product",
-            store = Store.STRIPE
+            store = Store.STRIPE,
+            product = null,
         )
     }
 
@@ -520,7 +521,7 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "com.revenuecat.product",
+            product = null,
             store = Store.STRIPE
         )
     }
@@ -533,7 +534,7 @@ class PurchaseInformationTest {
         price: PriceDetails,
         expirationLabel: ExpirationOrRenewal.Label,
         expirationDateString: String,
-        productIdentifier: String,
+        product: StoreProduct?,
         store: Store
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
@@ -547,7 +548,7 @@ class PurchaseInformationTest {
             assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
                 .isEqualTo(expirationDateString)
         }
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
+        assertThat(purchaseInformation.product).isEqualTo(product)
         assertThat(purchaseInformation.store).isEqualTo(store)
     }
 
