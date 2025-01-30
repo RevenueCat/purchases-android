@@ -26,6 +26,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
+import java.util.Date
 import kotlin.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 
@@ -283,6 +284,7 @@ internal fun Offering.toComponentsPaywallState(
     activelySubscribedProductIds: Set<String>,
     purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
+    dateProvider: () -> Date,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -298,6 +300,7 @@ internal fun Offering.toComponentsPaywallState(
         locales = validationResult.locales,
         activelySubscribedProductIds = activelySubscribedProductIds,
         purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
+        dateProvider = dateProvider,
     )
 }
 

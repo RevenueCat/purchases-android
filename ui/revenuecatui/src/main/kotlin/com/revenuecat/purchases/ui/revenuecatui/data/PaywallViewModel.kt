@@ -420,6 +420,7 @@ internal class PaywallViewModelImpl(
                 activelySubscribedProductIds = activelySubscribedProductIds,
                 purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
                 storefrontCountryCode = storefrontCountryCode,
+                dateProvider = { Date() },
             )
         }
     }

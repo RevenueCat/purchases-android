@@ -50,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
+import java.util.Date
 
 @Composable
 internal fun LoadedPaywallComponents(
@@ -164,6 +165,7 @@ private fun LoadedPaywallComponents_Preview() {
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
     )
     LoadedPaywallComponents(
         state = state,
@@ -343,6 +345,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
     )
 
     LoadedPaywallComponents(
@@ -352,3 +355,5 @@ private fun LoadedPaywallComponents_Preview_Bless() {
             .fillMaxSize(),
     )
 }
+
+private const val MILLIS_2025_01_25 = 1737763200000

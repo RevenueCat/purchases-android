@@ -59,6 +59,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
+import java.util.Date
+
+private const val MILLIS_2025_01_25 = 1737763200000
 
 @Composable
 @JvmSynthetic
@@ -94,6 +97,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
     )
 }
 

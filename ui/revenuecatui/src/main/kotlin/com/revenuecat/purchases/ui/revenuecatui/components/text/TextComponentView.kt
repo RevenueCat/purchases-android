@@ -46,7 +46,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
-import java.util.Date
 
 @Composable
 internal fun TextComponentView(
@@ -147,7 +146,7 @@ private fun rememberProcessedText(
                     packageContext = variableContext,
                     rcPackage = packageToUse,
                     locale = locale,
-                    date = Date(),
+                    date = state.currentDate,
                 )
 
                 // Note: we temporarily process with both V2 and V1 until no more paywalls have V1 variables.
