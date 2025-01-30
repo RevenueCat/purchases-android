@@ -45,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.variableLocalizationKeysForEnUs
 import kotlinx.coroutines.CompletableDeferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -84,6 +85,9 @@ class ButtonComponentViewTests {
                             margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
                                 .toPaddingValues(),
                             rcPackage = null,
+                            variableLocalizations = nonEmptyMapOf(
+                                LocaleId("en_US") to variableLocalizationKeysForEnUs()
+                            ),
                             overrides = null,
                         ),
                     ),

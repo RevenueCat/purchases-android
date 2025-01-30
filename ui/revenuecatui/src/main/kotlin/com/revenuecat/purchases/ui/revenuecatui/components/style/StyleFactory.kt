@@ -61,7 +61,6 @@ internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
     private val colorAliases: Map<ColorAlias, ColorScheme>,
     private val fontAliases: Map<FontAlias, FontSpec>,
-    @Suppress("unused")
     private val variableLocalizations: Map<LocaleId, Map<VariableLocalizationKey, String>>,
     private val offering: Offering,
 ) {
@@ -258,6 +257,7 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
+            variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
         )
     }
