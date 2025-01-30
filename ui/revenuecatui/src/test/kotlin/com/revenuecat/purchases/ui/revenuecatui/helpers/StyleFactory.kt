@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
@@ -24,7 +26,7 @@ private val defaultVariableLocalizations = nonEmptyMapOf(defaultLocaleId to vari
 @Suppress("TestFunctionName")
 internal fun StyleFactory(
     localizations: NonEmptyMap<LocaleId, LocalizationDictionary> = dummyLocalizations,
-    uiConfig: ActualUiConfig = UiConfig(localizations = defaultVariableLocalizations),
+    colorAliases: Map<ColorAlias, ColorScheme> = emptyMap(),
     fontAliases: Map<FontAlias, FontSpec> = emptyMap(),
     variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>> =
         defaultVariableLocalizations,
@@ -37,7 +39,7 @@ internal fun StyleFactory(
 ): StyleFactory =
     ActualStyleFactory(
         localizations = localizations,
-        uiConfig = uiConfig,
+        colorAliases = colorAliases,
         fontAliases = fontAliases,
         variableLocalizations = variableLocalizations,
         offering = offering,

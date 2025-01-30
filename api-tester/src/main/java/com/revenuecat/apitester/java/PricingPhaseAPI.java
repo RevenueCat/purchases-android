@@ -18,9 +18,11 @@ final class PricingPhaseAPI {
         Price price = pricingPhase.getPrice();
         String pricePerMonthString = pricingPhase.formattedPriceInMonths(locale);
         String pricePerMonthStringNoLocale = pricingPhase.formattedPriceInMonths();
+        Price pricePerDay = pricingPhase.pricePerDay(locale);
         Price pricePerWeek = pricingPhase.pricePerWeek(locale);
         Price pricePerMonth = pricingPhase.pricePerMonth(locale);
         Price pricePerYear = pricingPhase.pricePerYear(locale);
+        Price pricePerDayNoLocale = pricingPhase.pricePerDay();
         Price pricePerWeekNoLocale = pricingPhase.pricePerWeek();
         Price pricePerMonthNoLocale = pricingPhase.pricePerMonth();
         Price pricePerYearNoLocale = pricingPhase.pricePerYear();

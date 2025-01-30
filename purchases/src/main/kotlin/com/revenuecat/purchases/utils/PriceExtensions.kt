@@ -9,6 +9,7 @@ import java.util.Locale
 
 private const val MICRO_MULTIPLIER = 1_000_000.0
 
+@JvmSynthetic
 @OptIn(InternalRevenueCatAPI::class)
 internal fun Price.pricePerDay(billingPeriod: Period, locale: Locale): Price {
     return pricePerPeriod(billingPeriod.valueInDays, locale)

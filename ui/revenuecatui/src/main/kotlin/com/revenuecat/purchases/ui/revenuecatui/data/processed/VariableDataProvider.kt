@@ -19,7 +19,7 @@ import kotlin.math.roundToInt
 
 private const val MICRO_MULTIPLIER = 1_000_000.0
 
-@Suppress("UnusedParameter", "FunctionOnlyReturningConstant", "TooManyFunctions")
+@Suppress("FunctionOnlyReturningConstant", "TooManyFunctions")
 internal class VariableDataProvider(
     private val resourceProvider: ResourceProvider,
     private val preview: Boolean = false,
