@@ -5,6 +5,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -130,25 +133,46 @@ private fun InternalCustomerCenter(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val title = getTitleForState(state)
-    CustomerCenterScaffold(
-        modifier = modifier,
-        title = title,
-        onAction = onAction,
-        navigationButtonType =
-        if (state is CustomerCenterState.Success) {
-            state.navigationButtonType
+
+    val colorScheme: ColorScheme
+    if (state is CustomerCenterState.Success) {
+        val isDark = isSystemInDarkTheme()
+        val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
+        val accentColor: Color? = if (isDark) {
+            appearance.dark?.accentColor?.colorInt
         } else {
-            CustomerCenterState.NavigationButtonType.CLOSE
-        },
+            appearance.light?.accentColor?.colorInt
+        }?.let { Color(it) }
+        colorScheme = MaterialTheme.colorScheme.copy(
+            primary = accentColor ?: MaterialTheme.colorScheme.primary,
+        )
+    } else {
+        colorScheme = MaterialTheme.colorScheme
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
     ) {
-        when (state) {
-            is CustomerCenterState.NotLoaded -> {}
-            is CustomerCenterState.Loading -> CustomerCenterLoading()
-            is CustomerCenterState.Error -> CustomerCenterError(state)
-            is CustomerCenterState.Success -> CustomerCenterLoaded(
-                state,
-                onAction,
-            )
+        CustomerCenterScaffold(
+            modifier = modifier,
+            title = title,
+            onAction = onAction,
+            navigationButtonType =
+            if (state is CustomerCenterState.Success) {
+                state.navigationButtonType
+            } else {
+                CustomerCenterState.NavigationButtonType.CLOSE
+            },
+        ) {
+            when (state) {
+                is CustomerCenterState.NotLoaded -> {}
+                is CustomerCenterState.Loading -> CustomerCenterLoading()
+                is CustomerCenterState.Error -> CustomerCenterError(state)
+                is CustomerCenterState.Success -> CustomerCenterLoaded(
+                    state,
+                    onAction,
+                )
+            }
         }
     }
 }
