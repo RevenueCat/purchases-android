@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.CarouselComponent.PageControl
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.properties.Border
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
@@ -22,11 +24,20 @@ class CarouselComponent(
     @get:JvmSynthetic
     val slides: List<StackComponent>,
     @get:JvmSynthetic
+    @SerialName("initial_slide_index")
+    val initialSlideIndex: Int? = null,
+    @get:JvmSynthetic
     val alignment: VerticalAlignment,
     @get:JvmSynthetic
     val size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     @get:JvmSynthetic
+    @SerialName("side_page_peek")
+    val sidePagePeek: Int? = null,
+    @get:JvmSynthetic
     val spacing: Float? = null,
+    @get:JvmSynthetic
+    @SerialName("background_color")
+    val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
     val padding: Padding = Padding.zero,
     @get:JvmSynthetic
@@ -37,6 +48,9 @@ class CarouselComponent(
     val border: Border? = null,
     @get:JvmSynthetic
     val shadow: Shadow? = null,
+    @get:JvmSynthetic
+    @SerialName("page_control")
+    val pageControl: PageControl? = null,
     @get:JvmSynthetic
     val loop: Boolean? = null,
     @get:JvmSynthetic
@@ -56,6 +70,31 @@ class CarouselComponent(
         @SerialName("ms_transition_time")
         val msTransitionTime: Int,
     )
+
+    @Poko
+    @Serializable
+    class PageControl(
+        @get:JvmSynthetic
+        val alignment: VerticalAlignment,
+        @get:JvmSynthetic
+        val active: Indicator,
+        @get:JvmSynthetic
+        val default: Indicator,
+    ) {
+
+        @Poko
+        @Serializable
+        class Indicator(
+            @get:JvmSynthetic
+            val size: Size,
+            @get:JvmSynthetic
+            val spacing: Float? = null,
+            @get:JvmSynthetic
+            val color: ColorScheme,
+            @get:JvmSynthetic
+            val margin: Padding,
+        )
+    }
 }
 
 @Suppress("LongParameterList")
@@ -66,11 +105,20 @@ class PartialCarouselComponent(
     @get:JvmSynthetic
     val visible: Boolean? = null,
     @get:JvmSynthetic
+    @SerialName("initial_slide_index")
+    val initialSlideIndex: Int? = null,
+    @get:JvmSynthetic
     val alignment: VerticalAlignment? = null,
     @get:JvmSynthetic
     val size: Size? = null,
     @get:JvmSynthetic
+    @SerialName("side_page_peek")
+    val sidePagePeek: Int? = null,
+    @get:JvmSynthetic
     val spacing: Float? = null,
+    @get:JvmSynthetic
+    @SerialName("background_color")
+    val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
     val padding: Padding? = null,
     @get:JvmSynthetic
@@ -81,6 +129,9 @@ class PartialCarouselComponent(
     val border: Border? = null,
     @get:JvmSynthetic
     val shadow: Shadow? = null,
+    @get:JvmSynthetic
+    @SerialName("page_control")
+    val pageControl: PageControl? = null,
     @get:JvmSynthetic
     val loop: Boolean? = null,
     @get:JvmSynthetic
