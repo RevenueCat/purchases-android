@@ -17,6 +17,7 @@ class ParameterizedPricingPhaseTest(
 ) {
 
     class Expected(
+        val daily: Price,
         val weekly: Price,
         val monthly: Price,
         val yearly: Price,
@@ -35,8 +36,34 @@ class ParameterizedPricingPhaseTest(
         @Parameterized.Parameters(name = "{0}")
         fun parameters(): Collection<*> = listOf(
             arrayOf(
+                "P1D",
+                Expected(
+                    daily = BASE_PRICE,
+                    weekly = Price(
+                        formatted = "$699.93",
+                        amountMicros = 699930000,
+                        currencyCode = "USD"
+                    ),
+                    monthly = Price(
+                        formatted = "$2,999.70",
+                        amountMicros = 2999700000,
+                        currencyCode = "USD"
+                    ),
+                    yearly = Price(
+                        formatted = "$36,496.35",
+                        amountMicros = 36496350000,
+                        currencyCode = "USD",
+                    )
+                )
+            ),
+            arrayOf(
                 "P1W",
                 Expected(
+                    daily = Price(
+                        formatted = "$14.28",
+                        amountMicros = 14284285,
+                        currencyCode = "USD"
+                    ),
                     weekly = BASE_PRICE,
                     monthly = Price(
                         formatted = "$434.48",
@@ -53,6 +80,11 @@ class ParameterizedPricingPhaseTest(
             arrayOf(
                 "P1M",
                 Expected(
+                    daily = Price(
+                        formatted = "$3.33",
+                        amountMicros = 3333000,
+                        currencyCode = "USD"
+                    ),
                     weekly = Price(
                         formatted = "$23.01",
                         amountMicros = 23011397,
@@ -69,6 +101,11 @@ class ParameterizedPricingPhaseTest(
             arrayOf(
                 "P1Y",
                 Expected(
+                    daily = Price(
+                        formatted = "$0.27",
+                        amountMicros = 273945,
+                        currencyCode = "USD"
+                    ),
                     weekly = Price(
                         formatted = "$1.92",
                         amountMicros = 1917616,
@@ -97,9 +134,11 @@ class ParameterizedPricingPhaseTest(
         )
 
         // Act
+        val actualDaily = phase.pricePerDay(Locale.US)
         val actualWeekly = phase.pricePerWeek(Locale.US)
         val actualMonthly = phase.pricePerMonth(Locale.US)
         val actualYearly = phase.pricePerYear(Locale.US)
+        val actualDailyNoLocale = phase.pricePerDay()
         val actualWeeklyNoLocale = phase.pricePerWeek()
         val actualMonthlyNoLocale = phase.pricePerMonth()
         val actualYearlyNoLocale = phase.pricePerYear()
@@ -107,9 +146,11 @@ class ParameterizedPricingPhaseTest(
         val actualMonthlyFormattedNoLocale = phase.formattedPriceInMonths()
 
         // Assert
+        assertThat(actualDaily).isEqualTo(expected.daily)
         assertThat(actualWeekly).isEqualTo(expected.weekly)
         assertThat(actualMonthly).isEqualTo(expected.monthly)
         assertThat(actualYearly).isEqualTo(expected.yearly)
+        assertThat(actualDailyNoLocale.amountMicros).isEqualTo(expected.daily.amountMicros)
         assertThat(actualWeeklyNoLocale.amountMicros).isEqualTo(expected.weekly.amountMicros)
         assertThat(actualMonthlyNoLocale.amountMicros).isEqualTo(expected.monthly.amountMicros)
         assertThat(actualYearlyNoLocale.amountMicros).isEqualTo(expected.yearly.amountMicros)
