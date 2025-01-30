@@ -51,7 +51,7 @@ internal class TextComponentViewVariablesTests(
 ) {
 
     class Args(
-        val rcPackage: Package,
+        val packages: List<Package>,
         val locale: String,
         val storefrontCountryCode: String,
         val variableLocalizations: NonEmptyMap<VariableLocalizationKey, String>,
@@ -62,7 +62,7 @@ internal class TextComponentViewVariablesTests(
         private val zeroDecimalPlaceCountries = listOf(STORE_COUNTRY_WITHOUT_DECIMALS)
 
         private const val OFFERING_ID = "offering_identifier"
-        private val productYearlyUsd = TestStoreProduct(
+        private val productYearlyUsdTwoOffers = TestStoreProduct(
             id = "com.revenuecat.annual_product",
             name = "Annual",
             title = "Annual (App name)",
@@ -81,7 +81,19 @@ internal class TextComponentViewVariablesTests(
                 formatted = "$ 1.00",
             )
         )
-        private val productYearlyMxn = TestStoreProduct(
+        private val productMonthlyUsdOneOffer = TestStoreProduct(
+            id = "com.revenuecat.monthly_product",
+            name = "Monthly",
+            title = "Monthly (App name)",
+            price = Price(
+                amountMicros = 1_000_000,
+                currencyCode = "USD",
+                formatted = "$ 1.00",
+            ),
+            description = "Monthly",
+            period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+        )
+        private val productYearlyMxnOneOffer = TestStoreProduct(
             id = "com.revenuecat.annual_product",
             name = "Annual",
             title = "Annual (App name)",
@@ -96,19 +108,27 @@ internal class TextComponentViewVariablesTests(
         )
 
         @Suppress("DEPRECATION")
-        private val packageYearlyUsd = Package(
+        private val packageYearlyUsdTwoOffers = Package(
             packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
             offering = OFFERING_ID,
-            product = productYearlyUsd,
+            product = productYearlyUsdTwoOffers,
         )
 
         @Suppress("DEPRECATION")
-        private val packageYearlyMxn = Package(
+        private val packageMonthlyUsdOneOffer = Package(
+            packageType = PackageType.ANNUAL,
+            identifier = "package_monthly",
+            offering = OFFERING_ID,
+            product = productMonthlyUsdOneOffer,
+        )
+
+        @Suppress("DEPRECATION")
+        private val packageYearlyMxnOneOffer = Package(
             packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
             offering = OFFERING_ID,
-            product = productYearlyMxn,
+            product = productYearlyMxnOneOffer,
         )
 
         @Suppress("LongMethod", "Unused", "CyclomaticComplexMethod")
@@ -119,7 +139,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_CURRENCY_CODE -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -130,7 +150,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_CURRENCY_SYMBOL -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -141,7 +161,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PERIODLY -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -152,7 +172,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PRICE -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyMxn,
+                        packages = listOf(packageYearlyMxnOneOffer),
                         locale = "es_$STORE_COUNTRY_WITHOUT_DECIMALS",
                         storefrontCountryCode = STORE_COUNTRY_WITHOUT_DECIMALS,
                         variableLocalizations = variableLocalizationKeysForEsMx(),
@@ -163,7 +183,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PRICE_PER_PERIOD -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -174,7 +194,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -185,7 +205,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PRICE_PER_DAY -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -196,7 +216,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PRICE_PER_WEEK -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -207,7 +227,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PRICE_PER_MONTH -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -218,7 +238,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PRICE_PER_YEAR -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -229,7 +249,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PERIOD -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -240,7 +260,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PERIOD_ABBREVIATED -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -251,7 +271,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PERIOD_IN_DAYS -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -262,7 +282,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PERIOD_IN_WEEKS -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -273,7 +293,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PERIOD_IN_MONTHS -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -284,7 +304,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PERIOD_IN_YEARS -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -295,7 +315,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_PERIOD_WITH_UNIT -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -306,7 +326,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PRICE -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -317,7 +337,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PRICE_PER_DAY -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -328,7 +348,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PRICE_PER_WEEK -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -339,7 +359,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PRICE_PER_MONTH -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -350,7 +370,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PRICE_PER_YEAR -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -361,7 +381,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PERIOD -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -372,7 +392,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -383,7 +403,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PERIOD_IN_DAYS -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -394,7 +414,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PERIOD_IN_WEEKS -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -405,7 +425,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PERIOD_IN_MONTHS -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -416,7 +436,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PERIOD_IN_YEARS -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -427,7 +447,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_PERIOD_WITH_UNIT -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -438,7 +458,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_OFFER_END_DATE -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -449,7 +469,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_SECONDARY_OFFER_PRICE -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -460,7 +480,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_SECONDARY_OFFER_PERIOD -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -471,7 +491,7 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -482,18 +502,18 @@ internal class TextComponentViewVariablesTests(
                 Variable.PRODUCT_RELATIVE_DISCOUNT -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "Annual"
+                    "83%"
                 )
 
                 Variable.PRODUCT_STORE_PRODUCT_NAME -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
-                        rcPackage = packageYearlyUsd,
+                        packages = listOf(packageYearlyUsdTwoOffers),
                         locale = "en_US",
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
@@ -505,7 +525,7 @@ internal class TextComponentViewVariablesTests(
             arrayOf(
                 "{{ ${Variable.PRODUCT_CURRENCY_SYMBOL.identifier} }}",
                 Args(
-                    rcPackage = packageYearlyUsd,
+                    packages = listOf(packageYearlyUsdTwoOffers),
                     locale = "es_ES",
                     storefrontCountryCode = "ES",
                     variableLocalizations = variableLocalizationKeysForEsMx(),
@@ -515,7 +535,7 @@ internal class TextComponentViewVariablesTests(
         )
     }
 
-    private val rcPackage = args.rcPackage
+    private val packages = args.packages
     private val locale = args.locale
     private val storefrontCountryCode = args.storefrontCountryCode
     private val variableLocalizations = args.variableLocalizations
@@ -553,7 +573,7 @@ internal class TextComponentViewVariablesTests(
             identifier = OFFERING_ID,
             serverDescription = "description",
             metadata = emptyMap(),
-            availablePackages = listOf(rcPackage),
+            availablePackages = packages,
             paywallComponents = Offering.PaywallComponents(
                 uiConfig = UiConfig(localizations = mapOf(LocaleId(locale) to variableLocalizations)),
                 data = data
@@ -572,8 +592,8 @@ internal class TextComponentViewVariablesTests(
         setContent { TextComponentView(style = style, state = state, modifier = Modifier.testTag("text")) }
 
         // Assert
-        // Select the package to make sure the variables reflect its values.
-        state.update(selectedPackage = rcPackage)
+        // Select the first package to make sure the variables reflect its values.
+        state.update(selectedPackage = packages.first())
 
         onNodeWithTag("text")
             .onChild()
