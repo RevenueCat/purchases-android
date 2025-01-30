@@ -127,7 +127,7 @@ internal class CustomerCenterViewModelImpl(
                     if (product != null && it.promotionalOffer != null) {
                         loadAndDisplayPromotionalOffer(
                             product,
-                            it.promotionalOffer,
+                            it.promotionalOffer!!,
                             path,
                         )
                     } else {
@@ -141,7 +141,7 @@ internal class CustomerCenterViewModelImpl(
         if (product != null && path.promotionalOffer != null) {
             loadAndDisplayPromotionalOffer(
                 product,
-                path.promotionalOffer,
+                path.promotionalOffer!!,
                 path,
             )
         } else {
