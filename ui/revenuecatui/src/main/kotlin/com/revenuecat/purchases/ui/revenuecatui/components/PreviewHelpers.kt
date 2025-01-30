@@ -89,7 +89,12 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        paywallComponents = Offering.PaywallComponents(
+            uiConfig = UiConfig(
+                localizations = nonEmptyMapOf(LocaleId("en_US") to variableLocalizationKeysForEnUs()),
+            ),
+            data = data,
+        ),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     return offering.toComponentsPaywallState(
