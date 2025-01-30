@@ -38,6 +38,7 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.toRecurrenceMode
+import com.revenuecat.purchases.ui.revenuecatui.composables.AppIcon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -56,7 +57,7 @@ internal fun PromotionalOfferView(
             .fillMaxSize()
             .padding(horizontal = 24.dp),
     ) {
-        AppIconView(
+        AppIcon(
             modifier = Modifier
                 .padding(top = 48.dp, bottom = 16.dp)
                 .size(100.dp),
@@ -93,30 +94,6 @@ internal fun PromotionalOfferView(
         ) {
             Text("No Thanks")
         }
-    }
-}
-
-@SuppressLint("DiscouragedApi")
-@Composable
-fun AppIconView(
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-
-    val icon: Drawable? = try {
-        context.packageManager.getApplicationIcon(context.packageName)
-    } catch (e: PackageManager.NameNotFoundException) {
-        Logger.e("Error getting app icon", e)
-        null
-    }
-
-    icon?.let {
-        Image(
-            modifier = modifier
-                .clip(CircleShape),
-            painter = rememberAsyncImagePainter(model = it),
-            contentDescription = null,
-        )
     }
 }
 

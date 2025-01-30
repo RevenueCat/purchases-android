@@ -58,24 +58,6 @@ internal fun IconImage(
     }
 }
 
-@Composable
-private fun AppIcon(
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-
-    val appIconResId = remember {
-        val packageManager = context.packageManager
-        context.applicationInfo.loadIcon(packageManager)
-    }
-    Image(
-        bitmap = appIconResId.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = ContentScale.Crop,
-    )
-}
-
 @Preview
 @Composable
 private fun IconImagePreview() {
