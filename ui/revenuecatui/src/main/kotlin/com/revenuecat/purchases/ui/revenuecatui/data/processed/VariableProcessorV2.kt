@@ -378,7 +378,9 @@ internal object VariableProcessorV2 {
     private fun Package.productPeriodWithUnit(
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
     ): String? =
-        product.period?.unitPeriodLocalizationKey?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
+        product.period?.let { period ->
+            localizedVariableKeys.getStringOrLogError(period.unitPeriodLocalizationKey)?.format(period.value)
+        }
 
     private fun PricingPhase.productOfferPrice(
         localizedVariableKeys: Map<VariableLocalizationKey, String>,

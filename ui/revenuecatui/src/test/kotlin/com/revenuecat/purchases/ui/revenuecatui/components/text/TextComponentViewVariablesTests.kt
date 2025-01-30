@@ -73,7 +73,13 @@ internal class TextComponentViewVariablesTests(
             ),
             description = "Annual",
             period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
-            freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+            freeTrialPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+            // TestStoreProduct will add a monthly intro with this price.
+            introPrice = Price(
+                amountMicros = 1_000_000,
+                currencyCode = "USD",
+                formatted = "$ 1.00",
+            )
         )
         private val productYearlyMxn = TestStoreProduct(
             id = "com.revenuecat.annual_product",
@@ -316,7 +322,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "Annual"
+                    "free"
                 )
 
                 Variable.PRODUCT_OFFER_PRICE_PER_WEEK -> arrayOf(
@@ -327,7 +333,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "Annual"
+                    "free"
                 )
 
                 Variable.PRODUCT_OFFER_PRICE_PER_MONTH -> arrayOf(
@@ -338,7 +344,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "Annual"
+                    ""
                 )
 
                 Variable.PRODUCT_OFFER_PRICE_PER_YEAR -> arrayOf(
@@ -349,7 +355,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "Annual"
+                    ""
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD -> arrayOf(
@@ -360,7 +366,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "month"
+                    "week"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED -> arrayOf(
@@ -371,7 +377,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "mo"
+                    "wk"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_IN_DAYS -> arrayOf(
@@ -382,7 +388,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "30"
+                    "7"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_IN_WEEKS -> arrayOf(
@@ -393,7 +399,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "4"
+                    "1"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_IN_MONTHS -> arrayOf(
@@ -404,7 +410,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "1"
+                    ""
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_IN_YEARS -> arrayOf(
@@ -426,7 +432,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "1 month"
+                    "1 week"
                 )
 
                 Variable.PRODUCT_OFFER_END_DATE -> arrayOf(
@@ -448,7 +454,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "Annual"
+                    "\$ 1.00"
                 )
 
                 Variable.PRODUCT_SECONDARY_OFFER_PERIOD -> arrayOf(
@@ -459,7 +465,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "Annual"
+                    "month"
                 )
 
                 Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED -> arrayOf(
@@ -470,7 +476,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "Annual"
+                    "mo"
                 )
 
                 Variable.PRODUCT_RELATIVE_DISCOUNT -> arrayOf(
@@ -518,7 +524,7 @@ internal class TextComponentViewVariablesTests(
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `Should correctly process variable values`(): Unit = with(composeTestRule) {
+    fun `Should correctly process variables`(): Unit = with(composeTestRule) {
         // Arrange
         val expectedText = "Here's a variable in parentheses: ($expected)."
         val textWithVariable = LocalizationData.Text("Here's a variable in parentheses: ($variable).")
