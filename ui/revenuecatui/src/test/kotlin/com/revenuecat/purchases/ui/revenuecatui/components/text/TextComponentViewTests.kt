@@ -671,12 +671,10 @@ class TextComponentViewTests {
         val defaultLocaleIdentifier = LocaleId("en_US")
         val selectedPackageTextKey = LocalizationKey("key_selected")
         val selectedPackageTextWithVariable = LocalizationData.Text(
-            "Selected product V1: {{ product_name }}, selected product V2: {{ product.store_product_name }}"
+            "Selected product: {{ product.store_product_name }}"
         )
-        val expectedTextYearly =
-            "Selected product V1: ${packageYearly.product.name}, selected product V2: ${packageYearly.product.name}"
-        val expectedTextMonthly =
-            "Selected product V1: ${packageMonthly.product.name}, selected product V2: ${packageMonthly.product.name}"
+        val expectedTextYearly = "Selected product: ${packageYearly.product.name}"
+        val expectedTextMonthly = "Selected product: ${packageMonthly.product.name}"
         val localizations = nonEmptyMapOf(
             defaultLocaleIdentifier to nonEmptyMapOf(
                 selectedPackageTextKey to selectedPackageTextWithVariable,
@@ -755,9 +753,9 @@ class TextComponentViewTests {
         val mxnPackage = packageMonthlyMxn
         val countryWithoutDecimals = "MX"
         val textKey = LocalizationKey("key_selected")
-        val textWithPriceVariable = LocalizationData.Text("Price V1: {{ price }}, price V2: {{ product.price }}")
-        val expectedTextWithDecimals = "Price V1: \$ 2.00, price V2: \$ 2.00"
-        val expectedTextWithoutDecimals = "Price V1: MX\$1, price V2: MX\$1"
+        val textWithPriceVariable = LocalizationData.Text("Price: {{ product.price }}")
+        val expectedTextWithDecimals = "Price: \$ 2.00"
+        val expectedTextWithoutDecimals = "Price: MX\$1"
         val localizations = nonEmptyMapOf(
             defaultLocaleIdentifier to nonEmptyMapOf(
                 textKey to textWithPriceVariable,

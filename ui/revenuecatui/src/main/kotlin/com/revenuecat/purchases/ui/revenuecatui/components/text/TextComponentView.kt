@@ -138,7 +138,7 @@ private fun rememberProcessedText(
                     showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
                 )
 
-                val processedWithV2 = VariableProcessorV2.processVariables(
+                VariableProcessorV2.processVariables(
                     template = textState.text,
                     localizedVariableKeys = textState.localizedVariableKeys,
                     variableConfig = state.variableConfig,
@@ -147,16 +147,6 @@ private fun rememberProcessedText(
                     rcPackage = packageToUse,
                     locale = locale,
                     date = state.currentDate,
-                )
-
-                // Note: we temporarily process with both V2 and V1 until no more paywalls have V1 variables.
-                // V2 paywalls only had V1 variables during closed beta.
-                VariableProcessor.processVariables(
-                    variableDataProvider = variables,
-                    context = variableContext,
-                    originalString = processedWithV2,
-                    rcPackage = packageToUse,
-                    locale = locale,
                 )
             } ?: textState.text
         }
