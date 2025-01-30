@@ -37,7 +37,7 @@ data class PurchaseParams(val builder: Builder) {
      *
      * If a [Package] or [StoreProduct] is passed in, the [defaultOption] will be purchased. [defaultOption] is
      * selected via the following logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" or "rc-customer-center" tag
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      */

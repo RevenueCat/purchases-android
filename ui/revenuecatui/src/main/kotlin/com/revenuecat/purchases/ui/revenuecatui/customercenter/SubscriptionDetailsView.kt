@@ -27,6 +27,9 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.Explanation
@@ -208,12 +211,12 @@ private const val SizeIconDp = 22
 
 private const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
 
+@Suppress("MagicNumber")
 private class SubscriptionInformationProvider : PreviewParameterProvider<PurchaseInformation> {
     override val values: Sequence<PurchaseInformation> = sequenceOf(
         PurchaseInformation(
             title = "Basic",
             durationTitle = "Monthly",
-            productIdentifier = "basic_monthly",
             price = PriceDetails.Paid("$4.99"),
             explanation = Explanation.EARLIEST_RENEWAL,
             expirationOrRenewal =
@@ -223,11 +226,18 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             ),
             store = Store.PLAY_STORE,
             managementURL = Uri.parse(MANAGEMENT_URL),
+            product = TestStoreProduct(
+                "basic_monthly",
+                "name",
+                "title",
+                "description",
+                Price("$1.99", 1_990_000, "US"),
+                Period(1, Period.Unit.MONTH, "P1M"),
+            ),
         ),
         PurchaseInformation(
             title = "Basic",
             durationTitle = "Yearly",
-            productIdentifier = "basic_yearly",
             price = PriceDetails.Paid("$49.99"),
             explanation = Explanation.EARLIEST_EXPIRATION,
             expirationOrRenewal =
@@ -237,11 +247,18 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             ),
             store = Store.PLAY_STORE,
             managementURL = Uri.parse(MANAGEMENT_URL),
+            product = TestStoreProduct(
+                "basic_yearly",
+                "name",
+                "title",
+                "description",
+                Price("$1.99", 1_990_000, "US"),
+                Period(1, Period.Unit.YEAR, "P1Y"),
+            ),
         ),
         PurchaseInformation(
             title = "Basic",
             durationTitle = "Weekly",
-            productIdentifier = "basic_weekly",
             price = PriceDetails.Paid("$1.99"),
             explanation = Explanation.EXPIRED,
             expirationOrRenewal =
@@ -251,6 +268,14 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
             ),
             store = Store.PLAY_STORE,
             managementURL = Uri.parse(MANAGEMENT_URL),
+            product = TestStoreProduct(
+                "basic_weekly",
+                "name",
+                "title",
+                "description",
+                Price("$0.99", 990_000, "US"),
+                Period(1, Period.Unit.WEEK, "P1W"),
+            ),
         ),
     )
 }

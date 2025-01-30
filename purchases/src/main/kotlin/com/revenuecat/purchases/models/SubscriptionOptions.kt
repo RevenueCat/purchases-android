@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.models
 
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.SharedConstants
 
 class SubscriptionOptions(
     private val subscriptionOptions: List<SubscriptionOption>,
@@ -31,10 +33,11 @@ class SubscriptionOptions(
 
     /**
      * The default [SubscriptionOption]:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      */
+    @OptIn(InternalRevenueCatAPI::class)
     val defaultOffer: SubscriptionOption?
         get() {
             val basePlan = this.firstOrNull { it.isBasePlan } ?: return null
@@ -42,6 +45,7 @@ class SubscriptionOptions(
             val validOffers = this
                 .filter { !it.isBasePlan }
                 .filter { !it.tags.contains(RC_IGNORE_OFFER_TAG) }
+                .filter { !it.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) }
 
             return findLongestFreeTrial(validOffers) ?: findLowestNonFreeOffer(validOffers) ?: basePlan
         }
