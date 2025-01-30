@@ -84,6 +84,7 @@ internal fun PromotionalOfferView(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
         ) {
+            // TODO: modify this to display price of the offer
             Text("Accept offer")
         }
         OutlinedButton(
