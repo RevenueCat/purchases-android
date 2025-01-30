@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.carousel
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -51,7 +53,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import kotlinx.coroutines.delay
 
+@Suppress("LongMethod")
 @JvmSynthetic
 @Composable
 internal fun CarouselComponentView(
@@ -94,11 +98,30 @@ internal fun CarouselComponentView(
         }
     }
 
+    carouselState.autoAdvance?.let { autoAdvance ->
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(autoAdvance.msTimePerSlide.toLong())
+                val nextPage = if (carouselState.loop) {
+                    pagerState.currentPage + 1
+                } else {
+                    (pagerState.currentPage + 1) % pageCount
+                }
+                pagerState.animateScrollToPage(
+                    page = nextPage,
+                    animationSpec = tween(
+                        autoAdvance.msTransitionTime,
+                    ),
+                )
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .padding(carouselState.margin)
-            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
             .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
             .clip(composeShape)
             .applyIfNotNull(borderStyle) {
                 border(it, composeShape)
@@ -181,6 +204,10 @@ private fun CarouselComponentView_Loop_Preview() {
         CarouselComponentView(
             style = previewCarouselComponentStyle(
                 loop = true,
+                autoAdvance = CarouselComponent.AutoAdvanceSlides(
+                    msTimePerSlide = 2000,
+                    msTransitionTime = 500,
+                ),
             ),
             state = previewEmptyState(),
             clickHandler = {},
@@ -196,7 +223,7 @@ private fun previewCarouselComponentStyle(
     size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     sidePagePeek: Dp = 20.dp,
     spacing: Dp = 8.dp,
-    backgroundColor: Color = Color.Blue,
+    backgroundColor: Color = Color.LightGray,
     padding: PaddingValues = PaddingValues(0.dp),
     margin: PaddingValues = PaddingValues(vertical = 16.dp),
     shape: Shape = Shape.Rectangle(),
