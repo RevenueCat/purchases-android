@@ -68,8 +68,8 @@ internal fun ManageSubscriptionsView(
                 )
             } ?: NoActiveUserManagementView(
                 screen = screen,
-                onPathButtonPress = {
-                    onAction(CustomerCenterAction.PathButtonPressed(it))
+                onButtonPress = {
+                    onAction(CustomerCenterAction.PathButtonPressed(it, product = null))
                 },
             )
         }
@@ -110,7 +110,7 @@ private fun ActiveUserManagementView(
         ) {
             if (purchaseInformation.store == Store.PLAY_STORE) {
                 ManageSubscriptionsButtonsView(screen = screen, onButtonPress = {
-                    onAction(CustomerCenterAction.PathButtonPressed(it))
+                    onAction(CustomerCenterAction.PathButtonPressed(it, purchaseInformation.product))
                 })
             } else {
                 OtherPlatformSubscriptionButtonsView(
@@ -128,7 +128,7 @@ private fun ActiveUserManagementView(
 @Composable
 private fun NoActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
-    onPathButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column {
         CompatibilityContentUnavailableView(
@@ -139,7 +139,7 @@ private fun NoActiveUserManagementView(
 
         ManageSubscriptionsButtonsView(
             screen = screen,
-            onButtonPress = onPathButtonPress,
+            onButtonPress = onButtonPress,
             useOutlinedButton = true,
         )
     }

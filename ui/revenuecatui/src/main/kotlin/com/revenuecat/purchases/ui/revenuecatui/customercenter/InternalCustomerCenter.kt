@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
@@ -43,8 +44,10 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
 
 @JvmSynthetic
@@ -72,6 +75,13 @@ internal fun InternalCustomerCenter(
         }
     }
 
+    viewModel.actionError.value?.let {
+        ErrorDialog(
+            dismissRequest = viewModel::clearActionError,
+            error = it.message,
+        )
+    }
+
     InternalCustomerCenter(
         state,
         modifier,
@@ -79,7 +89,7 @@ internal fun InternalCustomerCenter(
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
                     coroutineScope.launch {
-                        viewModel.pathButtonPressed(context, action.path)
+                        viewModel.pathButtonPressed(context, action.path, action.product)
                     }
                 }
 
@@ -97,6 +107,15 @@ internal fun InternalCustomerCenter(
                     viewModel.onNavigationButtonPressed()
                     if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
                         onDismiss()
+                    }
+                }
+
+                is CustomerCenterAction.DismissPromotionalOffer ->
+                    viewModel.dismissPromotionalOffer(action.originalPath, context)
+                is CustomerCenterAction.PurchasePromotionalOffer -> {
+                    val activity = context.getActivity()
+                    coroutineScope.launch {
+                        viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
                 }
             }
@@ -199,6 +218,17 @@ private fun CustomerCenterLoaded(
 ) {
     if (state.feedbackSurveyData != null) {
         FeedbackSurveyView(state.feedbackSurveyData)
+    } else if (state.promotionalOfferData != null) {
+        val promotionalOfferData = state.promotionalOfferData
+        PromotionalOfferView(
+            promotionalOfferData = promotionalOfferData,
+            onAccept = { subscriptionOption ->
+                onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
+            },
+            onDismiss = {
+                onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
+            },
+        )
     } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,

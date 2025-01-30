@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.colorInt
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -92,7 +93,7 @@ internal class TextComponentTests {
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0xee, green = 0xee, blue = 0xee))
                             ),
-                            fontName = "some font",
+                            fontName = FontAlias("some font"),
                             fontWeight = FontWeight.BOLD,
                             fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
@@ -282,7 +283,7 @@ internal class TextComponentTests {
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0xee, green = 0xee, blue = 0xee))
                             ),
-                            fontName = "some font",
+                            fontName = FontAlias("some font"),
                             fontWeight = FontWeight.BOLD,
                             fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,

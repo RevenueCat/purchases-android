@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.net.Uri
 import android.widget.Toast
@@ -17,11 +16,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -31,9 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -41,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
+import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
@@ -53,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
@@ -237,30 +231,6 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
 }
 
 @Composable
-private fun ErrorDialog(
-    dismissRequest: () -> Unit,
-    error: String,
-) {
-    AlertDialog(
-        onDismissRequest = dismissRequest,
-        confirmButton = {
-            TextButton(
-                onClick = dismissRequest,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.OK),
-                    textAlign = TextAlign.Center,
-                )
-            }
-        },
-        icon = { Icon(painter = painterResource(id = R.drawable.error), contentDescription = null) },
-        text = {
-            Text(text = error)
-        },
-    )
-}
-
-@Composable
 private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
@@ -319,20 +289,4 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
         ButtonComponent.UrlMethod.DEEP_LINK,
         -> openUriOrElse(url, ::handleException)
     }
-}
-
-/**
- * Returns the activity from a given context. Most times, the context itself will be
- * an activity, but in the case it's not, it will iterate through the context wrappers until it
- * finds one that is an activity.
- */
-private fun Context.getActivity(): Activity? {
-    var currentContext = this
-    while (currentContext is ContextWrapper) {
-        if (currentContext is Activity) {
-            return currentContext
-        }
-        currentContext = currentContext.baseContext
-    }
-    return null
 }

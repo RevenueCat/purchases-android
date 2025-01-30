@@ -49,7 +49,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBa
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 
 @Composable
@@ -159,7 +158,7 @@ private fun LoadedPaywallComponents_Preview() {
         availablePackages = emptyList(),
         paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
-    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     val state = offering.toComponentsPaywallState(
         validationResult = validated,
         activelySubscribedProductIds = emptySet(),
@@ -338,7 +337,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         availablePackages = emptyList(),
         paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
-    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     val state = offering.toComponentsPaywallState(
         validationResult = validated,
         activelySubscribedProductIds = emptySet(),

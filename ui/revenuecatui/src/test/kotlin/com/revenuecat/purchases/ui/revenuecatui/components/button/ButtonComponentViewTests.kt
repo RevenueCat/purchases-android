@@ -12,7 +12,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -75,7 +74,7 @@ class ButtonComponentViewTests {
                             ),
                             fontSize = 15,
                             fontWeight = FontWeight.REGULAR.toFontWeight(),
-                            fontFamily = null,
+                            fontSpec = null,
                             textAlign = CENTER.toTextAlign(),
                             horizontalAlignment = CENTER.toAlignment(),
                             backgroundColor = ColorStyles(
@@ -173,7 +172,7 @@ class ButtonComponentViewTests {
             metadata = emptyMap(),
             availablePackages = emptyList(),
         )
-        val styleFactory = StyleFactory(localizations, UiConfig(), offering)
+        val styleFactory = StyleFactory(localizations, emptyMap(), emptyMap(), offering)
         val style = styleFactory.create(component).getOrThrow() as ButtonComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
