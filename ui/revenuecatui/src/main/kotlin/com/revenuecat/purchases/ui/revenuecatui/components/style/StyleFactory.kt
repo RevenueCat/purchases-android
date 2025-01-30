@@ -1,10 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
@@ -18,6 +18,7 @@ import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
@@ -58,7 +59,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 @Suppress("TooManyFunctions")
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
-    private val uiConfig: UiConfig,
+    private val colorAliases: Map<ColorAlias, ColorScheme>,
     private val fontAliases: Map<FontAlias, FontSpec>,
     private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     private val offering: Offering,
@@ -67,8 +68,6 @@ internal class StyleFactory(
     private companion object {
         private const val DEFAULT_SPACING = 0f
     }
-
-    private val colorAliases = uiConfig.app.colors
 
     fun create(
         component: PaywallComponent,
@@ -364,7 +363,7 @@ internal class StyleFactory(
         second = createTextComponentStyle(item.title, rcPackage),
         third = item.description?.let { createTextComponentStyle(it, rcPackage) }.orSuccessfullyNull(),
         fourth = createIconComponentStyle(item.icon, rcPackage),
-        fifth = item.connector?.color?.toColorStyles(uiConfig.app.colors).orSuccessfullyNull(),
+        fifth = item.connector?.color?.toColorStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, title, description, icon, connectorColor ->
         val connectorStyle = item.connector?.let { connector ->
             if (connectorColor != null) {

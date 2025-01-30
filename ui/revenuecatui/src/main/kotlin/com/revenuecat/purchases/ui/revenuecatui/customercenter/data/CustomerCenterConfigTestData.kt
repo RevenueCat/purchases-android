@@ -1,11 +1,16 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.net.Uri
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.RCColor
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Suppress("MagicNumber")
 internal object CustomerCenterConfigTestData {
 
     @SuppressWarnings("LongMethod")
@@ -31,8 +36,8 @@ internal object CustomerCenterConfigTestData {
                             promotionalOffer = CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
                                 androidOfferId = "offer_id",
                                 eligible = true,
-                                title = "title",
-                                subtitle = "subtitle",
+                                title = "Wait a minute...",
+                                subtitle = "Before you cancel, please consider accepting this one time offer",
                                 productMapping = mapOf("monthly" to "offer_id"),
                             ),
                         ),
@@ -51,6 +56,14 @@ internal object CustomerCenterConfigTestData {
                                     CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option(
                                         id = "1",
                                         title = "Too expensive",
+                                        promotionalOffer =
+                                        CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
+                                            androidOfferId = "offer_id",
+                                            eligible = true,
+                                            title = "Wait a minute...",
+                                            subtitle = "Before you cancel, please consider accepting this offer",
+                                            productMapping = mapOf("monthly" to "offer_id"),
+                                        ),
                                     ),
                                     CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option(
                                         id = "2",
@@ -120,8 +133,16 @@ internal object CustomerCenterConfigTestData {
             ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
         ),
-        productIdentifier = "monthly_product_id",
         store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        product = TestStoreProduct(
+            "monthly_product_id",
+            "Basic",
+            "title",
+            "description",
+            Price("$4.99", 4_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        ),
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -134,7 +155,15 @@ internal object CustomerCenterConfigTestData {
             ExpirationOrRenewal.Label.EXPIRES,
             ExpirationOrRenewal.Date.DateString("June 1st, 2025"),
         ),
-        productIdentifier = "yearly_product_id",
         store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        product = TestStoreProduct(
+            "yearly_product_id",
+            "Basic",
+            "title",
+            "description",
+            Price("$40.99", 40_990_000, "US"),
+            Period(1, Period.Unit.YEAR, "P1Y"),
+        ),
     )
 }

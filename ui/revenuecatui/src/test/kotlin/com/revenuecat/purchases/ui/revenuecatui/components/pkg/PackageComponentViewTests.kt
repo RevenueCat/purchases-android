@@ -301,8 +301,6 @@ class PackageComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle

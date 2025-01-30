@@ -357,8 +357,6 @@ class TextComponentViewTests {
         val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
@@ -520,8 +518,6 @@ class TextComponentViewTests {
         val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
@@ -709,8 +705,6 @@ class TextComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleSelected = styleFactory.create(selectedComponent).getOrThrow() as TextComponentStyle
@@ -802,8 +796,6 @@ class TextComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            uiConfig = UiConfig(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleSelected = styleFactory.create(component).getOrThrow() as TextComponentStyle

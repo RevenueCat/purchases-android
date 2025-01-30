@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.OwnershipType
@@ -8,6 +9,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ago
@@ -21,6 +23,8 @@ import org.junit.runner.RunWith
 import java.util.Date
 import java.util.Locale
 import kotlin.time.Duration.Companion.days
+
+private const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
 
 @RunWith(AndroidJUnit4::class)
 class PurchaseInformationTest {
@@ -65,8 +69,9 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
         )
 
         assertPurchaseInformation(
@@ -77,8 +82,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            product = storeProduct
         )
     }
 
@@ -115,6 +120,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -127,8 +133,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            product = storeProduct
         )
     }
 
@@ -165,6 +171,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -177,8 +184,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
             expirationDateString = "2 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            product = storeProduct,
         )
     }
 
@@ -206,6 +213,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -218,8 +226,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.APP_STORE
+            store = Store.APP_STORE,
+            product = null,
         )
     }
 
@@ -247,6 +255,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -259,8 +268,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.APP_STORE
+            store = Store.APP_STORE,
+            product = null,
         )
     }
 
@@ -288,6 +297,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -300,8 +310,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "test_product",
-            store = Store.APP_STORE
+            store = Store.APP_STORE,
+            product = null,
         )
     }
 
@@ -329,6 +339,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -341,8 +352,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Free,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "rc_promo_pro_cat_yearly",
-            store = Store.PROMOTIONAL
+            store = Store.PROMOTIONAL,
+            product = null,
         )
     }
 
@@ -370,6 +381,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -382,8 +394,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Free,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "",
-            productIdentifier = "rc_promo_pro_cat_yearly",
-            store = Store.PROMOTIONAL
+            store = Store.PROMOTIONAL,
+            product = null,
         )
         assertThat(purchaseInformation.expirationOrRenewal!!.date).isEqualTo(ExpirationOrRenewal.Date.Never)
     }
@@ -412,6 +424,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -424,8 +437,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "com.revenuecat.product",
-            store = Store.STRIPE
+            store = Store.STRIPE,
+            product = null,
         )
     }
 
@@ -453,6 +466,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -465,8 +479,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "com.revenuecat.product",
-            store = Store.STRIPE
+            store = Store.STRIPE,
+            product = null,
         )
     }
 
@@ -494,6 +508,7 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -506,7 +521,7 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
             expirationDateString = "3 Oct 2063",
-            productIdentifier = "com.revenuecat.product",
+            product = null,
             store = Store.STRIPE
         )
     }
@@ -519,7 +534,7 @@ class PurchaseInformationTest {
         price: PriceDetails,
         expirationLabel: ExpirationOrRenewal.Label,
         expirationDateString: String,
-        productIdentifier: String,
+        product: StoreProduct?,
         store: Store
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
@@ -533,7 +548,7 @@ class PurchaseInformationTest {
             assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
                 .isEqualTo(expirationDateString)
         }
-        assertThat(purchaseInformation.productIdentifier).isEqualTo(productIdentifier)
+        assertThat(purchaseInformation.product).isEqualTo(product)
         assertThat(purchaseInformation.store).isEqualTo(store)
     }
 

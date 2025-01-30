@@ -1,25 +1,40 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
+import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
@@ -36,12 +51,23 @@ import java.util.Locale
 @Suppress("TooManyFunctions")
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
-    suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath)
+    val actionError: State<PurchasesError?>
+
+    suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath, product: StoreProduct?)
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
+    fun loadAndDisplayPromotionalOffer(
+        product: StoreProduct,
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+        originalPath: CustomerCenterConfigData.HelpPath,
+    )
+    suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
+    fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
     fun onNavigationButtonPressed()
     suspend fun loadCustomerCenter()
+    fun openURL(context: Context, url: Uri)
+    fun clearActionError()
 }
 
 internal sealed class TransactionDetails(
@@ -84,17 +110,42 @@ internal class CustomerCenterViewModelImpl(
             initialValue = CustomerCenterState.Loading,
         )
 
-    override suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath) {
+    override val actionError: State<PurchasesError?>
+        get() = _actionError
+    private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
+
+    override suspend fun pathButtonPressed(
+        context: Context,
+        path: CustomerCenterConfigData.HelpPath,
+        product: StoreProduct?,
+    ) {
         path.feedbackSurvey?.let { feedbackSurvey ->
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 goBackToMain()
                 option?.let {
-                    mainPathAction(path, context)
+                    if (product != null && it.promotionalOffer != null) {
+                        loadAndDisplayPromotionalOffer(
+                            product,
+                            it.promotionalOffer!!,
+                            path,
+                        )
+                    } else {
+                        mainPathAction(path, context)
+                    }
                 }
             })
             return
         }
-        mainPathAction(path, context)
+
+        if (product != null && path.promotionalOffer != null) {
+            loadAndDisplayPromotionalOffer(
+                product,
+                path.promotionalOffer!!,
+                path,
+            )
+        } else {
+            mainPathAction(path, context)
+        }
     }
 
     private fun mainPathAction(
@@ -117,8 +168,8 @@ internal class CustomerCenterViewModelImpl(
             CustomerCenterConfigData.HelpPath.PathType.CANCEL -> {
                 when (val currentState = _state.value) {
                     is CustomerCenterState.Success -> {
-                        currentState.purchaseInformation?.productIdentifier?.let {
-                            showManageSubscriptions(context, it)
+                        currentState.purchaseInformation?.product?.let {
+                            showManageSubscriptions(context, it.id)
                         }
                     }
 
@@ -203,7 +254,13 @@ internal class CustomerCenterViewModelImpl(
                 val entitlement = customerInfo.entitlements.all.values
                     .firstOrNull { it.productIdentifier == activeTransactionDetails.productIdentifier }
 
-                return createPurchaseInformation(activeTransactionDetails, entitlement, dateFormatter, locale)
+                return createPurchaseInformation(
+                    activeTransactionDetails,
+                    entitlement,
+                    customerInfo.managementURL,
+                    dateFormatter,
+                    locale,
+                )
             } else {
                 Logger.w("Could not find subscription information")
             }
@@ -248,11 +305,15 @@ internal class CustomerCenterViewModelImpl(
     private suspend fun createPurchaseInformation(
         transaction: TransactionDetails,
         entitlement: EntitlementInfo?,
+        managementURL: Uri?,
         dateFormatter: DateFormatter,
         locale: Locale,
     ): PurchaseInformation {
         val product = if (transaction.store == Store.PLAY_STORE) {
-            purchases.awaitGetProduct(transaction.productIdentifier).firstOrNull().also {
+            purchases.awaitGetProduct(
+                transaction.productIdentifier,
+                entitlement?.productPlanIdentifier,
+            ).also {
                 if (it == null) {
                     Logger.w(
                         "Could not find product, loading without product information: ${transaction.productIdentifier}",
@@ -268,6 +329,7 @@ internal class CustomerCenterViewModelImpl(
             entitlementInfo = entitlement,
             subscribedProduct = product,
             transaction = transaction,
+            managementURL = managementURL,
             dateFormatter = dateFormatter,
             locale = locale,
         )
@@ -280,6 +342,89 @@ internal class CustomerCenterViewModelImpl(
             putExtra(Intent.EXTRA_TEXT, "Support request details...")
         }
         context.startActivity(Intent.createChooser(intent, "Contact Support"))
+    }
+
+    @SuppressWarnings("ForbiddenComment")
+    override fun openURL(context: Context, url: Uri) {
+        context.openUriOrElse(url.toString()) { exception ->
+            val msg = if (exception is ActivityNotFoundException) {
+                context.getString(R.string.no_browser_cannot_open_link)
+            } else {
+                context.getString(R.string.cannot_open_link)
+            }
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            Logger.w(msg)
+        }
+    }
+
+    override fun clearActionError() {
+        _actionError.value = null
+    }
+
+    override fun loadAndDisplayPromotionalOffer(
+        product: StoreProduct,
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+        originalPath: CustomerCenterConfigData.HelpPath,
+    ) {
+        val offerIdentifier = promotionalOffer.productMapping[product.id]
+        val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
+            when (option) {
+                is GoogleSubscriptionOption ->
+                    option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
+                else -> false
+            }
+        }
+        if (subscriptionOption != null) {
+            _state.update {
+                val currentState = _state.value
+                if (currentState is CustomerCenterState.Success) {
+                    currentState.copy(
+                        promotionalOfferData = PromotionalOfferData(
+                            promotionalOffer,
+                            subscriptionOption,
+                            originalPath,
+                        ),
+                    )
+                } else {
+                    currentState
+                }
+            }
+        }
+    }
+
+    override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
+        if (activity == null) {
+            Logger.e("Activity is null when accepting promotional offer")
+            _actionError.value = PurchasesError(
+                PurchasesErrorCode.PurchaseInvalidError,
+                "Couldn't perform purchase",
+            )
+            return
+        }
+        val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
+        try {
+            purchases.awaitPurchase(purchaseParams)
+            goBackToMain()
+        } catch (e: PurchasesException) {
+            if (e.code != PurchasesErrorCode.PurchaseCancelledError) {
+                _actionError.value = e.error
+                goBackToMain()
+            }
+        }
+    }
+
+    override fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context) {
+        // Continue with the original action and remove the promotional offer data
+        mainPathAction(originalPath, context)
+
+        _state.update {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(promotionalOfferData = null)
+            } else {
+                currentState
+            }
+        }
     }
 
     override fun onNavigationButtonPressed() {
@@ -333,6 +478,7 @@ internal class CustomerCenterViewModelImpl(
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
                     feedbackSurveyData = null,
+                    promotionalOfferData = null,
                     showRestoreDialog = false,
                     title = null,
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,

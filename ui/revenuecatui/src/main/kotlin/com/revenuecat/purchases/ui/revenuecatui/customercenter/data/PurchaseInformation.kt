@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.net.Uri
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.models.StoreProduct
@@ -16,14 +17,16 @@ internal class PurchaseInformation(
     val explanation: Explanation,
     val price: PriceDetails,
     val expirationOrRenewal: ExpirationOrRenewal?,
-    val productIdentifier: String,
+    val product: StoreProduct?,
     val store: Store,
+    val managementURL: Uri?,
 ) {
 
     constructor(
         entitlementInfo: EntitlementInfo? = null,
         subscribedProduct: StoreProduct? = null,
         transaction: TransactionDetails,
+        managementURL: Uri?,
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
     ) : this(
@@ -66,13 +69,14 @@ internal class PurchaseInformation(
             is TransactionDetails.NonSubscription ->
                 ExpirationOrRenewal(ExpirationOrRenewal.Label.EXPIRES, ExpirationOrRenewal.Date.Never)
         },
-        productIdentifier = entitlementInfo?.productIdentifier ?: transaction.productIdentifier,
+        product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
         price = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
             PriceDetails.Free
         } else {
             subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
         },
+        managementURL = managementURL,
     )
 }
 
