@@ -109,6 +109,8 @@ internal class TextComponentViewVariablesTests(
             period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
             freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
         )
+        private val productWithUpperCaseName = productYearlyUsdTwoOffers.copy(name = "ANNUAL")
+        private val productWithLowerCaseName = productYearlyUsdTwoOffers.copy(name = "annual")
 
         @Suppress("DEPRECATION")
         private val packageYearlyUsdTwoOffers = Package(
@@ -133,6 +135,9 @@ internal class TextComponentViewVariablesTests(
             offering = OFFERING_ID,
             product = productYearlyMxnOneOffer,
         )
+
+        private val packageWithUpperCaseName = packageYearlyUsdTwoOffers.copy(product = productWithUpperCaseName)
+        private val packageWithLowerCaseName = packageYearlyUsdTwoOffers.copy(product = productWithLowerCaseName)
 
         @Suppress("LongMethod", "Unused", "CyclomaticComplexMethod")
         @JvmStatic
@@ -526,6 +531,7 @@ internal class TextComponentViewVariablesTests(
                 )
             }
         } + listOf(
+            // Foreign currency:
             arrayOf(
                 "{{ ${Variable.PRODUCT_CURRENCY_SYMBOL.identifier} }}",
                 Args(
@@ -535,7 +541,80 @@ internal class TextComponentViewVariablesTests(
                     variableLocalizations = variableLocalizationKeysForEsMx(),
                 ),
                 "US\$"
-            )
+            ),
+            // Functions:
+            arrayOf(
+                "{{ product.store_product_name | lowercase }}",
+                Args(
+                    packages = listOf(packageWithUpperCaseName),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "annual"
+            ),
+            arrayOf(
+                "{{ product.store_product_name | capitalize }}",
+                Args(
+                    packages = listOf(packageWithUpperCaseName),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                // Capitalize doesn't do anything if the first character is already upper case.
+                "ANNUAL"
+            ),
+            arrayOf(
+                "{{ product.store_product_name | uppercase }}",
+                Args(
+                    packages = listOf(packageWithLowerCaseName),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "ANNUAL"
+            ),
+            arrayOf(
+                "{{ product.store_product_name | capitalize }}",
+                Args(
+                    packages = listOf(packageWithLowerCaseName),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "Annual"
+            ),
+            arrayOf(
+                "{{ product.store_product_name | lowercase | capitalize }}",
+                Args(
+                    packages = listOf(packageWithUpperCaseName),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "Annual"
+            ),
+            // Defensive:
+            arrayOf(
+                "{{product.store_product_name}}",
+                Args(
+                    packages = listOf(packageYearlyUsdTwoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "Annual"
+            ),
+            arrayOf(
+                "{{product.store_product_name|lowercase|capitalize}}",
+                Args(
+                    packages = listOf(packageWithUpperCaseName),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "Annual"
+            ),
         )
     }
 
