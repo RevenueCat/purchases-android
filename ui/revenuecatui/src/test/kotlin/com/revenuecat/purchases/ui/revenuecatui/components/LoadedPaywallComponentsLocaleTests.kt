@@ -27,9 +27,9 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.localeChangingTest
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed

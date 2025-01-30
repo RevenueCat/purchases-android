@@ -10,18 +10,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.resolve
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -109,9 +111,13 @@ internal class TextComponentState(
     @get:JvmSynthetic
     val fontWeight by derivedStateOf { presentedPartial?.partial?.fontWeight?.toFontWeight() ?: style.fontWeight }
 
+    private val fontSpec by derivedStateOf {
+        presentedPartial?.fontSpec ?: style.fontSpec
+    }
+
     @get:JvmSynthetic
     val fontFamily by derivedStateOf {
-        presentedPartial?.partial?.fontName?.let { SystemFontFamily(it, fontWeight) } ?: style.fontFamily
+        fontSpec?.resolve(weight = fontWeight ?: FontWeight.Normal, style = FontStyle.Normal)
     }
 
     @get:JvmSynthetic
