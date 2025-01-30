@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -57,8 +58,10 @@ internal class TextComponentViewVariablesTests(
         val storefrontCountryCode: String,
         val variableLocalizations: NonEmptyMap<VariableLocalizationKey, String>,
         val date: Date = Date(),
+        val variableConfig: VariableConfig = VariableConfig(),
     )
 
+    @Suppress("LargeClass")
     companion object {
         private const val MILLIS_2025_01_25 = 1737763200000
         private const val STORE_COUNTRY_WITHOUT_DECIMALS = "MX"
@@ -615,6 +618,114 @@ internal class TextComponentViewVariablesTests(
                 ),
                 "Annual"
             ),
+            // Fallbacks:
+            arrayOf(
+                "{{ name_variable_from_the_year_5202 }}",
+                Args(
+                    packages = listOf(packageYearlyUsdTwoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                    variableConfig = VariableConfig(
+                        variableCompatibilityMap = mapOf(
+                            "name_variable_from_the_year_5202" to "product.store_product_name"
+                        )
+                    )
+                ),
+                "Annual"
+            ),
+            arrayOf(
+                "{{ name_variable_from_the_year_5202 | uppercase_function_from_the_year_5202 }}",
+                Args(
+                    packages = listOf(packageYearlyUsdTwoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                    variableConfig = VariableConfig(
+                        variableCompatibilityMap = mapOf(
+                            "name_variable_from_the_year_5202" to "product.store_product_name"
+                        ),
+                        functionCompatibilityMap = mapOf(
+                            "uppercase_function_from_the_year_5202" to "uppercase"
+                        )
+                    )
+                ),
+                "ANNUAL"
+            ),
+            arrayOf(
+                "{{ name_variable_from_the_year_5202 | uppercase_function_from_the_year_5202 }}",
+                Args(
+                    packages = listOf(packageYearlyUsdTwoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                    variableConfig = VariableConfig(
+                        // Empty on purpose
+                        variableCompatibilityMap = emptyMap(),
+                        functionCompatibilityMap = mapOf(
+                            "uppercase_function_from_the_year_5202" to "uppercase"
+                        )
+                    )
+                ),
+                ""
+            ),
+            arrayOf(
+                "{{ name_variable_from_the_year_5202 | uppercase_function_from_the_year_5202 }}",
+                Args(
+                    packages = listOf(packageYearlyUsdTwoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                    variableConfig = VariableConfig(
+                        variableCompatibilityMap = mapOf(
+                            "name_variable_from_the_year_5202" to "product.store_product_name"
+                        ),
+                        // Empty on purpose
+                        functionCompatibilityMap = emptyMap(),
+                    )
+                ),
+                ""
+            ),
+            arrayOf(
+                "{{ name_variable_from_the_year_5202 | uppercase_function_from_the_year_5202 }}",
+                Args(
+                    packages = listOf(packageYearlyUsdTwoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                    variableConfig = VariableConfig(
+                        // The backwards compatible values are also unknown.
+                        variableCompatibilityMap = mapOf(
+                            "name_variable_from_the_year_5202" to "name_variable_from_the_year_3000"
+                        ),
+                        functionCompatibilityMap = mapOf(
+                            "uppercase_function_from_the_year_5202" to "uppercase_function_from_the_year_3000"
+                        )
+                    )
+                ),
+                ""
+            ),
+            arrayOf(
+                "{{ name_variable_from_the_year_5202 | uppercase_function_from_the_year_5202 }}",
+                Args(
+                    packages = listOf(packageYearlyUsdTwoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                    variableConfig = VariableConfig(
+                        // Recursion, just in case.
+                        variableCompatibilityMap = mapOf(
+                            "name_variable_from_the_year_5202" to "name_variable_from_the_year_3000",
+                            "name_variable_from_the_year_3000" to "product.store_product_name",
+                        ),
+                        functionCompatibilityMap = mapOf(
+                            "uppercase_function_from_the_year_5202" to "uppercase_function_from_the_year_3000",
+                            "uppercase_function_from_the_year_3000" to "uppercase",
+                        )
+                    )
+                ),
+                "ANNUAL"
+            ),
         )
     }
 
@@ -623,6 +734,7 @@ internal class TextComponentViewVariablesTests(
     private val storefrontCountryCode = args.storefrontCountryCode
     private val variableLocalizations = args.variableLocalizations
     private val date = args.date
+    private val variableConfig = args.variableConfig
 
     @get:Rule
     val composeTestRule = createComposeRule()
@@ -659,7 +771,10 @@ internal class TextComponentViewVariablesTests(
             metadata = emptyMap(),
             availablePackages = packages,
             paywallComponents = Offering.PaywallComponents(
-                uiConfig = UiConfig(localizations = mapOf(LocaleId(locale) to variableLocalizations)),
+                uiConfig = UiConfig(
+                    localizations = mapOf(LocaleId(locale) to variableLocalizations),
+                    variableConfig = variableConfig,
+                ),
                 data = data
             ),
         )
