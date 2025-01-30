@@ -7,7 +7,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 
 internal sealed class CustomerCenterState(
-    open val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
+    @get:JvmSynthetic open val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
 ) {
 
     enum class NavigationButtonType {
@@ -24,26 +24,26 @@ internal sealed class CustomerCenterState(
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     data class Success(
-        val customerCenterConfigData: CustomerCenterConfigData,
-        val purchaseInformation: PurchaseInformation? = null,
-        val showRestoreDialog: Boolean = false,
-        val restorePurchasesState: RestorePurchasesState = RestorePurchasesState.INITIAL,
-        val feedbackSurveyData: FeedbackSurveyData? = null,
-        val promotionalOfferData: PromotionalOfferData? = null,
-        val title: String? = null,
-        override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
+        @get:JvmSynthetic val customerCenterConfigData: CustomerCenterConfigData,
+        @get:JvmSynthetic val purchaseInformation: PurchaseInformation? = null,
+        @get:JvmSynthetic val showRestoreDialog: Boolean = false,
+        @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState = RestorePurchasesState.INITIAL,
+        @get:JvmSynthetic val feedbackSurveyData: FeedbackSurveyData? = null,
+        @get:JvmSynthetic val promotionalOfferData: PromotionalOfferData? = null,
+        @get:JvmSynthetic val title: String? = null,
+        @get:JvmSynthetic override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
     ) : CustomerCenterState(navigationButtonType)
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class FeedbackSurveyData(
-    val feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-    val onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+    @get:JvmSynthetic val feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
+    @get:JvmSynthetic val onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
 )
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class PromotionalOfferData(
-    val configuredPromotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
-    val subscriptionOption: SubscriptionOption,
-    val originalPath: CustomerCenterConfigData.HelpPath,
+    @get:JvmSynthetic val configuredPromotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+    @get:JvmSynthetic val subscriptionOption: SubscriptionOption,
+    @get:JvmSynthetic val originalPath: CustomerCenterConfigData.HelpPath,
 )
