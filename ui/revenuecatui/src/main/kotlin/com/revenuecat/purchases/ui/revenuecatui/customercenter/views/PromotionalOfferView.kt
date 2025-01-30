@@ -3,17 +3,12 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
-import android.annotation.SuppressLint
-import android.content.pm.PackageManager
-import android.graphics.drawable.Drawable
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -21,11 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -41,7 +33,6 @@ import com.revenuecat.purchases.models.toRecurrenceMode
 import com.revenuecat.purchases.ui.revenuecatui.composables.AppIcon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @JvmSynthetic
 @Composable
@@ -84,6 +75,7 @@ internal fun PromotionalOfferView(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
         ) {
+            @Suppress("ForbiddenComment")
             // TODO: modify this to display price of the offer
             Text("Accept offer")
         }

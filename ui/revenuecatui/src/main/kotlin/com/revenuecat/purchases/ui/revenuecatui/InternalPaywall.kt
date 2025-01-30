@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.net.Uri
 import android.widget.Toast

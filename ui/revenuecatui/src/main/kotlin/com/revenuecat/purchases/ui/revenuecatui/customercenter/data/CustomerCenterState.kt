@@ -38,7 +38,9 @@ internal sealed class CustomerCenterState(
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class FeedbackSurveyData(
     @get:JvmSynthetic val feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-    @get:JvmSynthetic val onOptionSelected: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+    @get:JvmSynthetic val onOptionSelected: (
+        CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?,
+    ) -> Unit,
 )
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

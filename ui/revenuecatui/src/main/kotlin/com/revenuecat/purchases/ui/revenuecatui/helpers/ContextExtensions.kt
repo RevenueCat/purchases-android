@@ -19,4 +19,3 @@ import android.content.ContextWrapper
     }
     return null
 }
-

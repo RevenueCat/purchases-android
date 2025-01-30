@@ -397,7 +397,7 @@ internal class CustomerCenterViewModelImpl(
             Logger.e("Activity is null when accepting promotional offer")
             _actionError.value = PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,
-                "Couldn't perform purchase"
+                "Couldn't perform purchase",
             )
             return
         }
