@@ -597,6 +597,18 @@ internal class TextComponentViewVariablesTests(
                 ),
                 "Annual"
             ),
+            // Multiple variables, with prefix and suffix text.
+            arrayOf(
+                "Products: {{ product.store_product_name | lowercase | capitalize }} and " +
+                    "{{ product.store_product_name | lowercase }}.",
+                Args(
+                    packages = listOf(packageWithUpperCaseName),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "Products: Annual and annual."
+            ),
             // Defensive:
             arrayOf(
                 "{{product.store_product_name}}",
@@ -609,7 +621,27 @@ internal class TextComponentViewVariablesTests(
                 "Annual"
             ),
             arrayOf(
+                "{{       product.store_product_name    }}",
+                Args(
+                    packages = listOf(packageYearlyUsdTwoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "Annual"
+            ),
+            arrayOf(
                 "{{product.store_product_name|lowercase|capitalize}}",
+                Args(
+                    packages = listOf(packageWithUpperCaseName),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "Annual"
+            ),
+            arrayOf(
+                "{{       product.store_product_name|lowercase       |    capitalize       }}",
                 Args(
                     packages = listOf(packageWithUpperCaseName),
                     locale = "en_US",
