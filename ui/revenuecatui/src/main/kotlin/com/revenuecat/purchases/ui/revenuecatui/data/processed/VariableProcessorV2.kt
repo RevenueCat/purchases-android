@@ -117,19 +117,27 @@ internal object VariableProcessorV2 {
 
     private fun String.replaceVariablesWithValues(
         getValue: (variable: String, functions: List<String>) -> String,
-    ): String {
-        var resultString = this
-        regex.findAll(this).toList().reversed().forEach { matchResult ->
-            val (variableString) = matchResult.destructured
+    ): String = buildString {
+        val template = this@replaceVariablesWithValues
+        var lastIndex = 0
 
+        regex.findAll(template).forEach { match ->
+            // Append everything between the previous match and this match
+            append(template, lastIndex, match.range.first)
+
+            val (variableString) = match.destructured
             val parts = variableString.split("|").map { it.trim() }
+
             val variable = parts[0]
             val functions = if (parts.size > 1) parts.drop(1) else emptyList()
 
-            val value = getValue(variable, functions)
-            resultString = resultString.replaceRange(matchResult.range, value)
+            append(getValue(variable, functions))
+
+            lastIndex = match.range.last + 1
         }
-        return resultString
+
+        // Append the remainder of the template.
+        append(template, lastIndex, template.length)
     }
 
     @Suppress("LongParameterList")
