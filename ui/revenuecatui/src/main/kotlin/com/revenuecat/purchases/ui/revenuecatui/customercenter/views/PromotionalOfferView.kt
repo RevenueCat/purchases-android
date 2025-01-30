@@ -36,6 +36,7 @@ import com.revenuecat.purchases.models.toRecurrenceMode
 import com.revenuecat.purchases.ui.revenuecatui.composables.AppIcon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 
 @JvmSynthetic
 @Composable
@@ -47,21 +48,9 @@ internal fun PromotionalOfferView(
     modifier: Modifier = Modifier,
 ) {
     val isDark = isSystemInDarkTheme()
-    val textColor: Color? = if (isDark) {
-        appearance.dark?.textColor?.colorInt
-    } else {
-        appearance.light?.textColor?.colorInt
-    }?.let { Color(it) }
-    val buttonBackgroundColor: Color? = if (isDark) {
-        appearance.dark?.buttonBackgroundColor?.colorInt
-    } else {
-        appearance.light?.buttonBackgroundColor?.colorInt
-    }?.let { Color(it) }
-    val buttonTextColor: Color? = if (isDark) {
-        appearance.dark?.buttonTextColor?.colorInt
-    } else {
-        appearance.light?.buttonTextColor?.colorInt
-    }?.let { Color(it) }
+    val textColor = appearance.getColorForTheme(isDark) { it.textColor }
+    val buttonBackgroundColor = appearance.getColorForTheme(isDark) { it.buttonBackgroundColor }
+    val buttonTextColor = appearance.getColorForTheme(isDark) { it.buttonTextColor }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -29,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,11 +37,11 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
@@ -140,20 +139,13 @@ private fun InternalCustomerCenter(
     if (state is CustomerCenterState.Success) {
         val isDark = isSystemInDarkTheme()
         val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
-        val accentColor: Color? = if (isDark) {
-            appearance.dark?.accentColor?.colorInt
-        } else {
-            appearance.light?.accentColor?.colorInt
-        }?.let { Color(it) }
+        val accentColor = appearance.getColorForTheme(isDark) { it.accentColor }
 
-        // Only change background if there is a promotional offer
-        var backgroundColor: Color? = null
-        if (state.promotionalOfferData != null) {
-            backgroundColor = if (isDark) {
-                appearance.dark?.backgroundColor?.colorInt
-            } else {
-                appearance.light?.backgroundColor?.colorInt
-            }?.let { Color(it) }
+        // Only change background when presenting a promotional offer
+        val backgroundColor = if (state.promotionalOfferData != null) {
+            appearance.getColorForTheme(isDark) { it.backgroundColor }
+        } else {
+            null
         }
 
         colorScheme = MaterialTheme.colorScheme.copy(
