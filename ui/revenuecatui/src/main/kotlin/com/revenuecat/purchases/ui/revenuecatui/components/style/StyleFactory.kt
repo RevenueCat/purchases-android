@@ -17,6 +17,7 @@ import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
@@ -60,6 +61,7 @@ internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
     private val colorAliases: Map<ColorAlias, ColorScheme>,
     private val fontAliases: Map<FontAlias, FontSpec>,
+    private val variableLocalizations: Map<LocaleId, Map<VariableLocalizationKey, String>>,
     private val offering: Offering,
 ) {
 
@@ -255,6 +257,7 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
+            variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
         )
     }

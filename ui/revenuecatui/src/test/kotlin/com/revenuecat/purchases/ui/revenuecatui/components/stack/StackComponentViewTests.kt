@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -45,11 +44,12 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertRectangularBord
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
@@ -77,14 +77,6 @@ class StackComponentViewTests {
     )
     private val styleFactory = StyleFactory(
         localizations = localizations,
-        colorAliases = emptyMap(),
-        fontAliases = emptyMap(),
-        offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
     )
     private val packageWithoutIntroOffer = TestData.Packages.monthly
     private val packageWithSingleIntroOffer = TestData.Packages.annual
@@ -336,8 +328,6 @@ class StackComponentViewTests {
         val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
-            colorAliases = emptyMap(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
@@ -657,8 +647,6 @@ class StackComponentViewTests {
         val state = offering.toComponentsPaywallState(validated)
         val styleFactory = StyleFactory(
             localizations = localizations,
-            colorAliases = emptyMap(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
