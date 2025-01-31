@@ -9,7 +9,9 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventRequest
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.EventsFileHelper
 import io.mockk.Runs
@@ -51,12 +53,14 @@ class PaywallEventsManagerTest {
 
     private val testFolder = "temp_test_folder"
 
-    private lateinit var fileHelper: EventsFileHelper<PaywallStoredEvent>
+    private lateinit var legacyFileHelper: EventsFileHelper<PaywallStoredEvent>
+    private lateinit var fileHelper: EventsFileHelper<BackendEvent>
+
     private lateinit var identityManager: IdentityManager
     private lateinit var paywallEventsDispatcher: Dispatcher
     private lateinit var backend: Backend
 
-    private lateinit var eventsManager: PaywallEventsManager
+    private lateinit var eventsManager: EventsManager
 
     @Before
     fun setUp() {
@@ -69,10 +73,17 @@ class PaywallEventsManagerTest {
         val context = mockk<Context>().apply {
             every { filesDir } returns tempTestFolder
         }
+        legacyFileHelper = EventsFileHelper(
+            FileHelper(context),
+            EventsManager.PAYWALL_EVENTS_FILE_PATH,
+            PaywallStoredEvent::fromString,
+        )
         fileHelper = EventsFileHelper(
             FileHelper(context),
-            PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH,
-            PaywallStoredEvent::fromString,
+            EventsManager.EVENTS_FILE_PATH_NEW,
+            { jsonString ->
+                EventsManager.json.decodeFromString(BackendEvent.serializer(), jsonString)
+            }
         )
         identityManager = mockk<IdentityManager>().apply {
             every { currentAppUserID } returns userID
@@ -80,17 +91,18 @@ class PaywallEventsManagerTest {
         paywallEventsDispatcher = SyncDispatcher()
         backend = mockk()
 
-        eventsManager = PaywallEventsManager(
+        eventsManager = EventsManager(
+            legacyFileHelper,
             fileHelper,
             identityManager,
             paywallEventsDispatcher,
-            postPaywallEvents = { request, onSuccess, onError ->
+            postEvents = { request, onSuccess, onError ->
                 backend.postPaywallEvents(
                     paywallEventRequest = request,
                     onSuccessHandler = onSuccess,
-                    onErrorHandler = onError
+                    onErrorHandler = onError,
                 )
-            }
+            },
         )
     }
 
@@ -168,7 +180,13 @@ class PaywallEventsManagerTest {
         eventsManager.flushEvents()
         checkFileContents("")
         val expectedRequest = EventRequest(
-            listOf(storedEvent.toPaywallBackendEvent(), storedEvent.toPaywallBackendEvent())
+            listOf(BackendEvent.Paywalls(
+                storedEvent.toPaywallBackendEvent()
+            ),
+                BackendEvent.Paywalls(
+                    storedEvent.toPaywallBackendEvent()
+                )
+            )
         )
         verify(exactly = 1) {
             backend.postPaywallEvents(
@@ -296,12 +314,12 @@ class PaywallEventsManagerTest {
 
 
     private fun checkFileNumberOfEvents(expectedNumberOfEvents: Int) {
-        val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
+        val file = File(testFolder, EventsManager.PAYWALL_EVENTS_FILE_PATH)
         assertThat(file.readLines().size).isEqualTo(expectedNumberOfEvents)
     }
 
     private fun checkFileContents(expectedContents: String) {
-        val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
+        val file = File(testFolder, EventsManager.PAYWALL_EVENTS_FILE_PATH)
         assertThat(file.readText()).isEqualTo(expectedContents)
     }
 
@@ -321,7 +339,7 @@ class PaywallEventsManagerTest {
 
     private fun expectNumberOfEventsSynced(eventsSynced: Int) {
         val expectedRequest = EventRequest(
-            List(eventsSynced) { storedEvent.toPaywallBackendEvent() }
+            List(eventsSynced) { BackendEvent.Paywalls(storedEvent.toPaywallBackendEvent()) }
         )
         verify(exactly = 1) {
             backend.postPaywallEvents(
@@ -333,7 +351,7 @@ class PaywallEventsManagerTest {
     }
 
     private fun appendToFile(contents: String) {
-        val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
+        val file = File(testFolder, EventsManager.PAYWALL_EVENTS_FILE_PATH)
         file.appendText(contents)
     }
 }

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.backend_integration_tests
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
@@ -168,18 +169,20 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     @Test
     fun `can postPaywallEvents backend request`() {
         val request = EventRequest(listOf(
-            PaywallBackendEvent(
-                id = "id",
-                version = 1,
-                type = PaywallEventType.CANCEL.value,
-                appUserID = "appUserID",
-                sessionID = "sessionID",
-                offeringID = "offeringID",
-                paywallRevision = 5,
-                timestamp = 123456789,
-                displayMode = "footer",
-                darkMode = true,
-                localeIdentifier = "en_US",
+            BackendEvent.Paywalls(
+                PaywallBackendEvent(
+                    id = "id",
+                    version = 1,
+                    type = PaywallEventType.CANCEL.value,
+                    appUserID = "appUserID",
+                    sessionID = "sessionID",
+                    offeringID = "offeringID",
+                    paywallRevision = 5,
+                    timestamp = 123456789,
+                    displayMode = "footer",
+                    darkMode = true,
+                    localeIdentifier = "en_US",
+                )
             )
         ))
         ensureBlockFinishes { latch ->

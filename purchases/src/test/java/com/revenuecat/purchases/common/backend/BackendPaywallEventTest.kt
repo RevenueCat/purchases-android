@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -41,18 +42,20 @@ class BackendPaywallEventTest {
 
 
     private val paywallEventRequest = EventRequest(listOf(
-        PaywallBackendEvent(
-            id = "id",
-            version = 1,
-            type = PaywallEventType.CANCEL.value,
-            appUserID = "appUserID",
-            sessionID = "sessionID",
-            offeringID = "offeringID",
-            paywallRevision = 5,
-            timestamp = 123456789,
-            displayMode = "footer",
-            darkMode = true,
-            localeIdentifier = "en_US",
+        BackendEvent.Paywalls(
+            PaywallBackendEvent(
+                id = "id",
+                version = 1,
+                type = PaywallEventType.CANCEL.value,
+                appUserID = "appUserID",
+                sessionID = "sessionID",
+                offeringID = "offeringID",
+                paywallRevision = 5,
+                timestamp = 123456789,
+                displayMode = "footer",
+                darkMode = true,
+                localeIdentifier = "en_US",
+            )
         )
     ))
 

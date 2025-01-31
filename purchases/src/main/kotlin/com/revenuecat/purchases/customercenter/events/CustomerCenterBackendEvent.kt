@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywalls.events
+package com.revenuecat.purchases.customercenter.events
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

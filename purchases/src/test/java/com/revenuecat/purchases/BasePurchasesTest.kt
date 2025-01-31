@@ -18,6 +18,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -73,7 +74,7 @@ internal open class BasePurchasesTest {
     internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
-    internal val mockPaywallEventsManager = mockk<PaywallEventsManager>()
+    internal val mockEventsManager = mockk<EventsManager>()
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -124,7 +125,7 @@ internal open class BasePurchasesTest {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         } just Runs
         every {
-            mockPaywallEventsManager.flushEvents()
+            mockEventsManager.flushEvents()
         } just Runs
 
         if (shouldConfigureOnSetUp) {
@@ -142,7 +143,7 @@ internal open class BasePurchasesTest {
             mockOfferingsManager,
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
-            mockPaywallEventsManager,
+            mockEventsManager,
             mockWebPurchasesRedemptionHelper,
         )
         unmockkStatic(ProcessLifecycleOwner::class)
@@ -414,7 +415,7 @@ internal open class BasePurchasesTest {
             postPendingTransactionsHelper = mockPostPendingTransactionsHelper,
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager,
-            paywallEventsManager = mockPaywallEventsManager,
+            eventsManager = mockEventsManager,
             paywallPresentedCache = paywallPresentedCache,
             purchasesStateCache = purchasesStateProvider,
             dispatcher = SyncDispatcher(),

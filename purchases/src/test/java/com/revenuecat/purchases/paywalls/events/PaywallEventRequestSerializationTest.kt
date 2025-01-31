@@ -2,6 +2,8 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventRequest
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -14,18 +16,20 @@ import org.junit.runner.RunWith
 class PaywallEventRequestSerializationTest {
 
     private val request = EventRequest(listOf(
-        PaywallBackendEvent(
-            id = "id",
-            version = 1,
-            type = PaywallEventType.CANCEL.value,
-            appUserID = "appUserID",
-            sessionID = "sessionID",
-            offeringID = "offeringID",
-            paywallRevision = 5,
-            timestamp = 123456789,
-            displayMode = "footer",
-            darkMode = true,
-            localeIdentifier = "en_US",
+        BackendEvent.Paywalls(
+            PaywallBackendEvent(
+                id = "id",
+                version = 1,
+                type = PaywallEventType.CANCEL.value,
+                appUserID = "appUserID",
+                sessionID = "sessionID",
+                offeringID = "offeringID",
+                paywallRevision = 5,
+                timestamp = 123456789,
+                displayMode = "footer",
+                darkMode = true,
+                localeIdentifier = "en_US",
+            )
         )
     ))
 

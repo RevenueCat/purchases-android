@@ -1,15 +1,21 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.paywalls.events.CustomerCenterBackendEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.utils.Event
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 internal sealed class BackendEvent : Event {
+    @Serializable
+    @SerialName("customer_center")
     data class CustomerCenter(val event: CustomerCenterBackendEvent) : BackendEvent()
+
+    @Serializable
+    @SerialName("paywalls")
     data class Paywalls(val event: PaywallBackendEvent) : BackendEvent()
 }
 
