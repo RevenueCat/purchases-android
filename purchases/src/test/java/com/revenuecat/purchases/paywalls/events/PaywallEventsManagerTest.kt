@@ -76,14 +76,18 @@ class PaywallEventsManagerTest {
         legacyFileHelper = EventsFileHelper(
             FileHelper(context),
             EventsManager.PAYWALL_EVENTS_FILE_PATH,
+            PaywallStoredEvent::toString,
             PaywallStoredEvent::fromString,
         )
         fileHelper = EventsFileHelper(
             FileHelper(context),
             EventsManager.EVENTS_FILE_PATH_NEW,
+            { event ->
+                EventsManager.json.encodeToString(BackendEvent.serializer(), event)
+            },
             { jsonString ->
                 EventsManager.json.decodeFromString(BackendEvent.serializer(), jsonString)
-            }
+            },
         )
         identityManager = mockk<IdentityManager>().apply {
             every { currentAppUserID } returns userID
@@ -115,61 +119,19 @@ class PaywallEventsManagerTest {
     @Test
     fun `tracking events adds them to file`() {
         eventsManager.track(event)
-        checkFileContents("{" +
-            "\"event\":{" +
-                "\"creationData\":{" +
-                    "\"id\":\"298207f4-87af-4b57-a581-eb27bcc6e009\"," +
-                    "\"date\":1699270688884" +
-                "}," +
-                "\"data\":{" +
-                    "\"offeringIdentifier\":\"offeringID\"," +
-                    "\"paywallRevision\":5," +
-                    "\"sessionIdentifier\":\"315107f4-98bf-4b68-a582-eb27bcb6e111\"," +
-                    "\"displayMode\":\"footer\"," +
-                    "\"localeIdentifier\":\"es_ES\"," +
-                    "\"darkMode\":true" +
-                "}," +
-                "\"type\":\"IMPRESSION\"" +
-            "}," +
-            "\"userID\":\"testAppUserId\"" +
-        "}\n")
+
+        checkFileContents(
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent() + "\n"
+        )
+
         eventsManager.track(event.copy(type = PaywallEventType.CANCEL))
-        checkFileContents("{" +
-            "\"event\":{" +
-                "\"creationData\":{" +
-                    "\"id\":\"298207f4-87af-4b57-a581-eb27bcc6e009\"," +
-                    "\"date\":1699270688884" +
-                "}," +
-                "\"data\":{" +
-                    "\"offeringIdentifier\":\"offeringID\"," +
-                    "\"paywallRevision\":5," +
-                    "\"sessionIdentifier\":\"315107f4-98bf-4b68-a582-eb27bcb6e111\"," +
-                    "\"displayMode\":\"footer\"," +
-                    "\"localeIdentifier\":\"es_ES\"," +
-                    "\"darkMode\":true" +
-                "}," +
-                "\"type\":\"IMPRESSION\"" +
-            "}," +
-            "\"userID\":\"testAppUserId\"" +
-        "}\n" +
-        "{" +
-            "\"event\":{" +
-                "\"creationData\":{" +
-                    "\"id\":\"298207f4-87af-4b57-a581-eb27bcc6e009\"," +
-                    "\"date\":1699270688884" +
-                "}," +
-                "\"data\":{" +
-                    "\"offeringIdentifier\":\"offeringID\"," +
-                    "\"paywallRevision\":5," +
-                    "\"sessionIdentifier\":\"315107f4-98bf-4b68-a582-eb27bcb6e111\"," +
-                    "\"displayMode\":\"footer\"," +
-                    "\"localeIdentifier\":\"es_ES\"," +
-                    "\"darkMode\":true" +
-                "}," +
-                "\"type\":\"CANCEL\"" +
-            "}," +
-            "\"userID\":\"testAppUserId\"" +
-        "}\n")
+
+        checkFileContents(
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + "\n"
+                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + "\n"
+        )
     }
 
     @Test
@@ -180,9 +142,10 @@ class PaywallEventsManagerTest {
         eventsManager.flushEvents()
         checkFileContents("")
         val expectedRequest = EventRequest(
-            listOf(BackendEvent.Paywalls(
-                storedEvent.toPaywallBackendEvent()
-            ),
+            listOf(
+                BackendEvent.Paywalls(
+                    storedEvent.toPaywallBackendEvent()
+                ),
                 BackendEvent.Paywalls(
                     storedEvent.toPaywallBackendEvent()
                 )
@@ -314,12 +277,12 @@ class PaywallEventsManagerTest {
 
 
     private fun checkFileNumberOfEvents(expectedNumberOfEvents: Int) {
-        val file = File(testFolder, EventsManager.PAYWALL_EVENTS_FILE_PATH)
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
         assertThat(file.readLines().size).isEqualTo(expectedNumberOfEvents)
     }
 
     private fun checkFileContents(expectedContents: String) {
-        val file = File(testFolder, EventsManager.PAYWALL_EVENTS_FILE_PATH)
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
         assertThat(file.readText()).isEqualTo(expectedContents)
     }
 
@@ -351,7 +314,7 @@ class PaywallEventsManagerTest {
     }
 
     private fun appendToFile(contents: String) {
-        val file = File(testFolder, EventsManager.PAYWALL_EVENTS_FILE_PATH)
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
         file.appendText(contents)
     }
 }

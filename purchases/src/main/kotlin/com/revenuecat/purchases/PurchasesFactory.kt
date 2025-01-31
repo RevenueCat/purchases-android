@@ -317,11 +317,15 @@ internal class PurchasesFactory(
                 legacyEventsFileHelper = EventsFileHelper(
                     FileHelper(context),
                     EventsManager.PAYWALL_EVENTS_FILE_PATH,
+                    PaywallStoredEvent::toString,
                     PaywallStoredEvent::fromString,
                 ),
                 fileHelper = EventsFileHelper(
                     FileHelper(context),
                     EventsManager.EVENTS_FILE_PATH_NEW,
+                    { event ->
+                        EventsManager.json.encodeToString(BackendEvent.serializer(), event) + "\n"
+                    },
                     { jsonString ->
                         EventsManager.json.decodeFromString(BackendEvent.serializer(), jsonString)
                     },

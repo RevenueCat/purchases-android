@@ -46,6 +46,10 @@ internal class EventsManager(
     @set:Synchronized
     private var flushInProgress = false
 
+    @get:Synchronized
+    @set:Synchronized
+    private var legacyFlushDone = false
+
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
@@ -73,68 +77,67 @@ internal class EventsManager(
                 return@enqueue
             }
             flushInProgress = true
-            flushLegacyEvents {
-                val storedEventsWithNullValues = getStoredEvents()
-                val storedEvents = storedEventsWithNullValues.filterNotNull()
 
-                if (storedEvents.isEmpty()) {
-                    verboseLog("No events to sync.")
-                    flushInProgress = false
-                    return@flushLegacyEvents
-                }
-
-                verboseLog("Event flush: posting ${storedEvents.size} events.")
-                postEvents(
-                    EventRequest(storedEvents),
-                    {
-                        verboseLog("Event flush: success.")
-                        enqueue {
-                            fileHelper.clear(storedEventsWithNullValues.size)
-                            flushInProgress = false
-                        }
-                    },
-                    { error, shouldMarkAsSynced ->
-                        errorLog("Event flush error: $error.")
-                        enqueue {
-                            if (shouldMarkAsSynced) {
-                                fileHelper.clear(storedEventsWithNullValues.size)
-                            }
-                            flushInProgress = false
-                        }
-                    },
-                )
+            if (!legacyFlushDone) {
+                flushLegacyEvents()
+                legacyFlushDone = true
             }
+
+            val storedEventsWithNullValues = getStoredEvents()
+            val storedEvents = storedEventsWithNullValues.filterNotNull()
+
+            if (storedEvents.isEmpty()) {
+                verboseLog("No new events to sync.")
+                flushInProgress = false
+                return@enqueue
+            }
+
+            verboseLog("New event flush: posting ${storedEvents.size} events.")
+            postEvents(
+                EventRequest(storedEvents),
+                {
+                    verboseLog("New event flush: success.")
+                    enqueue {
+                        fileHelper.clear(storedEventsWithNullValues.size)
+                        flushInProgress = false
+                    }
+                },
+                { error, shouldMarkAsSynced ->
+                    errorLog("New event flush error: $error.")
+                    enqueue {
+                        if (shouldMarkAsSynced) {
+                            fileHelper.clear(storedEventsWithNullValues.size)
+                        }
+                        flushInProgress = false
+                    }
+                },
+            )
         }
     }
 
-    private fun flushLegacyEvents(onComplete: () -> Unit) {
+    private fun flushLegacyEvents() {
         enqueue {
-            val storedLegacyEvents = getLegacyStoredEvents()
+            val storedLegacyEventsWithNullValues = getLegacyStoredEvents()
+            val storedLegacyEvents = storedLegacyEventsWithNullValues.filterNotNull()
 
             if (storedLegacyEvents.isEmpty()) {
-                verboseLog("No legacy events to sync.")
-                onComplete() // ✅ Proceed with new events
+                verboseLog("No legacy events to sync. Skipping legacy flush.")
                 return@enqueue
             }
 
             verboseLog("Legacy event flush: posting ${storedLegacyEvents.size} events.")
-
             postEvents(
                 EventRequest(storedLegacyEvents),
                 {
                     verboseLog("Legacy event flush: success.")
-                    enqueue {
-                        legacyEventsFileHelper.clear(flushCount)
-                        onComplete()
-                    }
+                    enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
                 },
                 { error, shouldMarkAsSynced ->
                     errorLog("Legacy event flush error: $error.")
                     enqueue {
                         if (shouldMarkAsSynced) {
-                            legacyEventsFileHelper.clear(flushCount)
+                            legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size)
                         }
-                        onComplete()
                     }
                 },
             )
