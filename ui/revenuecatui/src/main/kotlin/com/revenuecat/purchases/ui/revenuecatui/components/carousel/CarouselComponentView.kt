@@ -80,15 +80,7 @@ internal fun CarouselComponentView(
 
     val pageCount = style.slides.size
 
-    val initialPage = if (carouselState.loop) {
-        var currentPage = Int.MAX_VALUE / 2
-        while (currentPage % pageCount != carouselState.initialSlideIndex) {
-            currentPage++
-        }
-        currentPage
-    } else {
-        carouselState.initialSlideIndex
-    }
+    val initialPage = getInitialPage(carouselState)
 
     val pagerState = rememberPagerState(initialPage = initialPage) {
         if (carouselState.loop) {
@@ -132,6 +124,7 @@ internal fun CarouselComponentView(
         HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = carouselState.sidePagePeek),
+            // This will load all the pages at once, which allows the pager to always have the correct size
             beyondViewportPageCount = pageCount,
             pageSpacing = carouselState.spacing,
             verticalAlignment = carouselState.alignment,
@@ -146,6 +139,8 @@ internal fun CarouselComponentView(
 
         carouselState.pageControl?.let {
             val currentPage = pagerState.currentPage % pageCount
+            // The margin between the pager and the indicators is indicated
+            // by the margins configured in the indicators themselves
             PagerIndicator(
                 pageControl = it,
                 pageCount = pageCount,
@@ -185,6 +180,19 @@ private fun Indicator(indicator: CarouselComponentStyle.IndicatorStyles) {
     )
 }
 
+private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
+    // When looping, we use a very large number of pages to allow for "infinite" scrolling
+    // We need to calculate the initial page index in the middle of that large number of pages to make the carousel
+    // start at the correct slide
+    var currentPage = Int.MAX_VALUE / 2
+    while ((currentPage % carouselState.slides.size) != carouselState.initialSlideIndex) {
+        currentPage++
+    }
+    currentPage
+} else {
+    carouselState.initialSlideIndex
+}
+
 @Preview
 @Composable
 private fun CarouselComponentView_Preview() {
@@ -205,7 +213,7 @@ private fun CarouselComponentView_Loop_Preview() {
             style = previewCarouselComponentStyle(
                 loop = true,
                 autoAdvance = CarouselComponent.AutoAdvanceSlides(
-                    msTimePerSlide = 2000,
+                    msTimePerSlide = 1000,
                     msTransitionTime = 500,
                 ),
             ),
@@ -237,7 +245,7 @@ private fun previewCarouselComponentStyle(
     pageControl: CarouselComponentStyle.PageControlStyles? = CarouselComponentStyle.PageControlStyles(
         alignment = Alignment.Bottom,
         active = CarouselComponentStyle.IndicatorStyles(
-            size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
+            size = Size(width = SizeConstraint.Fixed(14u), height = SizeConstraint.Fixed(10u)),
             spacing = 4.dp,
             color = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
             margin = PaddingValues(vertical = 10.dp),
