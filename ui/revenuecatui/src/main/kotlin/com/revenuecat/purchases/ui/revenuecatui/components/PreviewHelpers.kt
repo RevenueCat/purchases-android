@@ -211,6 +211,7 @@ internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<P
  * testing this function.
  */
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+@JvmSynthetic
 @Suppress("CyclomaticComplexMethod")
 internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalizationKey, String> =
     VariableLocalizationKey.values().associateWith { key ->
