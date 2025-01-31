@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorSty
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -63,6 +64,7 @@ internal class StyleFactory(
 
     private companion object {
         private const val DEFAULT_SPACING = 0f
+        private val DEFAULT_SHAPE = Shape.Rectangle()
     }
 
     private val colorAliases = uiConfig.app.colors
@@ -208,7 +210,7 @@ internal class StyleFactory(
             backgroundColor = backgroundColorStyles,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
-            shape = component.shape ?: Shape.Rectangle(),
+            shape = component.shape ?: DEFAULT_SHAPE,
             border = borderStyles,
             shadow = shadowStyles,
             badge = badge,
@@ -387,28 +389,7 @@ internal class StyleFactory(
         third = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         fourth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
         fifth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
-        sixth = component.pageControl?.let { pageControl ->
-            zipOrAccumulate(
-                first = pageControl.active.color.toColorStyles(colorAliases),
-                second = pageControl.default.color.toColorStyles(colorAliases),
-            ) { activeColor, defaultColor ->
-                CarouselComponentStyle.PageControlStyles(
-                    alignment = pageControl.alignment.toAlignment(),
-                    active = CarouselComponentStyle.IndicatorStyles(
-                        size = pageControl.active.size,
-                        spacing = pageControl.active.spacing?.dp ?: 0.dp,
-                        color = activeColor,
-                        margin = pageControl.active.margin.toPaddingValues(),
-                    ),
-                    default = CarouselComponentStyle.IndicatorStyles(
-                        size = pageControl.default.size,
-                        spacing = pageControl.default.spacing?.dp ?: 0.dp,
-                        color = defaultColor,
-                        margin = pageControl.default.margin.toPaddingValues(),
-                    ),
-                )
-            }
-        }.orSuccessfullyNull(),
+        sixth = component.pageControl?.toPageControlStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles, backgroundColor, pageControlStyles ->
         CarouselComponentStyle(
             slides = stackComponentStyles,
@@ -420,7 +401,7 @@ internal class StyleFactory(
             backgroundColor = backgroundColor,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
-            shape = component.shape ?: Shape.Rectangle(),
+            shape = component.shape ?: DEFAULT_SHAPE,
             border = borderStyles,
             shadow = shadowStyles,
             pageControl = pageControlStyles,

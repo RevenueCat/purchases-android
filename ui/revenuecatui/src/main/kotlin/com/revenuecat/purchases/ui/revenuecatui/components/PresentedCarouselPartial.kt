@@ -1,11 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialCarouselComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
@@ -14,6 +11,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorSty
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
@@ -44,28 +42,9 @@ internal class PresentedCarouselPartial(
             third = from.shadow
                 ?.toShadowStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-            fourth = from.pageControl?.let {
-                zipOrAccumulate(
-                    first = it.active.color.toColorStyles(aliases = aliases),
-                    second = it.default.color.toColorStyles(aliases = aliases),
-                ) { activeColor, defaultColor ->
-                    CarouselComponentStyle.PageControlStyles(
-                        alignment = it.alignment.toAlignment(),
-                        active = CarouselComponentStyle.IndicatorStyles(
-                            size = it.active.size,
-                            spacing = it.active.spacing?.dp ?: 0.dp,
-                            color = activeColor,
-                            margin = it.active.margin.toPaddingValues(),
-                        ),
-                        default = CarouselComponentStyle.IndicatorStyles(
-                            size = it.default.size,
-                            spacing = it.default.spacing?.dp ?: 0.dp,
-                            color = defaultColor,
-                            margin = it.default.margin.toPaddingValues(),
-                        ),
-                    )
-                }
-            }.orSuccessfullyNull(),
+            fourth = from.pageControl
+                ?.toPageControlStyles(aliases = aliases)
+                .orSuccessfullyNull(),
         ) { backgroundColor, borderStyles, shadowStyles, pageControlStyles ->
             PresentedCarouselPartial(
                 backgroundColorStyles = backgroundColor,
