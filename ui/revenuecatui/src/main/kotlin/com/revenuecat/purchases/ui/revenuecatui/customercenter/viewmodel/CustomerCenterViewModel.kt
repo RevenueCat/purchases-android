@@ -33,8 +33,8 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurv
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
@@ -54,7 +54,12 @@ internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
     val actionError: State<PurchasesError?>
 
-    suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath, product: StoreProduct?)
+    suspend fun pathButtonPressed(
+        context: Context,
+        path: CustomerCenterConfigData.HelpPath,
+        product: StoreProduct?,
+    )
+
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
@@ -62,8 +67,8 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
-        context: Context,
     )
+
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
     fun onNavigationButtonPressed()
@@ -130,7 +135,6 @@ internal class CustomerCenterViewModelImpl(
                             product,
                             it.promotionalOffer!!,
                             path,
-                            context,
                         )
                     } else {
                         mainPathAction(path, context)
@@ -145,7 +149,6 @@ internal class CustomerCenterViewModelImpl(
                 product,
                 path.promotionalOffer!!,
                 path,
-                context,
             )
         } else {
             mainPathAction(path, context)
@@ -297,10 +300,12 @@ internal class CustomerCenterViewModelImpl(
                     willRenew = it.willRenew,
                     expiresDate = it.expiresDate,
                 )
+
                 is Transaction -> TransactionDetails.NonSubscription(
                     productIdentifier = it.productIdentifier,
                     store = it.store,
                 )
+
                 else -> null
             }
         }
@@ -369,21 +374,22 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
-        context: Context,
     ) {
         val offerIdentifier = promotionalOffer.productMapping[product.id]
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
             when (option) {
                 is GoogleSubscriptionOption ->
                     option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
+
                 else -> false
             }
         }
         if (subscriptionOption != null) {
-            val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(context)
             _state.update {
                 val currentState = _state.value
                 if (currentState is CustomerCenterState.Success) {
+                    val localization = currentState.customerCenterConfigData.localization
+                    val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
                     currentState.copy(
                         promotionalOfferData = PromotionalOfferData(
                             promotionalOffer,

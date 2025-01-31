@@ -30,6 +30,38 @@ data class CustomerCenterConfigData(
         val locale: String,
         @SerialName("localized_strings") val localizedStrings: Map<String, String>,
     ) {
+        enum class VariableName(val identifier: String) {
+            PRICE("price"),
+            PRICE_PER_PERIOD("price_per_period"),
+            PRICE_PER_PERIOD_FULL("price_per_period_full"),
+            TOTAL_PRICE_AND_PER_MONTH("total_price_and_per_month"),
+            TOTAL_PRICE_AND_PER_MONTH_FULL("total_price_and_per_month_full"),
+            PRODUCT_NAME("product_name"),
+            SUB_PERIOD("sub_period"),
+            SUB_PERIOD_LENGTH("sub_period_length"),
+            SUB_PERIOD_ABBREVIATED("sub_period_abbreviated"),
+            SUB_PRICE_PER_WEEK("sub_price_per_week"),
+            SUB_PRICE_PER_MONTH("sub_price_per_month"),
+            SUB_DURATION("sub_duration"),
+            SUB_DURATION_IN_MONTHS("sub_duration_in_months"),
+            SUB_OFFER_DURATION("sub_offer_duration"),
+            SUB_OFFER_DURATION_2("sub_offer_duration_2"),
+            SUB_OFFER_PRICE("sub_offer_price"),
+            SUB_OFFER_PRICE_2("sub_offer_price_2"),
+            SUB_RELATIVE_DISCOUNT("sub_relative_discount"),
+            ;
+
+            companion object {
+                private val valueMap by lazy {
+                    values().associateBy { it.identifier }
+                }
+
+                fun valueOfIdentifier(identifier: String): VariableName? {
+                    return valueMap[identifier]
+                }
+            }
+        }
+
         @Serializable
         enum class CommonLocalizedString {
             @SerialName("no_thanks")
@@ -154,6 +186,21 @@ data class CustomerCenterConfigData(
 
             @SerialName("never")
             NEVER,
+
+            @SerialName("free_trial_then_price")
+            FREE_TRIAL_THEN_PRICE,
+
+            @SerialName("single_payment_then_price")
+            SINGLE_PAYMENT_THEN_PRICE,
+
+            @SerialName("discounted_recurring_then_price")
+            DISCOUNTED_RECURRING_THEN_PRICE,
+
+            @SerialName("free_trial_single_payment_then_price")
+            FREE_TRIAL_SINGLE_PAYMENT_THEN_PRICE,
+
+            @SerialName("free_trial_discounted_then_price")
+            FREE_TRIAL_DISCOUNTED_THEN_PRICE,
             ;
 
             val defaultValue: String
@@ -210,6 +257,11 @@ data class CustomerCenterConfigData(
                             "You can manage your subscription by visiting your account."
                     FREE -> "Free"
                     NEVER -> "Never"
+                    FREE_TRIAL_THEN_PRICE -> "First {{ sub_offer_duration }} free, then {{ price }}"
+                    SINGLE_PAYMENT_THEN_PRICE -> "{{ sub_offer_duration }} for {{ sub_offer_price }}, then {{ price }}"
+                    DISCOUNTED_RECURRING_THEN_PRICE -> "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}"
+                    FREE_TRIAL_SINGLE_PAYMENT_THEN_PRICE -> "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for {{ sub_offer_price_2 }}, and {{ price }} thereafter"
+                    FREE_TRIAL_DISCOUNTED_THEN_PRICE -> "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
                 }
         }
 
