@@ -180,6 +180,18 @@ private class PreviewParametersProvider : PreviewParameterProvider<PreviewParame
             viewSize = Size(width = Fit, height = Fill),
             fitMode = FitMode.FIT,
         ),
+        PreviewParameters(
+            imageWidth = 700u,
+            imageHeight = 700u,
+            viewSize = Size(width = Fill, height = Fit),
+            fitMode = FitMode.FILL,
+        ),
+        PreviewParameters(
+            imageWidth = 700u,
+            imageHeight = 700u,
+            viewSize = Size(width = Fit, height = Fill),
+            fitMode = FitMode.FILL,
+        ),
     )
 }
 
