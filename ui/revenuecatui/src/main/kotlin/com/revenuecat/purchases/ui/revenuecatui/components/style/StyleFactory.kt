@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
@@ -52,12 +53,14 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.flatten
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
 @Suppress("TooManyFunctions")
@@ -71,6 +74,7 @@ internal class StyleFactory(
 
     private companion object {
         private const val DEFAULT_SPACING = 0f
+        private val DEFAULT_SHAPE = Shape.Rectangle()
     }
 
     fun create(
@@ -90,7 +94,7 @@ internal class StyleFactory(
             is TabControlButtonComponent -> TODO()
             is TabControlComponent -> TODO()
             is TabControlToggleComponent -> TODO()
-            is TabsComponent -> TODO()
+            is TabsComponent -> createTabsComponentStyle(component)
         }
 
     private fun createStickyFooterComponentStyle(
@@ -217,7 +221,7 @@ internal class StyleFactory(
             backgroundColor = backgroundColorStyles,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
-            shape = component.shape ?: Shape.Rectangle(),
+            shape = component.shape ?: DEFAULT_SHAPE,
             border = borderStyles,
             shadow = shadowStyles,
             badge = badge,
@@ -393,6 +397,59 @@ internal class StyleFactory(
             overrides = presentedOverrides,
         )
     }
+
+    private fun createTabsComponentStyle(
+        component: TabsComponent,
+    ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
+        zipOrAccumulate(
+            first = component.overrides
+                ?.toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
+                .orSuccessfullyNull()
+                .mapError { nonEmptyListOf(it) },
+            second = createTabsComponentStyleTabControl(component.control),
+            third = createTabsComponentStyleTabs(component.tabs),
+            fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+            fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+            sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+        ) { presentedOverrides, control, tabs, backgroundColor, border, shadow ->
+
+            TabsComponentStyle(
+                size = component.size,
+                padding = component.padding.toPaddingValues(),
+                margin = component.margin.toPaddingValues(),
+                backgroundColor = backgroundColor,
+                shape = component.shape ?: DEFAULT_SHAPE,
+                border = border,
+                shadow = shadow,
+                control = control,
+                tabs = tabs,
+                overrides = presentedOverrides,
+            )
+        }
+
+    private fun createTabsComponentStyleTabControl(
+        componentControl: TabsComponent.TabControl,
+    ): Result<TabsComponentStyle.TabControl, NonEmptyList<PaywallValidationError>> =
+        when (componentControl) {
+            is TabsComponent.TabControl.Buttons -> createStackComponentStyle(componentControl.stack, rcPackage = null)
+                .map { TabsComponentStyle.TabControl.Buttons(it) }
+            is TabsComponent.TabControl.Toggle -> createStackComponentStyle(componentControl.stack, rcPackage = null)
+                .map { TabsComponentStyle.TabControl.Toggle(it) }
+        }
+
+    private fun createTabsComponentStyleTabs(
+        componentTabs: List<TabsComponent.Tab>,
+    ): Result<NonEmptyList<TabsComponentStyle.Tab>, NonEmptyList<PaywallValidationError>> =
+        componentTabs
+            .toNonEmptyListOrNull()
+            .errorIfNull(nonEmptyListOf(PaywallValidationError.TabsComponentWithoutTabs))
+            .flatMap { tabs -> tabs.map { tab -> createTabsComponentStyleTab(tab) }.flatten() }
+
+    private fun createTabsComponentStyleTab(
+        componentTag: TabsComponent.Tab,
+    ): Result<TabsComponentStyle.Tab, NonEmptyList<PaywallValidationError>> =
+        createStackComponentStyle(componentTag.stack, rcPackage = null)
+            .map { stack -> TabsComponentStyle.Tab(stack) }
 
     private fun ThemeImageUrls.withLocalizedOverrides(
         overrideSourceLid: LocalizationKey?,

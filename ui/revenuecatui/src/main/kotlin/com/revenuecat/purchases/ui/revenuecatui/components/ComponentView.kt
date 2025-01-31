@@ -17,6 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
@@ -57,4 +58,5 @@ internal fun ComponentView(
     is PackageComponentStyle -> PackageComponentView(style = style, state = state, modifier = modifier)
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
     is TimelineComponentStyle -> TimelineComponentView(style = style, state = state, modifier = modifier)
+    is TabsComponentStyle -> TODO()
 }
