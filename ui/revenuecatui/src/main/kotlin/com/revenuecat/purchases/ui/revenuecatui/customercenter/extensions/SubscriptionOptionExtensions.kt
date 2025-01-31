@@ -3,12 +3,15 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions
 
+import android.icu.text.MeasureFormat
+import android.icu.util.Measure
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.OfferPaymentMode
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPerPeriod
-import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
+import com.revenuecat.purchases.ui.revenuecatui.extensions.measureUnit
 import java.util.Locale
 
 @JvmSynthetic
@@ -16,6 +19,7 @@ internal fun SubscriptionOption.getLocalizedDescription(
     localization: CustomerCenterConfigData.Localization,
     locale: Locale,
 ): String {
+    @Suppress("MagicNumber")
     return when (pricingPhases.size) {
         // Note last pricing phase is the base subscription price
         2 -> this.getTwoPhaseDescription(localization, locale)
@@ -24,12 +28,20 @@ internal fun SubscriptionOption.getLocalizedDescription(
     }
 }
 
+private fun PricingPhase.localizedDuration(
+    locale: Locale,
+): String {
+    return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE).format(
+        Measure(billingCycleCount, billingPeriod.unit.measureUnit),
+    )
+}
+
 private fun SubscriptionOption.getTwoPhaseDescription(
     localization: CustomerCenterConfigData.Localization,
     locale: Locale,
 ): String {
     val phase = pricingPhases.first()
-    val period = phase.billingPeriod.localizedPeriod(locale)
+    val duration = phase.localizedDuration(locale)
     val fullPricePhase = this.pricingPhases.last()
     val basePrice = fullPricePhase.price.localizedPerPeriod(
         fullPricePhase.billingPeriod,
@@ -38,7 +50,7 @@ private fun SubscriptionOption.getTwoPhaseDescription(
     )
 
     val replacements = mapOf(
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION to period,
+        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION to duration,
         CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_PRICE to phase.price.formatted,
         CustomerCenterConfigData.Localization.VariableName.PRICE to basePrice,
     )
@@ -93,12 +105,12 @@ private fun SubscriptionOption.getThreePhaseDescription(
         return this.getTwoPhaseDescription(localization, locale)
     }
 
-    val trialPeriod = firstPhase.billingPeriod.localizedPeriod(locale)
-    val secondPeriod = secondPhase.billingPeriod.localizedPeriod(locale)
+    val trialDuration = firstPhase.localizedDuration(locale)
+    val secondDuration = secondPhase.localizedDuration(locale)
 
     val replacements = mapOf(
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION to trialPeriod,
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION_2 to secondPeriod,
+        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION to trialDuration,
+        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION_2 to secondDuration,
         CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_PRICE_2 to secondPhase.price.formatted,
         CustomerCenterConfigData.Localization.VariableName.PRICE to basePrice,
     )
