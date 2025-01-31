@@ -41,11 +41,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyl
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
-import com.revenuecat.purchases.ui.revenuecatui.helpers.variableLocalizationKeysForEnUs
 import kotlinx.coroutines.CompletableDeferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule

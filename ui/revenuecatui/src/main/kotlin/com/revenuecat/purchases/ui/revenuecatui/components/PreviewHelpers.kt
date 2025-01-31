@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -206,10 +207,12 @@ internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<P
     validatePaywallComponentsDataOrNull(LocalContext.current.toResourceProvider())
 
 /**
- * This is duplicated in StyleFactory.kt in the test source set.
+ * This is only VisibleForTesting because we could use the same convenience when writing tests. We're not actually
+ * testing this function.
  */
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 @Suppress("CyclomaticComplexMethod")
-private fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalizationKey, String> =
+internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalizationKey, String> =
     VariableLocalizationKey.values().associateWith { key ->
         when (key) {
             VariableLocalizationKey.ANNUAL -> "annual"
