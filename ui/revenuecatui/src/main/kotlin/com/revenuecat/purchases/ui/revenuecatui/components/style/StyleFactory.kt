@@ -91,9 +91,9 @@ internal class StyleFactory(
             is TextComponent -> createTextComponentStyle(component, rcPackage)
             is IconComponent -> createIconComponentStyle(component, rcPackage)
             is TimelineComponent -> createTimelineComponentStyle(component, rcPackage)
-            is TabControlButtonComponent -> TODO()
+            is TabControlButtonComponent -> createTabControlButtonComponentStyle(component)
+            is TabControlToggleComponent -> createTabControlToggleComponentStyle(component)
             is TabControlComponent -> TODO()
-            is TabControlToggleComponent -> TODO()
             is TabsComponent -> createTabsComponentStyle(component)
         }
 
@@ -398,6 +398,30 @@ internal class StyleFactory(
         )
     }
 
+    private fun createTabControlButtonComponentStyle(
+        component: TabControlButtonComponent,
+    ): Result<TabControlButtonComponentStyle, NonEmptyList<PaywallValidationError>> =
+        createStackComponentStyle(component.stack, rcPackage = null)
+            .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
+
+    private fun createTabControlToggleComponentStyle(
+        component: TabControlToggleComponent,
+    ): Result<TabControlToggleComponentStyle, NonEmptyList<PaywallValidationError>> =
+        zipOrAccumulate(
+            first = component.thumbColorOn.toColorStyles(aliases = colorAliases),
+            second = component.thumbColorOff.toColorStyles(aliases = colorAliases),
+            third = component.trackColorOn.toColorStyles(aliases = colorAliases),
+            fourth = component.trackColorOff.toColorStyles(aliases = colorAliases),
+        ) { thumbColorOn, thumbColorOff, trackColorOn, trackColorOff ->
+            TabControlToggleComponentStyle(
+                defaultValue = component.defaultValue,
+                thumbColorOn = thumbColorOn,
+                thumbColorOff = thumbColorOff,
+                trackColorOn = trackColorOn,
+                trackColorOff = trackColorOff,
+            )
+        }
+
     private fun createTabsComponentStyle(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
@@ -411,8 +435,7 @@ internal class StyleFactory(
             fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
             fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
             sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
-        ) { presentedOverrides, control, tabs, backgroundColor, border, shadow ->
-
+        ) { overrides, control, tabs, backgroundColor, border, shadow ->
             TabsComponentStyle(
                 size = component.size,
                 padding = component.padding.toPaddingValues(),
@@ -423,7 +446,7 @@ internal class StyleFactory(
                 shadow = shadow,
                 control = control,
                 tabs = tabs,
-                overrides = presentedOverrides,
+                overrides = overrides,
             )
         }
 
@@ -431,8 +454,10 @@ internal class StyleFactory(
         componentControl: TabsComponent.TabControl,
     ): Result<TabsComponentStyle.TabControl, NonEmptyList<PaywallValidationError>> =
         when (componentControl) {
+            // FIXME This stack will contain a TabControlButtonComponent component.
             is TabsComponent.TabControl.Buttons -> createStackComponentStyle(componentControl.stack, rcPackage = null)
                 .map { TabsComponentStyle.TabControl.Buttons(it) }
+            // FIXME This stack will contain a TabControlToggleComponent component.
             is TabsComponent.TabControl.Toggle -> createStackComponentStyle(componentControl.stack, rcPackage = null)
                 .map { TabsComponentStyle.TabControl.Toggle(it) }
         }
