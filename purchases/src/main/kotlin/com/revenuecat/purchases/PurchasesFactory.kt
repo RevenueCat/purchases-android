@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -35,6 +36,7 @@ import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -291,7 +293,7 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 syncPurchasesHelper,
                 offeringsManager,
-                createPaywallEventsManager(application, identityManager, eventsDispatcher, backend),
+                createEventsManager(application, identityManager, eventsDispatcher, backend),
                 paywallPresentedCache,
                 purchasesStateProvider,
                 dispatcher = dispatcher,
@@ -302,17 +304,17 @@ internal class PurchasesFactory(
         }
     }
 
-    private fun createPaywallEventsManager(
+    private fun createEventsManager(
         context: Context,
         identityManager: IdentityManager,
         eventsDispatcher: Dispatcher,
         backend: Backend,
-    ): PaywallEventsManager? {
+    ): EventsManager? {
         // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
         // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
         // older versions.
         return if (isAndroidNOrNewer()) {
-            PaywallEventsManager(
+            EventsManager(
                 EventsFileHelper(
                     FileHelper(context),
                     PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH,
@@ -320,7 +322,7 @@ internal class PurchasesFactory(
                 ),
                 identityManager,
                 eventsDispatcher,
-                postPaywallEvents = { request, onSuccess, onError ->
+                postEvents = { request, onSuccess, onError ->
                     backend.postPaywallEvents(
                         paywallEventRequest = request,
                         onSuccessHandler = onSuccess,

@@ -9,11 +9,11 @@ import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.events.EventRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
-import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.asMap
 import io.mockk.every
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
 class BackendPaywallEventTest {
 
 
-    private val paywallEventRequest = PaywallEventRequest(listOf(
+    private val paywallEventRequest = EventRequest(listOf(
         PaywallBackendEvent(
             id = "id",
             version = 1,
@@ -190,10 +190,10 @@ class BackendPaywallEventTest {
 
     @Test
     fun `postPaywallEvents calls error handler with shouldMarkAsSynced true if json error`() {
-        mockkObject(PaywallEventRequest)
+        mockkObject(EventRequest)
         val mockJson = mockk<Json>()
         every {
-            PaywallEventRequest.json
+            EventRequest.json
         } returns mockJson
         every {
             mockJson.encodeToJsonElement(paywallEventRequest)
@@ -210,7 +210,7 @@ class BackendPaywallEventTest {
             },
         )
         assertThat(errorCalled).isTrue
-        unmockkObject(PaywallEventRequest)
+        unmockkObject(EventRequest)
     }
 
     @Test
@@ -256,8 +256,8 @@ class BackendPaywallEventTest {
     }
 
     private fun verifyCallWithBody(body: String) {
-        val expectedRequest: PaywallEventRequest = PaywallEventRequest.json.decodeFromString(body)
-        val expectedBody = PaywallEventRequest.json.encodeToJsonElement(expectedRequest).asMap()
+        val expectedRequest: EventRequest = EventRequest.json.decodeFromString(body)
+        val expectedBody = EventRequest.json.encodeToJsonElement(expectedRequest).asMap()
         verify(exactly = 1) {
             httpClient.performRequest(
                 AppConfig.paywallEventsURL,

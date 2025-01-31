@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.events.EventRequest
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.EventsFileHelper
 import io.mockk.Runs
@@ -166,7 +167,7 @@ class PaywallEventsManagerTest {
         eventsManager.track(event)
         eventsManager.flushEvents()
         checkFileContents("")
-        val expectedRequest = PaywallEventRequest(
+        val expectedRequest = EventRequest(
             listOf(storedEvent.toPaywallBackendEvent(), storedEvent.toPaywallBackendEvent())
         )
         verify(exactly = 1) {
@@ -319,7 +320,7 @@ class PaywallEventsManagerTest {
     }
 
     private fun expectNumberOfEventsSynced(eventsSynced: Int) {
-        val expectedRequest = PaywallEventRequest(
+        val expectedRequest = EventRequest(
             List(eventsSynced) { storedEvent.toPaywallBackendEvent() }
         )
         verify(exactly = 1) {

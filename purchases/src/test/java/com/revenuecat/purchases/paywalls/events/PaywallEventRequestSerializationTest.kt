@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.common.events.EventRequest
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions
@@ -12,7 +13,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PaywallEventRequestSerializationTest {
 
-    private val request = PaywallEventRequest(listOf(
+    private val request = EventRequest(listOf(
         PaywallBackendEvent(
             id = "id",
             version = 1,
@@ -30,7 +31,7 @@ class PaywallEventRequestSerializationTest {
 
     @Test
     fun `can encode paywall event request correctly`() {
-        val requestString = PaywallEventRequest.json.encodeToString(request)
+        val requestString = EventRequest.json.encodeToString(request)
         Assertions.assertThat(requestString).isEqualTo(
             "{" +
                 "\"events\":[" +
@@ -54,8 +55,8 @@ class PaywallEventRequestSerializationTest {
 
     @Test
     fun `can encode and decode event correctly`() {
-        val requestString = PaywallEventRequest.json.encodeToString(request)
-        val decodedRequest = PaywallEventRequest.json.decodeFromString<PaywallEventRequest>(requestString)
+        val requestString = EventRequest.json.encodeToString(request)
+        val decodedRequest = EventRequest.json.decodeFromString<EventRequest>(requestString)
         Assertions.assertThat(decodedRequest).isEqualTo(request)
     }
 }

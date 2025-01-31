@@ -1,12 +1,13 @@
-package com.revenuecat.purchases.paywalls.events
+package com.revenuecat.purchases.common.events
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Serializable
-internal data class PaywallEventRequest(
-    val events: List<PaywallBackendEvent>,
+public data class EventRequest internal constructor(
+    internal val events: List<BackendEvent>,
 ) {
+
     companion object {
         val json: Json = Json.Default
     }

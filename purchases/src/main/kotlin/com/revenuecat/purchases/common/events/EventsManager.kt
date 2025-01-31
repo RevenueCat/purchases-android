@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
@@ -7,11 +8,10 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.utils.Event
 import com.revenuecat.purchases.utils.EventsFileHelper
 
-internal abstract class EventsManager<FeatureEvent, StoredEvent : Event, BackendEvent, EventRequest>(
-    private val fileHelper: EventsFileHelper<StoredEvent>,
+internal class EventsManager(
+    private val fileHelper: EventsFileHelper<BackendEvent>,
     private val identityManager: IdentityManager,
     private val eventsDispatcher: Dispatcher,
     private val postEvents: (
@@ -26,11 +26,22 @@ internal abstract class EventsManager<FeatureEvent, StoredEvent : Event, Backend
     @set:Synchronized
     private var flushInProgress = false
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
         enqueue {
             debugLog("Tracking event: $event")
-            fileHelper.appendEvent(createStoredEvent(event, identityManager.currentAppUserID))
+
+            val backendEvent = when {
+                event.paywallEvent != null -> event.paywallEvent!!.toBackendEvent(identityManager.currentAppUserID)
+                else -> null
+            }
+
+            if (backendEvent != null) {
+                fileHelper.appendEvent(backendEvent)
+            } else {
+                debugLog("Backend event not implemented for: $event")
+            }
         }
     }
 
@@ -53,7 +64,7 @@ internal abstract class EventsManager<FeatureEvent, StoredEvent : Event, Backend
 
             verboseLog("Event flush: posting ${storedEvents.size} events.")
             postEvents(
-                createRequest(storedEvents),
+                EventRequest(storedEvents),
                 {
                     verboseLog("Event flush: success.")
                     enqueue {
@@ -74,8 +85,8 @@ internal abstract class EventsManager<FeatureEvent, StoredEvent : Event, Backend
         }
     }
 
-    private fun getStoredEvents(): List<StoredEvent?> {
-        var events: List<StoredEvent?> = emptyList()
+    private fun getStoredEvents(): List<BackendEvent?> {
+        var events: List<BackendEvent?> = emptyList()
         fileHelper.readFile { sequence ->
             events = sequence.take(flushCount).toList()
         }
@@ -85,9 +96,4 @@ internal abstract class EventsManager<FeatureEvent, StoredEvent : Event, Backend
     private fun enqueue(delay: Delay = Delay.NONE, command: () -> Unit) {
         eventsDispatcher.enqueue({ command() }, delay)
     }
-
-    protected abstract fun createRequest(events: List<StoredEvent>): EventRequest
-    protected abstract fun createStoredEvent(event: FeatureEvent, currentAppUserID: String): StoredEvent
-    protected abstract fun fromStoredEvent(event: StoredEvent): FeatureEvent
-    protected abstract fun toBackendEvent(event: StoredEvent): BackendEvent
 }
