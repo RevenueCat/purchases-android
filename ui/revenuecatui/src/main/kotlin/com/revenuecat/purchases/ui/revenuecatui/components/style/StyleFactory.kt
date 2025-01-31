@@ -13,6 +13,10 @@ import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
+import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
+import com.revenuecat.purchases.paywalls.components.TabControlComponent
+import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
+import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -83,6 +87,10 @@ internal class StyleFactory(
             is TextComponent -> createTextComponentStyle(component, rcPackage)
             is IconComponent -> createIconComponentStyle(component, rcPackage)
             is TimelineComponent -> createTimelineComponentStyle(component, rcPackage)
+            is TabControlButtonComponent -> TODO()
+            is TabControlComponent -> TODO()
+            is TabControlToggleComponent -> TODO()
+            is TabsComponent -> TODO()
         }
 
     private fun createStickyFooterComponentStyle(
