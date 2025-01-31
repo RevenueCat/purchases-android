@@ -14,6 +14,8 @@ import coil.decode.DataSource
 import coil.request.SuccessResult
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.UiConfig.AppConfig
+import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -105,6 +107,19 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         dateProvider = { Date(MILLIS_2025_01_25) },
     )
 }
+
+internal fun previewUiConfig(
+    app: AppConfig = AppConfig(),
+    localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = mapOf(
+        LocaleId("en_US") to variableLocalizationKeysForEnUs(),
+    ),
+    variableConfig: VariableConfig = VariableConfig(),
+): UiConfig =
+    UiConfig(
+        app = app,
+        localizations = localizations,
+        variableConfig = variableConfig,
+    )
 
 @Suppress("LongParameterList")
 @JvmSynthetic
