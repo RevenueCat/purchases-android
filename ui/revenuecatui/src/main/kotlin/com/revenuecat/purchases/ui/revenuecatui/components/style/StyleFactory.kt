@@ -80,35 +80,38 @@ internal class StyleFactory(
     fun create(
         component: PaywallComponent,
         rcPackage: Package? = null,
+        tabControl: TabControlStyle? = null,
     ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
-            is ButtonComponent -> createButtonComponentStyle(component, rcPackage)
+            is ButtonComponent -> createButtonComponentStyle(component, rcPackage, tabControl)
             is ImageComponent -> createImageComponentStyle(component, rcPackage)
-            is PackageComponent -> createPackageComponentStyle(component)
-            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, rcPackage)
-            is StackComponent -> createStackComponentStyle(component, rcPackage)
-            is StickyFooterComponent -> createStickyFooterComponentStyle(component)
+            is PackageComponent -> createPackageComponentStyle(component, tabControl)
+            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, rcPackage, tabControl)
+            is StackComponent -> createStackComponentStyle(component, rcPackage, tabControl)
+            is StickyFooterComponent -> createStickyFooterComponentStyle(component, tabControl)
             is TextComponent -> createTextComponentStyle(component, rcPackage)
             is IconComponent -> createIconComponentStyle(component, rcPackage)
             is TimelineComponent -> createTimelineComponentStyle(component, rcPackage)
             is TabControlButtonComponent -> createTabControlButtonComponentStyle(component)
             is TabControlToggleComponent -> createTabControlToggleComponentStyle(component)
-            is TabControlComponent -> TODO()
+            is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
         }
 
     private fun createStickyFooterComponentStyle(
         component: StickyFooterComponent,
+        tabControl: TabControlStyle?,
     ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createStackComponentStyle(component.stack, rcPackage = null).map {
+        createStackComponentStyle(component.stack, rcPackage = null, tabControl = tabControl).map {
             StickyFooterComponentStyle(stackComponentStyle = it)
         }
 
     private fun createButtonComponentStyle(
         component: ButtonComponent,
         rcPackage: Package?,
+        tabControl: TabControlStyle?,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-        first = createStackComponentStyle(component.stack, rcPackage),
+        first = createStackComponentStyle(component.stack, rcPackage, tabControl),
         second = component.action.toButtonComponentStyleAction(),
     ) { stack, action ->
         ButtonComponentStyle(
@@ -119,6 +122,7 @@ internal class StyleFactory(
 
     private fun createPackageComponentStyle(
         component: PackageComponent,
+        tabControl: TabControlStyle?,
     ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> =
         offering.getPackage(component.packageId)
             .errorIfNull(
@@ -132,6 +136,7 @@ internal class StyleFactory(
                 createStackComponentStyle(
                     component = component.stack,
                     rcPackage = rcPackage,
+                    tabControl = tabControl,
                 ).map { stack ->
                     PackageComponentStyle(
                         stackComponentStyle = stack,
@@ -144,9 +149,11 @@ internal class StyleFactory(
     private fun createPurchaseButtonComponentStyle(
         component: PurchaseButtonComponent,
         rcPackage: Package?,
+        tabControl: TabControlStyle?,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
         component.stack,
         rcPackage,
+        tabControl,
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
@@ -189,6 +196,7 @@ internal class StyleFactory(
     private fun createStackComponentStyle(
         component: StackComponent,
         rcPackage: Package?,
+        tabControl: TabControlStyle?,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
@@ -197,10 +205,10 @@ internal class StyleFactory(
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
         second = component.components
-            .map { create(it, rcPackage) }
+            .map { create(it, rcPackage, tabControl) }
             .mapOrAccumulate { it },
         third = component.badge?.let { badge ->
-            createStackComponentStyle(badge.stack, rcPackage)
+            createStackComponentStyle(badge.stack, rcPackage, tabControl)
                 .map {
                     BadgeStyle(
                         stackStyle = it,
@@ -401,7 +409,7 @@ internal class StyleFactory(
     private fun createTabControlButtonComponentStyle(
         component: TabControlButtonComponent,
     ): Result<TabControlButtonComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createStackComponentStyle(component.stack, rcPackage = null)
+        createStackComponentStyle(component.stack, rcPackage = null, tabControl = null)
             .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
 
     private fun createTabControlToggleComponentStyle(
@@ -425,55 +433,64 @@ internal class StyleFactory(
     private fun createTabsComponentStyle(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
-        zipOrAccumulate(
-            first = component.overrides
-                ?.toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
-                .orSuccessfullyNull()
-                .mapError { nonEmptyListOf(it) },
-            second = createTabsComponentStyleTabControl(component.control),
-            third = createTabsComponentStyleTabs(component.tabs),
-            fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
-            fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
-            sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
-        ) { overrides, control, tabs, backgroundColor, border, shadow ->
-            TabsComponentStyle(
-                size = component.size,
-                padding = component.padding.toPaddingValues(),
-                margin = component.margin.toPaddingValues(),
-                backgroundColor = backgroundColor,
-                shape = component.shape ?: DEFAULT_SHAPE,
-                border = border,
-                shadow = shadow,
-                control = control,
-                tabs = tabs,
-                overrides = overrides,
-            )
+        createTabsComponentStyleTabControl(component.control).flatMap { control ->
+            zipOrAccumulate(
+                first = component.overrides
+                    ?.toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
+                    .orSuccessfullyNull()
+                    .mapError { nonEmptyListOf(it) },
+                second = createTabsComponentStyleTabs(component.tabs, control),
+                third = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+                fourth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+                fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+            ) { overrides, tabs, backgroundColor, border, shadow ->
+                TabsComponentStyle(
+                    size = component.size,
+                    padding = component.padding.toPaddingValues(),
+                    margin = component.margin.toPaddingValues(),
+                    backgroundColor = backgroundColor,
+                    shape = component.shape ?: DEFAULT_SHAPE,
+                    border = border,
+                    shadow = shadow,
+                    control = control,
+                    tabs = tabs,
+                    overrides = overrides,
+                )
+            }
         }
 
     private fun createTabsComponentStyleTabControl(
         componentControl: TabsComponent.TabControl,
-    ): Result<TabsComponentStyle.TabControl, NonEmptyList<PaywallValidationError>> =
+    ): Result<TabControlStyle, NonEmptyList<PaywallValidationError>> =
         when (componentControl) {
-            // FIXME This stack will contain a TabControlButtonComponent component.
-            is TabsComponent.TabControl.Buttons -> createStackComponentStyle(componentControl.stack, rcPackage = null)
-                .map { TabsComponentStyle.TabControl.Buttons(it) }
-            // FIXME This stack will contain a TabControlToggleComponent component.
-            is TabsComponent.TabControl.Toggle -> createStackComponentStyle(componentControl.stack, rcPackage = null)
-                .map { TabsComponentStyle.TabControl.Toggle(it) }
+            // This stack will contain a TabControlButtonComponent component.
+            is TabsComponent.TabControl.Buttons -> createStackComponentStyle(
+                component = componentControl.stack,
+                rcPackage = null,
+                tabControl = null,
+            ).map { TabControlStyle.Buttons(it) }
+            // This stack will contain a TabControlToggleComponent component.
+            is TabsComponent.TabControl.Toggle -> createStackComponentStyle(
+                component = componentControl.stack,
+                rcPackage = null,
+                tabControl = null,
+            ).map { TabControlStyle.Toggle(it) }
         }
 
     private fun createTabsComponentStyleTabs(
         componentTabs: List<TabsComponent.Tab>,
+        control: TabControlStyle,
     ): Result<NonEmptyList<TabsComponentStyle.Tab>, NonEmptyList<PaywallValidationError>> =
         componentTabs
             .toNonEmptyListOrNull()
             .errorIfNull(nonEmptyListOf(PaywallValidationError.TabsComponentWithoutTabs))
-            .flatMap { tabs -> tabs.map { tab -> createTabsComponentStyleTab(tab) }.flatten() }
+            .flatMap { tabs -> tabs.map { tab -> createTabsComponentStyleTab(tab, control) }.flatten() }
 
     private fun createTabsComponentStyleTab(
         componentTag: TabsComponent.Tab,
+        control: TabControlStyle,
     ): Result<TabsComponentStyle.Tab, NonEmptyList<PaywallValidationError>> =
-        createStackComponentStyle(componentTag.stack, rcPackage = null)
+        createStackComponentStyle(componentTag.stack, rcPackage = null, tabControl = control)
             .map { stack -> TabsComponentStyle.Tab(stack) }
 
     private fun ThemeImageUrls.withLocalizedOverrides(

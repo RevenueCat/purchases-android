@@ -57,7 +57,7 @@ internal class TabsComponentStyle(
     @get:JvmSynthetic
     val shadow: ShadowStyles?,
     @get:JvmSynthetic
-    val control: TabControl,
+    val control: TabControlStyle,
     @get:JvmSynthetic
     val tabs: NonEmptyList<Tab>,
     @get:JvmSynthetic
@@ -66,13 +66,17 @@ internal class TabsComponentStyle(
 
     @Immutable
     class Tab(@get:JvmSynthetic val stack: StackComponentStyle)
+}
+
+@Immutable
+internal sealed interface TabControlStyle : ComponentStyle {
+    @Immutable
+    class Buttons(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
+        override val size: Size = stack.size
+    }
 
     @Immutable
-    sealed interface TabControl {
-        @Immutable
-        class Buttons(@get:JvmSynthetic val stack: StackComponentStyle) : TabControl
-
-        @Immutable
-        class Toggle(@get:JvmSynthetic val stack: StackComponentStyle) : TabControl
+    class Toggle(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
+        override val size: Size = stack.size
     }
 }

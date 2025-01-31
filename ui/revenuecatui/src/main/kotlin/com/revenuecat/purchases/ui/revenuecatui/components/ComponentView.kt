@@ -17,6 +17,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggleComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
@@ -59,4 +62,20 @@ internal fun ComponentView(
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
     is TimelineComponentStyle -> TimelineComponentView(style = style, state = state, modifier = modifier)
     is TabsComponentStyle -> TODO()
+    // This is a special Stack that has TabControlButtonComponentStyle children.
+    is TabControlStyle.Buttons -> StackComponentView(
+        style = style.stack,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
+    // This is a special Stack that has a TabControlToggleComponentStyle child.
+    is TabControlStyle.Toggle -> StackComponentView(
+        style = style.stack,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
+    is TabControlButtonComponentStyle -> TODO()
+    is TabControlToggleComponentStyle -> TODO()
 }
