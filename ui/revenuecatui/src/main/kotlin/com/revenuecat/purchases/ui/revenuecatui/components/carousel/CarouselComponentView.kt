@@ -76,7 +76,6 @@ internal fun CarouselComponentView(
     val backgroundColorStyle = carouselState.backgroundColor?.forCurrentTheme
     val borderStyle = carouselState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = carouselState.shadow?.let { rememberShadowStyle(shadow = it) }
-    val composeShape by remember(carouselState.shape) { derivedStateOf { carouselState.shape.toShape() } }
 
     val pageCount = style.slides.size
 
@@ -112,11 +111,11 @@ internal fun CarouselComponentView(
     Column(
         modifier = modifier
             .padding(carouselState.margin)
-            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
-            .clip(composeShape)
+            .applyIfNotNull(shadowStyle) { shadow(it, carouselState.shape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, carouselState.shape) }
+            .clip(carouselState.shape)
             .applyIfNotNull(borderStyle) {
-                border(it, composeShape)
+                border(it, carouselState.shape)
                     .padding(it.width)
             }
             .padding(carouselState.padding),

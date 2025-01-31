@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -108,7 +109,7 @@ internal class CarouselComponentState(
     val margin by derivedStateOf { presentedPartial?.partial?.margin?.toPaddingValues() ?: style.margin }
 
     @get:JvmSynthetic
-    val shape by derivedStateOf { presentedPartial?.partial?.shape ?: style.shape }
+    val shape by derivedStateOf { presentedPartial?.partial?.shape?.toShape() ?: style.shape.toShape() }
 
     @get:JvmSynthetic
     val border by derivedStateOf { presentedPartial?.borderStyles ?: style.border }
