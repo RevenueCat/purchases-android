@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalO
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
@@ -61,6 +62,7 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
+        context: Context,
     )
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
@@ -128,6 +130,7 @@ internal class CustomerCenterViewModelImpl(
                             product,
                             it.promotionalOffer!!,
                             path,
+                            context,
                         )
                     } else {
                         mainPathAction(path, context)
@@ -142,6 +145,7 @@ internal class CustomerCenterViewModelImpl(
                 product,
                 path.promotionalOffer!!,
                 path,
+                context,
             )
         } else {
             mainPathAction(path, context)
@@ -365,6 +369,7 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
+        context: Context,
     ) {
         val offerIdentifier = promotionalOffer.productMapping[product.id]
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
@@ -375,6 +380,7 @@ internal class CustomerCenterViewModelImpl(
             }
         }
         if (subscriptionOption != null) {
+            val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(context)
             _state.update {
                 val currentState = _state.value
                 if (currentState is CustomerCenterState.Success) {
@@ -383,6 +389,7 @@ internal class CustomerCenterViewModelImpl(
                             promotionalOffer,
                             subscriptionOption,
                             originalPath,
+                            pricingPhasesDescription,
                         ),
                     )
                 } else {

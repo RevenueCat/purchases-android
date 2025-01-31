@@ -20,4 +20,9 @@
     <string name="lifetime">Lifetime</string>
     <string name="no_browser_cannot_open_link">No browser installed. Link could not be opened.</string>
     <string name="cannot_open_link">Link invalid. Could not be opened.</string>
+    <string name="free_trial_then_price">First %1$s free, then %2$s</string>
+    <string name="single_payment_then_price">%1$s for %2$s, then %3$s</string>
+    <string name="discounted_recurring_then_price">%1$s during %2$s, then %3$s</string>
+    <string name="free_trial_single_payment_then_price">Try %1$s for free, then %2$s for %3$s, and %4$s thereafter</string>
+    <string name="free_trial_discounted_then_price">Try %1$s for free, then %2$s for your first %3$s, and %4$s thereafter</string>
 </resources>

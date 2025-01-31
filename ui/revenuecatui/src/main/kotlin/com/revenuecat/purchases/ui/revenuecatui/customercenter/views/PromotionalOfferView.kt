@@ -75,9 +75,7 @@ internal fun PromotionalOfferView(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
         ) {
-            @Suppress("ForbiddenComment")
-            // TODO: modify this to display price of the offer
-            Text("Accept offer")
+            Text(promotionalOfferData.localizedPricingPhasesDescription)
         }
         OutlinedButton(
             onClick = { onDismiss() },
@@ -108,6 +106,7 @@ internal fun PromotionalOfferViewPreview() {
             title = "Didn't receive purchase",
             type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
         ),
+        localizedPricingPhasesDescription = "1 month for $7.99, then $9.99/mth",
     )
     PromotionalOfferView(
         data,
