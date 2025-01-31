@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory as ActualStyleFactory
 
 private val defaultLocaleId = LocaleId("en_US")
@@ -43,56 +44,6 @@ internal fun StyleFactory(
         variableLocalizations = variableLocalizations,
         offering = offering,
     )
-
-/**
- * This is duplicated in PreviewHelpers.kt in the main source set.
- */
-internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalizationKey, String> =
-    VariableLocalizationKey.values().associateWith { key ->
-        when (key) {
-            VariableLocalizationKey.ANNUAL -> "annual"
-            VariableLocalizationKey.ANNUAL_SHORT -> "yr"
-            VariableLocalizationKey.ANNUALLY -> "annually"
-            VariableLocalizationKey.DAILY -> "daily"
-            VariableLocalizationKey.DAY -> "day"
-            VariableLocalizationKey.DAY_SHORT -> "day"
-            VariableLocalizationKey.FREE_PRICE -> "free"
-            VariableLocalizationKey.MONTH -> "month"
-            VariableLocalizationKey.MONTH_SHORT -> "mo"
-            VariableLocalizationKey.MONTHLY -> "monthly"
-            VariableLocalizationKey.NUM_DAY_FEW -> "%d days"
-            VariableLocalizationKey.NUM_DAY_MANY -> "%d days"
-            VariableLocalizationKey.NUM_DAY_ONE -> "%d day"
-            VariableLocalizationKey.NUM_DAY_OTHER -> "%d days"
-            VariableLocalizationKey.NUM_DAY_TWO -> "%d days"
-            VariableLocalizationKey.NUM_DAY_ZERO -> "%d day"
-            VariableLocalizationKey.NUM_MONTH_FEW -> "%d months"
-            VariableLocalizationKey.NUM_MONTH_MANY -> "%d months"
-            VariableLocalizationKey.NUM_MONTH_ONE -> "%d month"
-            VariableLocalizationKey.NUM_MONTH_OTHER -> "%d months"
-            VariableLocalizationKey.NUM_MONTH_TWO -> "%d months"
-            VariableLocalizationKey.NUM_MONTH_ZERO -> "%d month"
-            VariableLocalizationKey.NUM_WEEK_FEW -> "%d weeks"
-            VariableLocalizationKey.NUM_WEEK_MANY -> "%d weeks"
-            VariableLocalizationKey.NUM_WEEK_ONE -> "%d week"
-            VariableLocalizationKey.NUM_WEEK_OTHER -> "%d weeks"
-            VariableLocalizationKey.NUM_WEEK_TWO -> "%d weeks"
-            VariableLocalizationKey.NUM_WEEK_ZERO -> "%d week"
-            VariableLocalizationKey.NUM_YEAR_FEW -> "%d years"
-            VariableLocalizationKey.NUM_YEAR_MANY -> "%d years"
-            VariableLocalizationKey.NUM_YEAR_ONE -> "%d year"
-            VariableLocalizationKey.NUM_YEAR_OTHER -> "%d years"
-            VariableLocalizationKey.NUM_YEAR_TWO -> "%d years"
-            VariableLocalizationKey.NUM_YEAR_ZERO -> "%d year"
-            VariableLocalizationKey.PERCENT -> "%d%%"
-            VariableLocalizationKey.WEEK -> "week"
-            VariableLocalizationKey.WEEK_SHORT -> "wk"
-            VariableLocalizationKey.WEEKLY -> "weekly"
-            VariableLocalizationKey.YEAR -> "year"
-            VariableLocalizationKey.YEAR_SHORT -> "yr"
-            VariableLocalizationKey.YEARLY -> "yearly"
-        }
-    }.toNonEmptyMapOrNull()!!
 
 internal fun variableLocalizationKeysForEsMx(): NonEmptyMap<VariableLocalizationKey, String> =
     VariableLocalizationKey.values().associateWith { key ->
