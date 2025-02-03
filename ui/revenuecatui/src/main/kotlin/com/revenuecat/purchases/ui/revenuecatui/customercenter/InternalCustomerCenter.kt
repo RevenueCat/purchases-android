@@ -5,6 +5,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
@@ -130,25 +133,51 @@ private fun InternalCustomerCenter(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val title = getTitleForState(state)
-    CustomerCenterScaffold(
-        modifier = modifier,
-        title = title,
-        onAction = onAction,
-        navigationButtonType =
-        if (state is CustomerCenterState.Success) {
-            state.navigationButtonType
+
+    val colorScheme = if (state is CustomerCenterState.Success) {
+        val isDark = isSystemInDarkTheme()
+        val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
+        val accentColor = appearance.getColorForTheme(isDark) { it.accentColor }
+
+        // Only change background when presenting a promotional offer
+        val backgroundColor = if (state.promotionalOfferData != null) {
+            appearance.getColorForTheme(isDark) { it.backgroundColor }
         } else {
-            CustomerCenterState.NavigationButtonType.CLOSE
-        },
+            null
+        }
+
+        MaterialTheme.colorScheme.copy(
+            primary = accentColor ?: MaterialTheme.colorScheme.primary,
+            background = backgroundColor ?: MaterialTheme.colorScheme.background,
+        )
+    } else {
+        MaterialTheme.colorScheme
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
     ) {
-        when (state) {
-            is CustomerCenterState.NotLoaded -> {}
-            is CustomerCenterState.Loading -> CustomerCenterLoading()
-            is CustomerCenterState.Error -> CustomerCenterError(state)
-            is CustomerCenterState.Success -> CustomerCenterLoaded(
-                state,
-                onAction,
-            )
+        CustomerCenterScaffold(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.background),
+            title = title,
+            onAction = onAction,
+            navigationButtonType =
+            if (state is CustomerCenterState.Success) {
+                state.navigationButtonType
+            } else {
+                CustomerCenterState.NavigationButtonType.CLOSE
+            },
+        ) {
+            when (state) {
+                is CustomerCenterState.NotLoaded -> {}
+                is CustomerCenterState.Loading -> CustomerCenterLoading()
+                is CustomerCenterState.Error -> CustomerCenterError(state)
+                is CustomerCenterState.Success -> CustomerCenterLoaded(
+                    state,
+                    onAction,
+                )
+            }
         }
     }
 }
@@ -222,6 +251,7 @@ private fun CustomerCenterLoaded(
         val promotionalOfferData = state.promotionalOfferData
         PromotionalOfferView(
             promotionalOfferData = promotionalOfferData,
+            appearance = state.customerCenterConfigData.appearance,
             onAccept = { subscriptionOption ->
                 onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
             },
