@@ -33,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurv
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -53,7 +54,12 @@ internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
     val actionError: State<PurchasesError?>
 
-    suspend fun pathButtonPressed(context: Context, path: CustomerCenterConfigData.HelpPath, product: StoreProduct?)
+    suspend fun pathButtonPressed(
+        context: Context,
+        path: CustomerCenterConfigData.HelpPath,
+        product: StoreProduct?,
+    )
+
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
@@ -62,6 +68,7 @@ internal interface CustomerCenterViewModel {
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
     )
+
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
     fun onNavigationButtonPressed()
@@ -293,10 +300,12 @@ internal class CustomerCenterViewModelImpl(
                     willRenew = it.willRenew,
                     expiresDate = it.expiresDate,
                 )
+
                 is Transaction -> TransactionDetails.NonSubscription(
                     productIdentifier = it.productIdentifier,
                     store = it.store,
                 )
+
                 else -> null
             }
         }
@@ -371,6 +380,7 @@ internal class CustomerCenterViewModelImpl(
             when (option) {
                 is GoogleSubscriptionOption ->
                     option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
+
                 else -> false
             }
         }
@@ -378,11 +388,14 @@ internal class CustomerCenterViewModelImpl(
             _state.update {
                 val currentState = _state.value
                 if (currentState is CustomerCenterState.Success) {
+                    val localization = currentState.customerCenterConfigData.localization
+                    val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
                     currentState.copy(
                         promotionalOfferData = PromotionalOfferData(
                             promotionalOffer,
                             subscriptionOption,
                             originalPath,
+                            pricingPhasesDescription,
                         ),
                     )
                 } else {
