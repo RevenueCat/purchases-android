@@ -3,8 +3,10 @@ package com.revenuecat.purchases.customercenter
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.paywalls.EmptyStringToNullSerializer
 import com.revenuecat.purchases.paywalls.PaywallColor
+import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.net.URL
 
 typealias RCColor = PaywallColor
 
@@ -269,6 +271,8 @@ data class CustomerCenterConfigData(
         val type: PathType,
         @SerialName("promotional_offer") val promotionalOffer: PathDetail.PromotionalOffer? = null,
         @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
+        @Serializable(with = OptionalURLSerializer::class) val url: URL? = null,
+        @SerialName("open_method") val openMethod: OpenMethod? = null,
     ) {
         @Serializable
         sealed class PathDetail {
@@ -301,6 +305,14 @@ data class CustomerCenterConfigData(
             REFUND_REQUEST,
             CHANGE_PLANS,
             CANCEL,
+            CUSTOM_URL,
+            UNKNOWN,
+        }
+
+        @Serializable
+        enum class OpenMethod {
+            IN_APP,
+            EXTERNAL,
             UNKNOWN,
         }
     }

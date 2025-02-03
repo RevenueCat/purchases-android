@@ -343,6 +343,7 @@ private val previewConfigData = CustomerCenterConfigData(
                     type = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
                     promotionalOffer = null,
                     feedbackSurvey = null,
+                    openMethod = null,
                 ),
             ),
         ),
