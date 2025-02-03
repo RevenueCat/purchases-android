@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,13 +33,11 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
-import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shape
@@ -53,19 +50,18 @@ import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.padding
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
+import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -78,10 +74,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorSty
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
@@ -553,37 +547,6 @@ private val TwoDimensionalAlignment.isTop: Boolean
         -> false
     }
 
-/**
- * For [FlexDistribution.SPACE_AROUND] and [FlexDistribution.SPACE_EVENLY] we need to add some extra padding, as we
- * cannot use `Arrangement` to add spacing of a minimum size before or after the content. See
- * [FlexDistribution.toHorizontalArrangement] and [FlexDistribution.toVerticalArrangement] for more info.
- */
-@Stable
-private fun Modifier.padding(dimension: Dimension, spacing: Dp): Modifier =
-    when (dimension) {
-        is Dimension.Horizontal -> {
-            when (dimension.distribution) {
-                FlexDistribution.START,
-                FlexDistribution.END,
-                FlexDistribution.CENTER,
-                FlexDistribution.SPACE_BETWEEN,
-                -> this
-                FlexDistribution.SPACE_AROUND -> this.padding(horizontal = spacing / 2)
-                FlexDistribution.SPACE_EVENLY -> this.padding(horizontal = spacing)
-            }
-        }
-        is Dimension.Vertical -> when (dimension.distribution) {
-            FlexDistribution.START,
-            FlexDistribution.END,
-            FlexDistribution.CENTER,
-            FlexDistribution.SPACE_BETWEEN,
-            -> this
-            FlexDistribution.SPACE_AROUND -> this.padding(vertical = spacing / 2)
-            FlexDistribution.SPACE_EVENLY -> this.padding(vertical = spacing)
-        }
-        is Dimension.ZLayer -> this
-    }
-
 private fun getOverlaidBadgeOffsetY(
     height: Int,
     alignment: TwoDimensionalAlignment,
@@ -729,25 +692,9 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
             corners = CornerRadiuses.Dp(all = 20.0),
         )
         StackComponentView(
-            style = StackComponentStyle(
+            style = previewStackComponentStyle(
                 children = previewChildren(),
-                dimension = Dimension.Vertical(
-                    alignment = HorizontalAlignment.CENTER,
-                    distribution = FlexDistribution.START,
-                ),
-                size = Size(width = Fixed(200u), height = Fit),
-                spacing = 16.dp,
-                backgroundColor = ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
-                ),
-                padding = PaddingValues(all = 0.dp),
-                margin = PaddingValues(all = 0.dp),
-                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
-                shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, badgeShape),
-                rcPackage = null,
-                overrides = null,
             ),
             state = previewEmptyState(),
             clickHandler = { },
@@ -884,44 +831,23 @@ private fun StackComponentView_Preview_ZLayer() {
         StackComponentView(
             style = StackComponentStyle(
                 children = listOf(
-                    TextComponentStyle(
-                        texts = nonEmptyMapOf(LocaleId("en_US") to "Hello"),
-                        color = ColorStyles(
-                            light = ColorStyle.Solid(Color.Black),
-                        ),
-                        fontSize = 15,
-                        fontWeight = FontWeight.REGULAR.toFontWeight(),
-                        fontSpec = null,
-                        textAlign = HorizontalAlignment.CENTER.toTextAlign(),
-                        horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
+                    previewTextComponentStyle(
+                        text = "Hello",
                         backgroundColor = ColorStyles(
                             light = ColorStyle.Solid(Color.Yellow),
                             dark = ColorStyle.Solid(Color.Red),
                         ),
                         size = Size(width = Fit, height = Fit),
-                        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
-                        margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0).toPaddingValues(),
-                        rcPackage = null,
-                        overrides = null,
+                        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
+                        margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0),
                     ),
-                    TextComponentStyle(
-                        texts = nonEmptyMapOf(LocaleId("en_US") to "World"),
-                        color = ColorStyles(
-                            light = ColorStyle.Solid(Color.Black),
-                        ),
-                        fontSize = 15,
-                        fontWeight = FontWeight.REGULAR.toFontWeight(),
-                        fontSpec = null,
-                        textAlign = HorizontalAlignment.CENTER.toTextAlign(),
-                        horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
+                    previewTextComponentStyle(
+                        text = "World",
                         backgroundColor = ColorStyles(
                             light = ColorStyle.Solid(Color.Blue),
                         ),
                         size = Size(width = Fit, height = Fit),
-                        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
-                        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
-                        rcPackage = null,
-                        overrides = null,
+                        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
                     ),
                 ),
                 dimension = Dimension.ZLayer(alignment = TwoDimensionalAlignment.BOTTOM_TRAILING),
@@ -1089,43 +1015,21 @@ private fun StackComponentView_Preview_Distribution(
 
 @Composable
 private fun previewChildren() = listOf(
-    TextComponentStyle(
-        texts = nonEmptyMapOf(LocaleId("en_US") to "Hello"),
-        color = ColorStyles(
-            light = ColorStyle.Solid(Color.Black),
-        ),
-        fontSize = 15,
-        fontWeight = FontWeight.REGULAR.toFontWeight(),
-        fontSpec = null,
-        textAlign = HorizontalAlignment.CENTER.toTextAlign(),
-        horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
+    previewTextComponentStyle(
+        text = "Hello",
         backgroundColor = ColorStyles(
             light = ColorStyle.Solid(Color.Blue),
         ),
         size = Size(width = Fit, height = Fit),
-        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
-        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
-        rcPackage = null,
-        overrides = null,
+        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
     ),
-    TextComponentStyle(
-        texts = nonEmptyMapOf(LocaleId("en_US") to "World"),
-        color = ColorStyles(
-            light = ColorStyle.Solid(Color.Black),
-        ),
-        fontSize = 15,
-        fontWeight = FontWeight.REGULAR.toFontWeight(),
-        fontSpec = null,
-        textAlign = HorizontalAlignment.CENTER.toTextAlign(),
-        horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
+    previewTextComponentStyle(
+        text = "World",
         backgroundColor = ColorStyles(
             light = ColorStyle.Solid(Color.Blue),
         ),
         size = Size(width = Fit, height = Fit),
-        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
-        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
-        rcPackage = null,
-        overrides = null,
+        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
     ),
 )
 
@@ -1134,32 +1038,15 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
     return BadgeStyle(
         stackStyle = StackComponentStyle(
             children = listOf(
-                TextComponentStyle(
-                    texts = nonEmptyMapOf(LocaleId("en_US") to "Badge"),
-                    color = ColorStyles(
-                        light = ColorStyle.Solid(Color.Black),
-                    ),
-                    fontSize = 15,
-                    fontWeight = FontWeight.REGULAR.toFontWeight(),
-                    fontSpec = null,
-                    textAlign = HorizontalAlignment.CENTER.toTextAlign(),
-                    horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
-                    backgroundColor = null,
+                previewTextComponentStyle(
+                    text = "Badge",
                     size = Size(width = Fit, height = Fit),
                     padding = Padding(
                         top = 8.0,
                         bottom = 8.0,
                         leading = 8.0,
                         trailing = 8.0,
-                    ).toPaddingValues(),
-                    margin = Padding(
-                        top = 0.0,
-                        bottom = 0.0,
-                        leading = 0.0,
-                        trailing = 0.0,
-                    ).toPaddingValues(),
-                    rcPackage = null,
-                    overrides = null,
+                    ),
                 ),
             ),
             dimension = Dimension.Vertical(

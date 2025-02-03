@@ -26,12 +26,15 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -367,6 +370,7 @@ internal class PaywallViewModelImpl(
                         purchases.awaitCustomerInfo(),
                         _colorScheme.value,
                         purchases.storefrontCountryCode,
+                        options.mode,
                     )
                 }
             } catch (e: PurchasesException) {
@@ -386,12 +390,20 @@ internal class PaywallViewModelImpl(
         customerInfo: CustomerInfo,
         colorScheme: ColorScheme,
         storefrontCountryCode: String?,
+        mode: PaywallMode,
     ): PaywallState {
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
         }
 
-        val validationResult = offering.validatedPaywall(colorScheme, resourceProvider)
+        var validationResult = offering.validatedPaywall(colorScheme, resourceProvider)
+        if (validationResult is PaywallValidationResult.Components && !mode.isFullScreen) {
+            validationResult = offering.fallbackPaywall(
+                colorScheme,
+                resourceProvider,
+                PaywallValidationError.InvalidModeForComponentsPaywall,
+            )
+        }
 
         validationResult.errors?.let { validationErrors ->
             validationErrors.forEach { error ->
@@ -484,14 +496,14 @@ internal class PaywallViewModelImpl(
 
     private fun PaywallState.Loaded.Legacy.createEventData(): PaywallEvent.Data? {
         val offering = offering
-        val paywallData = this.offering.paywall ?: run {
+        val revision = this.offering.paywall?.revision ?: this.offering.paywallComponents?.data?.revision ?: run {
             Logger.e("Null paywall revision trying to create event data")
             return null
         }
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
             offeringIdentifier = offering.identifier,
-            paywallRevision = paywallData.revision,
+            paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),

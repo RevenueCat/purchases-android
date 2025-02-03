@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
@@ -46,6 +47,8 @@ internal class TextComponentStyle(
      */
     @get:JvmSynthetic
     val rcPackage: Package?,
+    @get:JvmSynthetic
+    val variableLocalizations: Map<LocaleId, Map<VariableLocalizationKey, String>>,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<LocalizedTextPartial>?,
 ) : ComponentStyle

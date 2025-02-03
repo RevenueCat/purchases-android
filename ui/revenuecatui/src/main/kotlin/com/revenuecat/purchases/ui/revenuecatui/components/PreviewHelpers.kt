@@ -3,11 +3,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.decode.DataSource
@@ -23,16 +25,22 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -43,16 +51,21 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
@@ -83,7 +96,12 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         serverDescription = "serverDescription",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        paywallComponents = Offering.PaywallComponents(
+            uiConfig = UiConfig(
+                localizations = nonEmptyMapOf(LocaleId("en_US") to variableLocalizationKeysForEnUs()),
+            ),
+            data = data,
+        ),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     return offering.toComponentsPaywallState(
@@ -91,6 +109,45 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
+    )
+}
+
+@Suppress("LongParameterList")
+internal fun previewStackComponentStyle(
+    children: List<ComponentStyle>,
+    dimension: Dimension = Dimension.Vertical(
+        alignment = HorizontalAlignment.CENTER,
+        distribution = FlexDistribution.START,
+    ),
+    size: Size = Size(width = Fixed(200u), height = Fit),
+    spacing: Dp = 16.dp,
+    backgroundColor: ColorStyles = ColorStyles(
+        light = ColorStyle.Solid(Color.Red),
+    ),
+    padding: PaddingValues = PaddingValues(all = 0.dp),
+    margin: PaddingValues = PaddingValues(all = 0.dp),
+    shape: Shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+    border: BorderStyles? = BorderStyles(
+        width = 2.dp,
+        colors = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
+    ),
+    shadow: ShadowStyles? = null,
+    badge: BadgeStyle? = null,
+): StackComponentStyle {
+    return StackComponentStyle(
+        children = children,
+        dimension = dimension,
+        size = size,
+        spacing = spacing,
+        backgroundColor = backgroundColor,
+        padding = padding,
+        margin = margin,
+        shape = shape,
+        border = border,
+        shadow = shadow,
+        badge = badge,
+        rcPackage = null,
+        overrides = null,
     )
 }
 
@@ -110,8 +167,9 @@ internal fun previewTextComponentStyle(
     margin: Padding = zero,
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
+    val localeId = LocaleId("en_US")
     return TextComponentStyle(
-        texts = nonEmptyMapOf(LocaleId("en_US") to text),
+        texts = nonEmptyMapOf(localeId to text),
         color = color,
         fontSize = fontSize,
         fontWeight = weight,
@@ -123,6 +181,7 @@ internal fun previewTextComponentStyle(
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
         rcPackage = null,
+        variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
         overrides = null,
     )
 }
@@ -194,3 +253,57 @@ internal fun previewImageLoader(
 @Suppress("MaxLineLength")
 internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? =
     validatePaywallComponentsDataOrNull(LocalContext.current.toResourceProvider())
+
+/**
+ * This is only VisibleForTesting because we could use the same convenience when writing tests. We're not actually
+ * testing this function.
+ */
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+@JvmSynthetic
+@Suppress("CyclomaticComplexMethod")
+internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalizationKey, String> =
+    VariableLocalizationKey.values().associateWith { key ->
+        when (key) {
+            VariableLocalizationKey.ANNUAL -> "annual"
+            VariableLocalizationKey.ANNUAL_SHORT -> "yr"
+            VariableLocalizationKey.ANNUALLY -> "annually"
+            VariableLocalizationKey.DAILY -> "daily"
+            VariableLocalizationKey.DAY -> "day"
+            VariableLocalizationKey.DAY_SHORT -> "day"
+            VariableLocalizationKey.FREE_PRICE -> "free"
+            VariableLocalizationKey.MONTH -> "month"
+            VariableLocalizationKey.MONTH_SHORT -> "mo"
+            VariableLocalizationKey.MONTHLY -> "monthly"
+            VariableLocalizationKey.NUM_DAY_FEW -> "%d days"
+            VariableLocalizationKey.NUM_DAY_MANY -> "%d days"
+            VariableLocalizationKey.NUM_DAY_ONE -> "%d day"
+            VariableLocalizationKey.NUM_DAY_OTHER -> "%d days"
+            VariableLocalizationKey.NUM_DAY_TWO -> "%d days"
+            VariableLocalizationKey.NUM_DAY_ZERO -> "%d day"
+            VariableLocalizationKey.NUM_MONTH_FEW -> "%d months"
+            VariableLocalizationKey.NUM_MONTH_MANY -> "%d months"
+            VariableLocalizationKey.NUM_MONTH_ONE -> "%d month"
+            VariableLocalizationKey.NUM_MONTH_OTHER -> "%d months"
+            VariableLocalizationKey.NUM_MONTH_TWO -> "%d months"
+            VariableLocalizationKey.NUM_MONTH_ZERO -> "%d month"
+            VariableLocalizationKey.NUM_WEEK_FEW -> "%d weeks"
+            VariableLocalizationKey.NUM_WEEK_MANY -> "%d weeks"
+            VariableLocalizationKey.NUM_WEEK_ONE -> "%d week"
+            VariableLocalizationKey.NUM_WEEK_OTHER -> "%d weeks"
+            VariableLocalizationKey.NUM_WEEK_TWO -> "%d weeks"
+            VariableLocalizationKey.NUM_WEEK_ZERO -> "%d week"
+            VariableLocalizationKey.NUM_YEAR_FEW -> "%d years"
+            VariableLocalizationKey.NUM_YEAR_MANY -> "%d years"
+            VariableLocalizationKey.NUM_YEAR_ONE -> "%d year"
+            VariableLocalizationKey.NUM_YEAR_OTHER -> "%d years"
+            VariableLocalizationKey.NUM_YEAR_TWO -> "%d years"
+            VariableLocalizationKey.NUM_YEAR_ZERO -> "%d year"
+            VariableLocalizationKey.PERCENT -> "%d%%"
+            VariableLocalizationKey.WEEK -> "week"
+            VariableLocalizationKey.WEEK_SHORT -> "wk"
+            VariableLocalizationKey.WEEKLY -> "weekly"
+            VariableLocalizationKey.YEAR -> "year"
+            VariableLocalizationKey.YEAR_SHORT -> "yr"
+            VariableLocalizationKey.YEARLY -> "yearly"
+        }
+    }.toNonEmptyMapOrNull()!!

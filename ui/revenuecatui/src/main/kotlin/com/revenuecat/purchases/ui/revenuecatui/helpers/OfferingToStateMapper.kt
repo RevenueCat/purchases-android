@@ -63,7 +63,8 @@ internal fun PaywallData.validate(
     )
 }
 
-private fun Offering.fallbackPaywall(
+@JvmSynthetic
+internal fun Offering.fallbackPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
     error: PaywallValidationError,
@@ -125,6 +126,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         localizations = localizations,
         colorAliases = colorAliases,
         fontAliases = fontAliases,
+        variableLocalizations = paywallComponents.uiConfig.localizations,
         offering = this,
     )
     val config = paywallComponents.data.componentsConfig.base

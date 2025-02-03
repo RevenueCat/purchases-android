@@ -16,9 +16,11 @@ private class PricingPhaseAPI {
         val price: Price = pricingPhase.price
         val pricePerMonthString: String = pricingPhase.formattedPriceInMonths(locale)
         val pricePerMonthStringNoLocale: String = pricingPhase.formattedPriceInMonths()
+        val pricePerDay = pricingPhase.pricePerDay(locale)
         val pricePerWeek = pricingPhase.pricePerWeek(locale)
         val pricePerMonth = pricingPhase.pricePerMonth(locale)
         val pricePerYear = pricingPhase.pricePerYear(locale)
+        val pricePerDayNoLocale = pricingPhase.pricePerDay()
         val pricePerWeekNoLocale = pricingPhase.pricePerWeek()
         val pricePerMonthNoLocale = pricingPhase.pricePerMonth()
         val pricePerYearNoLocale = pricingPhase.pricePerYear()

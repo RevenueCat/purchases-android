@@ -22,14 +22,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.LocalizationData
-import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -40,10 +36,9 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertApproximatePixe
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertRectangularBorderColor
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowChangingTest
 import org.junit.Rule
 import org.junit.Test
@@ -130,21 +125,7 @@ internal class StackComponentViewWindowTests {
             )
         )
         val state = FakePaywallState(component)
-        val styleFactory = StyleFactory(
-            localizations = nonEmptyMapOf(
-                LocaleId("en_US") to nonEmptyMapOf(
-                    LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
-                )
-            ),
-            colorAliases = emptyMap(),
-            fontAliases = emptyMap(),
-            offering = Offering(
-                identifier = "identifier",
-                serverDescription = "description",
-                metadata = emptyMap(),
-                availablePackages = emptyList(),
-            )
-        )
+        val styleFactory = StyleFactory()
         val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
         val content = @Composable {
             // An outer box, because a shadow draws outside the Composable's bounds.
