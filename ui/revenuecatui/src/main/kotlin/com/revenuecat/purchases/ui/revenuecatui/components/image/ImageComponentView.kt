@@ -220,8 +220,8 @@ private fun ImageComponentView_Bigger_Container_Fill_Fit_FitModeFill_Preview() {
     Box(
         modifier = Modifier
             .background(ComposeColor.Red)
-            .fillMaxWidth()
-            .height(200.dp)
+            .fillMaxHeight()
+            .width(200.dp)
             .padding(20.dp),
     ) {
         ImageComponentView(
