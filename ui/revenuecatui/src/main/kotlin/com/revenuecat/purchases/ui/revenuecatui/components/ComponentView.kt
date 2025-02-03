@@ -25,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlButtonView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlToggleView
+import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabsComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.timeline.TimelineComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -63,7 +64,12 @@ internal fun ComponentView(
     is PackageComponentStyle -> PackageComponentView(style = style, state = state, modifier = modifier)
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
     is TimelineComponentStyle -> TimelineComponentView(style = style, state = state, modifier = modifier)
-    is TabsComponentStyle -> TODO()
+    is TabsComponentStyle -> TabsComponentView(
+        style = style,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
     // This is a special Stack that has TabControlButtonComponentStyle children.
     is TabControlStyle.Buttons -> StackComponentView(
         style = style.stack,
