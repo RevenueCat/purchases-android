@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.utils
 
 import android.content.ActivityNotFoundException
@@ -9,14 +11,16 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
-enum class URLOpeningMethod {
-    IN_APP_BROWSER,
-    EXTERNAL_BROWSER,
-    DEEP_LINK,
+internal enum class URLOpeningMethod {
+    @JvmSynthetic IN_APP_BROWSER,
+
+    @JvmSynthetic EXTERNAL_BROWSER,
+
+    @JvmSynthetic DEEP_LINK,
 }
 
-object URLOpener {
-    fun openURL(context: Context, url: String, method: URLOpeningMethod) {
+internal object URLOpener {
+    @JvmSynthetic internal fun openURL(context: Context, url: String, method: URLOpeningMethod) {
         fun handleException(exception: Exception) {
             val message = if (exception is ActivityNotFoundException) {
                 context.getString(R.string.no_browser_cannot_open_link)
