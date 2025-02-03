@@ -355,6 +355,7 @@ data class CustomerCenterConfigData(
             val androidSupportedPathTypes = setOf(
                 HelpPath.PathType.MISSING_PURCHASE,
                 HelpPath.PathType.CANCEL,
+                HelpPath.PathType.CUSTOM_URL,
             )
             paths.filter { it.type in androidSupportedPathTypes }
         }

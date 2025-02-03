@@ -189,7 +189,11 @@ internal class CustomerCenterViewModelImpl(
 
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL -> {
                 path.url?.let {
-                    openURL(context, Uri.parse(it.toString()))
+                    openURL(
+                        context,
+                        Uri.parse(it.toString()),
+                        path.openMethod ?: CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
+                    )
                 }
             }
 
