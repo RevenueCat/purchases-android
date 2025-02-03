@@ -284,7 +284,7 @@ private fun getInitialPage(carouselState: CarouselComponentState) = if (carousel
 private fun CarouselComponentView_Preview() {
     Box(modifier = Modifier.background(Color.White)) {
         CarouselComponentView(
-            style = previewCarouselComponentStyle(loop = true),
+            style = previewCarouselComponentStyle(),
             state = previewEmptyState(),
             clickHandler = {},
         )
