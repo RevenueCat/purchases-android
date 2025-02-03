@@ -205,7 +205,7 @@ private fun Indicator(
         }
     }
 
-    val targetWidth by remember(progress) {
+    val targetWidth by remember {
         derivedStateOf {
             // We assume the size of the indicator to be Fixed.
             // It won't show otherwise.
@@ -216,7 +216,7 @@ private fun Indicator(
             )
         }
     }
-    val targetHeight by remember(progress) {
+    val targetHeight by remember {
         derivedStateOf {
             // We assume the size of the indicator to be Fixed.
             // It won't show otherwise.
@@ -227,7 +227,7 @@ private fun Indicator(
             )
         }
     }
-    val targetSpacing by remember(progress) {
+    val targetSpacing by remember {
         derivedStateOf {
             lerpUnit(
                 pageControl.default.spacing,
