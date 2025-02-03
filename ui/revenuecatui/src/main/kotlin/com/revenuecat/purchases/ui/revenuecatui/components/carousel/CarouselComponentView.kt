@@ -55,7 +55,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.extensions.dp
+import com.revenuecat.purchases.ui.revenuecatui.extensions.dpOrNull
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
 
@@ -210,8 +210,8 @@ private fun Indicator(
             // We assume the size of the indicator to be Fixed.
             // It won't show otherwise.
             lerpUnit(
-                pageControl.default.size.width.dp ?: 0.dp,
-                pageControl.active.size.width.dp ?: 0.dp,
+                pageControl.default.size.width.dpOrNull() ?: 0.dp,
+                pageControl.active.size.width.dpOrNull() ?: 0.dp,
                 progress,
             )
         }
@@ -221,8 +221,8 @@ private fun Indicator(
             // We assume the size of the indicator to be Fixed.
             // It won't show otherwise.
             lerpUnit(
-                pageControl.default.size.height.dp ?: 0.dp,
-                pageControl.active.size.height.dp ?: 0.dp,
+                pageControl.default.size.height.dpOrNull() ?: 0.dp,
+                pageControl.active.size.height.dpOrNull() ?: 0.dp,
                 progress,
             )
         }
