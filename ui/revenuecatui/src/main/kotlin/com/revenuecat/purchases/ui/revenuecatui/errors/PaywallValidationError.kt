@@ -9,6 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 
 internal sealed class PaywallValidationError : Throwable() {
 
+    @Suppress("CyclomaticComplexMethod")
     fun associatedErrorString(offering: Offering): String {
         return when (this) {
             is InvalidIcons -> {
@@ -35,6 +36,7 @@ internal sealed class PaywallValidationError : Throwable() {
             is MissingColorAlias -> message
             is AliasedColorIsAlias -> message
             is MissingFontAlias -> message
+            is InvalidModeForComponentsPaywall -> PaywallValidationErrorStrings.INVALID_MODE_FOR_COMPONENTS_PAYWALL
         }
     }
 
@@ -90,4 +92,5 @@ internal sealed class PaywallValidationError : Throwable() {
     ) : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.MISSING_FONT_ALIAS.format(alias.value)
     }
+    object InvalidModeForComponentsPaywall : PaywallValidationError()
 }
