@@ -281,12 +281,14 @@ internal fun Offering.toLegacyPaywallState(
     )
 }
 
+@Suppress("LongParameterList")
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
     activelySubscribedProductIds: Set<String>,
     purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
+    initialSelectedTabIndex: Int = 0,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -303,6 +305,7 @@ internal fun Offering.toComponentsPaywallState(
         activelySubscribedProductIds = activelySubscribedProductIds,
         purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
         dateProvider = dateProvider,
+        initialSelectedTabIndex = initialSelectedTabIndex,
     )
 }
 

@@ -85,6 +85,7 @@ internal fun ComponentView(
     )
     is TabControlToggleComponentStyle -> TabControlToggleView(
         style = style,
+        state = state,
         modifier = modifier,
     )
 }

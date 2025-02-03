@@ -19,7 +19,7 @@ internal fun TabControlButtonView(
         style = style.stack,
         state = state,
         // We act like a button, so we're handling the click already.
-        clickHandler = { },
+        clickHandler = { state.update(selectedTabIndex = style.tabIndex) },
         modifier = modifier.clickable { },
     )
 }
