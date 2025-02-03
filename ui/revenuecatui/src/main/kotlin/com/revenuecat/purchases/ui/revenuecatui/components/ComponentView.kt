@@ -23,6 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggl
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlButtonView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlToggleView
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.timeline.TimelineComponentView
@@ -77,7 +78,11 @@ internal fun ComponentView(
         clickHandler = onClick,
         modifier = modifier,
     )
-    is TabControlButtonComponentStyle -> TODO()
+    is TabControlButtonComponentStyle -> TabControlButtonView(
+        style = style,
+        state = state,
+        modifier = modifier,
+    )
     is TabControlToggleComponentStyle -> TabControlToggleView(
         style = style,
         modifier = modifier,
