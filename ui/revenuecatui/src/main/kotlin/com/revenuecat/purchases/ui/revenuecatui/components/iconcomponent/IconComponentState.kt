@@ -32,6 +32,7 @@ internal fun rememberUpdatedIconComponentState(
     rememberUpdatedIconComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
 @JvmSynthetic
@@ -39,6 +40,7 @@ internal fun rememberUpdatedIconComponentState(
 private fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
     selectedPackageProvider: () -> Package?,
+    selectedTabIndexProvider: () -> Int,
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -47,6 +49,7 @@ private fun rememberUpdatedIconComponentState(
             initialWindowSize = windowSize,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -60,10 +63,17 @@ internal class IconComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: IconComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+        if (style.rcPackage != null) {
+            style.rcPackage.identifier == selectedPackageProvider()?.identifier
+        } else if (style.tabIndex != null) {
+            style.tabIndex == selectedTabIndexProvider()
+        } else {
+            false
+        }
     }
     private val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()

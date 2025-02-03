@@ -85,6 +85,7 @@ class ButtonComponentViewTests {
                             margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
                                 .toPaddingValues(),
                             rcPackage = null,
+                            tabIndex = null,
                             variableLocalizations = nonEmptyMapOf(
                                 LocaleId("en_US") to variableLocalizationKeysForEnUs()
                             ),
@@ -107,6 +108,7 @@ class ButtonComponentViewTests {
                     ),
                     badge = null,
                     rcPackage = null,
+                    tabIndex = null,
                     overrides = null,
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage,

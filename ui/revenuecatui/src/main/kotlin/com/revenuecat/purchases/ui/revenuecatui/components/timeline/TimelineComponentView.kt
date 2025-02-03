@@ -235,6 +235,7 @@ private fun previewStyle(
         margin = margin,
         items = items,
         rcPackage = null,
+        tabIndex = null,
         overrides = null,
     )
 }
@@ -258,6 +259,7 @@ private fun previewItems(
             icon = previewIcon(),
             connector = previewConnectorStyle(margin = connectorMargins),
             rcPackage = null,
+            tabIndex = null,
             overrides = null,
         ),
         TimelineComponentStyle.ItemStyle(
@@ -274,6 +276,7 @@ private fun previewItems(
             icon = previewIcon(),
             connector = previewConnectorStyle(margin = connectorMargins),
             rcPackage = null,
+            tabIndex = null,
             overrides = null,
         ),
         TimelineComponentStyle.ItemStyle(
@@ -299,6 +302,7 @@ private fun previewItems(
                 ).toColorStyle(),
             ),
             rcPackage = null,
+            tabIndex = null,
             overrides = null,
         ),
     )

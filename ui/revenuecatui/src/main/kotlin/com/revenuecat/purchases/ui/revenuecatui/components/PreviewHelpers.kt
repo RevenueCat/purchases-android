@@ -139,6 +139,7 @@ internal fun previewTextComponentStyle(
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
         rcPackage = null,
+        tabIndex = null,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
         overrides = null,
     )
@@ -184,6 +185,7 @@ internal fun previewIconComponentStyle(
         color = backgroundColor,
     ),
     rcPackage = null,
+    tabIndex = null,
     overrides = null,
 )
 

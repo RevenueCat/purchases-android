@@ -427,6 +427,7 @@ private fun previewImageComponentStyle(
     overlay = overlay,
     contentScale = fitMode.toContentScale(),
     rcPackage = null,
+    tabIndex = null,
     overrides = null,
 )
 

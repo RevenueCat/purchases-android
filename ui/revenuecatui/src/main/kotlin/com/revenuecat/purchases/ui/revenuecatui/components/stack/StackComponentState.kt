@@ -32,6 +32,7 @@ internal fun rememberUpdatedStackComponentState(
     rememberUpdatedStackComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
 @JvmSynthetic
@@ -39,6 +40,7 @@ internal fun rememberUpdatedStackComponentState(
 internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     selectedPackageProvider: () -> Package?,
+    selectedTabIndexProvider: () -> Int,
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -47,6 +49,7 @@ internal fun rememberUpdatedStackComponentState(
             initialWindowSize = windowSize,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -60,10 +63,17 @@ internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: StackComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+        if (style.rcPackage != null) {
+            style.rcPackage.identifier == selectedPackageProvider()?.identifier
+        } else if (style.tabIndex != null) {
+            style.tabIndex == selectedTabIndexProvider()
+        } else {
+            false
+        }
     }
 
     /**

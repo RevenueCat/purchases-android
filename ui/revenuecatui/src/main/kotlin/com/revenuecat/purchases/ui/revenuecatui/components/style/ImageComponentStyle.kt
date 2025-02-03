@@ -42,6 +42,12 @@ internal class ImageComponentStyle(
      */
     @get:JvmSynthetic
     val rcPackage: Package?,
+    /**
+     * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
+     * available. This should only be set for stacks inside tab control elements. Not for all stacks within a tab.
+     */
+    @get:JvmSynthetic
+    val tabIndex: Int?,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedImagePartial>?,
 ) : ComponentStyle
