@@ -22,4 +22,6 @@ internal object PaywallValidationErrorStrings {
     const val MISSING_COLOR_ALIAS = "Aliased color '%s' does not exist."
     const val ALIASED_COLOR_IS_ALIAS = "Aliased color '%s' has an aliased value '%s', which is not allowed."
     const val MISSING_FONT_ALIAS = "Aliased font '%s' does not exist."
+    const val INVALID_MODE_FOR_COMPONENTS_PAYWALL =
+        "Paywalls V2 does not support footer modes. Falling back to legacy fallback paywall."
 }

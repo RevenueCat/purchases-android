@@ -63,7 +63,8 @@ internal fun PaywallData.validate(
     )
 }
 
-private fun Offering.fallbackPaywall(
+@JvmSynthetic
+internal fun Offering.fallbackPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
     error: PaywallValidationError,
