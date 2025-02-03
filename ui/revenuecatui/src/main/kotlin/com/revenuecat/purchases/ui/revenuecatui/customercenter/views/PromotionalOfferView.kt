@@ -24,7 +24,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.composables.AppIcon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
-import com.revenuecat.purchases.ui.revenuecatui.utils.stubSubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.utils.previewSubscriptionOption
 
 @JvmSynthetic
 @Composable
@@ -89,7 +89,7 @@ internal fun PromotionalOfferViewPreview() {
         }!!.promotionalOffer!!
     val data = PromotionalOfferData(
         promoOffer,
-        subscriptionOption = stubSubscriptionOption(
+        subscriptionOption = previewSubscriptionOption(
             "rc-cancel-offer",
             "monthly",
         ),

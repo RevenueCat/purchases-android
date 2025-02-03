@@ -15,11 +15,11 @@ import com.revenuecat.purchases.models.toRecurrenceMode
 
 @SuppressWarnings("LongParameterList")
 @JvmSynthetic
-internal fun stubSubscriptionOption(
+internal fun previewSubscriptionOption(
     id: String,
     productId: String,
     duration: Period = Period(1, Period.Unit.MONTH, "P1M"),
-    pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration)),
+    pricingPhases: List<PricingPhase> = listOf(previewPricingPhase(billingPeriod = duration)),
     presentedOfferingContext: PresentedOfferingContext? = null,
     installmentsInfo: InstallmentsInfo? = null,
 ): SubscriptionOption = object : SubscriptionOption {
@@ -34,7 +34,7 @@ internal fun stubSubscriptionOption(
     override val presentedOfferingContext: PresentedOfferingContext?
         get() = presentedOfferingContext
     override val purchasingData: PurchasingData
-        get() = StubPurchasingData(
+        get() = PreviewPurchasingData(
             productId = productId,
         )
     override val installmentsInfo: InstallmentsInfo?
@@ -43,7 +43,7 @@ internal fun stubSubscriptionOption(
 
 @SuppressWarnings("MagicNumber")
 @JvmSynthetic
-internal fun stubPricingPhase(
+internal fun previewPricingPhase(
     billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
     priceCurrencyCodeValue: String = "USD",
     price: Double = 4.99,
@@ -60,7 +60,7 @@ internal fun stubPricingPhase(
     ),
 )
 
-internal data class StubPurchasingData(
+internal data class PreviewPurchasingData(
     @get:JvmSynthetic override val productId: String,
 ) : PurchasingData {
 

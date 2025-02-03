@@ -8,7 +8,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.ui.revenuecatui.utils.stubPricingPhase
+import com.revenuecat.purchases.ui.revenuecatui.utils.previewPricingPhase
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -36,28 +36,28 @@ class SubscriptionOptionExtensionsTest(
             val mockLocalization = mockk<CustomerCenterConfigData.Localization>()
 
             // Setup common test data
-            val trialPhase = stubPricingPhase(
+            val trialPhase = previewPricingPhase(
                 billingPeriod = Period.create("P1M"),
                 priceCurrencyCodeValue = "USD",
                 price = 0.0,
                 recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
                 billingCycleCount = 2,
             )
-            val discountPhase = stubPricingPhase(
+            val discountPhase = previewPricingPhase(
                 billingPeriod = Period.create("P1M"),
                 priceCurrencyCodeValue = "USD",
                 price = 0.99,
                 recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
                 billingCycleCount = 2,
             )
-            val singlePaymentPhase = stubPricingPhase(
+            val singlePaymentPhase = previewPricingPhase(
                 billingPeriod = Period.create("P1M"),
                 priceCurrencyCodeValue = "USD",
                 price = 1.99,
                 recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
                 billingCycleCount = 1,
             )
-            val fullPricePhase = stubPricingPhase(
+            val fullPricePhase = previewPricingPhase(
                 billingPeriod = Period.create("P1M"),
                 priceCurrencyCodeValue = "USD",
                 price = 3.99,
