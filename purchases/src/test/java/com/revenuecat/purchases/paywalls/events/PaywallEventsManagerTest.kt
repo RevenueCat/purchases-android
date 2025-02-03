@@ -73,22 +73,8 @@ class PaywallEventsManagerTest {
         val context = mockk<Context>().apply {
             every { filesDir } returns tempTestFolder
         }
-        legacyFileHelper = EventsFileHelper(
-            FileHelper(context),
-            EventsManager.PAYWALL_EVENTS_FILE_PATH,
-            PaywallStoredEvent::toString,
-            PaywallStoredEvent::fromString,
-        )
-        fileHelper = EventsFileHelper(
-            FileHelper(context),
-            EventsManager.EVENTS_FILE_PATH_NEW,
-            { event ->
-                EventsManager.json.encodeToString(BackendEvent.serializer(), event)
-            },
-            { jsonString ->
-                EventsManager.json.decodeFromString(BackendEvent.serializer(), jsonString)
-            },
-        )
+        legacyFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context))
+        fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context))
         identityManager = mockk<IdentityManager>().apply {
             every { currentAppUserID } returns userID
         }

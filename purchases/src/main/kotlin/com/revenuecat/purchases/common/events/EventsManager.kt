@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
@@ -39,6 +40,24 @@ internal class EventsManager(
                     subclass(BackendEvent.Paywalls::class, BackendEvent.Paywalls.serializer())
                 }
             }
+        }
+
+        fun backendEvents(fileHelper: FileHelper): EventsFileHelper<BackendEvent> {
+            return EventsFileHelper(
+                fileHelper,
+                EVENTS_FILE_PATH_NEW,
+                { event -> json.encodeToString(BackendEvent.serializer(), event) },
+                { jsonString -> json.decodeFromString(BackendEvent.serializer(), jsonString) },
+            )
+        }
+
+        fun paywalls(fileHelper: FileHelper): EventsFileHelper<PaywallStoredEvent> {
+            return EventsFileHelper(
+                fileHelper,
+                EventsManager.PAYWALL_EVENTS_FILE_PATH,
+                PaywallStoredEvent::toString,
+                PaywallStoredEvent::fromString,
+            )
         }
     }
 

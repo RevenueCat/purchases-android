@@ -22,7 +22,6 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -37,13 +36,11 @@ import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
-import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
-import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
@@ -314,22 +311,8 @@ internal class PurchasesFactory(
         // older versions.
         return if (isAndroidNOrNewer()) {
             EventsManager(
-                legacyEventsFileHelper = EventsFileHelper(
-                    FileHelper(context),
-                    EventsManager.PAYWALL_EVENTS_FILE_PATH,
-                    PaywallStoredEvent::toString,
-                    PaywallStoredEvent::fromString,
-                ),
-                fileHelper = EventsFileHelper(
-                    FileHelper(context),
-                    EventsManager.EVENTS_FILE_PATH_NEW,
-                    { event ->
-                        EventsManager.json.encodeToString(BackendEvent.serializer(), event) + "\n"
-                    },
-                    { jsonString ->
-                        EventsManager.json.decodeFromString(BackendEvent.serializer(), jsonString)
-                    },
-                ),
+                legacyEventsFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context)),
+                fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context)),
                 identityManager,
                 eventsDispatcher,
                 postEvents = { request, onSuccess, onError ->
