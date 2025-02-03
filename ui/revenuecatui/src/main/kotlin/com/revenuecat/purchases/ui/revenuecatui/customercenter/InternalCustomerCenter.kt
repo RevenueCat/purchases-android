@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -135,8 +134,7 @@ private fun InternalCustomerCenter(
 ) {
     val title = getTitleForState(state)
 
-    val colorScheme: ColorScheme
-    if (state is CustomerCenterState.Success) {
+    val colorScheme = if (state is CustomerCenterState.Success) {
         val isDark = isSystemInDarkTheme()
         val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
         val accentColor = appearance.getColorForTheme(isDark) { it.accentColor }
@@ -148,12 +146,12 @@ private fun InternalCustomerCenter(
             null
         }
 
-        colorScheme = MaterialTheme.colorScheme.copy(
+        MaterialTheme.colorScheme.copy(
             primary = accentColor ?: MaterialTheme.colorScheme.primary,
             background = backgroundColor ?: MaterialTheme.colorScheme.background,
         )
     } else {
-        colorScheme = MaterialTheme.colorScheme
+        MaterialTheme.colorScheme
     }
 
     MaterialTheme(
