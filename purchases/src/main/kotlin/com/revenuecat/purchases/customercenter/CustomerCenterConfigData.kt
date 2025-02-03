@@ -313,7 +313,6 @@ data class CustomerCenterConfigData(
         enum class OpenMethod {
             IN_APP,
             EXTERNAL,
-            UNKNOWN,
         }
     }
 
