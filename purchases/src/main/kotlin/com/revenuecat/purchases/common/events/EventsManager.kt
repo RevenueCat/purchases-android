@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.events
 
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Delay
@@ -26,14 +27,16 @@ internal class EventsManager(
         () -> Unit,
         (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) -> Unit,
-    private val flushCount: Int = 50,
 ) {
 
     companion object {
-        const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
+        private const val FLUSH_COUNT = 50
+        private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
 
-        internal val json = Json {
+        private val json = Json {
             serializersModule = SerializersModule {
                 polymorphic(BackendEvent::class) {
                     subclass(BackendEvent.CustomerCenter::class, BackendEvent.CustomerCenter.serializer())
@@ -67,7 +70,7 @@ internal class EventsManager(
 
     @get:Synchronized
     @set:Synchronized
-    private var legacyFlushDone = false
+    private var legacyFlushTriggered = false
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
@@ -97,9 +100,9 @@ internal class EventsManager(
             }
             flushInProgress = true
 
-            if (!legacyFlushDone) {
+            if (!legacyFlushTriggered) {
                 flushLegacyEvents()
-                legacyFlushDone = true
+                legacyFlushTriggered = true
             }
 
             val storedEventsWithNullValues = getStoredEvents()
@@ -136,17 +139,18 @@ internal class EventsManager(
 
     private fun flushLegacyEvents() {
         enqueue {
-            val storedLegacyEventsWithNullValues = getLegacyStoredEvents()
+            val storedLegacyEventsWithNullValues = getLegacyPaywallsStoredEvents()
             val storedLegacyEvents = storedLegacyEventsWithNullValues.filterNotNull()
+            val storedBackendEvents = storedLegacyEvents.map { BackendEvent.Paywalls(it.toPaywallBackendEvent()) }
 
             if (storedLegacyEvents.isEmpty()) {
                 verboseLog("No legacy events to sync. Skipping legacy flush.")
                 return@enqueue
             }
 
-            verboseLog("Legacy event flush: posting ${storedLegacyEvents.size} events.")
+            verboseLog("Legacy event flush: posting ${storedBackendEvents.size} events.")
             postEvents(
-                EventRequest(storedLegacyEvents),
+                EventRequest(storedBackendEvents),
                 {
                     verboseLog("Legacy event flush: success.")
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
@@ -166,19 +170,17 @@ internal class EventsManager(
     private fun getStoredEvents(): List<BackendEvent?> {
         var events: List<BackendEvent?> = emptyList()
         fileHelper.readFile { sequence ->
-            events = sequence.take(flushCount).toList()
+            events = sequence.take(FLUSH_COUNT).toList()
         }
         return events
     }
 
-    private fun getLegacyStoredEvents(): List<BackendEvent> {
+    private fun getLegacyPaywallsStoredEvents(): List<PaywallStoredEvent?> {
         var events: List<PaywallStoredEvent?> = emptyList()
         legacyEventsFileHelper.readFile { sequence ->
-            events = sequence.take(flushCount).toList()
+            events = sequence.take(FLUSH_COUNT).toList()
         }
         return events
-            .filterNotNull()
-            .map { BackendEvent.Paywalls(it.toPaywallBackendEvent()) }
     }
 
     private fun enqueue(delay: Delay = Delay.NONE, command: () -> Unit) {
