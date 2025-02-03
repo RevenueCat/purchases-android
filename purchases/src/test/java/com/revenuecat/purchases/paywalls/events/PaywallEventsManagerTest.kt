@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventRequest
 import com.revenuecat.purchases.common.events.EventsManager
@@ -104,14 +105,13 @@ class PaywallEventsManagerTest {
 
     @Test
     fun `tracking events adds them to file`() {
-        eventsManager.track(event)
+        eventsManager.track(FeatureEvent.Paywall(event))
 
         checkFileContents(
             """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent() + "\n"
         )
 
-        eventsManager.track(event.copy(type = PaywallEventType.CANCEL))
-
+        eventsManager.track(FeatureEvent.Paywall(event.copy(type = PaywallEventType.CANCEL)))
         checkFileContents(
             """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
@@ -123,8 +123,8 @@ class PaywallEventsManagerTest {
     @Test
     fun `flushEvents sends available events to backend`() {
         mockBackendResponse(success = true)
-        eventsManager.track(event)
-        eventsManager.track(event)
+        eventsManager.track(FeatureEvent.Paywall(event))
+        eventsManager.track(FeatureEvent.Paywall(event))
         eventsManager.flushEvents()
         checkFileContents("")
         val expectedRequest = EventRequest(
@@ -158,7 +158,7 @@ class PaywallEventsManagerTest {
     fun `if more than maximum events flushEvents only posts maximum events`() {
         mockBackendResponse(success = true)
         for (i in 0..99) {
-            eventsManager.track(event)
+            eventsManager.track(FeatureEvent.Paywall(event))
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
@@ -169,7 +169,7 @@ class PaywallEventsManagerTest {
     fun `if backend errors without marking events as synced, events are not deleted`() {
         mockBackendResponse(success = false, shouldMarkAsSyncedOnError = false)
         for (i in 0..99) {
-            eventsManager.track(event)
+            eventsManager.track(FeatureEvent.Paywall(event))
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
@@ -180,7 +180,7 @@ class PaywallEventsManagerTest {
     fun `if backend errors but marking events as synced, events are deleted`() {
         mockBackendResponse(success = false, shouldMarkAsSyncedOnError = true)
         for (i in 0..99) {
-            eventsManager.track(event)
+            eventsManager.track(FeatureEvent.Paywall(event))
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
@@ -192,8 +192,8 @@ class PaywallEventsManagerTest {
         every {
             backend.postPaywallEvents(any(), any(), any())
         } just Runs
-        eventsManager.track(event)
-        eventsManager.track(event)
+        eventsManager.track(FeatureEvent.Paywall(event))
+        eventsManager.track(FeatureEvent.Paywall(event))
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         eventsManager.flushEvents()
@@ -208,8 +208,8 @@ class PaywallEventsManagerTest {
         every {
             backend.postPaywallEvents(any(), capture(successSlot), any())
         } just Runs
-        eventsManager.track(event)
-        eventsManager.track(event)
+        eventsManager.track(FeatureEvent.Paywall(event))
+        eventsManager.track(FeatureEvent.Paywall(event))
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         eventsManager.flushEvents()
@@ -218,9 +218,9 @@ class PaywallEventsManagerTest {
         }
         successSlot.captured()
         checkFileContents("")
-        eventsManager.track(event)
-        eventsManager.track(event)
-        eventsManager.track(event)
+        eventsManager.track(FeatureEvent.Paywall(event))
+        eventsManager.track(FeatureEvent.Paywall(event))
+        eventsManager.track(FeatureEvent.Paywall(event))
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 2) {
@@ -233,9 +233,9 @@ class PaywallEventsManagerTest {
     @Test
     fun `flushEvents with invalid events, flushes valid events`() {
         mockBackendResponse(success = true)
-        eventsManager.track(event)
+        eventsManager.track(FeatureEvent.Paywall(event))
         appendToFile("invalid event\n")
-        eventsManager.track(event)
+        eventsManager.track(FeatureEvent.Paywall(event))
         appendToFile("invalid event 2\n")
         checkFileNumberOfEvents(4)
         eventsManager.flushEvents()
@@ -247,12 +247,12 @@ class PaywallEventsManagerTest {
     fun `flushEvents with invalid events, flushes valid events when reaching max count per request`() {
         mockBackendResponse(success = true)
         for (i in 0..24) {
-            eventsManager.track(event)
+            eventsManager.track(FeatureEvent.Paywall(event))
         }
         appendToFile("invalid event\n")
         appendToFile("invalid event 2\n")
         for (i in 0..49) {
-            eventsManager.track(event)
+            eventsManager.track(FeatureEvent.Paywall(event))
         }
         appendToFile("invalid event 3\n")
         checkFileNumberOfEvents(78)

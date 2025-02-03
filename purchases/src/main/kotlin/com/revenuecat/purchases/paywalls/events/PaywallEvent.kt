@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.paywalls.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
 import kotlinx.serialization.Serializable
@@ -38,7 +37,7 @@ data class PaywallEvent(
     val creationData: CreationData,
     val data: Data,
     val type: PaywallEventType,
-) : FeatureEvent {
+) {
 
     @Serializable
     data class CreationData(
@@ -69,7 +68,4 @@ data class PaywallEvent(
             offeringId = data.offeringIdentifier,
         )
     }
-
-    override val paywallEvent: PaywallEvent?
-        get() = this
 }

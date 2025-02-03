@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.createCustomerInfo
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -1314,9 +1315,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockEventsManager.track(event) } just Runs
+        every { mockEventsManager.track(FeatureEvent(paywallEvent = event)) } just Runs
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
-        purchases.track(event)
+        purchases.track(FeatureEvent.Paywall(event))
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
     }
 
@@ -1330,8 +1331,8 @@ internal class PurchasesTest : BasePurchasesTest() {
             every { type } returns PaywallEventType.CLOSE
         }
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
-        purchases.track(impressionEvent)
-        purchases.track(closeEvent)
+        purchases.track(FeatureEvent.Paywall(impressionEvent))
+        purchases.track(FeatureEvent.Paywall(close))
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
     }
 
@@ -1340,10 +1341,10 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockEventsManager.track(event) } just Runs
+        every { mockEventsManager.track(FeatureEvent.Paywall(event)) } just Runs
 
-        purchases.track(event)
-        verify(exactly = 1) { mockEventsManager.track(event) }
+        purchases.track(FeatureEvent.Paywall(event))
+        verify(exactly = 1) { mockEventsManager.track(FeatureEvent.Paywall(event)) }
     }
 
     // endregion track events

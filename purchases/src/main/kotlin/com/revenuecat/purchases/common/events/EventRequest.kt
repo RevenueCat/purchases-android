@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Serializable
-public data class EventRequest internal constructor(
+data class EventRequest internal constructor(
     internal val events: List<BackendEvent>,
 ) {
 

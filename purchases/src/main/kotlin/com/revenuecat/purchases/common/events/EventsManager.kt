@@ -78,8 +78,8 @@ internal class EventsManager(
         enqueue {
             debugLog("Tracking event: $event")
 
-            val backendEvent = when {
-                event.paywallEvent != null -> event.paywallEvent!!.toBackendEvent(identityManager.currentAppUserID)
+            val backendEvent = when (event) {
+                is FeatureEvent.Paywall -> event.event.toBackendEvent(identityManager.currentAppUserID)
                 else -> null
             }
 
