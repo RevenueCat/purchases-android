@@ -44,7 +44,7 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val pageControl: PageControlStyles?,
     @get:JvmSynthetic
-    val loop: Boolean?,
+    val loop: Boolean,
     @get:JvmSynthetic
     val autoAdvance: CarouselComponent.AutoAdvanceSlides?,
     /**
