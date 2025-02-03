@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.carousel
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,14 +14,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,7 +41,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
@@ -51,7 +55,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.extensions.dp
 import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.lerp as lerpUnit
 
 @Suppress("LongMethod")
 @JvmSynthetic
@@ -135,13 +141,12 @@ internal fun CarouselComponentView(
         }
 
         carouselState.pageControl?.let {
-            val currentPage = pagerState.currentPage % pageCount
             // The margin between the pager and the indicators is indicated
             // by the margins configured in the indicators themselves
             PagerIndicator(
                 pageControl = it,
                 pageCount = pageCount,
-                currentPageIndex = currentPage,
+                pagerState = pagerState,
             )
         }
     }
@@ -151,7 +156,7 @@ internal fun CarouselComponentView(
 private fun ColumnScope.PagerIndicator(
     pageControl: CarouselComponentStyle.PageControlStyles,
     pageCount: Int,
-    currentPageIndex: Int,
+    pagerState: PagerState,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -160,20 +165,104 @@ private fun ColumnScope.PagerIndicator(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(pageCount) { iteration ->
-            Indicator(if (currentPageIndex == iteration) pageControl.active else pageControl.default)
+            Indicator(
+                pagerState = pagerState,
+                pageIndex = iteration,
+                pageCount = pageCount,
+                pageControl = pageControl,
+            )
         }
     }
 }
 
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
-private fun Indicator(indicator: CarouselComponentStyle.IndicatorStyles) {
+private fun Indicator(
+    pagerState: PagerState,
+    pageIndex: Int,
+    pageCount: Int,
+    pageControl: CarouselComponentStyle.PageControlStyles,
+) {
+    val progress by remember {
+        derivedStateOf {
+            val processedCurrentPage = pagerState.currentPage % pageCount
+            when {
+                pageIndex == processedCurrentPage -> {
+                    if (pagerState.currentPageOffsetFraction >= 0f) {
+                        1f - pagerState.currentPageOffsetFraction
+                    } else {
+                        1f + pagerState.currentPageOffsetFraction
+                    }
+                }
+                pageIndex == processedCurrentPage + 1 && pagerState.currentPageOffsetFraction >= 0f -> {
+                    pagerState.currentPageOffsetFraction
+                }
+                pageIndex == processedCurrentPage - 1 && pagerState.currentPageOffsetFraction < 0f -> {
+                    -pagerState.currentPageOffsetFraction
+                }
+                else -> 0f
+            }
+        }
+    }
+
+    val targetWidth by remember(progress) {
+        derivedStateOf {
+            // We assume the size of the indicator to be Fixed.
+            // It won't show otherwise.
+            lerpUnit(
+                pageControl.default.size.width.dp ?: 0.dp,
+                pageControl.active.size.width.dp ?: 0.dp,
+                progress,
+            )
+        }
+    }
+    val targetHeight by remember(progress) {
+        derivedStateOf {
+            // We assume the size of the indicator to be Fixed.
+            // It won't show otherwise.
+            lerpUnit(
+                pageControl.default.size.height.dp ?: 0.dp,
+                pageControl.active.size.height.dp ?: 0.dp,
+                progress,
+            )
+        }
+    }
+    val targetSpacing by remember(progress) {
+        derivedStateOf {
+            lerpUnit(
+                pageControl.default.spacing,
+                pageControl.active.spacing,
+                progress,
+            )
+        }
+    }
+
+    val width by animateDpAsState(
+        targetValue = targetWidth,
+    )
+    val height by animateDpAsState(
+        targetValue = targetHeight,
+    )
+    val spacing by animateDpAsState(
+        targetValue = targetSpacing,
+    )
+
+    val color = lerp(
+        (pageControl.default.color.forCurrentTheme as? ColorStyle.Solid)?.color ?: Color.Transparent,
+        (pageControl.active.color.forCurrentTheme as? ColorStyle.Solid)?.color ?: Color.Transparent,
+        progress,
+    )
+    val isCurrentPage = pageIndex == (pagerState.currentPage % pageCount)
+
     Box(
         modifier = Modifier
-            .padding(indicator.margin)
-            .padding(horizontal = indicator.spacing / 2)
+            // Indicator margin only indicates vertical margins, and we don't want to animate those,
+            // or it might jump around during transitions.
+            .padding(if (isCurrentPage) pageControl.active.margin else pageControl.default.margin)
+            .padding(horizontal = spacing / 2)
             .clip(Shape.Pill.toShape())
-            .background(indicator.color.forCurrentTheme)
-            .size(indicator.size),
+            .background(color)
+            .size(width = width, height = height),
     )
 }
 
@@ -195,7 +284,7 @@ private fun getInitialPage(carouselState: CarouselComponentState) = if (carousel
 private fun CarouselComponentView_Preview() {
     Box(modifier = Modifier.background(Color.White)) {
         CarouselComponentView(
-            style = previewCarouselComponentStyle(),
+            style = previewCarouselComponentStyle(loop = true),
             state = previewEmptyState(),
             clickHandler = {},
         )
