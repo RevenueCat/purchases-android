@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.utils
 
 import com.android.billingclient.api.ProductDetails
@@ -12,6 +14,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.toRecurrenceMode
 
 @SuppressWarnings("LongParameterList")
+@JvmSynthetic
 internal fun stubSubscriptionOption(
     id: String,
     productId: String,
@@ -39,6 +42,7 @@ internal fun stubSubscriptionOption(
 }
 
 @SuppressWarnings("MagicNumber")
+@JvmSynthetic
 internal fun stubPricingPhase(
     billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
     priceCurrencyCodeValue: String = "USD",
@@ -57,8 +61,10 @@ internal fun stubPricingPhase(
 )
 
 internal data class StubPurchasingData(
-    override val productId: String,
+    @get:JvmSynthetic override val productId: String,
 ) : PurchasingData {
+
+    @get:JvmSynthetic
     override val productType: ProductType
         get() = ProductType.SUBS
 }
