@@ -117,7 +117,7 @@ class BackendGetCustomerCenterConfigTest {
                         type = HelpPath.PathType.CUSTOM_URL,
                         promotionalOffer = null,
                         feedbackSurvey = null,
-                        url = URL("https://revenuecat.com"),
+                        url = "https://revenuecat.com",
                         openMethod = HelpPath.OpenMethod.EXTERNAL,
                     ),
                 )
@@ -138,7 +138,7 @@ class BackendGetCustomerCenterConfigTest {
                         type = HelpPath.PathType.CUSTOM_URL,
                         promotionalOffer = null,
                         feedbackSurvey = null,
-                        url = URL("https://revenuecat.com"),
+                        url = "https://revenuecat.com",
                         openMethod = HelpPath.OpenMethod.EXTERNAL,
                     ),
                 )

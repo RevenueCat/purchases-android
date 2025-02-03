@@ -74,7 +74,7 @@ internal interface CustomerCenterViewModel {
     suspend fun loadCustomerCenter()
     fun openURL(
         context: Context,
-        url: Uri,
+        url: String,
         method: CustomerCenterConfigData.HelpPath.OpenMethod = CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
     )
     fun clearActionError()
@@ -191,7 +191,7 @@ internal class CustomerCenterViewModelImpl(
                 path.url?.let {
                     openURL(
                         context,
-                        Uri.parse(it.toString()),
+                        it,
                         path.openMethod ?: CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
                     )
                 }
@@ -367,14 +367,13 @@ internal class CustomerCenterViewModelImpl(
     }
 
     @SuppressWarnings("ForbiddenComment")
-    override fun openURL(context: Context, url: Uri, method: CustomerCenterConfigData.HelpPath.OpenMethod) {
+    override fun openURL(context: Context, url: String, method: CustomerCenterConfigData.HelpPath.OpenMethod) {
         val openingMethod = when (method) {
             CustomerCenterConfigData.HelpPath.OpenMethod.IN_APP -> URLOpeningMethod.IN_APP_BROWSER
             CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
-            CustomerCenterConfigData.HelpPath.OpenMethod.UNKNOWN,
             -> URLOpeningMethod.EXTERNAL_BROWSER
         }
-        URLOpener.openURL(context, url.toString(), openingMethod)
+        URLOpener.openURL(context, url, openingMethod)
     }
 
     override fun clearActionError() {
