@@ -28,6 +28,7 @@ import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationK
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2.Variable
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
@@ -36,7 +37,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
-import com.revenuecat.purchases.ui.revenuecatui.helpers.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.helpers.variableLocalizationKeysForEsMx
 import org.junit.Rule
 import org.junit.Test
