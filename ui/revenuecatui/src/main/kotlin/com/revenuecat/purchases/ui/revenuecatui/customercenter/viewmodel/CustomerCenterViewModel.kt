@@ -473,13 +473,9 @@ internal class CustomerCenterViewModelImpl(
                 }
                 currentState is CustomerCenterState.Success &&
                     currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
-                    currentState.copy(
-                        feedbackSurveyData = null,
-                        showRestoreDialog = false,
-                        navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                    )
+                    currentState.resetToMainScreen()
                 }
-                else -> CustomerCenterState.NotLoaded
+                else -> currentState
             }
         }
     }
@@ -516,19 +512,21 @@ internal class CustomerCenterViewModelImpl(
 
     private fun goBackToMain() {
         _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    feedbackSurveyData = null,
-                    promotionalOfferData = null,
-                    showRestoreDialog = false,
-                    title = null,
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                )
-            } else {
-                currentState
+            when (currentState) {
+                is CustomerCenterState.Success -> currentState.resetToMainScreen()
+                else -> currentState
             }
         }
     }
+
+    private fun CustomerCenterState.Success.resetToMainScreen() =
+        copy(
+            feedbackSurveyData = null,
+            promotionalOfferData = null,
+            showRestoreDialog = false,
+            title = null,
+            navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+        )
 
     private fun showManageSubscriptions(context: Context, productId: String) {
         try {
