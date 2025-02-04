@@ -4,6 +4,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -59,6 +63,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 
+private const val DURATION_MS_CROSS_FADE = 220
+
 @Composable
 internal fun TabsComponentView(
     style: TabsComponentStyle,
@@ -86,6 +92,10 @@ internal fun TabsComponentView(
             .clip(tabsState.shape)
             .applyIfNotNull(borderStyle) { border(it, tabsState.shape).padding(it.width) }
             .padding(tabsState.padding),
+        transitionSpec = {
+            fadeIn(animationSpec = tween(DURATION_MS_CROSS_FADE, delayMillis = 0))
+                .togetherWith(fadeOut(animationSpec = tween(DURATION_MS_CROSS_FADE)))
+        },
     ) { selectedTabIndex ->
         // Coerce it, just in case we get an out-of-range value.
         val tab = tabsState.tabs[selectedTabIndex.coerceIn(0..tabsState.tabs.lastIndex)]
