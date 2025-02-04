@@ -135,12 +135,15 @@ internal class CustomerCenterViewModelImpl(
                 goBackToMain()
                 option?.let {
                     if (product != null && it.promotionalOffer != null) {
-                        loadAndDisplayPromotionalOffer(
+                        val loaded = loadAndDisplayPromotionalOffer(
                             product,
                             it.promotionalOffer!!,
                             path,
                             context,
                         )
+                        if (!loaded) {
+                            mainPathAction(path, context)
+                        }
                     } else {
                         mainPathAction(path, context)
                     }
@@ -150,12 +153,15 @@ internal class CustomerCenterViewModelImpl(
         }
 
         if (product != null && path.promotionalOffer != null) {
-            loadAndDisplayPromotionalOffer(
+            val loaded = loadAndDisplayPromotionalOffer(
                 product,
                 path.promotionalOffer!!,
                 path,
                 context,
             )
+            if (!loaded) {
+                mainPathAction(path, context)
+            }
         } else {
             mainPathAction(path, context)
         }
@@ -417,7 +423,9 @@ internal class CustomerCenterViewModelImpl(
                     currentState
                 }
             }
+            return true
         }
+        return false
     }
 
     override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
@@ -459,12 +467,12 @@ internal class CustomerCenterViewModelImpl(
         _state.update { currentState ->
             when {
                 currentState is CustomerCenterState.Success &&
-                currentState.onNavigationOverride != null -> {
+                    currentState.onNavigationOverride != null -> {
                     currentState.onNavigationOverride.invoke()
                     currentState.copy(onNavigationOverride = null)
                 }
                 currentState is CustomerCenterState.Success &&
-                currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                    currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
                     currentState.copy(
                         feedbackSurveyData = null,
                         showRestoreDialog = false,
