@@ -526,6 +526,7 @@ internal class CustomerCenterViewModelImpl(
             showRestoreDialog = false,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+            onNavigationOverride = null,
         )
 
     private fun showManageSubscriptions(context: Context, productId: String) {
