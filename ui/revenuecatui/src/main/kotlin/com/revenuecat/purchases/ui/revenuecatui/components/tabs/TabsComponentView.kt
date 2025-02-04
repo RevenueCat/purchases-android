@@ -55,7 +55,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -212,7 +211,6 @@ private fun TabsComponentView_Preview(
                 x = 0.dp,
                 y = 10.dp,
             ),
-            control = TabControlStyle.Buttons(stack = previewStackComponentStyle(emptyList())),
             tabs = nonEmptyListOf(
                 TabsComponentStyle.Tab(
                     stack = previewStackComponentStyle(

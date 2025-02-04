@@ -31,6 +31,7 @@ internal fun rememberUpdatedCarouselComponentState(
     rememberUpdatedCarouselComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
 @JvmSynthetic
@@ -38,6 +39,7 @@ internal fun rememberUpdatedCarouselComponentState(
 private fun rememberUpdatedCarouselComponentState(
     style: CarouselComponentStyle,
     selectedPackageProvider: () -> Package?,
+    selectedTabIndexProvider: () -> Int,
 ): CarouselComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -46,6 +48,7 @@ private fun rememberUpdatedCarouselComponentState(
             initialWindowSize = windowSize,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -59,11 +62,18 @@ internal class CarouselComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: CarouselComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedTabIndexProvider: () -> Int,
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+        if (style.rcPackage != null) {
+            style.rcPackage.identifier == selectedPackageProvider()?.identifier
+        } else if (style.tabIndex != null) {
+            style.tabIndex == selectedTabIndexProvider()
+        } else {
+            false
+        }
     }
 
     private val applicablePackage by derivedStateOf {

@@ -467,6 +467,7 @@ internal class StyleFactory(
             loop = component.loop ?: false,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
+            tabIndex = tabIndex,
             overrides = presentedOverrides,
         )
     }
@@ -498,30 +499,28 @@ internal class StyleFactory(
     private fun createTabsComponentStyle(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createTabsComponentStyleTabControl(component.control).flatMap { control ->
-            zipOrAccumulate(
-                first = component.overrides
-                    ?.toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
-                    .orSuccessfullyNull()
-                    .mapError { nonEmptyListOf(it) },
-                second = createTabsComponentStyleTabs(component.tabs, control),
-                third = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
-                fourth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
-                fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
-            ) { overrides, tabs, backgroundColor, border, shadow ->
-                TabsComponentStyle(
-                    size = component.size,
-                    padding = component.padding.toPaddingValues(),
-                    margin = component.margin.toPaddingValues(),
-                    backgroundColor = backgroundColor,
-                    shape = component.shape ?: DEFAULT_SHAPE,
-                    border = border,
-                    shadow = shadow,
-                    control = control,
-                    tabs = tabs,
-                    overrides = overrides,
-                )
-            }
+        zipOrAccumulate(
+            first = component.overrides
+                ?.toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
+                .orSuccessfullyNull()
+                .mapError { nonEmptyListOf(it) },
+            second = createTabsComponentStyleTabControl(component.control)
+                .flatMap { control -> createTabsComponentStyleTabs(component.tabs, control) },
+            third = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+            fourth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+            fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+        ) { overrides, tabs, backgroundColor, border, shadow ->
+            TabsComponentStyle(
+                size = component.size,
+                padding = component.padding.toPaddingValues(),
+                margin = component.margin.toPaddingValues(),
+                backgroundColor = backgroundColor,
+                shape = component.shape ?: DEFAULT_SHAPE,
+                border = border,
+                shadow = shadow,
+                tabs = tabs,
+                overrides = overrides,
+            )
         }
 
     private fun createTabsComponentStyleTabControl(
