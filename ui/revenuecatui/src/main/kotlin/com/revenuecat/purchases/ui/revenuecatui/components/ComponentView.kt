@@ -5,12 +5,14 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stickyfooter.StickyFooterComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
@@ -33,7 +35,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 /**
  * A Composable that can show any [ComponentStyle].
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "CyclomaticComplexMethod")
 @JvmSynthetic
 @Composable
 internal fun ComponentView(
@@ -64,6 +66,12 @@ internal fun ComponentView(
     is PackageComponentStyle -> PackageComponentView(style = style, state = state, modifier = modifier)
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
     is TimelineComponentStyle -> TimelineComponentView(style = style, state = state, modifier = modifier)
+    is CarouselComponentStyle -> CarouselComponentView(
+        style = style,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
     is TabsComponentStyle -> TabsComponentView(
         style = style,
         state = state,

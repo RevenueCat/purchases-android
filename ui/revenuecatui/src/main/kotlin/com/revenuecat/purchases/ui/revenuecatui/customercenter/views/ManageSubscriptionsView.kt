@@ -21,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -161,6 +162,7 @@ fun CompatibilityContentUnavailableView(
         Image(
             painter = painterResource(id = drawableResId),
             contentDescription = null,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
             modifier = Modifier
                 .size(48.dp)
                 .padding(bottom = 8.dp),
@@ -243,7 +245,7 @@ private fun OtherPlatformSubscriptionButtonsView(
     Column {
         managementURL?.let {
             CustomerCenterButton(
-                onClick = { onAction(CustomerCenterAction.OpenURL(it)) },
+                onClick = { onAction(CustomerCenterAction.OpenURL(it.toString())) },
                 buttonContent = { modifier ->
                     Text(
                         text = localization.commonLocalizedString(
@@ -331,7 +333,7 @@ private fun CustomerCenterButton(
                 .padding(start = startPadding, end = endPadding),
             // It's a rectangle so it gets clipped by the parent Surface.
             shape = RectangleShape,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         ) {
             buttonContent(Modifier.fillMaxWidth())
         }

@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -157,7 +156,7 @@ private fun LoadedPaywallComponents_Preview() {
         serverDescription = "description",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     val state = offering.toComponentsPaywallState(
@@ -337,7 +336,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         serverDescription = "description",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     val state = offering.toComponentsPaywallState(
