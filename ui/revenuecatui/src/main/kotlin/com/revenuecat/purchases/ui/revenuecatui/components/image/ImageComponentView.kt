@@ -15,8 +15,11 @@ import androidx.annotation.Px
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -203,6 +206,54 @@ private fun ImageComponentView_Preview(
                         bottomTrailing = 20.0,
                     ),
                 ),
+            ),
+            state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(themeImageUrls),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ImageComponentView_Bigger_Container_Fill_Fit_FitModeFill_Preview() {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 100u, heightPx = 100u)
+    Box(
+        modifier = Modifier
+            .background(ComposeColor.Red)
+            .fillMaxHeight()
+            .width(200.dp)
+            .padding(20.dp),
+    ) {
+        ImageComponentView(
+            style = previewImageComponentStyle(
+                themeImageUrls = themeImageUrls,
+                size = Size(width = Fill, height = Fit),
+                fitMode = FitMode.FILL,
+                shape = MaskShape.Rectangle(),
+            ),
+            state = previewEmptyState(),
+            previewImageLoader = previewImageLoader(themeImageUrls),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ImageComponentView_Bigger_Container_Fit_Fill_FitModeFill_Preview() {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 100u, heightPx = 100u)
+    Box(
+        modifier = Modifier
+            .background(ComposeColor.Red)
+            .fillMaxWidth()
+            .height(200.dp)
+            .padding(20.dp),
+    ) {
+        ImageComponentView(
+            style = previewImageComponentStyle(
+                themeImageUrls = themeImageUrls,
+                size = Size(width = Fit, height = Fill),
+                fitMode = FitMode.FILL,
+                shape = MaskShape.Rectangle(),
             ),
             state = previewEmptyState(),
             previewImageLoader = previewImageLoader(themeImageUrls),

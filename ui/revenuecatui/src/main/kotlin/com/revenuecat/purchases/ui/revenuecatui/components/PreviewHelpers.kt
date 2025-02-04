@@ -3,17 +3,21 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.SuccessResult
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.UiConfig.AppConfig
+import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -26,14 +30,19 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -44,7 +53,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -106,6 +118,58 @@ internal fun previewEmptyState(
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
         initialSelectedTabIndex = initialSelectedTabIndex,
+    )
+}
+
+internal fun previewUiConfig(
+    app: AppConfig = AppConfig(),
+    localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = mapOf(
+        LocaleId("en_US") to variableLocalizationKeysForEnUs(),
+    ),
+    variableConfig: VariableConfig = VariableConfig(),
+): UiConfig =
+    UiConfig(
+        app = app,
+        localizations = localizations,
+        variableConfig = variableConfig,
+    )
+
+@Suppress("LongParameterList")
+internal fun previewStackComponentStyle(
+    children: List<ComponentStyle>,
+    dimension: Dimension = Dimension.Vertical(
+        alignment = HorizontalAlignment.CENTER,
+        distribution = FlexDistribution.START,
+    ),
+    size: Size = Size(width = Fixed(200u), height = Fit),
+    spacing: Dp = 16.dp,
+    backgroundColor: ColorStyles = ColorStyles(
+        light = ColorStyle.Solid(Color.Red),
+    ),
+    padding: PaddingValues = PaddingValues(all = 0.dp),
+    margin: PaddingValues = PaddingValues(all = 0.dp),
+    shape: Shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+    border: BorderStyles? = BorderStyles(
+        width = 2.dp,
+        colors = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
+    ),
+    shadow: ShadowStyles? = null,
+    badge: BadgeStyle? = null,
+): StackComponentStyle {
+    return StackComponentStyle(
+        children = children,
+        dimension = dimension,
+        size = size,
+        spacing = spacing,
+        backgroundColor = backgroundColor,
+        padding = padding,
+        margin = margin,
+        shape = shape,
+        border = border,
+        shadow = shadow,
+        badge = badge,
+        rcPackage = null,
+        overrides = null,
     )
 }
 
@@ -217,10 +281,13 @@ internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<P
     validatePaywallComponentsDataOrNull(LocalContext.current.toResourceProvider())
 
 /**
- * This is duplicated in StyleFactory.kt in the test source set.
+ * This is only VisibleForTesting because we could use the same convenience when writing tests. We're not actually
+ * testing this function.
  */
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+@JvmSynthetic
 @Suppress("CyclomaticComplexMethod")
-private fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalizationKey, String> =
+internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalizationKey, String> =
     VariableLocalizationKey.values().associateWith { key ->
         when (key) {
             VariableLocalizationKey.ANNUAL -> "annual"

@@ -48,4 +48,5 @@ internal data class PromotionalOfferData(
     @get:JvmSynthetic val configuredPromotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
     @get:JvmSynthetic val subscriptionOption: SubscriptionOption,
     @get:JvmSynthetic val originalPath: CustomerCenterConfigData.HelpPath,
+    @get:JvmSynthetic val localizedPricingPhasesDescription: String,
 )

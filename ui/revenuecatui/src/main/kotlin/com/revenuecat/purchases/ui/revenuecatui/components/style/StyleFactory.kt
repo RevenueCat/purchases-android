@@ -6,6 +6,7 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -26,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
@@ -48,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorSty
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -77,6 +80,7 @@ internal class StyleFactory(
         private val DEFAULT_SHAPE = Shape.Rectangle()
     }
 
+    @Suppress("CyclomaticComplexMethod")
     fun create(
         component: PaywallComponent,
         rcPackage: Package? = null,
@@ -93,6 +97,7 @@ internal class StyleFactory(
             is TextComponent -> createTextComponentStyle(component, rcPackage, tabIndex)
             is IconComponent -> createIconComponentStyle(component, rcPackage, tabIndex)
             is TimelineComponent -> createTimelineComponentStyle(component, rcPackage, tabIndex)
+            is CarouselComponent -> createCarouselComponentStyle(component, rcPackage)
             is TabControlButtonComponent -> createTabControlButtonComponentStyle(component)
             is TabControlToggleComponent -> createTabControlToggleComponentStyle(component)
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
@@ -423,6 +428,43 @@ internal class StyleFactory(
             connector = connectorStyle,
             rcPackage = rcPackage,
             tabIndex = tabIndex,
+            overrides = presentedOverrides,
+        )
+    }
+
+    private fun createCarouselComponentStyle(
+        component: CarouselComponent,
+        rcPackage: Package?,
+    ): Result<CarouselComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = component.overrides
+            ?.toPresentedOverrides { partial -> PresentedCarouselPartial(partial, colorAliases) }
+            .orSuccessfullyNull()
+            .mapError { nonEmptyListOf(it) },
+        second = component.slides
+            .map { createStackComponentStyle(it, rcPackage) }
+            .mapOrAccumulate { it },
+        third = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+        fourth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+        fifth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+        sixth = component.pageControl?.toPageControlStyles(colorAliases).orSuccessfullyNull(),
+    ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles, backgroundColor, pageControlStyles ->
+        CarouselComponentStyle(
+            slides = stackComponentStyles,
+            initialSlideIndex = component.initialSlideIndex ?: 0,
+            alignment = component.alignment.toAlignment(),
+            size = component.size,
+            sidePagePeek = component.sidePagePeek?.dp ?: 0.dp,
+            spacing = (component.spacing ?: DEFAULT_SPACING).dp,
+            backgroundColor = backgroundColor,
+            padding = component.padding.toPaddingValues(),
+            margin = component.margin.toPaddingValues(),
+            shape = component.shape ?: DEFAULT_SHAPE,
+            border = borderStyles,
+            shadow = shadowStyles,
+            pageControl = pageControlStyles,
+            loop = component.loop ?: false,
+            autoAdvance = component.autoAdvance,
+            rcPackage = rcPackage,
             overrides = presentedOverrides,
         )
     }

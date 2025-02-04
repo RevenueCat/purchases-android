@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -58,9 +57,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.padding
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
+import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -558,41 +559,6 @@ private val TwoDimensionalAlignment.isTop: Boolean
         -> false
     }
 
-/**
- * For [FlexDistribution.SPACE_AROUND] and [FlexDistribution.SPACE_EVENLY] we need to add some extra padding, as we
- * cannot use `Arrangement` to add spacing of a minimum size before or after the content. See
- * [FlexDistribution.toHorizontalArrangement] and [FlexDistribution.toVerticalArrangement] for more info.
- */
-@Stable
-private fun Modifier.padding(dimension: Dimension, spacing: Dp): Modifier =
-    when (dimension) {
-        is Dimension.Horizontal -> {
-            when (dimension.distribution) {
-                FlexDistribution.START,
-                FlexDistribution.END,
-                FlexDistribution.CENTER,
-                FlexDistribution.SPACE_BETWEEN,
-                -> this
-
-                FlexDistribution.SPACE_AROUND -> this.padding(horizontal = spacing / 2)
-                FlexDistribution.SPACE_EVENLY -> this.padding(horizontal = spacing)
-            }
-        }
-
-        is Dimension.Vertical -> when (dimension.distribution) {
-            FlexDistribution.START,
-            FlexDistribution.END,
-            FlexDistribution.CENTER,
-            FlexDistribution.SPACE_BETWEEN,
-            -> this
-
-            FlexDistribution.SPACE_AROUND -> this.padding(vertical = spacing / 2)
-            FlexDistribution.SPACE_EVENLY -> this.padding(vertical = spacing)
-        }
-
-        is Dimension.ZLayer -> this
-    }
-
 private fun getOverlaidBadgeOffsetY(
     height: Int,
     alignment: TwoDimensionalAlignment,
@@ -742,26 +708,9 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
             corners = CornerRadiuses.Dp(all = 20.0),
         )
         StackComponentView(
-            style = StackComponentStyle(
+            style = previewStackComponentStyle(
                 children = previewChildren(),
-                dimension = Dimension.Vertical(
-                    alignment = HorizontalAlignment.CENTER,
-                    distribution = FlexDistribution.START,
-                ),
-                size = Size(width = Fixed(200u), height = Fit),
-                spacing = 16.dp,
-                backgroundColor = ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
-                ),
-                padding = PaddingValues(all = 0.dp),
-                margin = PaddingValues(all = 0.dp),
-                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
-                shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, badgeShape),
-                rcPackage = null,
-                tabIndex = null,
-                overrides = null,
             ),
             state = previewEmptyState(),
             clickHandler = { },
