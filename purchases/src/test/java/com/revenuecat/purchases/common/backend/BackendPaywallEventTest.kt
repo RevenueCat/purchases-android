@@ -9,9 +9,9 @@ import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
-import com.revenuecat.purchases.common.events.BackendEvent
+import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventRequest
-import com.revenuecat.purchases.common.events.toEventRequestMap
+import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit
 class BackendPaywallEventTest {
 
     private val paywallEventRequest = EventRequest(listOf(
-        BackendEvent.Paywalls(
+        BackendStoredEvent.Paywalls(
             PaywallBackendEvent(
                 id = "id",
                 version = 1,
@@ -57,7 +57,7 @@ class BackendPaywallEventTest {
                 localeIdentifier = "en_US",
             )
         )
-    ).mapNotNull { it.toEventRequestMap() })
+    ).mapNotNull { it.toBackendEvent() })
 
     private lateinit var appConfig: AppConfig
     private lateinit var httpClient: HTTPClient

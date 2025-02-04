@@ -2,9 +2,9 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.common.events.BackendEvent
+import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventRequest
-import com.revenuecat.purchases.common.events.toEventRequestMap
+import com.revenuecat.purchases.common.events.toBackendEvent
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions
 import org.junit.Test
@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 class PaywallEventRequestSerializationTest {
 
     private val request = EventRequest(listOf(
-        BackendEvent.Paywalls(
+        BackendStoredEvent.Paywalls(
             PaywallBackendEvent(
                 id = "id",
                 version = 1,
@@ -30,7 +30,7 @@ class PaywallEventRequestSerializationTest {
                 localeIdentifier = "en_US",
             )
         )
-    ).mapNotNull { it.toEventRequestMap() })
+    ).mapNotNull { it.toBackendEvent() })
 
     @Test
     fun `can encode paywall event request correctly`() {
@@ -39,6 +39,7 @@ class PaywallEventRequestSerializationTest {
             "{" +
                 "\"events\":[" +
                     "{" +
+                        "\"discriminator\":\"paywalls\"," +
                         "\"id\":\"id\"," +
                         "\"version\":1," +
                         "\"type\":\"paywall_cancel\"," +

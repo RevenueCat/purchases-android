@@ -3,16 +3,15 @@ package com.revenuecat.purchases.backend_integration_tests
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.events.BackendEvent
+import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventRequest
-import com.revenuecat.purchases.common.events.toEventRequestMap
+import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.utils.filterNotNullValues
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -170,7 +169,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     @Test
     fun `can postPaywallEvents backend request`() {
         val request = EventRequest(listOf(
-            BackendEvent.Paywalls(
+            BackendStoredEvent.Paywalls(
                 PaywallBackendEvent(
                     id = "id",
                     version = 1,
@@ -185,7 +184,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                     localeIdentifier = "en_US",
                 )
             )
-        ).mapNotNull { it.toEventRequestMap() })
+        ).mapNotNull { it.toBackendEvent() })
 
         ensureBlockFinishes { latch ->
             backend.postPaywallEvents(

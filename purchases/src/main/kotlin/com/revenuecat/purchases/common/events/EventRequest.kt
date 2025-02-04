@@ -2,13 +2,12 @@ package com.revenuecat.purchases.common.events
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 
 @Serializable
 data class EventRequest internal constructor(
-    internal val events: List<Map<String, JsonElement>?>,
+    internal val events: List<BackendEvent>,
 ) {
 
     companion object {

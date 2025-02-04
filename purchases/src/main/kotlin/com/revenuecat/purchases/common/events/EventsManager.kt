@@ -19,7 +19,7 @@ import kotlinx.serialization.modules.polymorphic
 internal class EventsManager(
     // legacy events store for paywalls
     private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
-    private val fileHelper: EventsFileHelper<BackendEvent>,
+    private val fileHelper: EventsFileHelper<BackendStoredEvent>,
     private val identityManager: IdentityManager,
     private val eventsDispatcher: Dispatcher,
     private val postEvents: (
@@ -38,19 +38,19 @@ internal class EventsManager(
 
         private val json = Json {
             serializersModule = SerializersModule {
-                polymorphic(BackendEvent::class) {
-                    subclass(BackendEvent.CustomerCenter::class, BackendEvent.CustomerCenter.serializer())
-                    subclass(BackendEvent.Paywalls::class, BackendEvent.Paywalls.serializer())
+                polymorphic(BackendStoredEvent::class) {
+                    subclass(BackendStoredEvent.CustomerCenter::class, BackendStoredEvent.CustomerCenter.serializer())
+                    subclass(BackendStoredEvent.Paywalls::class, BackendStoredEvent.Paywalls.serializer())
                 }
             }
         }
 
-        fun backendEvents(fileHelper: FileHelper): EventsFileHelper<BackendEvent> {
+        fun backendEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
             return EventsFileHelper(
                 fileHelper,
                 EVENTS_FILE_PATH_NEW,
-                { event -> json.encodeToString(BackendEvent.serializer(), event) },
-                { jsonString -> json.decodeFromString(BackendEvent.serializer(), jsonString) },
+                { event -> json.encodeToString(BackendStoredEvent.serializer(), event) },
+                { jsonString -> json.decodeFromString(BackendStoredEvent.serializer(), jsonString) },
             )
         }
 
@@ -79,7 +79,7 @@ internal class EventsManager(
             debugLog("Tracking event: $event")
 
             val backendEvent = when (event) {
-                is FeatureEvent.Paywall -> event.event.toBackendEvent(identityManager.currentAppUserID)
+                is FeatureEvent.Paywall -> event.event.toBackendStoredEvent(identityManager.currentAppUserID)
                 else -> null
             }
 
@@ -116,7 +116,7 @@ internal class EventsManager(
 
             verboseLog("New event flush: posting ${storedEvents.size} events.")
             postEvents(
-                EventRequest(storedEvents.mapNotNull { it.toEventRequestMap() }),
+                EventRequest(storedEvents.mapNotNull { it.toBackendEvent() }),
                 {
                     verboseLog("New event flush: success.")
                     enqueue {
@@ -141,7 +141,7 @@ internal class EventsManager(
         enqueue {
             val storedLegacyEventsWithNullValues = getLegacyPaywallsStoredEvents()
             val storedLegacyEvents = storedLegacyEventsWithNullValues.filterNotNull()
-            val storedBackendEvents = storedLegacyEvents.map { BackendEvent.Paywalls(it.toPaywallBackendEvent()) }
+            val storedBackendEvents = storedLegacyEvents.map { BackendStoredEvent.Paywalls(it.toPaywallBackendEvent()) }
 
             if (storedLegacyEvents.isEmpty()) {
                 verboseLog("No legacy events to sync. Skipping legacy flush.")
@@ -150,7 +150,7 @@ internal class EventsManager(
 
             verboseLog("Legacy event flush: posting ${storedBackendEvents.size} events.")
             postEvents(
-                EventRequest(storedBackendEvents.mapNotNull { it.toEventRequestMap() }),
+                EventRequest(storedBackendEvents.mapNotNull { it.toBackendEvent() }),
                 {
                     verboseLog("Legacy event flush: success.")
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
@@ -167,8 +167,8 @@ internal class EventsManager(
         }
     }
 
-    private fun getStoredEvents(): List<BackendEvent?> {
-        var events: List<BackendEvent?> = emptyList()
+    private fun getStoredEvents(): List<BackendStoredEvent?> {
+        var events: List<BackendStoredEvent?> = emptyList()
         fileHelper.readFile { sequence ->
             events = sequence.take(FLUSH_COUNT).toList()
         }

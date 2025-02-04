@@ -10,10 +10,10 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.events.BackendEvent
+import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventRequest
 import com.revenuecat.purchases.common.events.EventsManager
-import com.revenuecat.purchases.common.events.toEventRequestMap
+import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.EventsFileHelper
 import io.mockk.Runs
@@ -56,7 +56,7 @@ class PaywallEventsManagerTest {
     private val testFolder = "temp_test_folder"
 
     private lateinit var legacyFileHelper: EventsFileHelper<PaywallStoredEvent>
-    private lateinit var fileHelper: EventsFileHelper<BackendEvent>
+    private lateinit var fileHelper: EventsFileHelper<BackendStoredEvent>
 
     private lateinit var identityManager: IdentityManager
     private lateinit var paywallEventsDispatcher: Dispatcher
@@ -130,13 +130,13 @@ class PaywallEventsManagerTest {
         checkFileContents("")
         val expectedRequest = EventRequest(
             listOf(
-                BackendEvent.Paywalls(
+                BackendStoredEvent.Paywalls(
                     storedEvent.toPaywallBackendEvent()
                 ),
-                BackendEvent.Paywalls(
+                BackendStoredEvent.Paywalls(
                     storedEvent.toPaywallBackendEvent()
                 )
-            ).mapNotNull { it.toEventRequestMap() }
+            ).mapNotNull { it.toBackendEvent() }
         )
         verify(exactly = 1) {
             backend.postPaywallEvents(
@@ -289,7 +289,7 @@ class PaywallEventsManagerTest {
 
     private fun expectNumberOfEventsSynced(eventsSynced: Int) {
         val expectedRequest = EventRequest(
-            List(eventsSynced) { BackendEvent.Paywalls(storedEvent.toPaywallBackendEvent()) }.mapNotNull { it.toEventRequestMap() }
+            List(eventsSynced) { BackendStoredEvent.Paywalls(storedEvent.toPaywallBackendEvent()) }.mapNotNull { it.toBackendEvent() }
         )
         verify(exactly = 1) {
             backend.postPaywallEvents(
