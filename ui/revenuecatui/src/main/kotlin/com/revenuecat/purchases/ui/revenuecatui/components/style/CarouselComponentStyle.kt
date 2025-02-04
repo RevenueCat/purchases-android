@@ -53,6 +53,12 @@ internal data class CarouselComponentStyle(
      */
     @get:JvmSynthetic
     val rcPackage: Package?,
+    /**
+     * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
+     * available. This should only be set for carousels inside tab control elements. Not for all carousels within a tab.
+     */
+    @get:JvmSynthetic
+    val tabIndex: Int?,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedCarouselPartial>?,
 ) : ComponentStyle {

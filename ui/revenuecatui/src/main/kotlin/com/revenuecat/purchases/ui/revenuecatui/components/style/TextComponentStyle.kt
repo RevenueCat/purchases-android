@@ -49,7 +49,7 @@ internal class TextComponentStyle(
     val rcPackage: Package?,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
-     * available. This should only be set for stacks inside tab control elements. Not for all stacks within a tab.
+     * available. This should only be set for texts inside tab control elements. Not for all texts within a tab.
      */
     @get:JvmSynthetic
     val tabIndex: Int?,

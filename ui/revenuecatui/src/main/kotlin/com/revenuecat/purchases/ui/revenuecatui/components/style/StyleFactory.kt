@@ -467,6 +467,7 @@ internal class StyleFactory(
             loop = component.loop ?: false,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
+            tabIndex = tabIndex,
             overrides = presentedOverrides,
         )
     }
