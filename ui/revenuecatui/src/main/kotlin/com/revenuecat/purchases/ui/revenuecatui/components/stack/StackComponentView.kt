@@ -657,7 +657,7 @@ private fun StackComponentView_Preview_Vertical() {
 @Suppress("MagicNumber")
 @Preview
 @Composable
-private fun StackComponentView_Preview_Scroll_Vertical() {
+private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
     val children = (0..30).map {
         previewTextComponentStyle(
             text = "Hello $it",
@@ -910,7 +910,7 @@ private fun StackComponentView_Preview_Horizontal() {
 @Suppress("MagicNumber")
 @Preview
 @Composable
-private fun StackComponentView_Preview_Scroll_Horizontal() {
+private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll() {
     val children = (0..10).map {
         previewTextComponentStyle(
             text = "Hello $it",
