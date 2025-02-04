@@ -43,8 +43,6 @@ internal fun TabControlToggleView(
             uncheckedThumbColor = style.thumbColorOff.forCurrentTheme.solidOrElse(MaterialTheme.colorScheme.outline),
             uncheckedTrackColor = style.trackColorOff.forCurrentTheme
                 .solidOrElse(MaterialTheme.colorScheme.surfaceContainerHighest),
-            checkedBorderColor = Color.Transparent,
-            uncheckedBorderColor = Color.Yellow,
         ),
     )
 }
