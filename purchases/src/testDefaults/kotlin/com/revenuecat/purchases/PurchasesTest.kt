@@ -55,7 +55,7 @@ import kotlin.random.Random
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
-internal class PurchasesTest : BasePurchasesTest() {
+internal class PurchasesTest  : BasePurchasesTest() {
     private val inAppProductId = "inapp"
     private val inAppPurchaseToken = "token_inapp"
     private val subProductId = "sub"
@@ -1315,9 +1315,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockEventsManager.track(FeatureEvent(paywallEvent = event)) } just Runs
+        every { mockEventsManager.track(FeatureEvent.Paywall(event)) } just Runs
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
-        purchases.track(FeatureEvent.Paywall(event))
+        purchases.track(event)
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
     }
 
