@@ -123,6 +123,8 @@ internal fun previewTextComponentStyle(
     size: Size = Size(width = Fill, height = Fit),
     padding: Padding = zero,
     margin: Padding = zero,
+    tabIndex: Int? = null,
+    overrides: PresentedOverrides<LocalizedTextPartial>? = null,
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
     val localeId = LocaleId("en_US")
@@ -139,9 +141,9 @@ internal fun previewTextComponentStyle(
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
         rcPackage = null,
-        tabIndex = null,
+        tabIndex = tabIndex,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
-        overrides = null,
+        overrides = overrides,
     )
 }
 
