@@ -110,7 +110,16 @@ class BackendGetCustomerCenterConfigTest {
                                 )
                             )
                         )
-                    )
+                    ),
+                    HelpPath(
+                        id = "path_ZD-yiHSBN",
+                        title = "RevenueCat",
+                        type = HelpPath.PathType.CUSTOM_URL,
+                        promotionalOffer = null,
+                        feedbackSurvey = null,
+                        url = "https://revenuecat.com",
+                        openMethod = HelpPath.OpenMethod.EXTERNAL,
+                    ),
                 )
             ),
             Screen.ScreenType.NO_ACTIVE to Screen(
@@ -122,7 +131,16 @@ class BackendGetCustomerCenterConfigTest {
                         id = "9q9719171o",
                         title = "Check purchases",
                         type = HelpPath.PathType.MISSING_PURCHASE
-                    )
+                    ),
+                    HelpPath(
+                        id = "path_ZD-yiHSDN",
+                        title = "RevenueCat",
+                        type = HelpPath.PathType.CUSTOM_URL,
+                        promotionalOffer = null,
+                        feedbackSurvey = null,
+                        url = "https://revenuecat.com",
+                        openMethod = HelpPath.OpenMethod.EXTERNAL,
+                    ),
                 )
             )
         ),
@@ -187,6 +205,11 @@ class BackendGetCustomerCenterConfigTest {
                 "free" to "Free",
                 "never" to "Never",
                 "manage_subscription" to "Manage your subscription",
+                "free_trial_then_price" to "First {{ sub_offer_duration }} free, then {{ price }}",
+                "single_payment_then_price" to "{{ sub_offer_duration }} for {{ sub_offer_price }}, then {{ price }}",
+                "discounted_recurring_then_price" to "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}",
+                "free_trial_single_payment_then_price" to "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for {{ sub_offer_price_2 }}, and {{ price }} thereafter",
+                "free_trial_discounted_then_price" to "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, and {{ price }} thereafter",
             )
         ),
         support = CustomerCenterConfigData.Support(
@@ -258,7 +281,8 @@ class BackendGetCustomerCenterConfigTest {
     fun `given multiple getCustomerCenterConfig calls for same subscriber same body, only one is triggered`() {
         mockHttpResult(delayMs = 200)
         val lock = CountDownLatch(2)
-        asyncBackend.getCustomerCenterConfig("test-user-id",
+        asyncBackend.getCustomerCenterConfig(
+            "test-user-id",
             onSuccessHandler = {
                 lock.countDown()
             },
@@ -266,7 +290,8 @@ class BackendGetCustomerCenterConfigTest {
                 fail("Expected success. Got error: $it")
             },
         )
-        asyncBackend.getCustomerCenterConfig("test-user-id",
+        asyncBackend.getCustomerCenterConfig(
+            "test-user-id",
             onSuccessHandler = {
                 lock.countDown()
             },
@@ -289,7 +314,7 @@ class BackendGetCustomerCenterConfigTest {
 
     private fun mockHttpResult(
         responseCode: Int = RCHTTPStatusCodes.SUCCESS,
-        delayMs: Long? = null
+        delayMs: Long? = null,
     ) {
         every {
             httpClient.performRequest(

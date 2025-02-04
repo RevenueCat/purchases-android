@@ -37,6 +37,7 @@ internal sealed class PaywallValidationError : Throwable() {
             is MissingColorAlias -> message
             is AliasedColorIsAlias -> message
             is MissingFontAlias -> message
+            is InvalidModeForComponentsPaywall -> PaywallValidationErrorStrings.INVALID_MODE_FOR_COMPONENTS_PAYWALL
         }
     }
 
@@ -98,4 +99,5 @@ internal sealed class PaywallValidationError : Throwable() {
     ) : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.MISSING_FONT_ALIAS.format(alias.value)
     }
+    object InvalidModeForComponentsPaywall : PaywallValidationError()
 }
