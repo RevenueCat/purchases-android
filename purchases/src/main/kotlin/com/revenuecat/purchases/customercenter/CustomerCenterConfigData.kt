@@ -269,6 +269,8 @@ data class CustomerCenterConfigData(
         val type: PathType,
         @SerialName("promotional_offer") val promotionalOffer: PathDetail.PromotionalOffer? = null,
         @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
+        val url: String? = null,
+        @SerialName("open_method") val openMethod: OpenMethod? = null,
     ) {
         @Serializable
         sealed class PathDetail {
@@ -301,7 +303,14 @@ data class CustomerCenterConfigData(
             REFUND_REQUEST,
             CHANGE_PLANS,
             CANCEL,
+            CUSTOM_URL,
             UNKNOWN,
+        }
+
+        @Serializable
+        enum class OpenMethod {
+            IN_APP,
+            EXTERNAL,
         }
     }
 
@@ -343,6 +352,7 @@ data class CustomerCenterConfigData(
             val androidSupportedPathTypes = setOf(
                 HelpPath.PathType.MISSING_PURCHASE,
                 HelpPath.PathType.CANCEL,
+                HelpPath.PathType.CUSTOM_URL,
             )
             paths.filter { it.type in androidSupportedPathTypes }
         }

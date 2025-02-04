@@ -5,7 +5,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -27,7 +26,6 @@ import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
-import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
@@ -35,10 +33,11 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
-import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -73,7 +72,11 @@ internal interface CustomerCenterViewModel {
     fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
     fun onNavigationButtonPressed()
     suspend fun loadCustomerCenter()
-    fun openURL(context: Context, url: Uri)
+    fun openURL(
+        context: Context,
+        url: String,
+        method: CustomerCenterConfigData.HelpPath.OpenMethod = CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
+    )
     fun clearActionError()
 }
 
@@ -181,6 +184,16 @@ internal class CustomerCenterViewModelImpl(
                     }
 
                     else -> {}
+                }
+            }
+
+            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL -> {
+                path.url?.let {
+                    openURL(
+                        context,
+                        it,
+                        path.openMethod ?: CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
+                    )
                 }
             }
 
@@ -354,16 +367,13 @@ internal class CustomerCenterViewModelImpl(
     }
 
     @SuppressWarnings("ForbiddenComment")
-    override fun openURL(context: Context, url: Uri) {
-        context.openUriOrElse(url.toString()) { exception ->
-            val msg = if (exception is ActivityNotFoundException) {
-                context.getString(R.string.no_browser_cannot_open_link)
-            } else {
-                context.getString(R.string.cannot_open_link)
-            }
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-            Logger.w(msg)
+    override fun openURL(context: Context, url: String, method: CustomerCenterConfigData.HelpPath.OpenMethod) {
+        val openingMethod = when (method) {
+            CustomerCenterConfigData.HelpPath.OpenMethod.IN_APP -> URLOpeningMethod.IN_APP_BROWSER
+            CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
+            -> URLOpeningMethod.EXTERNAL_BROWSER
         }
+        URLOpener.openURL(context, url, openingMethod)
     }
 
     override fun clearActionError() {

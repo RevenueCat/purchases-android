@@ -245,7 +245,7 @@ private fun OtherPlatformSubscriptionButtonsView(
     Column {
         managementURL?.let {
             CustomerCenterButton(
-                onClick = { onAction(CustomerCenterAction.OpenURL(it)) },
+                onClick = { onAction(CustomerCenterAction.OpenURL(it.toString())) },
                 buttonContent = { modifier ->
                     Text(
                         text = localization.commonLocalizedString(
