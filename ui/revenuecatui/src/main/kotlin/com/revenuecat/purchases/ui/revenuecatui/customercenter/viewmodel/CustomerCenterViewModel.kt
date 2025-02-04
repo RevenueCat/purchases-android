@@ -66,7 +66,8 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
-    )
+        context: Context,
+    ): Boolean
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
@@ -138,6 +139,7 @@ internal class CustomerCenterViewModelImpl(
                             product,
                             it.promotionalOffer!!,
                             path,
+                            context,
                         )
                     } else {
                         mainPathAction(path, context)
@@ -152,6 +154,7 @@ internal class CustomerCenterViewModelImpl(
                 product,
                 path.promotionalOffer!!,
                 path,
+                context,
             )
         } else {
             mainPathAction(path, context)
@@ -384,7 +387,8 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
-    ) {
+        context: Context,
+    ): Boolean {
         val offerIdentifier = promotionalOffer.productMapping[product.id]
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
             when (option) {
@@ -407,6 +411,7 @@ internal class CustomerCenterViewModelImpl(
                             originalPath,
                             pricingPhasesDescription,
                         ),
+                        onNavigationOverride = { dismissPromotionalOffer(originalPath, context) },
                     )
                 } else {
                     currentState
@@ -452,16 +457,21 @@ internal class CustomerCenterViewModelImpl(
 
     override fun onNavigationButtonPressed() {
         _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success &&
-                currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK
-            ) {
-                currentState.copy(
-                    feedbackSurveyData = null,
-                    showRestoreDialog = false,
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                )
-            } else {
-                CustomerCenterState.NotLoaded
+            when {
+                currentState is CustomerCenterState.Success &&
+                currentState.onNavigationOverride != null -> {
+                    currentState.onNavigationOverride.invoke()
+                    currentState.copy(onNavigationOverride = null)
+                }
+                currentState is CustomerCenterState.Success &&
+                currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                    currentState.copy(
+                        feedbackSurveyData = null,
+                        showRestoreDialog = false,
+                        navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                    )
+                }
+                else -> CustomerCenterState.NotLoaded
             }
         }
     }
