@@ -78,12 +78,17 @@ data class PaywallOptions internal constructor(
 
         /**
          * Sets whether to display a close button on the paywall screen. Only available when using
-         * [Paywall]. Ignored when using [PaywallFooter]. Defaults to false.
+         * [Paywall] and original template paywalls. Ignored when using [OriginalTemplatePaywallFooter] or
+         * using V2 Paywalls. Defaults to false.
          */
         fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
+        /**
+         * Sets a font provider to provide the paywall with your custom fonts.
+         * Only available for original template paywalls. Ignored for V2 Paywalls.
+         */
         fun setFontProvider(fontProvider: FontProvider?) = apply {
             this.fontProvider = fontProvider
         }

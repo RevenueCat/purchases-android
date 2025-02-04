@@ -13,6 +13,33 @@ import androidx.compose.ui.Modifier
 /**
  * Composable offering a minified screen Paywall UI configured from the RevenueCat dashboard.
  * You can pass in your own Composables to be displayed in the main content area.
+ * Only compatible with original Paywalls. If using V2 paywalls, this will display a fallback paywall instead.
+ *
+ * @param options The options to configure the [Paywall] if needed.
+ * @param condensed Whether to condense the composable even more.
+ * @param mainContent The content to display in the main area of the [Paywall]. We give a [PaddingValues] so you can
+ * add that padding to your own content. This padding corresponds to the height of the rounded corner area of
+ * the paywall.
+ */
+@Deprecated(
+    "Use OriginalTemplatePaywallFooter instead",
+    ReplaceWith(
+        "OriginalTemplatePaywallFooter(options, condensed, mainContent)",
+    ),
+)
+@Composable
+fun PaywallFooter(
+    options: PaywallOptions,
+    condensed: Boolean = false,
+    mainContent: @Composable ((PaddingValues) -> Unit)? = null,
+) {
+    OriginalTemplatePaywallFooter(options, condensed, mainContent)
+}
+
+/**
+ * Composable offering a minified screen Paywall UI configured from the RevenueCat dashboard.
+ * You can pass in your own Composables to be displayed in the main content area.
+ * Only compatible with original Paywalls. If using V2 paywalls, this will display a fallback paywall instead.
  *
  * @param options The options to configure the [Paywall] if needed.
  * @param condensed Whether to condense the composable even more.
@@ -21,7 +48,7 @@ import androidx.compose.ui.Modifier
  * the paywall.
  */
 @Composable
-fun PaywallFooter(
+fun OriginalTemplatePaywallFooter(
     options: PaywallOptions,
     condensed: Boolean = false,
     mainContent: @Composable ((PaddingValues) -> Unit)? = null,

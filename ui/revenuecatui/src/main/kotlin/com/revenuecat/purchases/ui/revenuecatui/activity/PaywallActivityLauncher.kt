@@ -49,8 +49,9 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * Launch the paywall activity.
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
      * @param fontProvider The [ParcelizableFontProvider] to be used in the paywall. If null, the default fonts
-     * will be used.
+     * will be used. Only available for original template paywalls. Ignored for V2 Paywalls.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
+     * Only available for original template paywalls. Ignored for V2 Paywalls.
      */
     @JvmOverloads
     fun launch(
