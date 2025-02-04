@@ -6,7 +6,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.util.*
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)

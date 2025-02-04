@@ -166,7 +166,23 @@ class CustomerCenterConfigDataTest {
         val firstPathClone = JSONObject(managementScreenPaths.getJSONObject(0).toString())
         managementScreenPaths.put(firstPathClone.put("type", "UNKNOWN_PATH_TYPE"))
         val configData = createSampleConfigData(json.toString())
-        assertThat(configData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!.paths).hasSize(4)
+        assertThat(configData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!.paths).hasSize(5)
+    }
+
+    @Test
+    fun `can parse json with unknown open method type`() {
+        val json = JSONObject(loadTestJSON())
+        val managementScreenPaths = json
+            .getJSONObject("customer_center")
+            .getJSONObject("screens")
+            .getJSONObject("MANAGEMENT")
+            .getJSONArray("paths")
+
+        val firstPathClone = JSONObject(managementScreenPaths.getJSONObject(0).toString())
+        managementScreenPaths.put(firstPathClone.put("open_method", "UNKNOWN_OPEN_METHOD"))
+
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!.paths).hasSize(5)
     }
 
     private fun createSampleConfigData(json: String = loadTestJSON()): CustomerCenterConfigData {
@@ -176,5 +192,6 @@ class CustomerCenterConfigDataTest {
         ).customerCenter
     }
 
-    private fun loadTestJSON() = File(javaClass.classLoader!!.getResource("get_customer_center_config_success.json").file).readText()
+    private fun loadTestJSON() =
+        File(javaClass.classLoader!!.getResource("get_customer_center_config_success.json").file).readText()
 }

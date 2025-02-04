@@ -59,7 +59,12 @@
         "web_subscription_manage": "You have an active subscription that was created on the web. You can manage your subscription by visiting your account.",
         "free": "Free",
         "never": "Never",
-        "manage_subscription": "Manage your subscription"
+        "manage_subscription": "Manage your subscription",
+        "free_trial_then_price": "First {{ sub_offer_duration }} free, then {{ price }}",
+        "single_payment_then_price": "{{ sub_offer_duration }} for {{ sub_offer_price }}, then {{ price }}",
+        "discounted_recurring_then_price": "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}",
+        "free_trial_single_payment_then_price": "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for {{ sub_offer_price_2 }}, and {{ price }} thereafter",
+        "free_trial_discounted_then_price": "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
       }
     },
     "screens":{
