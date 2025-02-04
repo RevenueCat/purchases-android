@@ -97,7 +97,7 @@ internal class StyleFactory(
             is TextComponent -> createTextComponentStyle(component, rcPackage, tabIndex)
             is IconComponent -> createIconComponentStyle(component, rcPackage, tabIndex)
             is TimelineComponent -> createTimelineComponentStyle(component, rcPackage, tabIndex)
-            is CarouselComponent -> createCarouselComponentStyle(component, rcPackage)
+            is CarouselComponent -> createCarouselComponentStyle(component, rcPackage, tabControl)
             is TabControlButtonComponent -> createTabControlButtonComponentStyle(component)
             is TabControlToggleComponent -> createTabControlToggleComponentStyle(component)
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
@@ -435,13 +435,14 @@ internal class StyleFactory(
     private fun createCarouselComponentStyle(
         component: CarouselComponent,
         rcPackage: Package?,
+        tabControl: TabControlStyle?,
     ): Result<CarouselComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
             ?.toPresentedOverrides { partial -> PresentedCarouselPartial(partial, colorAliases) }
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
         second = component.slides
-            .map { createStackComponentStyle(it, rcPackage) }
+            .map { createStackComponentStyle(it, rcPackage, tabControl) }
             .mapOrAccumulate { it },
         third = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         fourth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
