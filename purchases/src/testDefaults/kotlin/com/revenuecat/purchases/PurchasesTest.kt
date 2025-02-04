@@ -1332,7 +1332,7 @@ internal class PurchasesTest  : BasePurchasesTest() {
         }
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
         purchases.track(impressionEvent)
-        purchases.track(close)
+        purchases.track(closeEvent)
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
     }
 
