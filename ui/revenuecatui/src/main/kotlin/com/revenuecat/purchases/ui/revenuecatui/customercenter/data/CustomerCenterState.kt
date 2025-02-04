@@ -32,7 +32,6 @@ internal sealed class CustomerCenterState(
         @get:JvmSynthetic val promotionalOfferData: PromotionalOfferData? = null,
         @get:JvmSynthetic val title: String? = null,
         @get:JvmSynthetic override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
-        @get:JvmSynthetic val onNavigationOverride: (() -> Unit)? = null,
     ) : CustomerCenterState(navigationButtonType)
 }
 

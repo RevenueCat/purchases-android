@@ -125,6 +125,8 @@ internal class CustomerCenterViewModelImpl(
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
 
+    private var onNavigationOverride: (() -> Unit)? = null
+
     override suspend fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
@@ -417,12 +419,12 @@ internal class CustomerCenterViewModelImpl(
                             originalPath,
                             pricingPhasesDescription,
                         ),
-                        onNavigationOverride = { dismissPromotionalOffer(originalPath, context) },
                     )
                 } else {
                     currentState
                 }
             }
+            onNavigationOverride = { dismissPromotionalOffer(originalPath, context) }
             return true
         }
         return false
@@ -464,18 +466,18 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun onNavigationButtonPressed() {
-        _state.update { currentState ->
-            when {
-                currentState is CustomerCenterState.Success &&
-                    currentState.onNavigationOverride != null -> {
-                    currentState.onNavigationOverride.invoke()
-                    currentState.copy(onNavigationOverride = null)
+        if (_state.value is CustomerCenterState.Success && onNavigationOverride != null) {
+            onNavigationOverride?.invoke()
+            onNavigationOverride = null
+        } else {
+            _state.update { currentState ->
+                when {
+                    currentState is CustomerCenterState.Success &&
+                        currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                        currentState.resetToMainScreen()
+                    }
+                    else -> CustomerCenterState.NotLoaded
                 }
-                currentState is CustomerCenterState.Success &&
-                    currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
-                    currentState.resetToMainScreen()
-                }
-                else -> CustomerCenterState.NotLoaded
             }
         }
     }
@@ -526,7 +528,6 @@ internal class CustomerCenterViewModelImpl(
             showRestoreDialog = false,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-            onNavigationOverride = null,
         )
 
     private fun showManageSubscriptions(context: Context, productId: String) {
