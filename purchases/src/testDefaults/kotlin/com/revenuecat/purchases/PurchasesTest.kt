@@ -1331,8 +1331,8 @@ internal class PurchasesTest  : BasePurchasesTest() {
             every { type } returns PaywallEventType.CLOSE
         }
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
-        purchases.track(FeatureEvent.Paywall(impressionEvent))
-        purchases.track(FeatureEvent.Paywall(close))
+        purchases.track(impressionEvent)
+        purchases.track(close)
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
     }
 
@@ -1343,7 +1343,7 @@ internal class PurchasesTest  : BasePurchasesTest() {
         }
         every { mockEventsManager.track(FeatureEvent.Paywall(event)) } just Runs
 
-        purchases.track(FeatureEvent.Paywall(event))
+        purchases.track(event)
         verify(exactly = 1) { mockEventsManager.track(FeatureEvent.Paywall(event)) }
     }
 
