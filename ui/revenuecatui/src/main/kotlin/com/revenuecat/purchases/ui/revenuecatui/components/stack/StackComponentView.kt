@@ -465,11 +465,7 @@ private fun MainStackComponent(
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
-        val scrollState = if (stackState.scrollOrientation == null) {
-            null
-        } else {
-            rememberScrollState()
-        }
+        val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
         when (val dimension = stackState.dimension) {
             is Dimension.Horizontal -> Row(
