@@ -2,10 +2,9 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventRequest
-import kotlinx.serialization.decodeFromString
+import com.revenuecat.purchases.common.events.toEventRequestMap
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions
 import org.junit.Test
@@ -31,7 +30,7 @@ class PaywallEventRequestSerializationTest {
                 localeIdentifier = "en_US",
             )
         )
-    ))
+    ).mapNotNull { it.toEventRequestMap() })
 
     @Test
     fun `can encode paywall event request correctly`() {

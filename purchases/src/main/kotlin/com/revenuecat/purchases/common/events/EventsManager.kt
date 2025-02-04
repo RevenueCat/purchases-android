@@ -116,7 +116,7 @@ internal class EventsManager(
 
             verboseLog("New event flush: posting ${storedEvents.size} events.")
             postEvents(
-                EventRequest(storedEvents),
+                EventRequest(storedEvents.mapNotNull { it.toEventRequestMap() }),
                 {
                     verboseLog("New event flush: success.")
                     enqueue {
@@ -150,7 +150,7 @@ internal class EventsManager(
 
             verboseLog("Legacy event flush: posting ${storedBackendEvents.size} events.")
             postEvents(
-                EventRequest(storedBackendEvents),
+                EventRequest(storedBackendEvents.mapNotNull { it.toEventRequestMap() }),
                 {
                     verboseLog("Legacy event flush: success.")
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }

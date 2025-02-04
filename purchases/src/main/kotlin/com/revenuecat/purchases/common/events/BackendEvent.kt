@@ -5,8 +5,12 @@ import com.revenuecat.purchases.customercenter.events.CustomerCenterBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.utils.Event
+import com.revenuecat.purchases.utils.asMap
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 
 @Serializable
 internal sealed class BackendEvent : Event {
@@ -36,4 +40,13 @@ internal fun PaywallEvent.toBackendEvent(appUserID: String): BackendEvent {
             localeIdentifier = data.localeIdentifier,
         ),
     )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+internal fun BackendEvent.toEventRequestMap(): Map<String, JsonElement>? {
+    val jsonElement = when (this) {
+        is BackendEvent.Paywalls -> EventRequest.json.encodeToJsonElement(this.event)
+        else -> null
+    }
+    return jsonElement?.jsonObject?.asMap()
 }

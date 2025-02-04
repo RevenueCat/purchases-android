@@ -30,6 +30,7 @@ import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import org.json.JSONArray
 import org.json.JSONException
@@ -497,7 +498,9 @@ internal class Backend(
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
-        val body = EventRequest.json.encodeToJsonElement(paywallEventRequest).asMap()
+        val body = buildJsonObject {
+            put("events", Json.encodeToJsonElement(paywallEventRequest.events))
+        }
         if (body == null) {
             onErrorHandler(
                 PurchasesError(

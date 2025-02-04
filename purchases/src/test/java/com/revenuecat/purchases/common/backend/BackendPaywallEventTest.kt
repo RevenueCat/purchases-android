@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventRequest
+import com.revenuecat.purchases.common.events.toEventRequestMap
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
@@ -40,7 +41,6 @@ import java.util.concurrent.TimeUnit
 @RunWith(AndroidJUnit4::class)
 class BackendPaywallEventTest {
 
-
     private val paywallEventRequest = EventRequest(listOf(
         BackendEvent.Paywalls(
             PaywallBackendEvent(
@@ -57,7 +57,7 @@ class BackendPaywallEventTest {
                 localeIdentifier = "en_US",
             )
         )
-    ))
+    ).mapNotNull { it.toEventRequestMap() })
 
     private lateinit var appConfig: AppConfig
     private lateinit var httpClient: HTTPClient
@@ -105,7 +105,8 @@ class BackendPaywallEventTest {
             "{" +
                 "\"events\":[" +
                     "{" +
-                        "\"id\":\"id\"," +
+                        "\"discriminator\":\"paywalls\"," +
+                         "\"id\":\"id\"," +
                         "\"version\":1," +
                         "\"type\":\"paywall_cancel\"," +
                         "\"app_user_id\":\"appUserID\"," +

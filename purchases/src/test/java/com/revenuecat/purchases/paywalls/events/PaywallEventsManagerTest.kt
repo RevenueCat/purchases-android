@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventRequest
 import com.revenuecat.purchases.common.events.EventsManager
+import com.revenuecat.purchases.common.events.toEventRequestMap
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.EventsFileHelper
 import io.mockk.Runs
@@ -135,7 +136,7 @@ class PaywallEventsManagerTest {
                 BackendEvent.Paywalls(
                     storedEvent.toPaywallBackendEvent()
                 )
-            )
+            ).mapNotNull { it.toEventRequestMap() }
         )
         verify(exactly = 1) {
             backend.postPaywallEvents(
@@ -288,7 +289,7 @@ class PaywallEventsManagerTest {
 
     private fun expectNumberOfEventsSynced(eventsSynced: Int) {
         val expectedRequest = EventRequest(
-            List(eventsSynced) { BackendEvent.Paywalls(storedEvent.toPaywallBackendEvent()) }
+            List(eventsSynced) { BackendEvent.Paywalls(storedEvent.toPaywallBackendEvent()) }.mapNotNull { it.toEventRequestMap() }
         )
         verify(exactly = 1) {
             backend.postPaywallEvents(
