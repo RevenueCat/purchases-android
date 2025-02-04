@@ -475,7 +475,7 @@ internal class CustomerCenterViewModelImpl(
                     currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
                     currentState.resetToMainScreen()
                 }
-                else -> currentState
+                else -> CustomerCenterState.NotLoaded
             }
         }
     }
