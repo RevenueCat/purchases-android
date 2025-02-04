@@ -77,6 +77,7 @@ internal class StyleFactory(
         private val DEFAULT_SHAPE = Shape.Rectangle()
     }
 
+    @Suppress("CyclomaticComplexMethod")
     fun create(
         component: PaywallComponent,
         rcPackage: Package? = null,
