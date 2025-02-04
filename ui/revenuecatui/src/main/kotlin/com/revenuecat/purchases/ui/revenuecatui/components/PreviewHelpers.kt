@@ -169,6 +169,7 @@ internal fun previewStackComponentStyle(
         shadow = shadow,
         badge = badge,
         rcPackage = null,
+        tabIndex = null,
         overrides = null,
     )
 }

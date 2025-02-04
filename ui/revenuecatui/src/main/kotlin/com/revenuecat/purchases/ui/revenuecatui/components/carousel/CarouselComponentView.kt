@@ -405,6 +405,7 @@ private fun previewSlide(
         shadow = null,
         badge = null,
         rcPackage = null,
+        tabIndex = null,
         overrides = null,
     )
 }
