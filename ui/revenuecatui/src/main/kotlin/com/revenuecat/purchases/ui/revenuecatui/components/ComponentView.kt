@@ -32,7 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 /**
  * A Composable that can show any [ComponentStyle].
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "CyclomaticComplexMethod")
 @JvmSynthetic
 @Composable
 internal fun ComponentView(
