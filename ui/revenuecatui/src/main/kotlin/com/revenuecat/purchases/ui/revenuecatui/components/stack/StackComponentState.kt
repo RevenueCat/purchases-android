@@ -22,6 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 
 @JvmSynthetic
 @Composable
@@ -132,6 +133,11 @@ internal class StackComponentState(
                 alignment = presentedPartial?.partial?.badge?.alignment ?: badgeStyle.alignment,
             )
         }
+    }
+
+    @get:JvmSynthetic
+    val scrollOrientation by derivedStateOf {
+        presentedPartial?.partial?.scrollOrientation?.toOrientation() ?: style.scrollOrientation
     }
 
     @JvmSynthetic

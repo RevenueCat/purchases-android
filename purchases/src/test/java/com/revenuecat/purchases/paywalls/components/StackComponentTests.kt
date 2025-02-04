@@ -123,7 +123,8 @@ internal class StackComponentTests {
                             "radius": 20.1,
                             "x": 23.6,
                             "y": 45.2
-                          }
+                          },
+                          "scroll_orientation": "horizontal"
                         }
                         """.trimIndent(),
                         expected = StackComponent(
@@ -150,6 +151,7 @@ internal class StackComponentTests {
                                 x = 23.6,
                                 y = 45.2
                             ),
+                            scrollOrientation = StackComponent.ScrollOrientation.HORIZONTAL,
                         )
                     ),
                 ),
@@ -328,7 +330,8 @@ internal class StackComponentTests {
                             "radius": 20.1,
                             "x": 23.6,
                             "y": 45.2
-                          }
+                          },
+                          "scroll_orientation": "horizontal"
                         }
                         """.trimIndent(),
                         expected = PartialStackComponent(
@@ -352,7 +355,8 @@ internal class StackComponentTests {
                                 radius = 20.1,
                                 x = 23.6,
                                 y = 45.2
-                            )
+                            ),
+                            scrollOrientation = StackComponent.ScrollOrientation.HORIZONTAL,
                         )
                     )
                 ),

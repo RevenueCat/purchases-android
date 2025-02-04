@@ -17,3 +17,11 @@ internal fun <T> Modifier.applyIfNotNull(value: T?, modifier: Modifier.(T) -> Mo
         this
     }
 }
+
+internal fun <T, V> Modifier.applyIfNotNull(value: T?, value2: V?, modifier: Modifier.(T, V) -> Modifier): Modifier {
+    return if (value != null && value2 != null) {
+        then(modifier(Modifier, value, value2))
+    } else {
+        this
+    }
+}

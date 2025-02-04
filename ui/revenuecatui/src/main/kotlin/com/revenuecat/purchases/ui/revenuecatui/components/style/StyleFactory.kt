@@ -50,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorSty
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
@@ -247,6 +248,7 @@ internal class StyleFactory(
             border = borderStyles,
             shadow = shadowStyles,
             badge = badge,
+            scrollOrientation = component.scrollOrientation?.toOrientation(),
             rcPackage = rcPackage,
             tabIndex = tabIndex,
             overrides = presentedOverrides,

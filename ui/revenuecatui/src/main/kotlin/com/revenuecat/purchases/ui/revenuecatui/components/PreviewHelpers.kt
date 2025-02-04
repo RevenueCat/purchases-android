@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.VisibleForTesting
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -155,6 +156,7 @@ internal fun previewStackComponentStyle(
     ),
     shadow: ShadowStyles? = null,
     badge: BadgeStyle? = null,
+    scrollOrientation: Orientation? = null,
 ): StackComponentStyle {
     return StackComponentStyle(
         children = children,
@@ -168,6 +170,7 @@ internal fun previewStackComponentStyle(
         border = border,
         shadow = shadow,
         badge = badge,
+        scrollOrientation = scrollOrientation,
         rcPackage = null,
         tabIndex = null,
         overrides = emptyList(),

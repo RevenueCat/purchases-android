@@ -98,6 +98,7 @@ private fun previewButtonComponentStyle(
             y = 3.dp,
         ),
         badge = null,
+        scrollOrientation = null,
         rcPackage = null,
         tabIndex = null,
         overrides = emptyList(),

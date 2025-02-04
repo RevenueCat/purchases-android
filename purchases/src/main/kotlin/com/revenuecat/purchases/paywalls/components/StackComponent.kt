@@ -49,8 +49,21 @@ class StackComponent(
     @get:JvmSynthetic
     val badge: Badge? = null,
     @get:JvmSynthetic
+    @SerialName("scroll_orientation")
+    val scrollOrientation: ScrollOrientation? = null,
+    @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
-) : PaywallComponent
+) : PaywallComponent {
+
+    @Serializable
+    enum class ScrollOrientation {
+        @SerialName("vertical")
+        VERTICAL,
+
+        @SerialName("horizontal")
+        HORIZONTAL,
+    }
+}
 
 @Suppress("LongParameterList")
 @InternalRevenueCatAPI
@@ -80,4 +93,7 @@ class PartialStackComponent(
     val shadow: Shadow? = null,
     @get:JvmSynthetic
     val badge: Badge? = null,
+    @get:JvmSynthetic
+    @SerialName("scroll_orientation")
+    val scrollOrientation: StackComponent.ScrollOrientation? = null,
 ) : PartialComponent

@@ -75,6 +75,7 @@ internal class PresentedStackPartial(
                 border = otherPartial?.border ?: partial.border,
                 shadow = otherPartial?.shadow ?: partial.shadow,
                 badge = otherPartial?.badge ?: partial.badge,
+                scrollOrientation = otherPartial?.scrollOrientation ?: partial.scrollOrientation,
             ),
         )
     }
