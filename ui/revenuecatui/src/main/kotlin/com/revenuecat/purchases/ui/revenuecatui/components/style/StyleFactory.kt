@@ -517,7 +517,6 @@ internal class StyleFactory(
                     shape = component.shape ?: DEFAULT_SHAPE,
                     border = border,
                     shadow = shadow,
-                    control = control,
                     tabs = tabs,
                     overrides = overrides,
                 )
