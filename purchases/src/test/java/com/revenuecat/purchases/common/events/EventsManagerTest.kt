@@ -152,7 +152,7 @@ class EventsManagerTest {
     }
 
     @Test
-    fun `tracking customer center adds them to file`() {
+    fun `tracking customer center events adds them to file`() {
         eventsManager.track(customerCenterEvent)
 
         checkFileContents(
