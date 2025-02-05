@@ -1,8 +1,6 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.customercenter.events.CustomerCenterBackendEvent
-import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
@@ -12,11 +10,11 @@ import kotlinx.serialization.Serializable
 internal sealed class BackendStoredEvent : Event {
     @Serializable
     @SerialName("customer_center")
-    data class CustomerCenter(val event: CustomerCenterBackendEvent) : BackendStoredEvent()
+    data class CustomerCenter(val event: BackendEvent.CustomerCenter) : BackendStoredEvent()
 
     @Serializable
     @SerialName("paywalls")
-    data class Paywalls(val event: PaywallBackendEvent) : BackendStoredEvent()
+    data class Paywalls(val event: BackendEvent.Paywalls) : BackendStoredEvent()
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -49,9 +47,9 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent? {
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun PaywallEvent.toBackendStoredEvent(appUserID: String): BackendStoredEvent {
     return BackendStoredEvent.Paywalls(
-        PaywallBackendEvent(
+        BackendEvent.Paywalls(
             id = creationData.id.toString(),
-            version = PaywallBackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,
+            version = BackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,
             type = type.value,
             appUserID = appUserID,
             sessionID = data.sessionIdentifier.toString(),

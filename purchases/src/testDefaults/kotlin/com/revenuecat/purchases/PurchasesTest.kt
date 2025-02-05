@@ -55,7 +55,7 @@ import kotlin.random.Random
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
-internal class PurchasesTest  : BasePurchasesTest() {
+internal class PurchasesTest : BasePurchasesTest() {
     private val inAppProductId = "inapp"
     private val inAppPurchaseToken = "token_inapp"
     private val subProductId = "sub"

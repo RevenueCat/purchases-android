@@ -2,8 +2,9 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
-import com.revenuecat.purchases.common.events.EventRequest
+import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.events.toBackendEvent
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions
@@ -12,11 +13,11 @@ import org.junit.runner.RunWith
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
-class PaywallEventRequestSerializationTest {
+class PaywallEventsRequestSerializationTest {
 
-    private val request = EventRequest(listOf(
+    private val request = EventsRequest(listOf(
         BackendStoredEvent.Paywalls(
-            PaywallBackendEvent(
+            BackendEvent.Paywalls(
                 id = "id",
                 version = 1,
                 type = PaywallEventType.CANCEL.value,
@@ -34,7 +35,7 @@ class PaywallEventRequestSerializationTest {
 
     @Test
     fun `can encode paywall event request correctly`() {
-        val requestString = EventRequest.json.encodeToString(request)
+        val requestString = EventsRequest.json.encodeToString(request)
         Assertions.assertThat(requestString).isEqualTo(
             "{" +
                 "\"events\":[" +
@@ -59,8 +60,8 @@ class PaywallEventRequestSerializationTest {
 
     @Test
     fun `can encode and decode event correctly`() {
-        val requestString = EventRequest.json.encodeToString(request)
-        val decodedRequest = EventRequest.json.decodeFromString<EventRequest>(requestString)
+        val requestString = EventsRequest.json.encodeToString(request)
+        val decodedRequest = EventsRequest.json.decodeFromString<EventsRequest>(requestString)
         Assertions.assertThat(decodedRequest).isEqualTo(request)
     }
 }

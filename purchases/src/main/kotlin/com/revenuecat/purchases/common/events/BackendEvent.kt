@@ -48,4 +48,8 @@ internal sealed class BackendEvent : Event {
         @SerialName("locale")
         val localeIdentifier: String,
     ) : BackendEvent()
+
+    companion object {
+        const val PAYWALL_EVENT_SCHEMA_VERSION = 1
+    }
 }

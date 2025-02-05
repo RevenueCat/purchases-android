@@ -11,7 +11,7 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
-import com.revenuecat.purchases.common.events.EventRequest
+import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.identity.IdentityManager
@@ -128,13 +128,13 @@ class PaywallEventsManagerTest {
         eventsManager.track(FeatureEvent.Paywall(event))
         eventsManager.flushEvents()
         checkFileContents("")
-        val expectedRequest = EventRequest(
+        val expectedRequest = EventsRequest(
             listOf(
                 BackendStoredEvent.Paywalls(
-                    storedEvent.toPaywallBackendEvent()
+                    storedEvent.toBackendEvent()
                 ),
                 BackendStoredEvent.Paywalls(
-                    storedEvent.toPaywallBackendEvent()
+                    storedEvent.toBackendEvent()
                 )
             ).mapNotNull { it.toBackendEvent() }
         )
@@ -288,8 +288,8 @@ class PaywallEventsManagerTest {
     }
 
     private fun expectNumberOfEventsSynced(eventsSynced: Int) {
-        val expectedRequest = EventRequest(
-            List(eventsSynced) { BackendStoredEvent.Paywalls(storedEvent.toPaywallBackendEvent()) }.mapNotNull { it.toBackendEvent() }
+        val expectedRequest = EventsRequest(
+            List(eventsSynced) { BackendStoredEvent.Paywalls(storedEvent.toBackendEvent()) }.mapNotNull { it.toBackendEvent() }
         )
         verify(exactly = 1) {
             backend.postPaywallEvents(

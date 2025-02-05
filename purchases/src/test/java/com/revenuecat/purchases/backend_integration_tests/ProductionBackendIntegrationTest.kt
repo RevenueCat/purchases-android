@@ -3,14 +3,14 @@ package com.revenuecat.purchases.backend_integration_tests
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
-import com.revenuecat.purchases.common.events.EventRequest
+import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -168,9 +168,9 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can postPaywallEvents backend request`() {
-        val request = EventRequest(listOf(
+        val request = EventsRequest(listOf(
             BackendStoredEvent.Paywalls(
-                PaywallBackendEvent(
+                BackendEvent.Paywalls(
                     id = "id",
                     version = 1,
                     type = PaywallEventType.CANCEL.value,

@@ -11,7 +11,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.events.EventRequest
+import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
@@ -493,11 +493,11 @@ internal class Backend(
     }
 
     fun postPaywallEvents(
-        paywallEventRequest: EventRequest,
+        paywallEventRequest: EventsRequest,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
-        val body = EventRequest.json.encodeToJsonElement(paywallEventRequest).asMap()
+        val body = EventsRequest.json.encodeToJsonElement(paywallEventRequest).asMap()
         if (body == null) {
             onErrorHandler(
                 PurchasesError(

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.events
 
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Delay
@@ -23,7 +22,7 @@ internal class EventsManager(
     private val identityManager: IdentityManager,
     private val eventsDispatcher: Dispatcher,
     private val postEvents: (
-        EventRequest,
+        EventsRequest,
         () -> Unit,
         (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) -> Unit,
@@ -32,9 +31,7 @@ internal class EventsManager(
     companion object {
         private const val FLUSH_COUNT = 50
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
-
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
+        internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
 
         private val json = Json {
             serializersModule = SerializersModule {
@@ -116,7 +113,7 @@ internal class EventsManager(
 
             verboseLog("New event flush: posting ${storedEvents.size} events.")
             postEvents(
-                EventRequest(storedEvents.mapNotNull { it.toBackendEvent() }),
+                EventsRequest(storedEvents.mapNotNull { it.toBackendEvent() }),
                 {
                     verboseLog("New event flush: success.")
                     enqueue {
@@ -141,7 +138,7 @@ internal class EventsManager(
         enqueue {
             val storedLegacyEventsWithNullValues = getLegacyPaywallsStoredEvents()
             val storedLegacyEvents = storedLegacyEventsWithNullValues.filterNotNull()
-            val storedBackendEvents = storedLegacyEvents.map { BackendStoredEvent.Paywalls(it.toPaywallBackendEvent()) }
+            val storedBackendEvents = storedLegacyEvents.map { BackendStoredEvent.Paywalls(it.toBackendEvent()) }
 
             if (storedLegacyEvents.isEmpty()) {
                 verboseLog("No legacy events to sync. Skipping legacy flush.")
@@ -150,7 +147,7 @@ internal class EventsManager(
 
             verboseLog("Legacy event flush: posting ${storedBackendEvents.size} events.")
             postEvents(
-                EventRequest(storedBackendEvents.mapNotNull { it.toBackendEvent() }),
+                EventsRequest(storedBackendEvents.mapNotNull { it.toBackendEvent() }),
                 {
                     verboseLog("Legacy event flush: success.")
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
