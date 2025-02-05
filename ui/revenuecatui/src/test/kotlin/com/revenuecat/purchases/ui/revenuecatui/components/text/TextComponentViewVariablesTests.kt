@@ -112,6 +112,18 @@ internal class TextComponentViewVariablesTests(
             period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
             freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
         )
+        private val productLifetimeUsd = TestStoreProduct(
+            id = "com.revenuecat.lifetime_product",
+            name = "Lifetime",
+            title = "Lifetime (App name)",
+            price = Price(
+                amountMicros = 200_000_000,
+                currencyCode = "USD",
+                formatted = "$ 200.00",
+            ),
+            description = "Annual",
+            period = null,
+        )
         private val productWithUpperCaseName = productYearlyUsdTwoOffers.copy(name = "ANNUAL")
         private val productWithLowerCaseName = productYearlyUsdTwoOffers.copy(name = "annual")
 
@@ -137,6 +149,14 @@ internal class TextComponentViewVariablesTests(
             identifier = "package_yearly",
             offering = OFFERING_ID,
             product = productYearlyMxnOneOffer,
+        )
+
+        @Suppress("DEPRECATION")
+        private val packageLifetimeUsd = Package(
+            packageType = PackageType.LIFETIME,
+            identifier = "package_lifetime",
+            offering = OFFERING_ID,
+            product = productLifetimeUsd,
         )
 
         private val packageWithUpperCaseName = packageYearlyUsdTwoOffers.copy(product = productWithUpperCaseName)
@@ -534,6 +554,180 @@ internal class TextComponentViewVariablesTests(
                 )
             }
         } + listOf(
+            // Lifetime:
+            arrayOf(
+                "{{ ${Variable.PRODUCT_CURRENCY_CODE.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "USD"
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_CURRENCY_SYMBOL.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "\$"
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIODLY.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlyMxnOneOffer),
+                    locale = "es_$STORE_COUNTRY_WITHOUT_DECIMALS",
+                    storefrontCountryCode = STORE_COUNTRY_WITHOUT_DECIMALS,
+                    variableLocalizations = variableLocalizationKeysForEsMx(),
+                ),
+                "\$200"
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_IN_DAYS.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_IN_WEEKS.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_IN_MONTHS.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_IN_YEARS.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_WITH_UNIT.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_RELATIVE_DISCOUNT.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd, packageMonthlyUsdOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_STORE_PRODUCT_NAME.identifier} }}",
+                Args(
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "Lifetime"
+            )
+        ) + listOf(
             // Foreign currency:
             arrayOf(
                 "{{ ${Variable.PRODUCT_CURRENCY_SYMBOL.identifier} }}",
@@ -797,7 +991,7 @@ internal class TextComponentViewVariablesTests(
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         )
-        
+
         val offering = Offering(
             identifier = OFFERING_ID,
             serverDescription = "description",
@@ -835,9 +1029,4 @@ internal class TextComponentViewVariablesTests(
             .onChild()
             .assertTextEquals(expectedText)
     }
-
-
-
-
-
 }
