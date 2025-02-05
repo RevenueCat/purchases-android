@@ -604,7 +604,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 onSuccess = any(),
                 onError = any()
             )
-            mockPaywallEventsManager.flushEvents()
+            mockEventsManager.flushEvents()
         }
     }
 
@@ -1355,17 +1355,17 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `paywall events synced on app foregrounded`() {
-        verify(exactly = 0) { mockPaywallEventsManager.flushEvents() }
+        verify(exactly = 0) { mockEventsManager.flushEvents() }
         mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        verify(exactly = 1) { mockPaywallEventsManager.flushEvents() }
+        verify(exactly = 1) { mockEventsManager.flushEvents() }
     }
 
     @Test
     fun `paywall events synced on app backgrounded`() {
-        verify(exactly = 0) { mockPaywallEventsManager.flushEvents() }
+        verify(exactly = 0) { mockEventsManager.flushEvents() }
         Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
-        verify(exactly = 1) { mockPaywallEventsManager.flushEvents() }
+        verify(exactly = 1) { mockEventsManager.flushEvents() }
     }
 
     // endregion

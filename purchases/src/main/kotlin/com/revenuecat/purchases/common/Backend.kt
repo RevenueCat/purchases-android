@@ -11,6 +11,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
@@ -23,7 +24,6 @@ import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.asMap
@@ -493,11 +493,11 @@ internal class Backend(
     }
 
     fun postPaywallEvents(
-        paywallEventRequest: PaywallEventRequest,
+        paywallEventRequest: EventsRequest,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
-        val body = PaywallEventRequest.json.encodeToJsonElement(paywallEventRequest).asMap()
+        val body = EventsRequest.json.encodeToJsonElement(paywallEventRequest).asMap()
         if (body == null) {
             onErrorHandler(
                 PurchasesError(
