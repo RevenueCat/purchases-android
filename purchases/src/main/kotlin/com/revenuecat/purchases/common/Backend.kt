@@ -492,7 +492,7 @@ internal class Backend(
         }
     }
 
-    fun postPaywallEvents(
+    fun postEvents(
         paywallEventRequest: EventsRequest,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
@@ -70,6 +71,31 @@ internal fun PaywallEvent.toBackendStoredEvent(appUserID: String): BackendStored
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
+        ),
+    )
+}
+
+/**
+ * Converts a `PaywallEvent` into a `BackendStoredEvent.Paywalls` instance.
+ *
+ * @receiver The `PaywallEvent` to be converted.
+ * @param appUserID The user ID associated with the event.
+ * @return A `BackendStoredEvent.Paywalls` containing a `BackendEvent.Paywalls`.
+ */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+internal fun CustomerCenterEvent.toBackendStoredEvent(appUserID: String): BackendStoredEvent {
+    return BackendStoredEvent.CustomerCenter(
+        BackendEvent.CustomerCenter(
+            id = creationData.id.toString(),
+            revisionID = data.revisionID,
+            type = data.type.value,
+            appUserID = appUserID,
+            appSessionID = data.sessionIdentifier.toString(),
+            timestamp = data.timestamp.time,
+            darkMode = data.darkMode,
+            locale = data.locale,
+            isSandbox = data.isSandbox,
+            displayMode = data.displayMode.value,
         ),
     )
 }
