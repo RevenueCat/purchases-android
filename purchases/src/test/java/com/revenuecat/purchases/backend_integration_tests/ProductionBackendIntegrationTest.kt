@@ -3,14 +3,15 @@ package com.revenuecat.purchases.backend_integration_tests
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.events.BackendEvent
+import com.revenuecat.purchases.common.events.BackendStoredEvent
+import com.revenuecat.purchases.common.events.EventsRequest
+import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
-import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import io.mockk.InternalPlatformDsl.toArray
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -167,21 +168,24 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can postPaywallEvents backend request`() {
-        val request = PaywallEventRequest(listOf(
-            PaywallBackendEvent(
-                id = "id",
-                version = 1,
-                type = PaywallEventType.CANCEL.value,
-                appUserID = "appUserID",
-                sessionID = "sessionID",
-                offeringID = "offeringID",
-                paywallRevision = 5,
-                timestamp = 123456789,
-                displayMode = "footer",
-                darkMode = true,
-                localeIdentifier = "en_US",
+        val request = EventsRequest(listOf(
+            BackendStoredEvent.Paywalls(
+                BackendEvent.Paywalls(
+                    id = "id",
+                    version = 1,
+                    type = PaywallEventType.CANCEL.value,
+                    appUserID = "appUserID",
+                    sessionID = "sessionID",
+                    offeringID = "offeringID",
+                    paywallRevision = 5,
+                    timestamp = 123456789,
+                    displayMode = "footer",
+                    darkMode = true,
+                    localeIdentifier = "en_US",
+                )
             )
-        ))
+        ).mapNotNull { it.toBackendEvent() })
+
         ensureBlockFinishes { latch ->
             backend.postPaywallEvents(
                 request,
