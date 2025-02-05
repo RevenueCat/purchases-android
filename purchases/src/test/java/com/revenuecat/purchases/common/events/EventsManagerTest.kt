@@ -123,7 +123,7 @@ class EventsManagerTest {
     }
 
     @Test
-    fun `tracking paywall adds them to file`() {
+    fun `tracking paywall events adds them to file`() {
         eventsManager.track(paywallEvent)
 
         checkFileContents(
