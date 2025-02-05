@@ -56,7 +56,7 @@ android {
 }
 
 dependencies {
-    compileOnly libs.emerge.snapshots.annotations
+    debugImplementation libs.emerge.snapshots.annotations
 
     implementation project(path: ':purchases')
 
