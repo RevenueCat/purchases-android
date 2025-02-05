@@ -15,8 +15,16 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 
+/**
+ * Manages the tracking, storing, and syncing of events in RevenueCat.
+ *
+ * @property legacyEventsFileHelper File helper for legacy paywall events.
+ * @property fileHelper File helper for new backend stored events.
+ * @property identityManager Manages user identity within the system.
+ * @property eventsDispatcher Dispatches event-related operations.
+ * @property postEvents Function for sending events to the backend.
+ */
 internal class EventsManager(
-    // legacy events store for paywalls
     private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
     private val fileHelper: EventsFileHelper<BackendStoredEvent>,
     private val identityManager: IdentityManager,
@@ -42,6 +50,12 @@ internal class EventsManager(
             }
         }
 
+        /**
+         * Creates an `EventsFileHelper` for handling backend events.
+         *
+         * @param fileHelper The file helper used for event storage.
+         * @return An `EventsFileHelper` for `BackendStoredEvent`.
+         */
         fun backendEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
             return EventsFileHelper(
                 fileHelper,
@@ -51,10 +65,16 @@ internal class EventsManager(
             )
         }
 
+        /**
+         * Creates an `EventsFileHelper` for handling paywall events.
+         *
+         * @param fileHelper The file helper used for event storage.
+         * @return An `EventsFileHelper` for `PaywallStoredEvent`.
+         */
         fun paywalls(fileHelper: FileHelper): EventsFileHelper<PaywallStoredEvent> {
             return EventsFileHelper(
                 fileHelper,
-                EventsManager.PAYWALL_EVENTS_FILE_PATH,
+                PAYWALL_EVENTS_FILE_PATH,
                 PaywallStoredEvent::toString,
                 PaywallStoredEvent::fromString,
             )
@@ -69,6 +89,11 @@ internal class EventsManager(
     @set:Synchronized
     private var legacyFlushTriggered = false
 
+    /**
+     * Tracks an event and stores it in the event file for future syncing.
+     *
+     * @param event The event to be tracked.
+     */
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
@@ -88,6 +113,9 @@ internal class EventsManager(
         }
     }
 
+    /**
+     * Initiates flushing of stored events to the backend.
+     */
     @Synchronized
     fun flushEvents() {
         enqueue {
@@ -134,6 +162,9 @@ internal class EventsManager(
         }
     }
 
+    /**
+     * Flushes legacy paywall events to the backend.
+     */
     private fun flushLegacyEvents() {
         enqueue {
             val storedLegacyEventsWithNullValues = getLegacyPaywallsStoredEvents()
@@ -164,6 +195,11 @@ internal class EventsManager(
         }
     }
 
+    /**
+     * Retrieves stored backend events from the file system.
+     *
+     * @return A list of stored backend events, some of which may be null.
+     */
     private fun getStoredEvents(): List<BackendStoredEvent?> {
         var events: List<BackendStoredEvent?> = emptyList()
         fileHelper.readFile { sequence ->
@@ -172,6 +208,11 @@ internal class EventsManager(
         return events
     }
 
+    /**
+     * Retrieves stored legacy paywall events from the file system.
+     *
+     * @return A list of stored paywall events, some of which may be null.
+     */
     private fun getLegacyPaywallsStoredEvents(): List<PaywallStoredEvent?> {
         var events: List<PaywallStoredEvent?> = emptyList()
         legacyEventsFileHelper.readFile { sequence ->
@@ -180,6 +221,12 @@ internal class EventsManager(
         return events
     }
 
+    /**
+     * Enqueues a task for execution.
+     *
+     * @param delay The delay before execution.
+     * @param command The task to execute.
+     */
     private fun enqueue(delay: Delay = Delay.NONE, command: () -> Unit) {
         eventsDispatcher.enqueue({ command() }, delay)
     }
