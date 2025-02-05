@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.createCustomerInfo
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -1314,7 +1315,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockPaywallEventsManager.track(event) } just Runs
+        every { mockEventsManager.track(event) } just Runs
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
         purchases.track(event)
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
@@ -1322,7 +1323,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `track close event clears cache`() {
-        every { mockPaywallEventsManager.track(any()) } just Runs
+        every { mockEventsManager.track(any()) } just Runs
         val impressionEvent = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
@@ -1340,10 +1341,10 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockPaywallEventsManager.track(event) } just Runs
+        every { mockEventsManager.track(event) } just Runs
 
         purchases.track(event)
-        verify(exactly = 1) { mockPaywallEventsManager.track(event) }
+        verify(exactly = 1) { mockEventsManager.track(event) }
     }
 
     // endregion track events

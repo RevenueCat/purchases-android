@@ -2,6 +2,7 @@ package com.revenuecat.purchases.customercenter.events
 
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
 import dev.drewhamilton.poko.Poko
@@ -19,7 +20,7 @@ import java.util.UUID
 class CustomerCenterEvent(
     val creationData: CreationData,
     val eventData: Data,
-) {
+) : FeatureEvent {
 
     companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
