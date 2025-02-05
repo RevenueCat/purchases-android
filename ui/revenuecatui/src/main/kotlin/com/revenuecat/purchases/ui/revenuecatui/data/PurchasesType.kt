@@ -38,7 +38,7 @@ internal interface PurchasesType {
 
     suspend fun awaitGetProduct(productId: String, basePlan: String?): StoreProduct?
 
-    fun track(event: PaywallEvent)
+    fun track(event: FeatureEvent)
 
     val purchasesAreCompletedBy: PurchasesAreCompletedBy
 

@@ -43,9 +43,9 @@ data class PaywallEvent(
     @Serializable
     data class CreationData(
         @Serializable(with = UUIDSerializer::class)
-        val id: UUID,
+        val id: UUID = UUID.randomUUID(),
         @Serializable(with = DateSerializer::class)
-        val date: Date,
+        val date: Date = Date(),
     )
 
     @Serializable

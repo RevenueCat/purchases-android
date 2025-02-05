@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
@@ -78,6 +79,9 @@ internal interface CustomerCenterViewModel {
         method: CustomerCenterConfigData.HelpPath.OpenMethod = CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
     )
     fun clearActionError()
+
+    // events
+    fun trackImpression()
 }
 
 internal sealed class TransactionDetails(
@@ -104,6 +108,8 @@ internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
     private val dateFormatter: DateFormatter = DefaultDateFormatter(),
     private val locale: Locale = Locale.getDefault(),
+    private var isDarkMode: Boolean,
+    private val sessionIdentifier = UUID.randomUUID(),
 ) : ViewModel(), CustomerCenterViewModel {
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
@@ -476,6 +482,20 @@ internal class CustomerCenterViewModelImpl(
         } catch (e: PurchasesException) {
             _state.value = CustomerCenterState.Error(e.error)
         }
+    }
+
+    override fun trackImpression() {
+//        val event = CustomerCenterEvent(
+//            creationData = CustomerCenterEvent.CreationData(),
+//            data = CustomerCenterEvent.Data(
+//                type = CustomerCenterEventType.IMPRESSION,
+//                timestamp = Date(),
+//                darkMode = isDarkMode,
+//                locale = "en_US",
+//                isSandbox = false,
+//                sessionIdentifier = sessionIdentifier,
+//            ),
+//        )
     }
 
     private fun displayFeedbackSurvey(

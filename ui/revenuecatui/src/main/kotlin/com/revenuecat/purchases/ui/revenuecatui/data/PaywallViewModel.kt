@@ -40,7 +40,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
@@ -471,7 +470,7 @@ internal class PaywallViewModelImpl(
             return
         }
         val event = PaywallEvent(
-            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            creationData = PaywallEvent.CreationData(),
             data = eventData,
             type = eventType,
         )
