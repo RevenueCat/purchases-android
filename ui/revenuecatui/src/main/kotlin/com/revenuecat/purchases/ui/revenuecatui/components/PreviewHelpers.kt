@@ -16,6 +16,8 @@ import coil.decode.DataSource
 import coil.request.SuccessResult
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.UiConfig.AppConfig
+import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -69,6 +71,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
+import java.util.Date
+
+private const val MILLIS_2025_01_25 = 1737763200000
 
 @Composable
 @JvmSynthetic
@@ -109,8 +114,22 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
     )
 }
+
+internal fun previewUiConfig(
+    app: AppConfig = AppConfig(),
+    localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = mapOf(
+        LocaleId("en_US") to variableLocalizationKeysForEnUs(),
+    ),
+    variableConfig: VariableConfig = VariableConfig(),
+): UiConfig =
+    UiConfig(
+        app = app,
+        localizations = localizations,
+        variableConfig = variableConfig,
+    )
 
 @Suppress("LongParameterList")
 internal fun previewStackComponentStyle(

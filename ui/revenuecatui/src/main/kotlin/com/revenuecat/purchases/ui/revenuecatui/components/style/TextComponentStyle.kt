@@ -48,7 +48,7 @@ internal class TextComponentStyle(
     @get:JvmSynthetic
     val rcPackage: Package?,
     @get:JvmSynthetic
-    val variableLocalizations: Map<LocaleId, Map<VariableLocalizationKey, String>>,
+    val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<LocalizedTextPartial>?,
 ) : ComponentStyle

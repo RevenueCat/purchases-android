@@ -243,7 +243,7 @@ class PackageComponentViewTests {
         val defaultLocaleIdentifier = LocaleId("en_US")
         // Both packages use the same unprocessed text.
         val textKey = LocalizationKey("key")
-        val textWithVariable = LocalizationData.Text("Product: {{ product_name }}")
+        val textWithVariable = LocalizationData.Text("Product: {{ product.store_product_name }}")
         // However the displayed text should be different, as the product names are different.
         val expectedTextYearly = "Product: ${packageYearly.product.name}"
         val expectedTextMonthly = "Product: ${packageMonthly.product.name}"

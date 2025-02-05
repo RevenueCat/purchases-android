@@ -8,6 +8,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import java.util.Date
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState as actualToComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull as actualValidatePaywallComponentsDataOrNull
 
@@ -19,12 +20,14 @@ internal fun Offering.toComponentsPaywallState(
     activelySubscribedProductIds: Set<String> = emptySet(),
     purchasedNonSubscriptionProductIds: Set<String> = emptySet(),
     storefrontCountryCode: String? = null,
+    dateProvider: () -> Date = { Date() }
 ): PaywallState.Loaded.Components =
     actualToComponentsPaywallState(
         validationResult = validationResult,
         activelySubscribedProductIds = activelySubscribedProductIds,
         purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
-        storefrontCountryCode = storefrontCountryCode
+        storefrontCountryCode = storefrontCountryCode,
+        dateProvider = dateProvider,
     )
 
 /**
