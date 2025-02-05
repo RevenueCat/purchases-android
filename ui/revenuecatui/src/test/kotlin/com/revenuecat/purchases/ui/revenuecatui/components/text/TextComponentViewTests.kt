@@ -666,7 +666,9 @@ class TextComponentViewTests {
         val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocaleIdentifier = LocaleId("en_US")
         val selectedPackageTextKey = LocalizationKey("key_selected")
-        val selectedPackageTextWithVariable = LocalizationData.Text("Selected product: {{ product_name }}")
+        val selectedPackageTextWithVariable = LocalizationData.Text(
+            "Selected product: {{ product.store_product_name }}"
+        )
         val expectedTextYearly = "Selected product: ${packageYearly.product.name}"
         val expectedTextMonthly = "Selected product: ${packageMonthly.product.name}"
         val localizations = nonEmptyMapOf(
@@ -745,7 +747,7 @@ class TextComponentViewTests {
         val mxnPackage = packageMonthlyMxn
         val countryWithoutDecimals = "MX"
         val textKey = LocalizationKey("key_selected")
-        val textWithPriceVariable = LocalizationData.Text("Price: {{ price }}")
+        val textWithPriceVariable = LocalizationData.Text("Price: {{ product.price }}")
         val expectedTextWithDecimals = "Price: \$ 2.00"
         val expectedTextWithoutDecimals = "Price: MX\$1"
         val localizations = nonEmptyMapOf(

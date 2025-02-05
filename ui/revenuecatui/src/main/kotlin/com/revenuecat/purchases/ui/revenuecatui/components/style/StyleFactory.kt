@@ -64,7 +64,7 @@ internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
     private val colorAliases: Map<ColorAlias, ColorScheme>,
     private val fontAliases: Map<FontAlias, FontSpec>,
-    private val variableLocalizations: Map<LocaleId, Map<VariableLocalizationKey, String>>,
+    private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     private val offering: Offering,
 ) {
 

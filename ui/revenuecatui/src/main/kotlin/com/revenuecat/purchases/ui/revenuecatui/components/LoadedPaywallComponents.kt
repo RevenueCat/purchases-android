@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -50,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
+import java.util.Date
 
 @Composable
 internal fun LoadedPaywallComponents(
@@ -156,7 +156,7 @@ private fun LoadedPaywallComponents_Preview() {
         serverDescription = "description",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     val state = offering.toComponentsPaywallState(
@@ -164,6 +164,7 @@ private fun LoadedPaywallComponents_Preview() {
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
     )
     LoadedPaywallComponents(
         state = state,
@@ -335,7 +336,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         serverDescription = "description",
         metadata = emptyMap(),
         availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     val state = offering.toComponentsPaywallState(
@@ -343,6 +344,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
     )
 
     LoadedPaywallComponents(
@@ -352,3 +354,5 @@ private fun LoadedPaywallComponents_Preview_Bless() {
             .fillMaxSize(),
     )
 }
+
+private const val MILLIS_2025_01_25 = 1737763200000

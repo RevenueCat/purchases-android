@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.URL
+import java.util.Date
 import java.util.Locale
 
 internal object TestData {
@@ -473,6 +474,7 @@ internal class MockViewModel(
                 activelySubscribedProductIds = emptySet(),
                 purchasedNonSubscriptionProductIds = emptySet(),
                 storefrontCountryCode = null,
+                dateProvider = { Date(MILLIS_2025_01_25) },
             )
         },
     )
@@ -591,5 +593,6 @@ internal class MockViewModel(
 
     private companion object {
         const val fakePurchaseDelayMillis: Long = 2000
+        private const val MILLIS_2025_01_25 = 1737763200000
     }
 }

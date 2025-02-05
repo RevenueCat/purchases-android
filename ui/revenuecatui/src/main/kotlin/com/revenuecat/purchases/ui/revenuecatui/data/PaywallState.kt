@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscrib
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+import java.util.Date
 import android.os.LocaleList as FrameworkLocaleList
 
 internal sealed interface PaywallState {
@@ -72,6 +74,7 @@ internal sealed interface PaywallState {
              * for that.
              */
             val showPricesWithDecimals: Boolean,
+            val variableConfig: VariableConfig,
             override val offering: Offering,
             /**
              * All locales that this paywall supports, with `locales.head` being the default one.
@@ -79,6 +82,7 @@ internal sealed interface PaywallState {
             private val locales: NonEmptySet<LocaleId>,
             private val activelySubscribedProductIds: Set<String>,
             private val purchasedNonSubscriptionProductIds: Set<String>,
+            private val dateProvider: () -> Date,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedPackage: Package? = null,
         ) : Loaded {
@@ -107,6 +111,9 @@ internal sealed interface PaywallState {
             }
 
             val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
+
+            val currentDate: Date
+                get() = dateProvider()
 
             fun update(localeList: FrameworkLocaleList? = null) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
