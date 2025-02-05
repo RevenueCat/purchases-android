@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -35,14 +36,11 @@ import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
-import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
-import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
-import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
@@ -291,7 +289,7 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 syncPurchasesHelper,
                 offeringsManager,
-                createPaywallEventsManager(application, identityManager, eventsDispatcher, backend),
+                createEventsManager(application, identityManager, eventsDispatcher, backend),
                 paywallPresentedCache,
                 purchasesStateProvider,
                 dispatcher = dispatcher,
@@ -302,25 +300,28 @@ internal class PurchasesFactory(
         }
     }
 
-    private fun createPaywallEventsManager(
+    private fun createEventsManager(
         context: Context,
         identityManager: IdentityManager,
         eventsDispatcher: Dispatcher,
         backend: Backend,
-    ): PaywallEventsManager? {
+    ): EventsManager? {
         // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
         // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
         // older versions.
         return if (isAndroidNOrNewer()) {
-            PaywallEventsManager(
-                EventsFileHelper(
-                    FileHelper(context),
-                    PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH,
-                    PaywallStoredEvent::fromString,
-                ),
+            EventsManager(
+                legacyEventsFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context)),
+                fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context)),
                 identityManager,
                 eventsDispatcher,
-                backend,
+                postEvents = { request, onSuccess, onError ->
+                    backend.postPaywallEvents(
+                        paywallEventRequest = request,
+                        onSuccessHandler = onSuccess,
+                        onErrorHandler = onError,
+                    )
+                },
             )
         } else {
             debugLog("Paywall events are only supported on Android N or newer.")
