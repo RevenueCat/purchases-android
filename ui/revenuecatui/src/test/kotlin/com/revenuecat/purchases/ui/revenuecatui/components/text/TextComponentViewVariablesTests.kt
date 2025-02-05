@@ -121,7 +121,7 @@ internal class TextComponentViewVariablesTests(
                 currencyCode = "USD",
                 formatted = "$ 200.00",
             ),
-            description = "Annual",
+            description = "Lifetime",
             period = null,
         )
         private val productWithUpperCaseName = productYearlyUsdTwoOffers.copy(name = "ANNUAL")
