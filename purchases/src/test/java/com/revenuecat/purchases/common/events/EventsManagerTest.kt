@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywalls.events
+package com.revenuecat.purchases.common.events
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -9,12 +9,10 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
-import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.events.BackendStoredEvent
-import com.revenuecat.purchases.common.events.EventsRequest
-import com.revenuecat.purchases.common.events.EventsManager
-import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
 import io.mockk.Runs
 import io.mockk.every
@@ -33,7 +31,7 @@ import java.util.UUID
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
-class PaywallEventsManagerTest {
+class EventsManagerTest {
 
     private val userID = "testAppUserId"
     private val event = PaywallEvent(
