@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
 import kotlinx.serialization.json.Json
@@ -101,7 +102,7 @@ internal class EventsManager(
             debugLog("Tracking event: $event")
 
             val backendEvent = when (event) {
-                is FeatureEvent.Paywall -> event.event.toBackendStoredEvent(identityManager.currentAppUserID)
+                is PaywallEvent -> event.toBackendStoredEvent(identityManager.currentAppUserID)
                 else -> null
             }
 
@@ -126,8 +127,8 @@ internal class EventsManager(
             flushInProgress = true
 
             if (!legacyFlushTriggered) {
-                flushLegacyEvents()
                 legacyFlushTriggered = true
+                flushLegacyEvents()
             }
 
             val storedEventsWithNullValues = getStoredEvents()

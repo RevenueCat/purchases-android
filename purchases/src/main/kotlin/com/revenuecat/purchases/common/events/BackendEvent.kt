@@ -32,7 +32,7 @@ internal sealed class BackendEvent : Event {
         val type: String,
         @SerialName("app_user_id")
         val appUserID: String,
-        @SerialName("session_id")
+        @SerialName("app_session_id")
         val appSessionID: String,
         val timestamp: Long,
         @SerialName("dark_mode")

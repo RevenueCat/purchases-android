@@ -40,22 +40,7 @@ internal sealed class BackendStoredEvent : Event {
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun BackendStoredEvent.toBackendEvent(): BackendEvent? {
     return when (this) {
-        is BackendStoredEvent.Paywalls -> {
-            // Convert the stored Paywalls event to the flat backend event.
-            BackendEvent.Paywalls(
-                id = this.event.id,
-                version = this.event.version,
-                type = this.event.type,
-                appUserID = this.event.appUserID,
-                sessionID = this.event.sessionID,
-                offeringID = this.event.offeringID,
-                paywallRevision = this.event.paywallRevision,
-                timestamp = this.event.timestamp,
-                displayMode = this.event.displayMode,
-                darkMode = this.event.darkMode,
-                localeIdentifier = this.event.localeIdentifier,
-            )
-        }
+        is BackendStoredEvent.Paywalls -> { this.event }
         is BackendStoredEvent.CustomerCenter -> {
             // For now, returning null:
             null
