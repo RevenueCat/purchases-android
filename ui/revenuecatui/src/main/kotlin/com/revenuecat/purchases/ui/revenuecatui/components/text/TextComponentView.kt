@@ -237,20 +237,6 @@ private fun TextComponentView_Preview_MonospaceFont() {
     )
 }
 
-@Preview(name = "CursiveFont")
-@Composable
-private fun TextComponentView_Preview_CursiveFont() {
-    TextComponentView(
-        style = previewTextComponentStyle(
-            text = "Hello, world",
-            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontSpec = FontSpec.Generic.Cursive,
-            size = Size(width = Fit, height = Fit),
-        ),
-        state = previewEmptyState(),
-    )
-}
-
 @Preview
 @Composable
 private fun TextComponentView_Preview_FontSize() {

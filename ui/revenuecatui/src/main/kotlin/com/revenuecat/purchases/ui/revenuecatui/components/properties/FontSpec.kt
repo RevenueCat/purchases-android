@@ -44,7 +44,6 @@ internal sealed interface FontSpec {
         object SansSerif : Generic
         object Serif : Generic
         object Monospace : Generic
-        object Cursive : Generic
     }
 
     data class System(@get:JvmSynthetic val name: String) : FontSpec
@@ -85,7 +84,6 @@ internal fun FontSpec.resolve(
         FontSpec.Generic.SansSerif -> FontFamily.SansSerif
         FontSpec.Generic.Serif -> FontFamily.Serif
         FontSpec.Generic.Monospace -> FontFamily.Monospace
-        FontSpec.Generic.Cursive -> FontFamily.Cursive
     }
 
     is FontSpec.System -> FontFamily(
@@ -100,7 +98,6 @@ private fun ResourceProvider.determineFontSpec(info: FontInfo): FontSpec =
             FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
             FontFamily.Serif.name -> FontSpec.Generic.Serif
             FontFamily.Monospace.name -> FontSpec.Generic.Monospace
-            FontFamily.Cursive.name -> FontSpec.Generic.Cursive
             else -> {
                 @SuppressLint("DiscouragedApi")
                 val fontId = getResourceIdentifier(name = info.value, type = "font")
