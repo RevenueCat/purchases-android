@@ -106,7 +106,7 @@ class SubscriberAttributesPurchasesTests {
             postPendingTransactionsHelper = postPendingTransactionsHelper,
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock,
-            paywallEventsManager = null,
+            eventsManager = null,
             paywallPresentedCache = PaywallPresentedCache(),
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
             dispatcher = SyncDispatcher(),

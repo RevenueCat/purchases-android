@@ -12,11 +12,15 @@ import org.json.JSONObject
 internal open class EventsFileHelper<T : Event> (
     private val fileHelper: FileHelper,
     private val filePath: String,
+    private val eventSerializer: ((T) -> String)? = null,
     private val eventDeserializer: ((String) -> T)? = null,
 ) {
     @Synchronized
     fun appendEvent(event: T) {
-        fileHelper.appendToFile(filePath, event.toString() + "\n")
+        fileHelper.appendToFile(
+            filePath,
+            (eventSerializer?.invoke(event) ?: event.toString()) + "\n",
+        )
     }
 
     @Synchronized

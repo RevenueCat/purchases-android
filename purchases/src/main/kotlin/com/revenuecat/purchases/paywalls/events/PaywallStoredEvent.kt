@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -20,10 +21,10 @@ internal data class PaywallStoredEvent(
         }
     }
 
-    fun toPaywallBackendEvent(): PaywallBackendEvent {
-        return PaywallBackendEvent(
+    fun toBackendEvent(): BackendEvent.Paywalls {
+        return BackendEvent.Paywalls(
             id = event.creationData.id.toString(),
-            version = PaywallBackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,
+            version = BackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,
             type = event.type.value,
             appUserID = userID,
             sessionID = event.data.sessionIdentifier.toString(),
