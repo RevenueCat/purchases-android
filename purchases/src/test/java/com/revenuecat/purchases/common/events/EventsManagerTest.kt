@@ -9,17 +9,23 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
+import com.revenuecat.purchases.utils.serializers.DateSerializer
+import com.revenuecat.purchases.utils.serializers.UUIDSerializer
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -34,7 +40,7 @@ import java.util.UUID
 class EventsManagerTest {
 
     private val userID = "testAppUserId"
-    private val event = PaywallEvent(
+    private val paywallEvent = PaywallEvent(
         creationData = PaywallEvent.CreationData(
             id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
             date = Date(1699270688884)
@@ -49,7 +55,21 @@ class EventsManagerTest {
         ),
         type = PaywallEventType.IMPRESSION,
     )
-    private val storedEvent = PaywallStoredEvent(event, userID)
+    private val customerCenterEvent = CustomerCenterEvent(
+        creationData = CustomerCenterEvent.CreationData(
+            id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+            date = Date(1699270688884)
+        ),
+        data = CustomerCenterEvent.Data(
+            type = CustomerCenterEventType.IMPRESSION,
+            timestamp = Date(1699270688884),
+            sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+            darkMode = true,
+            locale = "es_ES",
+            isSandbox = true,
+        )
+    )
+    private val storedEvent = PaywallStoredEvent(paywallEvent, userID)
 
     private val testFolder = "temp_test_folder"
 
@@ -87,7 +107,7 @@ class EventsManagerTest {
             identityManager,
             paywallEventsDispatcher,
             postEvents = { request, onSuccess, onError ->
-                backend.postPaywallEvents(
+                backend.postEvents(
                     paywallEventRequest = request,
                     onSuccessHandler = onSuccess,
                     onErrorHandler = onError,
@@ -103,14 +123,14 @@ class EventsManagerTest {
     }
 
     @Test
-    fun `tracking events adds them to file`() {
-        eventsManager.track(event)
+    fun `tracking paywall events adds them to file`() {
+        eventsManager.track(paywallEvent)
 
         checkFileContents(
             """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent() + "\n"
         )
 
-        eventsManager.track(event.copy(type = PaywallEventType.CANCEL))
+        eventsManager.track(paywallEvent.copy(type = PaywallEventType.CANCEL))
         checkFileContents(
             """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
@@ -120,10 +140,43 @@ class EventsManagerTest {
     }
 
     @Test
+    fun `tracking mixed events adds them to file`() {
+        eventsManager.track(customerCenterEvent)
+        eventsManager.track(paywallEvent)
+        checkFileContents(
+            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","is_sandbox":true,"display_mode":"full_screen"}}""".trimIndent()
+                + "\n"
+                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking customer center events adds them to file`() {
+        eventsManager.track(customerCenterEvent)
+
+        checkFileContents(
+            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","is_sandbox":true,"display_mode":"full_screen"}}""".trimIndent() + "\n"
+        )
+
+        var surveyEvent = CustomerCenterEvent(
+            creationData = customerCenterEvent.creationData,
+            data = customerCenterEvent.data.copy(type = CustomerCenterEventType.SURVEY_OPTION_CHOSEN)
+        )
+        eventsManager.track(surveyEvent)
+        checkFileContents(
+            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","is_sandbox":true,"display_mode":"full_screen"}}""".trimIndent()
+                + "\n"
+                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","is_sandbox":true,"display_mode":"full_screen"}}""".trimIndent()
+                + "\n"
+        )
+    }
+
+    @Test
     fun `flushEvents sends available events to backend`() {
         mockBackendResponse(success = true)
-        eventsManager.track(event)
-        eventsManager.track(event)
+        eventsManager.track(paywallEvent)
+        eventsManager.track(paywallEvent)
         eventsManager.flushEvents()
         checkFileContents("")
         val expectedRequest = EventsRequest(
@@ -137,7 +190,7 @@ class EventsManagerTest {
             ).mapNotNull { it.toBackendEvent() }
         )
         verify(exactly = 1) {
-            backend.postPaywallEvents(
+            backend.postEvents(
                 expectedRequest,
                 any(),
                 any(),
@@ -149,7 +202,7 @@ class EventsManagerTest {
     fun `flushEvents without events, does not call backend`() {
         eventsManager.flushEvents()
         verify(exactly = 0) {
-            backend.postPaywallEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any())
         }
     }
 
@@ -157,7 +210,7 @@ class EventsManagerTest {
     fun `if more than maximum events flushEvents only posts maximum events`() {
         mockBackendResponse(success = true)
         for (i in 0..99) {
-            eventsManager.track(event)
+            eventsManager.track(paywallEvent)
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
@@ -168,7 +221,7 @@ class EventsManagerTest {
     fun `if backend errors without marking events as synced, events are not deleted`() {
         mockBackendResponse(success = false, shouldMarkAsSyncedOnError = false)
         for (i in 0..99) {
-            eventsManager.track(event)
+            eventsManager.track(paywallEvent)
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
@@ -179,7 +232,7 @@ class EventsManagerTest {
     fun `if backend errors but marking events as synced, events are deleted`() {
         mockBackendResponse(success = false, shouldMarkAsSyncedOnError = true)
         for (i in 0..99) {
-            eventsManager.track(event)
+            eventsManager.track(paywallEvent)
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
@@ -189,15 +242,15 @@ class EventsManagerTest {
     @Test
     fun `flushEvents multiple times only executes once`() {
         every {
-            backend.postPaywallEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any())
         } just Runs
-        eventsManager.track(event)
-        eventsManager.track(event)
+        eventsManager.track(paywallEvent)
+        eventsManager.track(paywallEvent)
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postPaywallEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any())
         }
     }
 
@@ -205,25 +258,25 @@ class EventsManagerTest {
     fun `flushEvents multiple times, then finishing, adding events and flushing again works`() {
         val successSlot = slot<() -> Unit>()
         every {
-            backend.postPaywallEvents(any(), capture(successSlot), any())
+            backend.postEvents(any(), capture(successSlot), any())
         } just Runs
-        eventsManager.track(event)
-        eventsManager.track(event)
+        eventsManager.track(paywallEvent)
+        eventsManager.track(paywallEvent)
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postPaywallEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
-        eventsManager.track(event)
-        eventsManager.track(event)
-        eventsManager.track(event)
+        eventsManager.track(paywallEvent)
+        eventsManager.track(paywallEvent)
+        eventsManager.track(paywallEvent)
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 2) {
-            backend.postPaywallEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -232,9 +285,9 @@ class EventsManagerTest {
     @Test
     fun `flushEvents with invalid events, flushes valid events`() {
         mockBackendResponse(success = true)
-        eventsManager.track(event)
+        eventsManager.track(paywallEvent)
         appendToFile("invalid event\n")
-        eventsManager.track(event)
+        eventsManager.track(paywallEvent)
         appendToFile("invalid event 2\n")
         checkFileNumberOfEvents(4)
         eventsManager.flushEvents()
@@ -246,12 +299,12 @@ class EventsManagerTest {
     fun `flushEvents with invalid events, flushes valid events when reaching max count per request`() {
         mockBackendResponse(success = true)
         for (i in 0..24) {
-            eventsManager.track(event)
+            eventsManager.track(paywallEvent)
         }
         appendToFile("invalid event\n")
         appendToFile("invalid event 2\n")
         for (i in 0..49) {
-            eventsManager.track(event)
+            eventsManager.track(paywallEvent)
         }
         appendToFile("invalid event 3\n")
         checkFileNumberOfEvents(78)
@@ -275,7 +328,7 @@ class EventsManagerTest {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
-            backend.postPaywallEvents(any(), capture(successSlot), capture(errorSlot))
+            backend.postEvents(any(), capture(successSlot), capture(errorSlot))
         } answers {
             if (success) {
                 successSlot.captured.invoke()
@@ -290,7 +343,7 @@ class EventsManagerTest {
             List(eventsSynced) { BackendStoredEvent.Paywalls(storedEvent.toBackendEvent()) }.mapNotNull { it.toBackendEvent() }
         )
         verify(exactly = 1) {
-            backend.postPaywallEvents(
+            backend.postEvents(
                 expectedRequest,
                 any(),
                 any(),

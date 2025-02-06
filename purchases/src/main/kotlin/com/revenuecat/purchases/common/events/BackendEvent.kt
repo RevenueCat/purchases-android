@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.common.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -18,6 +21,7 @@ internal sealed class BackendEvent : Event {
      * @property type Type of the event.
      * @property appUserID The app user identifier associated with this event.
      * @property appSessionID The session ID of the app session when this event occurred.
+     * Differs from PaywallEvent.sessionID
      * @property timestamp Unix timestamp representing when the event occurred.
      * @property darkMode Whether the app was in dark mode at the time of the event.
      * @property locale The locale setting of the device.
@@ -25,11 +29,13 @@ internal sealed class BackendEvent : Event {
      * @property displayMode The display mode of the Customer Center.
      */
     @Serializable
-    data class CustomerCenter(
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @SerialName("customer_center")
+    data class CustomerCenter constructor(
         val id: String,
         @SerialName("revision_id")
         val revisionID: Int,
-        val type: String,
+        val type: CustomerCenterEventType,
         @SerialName("app_user_id")
         val appUserID: String,
         @SerialName("app_session_id")
@@ -41,7 +47,7 @@ internal sealed class BackendEvent : Event {
         @SerialName("is_sandbox")
         val isSandbox: Boolean,
         @SerialName("display_mode")
-        val displayMode: String,
+        val displayMode: CustomerCenterDisplayMode,
     ) : BackendEvent()
 
     /**

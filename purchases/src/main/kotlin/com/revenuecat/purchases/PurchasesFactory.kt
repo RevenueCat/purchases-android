@@ -316,7 +316,7 @@ internal class PurchasesFactory(
                 identityManager,
                 eventsDispatcher,
                 postEvents = { request, onSuccess, onError ->
-                    backend.postPaywallEvents(
+                    backend.postEvents(
                         paywallEventRequest = request,
                         onSuccessHandler = onSuccess,
                         onErrorHandler = onError,

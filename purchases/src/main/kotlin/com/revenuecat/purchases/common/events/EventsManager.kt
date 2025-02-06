@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
@@ -103,6 +104,7 @@ internal class EventsManager(
 
             val backendEvent = when (event) {
                 is PaywallEvent -> event.toBackendStoredEvent(identityManager.currentAppUserID)
+                is CustomerCenterEvent -> event.toBackendStoredEvent(identityManager.currentAppUserID)
                 else -> null
             }
 
