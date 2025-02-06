@@ -18,6 +18,7 @@ internal sealed class BackendEvent : Event {
      * @property type Type of the event.
      * @property appUserID The app user identifier associated with this event.
      * @property appSessionID The session ID of the app session when this event occurred.
+     * Differs from PaywallEvent.sessionID
      * @property timestamp Unix timestamp representing when the event occurred.
      * @property darkMode Whether the app was in dark mode at the time of the event.
      * @property locale The locale setting of the device.
