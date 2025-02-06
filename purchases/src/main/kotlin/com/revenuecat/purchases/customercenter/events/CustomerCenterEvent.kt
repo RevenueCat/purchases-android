@@ -55,7 +55,7 @@ class CustomerCenterEvent(
         val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
     ) {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-       internal fun copy(
+        internal fun copy(
             type: CustomerCenterEventType = this.type,
             timestamp: Date = this.timestamp,
             sessionIdentifier: UUID = this.sessionIdentifier,
