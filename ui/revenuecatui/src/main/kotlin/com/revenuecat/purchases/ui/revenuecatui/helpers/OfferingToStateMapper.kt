@@ -32,7 +32,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineCompone
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.InitialTabState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -178,29 +177,24 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     ) { stack, stickyFooter, background ->
 
         val tabsComponentPredicate: (ComponentStyle) -> Boolean = { it is TabsComponentStyle }
+        val tabsComponent = stack.firstOrNull(tabsComponentPredicate) as TabsComponentStyle?
+            ?: stickyFooter?.firstOrNull(tabsComponentPredicate) as TabsComponentStyle?
 
-        val tabsComponent = (
-            stack.firstOrNull(tabsComponentPredicate)
-                ?: stickyFooter?.firstOrNull(tabsComponentPredicate)
-            ) as TabsComponentStyle?
-
-        val exceptTabsComponent = stack.pruned(tabsComponentPredicate)?.filter { true }.orEmpty() +
-            stickyFooter?.pruned(tabsComponentPredicate)?.filter { true }.orEmpty()
+        val packagesOutsideTabsFilter: ComponentStyle.() -> List<ComponentStyle> = {
+            filter(
+                predicate = { it is PackageComponentStyle },
+                skip = { it is TabsComponentStyle },
+            )
+        }
+        val packagesOutsideTabs = stack.packagesOutsideTabsFilter()
+            .plus(stickyFooter?.packagesOutsideTabsFilter().orEmpty())
+            .map { it as PackageComponentStyle }
 
         val packagesByTab = tabsComponent?.tabs?.mapIndexed { index, tab ->
             index to tab.stack
                 .filter { it is PackageComponentStyle }
                 .map { it as PackageComponentStyle }
         }?.toMap()
-
-        val packagesOutsideTabs = exceptTabsComponent.flatMap { component ->
-            component.filter { it is PackageComponentStyle }
-                .map { it as PackageComponentStyle }
-        }
-
-        val selectedPackageByTab = packagesByTab?.mapValues { (_, packages) ->
-            packages.firstOrNull { it.isSelectedByDefault }?.rcPackage
-        }
 
         val initialSelectedTabIndex = tabsComponent?.let {
             when (val controlStyle = tabsComponent.control) {
@@ -214,12 +208,6 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
                         .let { if (it) 1 else 0 }
                 }
             }
-        }
-
-        val initialTabState = if (initialSelectedTabIndex != null && selectedPackageByTab != null) {
-            InitialTabState(initialSelectedTabIndex, selectedPackageByTab)
-        } else {
-            null
         }
 
         PaywallValidationResult.Components(
@@ -237,7 +225,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
                     packages.map { AvailablePackages.Info(it.rcPackage, it.isSelectedByDefault) }
                 }.orEmpty(),
             ),
-            initialTabState = initialTabState,
+            initialSelectedTabIndex = initialSelectedTabIndex,
         )
     }
 }
@@ -378,7 +366,7 @@ internal fun Offering.toComponentsPaywallState(
         purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
         dateProvider = dateProvider,
         packages = validationResult.packages,
-        initialTabState = validationResult.initialTabState,
+        initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
     )
 }
 
@@ -488,13 +476,35 @@ private fun ComponentStyle.firstOrNull(predicate: (ComponentStyle) -> Boolean): 
  *
  * Implemented as breadth-first search.
  */
-private fun ComponentStyle.filter(predicate: (ComponentStyle) -> Boolean): List<ComponentStyle> {
+private fun ComponentStyle.filter(
+    predicate: (ComponentStyle) -> Boolean,
+): List<ComponentStyle> =
+    filter(
+        predicate = predicate,
+        skip = { false },
+    )
+
+/**
+ * Returns all ComponentStyles that satisfy the predicate, skipping any nodes (and their children) that satisfy the
+ * skip predicate.
+ *
+ * Implemented as breadth-first search.
+ */
+@Suppress("CyclomaticComplexMethod")
+private fun ComponentStyle.filter(
+    predicate: (ComponentStyle) -> Boolean,
+    skip: (ComponentStyle) -> Boolean,
+): List<ComponentStyle> {
     val matches = mutableListOf<ComponentStyle>()
     val queue = ArrayDeque<ComponentStyle>()
     queue.add(this)
 
     while (queue.isNotEmpty()) {
         val current = queue.removeFirst()
+
+        if (skip(current)) {
+            continue
+        }
 
         if (predicate(current)) {
             matches.add(current)
@@ -510,8 +520,10 @@ private fun ComponentStyle.filter(predicate: (ComponentStyle) -> Boolean): List<
             is TabControlStyle.Buttons -> queue.add(current.stack)
             is TabControlStyle.Toggle -> queue.add(current.stack)
             is TabsComponentStyle -> queue.addAll(current.tabs.map { it.stack })
+            is TimelineComponentStyle ->
+                queue.addAll(current.items.flatMap { item -> listOfNotNull(item.title, item.description, item.icon) })
+
             is TabControlToggleComponentStyle,
-            is TimelineComponentStyle,
             is ImageComponentStyle,
             is IconComponentStyle,
             is TextComponentStyle,

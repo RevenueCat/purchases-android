@@ -87,7 +87,7 @@ internal sealed interface PaywallState {
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
-            initialTabState: InitialTabState? = null,
+            initialSelectedTabIndex: Int? = null,
         ) : Loaded {
 
             data class AvailablePackages(
@@ -103,15 +103,6 @@ internal sealed interface PaywallState {
             data class SelectedPackageInfo(
                 val rcPackage: Package,
                 val currentlySubscribed: Boolean,
-            )
-
-            data class InitialTabState(
-                val initialSelectedTabIndex: Int,
-                /**
-                 * Map of tab index to package. A tab doesn't have to have any packages on it, which is why Package is
-                 * nullable.
-                 */
-                val initialSelectedPackageByTab: Map<Int, Package?>,
             )
 
             private val initialSelectedPackageOutsideTabs = packages.globalPackages
@@ -134,17 +125,21 @@ internal sealed interface PaywallState {
 
             val locale by derivedStateOf { localeId.toComposeLocale() }
 
-            private val selectedPackageByTab = initialTabState?.let {
-                mutableStateMapOf<Int, Package?>().apply { putAll(it.initialSelectedPackageByTab) }
+            private val selectedPackageByTab = mutableStateMapOf<Int, Package?>().apply {
+                putAll(
+                    packages.packagesByTab.mapValues { (_, packages) ->
+                        packages.firstOrNull { it.isSelectedByDefault }?.pkg
+                    },
+                )
             }
 
-            var selectedTabIndex by mutableIntStateOf(initialTabState?.initialSelectedTabIndex ?: 0)
+            var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
                 private set
 
-            private val initialSelectedPackage2 = initialSelectedPackageOutsideTabs
-                ?: initialTabState?.initialSelectedTabIndex?.let { selectedPackageByTab?.get(it) }
+            private val initialSelectedPackage = initialSelectedPackageOutsideTabs
+                ?: initialSelectedTabIndex?.let { selectedPackageByTab[it] }
 
-            private var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage2)
+            private var selectedPackage by mutableStateOf(initialSelectedPackage)
 
             val selectedPackageInfo by derivedStateOf {
                 selectedPackage?.let { rcPackage ->
