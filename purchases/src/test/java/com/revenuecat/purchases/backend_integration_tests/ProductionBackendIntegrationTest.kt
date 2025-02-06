@@ -187,7 +187,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         ).mapNotNull { it.toBackendEvent() })
 
         ensureBlockFinishes { latch ->
-            backend.postPaywallEvents(
+            backend.postEvents(
                 request,
                 onSuccessHandler = {
                     latch.countDown()
