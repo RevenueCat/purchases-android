@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.common.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -26,11 +28,13 @@ internal sealed class BackendEvent : Event {
      * @property displayMode The display mode of the Customer Center.
      */
     @Serializable
-    data class CustomerCenter(
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @SerialName("customer_center")
+    data class CustomerCenter constructor(
         val id: String,
         @SerialName("revision_id")
         val revisionID: Int,
-        val type: String,
+        val type: CustomerCenterEventType,
         @SerialName("app_user_id")
         val appUserID: String,
         @SerialName("app_session_id")

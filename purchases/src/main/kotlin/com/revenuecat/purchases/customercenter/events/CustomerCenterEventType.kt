@@ -9,16 +9,16 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @ExperimentalPreviewRevenueCatPurchasesAPI
-enum class CustomerCenterEventType(val value: String) {
+enum class CustomerCenterEventType {
     /**
      * The customer center was shown to the user.
      */
     @SerialName("customer_center_impression")
-    IMPRESSION(value = "customer_center_impression"),
+    IMPRESSION,
 
     /**
      * The customer center was closed by the user.
      */
     @SerialName("customer_center_survey_option_chosen")
-    SURVEY_OPTION_CHOSEN(value = "customer_center_survey_option_chosen"),
+    SURVEY_OPTION_CHOSEN,
 }

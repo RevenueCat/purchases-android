@@ -90,7 +90,7 @@ internal fun CustomerCenterEvent.toBackendStoredEvent(appUserID: String): Backen
         BackendEvent.CustomerCenter(
             id = creationData.id.toString(),
             revisionID = data.revisionID,
-            type = data.type.value,
+            type = data.type,
             appUserID = appUserID,
             appSessionID = data.sessionIdentifier.toString(),
             timestamp = data.timestamp.time,
