@@ -96,7 +96,7 @@ class BackendPaywallEventTest {
     @Test
     fun `postPaywallEvents posts events correctly`() {
         mockHttpResult()
-        backend.postPaywallEvents(
+        backend.postEvents(
             paywallEventRequest,
             onSuccessHandler = {},
             onErrorHandler = { _, _ -> },
@@ -127,7 +127,7 @@ class BackendPaywallEventTest {
     fun `postPaywallEvents calls success handler`() {
         mockHttpResult()
         var successCalled = false
-        backend.postPaywallEvents(
+        backend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { successCalled = true },
             onErrorHandler = { _, _ -> fail("Expected success") },
@@ -139,7 +139,7 @@ class BackendPaywallEventTest {
     fun `postPaywallEvents calls error handler if error response code`() {
         mockHttpResult(responseCode = RCHTTPStatusCodes.ERROR)
         var errorCalled = false
-        backend.postPaywallEvents(
+        backend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, _ -> errorCalled = true },
@@ -151,7 +151,7 @@ class BackendPaywallEventTest {
     fun `postPaywallEvents calls error handler with shouldMarkAsSynced false if server error`() {
         mockHttpResult(responseCode = RCHTTPStatusCodes.ERROR)
         var errorCalled = false
-        backend.postPaywallEvents(
+        backend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
@@ -166,7 +166,7 @@ class BackendPaywallEventTest {
     fun `postPaywallEvents calls error handler with shouldMarkAsSynced false if 404`() {
         mockHttpResult(responseCode = RCHTTPStatusCodes.NOT_FOUND)
         var errorCalled = false
-        backend.postPaywallEvents(
+        backend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
@@ -181,7 +181,7 @@ class BackendPaywallEventTest {
     fun `postPaywallEvents calls error handler with shouldMarkAsSynced true if 400`() {
         mockHttpResult(responseCode = RCHTTPStatusCodes.BAD_REQUEST)
         var errorCalled = false
-        backend.postPaywallEvents(
+        backend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
@@ -205,7 +205,7 @@ class BackendPaywallEventTest {
             JsonPrimitive(123)
         }
         var errorCalled = false
-        backend.postPaywallEvents(
+        backend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
@@ -221,7 +221,7 @@ class BackendPaywallEventTest {
     fun `postPaywallEvents calls error handler with shouldMarkAsSynced false if a network error is raised`() {
         mockHttpClientException()
         var errorCalled = false
-        backend.postPaywallEvents(
+        backend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
@@ -236,12 +236,12 @@ class BackendPaywallEventTest {
     fun `postPaywallEvents multiple times with same request, only one is triggered`() {
         mockHttpResult(delayMs = 10)
         val lock = CountDownLatch(2)
-        asyncBackend.postPaywallEvents(
+        asyncBackend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { lock.countDown() },
             onErrorHandler = { _, _ -> },
         )
-        asyncBackend.postPaywallEvents(
+        asyncBackend.postEvents(
             paywallEventRequest,
             onSuccessHandler = { lock.countDown() },
             onErrorHandler = { _, _ -> },

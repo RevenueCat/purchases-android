@@ -21,21 +21,20 @@ public class CustomerCenterEventSerializationTests {
             id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
             date = Date(1699270688884)
         ),
-        eventData = CustomerCenterEvent.Data(
+        data = CustomerCenterEvent.Data(
             type = CustomerCenterEventType.IMPRESSION,
             timestamp = Date(1699270688884),
             darkMode = true,
             locale = "en_US",
             isSandbox = true,
-            version = 1,
-            revisionId = 1,
+            sessionIdentifier = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
         )
     )
 
     @Test
     fun `can encode customer center event correctly`() {
         val eventString: String = CustomerCenterEvent.json.encodeToString(event)
-        val expectedJson = "{\"creationData\":{\"id\":\"298207f4-87af-4b57-a581-eb27bcc6e009\",\"date\":1699270688884},\"eventData\":{\"type\":\"customer_center_impression\",\"timestamp\":1699270688884,\"darkMode\":true,\"locale\":\"en_US\",\"isSandbox\":true}}"
+        val expectedJson = "{\"creationData\":{\"id\":\"298207f4-87af-4b57-a581-eb27bcc6e009\",\"date\":1699270688884},\"data\":{\"type\":\"customer_center_impression\",\"timestamp\":1699270688884,\"sessionIdentifier\":\"298207f4-87af-4b57-a581-eb27bcc6e009\",\"darkMode\":true,\"locale\":\"en_US\",\"isSandbox\":true}}"
 
         assertThat(eventString).isEqualTo(expectedJson)
     }
