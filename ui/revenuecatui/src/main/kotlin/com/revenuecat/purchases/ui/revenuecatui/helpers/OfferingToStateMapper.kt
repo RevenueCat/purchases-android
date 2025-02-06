@@ -176,39 +176,13 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         third = config.background.toBackgroundStyles(aliases = colorAliases),
     ) { stack, stickyFooter, background ->
 
-        val tabsComponentPredicate: (ComponentStyle) -> Boolean = { it is TabsComponentStyle }
-        val tabsComponent = stack.firstOrNull(tabsComponentPredicate) as TabsComponentStyle?
-            ?: stickyFooter?.firstOrNull(tabsComponentPredicate) as TabsComponentStyle?
+        val packagesOutsideTabs = stack.findPackagesOutsideTabs() + stickyFooter?.findPackagesOutsideTabs().orEmpty()
+        val tabsComponent = stack.findTabsComponentStyle() ?: stickyFooter?.findTabsComponentStyle()
 
-        val packagesOutsideTabsFilter: ComponentStyle.() -> List<ComponentStyle> = {
-            filter(
-                predicate = { it is PackageComponentStyle },
-                skip = { it is TabsComponentStyle },
-            )
-        }
-        val packagesOutsideTabs = stack.packagesOutsideTabsFilter()
-            .plus(stickyFooter?.packagesOutsideTabsFilter().orEmpty())
-            .map { it as PackageComponentStyle }
-
-        val packagesByTab = tabsComponent?.tabs?.mapIndexed { index, tab ->
-            index to tab.stack
-                .filter { it is PackageComponentStyle }
-                .map { it as PackageComponentStyle }
-        }?.toMap()
-
-        val initialSelectedTabIndex = tabsComponent?.let {
-            when (val controlStyle = tabsComponent.control) {
-                // Button control doesn't have a default tab.
-                is TabControlStyle.Buttons -> 0
-                is TabControlStyle.Toggle -> {
-                    controlStyle.stack
-                        .firstOrNull { it is TabControlToggleComponentStyle }!! // FIXME Error if null
-                        .let { it as TabControlToggleComponentStyle }
-                        .defaultValue
-                        .let { if (it) 1 else 0 }
-                }
-            }
-        }
+        val packages = AvailablePackages(
+            globalPackages = packagesOutsideTabs,
+            packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
+        )
 
         PaywallValidationResult.Components(
             stack = stack,
@@ -217,15 +191,8 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
             variableConfig = paywallComponents.uiConfig.variableConfig,
-            packages = AvailablePackages(
-                globalPackages = packagesOutsideTabs.map {
-                    AvailablePackages.Info(it.rcPackage, it.isSelectedByDefault)
-                },
-                packagesByTab = packagesByTab?.mapValues { (_, packages) ->
-                    packages.map { AvailablePackages.Info(it.rcPackage, it.isSelectedByDefault) }
-                }.orEmpty(),
-            ),
-            initialSelectedTabIndex = initialSelectedTabIndex,
+            packages = packages,
+            initialSelectedTabIndex = tabsComponent?.defaultTabIndex,
         )
     }
 }
@@ -431,6 +398,44 @@ private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, Loca
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
     get() = uiConfig.localizations[data.defaultLocaleIdentifier]
 
+private val TabsComponentStyle.defaultTabIndex: Int
+    get() = when (control) {
+        // Button control doesn't have a default tab.
+        is TabControlStyle.Buttons -> 0
+        is TabControlStyle.Toggle -> {
+            control.stack
+                .firstOrNull { it is TabControlToggleComponentStyle }
+                .let { it as TabControlToggleComponentStyle? }
+                ?.defaultValue
+                .let { if (it == true) 1 else 0 }
+        }
+    }
+
+private fun ComponentStyle.findTabsComponentStyle(): TabsComponentStyle? =
+    firstOrNull { it is TabsComponentStyle } as TabsComponentStyle?
+
+private fun ComponentStyle.findPackagesOutsideTabs(): List<AvailablePackages.Info> =
+    filter(
+        predicate = { it is PackageComponentStyle },
+        skip = { it is TabsComponentStyle },
+    ).map { (it as PackageComponentStyle).toAvailablePackageInfo() }
+
+private val TabsComponentStyle.packagesByTab: Map<Int, List<AvailablePackages.Info>>
+    get() = buildMap(tabs.size) {
+        tabs.forEachIndexed { index, tab ->
+            val packages = tab.stack
+                .filterIsInstance<PackageComponentStyle>()
+                .map { it.toAvailablePackageInfo() }
+            put(index, packages)
+        }
+    }
+
+private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.Info =
+    AvailablePackages.Info(
+        pkg = rcPackage,
+        isSelectedByDefault = isSelectedByDefault,
+    )
+
 /**
  * Returns the first ComponentStyle that satisfies the predicate, or null if none is found.
  *
@@ -442,47 +447,26 @@ private fun ComponentStyle.firstOrNull(predicate: (ComponentStyle) -> Boolean): 
 
     while (queue.isNotEmpty()) {
         val current = queue.removeFirst()
-
-        if (predicate(current)) {
-            return current
-        }
-
-        when (current) {
-            is StackComponentStyle -> queue.addAll(current.children)
-            is ButtonComponentStyle -> queue.add(current.stackComponentStyle)
-            is PackageComponentStyle -> queue.add(current.stackComponentStyle)
-            is StickyFooterComponentStyle -> queue.add(current.stackComponentStyle)
-            is CarouselComponentStyle -> queue.addAll(current.slides)
-            is TabControlButtonComponentStyle -> queue.add(current.stack)
-            is TabControlStyle.Buttons -> queue.add(current.stack)
-            is TabControlStyle.Toggle -> queue.add(current.stack)
-            is TabsComponentStyle -> queue.addAll(current.tabs.map { it.stack })
-            is TabControlToggleComponentStyle,
-            is TimelineComponentStyle,
-            is ImageComponentStyle,
-            is IconComponentStyle,
-            is TextComponentStyle,
-            -> {
-                // These don't have child components.
-            }
-        }
+        if (predicate(current)) return current
+        queue.addChildrenOf(current)
     }
 
     return null
 }
 
-/**
- * Returns all ComponentStyles that satisfy the predicate.
- *
- * Implemented as breadth-first search.
- */
-private fun ComponentStyle.filter(
-    predicate: (ComponentStyle) -> Boolean,
-): List<ComponentStyle> =
-    filter(
-        predicate = predicate,
-        skip = { false },
-    )
+private inline fun <reified R : ComponentStyle> ComponentStyle.filterIsInstance(): List<R> {
+    val matches = mutableListOf<R>()
+    val queue = ArrayDeque<ComponentStyle>()
+    queue.add(this)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+        if (current is R) matches.add(current)
+        queue.addChildrenOf(current)
+    }
+
+    return matches
+}
 
 /**
  * Returns all ComponentStyles that satisfy the predicate, skipping any nodes (and their children) that satisfy the
@@ -502,36 +486,35 @@ private fun ComponentStyle.filter(
     while (queue.isNotEmpty()) {
         val current = queue.removeFirst()
 
-        if (skip(current)) {
-            continue
-        }
+        if (skip(current)) continue
+        if (predicate(current)) matches.add(current)
 
-        if (predicate(current)) {
-            matches.add(current)
-        }
-
-        when (current) {
-            is StackComponentStyle -> queue.addAll(current.children)
-            is ButtonComponentStyle -> queue.add(current.stackComponentStyle)
-            is PackageComponentStyle -> queue.add(current.stackComponentStyle)
-            is StickyFooterComponentStyle -> queue.add(current.stackComponentStyle)
-            is CarouselComponentStyle -> queue.addAll(current.slides)
-            is TabControlButtonComponentStyle -> queue.add(current.stack)
-            is TabControlStyle.Buttons -> queue.add(current.stack)
-            is TabControlStyle.Toggle -> queue.add(current.stack)
-            is TabsComponentStyle -> queue.addAll(current.tabs.map { it.stack })
-            is TimelineComponentStyle ->
-                queue.addAll(current.items.flatMap { item -> listOfNotNull(item.title, item.description, item.icon) })
-
-            is TabControlToggleComponentStyle,
-            is ImageComponentStyle,
-            is IconComponentStyle,
-            is TextComponentStyle,
-            -> {
-                // These don't have child components.
-            }
-        }
+        queue.addChildrenOf(current)
     }
 
     return matches
+}
+
+private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
+    when (parent) {
+        is StackComponentStyle -> addAll(parent.children)
+        is ButtonComponentStyle -> add(parent.stackComponentStyle)
+        is PackageComponentStyle -> add(parent.stackComponentStyle)
+        is StickyFooterComponentStyle -> add(parent.stackComponentStyle)
+        is CarouselComponentStyle -> addAll(parent.slides)
+        is TabControlButtonComponentStyle -> add(parent.stack)
+        is TabControlStyle.Buttons -> add(parent.stack)
+        is TabControlStyle.Toggle -> add(parent.stack)
+        is TabsComponentStyle -> addAll(parent.tabs.map { it.stack })
+        is TimelineComponentStyle ->
+            addAll(parent.items.flatMap { item -> listOfNotNull(item.title, item.description, item.icon) })
+
+        is TabControlToggleComponentStyle,
+        is ImageComponentStyle,
+        is IconComponentStyle,
+        is TextComponentStyle,
+        -> {
+            // These don't have child components.
+        }
+    }
 }

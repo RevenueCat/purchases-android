@@ -168,10 +168,8 @@ internal sealed interface PaywallState {
                     // package when the tab changes.
                     if (globalPackages.contains(selectedPackage)) return
 
-                    if (selectedPackageByTab != null) {
-                        selectedPackage = selectedPackageByTab[selectedTabIndex]
-                            ?: packages.globalPackages.firstOrNull { it.isSelectedByDefault }?.pkg
-                    }
+                    selectedPackage = selectedPackageByTab[selectedTabIndex]
+                        ?: packages.globalPackages.firstOrNull { it.isSelectedByDefault }?.pkg
                 }
             }
 
@@ -181,13 +179,9 @@ internal sealed interface PaywallState {
                 // Check if the package (also) exists on the currently selected tab. We need to remember this so we can
                 // reselect this package when the user navigates away and back to the current tab.
                 val currentTabIndex = selectedTabIndex
-                if (currentTabIndex != null && selectedPackageByTab != null) {
-                    val tabsWithThisPackage = tabsByPackage[selectedPackage].orEmpty()
-                    val currentTabContainsThisPackage = tabsWithThisPackage.contains(currentTabIndex)
-                    if (currentTabContainsThisPackage) {
-                        selectedPackageByTab[currentTabIndex] = selectedPackage
-                    }
-                }
+                val tabsWithThisPackage = tabsByPackage[selectedPackage]
+                val currentTabContainsThisPackage = tabsWithThisPackage?.contains(currentTabIndex) == true
+                if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackage
             }
 
             private fun LocaleList.toLocaleId(): LocaleId =
@@ -213,6 +207,7 @@ internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
             is PaywallState.Loaded.Legacy -> state
             is PaywallState.Loaded.Components -> null
         }
+
         is PaywallState.Loading -> null
     }
 }
