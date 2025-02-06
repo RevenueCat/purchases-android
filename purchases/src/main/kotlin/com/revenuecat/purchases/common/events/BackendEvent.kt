@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
@@ -46,7 +47,7 @@ internal sealed class BackendEvent : Event {
         @SerialName("is_sandbox")
         val isSandbox: Boolean,
         @SerialName("display_mode")
-        val displayMode: String,
+        val displayMode: CustomerCenterDisplayMode,
     ) : BackendEvent()
 
     /**

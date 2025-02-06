@@ -97,7 +97,7 @@ internal fun CustomerCenterEvent.toBackendStoredEvent(appUserID: String): Backen
             darkMode = data.darkMode,
             locale = data.locale,
             isSandbox = data.isSandbox,
-            displayMode = data.displayMode.value,
+            displayMode = data.displayMode,
         ),
     )
 }

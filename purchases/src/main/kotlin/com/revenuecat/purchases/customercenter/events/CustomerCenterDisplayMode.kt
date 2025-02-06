@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.customercenter.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -8,7 +9,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @ExperimentalPreviewRevenueCatPurchasesAPI
-enum class CustomerCenterDisplayMode(val value: String) {
+enum class CustomerCenterDisplayMode {
 
-    FULL_SCREEN(value = "full_screen"),
+    @SerialName("full_screen")
+    FULL_SCREEN,
 }
