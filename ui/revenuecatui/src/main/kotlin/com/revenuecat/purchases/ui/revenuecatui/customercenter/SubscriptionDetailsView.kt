@@ -92,7 +92,7 @@ internal fun SubscriptionDetailsView(
 @JvmSynthetic
 internal fun SubscriptionDetailsRow(
     title: String,
-    subtitle: String? = null,
+    subtitle: String,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     prominentSubtitle: Boolean = true,
@@ -134,7 +134,7 @@ internal fun SubscriptionDetailsRow(
         }
         Column {
             Text(text = title, style = titleTextStyle, maxLines = 1)
-            subtitle?.let { Text(text = it, style = subtitleTextStyle, maxLines = 2) }
+            Text(text = subtitle, style = subtitleTextStyle, maxLines = 2)
         }
     }
 }
@@ -294,7 +294,7 @@ internal fun SubscriptionDetailsView_Preview() {
 
 @Preview
 @Composable
-fun SubscriptionDetailsRowIcon_Preview() {
+private fun SubscriptionDetailsRowIcon_Preview() {
     SubscriptionDetailsRow(
         "Next Billing Date",
         "June 1st, 2024",
@@ -305,7 +305,7 @@ fun SubscriptionDetailsRowIcon_Preview() {
 
 @Preview
 @Composable
-fun SubscriptionDetailsRow_Preview() {
+private fun SubscriptionDetailsRow_Preview() {
     SubscriptionDetailsRow(
         title = "Basic",
         subtitle = "This is your subscription with the earliest expiration date",

@@ -86,6 +86,7 @@ internal fun ManageSubscriptionsView(
     }
 }
 
+@SuppressWarnings("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun ActiveUserManagementView(

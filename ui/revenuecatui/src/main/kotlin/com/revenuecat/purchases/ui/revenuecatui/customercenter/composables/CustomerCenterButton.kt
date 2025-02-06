@@ -44,7 +44,7 @@ internal fun CustomerCenterButton(
 
 @Preview
 @Composable
-fun CustomerCenterButtonOnlyTitle_Preview() {
+private fun CustomerCenterButtonOnlyTitle_Preview() {
     CustomerCenterButton(
         title = "Cancel Subscription",
     ) {}
