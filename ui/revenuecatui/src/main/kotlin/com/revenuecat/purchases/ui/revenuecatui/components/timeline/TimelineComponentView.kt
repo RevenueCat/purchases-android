@@ -236,7 +236,7 @@ private fun previewStyle(
         items = items,
         rcPackage = null,
         tabIndex = null,
-        overrides = null,
+        overrides = emptyList(),
     )
 }
 
@@ -260,7 +260,7 @@ private fun previewItems(
             connector = previewConnectorStyle(margin = connectorMargins),
             rcPackage = null,
             tabIndex = null,
-            overrides = null,
+            overrides = emptyList(),
         ),
         TimelineComponentStyle.ItemStyle(
             title = previewTextComponentStyle(
@@ -277,7 +277,7 @@ private fun previewItems(
             connector = previewConnectorStyle(margin = connectorMargins),
             rcPackage = null,
             tabIndex = null,
-            overrides = null,
+            overrides = emptyList(),
         ),
         TimelineComponentStyle.ItemStyle(
             title = previewTextComponentStyle(
@@ -303,7 +303,7 @@ private fun previewItems(
             ),
             rcPackage = null,
             tabIndex = null,
-            overrides = null,
+            overrides = emptyList(),
         ),
     )
 }

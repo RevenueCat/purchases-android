@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -42,7 +42,7 @@ internal data class TimelineComponentStyle(
     @get:JvmSynthetic
     val tabIndex: Int?,
     @get:JvmSynthetic
-    val overrides: PresentedOverrides<PresentedTimelinePartial>?,
+    val overrides: List<PresentedOverride<PresentedTimelinePartial>>,
 ) : ComponentStyle {
     @Immutable
     data class ItemStyle(
@@ -67,7 +67,7 @@ internal data class TimelineComponentStyle(
         @get:JvmSynthetic
         val tabIndex: Int?,
         @get:JvmSynthetic
-        val overrides: PresentedOverrides<PresentedTimelineItemPartial>?,
+        val overrides: List<PresentedOverride<PresentedTimelineItemPartial>>,
     )
 
     @Immutable

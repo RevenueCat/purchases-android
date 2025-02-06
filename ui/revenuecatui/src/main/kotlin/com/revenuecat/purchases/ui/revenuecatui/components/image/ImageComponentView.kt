@@ -479,7 +479,7 @@ private fun previewImageComponentStyle(
     contentScale = fitMode.toContentScale(),
     rcPackage = null,
     tabIndex = null,
-    overrides = null,
+    overrides = emptyList(),
 )
 
 @Composable

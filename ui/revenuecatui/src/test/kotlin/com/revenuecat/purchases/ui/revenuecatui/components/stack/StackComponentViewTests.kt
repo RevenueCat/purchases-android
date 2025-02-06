@@ -22,8 +22,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -284,23 +283,22 @@ class StackComponentViewTests {
                     x = 10.0,
                     y = 10.0,
                 ),
-                overrides = ComponentOverrides(
-                    states = ComponentStates(
-                        selected = PartialStackComponent(
-                            backgroundColor = ColorScheme(ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
-                            border = Border(
-                                color = ColorScheme(light = ColorInfo.Hex(expectedSelectedBorderColor.toArgb())),
-                                width = expectedSelectedBorderWidth
-                            ),
-                            shadow = Shadow(
-                                color = ColorScheme(light = ColorInfo.Hex(expectedSelectedShadowColor.toArgb())),
-                                radius = 5.0,
-                                x = 10.0,
-                                y = 10.0,
-                            ),
+                overrides = listOf(ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.SELECTED),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSelectedBorderColor.toArgb())),
+                            width = expectedSelectedBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSelectedShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
                         ),
                     ),
-                )
+                ))
             )
         )
 
@@ -414,35 +412,41 @@ class StackComponentViewTests {
                 x = 10.0,
                 y = 10.0,
             ),
-            overrides = ComponentOverrides(
-                introOffer = PartialStackComponent(
-                    backgroundColor = ColorScheme(
-                        light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
-                    ),
-                    border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
-                        width = expectedSingleEligibleBorderWidth
-                    ),
-                    shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
-                        radius = 5.0,
-                        x = 10.0,
-                        y = 10.0,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(
+                            light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
+                        ),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
+                            width = expectedSingleEligibleBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
+                        ),
                     ),
                 ),
-                multipleIntroOffers = PartialStackComponent(
-                    backgroundColor = ColorScheme(
-                        light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
-                    ),
-                    border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
-                        width = expectedMultipleEligibleBorderWidth
-                    ),
-                    shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
-                        radius = 5.0,
-                        x = 10.0,
-                        y = 10.0,
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(
+                            light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
+                        ),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
+                            width = expectedMultipleEligibleBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
+                        ),
                     ),
                 ),
             )
@@ -565,35 +569,41 @@ class StackComponentViewTests {
                 x = 10.0,
                 y = 10.0,
             ),
-            overrides = ComponentOverrides(
-                introOffer = PartialStackComponent(
-                    backgroundColor = ColorScheme(
-                        light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
-                    ),
-                    border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
-                        width = expectedSingleEligibleBorderWidth
-                    ),
-                    shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
-                        radius = 5.0,
-                        x = 10.0,
-                        y = 10.0,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(
+                            light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
+                        ),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
+                            width = expectedSingleEligibleBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
+                        ),
                     ),
                 ),
-                multipleIntroOffers = PartialStackComponent(
-                    backgroundColor = ColorScheme(
-                        light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
-                    ),
-                    border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
-                        width = expectedMultipleEligibleBorderWidth
-                    ),
-                    shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
-                        radius = 5.0,
-                        x = 10.0,
-                        y = 10.0,
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(
+                            light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
+                        ),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
+                            width = expectedMultipleEligibleBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
+                        ),
                     ),
                 ),
             )

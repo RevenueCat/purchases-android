@@ -83,7 +83,7 @@ internal class IconComponentState(
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
     private val baseUrl: String by derivedStateOf {
         presentedPartial?.partial?.baseUrl ?: style.baseUrl

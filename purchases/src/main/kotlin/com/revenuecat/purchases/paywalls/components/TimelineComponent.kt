@@ -2,7 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
@@ -39,7 +39,7 @@ class TimelineComponent(
     @get:JvmSynthetic
     val items: List<Item> = emptyList(),
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialTimelineComponent>? = null,
+    val overrides: List<ComponentOverride<PartialTimelineComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @Serializable
@@ -63,7 +63,7 @@ class TimelineComponent(
         @get:JvmSynthetic
         val connector: Connector? = null,
         @get:JvmSynthetic
-        val overrides: ComponentOverrides<PartialTimelineComponentItem>? = null,
+        val overrides: List<ComponentOverride<PartialTimelineComponentItem>> = emptyList(),
     )
 
     @Poko

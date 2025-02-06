@@ -11,7 +11,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -338,9 +338,10 @@ class PaywallComponentDataValidationTests {
                                 text = LocalizationKey("key1"),
                                 color = textColor,
                                 fontName = missingFontAlias1,
-                                overrides = ComponentOverrides(
-                                    introOffer = PartialTextComponent(fontName = missingFontAlias2)
-                                )
+                                overrides = listOf(ComponentOverride(
+                                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                                    properties = PartialTextComponent(fontName = missingFontAlias2),
+                                ))
                             ),
                             TextComponent(
                                 text = LocalizationKey("key2"),

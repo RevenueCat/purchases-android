@@ -17,9 +17,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
-import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -186,7 +184,10 @@ class StyleFactoryTests {
         val component = TextComponent(
             text = baseLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
-            overrides = ComponentOverrides(introOffer = PartialTextComponent(text = overrideLocalizationKey))
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                properties = PartialTextComponent(text = overrideLocalizationKey)
+            ))
         )
         val incorrectStyleFactory = StyleFactory(
             localizations = nonEmptyMapOf(
@@ -227,7 +228,10 @@ class StyleFactoryTests {
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             fontName = fontAliasBase,
-            overrides = ComponentOverrides(introOffer = PartialTextComponent(fontName = fontAliasOverride))
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                properties = PartialTextComponent(fontName = fontAliasOverride)
+            ))
         )
         val correctStyleFactory = StyleFactory(
             localizations = localizations,
@@ -248,8 +252,9 @@ class StyleFactoryTests {
         assertThat(result.isSuccess).isTrue()
         val textComponentStyle = result.getOrThrow() as TextComponentStyle
         val actualBaseFontSpec = textComponentStyle.fontSpec
-        val actualOverrideFontSpec = textComponentStyle.overrides?.introOffer?.fontSpec
+        val actualOverrideFontSpec = textComponentStyle.overrides.firstOrNull()?.properties?.fontSpec
 
+        assertThat(textComponentStyle.overrides).hasSize(1)
         assertThat(actualBaseFontSpec).isEqualTo(expectedBaseFontSpec)
         assertThat(actualOverrideFontSpec).isEqualTo(expectedOverrideFontSpec)
     }
@@ -290,7 +295,10 @@ class StyleFactoryTests {
         val component = TextComponent(
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            overrides = ComponentOverrides(introOffer = PartialTextComponent(fontName = expectedMissingFontAlias))
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                properties = PartialTextComponent(fontName = expectedMissingFontAlias)
+            ))
         )
         val incorrectStyleFactory = StyleFactory(
             localizations = localizations,
@@ -380,13 +388,26 @@ class StyleFactoryTests {
 
         val component = ImageComponent(
             source = expectedBaseSource,
-            overrides = ComponentOverrides(
-                introOffer = PartialImageComponent(source = expectedIntroSource),
-                states = ComponentStates(selected = PartialImageComponent(source = expectedSelectedSource)),
-                conditions = ComponentConditions(
-                    compact = PartialImageComponent(source = expectedCompactSource),
-                    medium = PartialImageComponent(source = expectedMediumSource),
-                    expanded = PartialImageComponent(source = expectedExpandedSource),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                    properties = PartialImageComponent(source = expectedIntroSource),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.SELECTED),
+                    properties = PartialImageComponent(source = expectedSelectedSource),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.COMPACT),
+                    properties = PartialImageComponent(source = expectedCompactSource),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                    properties = PartialImageComponent(source = expectedMediumSource),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.EXPANDED),
+                    properties = PartialImageComponent(source = expectedExpandedSource),
                 ),
             )
         )
@@ -407,21 +428,22 @@ class StyleFactoryTests {
         with(imageComponentStyle) {
             assertThat(sources.size).isEqualTo(1)
             assertThat(sources.getValue(defaultLocale)).isEqualTo(expectedBaseSource)
-            assertThat(overrides?.introOffer?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.introOffer?.sources?.getValue(defaultLocale)).isEqualTo(expectedIntroSource)
+            assertThat(overrides).hasSize(5)
+            assertThat(overrides[0].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[0].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedIntroSource)
 
-            assertThat(overrides?.states?.selected?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.states?.selected?.sources?.getValue(defaultLocale)).isEqualTo(expectedSelectedSource)
+            assertThat(overrides[1].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[1].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedSelectedSource)
 
-            assertThat(overrides?.conditions?.compact?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.conditions?.compact?.sources?.getValue(defaultLocale))
+            assertThat(overrides[2].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[2].properties.sources?.getValue(defaultLocale))
                 .isEqualTo(expectedCompactSource)
 
-            assertThat(overrides?.conditions?.medium?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.conditions?.medium?.sources?.getValue(defaultLocale)).isEqualTo(expectedMediumSource)
+            assertThat(overrides[3].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[3].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedMediumSource)
 
-            assertThat(overrides?.conditions?.expanded?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.conditions?.expanded?.sources?.getValue(defaultLocale))
+            assertThat(overrides[4].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[4].properties.sources?.getValue(defaultLocale))
                 .isEqualTo(expectedExpandedSource)
         }
     }

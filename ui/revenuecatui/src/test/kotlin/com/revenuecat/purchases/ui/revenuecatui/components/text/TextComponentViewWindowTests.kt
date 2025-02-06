@@ -17,8 +17,7 @@ import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
-import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -79,24 +78,31 @@ internal class TextComponentViewWindowTests {
         val component = TextComponent(
             text = defaultLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            overrides = ComponentOverrides(
-                conditions = ComponentConditions(
-                    compact = PartialTextComponent(
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.COMPACT),
+                    properties = PartialTextComponent(
                         text = compactLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedCompactTextColor.toArgb())),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedCompactBackgroundColor.toArgb())),
-                    ),
-                    medium = PartialTextComponent(
+                    )
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                    properties = PartialTextComponent(
                         text = mediumLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMediumTextColor.toArgb())),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedMediumBackgroundColor.toArgb())),
-                    ),
-                    expanded = PartialTextComponent(
+                    )
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.EXPANDED),
+                    properties = PartialTextComponent(
                         text = expandedLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedExpandedTextColor.toArgb())),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedExpandedBackgroundColor.toArgb())),
-                    ),
-                )
+                    )
+                ),
             )
         )
         val state = FakePaywallState(
