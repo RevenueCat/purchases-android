@@ -82,8 +82,6 @@ private fun TabControlToggleView_Preview(
                 dark = ColorStyle.Solid(color = Color.Yellow),
             ),
         ),
-        state = previewEmptyState(
-            initialSelectedTabIndex = if (checked) 1 else 0,
-        ),
+        state = previewEmptyState(),
     )
 }

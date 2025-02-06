@@ -15,8 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -107,17 +105,11 @@ internal fun TabsComponentView(
     }
 }
 
-private class SelectedTabIndexProvider : PreviewParameterProvider<Int> {
-    override val values: Sequence<Int> = sequenceOf(0, 1, 2)
-}
-
 @Suppress("LongMethod")
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun TabsComponentView_Preview(
-    @PreviewParameter(SelectedTabIndexProvider::class) selectedTabIndex: Int,
-) {
+private fun TabsComponentView_Preview() {
     val boldWhenSelectedOverride = PresentedOverrides(
         introOffer = null,
         multipleIntroOffers = null,
@@ -253,7 +245,7 @@ private fun TabsComponentView_Preview(
             ),
             overrides = null,
         ),
-        state = previewEmptyState(initialSelectedTabIndex = selectedTabIndex),
+        state = previewEmptyState(),
         clickHandler = { },
     )
 }
