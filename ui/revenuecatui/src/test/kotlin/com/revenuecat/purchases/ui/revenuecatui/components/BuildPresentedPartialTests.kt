@@ -240,7 +240,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = buildPresentedOverrides(multipleIntroOffers = null, selected = null),
                     windowSize = MEDIUM,
-                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = introOfferPartial,
                 ),

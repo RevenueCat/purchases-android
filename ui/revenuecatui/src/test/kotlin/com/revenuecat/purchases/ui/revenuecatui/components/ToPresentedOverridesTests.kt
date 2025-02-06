@@ -59,18 +59,6 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
 
         private val defaultAvailableOverrides = listOf(
             ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
-                properties = PartialTextComponent(fontName = introOffer),
-            ),
-            ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
-                properties = PartialTextComponent(fontName = multipleIntroOffers),
-            ),
-            ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.SELECTED),
-                properties = PartialTextComponent(fontName = selected),
-            ),
-            ComponentOverride(
                 conditions = listOf(ComponentOverride.Condition.EXPANDED),
                 properties = PartialTextComponent(fontName = expanded),
             ),
@@ -81,6 +69,18 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
             ComponentOverride(
                 conditions = listOf(ComponentOverride.Condition.COMPACT),
                 properties = PartialTextComponent(fontName = compact),
+            ),
+            ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                properties = PartialTextComponent(fontName = introOffer),
+            ),
+            ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                properties = PartialTextComponent(fontName = multipleIntroOffers),
+            ),
+            ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.SELECTED),
+                properties = PartialTextComponent(fontName = selected),
             ),
         )
             
@@ -206,33 +206,6 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     expected = Result.Success(
                         listOf(
                             PresentedOverride(
-                                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
-                                properties = LocalizedTextPartial(
-                                    from = PartialTextComponent(fontName = introOffer),
-                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                                    aliases = emptyMap(),
-                                    fontAliases = allFontAliases,
-                                ).getOrThrow(),
-                            ),
-                            PresentedOverride(
-                                conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
-                                properties = LocalizedTextPartial(
-                                    from = PartialTextComponent(fontName = multipleIntroOffers),
-                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                                    aliases = emptyMap(),
-                                    fontAliases = allFontAliases,
-                                ).getOrThrow(),
-                            ),
-                            PresentedOverride(
-                                conditions = listOf(ComponentOverride.Condition.SELECTED),
-                                properties = LocalizedTextPartial(
-                                    from = PartialTextComponent(fontName = selected),
-                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                                    aliases = emptyMap(),
-                                    fontAliases = allFontAliases,
-                                ).getOrThrow(),
-                            ),
-                            PresentedOverride(
                                 conditions = listOf(ComponentOverride.Condition.EXPANDED),
                                 properties = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = expanded),
@@ -254,6 +227,33 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                 conditions = listOf(ComponentOverride.Condition.COMPACT),
                                 properties = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = compact),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = introOffer),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = multipleIntroOffers),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.SELECTED),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = selected),
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
                                     fontAliases = allFontAliases,
