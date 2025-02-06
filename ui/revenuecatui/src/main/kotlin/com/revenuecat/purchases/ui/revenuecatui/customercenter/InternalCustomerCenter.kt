@@ -289,6 +289,7 @@ private fun MainScreen(
                 localization = configuration.localization,
                 purchaseInformation = state.purchaseInformation,
                 support = configuration.support,
+                appearance = configuration.appearance,
                 onAction = onAction,
             )
         } ?: run {
@@ -301,6 +302,7 @@ private fun MainScreen(
                 screen = noActiveScreen,
                 localization = configuration.localization,
                 support = configuration.support,
+                appearance = configuration.appearance,
                 onAction = onAction,
             )
         } ?: run {

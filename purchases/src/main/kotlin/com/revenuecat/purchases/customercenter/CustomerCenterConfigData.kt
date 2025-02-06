@@ -188,6 +188,9 @@ data class CustomerCenterConfigData(
 
             @SerialName("free_trial_discounted_then_price")
             FREE_TRIAL_DISCOUNTED_THEN_PRICE,
+
+            @SerialName("manage")
+            MANAGE,
             ;
 
             val defaultValue: String
@@ -254,6 +257,7 @@ data class CustomerCenterConfigData(
                     FREE_TRIAL_DISCOUNTED_THEN_PRICE ->
                         "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} " +
                             "during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
+                    MANAGE -> "Manage"
                 }
         }
 
