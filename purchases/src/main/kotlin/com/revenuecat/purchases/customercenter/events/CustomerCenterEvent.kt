@@ -15,8 +15,9 @@ import java.util.UUID
  * Type representing a customer center event and associated data. Meant for RevenueCatUI use.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@Poko
 @Serializable
-data class CustomerCenterEvent constructor(
+class CustomerCenterEvent(
     val creationData: CreationData,
     val data: Data,
 ) : FeatureEvent {
@@ -38,8 +39,9 @@ data class CustomerCenterEvent constructor(
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @Serializable
+    @Poko
     @SuppressWarnings("LongParameterList")
-    data class Data(
+    class Data(
         val type: CustomerCenterEventType,
         @Serializable(with = DateSerializer::class)
         val timestamp: Date,
@@ -51,5 +53,28 @@ data class CustomerCenterEvent constructor(
         val version: Int = 1,
         val revisionID: Int = 1,
         val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
-    )
+    ) {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        fun copy(
+            type: CustomerCenterEventType = this.type,
+            timestamp: Date = this.timestamp,
+            sessionIdentifier: UUID = this.sessionIdentifier,
+            darkMode: Boolean = this.darkMode,
+            locale: String = this.locale,
+            isSandbox: Boolean = this.isSandbox,
+            version: Int = this.version,
+            revisionID: Int = this.revisionID,
+            displayMode: CustomerCenterDisplayMode = this.displayMode,
+        ) = Data(
+            type,
+            Date(timestamp.time),
+            sessionIdentifier,
+            darkMode,
+            locale,
+            isSandbox,
+            version,
+            revisionID,
+            displayMode,
+        )
+    }
 }

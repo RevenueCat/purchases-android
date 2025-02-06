@@ -57,6 +57,7 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent? {
  * @return A `BackendStoredEvent.Paywalls` containing a `BackendEvent.Paywalls`.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
 internal fun PaywallEvent.toBackendStoredEvent(appUserID: String): BackendStoredEvent {
     return BackendStoredEvent.Paywalls(
         BackendEvent.Paywalls(
@@ -83,6 +84,7 @@ internal fun PaywallEvent.toBackendStoredEvent(appUserID: String): BackendStored
  * @return A `BackendStoredEvent.Paywalls` containing a `BackendEvent.Paywalls`.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
 internal fun CustomerCenterEvent.toBackendStoredEvent(appUserID: String): BackendStoredEvent {
     return BackendStoredEvent.CustomerCenter(
         BackendEvent.CustomerCenter(
