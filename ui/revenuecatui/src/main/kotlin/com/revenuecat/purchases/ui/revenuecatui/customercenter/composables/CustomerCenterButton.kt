@@ -31,13 +31,13 @@ internal fun CustomerCenterButton(
             .defaultMinSize(minHeight = 60.dp)
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = title,
             fontSize = 20.sp,
             color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1
+            maxLines = 1,
         )
     }
 }

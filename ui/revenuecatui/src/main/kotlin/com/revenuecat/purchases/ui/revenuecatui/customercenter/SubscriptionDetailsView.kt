@@ -62,7 +62,7 @@ internal fun SubscriptionDetailsView(
             SubscriptionDetailsRow(
                 title = localization.commonLocalizedString(CommonLocalizedString.BILLING_CYCLE),
                 subtitle = it,
-                icon = CurrencyExchange
+                icon = CurrencyExchange,
             )
         }
 
@@ -95,35 +95,41 @@ internal fun SubscriptionDetailsRow(
     subtitle: String? = null,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    prominentSubtitle: Boolean = true
+    prominentSubtitle: Boolean = true,
 ) {
     val titleTextStyle = TextStyle(
         fontSize = if (prominentSubtitle) 14.sp else 20.sp,
         fontWeight = FontWeight.Normal,
-        color = if (prominentSubtitle) MaterialTheme.colorScheme.onSurfaceVariant
-        else MaterialTheme.colorScheme.onSurface
+        color = if (prominentSubtitle) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
     )
 
     val subtitleTextStyle = TextStyle(
         fontSize = if (prominentSubtitle) 20.sp else 14.sp,
         fontWeight = FontWeight.Normal,
-        color = if (prominentSubtitle) MaterialTheme.colorScheme.onSurface
-        else MaterialTheme.colorScheme.onSurfaceVariant
+        color = if (prominentSubtitle) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
     )
-    Row (
+    Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .defaultMinSize(minHeight = 60.dp)
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         icon?.let {
             Icon(
                 imageVector = it,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurface
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         Column {

@@ -35,6 +35,12 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 
+/** Constants for padding, spacing, sizes, and default colors **/
+private val PADDING_LARGE = 16.dp
+private val PADDING_XL = 32.dp
+private val ICON_SIZE = 56.dp
+private val TITLE_TOP_PADDING = 64.dp
+
 @SuppressWarnings("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
@@ -48,12 +54,13 @@ internal fun ManageSubscriptionsView(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Box(
-        modifier = modifier
-            .fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (screen.type == CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT && purchaseInformation != null) {
@@ -93,10 +100,10 @@ private fun ActiveUserManagementView(
         Text(
             text = screen.title,
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 64.dp),
+            modifier = Modifier.padding(start = PADDING_LARGE, end = PADDING_LARGE, top = TITLE_TOP_PADDING),
         )
 
-        Spacer(modifier = Modifier.size(32.dp))
+        Spacer(modifier = Modifier.size(PADDING_XL))
 
         SubscriptionDetailsView(details = purchaseInformation, localization = localization)
 
@@ -123,13 +130,11 @@ private fun NoActiveUserManagementView(
     appearance: CustomerCenterConfigData.Appearance,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         CompatibilityContentUnavailableView(
             title = screen.title,
             description = screen.subtitle,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(PADDING_LARGE),
         )
 
         ManageSubscriptionsButtonsView(
@@ -156,21 +161,19 @@ fun CompatibilityContentUnavailableView(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(PADDING_LARGE),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = Icons.Rounded.Warning,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .size(56.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(ICON_SIZE),
             )
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.padding(bottom = 8.dp),
             )
 
@@ -179,7 +182,7 @@ fun CompatibilityContentUnavailableView(
                     text = it,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 16.dp, top = 16.dp),
+                    modifier = Modifier.padding(vertical = PADDING_LARGE),
                 )
             }
         }
@@ -196,15 +199,16 @@ private fun ManageSubscriptionsButtonsView(
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
+    val accentColor = appearance.getColorForTheme(isDark) { it.accentColor } ?: MaterialTheme.colorScheme.primary
 
     Column {
-        Spacer(modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.size(PADDING_LARGE))
         if (showSectionHeader) {
             Text(
                 localization.commonLocalizedString(CustomerCenterConfigData.Localization.CommonLocalizedString.MANAGE),
                 style = MaterialTheme.typography.bodyMedium,
-                color = appearance.getColorForTheme(isDark) { it.accentColor } ?: MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = accentColor,
+                modifier = Modifier.padding(horizontal = PADDING_LARGE, vertical = 8.dp),
             )
         } else {
             HorizontalDivider()
