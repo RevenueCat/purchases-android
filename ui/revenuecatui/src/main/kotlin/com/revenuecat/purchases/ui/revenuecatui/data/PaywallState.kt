@@ -182,7 +182,6 @@ internal sealed interface PaywallState {
 
             fun update(selectedPackage: Package) {
                 this.selectedPackage = selectedPackage
-                println("TESTING Components.update(selectedPackage = [${selectedPackage.identifier}])")
 
                 // Check if the package (also) exists on the currently selected tab. We need to remember this so we can
                 // reselect this package when the user navigates away and back to the current tab.

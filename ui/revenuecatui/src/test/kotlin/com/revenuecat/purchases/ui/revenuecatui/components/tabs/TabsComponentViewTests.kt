@@ -727,9 +727,7 @@ class TabsComponentViewTests {
                     ) + packagesOnThisTab.mapIndexed { index, pkg ->
                         simplePackageComponent(
                             pkg = pkg,
-                            isSelectedByDefault = (selectedByDefaultIndex == index).also {
-                                println("TESTING selecting ${pkg.identifier} by default: $it")
-                            },
+                            isSelectedByDefault = (selectedByDefaultIndex == index),
                         )
                     }
                 )
