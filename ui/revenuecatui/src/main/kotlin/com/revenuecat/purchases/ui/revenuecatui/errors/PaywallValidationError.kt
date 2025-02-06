@@ -5,6 +5,8 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.TabControlNotInTab.message
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.TabsComponentWithoutTabs.message
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 
 internal sealed class PaywallValidationError : Throwable() {
@@ -38,6 +40,8 @@ internal sealed class PaywallValidationError : Throwable() {
             is AliasedColorIsAlias -> message
             is MissingFontAlias -> message
             is InvalidModeForComponentsPaywall -> PaywallValidationErrorStrings.INVALID_MODE_FOR_COMPONENTS_PAYWALL
+            is TabsComponentWithoutTabs -> message
+            is TabControlNotInTab -> message
         }
     }
 
@@ -100,4 +104,10 @@ internal sealed class PaywallValidationError : Throwable() {
         override val message: String = PaywallValidationErrorStrings.MISSING_FONT_ALIAS.format(alias.value)
     }
     object InvalidModeForComponentsPaywall : PaywallValidationError()
+    object TabsComponentWithoutTabs : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.TABS_COMPONENT_WITHOUT_TABS
+    }
+    object TabControlNotInTab : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.TAB_CONTROL_NOT_IN_TAB
+    }
 }

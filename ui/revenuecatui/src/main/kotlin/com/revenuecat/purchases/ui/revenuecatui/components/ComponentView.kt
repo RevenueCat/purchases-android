@@ -19,6 +19,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggleComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
@@ -28,7 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 /**
  * A Composable that can show any [ComponentStyle].
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "CyclomaticComplexMethod")
 @JvmSynthetic
 @Composable
 internal fun ComponentView(
@@ -65,4 +69,21 @@ internal fun ComponentView(
         clickHandler = onClick,
         modifier = modifier,
     )
+    is TabsComponentStyle -> TODO()
+    // This is a special Stack that has TabControlButtonComponentStyle children.
+    is TabControlStyle.Buttons -> StackComponentView(
+        style = style.stack,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
+    // This is a special Stack that has a TabControlToggleComponentStyle child.
+    is TabControlStyle.Toggle -> StackComponentView(
+        style = style.stack,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
+    is TabControlButtonComponentStyle -> TODO()
+    is TabControlToggleComponentStyle -> TODO()
 }
