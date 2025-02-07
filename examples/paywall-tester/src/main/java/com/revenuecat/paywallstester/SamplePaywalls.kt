@@ -4,6 +4,8 @@ package com.revenuecat.paywallstester
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.revenuecat.paywallstester.paywalls.tabsWithButtons
+import com.revenuecat.paywallstester.paywalls.tabsWithToggle
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
@@ -26,6 +28,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertical
@@ -47,13 +50,19 @@ class SamplePaywallsLoader {
     private val secondaryGoogleFont = FontAlias("secondary")
 
     fun offeringForTemplate(template: SamplePaywalls.SampleTemplate): Offering {
+        val paywall = paywallForTemplate(template)
+        val localeId = when (paywall) {
+            is SampleData.Legacy -> LocaleId("en_US")
+            is SampleData.Components -> paywall.data.defaultLocaleIdentifier
+        }
+
         return Offering(
             "$SamplePaywalls.offeringIdentifier_${template.name}",
             SamplePaywalls.offeringIdentifier,
             emptyMap(),
             SamplePaywalls.packages,
-            paywall = (paywallForTemplate(template) as? SampleData.Legacy)?.data,
-            paywallComponents = (paywallForTemplate(template) as? SampleData.Components)?.data?.let { data ->
+            paywall = (paywall as? SampleData.Legacy)?.data,
+            paywallComponents = (paywall as? SampleData.Components)?.data?.let { data ->
                 Offering.PaywallComponents(
                     uiConfig = UiConfig(
                         app = UiConfig.AppConfig(
@@ -62,6 +71,7 @@ class SamplePaywallsLoader {
                                 secondaryGoogleFont to FontsConfig(android = FontInfo.GoogleFonts("Barrio")),
                             ),
                         ),
+                        localizations = mapOf(localeId to variableLocalizationKeysForEnUs()),
                     ),
                     data = data,
                 )
@@ -81,6 +91,9 @@ class SamplePaywallsLoader {
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_LOCAL_FONT -> SamplePaywalls.bless(font = primaryLocalFont)
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_GOOGLE_FONT ->
                 SamplePaywalls.bless(font = secondaryGoogleFont)
+
+            SamplePaywalls.SampleTemplate.TABS_BUTTONS -> tabsWithButtons()
+            SamplePaywalls.SampleTemplate.TABS_TOGGLE -> tabsWithToggle()
             SamplePaywalls.SampleTemplate.UNRECOGNIZED_TEMPLATE -> SamplePaywalls.unrecognizedTemplate()
         }
     }
@@ -104,7 +117,9 @@ object SamplePaywalls {
         TEMPLATE_7("#7: Multi-tier"),
         COMPONENTS_BLESS("#8: Components - bless."),
         COMPONENTS_BLESS_LOCAL_FONT("#9: Components - bless. - local font"),
-        COMPONENTS_BLESS_GOOGLE_FONT("#9: Components - bless. - Google font"),
+        COMPONENTS_BLESS_GOOGLE_FONT("#10: Components - bless. - Google font"),
+        TABS_BUTTONS("#11: Tabs - buttons"),
+        TABS_TOGGLE("#12 Tabs - toggle"),
         UNRECOGNIZED_TEMPLATE("Default template"),
     }
 
@@ -923,3 +938,51 @@ object SamplePaywalls {
         )
     }
 }
+
+@Suppress("CyclomaticComplexMethod")
+private fun variableLocalizationKeysForEnUs(): Map<VariableLocalizationKey, String> =
+    VariableLocalizationKey.values().associateWith { key ->
+        when (key) {
+            VariableLocalizationKey.ANNUAL -> "annual"
+            VariableLocalizationKey.ANNUAL_SHORT -> "yr"
+            VariableLocalizationKey.ANNUALLY -> "annually"
+            VariableLocalizationKey.DAILY -> "daily"
+            VariableLocalizationKey.DAY -> "day"
+            VariableLocalizationKey.DAY_SHORT -> "day"
+            VariableLocalizationKey.FREE_PRICE -> "free"
+            VariableLocalizationKey.MONTH -> "month"
+            VariableLocalizationKey.MONTH_SHORT -> "mo"
+            VariableLocalizationKey.MONTHLY -> "monthly"
+            VariableLocalizationKey.NUM_DAY_FEW -> "%d days"
+            VariableLocalizationKey.NUM_DAY_MANY -> "%d days"
+            VariableLocalizationKey.NUM_DAY_ONE -> "%d day"
+            VariableLocalizationKey.NUM_DAY_OTHER -> "%d days"
+            VariableLocalizationKey.NUM_DAY_TWO -> "%d days"
+            VariableLocalizationKey.NUM_DAY_ZERO -> "%d day"
+            VariableLocalizationKey.NUM_MONTH_FEW -> "%d months"
+            VariableLocalizationKey.NUM_MONTH_MANY -> "%d months"
+            VariableLocalizationKey.NUM_MONTH_ONE -> "%d month"
+            VariableLocalizationKey.NUM_MONTH_OTHER -> "%d months"
+            VariableLocalizationKey.NUM_MONTH_TWO -> "%d months"
+            VariableLocalizationKey.NUM_MONTH_ZERO -> "%d month"
+            VariableLocalizationKey.NUM_WEEK_FEW -> "%d weeks"
+            VariableLocalizationKey.NUM_WEEK_MANY -> "%d weeks"
+            VariableLocalizationKey.NUM_WEEK_ONE -> "%d week"
+            VariableLocalizationKey.NUM_WEEK_OTHER -> "%d weeks"
+            VariableLocalizationKey.NUM_WEEK_TWO -> "%d weeks"
+            VariableLocalizationKey.NUM_WEEK_ZERO -> "%d week"
+            VariableLocalizationKey.NUM_YEAR_FEW -> "%d years"
+            VariableLocalizationKey.NUM_YEAR_MANY -> "%d years"
+            VariableLocalizationKey.NUM_YEAR_ONE -> "%d year"
+            VariableLocalizationKey.NUM_YEAR_OTHER -> "%d years"
+            VariableLocalizationKey.NUM_YEAR_TWO -> "%d years"
+            VariableLocalizationKey.NUM_YEAR_ZERO -> "%d year"
+            VariableLocalizationKey.PERCENT -> "%d%%"
+            VariableLocalizationKey.WEEK -> "week"
+            VariableLocalizationKey.WEEK_SHORT -> "wk"
+            VariableLocalizationKey.WEEKLY -> "weekly"
+            VariableLocalizationKey.YEAR -> "year"
+            VariableLocalizationKey.YEAR_SHORT -> "yr"
+            VariableLocalizationKey.YEARLY -> "yearly"
+        }
+    }
