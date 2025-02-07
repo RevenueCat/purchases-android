@@ -108,13 +108,12 @@ internal sealed interface PaywallState {
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
                 .firstOrNull { it.isSelectedByDefault }
                 ?.pkg
-            private val packagesOutsideTabs: List<Package> = packages.packagesOutsideTabs.map { it.pkg }
-            private val packagesByTab: Map<Int, List<Package>> = packages.packagesByTab
-                .mapValues { it.value.map { it.pkg } }
-
+            private val packagesOutsideTabs: Set<Package> = packages.packagesOutsideTabs
+                .mapTo(mutableSetOf()) { it.pkg }
             private val tabsByPackage: Map<Package, Set<Int>> = mutableMapOf<Package, Set<Int>>().apply {
-                packagesByTab.forEach { (tabIndex, packages) ->
-                    packages.forEach { pkg ->
+                packages.packagesByTab.forEach { (tabIndex, packages) ->
+                    packages.forEach { packageInfo ->
+                        val pkg = packageInfo.pkg
                         val tabIndices = getOrDefault(pkg, emptySet())
                         put(pkg, tabIndices + tabIndex)
                     }
