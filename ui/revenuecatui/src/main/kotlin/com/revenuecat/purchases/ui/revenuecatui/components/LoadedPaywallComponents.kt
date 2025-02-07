@@ -74,15 +74,23 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
 
-    Box(modifier = modifier.background(background)) {
+    Box(
+        modifier = modifier
+            .background(background),
+    ) {
         var footerHeight by remember { mutableIntStateOf(0) }
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        ) {
             ComponentView(
                 style = style,
                 state = state,
                 onClick = clickHandler,
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .weight(1f),
             )
             val footerHeightDp = with(LocalDensity.current) { footerHeight.toDp() }
             Spacer(modifier = Modifier.height(footerHeightDp))
