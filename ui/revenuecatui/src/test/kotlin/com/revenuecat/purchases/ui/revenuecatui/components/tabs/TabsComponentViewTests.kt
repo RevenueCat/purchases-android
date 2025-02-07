@@ -36,8 +36,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -96,7 +95,7 @@ class TabsComponentViewTests {
             unselectedKeyTab0 to selectedKeyTab0,
             unselectedKeyTab1 to selectedKeyTab1,
             unselectedKeyTab2 to selectedKeyTab2,
-        ).mapIndexed() { index, (unselectedKey, selectedKey) ->
+        ).mapIndexed { index, (unselectedKey, selectedKey) ->
             TabControlButtonComponent(
                 tabIndex = index,
                 stack = StackComponent(
@@ -104,8 +103,11 @@ class TabsComponentViewTests {
                         TextComponent(
                             text = unselectedKey,
                             color = textColor,
-                            overrides = ComponentOverrides(
-                                states = ComponentStates(selected = PartialTextComponent(text = selectedKey))
+                            overrides = listOf(
+                                ComponentOverride(
+                                    conditions = listOf(ComponentOverride.Condition.Selected),
+                                    properties = PartialTextComponent(text = selectedKey),
+                                ),
                             )
                         )
                     ),
@@ -256,8 +258,11 @@ class TabsComponentViewTests {
                         TextComponent(
                             text = unselectedKey,
                             color = textColor,
-                            overrides = ComponentOverrides(
-                                states = ComponentStates(selected = PartialTextComponent(text = selectedKey))
+                            overrides = listOf(
+                                ComponentOverride(
+                                    conditions = listOf(ComponentOverride.Condition.Selected),
+                                    properties = PartialTextComponent(text = selectedKey),
+                                ),
                             )
                         )
                     )

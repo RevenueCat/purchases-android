@@ -24,8 +24,7 @@ import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
-import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -80,9 +79,10 @@ internal class StackComponentViewWindowTests {
         val component = StackComponent(
             components = emptyList(),
             size = Size(width = Fixed(SIZE_STACK), height = Fixed(SIZE_STACK)),
-            overrides = ComponentOverrides(
-                conditions = ComponentConditions(
-                    compact = PartialStackComponent(
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialStackComponent(
                         border = Border(
                             color = ColorScheme(ColorInfo.Hex(expectedCompactBorderColor.toArgb())),
                             width = expectedCompactBorderWidth.value.toDouble()
@@ -95,7 +95,10 @@ internal class StackComponentViewWindowTests {
                         ),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedCompactBackgroundColor.toArgb()))
                     ),
-                    medium = PartialStackComponent(
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Medium),
+                    properties = PartialStackComponent(
                         border = Border(
                             color = ColorScheme(ColorInfo.Hex(expectedMediumBorderColor.toArgb())),
                             width = expectedMediumBorderWidth.value.toDouble()
@@ -108,7 +111,10 @@ internal class StackComponentViewWindowTests {
                         ),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedMediumBackgroundColor.toArgb()))
                     ),
-                    expanded = PartialStackComponent(
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Expanded),
+                    properties = PartialStackComponent(
                         border = Border(
                             color = ColorScheme(ColorInfo.Hex(expectedExpandedBorderColor.toArgb())),
                             width = expectedExpandedBorderWidth.value.toDouble()
@@ -120,8 +126,8 @@ internal class StackComponentViewWindowTests {
                             y = 10.0
                         ),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedExpandedBackgroundColor.toArgb()))
-                    )
-                )
+                    ),
+                ),
             )
         )
         val state = FakePaywallState(component)

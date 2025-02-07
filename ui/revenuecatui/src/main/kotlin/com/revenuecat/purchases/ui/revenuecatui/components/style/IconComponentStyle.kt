@@ -12,7 +12,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
@@ -57,7 +57,7 @@ internal class IconComponentStyle(
     @get:JvmSynthetic
     val tabIndex: Int?,
     @get:JvmSynthetic
-    val overrides: PresentedOverrides<PresentedIconPartial>?,
+    val overrides: List<PresentedOverride<PresentedIconPartial>>,
 ) : ComponentStyle {
     @Immutable
     internal class Background(

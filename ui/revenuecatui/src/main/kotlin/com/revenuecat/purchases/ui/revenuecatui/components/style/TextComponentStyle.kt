@@ -10,7 +10,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
@@ -56,5 +56,5 @@ internal class TextComponentStyle(
     @get:JvmSynthetic
     val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     @get:JvmSynthetic
-    val overrides: PresentedOverrides<LocalizedTextPartial>?,
+    val overrides: List<PresentedOverride<LocalizedTextPartial>>,
 ) : ComponentStyle

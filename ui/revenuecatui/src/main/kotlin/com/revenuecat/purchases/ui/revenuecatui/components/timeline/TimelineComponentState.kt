@@ -82,7 +82,7 @@ internal class TimelineComponentState(
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
 
     @get:JvmSynthetic
@@ -149,7 +149,7 @@ internal class TimelineComponentState(
             val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
             val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-            style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+            style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
         }
 
         @get:JvmSynthetic

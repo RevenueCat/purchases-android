@@ -89,7 +89,7 @@ class ButtonComponentViewTests {
                             variableLocalizations = nonEmptyMapOf(
                                 LocaleId("en_US") to variableLocalizationKeysForEnUs()
                             ),
-                            overrides = null,
+                            overrides = emptyList(),
                         ),
                     ),
                     dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
@@ -109,7 +109,7 @@ class ButtonComponentViewTests {
                     badge = null,
                     rcPackage = null,
                     tabIndex = null,
-                    overrides = null,
+                    overrides = emptyList(),
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage,
             )

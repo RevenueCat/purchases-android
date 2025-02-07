@@ -13,8 +13,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -52,28 +51,20 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
         dark = ColorInfo.Hex(Color.Black.toArgb()),
     )
 
-    val boldWhenSelectedOverride = ComponentOverrides(
-        introOffer = null,
-        multipleIntroOffers = null,
-        states = ComponentStates(
-            selected = PartialTextComponent(
-                fontWeight = FontWeight.EXTRA_BOLD,
-            ),
+    val boldWhenSelectedOverride = ComponentOverride(
+        conditions = listOf(ComponentOverride.Condition.Selected),
+        properties = PartialTextComponent(
+            fontWeight = FontWeight.EXTRA_BOLD,
         ),
-        conditions = null,
     )
 
-    val cyanBackgroundWhenSelectedOverride = ComponentOverrides(
-        introOffer = null,
-        multipleIntroOffers = null,
-        states = ComponentStates(
-            selected = PartialStackComponent(
-                backgroundColor = ColorScheme(
-                    light = ColorInfo.Hex(Color.Cyan.toArgb()),
-                ),
+    val cyanBackgroundWhenSelectedOverride = ComponentOverride(
+        conditions = listOf(ComponentOverride.Condition.Selected),
+        properties = PartialStackComponent(
+            backgroundColor = ColorScheme(
+                light = ColorInfo.Hex(Color.Cyan.toArgb()),
             ),
         ),
-        conditions = null,
     )
 
     return SampleData.Components(
@@ -108,7 +99,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             size = Size(width = Fit, height = Fit),
                                                             fontName = font,
-                                                            overrides = boldWhenSelectedOverride,
+                                                            overrides = listOf(boldWhenSelectedOverride),
                                                             padding = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -118,7 +109,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                         ),
                                                     ),
                                                     size = Size(width = Fit, height = Fit),
-                                                    overrides = cyanBackgroundWhenSelectedOverride,
+                                                    overrides = listOf(cyanBackgroundWhenSelectedOverride),
                                                 ),
                                             )
                                         },
