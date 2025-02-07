@@ -71,11 +71,7 @@ internal fun InternalCustomerCenter(
     }
 
     BackHandler {
-        val buttonType = state.navigationButtonType
-        viewModel.onNavigationButtonPressed(context)
-        if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
-            onDismiss()
-        }
+        viewModel.onNavigationButtonPressed(context, onDismiss)
     }
 
     viewModel.actionError.value?.let {
@@ -106,11 +102,7 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
                 is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
                 is CustomerCenterAction.NavigationButtonPressed -> {
-                    val buttonType = state.navigationButtonType
-                    viewModel.onNavigationButtonPressed(context)
-                    if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
-                        onDismiss()
-                    }
+                    viewModel.onNavigationButtonPressed(context, onDismiss)
                 }
 
                 is CustomerCenterAction.DismissPromotionalOffer ->

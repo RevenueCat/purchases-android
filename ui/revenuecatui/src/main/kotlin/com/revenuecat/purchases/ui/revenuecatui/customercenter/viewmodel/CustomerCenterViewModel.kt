@@ -71,7 +71,7 @@ internal interface CustomerCenterViewModel {
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
-    fun onNavigationButtonPressed(context: Context)
+    fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit)
     suspend fun loadCustomerCenter()
     fun openURL(
         context: Context,
@@ -462,7 +462,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun onNavigationButtonPressed(context: Context) {
+    override fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit) {
         val currentState = _state.value
         if (currentState is CustomerCenterState.Success && currentState.promotionalOfferData != null) {
             dismissPromotionalOffer(currentState.promotionalOfferData.originalPath, context)
@@ -476,6 +476,10 @@ internal class CustomerCenterViewModelImpl(
                     }
                     else -> CustomerCenterState.NotLoaded
                 }
+            }
+            val buttonType = state.value.navigationButtonType
+            if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+                onDismiss()
             }
         }
     }
