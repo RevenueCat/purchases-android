@@ -106,7 +106,7 @@ internal fun InternalCustomerCenter(
                 }
 
                 is CustomerCenterAction.DismissPromotionalOffer ->
-                    viewModel.dismissPromotionalOffer(action.originalPath, context)
+                    viewModel.dismissPromotionalOffer(context, action.originalPath)
                 is CustomerCenterAction.PurchasePromotionalOffer -> {
                     val activity = context.getActivity()
                     coroutineScope.launch {
