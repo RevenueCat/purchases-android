@@ -77,7 +77,9 @@ private const val MILLIS_2025_01_25 = 1737763200000
 
 @Composable
 @JvmSynthetic
-internal fun previewEmptyState(): PaywallState.Loaded.Components {
+internal fun previewEmptyState(
+    initialSelectedTabIndex: Int = 0,
+): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
@@ -115,6 +117,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
+        initialSelectedTabIndex = initialSelectedTabIndex,
     )
 }
 

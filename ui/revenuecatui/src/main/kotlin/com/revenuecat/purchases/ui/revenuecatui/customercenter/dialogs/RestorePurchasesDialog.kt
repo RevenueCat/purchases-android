@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.emergetools.snapshots.annotations.IgnoreEmergeSnapshot
 
 @JvmSynthetic
 @Composable
@@ -150,6 +151,7 @@ private fun PurchasesNotFoundDialog(
 }
 
 @Preview(showBackground = true)
+@IgnoreEmergeSnapshot
 @Composable
 private fun RestorePurchasesDialogInitialPreview() {
     RestorePurchasesDialog(
@@ -161,6 +163,7 @@ private fun RestorePurchasesDialogInitialPreview() {
 }
 
 @Preview(showBackground = true)
+@IgnoreEmergeSnapshot
 @Composable
 private fun RestorePurchasesDialogRecoveredPreview() {
     RestorePurchasesDialog(
@@ -172,6 +175,7 @@ private fun RestorePurchasesDialogRecoveredPreview() {
 }
 
 @Preview(showBackground = true)
+@IgnoreEmergeSnapshot
 @Composable
 private fun RestorePurchasesDialogNotFoundPreview() {
     RestorePurchasesDialog(
@@ -183,6 +187,7 @@ private fun RestorePurchasesDialogNotFoundPreview() {
 }
 
 @Preview(showBackground = true)
+@IgnoreEmergeSnapshot
 @Composable
 private fun RestorePurchasesDialogLoadingPreview() {
     RestorePurchasesDialog(
@@ -194,6 +199,7 @@ private fun RestorePurchasesDialogLoadingPreview() {
 }
 
 @Preview(showBackground = true)
+@IgnoreEmergeSnapshot
 @Composable
 private fun RestorePurchasesDialogRestoringPreview() {
     RestorePurchasesDialog(

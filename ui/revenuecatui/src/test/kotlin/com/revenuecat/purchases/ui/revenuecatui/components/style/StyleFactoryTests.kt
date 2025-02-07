@@ -478,13 +478,11 @@ class StyleFactoryTests {
         assertThat(result).isInstanceOf(Result.Success::class.java)
         val style = (result as Result.Success).value as TabsComponentStyle
         assertThat(style.tabs.size).isEqualTo(2)
-        assertThat(style.control).isInstanceOf(TabControlStyle.Buttons::class.java)
         repeat(2) { index ->
             val firstChildOfTab = style.tabs[index].stack.children[0] as StackComponentStyle
             assertThat(firstChildOfTab.children.size).isEqualTo(1)
             val tabControlInTab = firstChildOfTab.children[0]
             assertThat(tabControlInTab).isInstanceOf(TabControlStyle.Buttons::class.java)
-            assertThat(style.control).isEqualTo(tabControlInTab)
         }
     }
 
@@ -535,13 +533,11 @@ class StyleFactoryTests {
         assertThat(result).isInstanceOf(Result.Success::class.java)
         val style = (result as Result.Success).value as TabsComponentStyle
         assertThat(style.tabs.size).isEqualTo(2)
-        assertThat(style.control).isInstanceOf(TabControlStyle.Toggle::class.java)
         repeat(2) { index ->
             val firstChildOfTab = style.tabs[index].stack.children[0] as StackComponentStyle
             assertThat(firstChildOfTab.children.size).isEqualTo(1)
             val tabControlInTab = firstChildOfTab.children[0]
             assertThat(tabControlInTab).isInstanceOf(TabControlStyle.Toggle::class.java)
-            assertThat(style.control).isEqualTo(tabControlInTab)
         }
     }
 
