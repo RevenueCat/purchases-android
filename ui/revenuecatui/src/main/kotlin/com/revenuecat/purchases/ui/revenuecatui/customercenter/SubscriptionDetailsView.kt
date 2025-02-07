@@ -30,12 +30,14 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localiza
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_LARGE
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_MEDIUM
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_SMALL
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SUBSCRIPTION_DETAILS_ROW_HEIGHT
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.TEXT_LIKE_SETTINGS_MAIN_SIZE
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.TEXT_LIKE_SETTINGS_SUPPORTING_SIZE
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SettingsRowMainTextAlpha
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SettingsRowMainTextSize
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SettingsRowSupportingTextAlpha
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SettingsRowSupportingTextSize
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SubscriptionViewHorizontalSpace
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SubscriptionViewIconSize
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SubscriptionViewRowHeight
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.Explanation
@@ -101,27 +103,27 @@ internal fun SubscriptionDetailsRow(
     prominentSubtitle: Boolean = true,
 ) {
     val titleTextStyle = TextStyle(
-        fontSize = if (prominentSubtitle) TEXT_LIKE_SETTINGS_SUPPORTING_SIZE else TEXT_LIKE_SETTINGS_MAIN_SIZE,
+        fontSize = if (prominentSubtitle) SettingsRowSupportingTextSize else SettingsRowMainTextSize,
         fontWeight = FontWeight.Normal,
     )
 
     val subtitleTextStyle = TextStyle(
-        fontSize = if (prominentSubtitle) TEXT_LIKE_SETTINGS_MAIN_SIZE else TEXT_LIKE_SETTINGS_SUPPORTING_SIZE,
+        fontSize = if (prominentSubtitle) SettingsRowMainTextSize else SettingsRowSupportingTextSize,
         fontWeight = FontWeight.Normal,
     )
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .defaultMinSize(minHeight = SUBSCRIPTION_DETAILS_ROW_HEIGHT)
+            .defaultMinSize(minHeight = SubscriptionViewRowHeight)
             .fillMaxWidth()
-            .padding(PADDING_MEDIUM),
-        horizontalArrangement = Arrangement.spacedBy(PADDING_SMALL),
+            .padding(ManagementViewHorizontalPadding),
+        horizontalArrangement = Arrangement.spacedBy(SubscriptionViewHorizontalSpace),
     ) {
         icon?.let {
             Icon(
                 imageVector = it,
                 contentDescription = null,
-                modifier = Modifier.size(PADDING_LARGE),
+                modifier = Modifier.size(SubscriptionViewIconSize),
             )
         }
         Column {
@@ -129,13 +131,17 @@ internal fun SubscriptionDetailsRow(
                 text = title,
                 style = titleTextStyle,
                 maxLines = 1,
-                modifier = Modifier.alpha(if (prominentSubtitle) 0.6f else 1.0f),
+                modifier = Modifier.alpha(
+                    if (prominentSubtitle) SettingsRowSupportingTextAlpha else SettingsRowMainTextAlpha,
+                ),
             )
             Text(
                 text = subtitle,
                 style = subtitleTextStyle,
                 maxLines = 2,
-                modifier = Modifier.alpha(if (prominentSubtitle) 1.0f else 0.6f),
+                modifier = Modifier.alpha(
+                    if (prominentSubtitle) SettingsRowMainTextAlpha else SettingsRowSupportingTextAlpha,
+                ),
             )
         }
     }

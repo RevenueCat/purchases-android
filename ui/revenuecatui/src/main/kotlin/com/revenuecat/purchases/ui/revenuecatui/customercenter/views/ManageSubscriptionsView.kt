@@ -24,11 +24,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ICON_SIZE
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_MEDIUM
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_SMALL
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_XL
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.TITLE_TOP_PADDING
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableIconSize
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPadding
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingTopDescription
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingTopTitle
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
@@ -42,7 +44,6 @@ internal fun ManageSubscriptionsView(
     screen: CustomerCenterConfigData.Screen,
     localization: CustomerCenterConfigData.Localization,
     support: CustomerCenterConfigData.Support,
-    appearance: CustomerCenterConfigData.Appearance,
     modifier: Modifier = Modifier,
     purchaseInformation: PurchaseInformation? = null,
     onAction: (CustomerCenterAction) -> Unit,
@@ -59,7 +60,6 @@ internal fun ManageSubscriptionsView(
                 localization,
                 purchaseInformation,
                 support,
-                appearance,
                 onAction,
             )
         } else {
@@ -81,17 +81,20 @@ private fun ActiveUserManagementView(
     localization: CustomerCenterConfigData.Localization,
     purchaseInformation: PurchaseInformation,
     support: CustomerCenterConfigData.Support,
-    appearance: CustomerCenterConfigData.Appearance,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column {
         Text(
             text = screen.title,
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = PADDING_MEDIUM, end = PADDING_MEDIUM, top = TITLE_TOP_PADDING),
+            modifier = Modifier.padding(
+                start = ManagementViewHorizontalPadding,
+                end = ManagementViewHorizontalPadding,
+                top = ManagementViewTitleTopPadding,
+            ),
         )
 
-        Spacer(modifier = Modifier.size(PADDING_XL))
+        Spacer(modifier = Modifier.size(ManagementViewSpacer))
 
         SubscriptionDetailsView(details = purchaseInformation, localization = localization)
 
@@ -120,7 +123,7 @@ private fun NoActiveUserManagementView(
         ContentUnavailableView(
             title = screen.title,
             description = screen.subtitle,
-            modifier = Modifier.padding(PADDING_MEDIUM),
+            modifier = Modifier.padding(ManagementViewHorizontalPadding),
         )
 
         ManageSubscriptionsButtonsView(
@@ -139,19 +142,19 @@ private fun ContentUnavailableView(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(PADDING_MEDIUM),
+            .padding(ContentUnavailableViewPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
             imageVector = Icons.Rounded.Warning,
             contentDescription = null,
-            modifier = Modifier.size(ICON_SIZE),
+            modifier = Modifier.size(ContentUnavailableIconSize),
         )
 
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(top = PADDING_SMALL),
+            modifier = Modifier.padding(top = ContentUnavailableViewPaddingTopTitle),
         )
 
         description?.let {
@@ -159,7 +162,7 @@ private fun ContentUnavailableView(
                 text = it,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = PADDING_MEDIUM),
+                modifier = Modifier.padding(top = ContentUnavailableViewPaddingTopDescription),
             )
         }
     }
@@ -172,7 +175,7 @@ private fun ManageSubscriptionsButtonsView(
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column {
-        HorizontalDivider(Modifier.padding(horizontal = PADDING_MEDIUM))
+        HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
         screen.supportedPaths.forEach { path ->
             SettingsButton(
                 onClick = { onButtonPress(path) },
@@ -191,7 +194,7 @@ private fun OtherPlatformSubscriptionButtonsView(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column {
-        HorizontalDivider(Modifier.padding(horizontal = PADDING_MEDIUM))
+        HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
 
         managementURL?.let {
             SettingsButton(
@@ -223,7 +226,6 @@ private fun ManageSubscriptionsViewPreview() {
         localization = testData.localization,
         support = testData.support,
         purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
-        appearance = testData.appearance,
         onAction = {},
     )
 }
@@ -240,7 +242,6 @@ private fun NoActiveSubscriptionsViewPreview() {
         localization = testData.localization,
         support = testData.support,
         purchaseInformation = null,
-        appearance = testData.appearance,
         onAction = {},
     )
 }
@@ -257,7 +258,6 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
         localization = testData.localization,
         support = testData.support,
         purchaseInformation = null,
-        appearance = testData.appearance,
         onAction = {},
     )
 }

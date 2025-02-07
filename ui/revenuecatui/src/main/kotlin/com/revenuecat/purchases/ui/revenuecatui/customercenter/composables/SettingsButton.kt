@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_MEDIUM
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 
 @Composable
 @JvmSynthetic
@@ -27,7 +27,7 @@ internal fun SettingsButton(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(PADDING_MEDIUM),
+            .padding(ManagementViewHorizontalPadding),
     ) {
         Text(
             text = title,
