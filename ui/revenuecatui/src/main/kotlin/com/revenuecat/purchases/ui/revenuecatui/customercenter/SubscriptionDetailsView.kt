@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -22,8 +21,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -274,25 +273,26 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(group = "scale = 1", fontScale = 1F, device = "spec:width=1080px,height=2720px,dpi=440")
-// Unrealistically long device to make the Column fit. Can be removed once Emerge Snapshot Test supports
-// @PreviewParameter.
+@Composable
+internal fun SubscriptionDetailsView_Preview(
+    @PreviewParameter(SubscriptionInformationProvider::class) details: PurchaseInformation
+) {
+    SubscriptionDetailsView(
+        details = details,
+        localization = CustomerCenterConfigTestData.customerCenterData(shouldWarnCustomerToUpdate = false).localization,
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(group = "scale = 2", fontScale = 2F, device = "spec:width=1080px,height=2720px,dpi=440")
 @Composable
-internal fun SubscriptionDetailsView_Preview() {
-    Column(
-        modifier = Modifier.height(2000.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        // Bit of a roundabout way of using the PreviewParameterProvider, because Emerge Snapshot Test doesn't support
-        // it yet.
-        SubscriptionInformationProvider().values.forEach { details ->
-            SubscriptionDetailsView(
-                details = details,
-                localization =
-                CustomerCenterConfigTestData.customerCenterData(shouldWarnCustomerToUpdate = false).localization,
-            )
-        }
-    }
+internal fun SubscriptionDetailsView_Preview_Scale2(
+    @PreviewParameter(SubscriptionInformationProvider::class) details: PurchaseInformation
+) {
+    SubscriptionDetailsView(
+        details = details,
+        localization = CustomerCenterConfigTestData.customerCenterData(shouldWarnCustomerToUpdate = false).localization,
+    )
 }
 
 @Preview
