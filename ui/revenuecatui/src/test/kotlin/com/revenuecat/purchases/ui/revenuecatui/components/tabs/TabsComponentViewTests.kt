@@ -1054,10 +1054,13 @@ class TabsComponentViewTests {
         TextComponent(
             text = text,
             color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-            overrides = ComponentOverrides(
-                states = ComponentStates(
-                    selected = selectedText?.let { PartialTextComponent(text = it) }
-                )
+            overrides = listOfNotNull(
+                selectedText?.let { PartialTextComponent(text = it) }?.let { partial ->
+                    ComponentOverride(
+                        conditions = listOf(ComponentOverride.Condition.Selected),
+                        properties = partial,
+                    )
+                }
             )
         )
 
@@ -1191,37 +1194,36 @@ class TabsComponentViewTests {
     private fun PaywallComponent.getLocalizationKeys(): Set<LocalizationKey> =
         filter { it is TextComponent }
             .map { it as TextComponent }
-            .flatMap { component -> component.overrides?.getLocalizationKeys().orEmpty() + component.text }
+            .flatMap { component ->
+                component.overrides?.getLocalizationKeys().orEmpty() + component.text
+            }
             .toSet()
 
-    private fun ComponentOverrides<PartialTextComponent>.getLocalizationKeys(): Set<LocalizationKey> =
-        listOf(
-            introOffer,
-            multipleIntroOffers,
-            states?.selected,
-            conditions?.compact,
-            conditions?.medium,
-            conditions?.expanded,
-        ).mapNotNull { partialTextComponent ->
-            partialTextComponent?.text
-        }.toSet()
+    private fun List<ComponentOverride<PartialTextComponent>>.getLocalizationKeys(): Set<LocalizationKey> =
+        mapNotNull { componentOverride -> componentOverride.properties.text }.toSet()
 
-    private val Package.selectedLocalizedText: LocalizationData.Text
+    private
+    val Package.selectedLocalizedText: LocalizationData.Text
         get() = selectedLocalizationKey.asText()
 
-    private val Package.selectedLocalizationKey: LocalizationKey
+    private
+    val Package.selectedLocalizationKey: LocalizationKey
         get() = LocalizationKey("package_${identifier}_selected")
 
-    private val Package.unselectedLocalizedText: LocalizationData.Text
+    private
+    val Package.unselectedLocalizedText: LocalizationData.Text
         get() = unselectedLocalizationKey.asText()
 
-    private val Package.unselectedLocalizationKey: LocalizationKey
+    private
+    val Package.unselectedLocalizationKey: LocalizationKey
         get() = LocalizationKey("package_${identifier}_unselected")
 
-    private val Package.localizedText: LocalizationData.Text
+    private
+    val Package.localizedText: LocalizationData.Text
         get() = localizationKey.asText()
 
-    private val Package.localizationKey: LocalizationKey
+    private
+    val Package.localizationKey: LocalizationKey
         get() = LocalizationKey("package_$identifier")
 
     private fun LocalizationKey.asText(): LocalizationData.Text =
