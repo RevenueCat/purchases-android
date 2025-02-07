@@ -1281,7 +1281,7 @@ class PaywallViewModelTest {
                 withArg { event ->
                     val paywallEvent = event as? PaywallEvent
                         ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
-                    withArg { assertThat(paywallEvent.type).isEqualTo(eventType) }
+                    assertThat(paywallEvent.type).isEqualTo(eventType)
                 }
             )
         }
