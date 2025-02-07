@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import org.json.JSONObject
 
 @Parcelize
 data class Price(
@@ -27,4 +28,10 @@ data class Price(
      * If currency code cannot be determined, currency symbol is returned.
      */
     val currencyCode: String,
-) : Parcelable
+) : Parcelable {
+    constructor(jsonObject: JSONObject) : this(
+        formatted = "", // TODO
+        jsonObject.getLong("amount"),
+        jsonObject.getString("currency"),
+    )
+}
