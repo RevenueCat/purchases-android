@@ -1,9 +1,11 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.EntitlementInfoHelper
 import java.util.Date
+import java.util.Locale
 
 /**
  * Subscription purchases of the Customer.
@@ -74,6 +76,10 @@ class SubscriptionInfo(
      * The transaction id in the store of the subscription.
      */
     val storeTransactionId: String?,
+    val autoResumeDate: Date?,
+    val displayName: String?,
+    val price: Price?,
+    val productPlanIdentifier: String?,
     /**
      * The date the request was made.
      */
@@ -121,6 +127,7 @@ class SubscriptionInfo(
         productIdentifier: String,
         requestDate: Date,
         response: SubscriptionInfoResponse,
+        locale: Locale = Locale.getDefault(),
     ) : this(
         productIdentifier = productIdentifier,
         requestDate = requestDate,
@@ -136,5 +143,9 @@ class SubscriptionInfo(
         periodType = response.periodType,
         refundedAt = response.refundedAt,
         storeTransactionId = response.storeTransactionId,
+        autoResumeDate = response.autoResumeDate,
+        displayName = response.displayName,
+        price = response.price?.toPrice(locale),
+        productPlanIdentifier = response.productPlanIdentifier,
     )
 }

@@ -7,7 +7,7 @@ import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
 
-private const val MICRO_MULTIPLIER = 1_000_000.0
+internal const val MICRO_MULTIPLIER = 1_000_000.0
 
 @JvmSynthetic
 @OptIn(InternalRevenueCatAPI::class)
