@@ -723,7 +723,7 @@ workflows:
       and:
         - not:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "publish-paywall-tester-to-internal", << pipeline.git.branch >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
     jobs:
       - publish-paywall-tester-release:
           track: "internal"
