@@ -56,6 +56,8 @@ android {
 }
 
 dependencies {
+    debugImplementation libs.emerge.snapshots.annotations
+
     implementation project(path: ':purchases')
 
     implementation(platform(libs.kotlin.bom))

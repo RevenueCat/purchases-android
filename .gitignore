@@ -107,7 +107,7 @@ tmp/
 
 # kotlin
 annotations/
-!/ui/revenuecatui/src/main/kotlin/com/emergetools/snapshots/annotations/
+!ui/revenuecatui/src/main/kotlin/com/emergetools/snapshots/annotations/IgnoreEmergeSnapshot.kt
 .project
 purchases/.classpath
 purchase-tester/.classpath
