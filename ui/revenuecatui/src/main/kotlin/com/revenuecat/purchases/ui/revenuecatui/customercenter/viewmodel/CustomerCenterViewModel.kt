@@ -71,7 +71,7 @@ internal interface CustomerCenterViewModel {
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
-    fun onNavigationButtonPressed()
+    fun onNavigationButtonPressed(context: Context)
     suspend fun loadCustomerCenter()
     fun openURL(
         context: Context,
@@ -124,8 +124,6 @@ internal class CustomerCenterViewModelImpl(
     override val actionError: State<PurchasesError?>
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
-
-    private var onNavigationOverride: (() -> Unit)? = null
 
     override suspend fun pathButtonPressed(
         context: Context,
@@ -424,7 +422,6 @@ internal class CustomerCenterViewModelImpl(
                     currentState
                 }
             }
-            onNavigationOverride = { dismissPromotionalOffer(originalPath, context) }
             return true
         }
         return false
@@ -465,16 +462,17 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun onNavigationButtonPressed() {
-        if (_state.value is CustomerCenterState.Success && onNavigationOverride != null) {
-            onNavigationOverride?.invoke()
-            onNavigationOverride = null
+    override fun onNavigationButtonPressed(context: Context) {
+        val currentState = _state.value
+        if (currentState is CustomerCenterState.Success && currentState.promotionalOfferData != null) {
+            dismissPromotionalOffer(currentState.promotionalOfferData.originalPath, context)
         } else {
-            _state.update { currentState ->
+            // Perform the default navigation action
+            _state.update { state ->
                 when {
-                    currentState is CustomerCenterState.Success &&
-                        currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
-                        currentState.resetToMainScreen()
+                    state is CustomerCenterState.Success &&
+                        state.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                        state.resetToMainScreen()
                     }
                     else -> CustomerCenterState.NotLoaded
                 }

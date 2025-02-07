@@ -72,7 +72,7 @@ internal fun InternalCustomerCenter(
 
     BackHandler {
         val buttonType = state.navigationButtonType
-        viewModel.onNavigationButtonPressed()
+        viewModel.onNavigationButtonPressed(context)
         if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
             onDismiss()
         }
@@ -107,7 +107,7 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
                 is CustomerCenterAction.NavigationButtonPressed -> {
                     val buttonType = state.navigationButtonType
-                    viewModel.onNavigationButtonPressed()
+                    viewModel.onNavigationButtonPressed(context)
                     if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
                         onDismiss()
                     }
