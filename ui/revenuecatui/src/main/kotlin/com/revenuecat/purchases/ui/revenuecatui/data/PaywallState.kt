@@ -6,6 +6,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
@@ -85,6 +86,7 @@ internal sealed interface PaywallState {
             private val dateProvider: () -> Date,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedPackage: Package? = null,
+            initialSelectedTabIndex: Int = 0,
         ) : Loaded {
 
             data class SelectedPackageInfo(
@@ -110,13 +112,17 @@ internal sealed interface PaywallState {
                 }
             }
 
+            var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex)
+                private set
+
             val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
 
             val currentDate: Date
                 get() = dateProvider()
 
-            fun update(localeList: FrameworkLocaleList? = null) {
+            fun update(localeList: FrameworkLocaleList? = null, selectedTabIndex: Int? = null) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
+                if (selectedTabIndex != null) this.selectedTabIndex = selectedTabIndex
             }
 
             fun update(selectedPackage: Package?) {

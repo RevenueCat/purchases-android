@@ -28,6 +28,7 @@ internal fun rememberUpdatedTimelineComponentState(
     rememberUpdatedTimelineComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
 @JvmSynthetic
@@ -35,6 +36,7 @@ internal fun rememberUpdatedTimelineComponentState(
 private fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
     selectedPackageProvider: () -> Package?,
+    selectedTabIndexProvider: () -> Int,
 ): TimelineComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -43,6 +45,7 @@ private fun rememberUpdatedTimelineComponentState(
             initialWindowSize = windowSize,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -56,11 +59,18 @@ internal class TimelineComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TimelineComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedTabIndexProvider: () -> Int,
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+        if (style.rcPackage != null) {
+            style.rcPackage.identifier == selectedPackageProvider()?.identifier
+        } else if (style.tabIndex != null) {
+            style.tabIndex == selectedTabIndexProvider()
+        } else {
+            false
+        }
     }
 
     private val applicablePackage by derivedStateOf {
@@ -100,7 +110,9 @@ internal class TimelineComponentState(
     val margin by derivedStateOf { presentedPartial?.partial?.margin?.toPaddingValues() ?: style.margin }
 
     @get:JvmSynthetic
-    val items by derivedStateOf { style.items.map { ItemState(initialWindowSize, it, selectedPackageProvider) } }
+    val items by derivedStateOf {
+        style.items.map { ItemState(initialWindowSize, it, selectedPackageProvider, selectedTabIndexProvider) }
+    }
 
     @JvmSynthetic
     fun update(
@@ -114,11 +126,18 @@ internal class TimelineComponentState(
         initialWindowSize: WindowWidthSizeClass,
         private val style: TimelineComponentStyle.ItemStyle,
         private val selectedPackageProvider: () -> Package?,
+        private val selectedTabIndexProvider: () -> Int,
     ) {
 
         private var windowSize by mutableStateOf(initialWindowSize)
         private val selected by derivedStateOf {
-            if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+            if (style.rcPackage != null) {
+                style.rcPackage.identifier == selectedPackageProvider()?.identifier
+            } else if (style.tabIndex != null) {
+                style.tabIndex == selectedTabIndexProvider()
+            } else {
+                false
+            }
         }
 
         private val applicablePackage by derivedStateOf {

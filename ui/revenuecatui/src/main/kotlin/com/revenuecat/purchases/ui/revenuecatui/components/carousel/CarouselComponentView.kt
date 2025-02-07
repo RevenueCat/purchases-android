@@ -365,6 +365,7 @@ private fun previewCarouselComponentStyle(
         loop = loop,
         autoAdvance = autoAdvance,
         rcPackage = null,
+        tabIndex = null,
         overrides = null,
     )
 }
@@ -405,6 +406,7 @@ private fun previewSlide(
         shadow = null,
         badge = null,
         rcPackage = null,
+        tabIndex = null,
         overrides = null,
     )
 }

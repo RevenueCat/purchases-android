@@ -77,7 +77,9 @@ private const val MILLIS_2025_01_25 = 1737763200000
 
 @Composable
 @JvmSynthetic
-internal fun previewEmptyState(): PaywallState.Loaded.Components {
+internal fun previewEmptyState(
+    initialSelectedTabIndex: Int = 0,
+): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
@@ -115,6 +117,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
+        initialSelectedTabIndex = initialSelectedTabIndex,
     )
 }
 
@@ -166,6 +169,7 @@ internal fun previewStackComponentStyle(
         shadow = shadow,
         badge = badge,
         rcPackage = null,
+        tabIndex = null,
         overrides = null,
     )
 }
@@ -184,6 +188,8 @@ internal fun previewTextComponentStyle(
     size: Size = Size(width = Fill, height = Fit),
     padding: Padding = zero,
     margin: Padding = zero,
+    tabIndex: Int? = null,
+    overrides: PresentedOverrides<LocalizedTextPartial>? = null,
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
     val localeId = LocaleId("en_US")
@@ -200,8 +206,9 @@ internal fun previewTextComponentStyle(
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
         rcPackage = null,
+        tabIndex = tabIndex,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
-        overrides = null,
+        overrides = overrides,
     )
 }
 
@@ -245,6 +252,7 @@ internal fun previewIconComponentStyle(
         color = backgroundColor,
     ),
     rcPackage = null,
+    tabIndex = null,
     overrides = null,
 )
 

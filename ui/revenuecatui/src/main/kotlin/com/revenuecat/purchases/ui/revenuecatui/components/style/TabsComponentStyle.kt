@@ -57,8 +57,6 @@ internal class TabsComponentStyle(
     @get:JvmSynthetic
     val shadow: ShadowStyles?,
     @get:JvmSynthetic
-    val control: TabControlStyle,
-    @get:JvmSynthetic
     val tabs: NonEmptyList<Tab>,
     @get:JvmSynthetic
     val overrides: PresentedOverrides<PresentedTabsPartial>?,

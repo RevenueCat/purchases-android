@@ -123,6 +123,7 @@ internal fun StackComponentView(
                         clickHandler,
                         modifier,
                     )
+
                     else
                     -> StackWithShortEdgeToEdgeBadge(
                         stackState,
@@ -226,6 +227,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                         )
                     } ?: RectangleShape
                 }
+
                 is CornerRadiuses.Dp -> {
                     when (val mainStackCornerRadiuses = stackState.shape.cornerRadiuses) {
                         is CornerRadiuses.Dp -> if (topBadge) {
@@ -247,6 +249,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                                 ),
                             ).toShape()
                         }
+
                         is CornerRadiuses.Percentage ->
                             (stackState.shape.toShape() as? RoundedCornerShape)?.let { composeShape ->
                                 if (topBadge) {
@@ -339,27 +342,32 @@ private fun StackWithShortEdgeToEdgeBadge(
                     bottomLeading = 0,
                     bottomTrailing = badgeRectangleCorners.bottomTrailing,
                 )
+
                 TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses.Percentage(
                     topLeading = 0,
                     topTrailing = 0,
                     bottomLeading = badgeRectangleCorners.bottomLeading,
                     bottomTrailing = 0,
                 )
+
                 TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses.Percentage(
                     topLeading = 0,
                     topTrailing = badgeRectangleCorners.topTrailing,
                     bottomLeading = 0,
                     bottomTrailing = 0,
                 )
+
                 TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses.Percentage(
                     topLeading = badgeRectangleCorners.topLeading,
                     topTrailing = 0,
                     bottomLeading = 0,
                     bottomTrailing = 0,
                 )
+
                 else -> CornerRadiuses.Percentage(all = 0)
             }
         }
+
         is CornerRadiuses.Dp -> {
             when (alignment) {
                 TwoDimensionalAlignment.TOP_LEADING -> CornerRadiuses.Dp(
@@ -368,24 +376,28 @@ private fun StackWithShortEdgeToEdgeBadge(
                     bottomLeading = 0.0,
                     bottomTrailing = badgeRectangleCorners.bottomTrailing,
                 )
+
                 TwoDimensionalAlignment.TOP_TRAILING -> CornerRadiuses.Dp(
                     topLeading = 0.0,
                     topTrailing = 0.0,
                     bottomLeading = badgeRectangleCorners.bottomLeading,
                     bottomTrailing = 0.0,
                 )
+
                 TwoDimensionalAlignment.BOTTOM_LEADING -> CornerRadiuses.Dp(
                     topLeading = 0.0,
                     topTrailing = badgeRectangleCorners.topTrailing,
                     bottomLeading = 0.0,
                     bottomTrailing = 0.0,
                 )
+
                 TwoDimensionalAlignment.BOTTOM_TRAILING -> CornerRadiuses.Dp(
                     topLeading = badgeRectangleCorners.topLeading,
                     topTrailing = 0.0,
                     bottomLeading = 0.0,
                     bottomTrailing = 0.0,
                 )
+
                 else -> CornerRadiuses.Dp(all = 0.0)
             }
         }
@@ -556,10 +568,12 @@ private fun getOverlaidBadgeOffsetY(
     TwoDimensionalAlignment.LEADING,
     TwoDimensionalAlignment.TRAILING,
     -> 0
+
     TwoDimensionalAlignment.TOP,
     TwoDimensionalAlignment.TOP_LEADING,
     TwoDimensionalAlignment.TOP_TRAILING,
     -> (-((height.toFloat() - mainStackBorderWidthPx) / 2)).roundToInt()
+
     TwoDimensionalAlignment.BOTTOM,
     TwoDimensionalAlignment.BOTTOM_LEADING,
     TwoDimensionalAlignment.BOTTOM_TRAILING,
@@ -618,6 +632,7 @@ private fun StackComponentView_Preview_Vertical() {
                 ),
                 badge = null,
                 rcPackage = null,
+                tabIndex = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -672,6 +687,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 shadow = null,
                 badge = previewBadge(Badge.Style.Overlay, alignment, badgeShape),
                 rcPackage = null,
+                tabIndex = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -729,6 +745,7 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, Shape.Pill),
                 rcPackage = null,
+                tabIndex = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -772,6 +789,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                 shadow = null,
                 badge = previewBadge(Badge.Style.Nested, alignment, badgeShape),
                 rcPackage = null,
+                tabIndex = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -812,6 +830,7 @@ private fun StackComponentView_Preview_Horizontal() {
                 ),
                 badge = null,
                 rcPackage = null,
+                tabIndex = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -869,6 +888,7 @@ private fun StackComponentView_Preview_ZLayer() {
                 ),
                 badge = null,
                 rcPackage = null,
+                tabIndex = null,
                 overrides = null,
             ),
             state = previewEmptyState(),
@@ -908,6 +928,7 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             shadow = null,
             overrides = null,
             rcPackage = null,
+            tabIndex = null,
             badge = null,
         ),
         state = previewEmptyState(),
@@ -946,6 +967,7 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             shadow = null,
             overrides = null,
             rcPackage = null,
+            tabIndex = null,
             badge = null,
         ),
         state = previewEmptyState(),
@@ -1006,6 +1028,7 @@ private fun StackComponentView_Preview_Distribution(
             shadow = null,
             badge = null,
             rcPackage = null,
+            tabIndex = null,
             overrides = null,
         ),
         state = previewEmptyState(),
@@ -1071,6 +1094,7 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
             shadow = null,
             badge = null,
             rcPackage = null,
+            tabIndex = null,
             overrides = null,
         ),
         style = style,
