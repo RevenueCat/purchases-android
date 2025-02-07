@@ -87,6 +87,12 @@ internal class ComponentOverridesTests {
                                 "properties": {
                                   "font_name": "unknown condition font"
                                 }
+                              },
+                              {
+                                "conditions": [ { "type": "selected", "other_property": "value" } ],
+                                "properties": {
+                                  "font_name": "condition with other unknown property"
+                                }
                               }
                             ]
                         """.trimIndent(),
@@ -126,6 +132,12 @@ internal class ComponentOverridesTests {
                                 conditions = listOf(ComponentOverride.Condition.Unsupported),
                                 properties = PartialTextComponent(fontName = FontAlias("unknown condition font")),
                             ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Selected),
+                                properties = PartialTextComponent(
+                                    fontName = FontAlias("condition with other unknown property"),
+                                ),
+                            )
                         )
                     )
                 ),
