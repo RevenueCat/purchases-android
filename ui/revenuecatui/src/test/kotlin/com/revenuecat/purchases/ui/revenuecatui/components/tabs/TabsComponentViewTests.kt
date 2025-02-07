@@ -17,6 +17,8 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
@@ -48,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2.Variable
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
@@ -687,6 +690,335 @@ class TabsComponentViewTests {
             assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
         }
 
+    @Test
+    fun `Should properly calculate discount from global packages when switching to a tab without packages`(): Unit =
+        with(composeTestRule) {
+            val defaultPackageOnTabZero = TestData.Packages.quarterly.copy(
+                identifier = "default-package-on-tab-zero",
+                product = (TestData.Packages.quarterly.product as TestStoreProduct)
+                    .copy(price = Price(amountMicros = 2_000_000, currencyCode = "USD", formatted = "$2.00"))
+            )
+            val otherPackageOnTabZero = TestData.Packages.monthly.copy(
+                identifier = "other-package-on-tab-zero",
+                product = (TestData.Packages.monthly.product as TestStoreProduct)
+                    .copy(price = Price(amountMicros = 1_000_000, currencyCode = "USD", formatted = "$1.00"))
+            )
+            val otherPackageOnTabOne = TestData.Packages.monthly.copy(
+                identifier = "default-package-on-tab-one",
+                product = (TestData.Packages.monthly.product as TestStoreProduct)
+                    .copy(price = Price(amountMicros = 2_000_000, currencyCode = "USD", formatted = "$2.00"))
+            )
+            val defaultPackageOnTabOne = TestData.Packages.quarterly.copy(
+                identifier = "other-package-on-tab-one",
+                product = (TestData.Packages.quarterly.product as TestStoreProduct)
+                    .copy(price = Price(amountMicros = 5_000_000, currencyCode = "USD", formatted = "$5.00"))
+            )
+            val defaultGlobalPackageAndOnTabOne = TestData.Packages.bimonthly.copy(
+                identifier = "default-global-and-on-tab-one",
+                product = (TestData.Packages.bimonthly.product as TestStoreProduct)
+                    .copy(price = Price(amountMicros = 1_500_000, currencyCode = "USD", formatted = "$1.50"))
+            )
+            val otherGlobalPackage = TestData.Packages.annual.copy(
+                identifier = "other-global-package",
+                product = (TestData.Packages.annual.product as TestStoreProduct)
+                    .copy(price = Price(amountMicros = 10_000_000, currencyCode = "USD", formatted = "$10.00"))
+            )
+
+            val packages = listOf(
+                defaultPackageOnTabZero,
+                otherPackageOnTabZero,
+                defaultPackageOnTabOne,
+                otherPackageOnTabOne,
+                defaultGlobalPackageAndOnTabOne,
+                otherGlobalPackage,
+            )
+
+            val expectedBiMonthlyDiscountTabZero = "25%"
+            // This discount is calculated from global packages only:
+            val expectedBiMonthlyDiscountTabTwo = "10%"
+
+            fun expectedTextWithDiscount(discount: String) = "Here's your discount: $discount"
+
+            val discountLocalizationKey = LocalizationKey("text-with-discount")
+            val discountLocalizedText = LocalizationData.Text(
+                expectedTextWithDiscount("{{ ${Variable.PRODUCT_RELATIVE_DISCOUNT.identifier} }}")
+            )
+
+            val tabs = tabs(
+                // On tab 0, index 1 is selected by default. On tab 1, index 0 is selected by default.
+                1 to listOf(otherPackageOnTabZero, defaultPackageOnTabZero),
+                0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
+            ) +
+                // Adding an extra tab without any packages
+                Tab(components = listOf())
+            val tabControlButtonKeys = List(tabs.size) { index ->
+                LocalizationKey("tab_control_button_$index")
+            }
+            val tabsComponent = TabsComponentWithButtonsControl(
+                tabs,
+                List(tabs.size) { index ->
+                    TabControlButtonComponent(
+                        tabIndex = index,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = tabControlButtonKeys[index],
+                                    color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+                                )
+                            )
+                        )
+                    )
+                }
+            )
+            val rootStack = StackComponent(
+                components = listOf(
+                    tabsComponent,
+                    simplePackageComponent(otherGlobalPackage, isSelectedByDefault = false),
+                    simplePackageComponent(defaultGlobalPackageAndOnTabOne, isSelectedByDefault = true),
+                    // We're going to assert the contents of this TextComponent:
+                    simpleTextComponent(text = discountLocalizationKey),
+                )
+            )
+            val offering = Offering(
+                rootStack = rootStack,
+                packages = packages,
+                localizations = nonEmptyMapOf(
+                    defaultLocaleIdentifier to rootStack.buildLocalizationNonEmptyMapOrThrow()
+                        .plus(discountLocalizationKey to discountLocalizedText)
+                ),
+            )
+            val styleFactory = StyleFactory(offering)
+            val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+            val state = paywallComponentsState(offering)
+
+            // Act
+            setContent { StackComponentView(style = rootStackStyle, state = state, clickHandler = { }) }
+
+            // Assert
+            assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
+            // Bimonthly discount is correct.
+            onNodeWithText(expectedTextWithDiscount(expectedBiMonthlyDiscountTabZero))
+                .assertIsDisplayed()
+            // Select tab without packages
+            onNodeWithText(tabControlButtonKeys[2].asText().value)
+                .performClick()
+            // Bimonthly discount is correct. It should only take into account the global packages.
+            onNodeWithText(expectedTextWithDiscount(expectedBiMonthlyDiscountTabTwo))
+                .assertIsDisplayed()
+        }
+
+    @Test
+    fun `Should include global packages when calculating discount`(): Unit = with(composeTestRule) {
+        val defaultPackageOnTabZero = TestData.Packages.quarterly.copy(
+            identifier = "default-package-on-tab-zero",
+            product = (TestData.Packages.quarterly.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 2_000_000, currencyCode = "USD", formatted = "$2.00"))
+        )
+        val otherPackageOnTabZero = TestData.Packages.monthly.copy(
+            identifier = "other-package-on-tab-zero",
+            product = (TestData.Packages.monthly.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 1_000_000, currencyCode = "USD", formatted = "$1.00"))
+        )
+        val otherPackageOnTabOne = TestData.Packages.monthly.copy(
+            identifier = "default-package-on-tab-one",
+            product = (TestData.Packages.monthly.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 2_000_000, currencyCode = "USD", formatted = "$2.00"))
+        )
+        val defaultPackageOnTabOne = TestData.Packages.quarterly.copy(
+            identifier = "other-package-on-tab-one",
+            product = (TestData.Packages.quarterly.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 5_000_000, currencyCode = "USD", formatted = "$5.00"))
+        )
+        val defaultGlobalPackageAndOnTabOne = TestData.Packages.bimonthly.copy(
+            identifier = "default-global-and-on-tab-one",
+            product = (TestData.Packages.bimonthly.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 1_500_000, currencyCode = "USD", formatted = "$1.50"))
+        )
+        val otherGlobalPackage = TestData.Packages.annual.copy(
+            identifier = "other-global-package",
+            product = (TestData.Packages.annual.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 10_000_000, currencyCode = "USD", formatted = "$10.00"))
+        )
+
+        val expectedBiMonthlyDiscountTabOne = "63%"
+        val expectedAnnualDiscountTabOne = "58%"
+        val expectedQuarterlyDiscountTabOne = "17%"
+        val expectedBiMonthlyDiscountTabZero = "25%"
+        val expectedAnnualDiscountTabZero = "17%"
+        val expectedQuarterlyDiscountTabZero = "33%"
+
+        val packages = listOf(
+            defaultPackageOnTabZero,
+            otherPackageOnTabZero,
+            defaultPackageOnTabOne,
+            otherPackageOnTabOne,
+            defaultGlobalPackageAndOnTabOne,
+            otherGlobalPackage,
+        )
+
+        fun expectedTextWithDiscount(discount: String) = "Here's your discount: $discount"
+
+        val discountLocalizationKey = LocalizationKey("text-with-discount")
+        val discountLocalizedText = LocalizationData.Text(
+            expectedTextWithDiscount("{{ ${Variable.PRODUCT_RELATIVE_DISCOUNT.identifier} }}")
+        )
+
+        val rootStack = StackComponent(
+            components = listOf(
+                TabsComponentWithToggleControl(
+                    defaultToggleValue = true,
+                    1 to listOf(otherPackageOnTabZero, defaultPackageOnTabZero),
+                    0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
+                ),
+                simplePackageComponent(otherGlobalPackage, isSelectedByDefault = false),
+                simplePackageComponent(defaultGlobalPackageAndOnTabOne, isSelectedByDefault = true),
+                // We're going to assert the contents of this TextComponent:
+                simpleTextComponent(text = discountLocalizationKey),
+            )
+        )
+        val offering = Offering(
+            rootStack = rootStack,
+            packages = packages,
+            localizations = nonEmptyMapOf(
+                defaultLocaleIdentifier to rootStack.buildLocalizationNonEmptyMapOrThrow()
+                    .plus(discountLocalizationKey to discountLocalizedText)
+            ),
+        )
+        val styleFactory = StyleFactory(offering)
+        val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+        val state = paywallComponentsState(offering)
+
+        // Act
+        setContent { StackComponentView(style = rootStackStyle, state = state, clickHandler = { }) }
+
+        // Assert
+        // Tab 1.
+        onNode(isToggleable())
+            .assertIsOn()
+        assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
+        // Bimonthly discount is correct.
+        onNodeWithText(expectedTextWithDiscount(expectedBiMonthlyDiscountTabOne))
+            .assertIsDisplayed()
+        // Select annual package
+        onNodeWithText(otherGlobalPackage.unselectedLocalizedText.value)
+            .performClick()
+        // Annual discount is correct.
+        onNodeWithText(expectedTextWithDiscount(expectedAnnualDiscountTabOne))
+            .assertIsDisplayed()
+        // Select quarterly package.
+        onNodeWithText(defaultPackageOnTabOne.unselectedLocalizedText.value)
+            .performClick()
+        // Quarterly discount is correct.
+        onNodeWithText(expectedTextWithDiscount(expectedQuarterlyDiscountTabOne))
+            .assertIsDisplayed()
+
+        // Tab 0.
+        onNode(isToggleable())
+            .performClick()
+            .assertIsOff()
+        assertPackageIsSelected(selected = defaultPackageOnTabZero, all = packages)
+        // Quarterly discount is correct.
+        onNodeWithText(expectedTextWithDiscount(expectedQuarterlyDiscountTabZero))
+            .assertIsDisplayed()
+        // Select annual package
+        onNodeWithText(otherGlobalPackage.unselectedLocalizedText.value)
+            .performClick()
+        // Annual discount is correct.
+        onNodeWithText(expectedTextWithDiscount(expectedAnnualDiscountTabZero))
+            .assertIsDisplayed()
+        // Select bimonthly package
+        onNodeWithText(defaultGlobalPackageAndOnTabOne.unselectedLocalizedText.value)
+            .performClick()
+        // Bimonthly discount is correct.
+        onNodeWithText(expectedTextWithDiscount(expectedBiMonthlyDiscountTabZero))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun `Should properly calculate discount when switching tabs`(): Unit = with(composeTestRule) {
+        val defaultPackageOnTabZero = TestData.Packages.annual.copy(
+            identifier = "default-package-on-tab-zero",
+            product = (TestData.Packages.annual.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 10_000_000, currencyCode = "USD", formatted = "$10.00"))
+        )
+        val otherPackageOnTabZero = TestData.Packages.monthly.copy(
+            identifier = "other-package-on-tab-zero",
+            product = (TestData.Packages.monthly.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 1_000_000, currencyCode = "USD", formatted = "$1.00"))
+        )
+        val otherPackageOnTabOne = TestData.Packages.monthly.copy(
+            identifier = "default-package-on-tab-one",
+            product = (TestData.Packages.monthly.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 2_000_000, currencyCode = "USD", formatted = "$2.00"))
+        )
+        val defaultPackageOnTabOne = TestData.Packages.annual.copy(
+            identifier = "other-package-on-tab-one",
+            product = (TestData.Packages.annual.product as TestStoreProduct)
+                .copy(price = Price(amountMicros = 18_000_000, currencyCode = "USD", formatted = "$18.00"))
+        )
+        val expectedAnnualDiscountTabOne = "25%"
+        val expectedAnnualDiscountTabZero = "17%"
+
+        val packages = listOf(
+            defaultPackageOnTabZero,
+            otherPackageOnTabZero,
+            defaultPackageOnTabOne,
+            otherPackageOnTabOne,
+        )
+
+        fun expectedTextWithDiscount(discount: String) = "Here's your discount: $discount"
+
+        val discountLocalizationKey = LocalizationKey("text-with-discount")
+        val discountLocalizedText = LocalizationData.Text(
+            expectedTextWithDiscount("{{ ${Variable.PRODUCT_RELATIVE_DISCOUNT.identifier} }}")
+        )
+
+        val rootStack = StackComponent(
+            components = listOf(
+                TabsComponentWithToggleControl(
+                    defaultToggleValue = true,
+                    1 to listOf(otherPackageOnTabZero, defaultPackageOnTabZero),
+                    0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne),
+                ),
+                // We're going to assert the contents of this TextComponent:
+                simpleTextComponent(text = discountLocalizationKey),
+            )
+        )
+        val offering = Offering(
+            rootStack = rootStack,
+            packages = packages,
+            localizations = nonEmptyMapOf(
+                defaultLocaleIdentifier to rootStack.buildLocalizationNonEmptyMapOrThrow()
+                    .plus(discountLocalizationKey to discountLocalizedText)
+            ),
+        )
+        val styleFactory = StyleFactory(offering)
+        val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+        val state = paywallComponentsState(offering)
+
+        // Act
+        setContent { StackComponentView(style = rootStackStyle, state = state, clickHandler = { }) }
+
+        // Assert
+
+        // Tab 1.
+        onNode(isToggleable())
+            .assertIsOn()
+        assertPackageIsSelected(selected = defaultPackageOnTabOne, all = packages)
+        // Annual discount is correct.
+        onNodeWithText(expectedTextWithDiscount(expectedAnnualDiscountTabOne))
+            .assertIsDisplayed()
+
+        // Tab 0.
+        onNode(isToggleable())
+            .performClick()
+            .assertIsOff()
+        assertPackageIsSelected(selected = defaultPackageOnTabZero, all = packages)
+        // Annual discount is correct.
+        onNodeWithText(expectedTextWithDiscount(expectedAnnualDiscountTabZero))
+            .assertIsDisplayed()
+    }
+
     @OptIn(ExperimentalTestApi::class)
     private fun ComposeTestRule.assertPackageIsSelected(selected: Package, all: List<Package>) {
         waitUntilAtLeastOneExists(hasText(selected.selectedLocalizedText.value))
@@ -705,15 +1037,21 @@ class TabsComponentViewTests {
             isSelectedByDefault = isSelectedByDefault,
             stack = StackComponent(
                 listOf(
-                    TextComponent(
+                    simpleTextComponent(
                         text = pkg.unselectedLocalizationKey,
-                        color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-                        overrides = ComponentOverrides(
-                            states = ComponentStates(
-                                selected = PartialTextComponent(text = pkg.selectedLocalizationKey)
-                            )
-                        )
-                    )
+                        selectedText = pkg.selectedLocalizationKey
+                    ),
+                )
+            )
+        )
+
+    private fun simpleTextComponent(text: LocalizationKey, selectedText: LocalizationKey? = null) =
+        TextComponent(
+            text = text,
+            color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+            overrides = ComponentOverrides(
+                states = ComponentStates(
+                    selected = selectedText?.let { PartialTextComponent(text = it) }
                 )
             )
         )
