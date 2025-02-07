@@ -178,7 +178,7 @@ private fun ManageSubscriptionsButtonsView(
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column {
-        HorizontalDivider()
+        HorizontalDivider(Modifier.padding(horizontal = PADDING_MEDIUM))
         screen.supportedPaths.forEach { path ->
             SettingsButton(
                 onClick = { onButtonPress(path) },
@@ -197,6 +197,8 @@ private fun OtherPlatformSubscriptionButtonsView(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column {
+        HorizontalDivider(Modifier.padding(horizontal = PADDING_MEDIUM))
+
         managementURL?.let {
             SettingsButton(
                 onClick = { onAction(CustomerCenterAction.OpenURL(it.toString())) },

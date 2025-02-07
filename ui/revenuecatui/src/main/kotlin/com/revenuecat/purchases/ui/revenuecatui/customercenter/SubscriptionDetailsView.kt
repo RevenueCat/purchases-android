@@ -275,7 +275,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
 @Preview(group = "scale = 1", fontScale = 1F, device = "spec:width=1080px,height=2720px,dpi=440")
 @Composable
 internal fun SubscriptionDetailsView_Preview(
-    @PreviewParameter(SubscriptionInformationProvider::class) details: PurchaseInformation
+    @PreviewParameter(SubscriptionInformationProvider::class) details: PurchaseInformation,
 ) {
     SubscriptionDetailsView(
         details = details,
@@ -287,7 +287,7 @@ internal fun SubscriptionDetailsView_Preview(
 @Preview(group = "scale = 2", fontScale = 2F, device = "spec:width=1080px,height=2720px,dpi=440")
 @Composable
 internal fun SubscriptionDetailsView_Preview_Scale2(
-    @PreviewParameter(SubscriptionInformationProvider::class) details: PurchaseInformation
+    @PreviewParameter(SubscriptionInformationProvider::class) details: PurchaseInformation,
 ) {
     SubscriptionDetailsView(
         details = details,
