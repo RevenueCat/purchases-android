@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.utils.Event
@@ -46,6 +47,10 @@ internal sealed class BackendEvent : Event {
         val locale: String,
         @SerialName("display_mode")
         val displayMode: CustomerCenterDisplayMode,
+        // only valid for survey option chosen
+        val path: CustomerCenterConfigData.HelpPath.PathType?,
+        val url: String?,
+
     ) : BackendEvent()
 
     /**

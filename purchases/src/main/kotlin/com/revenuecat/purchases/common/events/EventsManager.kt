@@ -8,11 +8,13 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
-import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -45,6 +47,7 @@ internal class EventsManager(
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
 
+        @OptIn(ExperimentalSerializationApi::class)
         private val json = Json {
             serializersModule = SerializersModule {
                 polymorphic(BackendStoredEvent::class) {
@@ -52,6 +55,7 @@ internal class EventsManager(
                     subclass(BackendStoredEvent.Paywalls::class, BackendStoredEvent.Paywalls.serializer())
                 }
             }
+            explicitNulls = false
         }
 
         /**
@@ -108,7 +112,11 @@ internal class EventsManager(
                 is PaywallEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                 )
-                is CustomerCenterEvent -> event.toBackendStoredEvent(
+                is CustomerCenterImpressionEvent -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is CustomerCenterSurverOptionChosenEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )

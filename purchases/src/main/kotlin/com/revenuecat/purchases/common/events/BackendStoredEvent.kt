@@ -1,7 +1,8 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
@@ -87,7 +88,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
-internal fun CustomerCenterEvent.toBackendStoredEvent(
+internal fun CustomerCenterImpressionEvent.toBackendStoredEvent(
     appUserID: String,
     appSessionID: String,
 ): BackendStoredEvent {
@@ -102,6 +103,38 @@ internal fun CustomerCenterEvent.toBackendStoredEvent(
             darkMode = data.darkMode,
             locale = data.locale,
             displayMode = data.displayMode,
+            path = null,
+            url = null,
+        ),
+    )
+}
+
+/**
+ * Converts a `PaywallEvent` into a `BackendStoredEvent.Paywalls` instance.
+ *
+ * @receiver The `PaywallEvent` to be converted.
+ * @param appUserID The user ID associated with the event.
+ * @return A `BackendStoredEvent.Paywalls` containing a `BackendEvent.Paywalls`.
+ */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
+internal fun CustomerCenterSurverOptionChosenEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.CustomerCenter(
+        BackendEvent.CustomerCenter(
+            id = creationData.id.toString(),
+            revisionID = data.revisionID,
+            type = data.type,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            timestamp = data.timestamp.time,
+            darkMode = data.darkMode,
+            locale = data.locale,
+            displayMode = data.displayMode,
+            path = data.path,
+            url = data.url,
         ),
     )
 }

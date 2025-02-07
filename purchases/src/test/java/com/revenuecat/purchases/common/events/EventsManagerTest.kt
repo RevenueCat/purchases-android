@@ -9,23 +9,21 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
-import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
-import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
-import com.revenuecat.purchases.utils.serializers.DateSerializer
-import com.revenuecat.purchases.utils.serializers.UUIDSerializer
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -55,13 +53,12 @@ class EventsManagerTest {
         ),
         type = PaywallEventType.IMPRESSION,
     )
-    private val customerCenterEvent = CustomerCenterEvent(
-        creationData = CustomerCenterEvent.CreationData(
+    private val customerCenterImpressionEvent = CustomerCenterImpressionEvent(
+        creationData = CustomerCenterImpressionEvent.CreationData(
             id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
             date = Date(1699270688884)
         ),
-        data = CustomerCenterEvent.Data(
-            type = CustomerCenterEventType.IMPRESSION,
+        data = CustomerCenterImpressionEvent.Data(
             timestamp = Date(1699270688884),
             darkMode = true,
             locale = "es_ES"
@@ -141,7 +138,7 @@ class EventsManagerTest {
 
     @Test
     fun `tracking mixed events adds them to file`() {
-        eventsManager.track(customerCenterEvent)
+        eventsManager.track(customerCenterImpressionEvent)
         eventsManager.track(paywallEvent)
         checkFileContents(
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
@@ -153,21 +150,30 @@ class EventsManagerTest {
 
     @Test
     fun `tracking customer center events adds them to file`() {
-        eventsManager.track(customerCenterEvent)
+        eventsManager.track(customerCenterImpressionEvent)
 
         checkFileContents(
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent() + "\n"
         )
 
-        var surveyEvent = CustomerCenterEvent(
-            creationData = customerCenterEvent.creationData,
-            data = customerCenterEvent.data.copy(type = CustomerCenterEventType.SURVEY_OPTION_CHOSEN)
+        var surveyEvent = CustomerCenterSurverOptionChosenEvent(
+            creationData = CustomerCenterSurverOptionChosenEvent.CreationData(
+                id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                date = Date(1699270688884)
+            ),
+            data = CustomerCenterSurverOptionChosenEvent.Data(
+                timestamp = Date(1699270688884),
+                darkMode = true,
+                locale = "es_ES",
+                path = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
+                url = "PATH2"
+            )
         )
         eventsManager.track(surveyEvent)
         checkFileContents(
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
-                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
+                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen","path":"CANCEL","url":"PATH2"}}""".trimIndent()
                 + "\n"
         )
     }

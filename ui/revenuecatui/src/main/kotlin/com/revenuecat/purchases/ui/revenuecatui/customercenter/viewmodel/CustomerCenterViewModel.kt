@@ -24,8 +24,8 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
-import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
+import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -148,6 +148,11 @@ internal class CustomerCenterViewModelImpl(
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 goBackToMain()
                 option?.let {
+                    trackCustomerCenterEventOptionChosen(
+                        path = path.type,
+                        url = path.url,
+                    )
+
                     if (product != null && it.promotionalOffer != null) {
                         loadAndDisplayPromotionalOffer(
                             product,
@@ -519,12 +524,28 @@ internal class CustomerCenterViewModelImpl(
 
     override fun trackImpression() {
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
-        val event = CustomerCenterEvent(
-            data = CustomerCenterEvent.Data(
-                type = CustomerCenterEventType.IMPRESSION,
+        val event = CustomerCenterImpressionEvent(
+            data = CustomerCenterImpressionEvent.Data(
                 timestamp = Date(),
                 darkMode = isDarkMode,
                 locale = locale.toString(),
+            ),
+        )
+        purchases.track(event)
+    }
+
+    private fun trackCustomerCenterEventOptionChosen(
+        path: CustomerCenterConfigData.HelpPath.PathType,
+        url: String?,
+    ) {
+        val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
+        val event = CustomerCenterSurverOptionChosenEvent(
+            data = CustomerCenterSurverOptionChosenEvent.Data(
+                timestamp = Date(),
+                darkMode = isDarkMode,
+                locale = locale.toString(),
+                path = path,
+                url = url,
             ),
         )
         purchases.track(event)
