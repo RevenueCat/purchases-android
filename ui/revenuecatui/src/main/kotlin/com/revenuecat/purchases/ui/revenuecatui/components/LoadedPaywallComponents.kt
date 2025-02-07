@@ -4,11 +4,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -79,22 +78,17 @@ internal fun LoadedPaywallComponents(
             .background(background),
     ) {
         var footerHeight by remember { mutableIntStateOf(0) }
-        Column(
+        val footerHeightDp = with(LocalDensity.current) { footerHeight.toDp() }
+
+        ComponentView(
+            style = style,
+            state = state,
+            onClick = clickHandler,
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-        ) {
-            ComponentView(
-                style = style,
-                state = state,
-                onClick = clickHandler,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            )
-            val footerHeightDp = with(LocalDensity.current) { footerHeight.toDp() }
-            Spacer(modifier = Modifier.height(footerHeightDp))
-        }
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = footerHeightDp),
+        )
 
         footerComponentStyle?.let {
             ComponentView(
