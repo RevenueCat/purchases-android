@@ -168,8 +168,7 @@ internal sealed interface PaywallState {
                     // package when the tab changes.
                     if (packagesOutsideTabs.contains(selectedPackage)) return
 
-                    selectedPackage = selectedPackageByTab[selectedTabIndex]
-                        ?: packages.packagesOutsideTabs.firstOrNull { it.isSelectedByDefault }?.pkg
+                    selectedPackage = selectedPackageByTab[selectedTabIndex] ?: initialSelectedPackageOutsideTabs
                 }
             }
 
