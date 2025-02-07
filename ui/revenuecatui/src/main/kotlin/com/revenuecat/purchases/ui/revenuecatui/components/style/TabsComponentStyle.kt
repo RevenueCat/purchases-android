@@ -15,7 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyl
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 
 @Immutable
-internal data class TabControlButtonComponentStyle(
+internal class TabControlButtonComponentStyle(
     @get:JvmSynthetic
     val tabIndex: Int,
     @get:JvmSynthetic
@@ -41,7 +41,7 @@ internal class TabControlToggleComponentStyle(
 }
 
 @Immutable
-internal data class TabsComponentStyle(
+internal class TabsComponentStyle(
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
@@ -65,18 +65,18 @@ internal data class TabsComponentStyle(
 ) : ComponentStyle {
 
     @Immutable
-    data class Tab(@get:JvmSynthetic val stack: StackComponentStyle)
+    class Tab(@get:JvmSynthetic val stack: StackComponentStyle)
 }
 
 @Immutable
 internal sealed interface TabControlStyle : ComponentStyle {
     @Immutable
-    data class Buttons(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
+    class Buttons(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
         override val size: Size = stack.size
     }
 
     @Immutable
-    data class Toggle(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
+    class Toggle(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
         override val size: Size = stack.size
     }
 }

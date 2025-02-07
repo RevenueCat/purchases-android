@@ -8,7 +8,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import dev.drewhamilton.poko.Poko
 
 @Immutable
-internal data class ButtonComponentStyle(
+internal class ButtonComponentStyle(
     @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
     @get:JvmSynthetic

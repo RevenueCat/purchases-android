@@ -4,7 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.paywalls.components.properties.Size
 
 @Immutable
-internal data class StickyFooterComponentStyle(
+internal class StickyFooterComponentStyle(
     @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
 ) : ComponentStyle {
