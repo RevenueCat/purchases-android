@@ -17,7 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 
 @Composable
 @JvmSynthetic
-internal fun CustomerCenterButton(
+internal fun SettingsButton(
     title: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
@@ -40,8 +40,8 @@ internal fun CustomerCenterButton(
 
 @Preview
 @Composable
-private fun CustomerCenterButtonOnlyTitle_Preview() {
-    CustomerCenterButton(
+private fun SettingsButton_Preview() {
+    SettingsButton(
         title = "Cancel Subscription",
     ) {}
 }

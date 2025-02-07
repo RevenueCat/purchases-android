@@ -32,7 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.TITLE_TOP_PADDING
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.CustomerCenterButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
@@ -180,7 +180,7 @@ private fun ManageSubscriptionsButtonsView(
     Column {
         HorizontalDivider()
         screen.supportedPaths.forEach { path ->
-            CustomerCenterButton(
+            SettingsButton(
                 onClick = { onButtonPress(path) },
                 title = path.title,
             )
@@ -198,7 +198,7 @@ private fun OtherPlatformSubscriptionButtonsView(
 ) {
     Column {
         managementURL?.let {
-            CustomerCenterButton(
+            SettingsButton(
                 onClick = { onAction(CustomerCenterAction.OpenURL(it.toString())) },
                 title = localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.MANAGE_SUBSCRIPTION,
@@ -206,7 +206,7 @@ private fun OtherPlatformSubscriptionButtonsView(
             )
         }
         support.email?.let {
-            CustomerCenterButton(
+            SettingsButton(
                 onClick = { onAction(CustomerCenterAction.ContactSupport(it)) },
                 title = localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
