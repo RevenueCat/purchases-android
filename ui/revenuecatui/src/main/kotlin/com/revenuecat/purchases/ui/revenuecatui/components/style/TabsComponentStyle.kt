@@ -7,7 +7,7 @@ import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -59,7 +59,7 @@ internal class TabsComponentStyle(
     @get:JvmSynthetic
     val tabs: NonEmptyList<Tab>,
     @get:JvmSynthetic
-    val overrides: PresentedOverrides<PresentedTabsPartial>?,
+    val overrides: List<PresentedOverride<PresentedTabsPartial>>,
 ) : ComponentStyle {
 
     @Immutable

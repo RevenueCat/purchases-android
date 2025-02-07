@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -37,8 +38,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStates
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
@@ -117,22 +117,18 @@ private class SelectedTabIndexProvider : PreviewParameterProvider<Int> {
 private fun TabsComponentView_Preview(
     @PreviewParameter(SelectedTabIndexProvider::class) selectedTabIndex: Int,
 ) {
-    val boldWhenSelectedOverride = PresentedOverrides(
-        introOffer = null,
-        multipleIntroOffers = null,
-        states = PresentedStates(
-            selected = LocalizedTextPartial(
-                from = PartialTextComponent(fontWeight = FontWeight.EXTRA_BOLD),
-                using = nonEmptyMapOf(
-                    LocaleId("en_US") to nonEmptyMapOf(
-                        LocalizationKey("dummy") to LocalizationData.Text("dummy"),
-                    ),
+    val boldWhenSelectedOverride = PresentedOverride(
+        conditions = listOf(ComponentOverride.Condition.Selected),
+        properties = LocalizedTextPartial(
+            from = PartialTextComponent(fontWeight = FontWeight.EXTRA_BOLD),
+            using = nonEmptyMapOf(
+                LocaleId("en_US") to nonEmptyMapOf(
+                    LocalizationKey("dummy") to LocalizationData.Text("dummy"),
                 ),
-                aliases = emptyMap(),
-                fontAliases = emptyMap(),
-            ).getOrThrow(),
-        ),
-        conditions = null,
+            ),
+            aliases = emptyMap(),
+            fontAliases = emptyMap(),
+        ).getOrThrow(),
     )
 
     val controlButtons = previewStackComponentStyle(
@@ -145,7 +141,7 @@ private fun TabsComponentView_Preview(
                             text = "Tab 1",
                             size = Size(width = Fit, height = Fit),
                             tabIndex = 0,
-                            overrides = boldWhenSelectedOverride,
+                            overrides = listOf(boldWhenSelectedOverride),
                         ),
                     ),
                     size = Size(width = Fit, height = Fit),
@@ -159,7 +155,7 @@ private fun TabsComponentView_Preview(
                             text = "Tab 2",
                             size = Size(width = Fit, height = Fit),
                             tabIndex = 1,
-                            overrides = boldWhenSelectedOverride,
+                            overrides = listOf(boldWhenSelectedOverride),
                         ),
                     ),
                     size = Size(width = Fit, height = Fit),
@@ -173,7 +169,7 @@ private fun TabsComponentView_Preview(
                             text = "Tab 3",
                             size = Size(width = Fit, height = Fit),
                             tabIndex = 2,
-                            overrides = boldWhenSelectedOverride,
+                            overrides = listOf(boldWhenSelectedOverride),
                         ),
                     ),
                     size = Size(width = Fit, height = Fit),
@@ -249,7 +245,7 @@ private fun TabsComponentView_Preview(
                     ),
                 ),
             ),
-            overrides = null,
+            overrides = emptyList(),
         ),
         state = previewEmptyState(initialSelectedTabIndex = selectedTabIndex),
         clickHandler = { },
@@ -284,5 +280,5 @@ private fun previewStackComponentStyle(
         badge = null,
         rcPackage = null,
         tabIndex = tabIndex,
-        overrides = null,
+        overrides = emptyList(),
     )

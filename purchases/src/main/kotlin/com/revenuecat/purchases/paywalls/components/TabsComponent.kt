@@ -3,7 +3,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -80,7 +80,7 @@ class TabsComponent(
     @get:JvmSynthetic
     val tabs: List<Tab>,
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialTabsComponent>? = null,
+    val overrides: List<ComponentOverride<PartialTabsComponent>> = emptyList(),
 ) : PaywallComponent {
     @InternalRevenueCatAPI
     @Poko

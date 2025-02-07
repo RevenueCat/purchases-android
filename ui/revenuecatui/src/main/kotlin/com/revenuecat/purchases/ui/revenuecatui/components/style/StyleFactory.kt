@@ -495,8 +495,7 @@ internal class StyleFactory(
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
         zipOrAccumulate(
             first = component.overrides
-                ?.toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
-                .orSuccessfullyNull()
+                .toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
                 .mapError { nonEmptyListOf(it) },
             second = createTabsComponentStyleTabControl(component.control)
                 .flatMap { control -> createTabsComponentStyleTabs(component.tabs, control) },
