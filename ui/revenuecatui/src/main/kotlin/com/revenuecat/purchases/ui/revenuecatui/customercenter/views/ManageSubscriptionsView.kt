@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.net.Uri
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,33 +47,28 @@ internal fun ManageSubscriptionsView(
     purchaseInformation: PurchaseInformation? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter,
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            if (screen.type == CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT && purchaseInformation != null) {
-                ActiveUserManagementView(
-                    screen,
-                    localization,
-                    purchaseInformation,
-                    support,
-                    appearance,
-                    onAction,
-                )
-            } else {
-                NoActiveUserManagementView(
-                    screen,
-                    onButtonPress = {
-                        onAction(CustomerCenterAction.PathButtonPressed(it, product = null))
-                    },
-                )
-            }
+        if (screen.type == CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT && purchaseInformation != null) {
+            ActiveUserManagementView(
+                screen,
+                localization,
+                purchaseInformation,
+                support,
+                appearance,
+                onAction,
+            )
+        } else {
+            NoActiveUserManagementView(
+                screen,
+                onButtonPress = {
+                    onAction(CustomerCenterAction.PathButtonPressed(it, product = null))
+                },
+            )
         }
     }
 }
