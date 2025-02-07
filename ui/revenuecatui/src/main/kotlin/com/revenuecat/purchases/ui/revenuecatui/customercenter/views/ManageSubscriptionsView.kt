@@ -22,12 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ICON_SIZE
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_MEDIUM
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_SMALL
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_XL
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.TITLE_TOP_PADDING
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
@@ -123,7 +123,7 @@ private fun NoActiveUserManagementView(
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        CompatibilityContentUnavailableView(
+        ContentUnavailableView(
             title = screen.title,
             description = screen.subtitle,
             modifier = Modifier.padding(PADDING_MEDIUM),
@@ -137,7 +137,7 @@ private fun NoActiveUserManagementView(
 }
 
 @Composable
-fun CompatibilityContentUnavailableView(
+private fun ContentUnavailableView(
     title: String,
     description: String?,
     modifier: Modifier = Modifier,
@@ -157,7 +157,7 @@ fun CompatibilityContentUnavailableView(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(top = PADDING_SMALL),
         )
 
         description?.let {
@@ -165,7 +165,7 @@ fun CompatibilityContentUnavailableView(
                 text = it,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(vertical = PADDING_MEDIUM),
+                modifier = Modifier.padding(top = PADDING_MEDIUM),
             )
         }
     }
@@ -243,6 +243,23 @@ private fun NoActiveSubscriptionsViewPreview() {
 
     ManageSubscriptionsView(
         screen = noActiveScreen,
+        localization = testData.localization,
+        support = testData.support,
+        purchaseInformation = null,
+        appearance = testData.appearance,
+        onAction = {},
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun NoActiveSubscriptionsViewNoDescription_Preview() {
+    val testData = CustomerCenterConfigTestData.customerCenterData()
+    val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
+
+    ManageSubscriptionsView(
+        screen = noActiveScreen.copy(subtitle = null),
         localization = testData.localization,
         support = testData.support,
         purchaseInformation = null,
