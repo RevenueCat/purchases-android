@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.net.Uri
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,7 +35,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.CustomerCenterButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 
 @SuppressWarnings("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -73,8 +70,6 @@ internal fun ManageSubscriptionsView(
             } else {
                 NoActiveUserManagementView(
                     screen,
-                    localization,
-                    appearance,
                     onButtonPress = {
                         onAction(CustomerCenterAction.PathButtonPressed(it, product = null))
                     },
@@ -107,7 +102,7 @@ private fun ActiveUserManagementView(
         SubscriptionDetailsView(details = purchaseInformation, localization = localization)
 
         if (purchaseInformation.store == Store.PLAY_STORE) {
-            ManageSubscriptionsButtonsView(screen, localization, appearance, onButtonPress = {
+            ManageSubscriptionsButtonsView(screen, onButtonPress = {
                 onAction(CustomerCenterAction.PathButtonPressed(it, purchaseInformation.product))
             })
         } else {
@@ -125,8 +120,6 @@ private fun ActiveUserManagementView(
 @Composable
 private fun NoActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
-    localization: CustomerCenterConfigData.Localization,
-    appearance: CustomerCenterConfigData.Appearance,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -138,9 +131,6 @@ private fun NoActiveUserManagementView(
 
         ManageSubscriptionsButtonsView(
             screen,
-            localization,
-            appearance,
-            showSectionHeader = false,
             onButtonPress,
         )
     }
@@ -152,38 +142,31 @@ fun CompatibilityContentUnavailableView(
     description: String?,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(PADDING_MEDIUM),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(PADDING_MEDIUM),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(ICON_SIZE),
-            )
+        Icon(
+            imageVector = Icons.Rounded.Warning,
+            contentDescription = null,
+            modifier = Modifier.size(ICON_SIZE),
+        )
 
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+
+        description?.let {
             Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.padding(bottom = 8.dp),
+                text = it,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(vertical = PADDING_MEDIUM),
             )
-
-            description?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = PADDING_MEDIUM),
-                )
-            }
         }
     }
 }
@@ -192,26 +175,10 @@ fun CompatibilityContentUnavailableView(
 @Composable
 private fun ManageSubscriptionsButtonsView(
     screen: CustomerCenterConfigData.Screen,
-    localization: CustomerCenterConfigData.Localization,
-    appearance: CustomerCenterConfigData.Appearance,
-    showSectionHeader: Boolean = true,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
-    val accentColor = appearance.getColorForTheme(isDark) { it.accentColor } ?: MaterialTheme.colorScheme.primary
-
     Column {
-        Spacer(modifier = Modifier.size(PADDING_MEDIUM))
-        if (showSectionHeader) {
-            Text(
-                localization.commonLocalizedString(CustomerCenterConfigData.Localization.CommonLocalizedString.MANAGE),
-                style = MaterialTheme.typography.bodyMedium,
-                color = accentColor,
-                modifier = Modifier.padding(horizontal = PADDING_MEDIUM, vertical = 8.dp),
-            )
-        } else {
-            HorizontalDivider()
-        }
+        HorizontalDivider()
         screen.supportedPaths.forEach { path ->
             CustomerCenterButton(
                 onClick = { onButtonPress(path) },

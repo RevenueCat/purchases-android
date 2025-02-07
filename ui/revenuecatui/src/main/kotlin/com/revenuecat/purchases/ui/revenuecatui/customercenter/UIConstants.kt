@@ -22,5 +22,4 @@ internal object CustomerCenterUIConstants {
     val TEXT_LIKE_SETTINGS_SUPPORTING_SIZE = 14.sp
 
     val SUBSCRIPTION_DETAILS_ROW_HEIGHT = 60.dp
-
 }

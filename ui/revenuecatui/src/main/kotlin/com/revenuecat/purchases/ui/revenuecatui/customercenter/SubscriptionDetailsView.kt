@@ -79,7 +79,6 @@ internal fun SubscriptionDetailsView(
                 icon = UniversalCurrencyAlt,
             )
         }
-
         details.expirationOrRenewal?.let { expirationOrRenewal ->
             val expirationValue = remember { getExpirationValue(expirationOrRenewal, localization) }
             val expirationOverline = remember { labelForExpirationOrRenewal(expirationOrRenewal, localization) }
@@ -131,13 +130,13 @@ internal fun SubscriptionDetailsRow(
                 text = title,
                 style = titleTextStyle,
                 maxLines = 1,
-                modifier = Modifier.alpha(if (prominentSubtitle) 0.6f else 1.0f)
+                modifier = Modifier.alpha(if (prominentSubtitle) 0.6f else 1.0f),
             )
             Text(
                 text = subtitle,
                 style = subtitleTextStyle,
                 maxLines = 2,
-                modifier = Modifier.alpha(if (prominentSubtitle) 1.0f else 0.6f)
+                modifier = Modifier.alpha(if (prominentSubtitle) 1.0f else 0.6f),
             )
         }
     }
