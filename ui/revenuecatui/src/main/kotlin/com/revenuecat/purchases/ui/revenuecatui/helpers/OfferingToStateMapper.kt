@@ -180,7 +180,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         val tabsComponent = stack.findTabsComponentStyle() ?: stickyFooter?.findTabsComponentStyle()
 
         val packages = AvailablePackages(
-            globalPackages = packagesOutsideTabs,
+            packagesOutsideTabs = packagesOutsideTabs,
             packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
         )
 

@@ -91,7 +91,7 @@ internal sealed interface PaywallState {
         ) : Loaded {
 
             data class AvailablePackages(
-                val globalPackages: List<Info>,
+                val packagesOutsideTabs: List<Info>,
                 val packagesByTab: Map<Int, List<Info>>,
             ) {
                 data class Info(
@@ -105,10 +105,10 @@ internal sealed interface PaywallState {
                 val currentlySubscribed: Boolean,
             )
 
-            private val initialSelectedPackageOutsideTabs = packages.globalPackages
+            private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
                 .firstOrNull { it.isSelectedByDefault }
                 ?.pkg
-            private val globalPackages: List<Package> = packages.globalPackages.map { it.pkg }
+            private val packagesOutsideTabs: List<Package> = packages.packagesOutsideTabs.map { it.pkg }
             private val packagesByTab: Map<Int, List<Package>> = packages.packagesByTab
                 .mapValues { it.value.map { it.pkg } }
 
@@ -166,10 +166,10 @@ internal sealed interface PaywallState {
                     this.selectedTabIndex = selectedTabIndex
                     // If our currently selected package exists outside of tabs, we don't have to change the selected
                     // package when the tab changes.
-                    if (globalPackages.contains(selectedPackage)) return
+                    if (packagesOutsideTabs.contains(selectedPackage)) return
 
                     selectedPackage = selectedPackageByTab[selectedTabIndex]
-                        ?: packages.globalPackages.firstOrNull { it.isSelectedByDefault }?.pkg
+                        ?: packages.packagesOutsideTabs.firstOrNull { it.isSelectedByDefault }?.pkg
                 }
             }
 
