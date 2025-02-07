@@ -9,7 +9,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
@@ -49,5 +49,5 @@ internal class ImageComponentStyle(
     @get:JvmSynthetic
     val tabIndex: Int?,
     @get:JvmSynthetic
-    val overrides: PresentedOverrides<PresentedImagePartial>?,
+    val overrides: List<PresentedOverride<PresentedImagePartial>>,
 ) : ComponentStyle

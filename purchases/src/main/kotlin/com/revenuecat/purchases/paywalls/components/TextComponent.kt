@@ -2,7 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
@@ -63,7 +63,7 @@ constructor(
     @get:JvmSynthetic
     val margin: Padding = zero,
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialTextComponent>? = null,
+    val overrides: List<ComponentOverride<PartialTextComponent>> = emptyList(),
 ) : PaywallComponent
 
 @InternalRevenueCatAPI

@@ -9,7 +9,7 @@ import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
@@ -60,7 +60,7 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val tabIndex: Int?,
     @get:JvmSynthetic
-    val overrides: PresentedOverrides<PresentedCarouselPartial>?,
+    val overrides: List<PresentedOverride<PresentedCarouselPartial>>,
 ) : ComponentStyle {
     @Immutable
     data class PageControlStyles(

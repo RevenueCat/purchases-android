@@ -170,7 +170,7 @@ internal fun previewStackComponentStyle(
         badge = badge,
         rcPackage = null,
         tabIndex = null,
-        overrides = null,
+        overrides = emptyList(),
     )
 }
 
@@ -189,7 +189,7 @@ internal fun previewTextComponentStyle(
     padding: Padding = zero,
     margin: Padding = zero,
     tabIndex: Int? = null,
-    overrides: PresentedOverrides<LocalizedTextPartial>? = null,
+    overrides: List<PresentedOverride<LocalizedTextPartial>> = emptyList(),
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
     val localeId = LocaleId("en_US")
@@ -253,7 +253,7 @@ internal fun previewIconComponentStyle(
     ),
     rcPackage = null,
     tabIndex = null,
-    overrides = null,
+    overrides = emptyList(),
 )
 
 @Composable
