@@ -12,12 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -105,21 +105,11 @@ internal fun SubscriptionDetailsRow(
     val titleTextStyle = TextStyle(
         fontSize = if (prominentSubtitle) TEXT_LIKE_SETTINGS_SUPPORTING_SIZE else TEXT_LIKE_SETTINGS_MAIN_SIZE,
         fontWeight = FontWeight.Normal,
-        color = if (prominentSubtitle) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        },
     )
 
     val subtitleTextStyle = TextStyle(
         fontSize = if (prominentSubtitle) TEXT_LIKE_SETTINGS_MAIN_SIZE else TEXT_LIKE_SETTINGS_SUPPORTING_SIZE,
         fontWeight = FontWeight.Normal,
-        color = if (prominentSubtitle) {
-            MaterialTheme.colorScheme.onSurface
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
     )
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -134,12 +124,21 @@ internal fun SubscriptionDetailsRow(
                 imageVector = it,
                 contentDescription = null,
                 modifier = Modifier.size(PADDING_LARGE),
-                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         Column {
-            Text(text = title, style = titleTextStyle, maxLines = 1)
-            Text(text = subtitle, style = subtitleTextStyle, maxLines = 2)
+            Text(
+                text = title,
+                style = titleTextStyle,
+                maxLines = 1,
+                modifier = Modifier.alpha(if (prominentSubtitle) 0.6f else 1.0f)
+            )
+            Text(
+                text = subtitle,
+                style = subtitleTextStyle,
+                maxLines = 2,
+                modifier = Modifier.alpha(if (prominentSubtitle) 1.0f else 0.6f)
+            )
         }
     }
 }
