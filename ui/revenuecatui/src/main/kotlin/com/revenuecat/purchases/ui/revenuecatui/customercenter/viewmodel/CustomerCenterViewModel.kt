@@ -418,11 +418,11 @@ internal class CustomerCenterViewModelImpl(
                             pricingPhasesDescription,
                         ),
                     )
+                    return true
                 } else {
                     currentState
                 }
             }
-            return true
         }
         return false
     }
