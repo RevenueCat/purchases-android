@@ -17,7 +17,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -41,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -570,6 +570,66 @@ class PaywallViewModelTest {
         val expectedPaywall = offering.paywall!!
 
         verifyPaywall(state, expectedPaywall)
+    }
+
+    @Test
+    fun `Should load paywall components if using components paywall in full screen mode`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        // Act
+        val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN)
+
+        // Assert
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `Should load fallback paywall if using components paywall in footer mode`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        // Act
+        val model = create(offering = offering, mode = PaywallMode.FOOTER)
+
+        // Assert
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        assertThat(
+            (model.state.value as PaywallState.Loaded.Legacy).templateConfiguration.packages.all.size
+        ).isEqualTo(2)
+    }
+
+    @Test
+    fun `Should load fallback paywall if using components paywall in footer condensed mode`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        // Act
+        val model = create(offering = offering, mode = PaywallMode.FOOTER_CONDENSED)
+
+        // Assert
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        assertThat(
+            (model.state.value as PaywallState.Loaded.Legacy).templateConfiguration.packages.all.size
+        ).isEqualTo(2)
     }
 
     @Test
@@ -1129,7 +1189,8 @@ class PaywallViewModelTest {
         activeSubscriptions: Set<String> = setOf(),
         nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
         customPurchaseLogic: PurchaseLogic? = null,
-        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
+        mode: PaywallMode = PaywallMode.default,
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         mockActiveSubscriptions(activeSubscriptions)
         mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
@@ -1141,6 +1202,7 @@ class PaywallViewModelTest {
                 .setListener(listener)
                 .setOffering(offering)
                 .setPurchaseLogic(customPurchaseLogic)
+                .setMode(mode)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,

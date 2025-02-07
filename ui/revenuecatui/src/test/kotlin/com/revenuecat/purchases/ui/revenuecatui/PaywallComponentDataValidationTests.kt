@@ -4,14 +4,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.AllLocalizationsMissing
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingStringLocalization
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -235,7 +236,7 @@ class PaywallComponentDataValidationTests {
         val openSansFont = FontSpec.Resource(2)
         val openSansFontResourceName = FontInfo.Name("open_sans")
         val uiConfig = UiConfig(
-            app = UiConfig.AppConfig(
+            app = AppConfig(
                 fonts = mapOf(
                     primaryFontAlias to FontsConfig(robotoFontResourceName),
                     secondaryFontAlias to FontsConfig(openSansFontResourceName),
@@ -315,7 +316,7 @@ class PaywallComponentDataValidationTests {
         val existingFontResource = FontSpec.Resource(1)
         val existingFontResourceName = FontInfo.Name("roboto")
         val uiConfig = UiConfig(
-            app = UiConfig.AppConfig(
+            app = AppConfig(
                 fonts = mapOf(
                     existingFontAlias to FontsConfig(existingFontResourceName),
                 )
@@ -337,9 +338,10 @@ class PaywallComponentDataValidationTests {
                                 text = LocalizationKey("key1"),
                                 color = textColor,
                                 fontName = missingFontAlias1,
-                                overrides = ComponentOverrides(
-                                    introOffer = PartialTextComponent(fontName = missingFontAlias2)
-                                )
+                                overrides = listOf(ComponentOverride(
+                                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                    properties = PartialTextComponent(fontName = missingFontAlias2),
+                                ))
                             ),
                             TextComponent(
                                 text = LocalizationKey("key2"),

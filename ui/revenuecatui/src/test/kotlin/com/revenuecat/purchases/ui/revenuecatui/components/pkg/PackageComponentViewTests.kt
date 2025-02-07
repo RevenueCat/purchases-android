@@ -16,7 +16,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -25,8 +24,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -37,9 +35,10 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Rule
@@ -124,13 +123,10 @@ class PackageComponentViewTests {
                         text = unselectedKeyYearly,
                         color = textColor,
                         horizontalAlignment = HorizontalAlignment.LEADING,
-                        overrides = ComponentOverrides(
-                            states = ComponentStates(
-                                selected = PartialTextComponent(
-                                    text = selectedKeyYearly,
-                                )
-                            )
-                        )
+                        overrides = listOf(ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Selected),
+                            properties = PartialTextComponent(text = selectedKeyYearly)
+                        ))
                     )
                 ),
             )
@@ -144,13 +140,10 @@ class PackageComponentViewTests {
                         text = unselectedKeyMonthly,
                         color = textColor,
                         horizontalAlignment = HorizontalAlignment.LEADING,
-                        overrides = ComponentOverrides(
-                            states = ComponentStates(
-                                selected = PartialTextComponent(
-                                    text = selectedKeyMonthly,
-                                )
-                            )
-                        )
+                        overrides = listOf(ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Selected),
+                            properties = PartialTextComponent(text = selectedKeyMonthly),
+                        ))
                     )
                 ),
             )
@@ -181,8 +174,6 @@ class PackageComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            colorAliases = emptyMap(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle
@@ -245,7 +236,7 @@ class PackageComponentViewTests {
         val defaultLocaleIdentifier = LocaleId("en_US")
         // Both packages use the same unprocessed text.
         val textKey = LocalizationKey("key")
-        val textWithVariable = LocalizationData.Text("Product: {{ product_name }}")
+        val textWithVariable = LocalizationData.Text("Product: {{ product.store_product_name }}")
         // However the displayed text should be different, as the product names are different.
         val expectedTextYearly = "Product: ${packageYearly.product.name}"
         val expectedTextMonthly = "Product: ${packageMonthly.product.name}"
@@ -303,8 +294,6 @@ class PackageComponentViewTests {
 
         val styleFactory = StyleFactory(
             localizations = localizations,
-            colorAliases = emptyMap(),
-            fontAliases = emptyMap(),
             offering = offering,
         )
         val styleYearly = styleFactory.create(componentYearly).getOrThrow() as PackageComponentStyle

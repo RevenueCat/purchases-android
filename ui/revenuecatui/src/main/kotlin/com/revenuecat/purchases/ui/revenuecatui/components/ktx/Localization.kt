@@ -84,3 +84,7 @@ internal fun LocaleId.toJavaLocale(): JavaLocale =
 @JvmSynthetic
 internal fun ComposeLocale.toLocaleId(): LocaleId =
     LocaleId(toLanguageTag().replace('-', '_'))
+
+@JvmSynthetic
+internal fun ComposeLocale.toJavaLocale(): JavaLocale =
+    JavaLocale.forLanguageTag(toLanguageTag())

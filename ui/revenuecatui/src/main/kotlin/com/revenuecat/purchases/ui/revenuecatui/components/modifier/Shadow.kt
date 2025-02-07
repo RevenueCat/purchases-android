@@ -21,16 +21,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.translate
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -44,9 +49,8 @@ internal fun Modifier.shadow(
     shape: Shape,
 ) = this.drawBehind {
     // Where to draw
-    val outline = shape.createOutline(size, layoutDirection, this)
     val offset = Offset(x = shadow.x.toPx(), y = shadow.y.toPx())
-    val path = Path().apply { addOutline(outline, offset) }
+    val path = shape.toPath(size, layoutDirection, this, offset)
     // What to draw
     val paint = Paint().apply {
         when (shadow.color) {
@@ -60,7 +64,23 @@ internal fun Modifier.shadow(
     }
 
     // Actually drawing
-    drawIntoCanvas { canvas -> canvas.drawPath(path, paint) }
+    drawIntoCanvas { canvas ->
+        canvas.save()
+        // Make sure we don't draw inside our original shape. This would be visible if the composable is transparent.
+        canvas.clipPath(shape.toPath(size, layoutDirection, this), ClipOp.Difference)
+        canvas.drawPath(path, paint)
+        canvas.restore()
+    }
+}
+
+private fun Shape.toPath(size: Size, layoutDirection: LayoutDirection, density: Density, offset: Offset? = null): Path {
+    val outline = createOutline(size, layoutDirection, density)
+
+    return if (offset == null) {
+        Path().apply { addOutline(outline) }
+    } else {
+        Path().apply { addOutline(outline, offset) }
+    }
 }
 
 private fun Path.addOutline(outline: Outline, offset: Offset) {
@@ -121,6 +141,59 @@ private fun Shadow_Preview_Square() {
                     shape = shape,
                 )
                 .background(Color.Red, shape = shape),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun Shadow_Preview_CircleAlpha() {
+    val shape = CircleShape
+    Box(
+        modifier = Modifier
+            .requiredSize(200.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .requiredSize(100.dp)
+                .shadow(
+                    shadow = ShadowStyle(
+                        color = ColorStyle.Solid(Color.Black),
+                        x = 5.dp,
+                        y = 5.dp,
+                        radius = 0.dp,
+                    ),
+                    shape = shape,
+                )
+                .background(Color.Red.copy(alpha = 0.5f), shape = shape),
+        )
+    }
+}
+
+@Suppress("MagicNumber")
+@Preview
+@Composable
+private fun Shadow_Preview_SquareAlpha() {
+    val shape = RectangleShape
+    Box(
+        modifier = Modifier
+            .requiredSize(200.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .requiredSize(100.dp)
+                .shadow(
+                    shadow = ShadowStyle(
+                        color = ColorStyle.Solid(Color.Black),
+                        x = 10.dp,
+                        y = 5.dp,
+                        radius = 20.dp,
+                    ),
+                    shape = shape,
+                )
+                .background(Color.Red.copy(alpha = 0.5f), shape = shape),
         )
     }
 }

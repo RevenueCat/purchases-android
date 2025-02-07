@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.extensions
 
 import android.icu.text.MeasureFormat
@@ -6,18 +8,19 @@ import android.icu.util.MeasureUnit
 import com.revenuecat.purchases.models.Period
 import java.util.Locale
 
-internal fun Period.localizedAbbreviatedPeriod(
+@JvmSynthetic internal fun Period.localizedAbbreviatedPeriod(
     locale: Locale,
 ): String {
     return localized(locale, MeasureFormat.FormatWidth.SHORT)
 }
-internal fun Period.localizedUnitPeriod(
+
+@JvmSynthetic internal fun Period.localizedUnitPeriod(
     locale: Locale,
 ): String {
     return localized(locale, MeasureFormat.FormatWidth.WIDE)
 }
 
-internal fun Period.localizedPeriod(
+@JvmSynthetic internal fun Period.localizedPeriod(
     locale: Locale,
     formatWidth: MeasureFormat.FormatWidth = MeasureFormat.FormatWidth.WIDE,
 ): String {
@@ -26,7 +29,7 @@ internal fun Period.localizedPeriod(
     )
 }
 
-private val Period.Unit.measureUnit: MeasureUnit?
+@get:JvmSynthetic internal val Period.Unit.measureUnit: MeasureUnit?
     get() = when (this) {
         Period.Unit.DAY -> MeasureUnit.DAY
         Period.Unit.WEEK -> MeasureUnit.WEEK

@@ -220,7 +220,7 @@ enum class Store {
     AMAZON,
 
     /**
-     * For entitlements granted via RC Billing.
+     * For entitlements granted via RevenueCat's Web Billing.
      */
     @SerialName("rc_billing")
     RC_BILLING,

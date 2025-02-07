@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -50,7 +50,7 @@ class ImageComponent(
     @get:JvmSynthetic
     val shadow: Shadow? = null,
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialImageComponent>? = null,
+    val overrides: List<ComponentOverride<PartialImageComponent>> = emptyList(),
 ) : PaywallComponent
 
 @Suppress("LongParameterList")

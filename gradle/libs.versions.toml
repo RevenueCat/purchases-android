@@ -102,6 +102,7 @@ detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", 
 detekt-compose = { module = "io.nlopez.compose.rules:detekt", version.ref = "detektRulesCompose" }
 
 emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref = "emergeSnapshots" }
+emerge-snapshots-annotations = { module = "com.emergetools.snapshots:snapshots-annotations", version.ref = "emergeSnapshots" }
 
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON"}

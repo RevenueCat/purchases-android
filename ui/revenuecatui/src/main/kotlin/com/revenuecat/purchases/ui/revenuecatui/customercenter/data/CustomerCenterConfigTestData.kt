@@ -111,15 +111,15 @@ internal object CustomerCenterConfigTestData {
             accentColor = RCColor("#007AFF"),
             textColor = RCColor("#000000"),
             backgroundColor = RCColor("#f5f5f7"),
-            buttonTextColor = RCColor("#ffffff"),
+            buttonTextColor = RCColor("#7A0000"),
             buttonBackgroundColor = RCColor("#287aff"),
         ),
         dark = CustomerCenterConfigData.Appearance.ColorInformation(
-            accentColor = RCColor("#007AFF"),
-            textColor = RCColor("#ffffff"),
-            backgroundColor = RCColor("#000000"),
-            buttonTextColor = RCColor("#000000"),
-            buttonBackgroundColor = RCColor("#287aff"),
+            accentColor = RCColor("#FFFFFF"),
+            textColor = RCColor("#FFFFFF"),
+            backgroundColor = RCColor("#A96800"),
+            buttonTextColor = RCColor("#FF2600"),
+            buttonBackgroundColor = RCColor("#000000"),
         ),
     )
 

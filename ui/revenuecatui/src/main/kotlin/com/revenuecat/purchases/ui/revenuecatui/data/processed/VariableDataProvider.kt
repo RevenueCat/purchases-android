@@ -8,7 +8,9 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.extensions.isMonthly
 import com.revenuecat.purchases.ui.revenuecatui.extensions.isSubscription
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localized
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedPeriod
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPerPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
@@ -19,7 +21,7 @@ import kotlin.math.roundToInt
 
 private const val MICRO_MULTIPLIER = 1_000_000.0
 
-@Suppress("UnusedParameter", "FunctionOnlyReturningConstant", "TooManyFunctions")
+@Suppress("FunctionOnlyReturningConstant", "TooManyFunctions")
 internal class VariableDataProvider(
     private val resourceProvider: ResourceProvider,
     private val preview: Boolean = false,
@@ -32,11 +34,15 @@ internal class VariableDataProvider(
         }
 
     fun localizedPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
-        // always round if rounding on
-        return if (showZeroDecimalPlacePrices && rcPackage.product.price.endsIn00Cents()) {
-            rcPackage.product.price.getTruncatedFormatted(locale)
+        return rcPackage.product.price.localized(locale, showZeroDecimalPlacePrices)
+    }
+
+    fun localizedPricePerDay(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+        val pricePerDay = rcPackage.product.pricePerDay(locale) ?: return null
+        return if (showZeroDecimalPlacePrices && pricePerDay.endsIn00Cents()) {
+            pricePerDay.getTruncatedFormatted(locale)
         } else {
-            rcPackage.product.price.formatted
+            pricePerDay.formatted
         }
     }
 
@@ -56,6 +62,15 @@ internal class VariableDataProvider(
             pricePerMonth.getTruncatedFormatted(locale)
         } else {
             pricePerMonth.formatted
+        }
+    }
+
+    fun localizedPricePerYear(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+        val pricePerYear = rcPackage.product.pricePerYear(locale) ?: return null
+        return if (showZeroDecimalPlacePrices && pricePerYear.endsIn00Cents()) {
+            pricePerYear.getTruncatedFormatted(locale)
+        } else {
+            pricePerYear.formatted
         }
     }
 
@@ -138,15 +153,14 @@ internal class VariableDataProvider(
     }
 
     fun localizedPricePerPeriod(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
-        val localizedPrice = localizedPrice(rcPackage, locale, showZeroDecimalPlacePrices)
-        return rcPackage.product.period?.let { period ->
-            val formattedPeriod = period.localizedAbbreviatedPeriod(locale)
-            "$localizedPrice/$formattedPeriod"
-        } ?: localizedPrice
+        val product = rcPackage.product
+        return product.period?.let {
+            return product.price.localizedPerPeriod(it, locale, showZeroDecimalPlacePrices)
+        } ?: product.price.localized(locale, showZeroDecimalPlacePrices)
     }
 
     fun localizedPricePerPeriodFull(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
-        val localizedPrice = localizedPrice(rcPackage, locale, showZeroDecimalPlacePrices)
+        val localizedPrice = rcPackage.product.price.localized(locale, showZeroDecimalPlacePrices)
         return rcPackage.product.period?.let { period ->
             val formattedPeriod = period.localizedUnitPeriod(locale)
             "$localizedPrice/$formattedPeriod"
@@ -223,7 +237,7 @@ private fun Period.normalizedMonths(): Period {
 // Price extensions
 
 @SuppressWarnings("MagicNumber")
-private fun Price.endsIn00Cents(): Boolean {
+internal fun Price.endsIn00Cents(): Boolean {
     val normalPrice = amountMicros / MICRO_MULTIPLIER
     val roundedPrice = Math.round(normalPrice * 100) / 100.0
     return roundedPrice * 100 % 100 == 0.0
@@ -233,7 +247,7 @@ private fun Price.endsIn00Cents(): Boolean {
  * Returns price, rounded with the cents component truncated, formatted for the given locale.
  * For example $3.
  */
-private fun Price.getTruncatedFormatted(locale: Locale = Locale.getDefault()): String {
+internal fun Price.getTruncatedFormatted(locale: Locale = Locale.getDefault()): String {
     val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
         currency = Currency.getInstance(currencyCode)
         maximumFractionDigits = 0

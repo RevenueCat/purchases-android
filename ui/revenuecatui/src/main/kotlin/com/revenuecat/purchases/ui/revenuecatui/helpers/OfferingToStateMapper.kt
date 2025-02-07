@@ -9,6 +9,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
@@ -25,6 +26,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
+import java.util.Date
 import kotlin.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 
@@ -63,7 +65,8 @@ internal fun PaywallData.validate(
     )
 }
 
-private fun Offering.fallbackPaywall(
+@JvmSynthetic
+internal fun Offering.fallbackPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
     error: PaywallValidationError,
@@ -114,6 +117,27 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     }.mapValuesOrAccumulate { it }
         .getOrElse { error -> return RcResult.Error(error) }
 
+    // Check that the default variable localization is present in the localizations map.
+    val defaultVariableLocalization = paywallComponents.defaultVariableLocalization
+        .errorIfNull(
+            PaywallValidationError.AllVariableLocalizationsMissing(paywallComponents.data.defaultLocaleIdentifier),
+        )
+        .mapError { nonEmptyListOf(it) }
+        .getOrElse { error -> return RcResult.Error(error) }
+
+    // Build a NonEmptyMap of variable localizations, ensuring that we always have the default localization as fallback.
+    val variableLocalizations = nonEmptyMapOf(
+        paywallComponents.data.defaultLocaleIdentifier to defaultVariableLocalization,
+        paywallComponents.uiConfig.localizations,
+    ).mapValues { (locale, map) ->
+        // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>. If a certain locale
+        // has an empty Map, we add an AllLocalizationsMissing error for that locale to our list of errors.
+        map.toNonEmptyMapOrNull()
+            .errorIfNull(PaywallValidationError.AllLocalizationsMissing(locale))
+            .mapError { nonEmptyListOf(it) }
+    }.mapValuesOrAccumulate { it }
+        .getOrElse { error -> return RcResult.Error(error) }
+
     val colorAliases = paywallComponents.uiConfig.app.colors
 
     // Build a map of FontAliases to FontSpecs.
@@ -125,6 +149,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         localizations = localizations,
         colorAliases = colorAliases,
         fontAliases = fontAliases,
+        variableLocalizations = variableLocalizations,
         offering = this,
     )
     val config = paywallComponents.data.componentsConfig.base
@@ -141,6 +166,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             background = background,
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
+            variableConfig = paywallComponents.uiConfig.variableConfig,
         )
     }
 }
@@ -256,11 +282,14 @@ internal fun Offering.toLegacyPaywallState(
     )
 }
 
+@Suppress("LongParameterList")
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
     activelySubscribedProductIds: Set<String>,
     purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
+    dateProvider: () -> Date,
+    initialSelectedTabIndex: Int = 0,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -271,10 +300,13 @@ internal fun Offering.toComponentsPaywallState(
         stickyFooter = validationResult.stickyFooter,
         background = validationResult.background,
         showPricesWithDecimals = showPricesWithDecimals,
+        variableConfig = validationResult.variableConfig,
         offering = this,
         locales = validationResult.locales,
         activelySubscribedProductIds = activelySubscribedProductIds,
         purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
+        dateProvider = dateProvider,
+        initialSelectedTabIndex = initialSelectedTabIndex,
     )
 }
 
@@ -335,3 +367,6 @@ private fun PaywallData.validateTemplate(): PaywallTemplate? {
 
 private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, LocalizationData>?
     get() = componentsLocalizations[defaultLocaleIdentifier]
+
+private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
+    get() = uiConfig.localizations[data.defaultLocaleIdentifier]

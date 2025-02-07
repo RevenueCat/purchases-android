@@ -28,6 +28,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -59,7 +60,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
-import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -97,7 +97,7 @@ internal class PurchasesOrchestrator(
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
-    private val paywallEventsManager: PaywallEventsManager?,
+    private val eventsManager: EventsManager?,
     private val paywallPresentedCache: PaywallPresentedCache,
     private val purchasesStateCache: PurchasesStateCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
@@ -584,7 +584,7 @@ internal class PurchasesOrchestrator(
     fun track(paywallEvent: PaywallEvent) {
         paywallPresentedCache.receiveEvent(paywallEvent)
         if (isAndroidNOrNewer()) {
-            paywallEventsManager?.track(paywallEvent)
+            eventsManager?.track(paywallEvent)
         }
     }
 
@@ -1245,7 +1245,7 @@ internal class PurchasesOrchestrator(
 
     private fun flushPaywallEvents() {
         if (isAndroidNOrNewer()) {
-            paywallEventsManager?.flushEvents()
+            eventsManager?.flushEvents()
         }
     }
 
