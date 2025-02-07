@@ -1202,28 +1202,22 @@ class TabsComponentViewTests {
     private fun List<ComponentOverride<PartialTextComponent>>.getLocalizationKeys(): Set<LocalizationKey> =
         mapNotNull { componentOverride -> componentOverride.properties.text }.toSet()
 
-    private
-    val Package.selectedLocalizedText: LocalizationData.Text
+    private val Package.selectedLocalizedText: LocalizationData.Text
         get() = selectedLocalizationKey.asText()
 
-    private
-    val Package.selectedLocalizationKey: LocalizationKey
+    private val Package.selectedLocalizationKey: LocalizationKey
         get() = LocalizationKey("package_${identifier}_selected")
 
-    private
-    val Package.unselectedLocalizedText: LocalizationData.Text
+    private val Package.unselectedLocalizedText: LocalizationData.Text
         get() = unselectedLocalizationKey.asText()
 
-    private
-    val Package.unselectedLocalizationKey: LocalizationKey
+    private val Package.unselectedLocalizationKey: LocalizationKey
         get() = LocalizationKey("package_${identifier}_unselected")
 
-    private
-    val Package.localizedText: LocalizationData.Text
+    private val Package.localizedText: LocalizationData.Text
         get() = localizationKey.asText()
 
-    private
-    val Package.localizationKey: LocalizationKey
+    private val Package.localizationKey: LocalizationKey
         get() = LocalizationKey("package_$identifier")
 
     private fun LocalizationKey.asText(): LocalizationData.Text =
