@@ -28,18 +28,16 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ICON_SIZE
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_MEDIUM
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_XL
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.TITLE_TOP_PADDING
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.CustomerCenterButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
-
-/** Constants for padding, spacing, sizes, and default colors **/
-private val PADDING_LARGE = 16.dp
-private val PADDING_XL = 32.dp
-private val ICON_SIZE = 56.dp
-private val TITLE_TOP_PADDING = 64.dp
 
 @SuppressWarnings("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -101,7 +99,7 @@ private fun ActiveUserManagementView(
         Text(
             text = screen.title,
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = PADDING_LARGE, end = PADDING_LARGE, top = TITLE_TOP_PADDING),
+            modifier = Modifier.padding(start = PADDING_MEDIUM, end = PADDING_MEDIUM, top = TITLE_TOP_PADDING),
         )
 
         Spacer(modifier = Modifier.size(PADDING_XL))
@@ -135,7 +133,7 @@ private fun NoActiveUserManagementView(
         CompatibilityContentUnavailableView(
             title = screen.title,
             description = screen.subtitle,
-            modifier = Modifier.padding(PADDING_LARGE),
+            modifier = Modifier.padding(PADDING_MEDIUM),
         )
 
         ManageSubscriptionsButtonsView(
@@ -162,7 +160,7 @@ fun CompatibilityContentUnavailableView(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(PADDING_LARGE),
+                .padding(PADDING_MEDIUM),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
@@ -183,7 +181,7 @@ fun CompatibilityContentUnavailableView(
                     text = it,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = PADDING_LARGE),
+                    modifier = Modifier.padding(vertical = PADDING_MEDIUM),
                 )
             }
         }
@@ -203,13 +201,13 @@ private fun ManageSubscriptionsButtonsView(
     val accentColor = appearance.getColorForTheme(isDark) { it.accentColor } ?: MaterialTheme.colorScheme.primary
 
     Column {
-        Spacer(modifier = Modifier.size(PADDING_LARGE))
+        Spacer(modifier = Modifier.size(PADDING_MEDIUM))
         if (showSectionHeader) {
             Text(
                 localization.commonLocalizedString(CustomerCenterConfigData.Localization.CommonLocalizedString.MANAGE),
                 style = MaterialTheme.typography.bodyMedium,
                 color = accentColor,
-                modifier = Modifier.padding(horizontal = PADDING_LARGE, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = PADDING_MEDIUM, vertical = 8.dp),
             )
         } else {
             HorizontalDivider()

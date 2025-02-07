@@ -24,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -32,6 +31,12 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localiza
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_LARGE
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_MEDIUM
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.PADDING_SMALL
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SUBSCRIPTION_DETAILS_ROW_HEIGHT
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.TEXT_LIKE_SETTINGS_MAIN_SIZE
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.TEXT_LIKE_SETTINGS_SUPPORTING_SIZE
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.Explanation
@@ -98,7 +103,7 @@ internal fun SubscriptionDetailsRow(
     prominentSubtitle: Boolean = true,
 ) {
     val titleTextStyle = TextStyle(
-        fontSize = if (prominentSubtitle) 14.sp else 20.sp,
+        fontSize = if (prominentSubtitle) TEXT_LIKE_SETTINGS_SUPPORTING_SIZE else TEXT_LIKE_SETTINGS_MAIN_SIZE,
         fontWeight = FontWeight.Normal,
         color = if (prominentSubtitle) {
             MaterialTheme.colorScheme.onSurfaceVariant
@@ -108,7 +113,7 @@ internal fun SubscriptionDetailsRow(
     )
 
     val subtitleTextStyle = TextStyle(
-        fontSize = if (prominentSubtitle) 20.sp else 14.sp,
+        fontSize = if (prominentSubtitle) TEXT_LIKE_SETTINGS_MAIN_SIZE else TEXT_LIKE_SETTINGS_SUPPORTING_SIZE,
         fontWeight = FontWeight.Normal,
         color = if (prominentSubtitle) {
             MaterialTheme.colorScheme.onSurface
@@ -119,16 +124,16 @@ internal fun SubscriptionDetailsRow(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .defaultMinSize(minHeight = 60.dp)
+            .defaultMinSize(minHeight = SUBSCRIPTION_DETAILS_ROW_HEIGHT)
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(PADDING_MEDIUM),
+        horizontalArrangement = Arrangement.spacedBy(PADDING_SMALL),
     ) {
         icon?.let {
             Icon(
                 imageVector = it,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(PADDING_LARGE),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
         }
