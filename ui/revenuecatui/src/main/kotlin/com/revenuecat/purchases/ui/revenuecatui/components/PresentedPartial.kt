@@ -98,22 +98,22 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
 ): Boolean {
     for (condition in conditions) {
         when (condition) {
-            ComponentOverride.Condition.COMPACT,
-            ComponentOverride.Condition.MEDIUM,
-            ComponentOverride.Condition.EXPANDED,
+            ComponentOverride.Condition.Compact,
+            ComponentOverride.Condition.Medium,
+            ComponentOverride.Condition.Expanded,
             -> {
                 if (!windowSize.applicableConditions.contains(condition)) return false
             }
-            ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS -> {
+            ComponentOverride.Condition.MultipleIntroOffers -> {
                 if (introOfferEligibility != IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE) return false
             }
-            ComponentOverride.Condition.INTRO_OFFER -> {
+            ComponentOverride.Condition.IntroOffer -> {
                 if (introOfferEligibility == IntroOfferEligibility.INELIGIBLE) return false
             }
-            ComponentOverride.Condition.SELECTED -> {
+            ComponentOverride.Condition.Selected -> {
                 if (state != ComponentViewState.SELECTED) return false
             }
-            ComponentOverride.Condition.UNSUPPORTED -> {
+            ComponentOverride.Condition.Unsupported -> {
                 return false
             }
         }
@@ -123,11 +123,11 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
 
 private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>
     get() = when (this) {
-        ScreenCondition.COMPACT -> setOf(ComponentOverride.Condition.COMPACT)
-        ScreenCondition.MEDIUM -> setOf(ComponentOverride.Condition.COMPACT, ComponentOverride.Condition.MEDIUM)
+        ScreenCondition.COMPACT -> setOf(ComponentOverride.Condition.Compact)
+        ScreenCondition.MEDIUM -> setOf(ComponentOverride.Condition.Compact, ComponentOverride.Condition.Medium)
         ScreenCondition.EXPANDED -> setOf(
-            ComponentOverride.Condition.COMPACT,
-            ComponentOverride.Condition.MEDIUM,
-            ComponentOverride.Condition.EXPANDED,
+            ComponentOverride.Condition.Compact,
+            ComponentOverride.Condition.Medium,
+            ComponentOverride.Condition.Expanded,
         )
     }

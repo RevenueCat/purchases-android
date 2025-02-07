@@ -81,7 +81,7 @@ internal class StackComponentViewWindowTests {
             size = Size(width = Fixed(SIZE_STACK), height = Fixed(SIZE_STACK)),
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.COMPACT),
+                    conditions = listOf(ComponentOverride.Condition.Compact),
                     properties = PartialStackComponent(
                         border = Border(
                             color = ColorScheme(ColorInfo.Hex(expectedCompactBorderColor.toArgb())),
@@ -97,7 +97,7 @@ internal class StackComponentViewWindowTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                    conditions = listOf(ComponentOverride.Condition.Medium),
                     properties = PartialStackComponent(
                         border = Border(
                             color = ColorScheme(ColorInfo.Hex(expectedMediumBorderColor.toArgb())),
@@ -113,7 +113,7 @@ internal class StackComponentViewWindowTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.EXPANDED),
+                    conditions = listOf(ComponentOverride.Condition.Expanded),
                     properties = PartialStackComponent(
                         border = Border(
                             color = ColorScheme(ColorInfo.Hex(expectedExpandedBorderColor.toArgb())),

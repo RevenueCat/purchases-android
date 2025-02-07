@@ -284,7 +284,7 @@ class StackComponentViewTests {
                     y = 10.0,
                 ),
                 overrides = listOf(ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.SELECTED),
+                    conditions = listOf(ComponentOverride.Condition.Selected),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
                         border = Border(
@@ -414,7 +414,7 @@ class StackComponentViewTests {
             ),
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
@@ -432,7 +432,7 @@ class StackComponentViewTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
@@ -571,7 +571,7 @@ class StackComponentViewTests {
             ),
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
@@ -589,7 +589,7 @@ class StackComponentViewTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())

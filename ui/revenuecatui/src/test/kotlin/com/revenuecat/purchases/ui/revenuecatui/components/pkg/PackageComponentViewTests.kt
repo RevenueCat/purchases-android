@@ -124,7 +124,7 @@ class PackageComponentViewTests {
                         color = textColor,
                         horizontalAlignment = HorizontalAlignment.LEADING,
                         overrides = listOf(ComponentOverride(
-                            conditions = listOf(ComponentOverride.Condition.SELECTED),
+                            conditions = listOf(ComponentOverride.Condition.Selected),
                             properties = PartialTextComponent(text = selectedKeyYearly)
                         ))
                     )
@@ -141,7 +141,7 @@ class PackageComponentViewTests {
                         color = textColor,
                         horizontalAlignment = HorizontalAlignment.LEADING,
                         overrides = listOf(ComponentOverride(
-                            conditions = listOf(ComponentOverride.Condition.SELECTED),
+                            conditions = listOf(ComponentOverride.Condition.Selected),
                             properties = PartialTextComponent(text = selectedKeyMonthly),
                         ))
                     )

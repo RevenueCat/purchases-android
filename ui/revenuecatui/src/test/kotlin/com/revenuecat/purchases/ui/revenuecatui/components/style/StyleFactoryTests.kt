@@ -185,7 +185,7 @@ class StyleFactoryTests {
             text = baseLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer),
                 properties = PartialTextComponent(text = overrideLocalizationKey)
             ))
         )
@@ -229,7 +229,7 @@ class StyleFactoryTests {
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             fontName = fontAliasBase,
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer),
                 properties = PartialTextComponent(fontName = fontAliasOverride)
             ))
         )
@@ -296,7 +296,7 @@ class StyleFactoryTests {
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer),
                 properties = PartialTextComponent(fontName = expectedMissingFontAlias)
             ))
         )
@@ -390,23 +390,23 @@ class StyleFactoryTests {
             source = expectedBaseSource,
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
                     properties = PartialImageComponent(source = expectedIntroSource),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.SELECTED),
+                    conditions = listOf(ComponentOverride.Condition.Selected),
                     properties = PartialImageComponent(source = expectedSelectedSource),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.COMPACT),
+                    conditions = listOf(ComponentOverride.Condition.Compact),
                     properties = PartialImageComponent(source = expectedCompactSource),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                    conditions = listOf(ComponentOverride.Condition.Medium),
                     properties = PartialImageComponent(source = expectedMediumSource),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.EXPANDED),
+                    conditions = listOf(ComponentOverride.Condition.Expanded),
                     properties = PartialImageComponent(source = expectedExpandedSource),
                 ),
             )

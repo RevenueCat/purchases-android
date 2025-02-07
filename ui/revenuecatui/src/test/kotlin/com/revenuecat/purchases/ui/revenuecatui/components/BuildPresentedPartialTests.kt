@@ -134,37 +134,37 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             val overrides: MutableList<PresentedOverride<LocalizedTextPartial>> = mutableListOf()
             compact?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.COMPACT),
+                    conditions = listOf(ComponentOverride.Condition.Compact),
                     properties = it,
                 ))
             }
             medium?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                    conditions = listOf(ComponentOverride.Condition.Medium),
                     properties = it,
                 ))
             }
             expanded?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.EXPANDED),
+                    conditions = listOf(ComponentOverride.Condition.Expanded),
                     properties = it,
                 ))
             }
             introOffer?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
                     properties = it,
                 ))
             }
             multipleIntroOffers?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
                     properties = it,
                 ))
             }
             selected?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.SELECTED),
+                    conditions = listOf(ComponentOverride.Condition.Selected),
                     properties = it,
                 ))
             }
@@ -411,17 +411,17 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                            conditions = listOf(ComponentOverride.Condition.Medium),
                             properties = mediumPartial,
                         ),
                         PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.SELECTED),
+                            conditions = listOf(ComponentOverride.Condition.Selected),
                             properties = selectedPartial,
                         ),
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.MEDIUM,
-                                ComponentOverride.Condition.SELECTED,
+                                ComponentOverride.Condition.Medium,
+                                ComponentOverride.Condition.Selected,
                             ),
                             properties = introOfferAndSelectedPartial,
                         ),
@@ -437,17 +437,17 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                            conditions = listOf(ComponentOverride.Condition.Medium),
                             properties = mediumPartial,
                         ),
                         PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.SELECTED),
+                            conditions = listOf(ComponentOverride.Condition.Selected),
                             properties = selectedPartial,
                         ),
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.MEDIUM,
-                                ComponentOverride.Condition.SELECTED,
+                                ComponentOverride.Condition.Medium,
+                                ComponentOverride.Condition.Selected,
                             ),
                             properties = introOfferAndSelectedPartial,
                         ),

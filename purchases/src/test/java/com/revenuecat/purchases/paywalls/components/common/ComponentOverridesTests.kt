@@ -77,6 +77,12 @@ internal class ComponentOverridesTests {
                                 }
                               },
                               {
+                                "conditions": [ { "type": "selected" }, { "type": "intro_offer" } ],
+                                "properties": {
+                                  "font_name": "compact font"
+                                }
+                              },
+                              {
                                 "conditions": [ { "type": "unknown" } ],
                                 "properties": {
                                   "font_name": "unknown condition font"
@@ -86,31 +92,38 @@ internal class ComponentOverridesTests {
                         """.trimIndent(),
                         expected = listOf(
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
                                 properties = PartialTextComponent(fontName = FontAlias("intro font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
                                 properties = PartialTextComponent(fontName = FontAlias("multiple intros font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.SELECTED),
+                                conditions = listOf(ComponentOverride.Condition.Selected),
                                 properties = PartialTextComponent(fontName = FontAlias("selected font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.EXPANDED),
+                                conditions = listOf(ComponentOverride.Condition.Expanded),
                                 properties = PartialTextComponent(fontName = FontAlias("expanded font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                                conditions = listOf(ComponentOverride.Condition.Medium),
                                 properties = PartialTextComponent(fontName = FontAlias("medium font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.COMPACT),
+                                conditions = listOf(ComponentOverride.Condition.Compact),
                                 properties = PartialTextComponent(fontName = FontAlias("compact font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.UNSUPPORTED),
+                                conditions = listOf(
+                                    ComponentOverride.Condition.Selected,
+                                    ComponentOverride.Condition.IntroOffer,
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("compact font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Unsupported),
                                 properties = PartialTextComponent(fontName = FontAlias("unknown condition font")),
                             ),
                         )
@@ -189,29 +202,29 @@ internal class ComponentOverridesTests {
                         """.trimIndent(),
                         expected = listOf(
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MULTIPLE_INTRO_OFFERS),
+                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
                                 properties = PartialImageComponent(
                                     overrideSourceLid = LocalizationKey("multiple_intros")
                                 ),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.SELECTED),
+                                conditions = listOf(ComponentOverride.Condition.Selected),
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("selected")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.COMPACT),
+                                conditions = listOf(ComponentOverride.Condition.Compact),
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("compact")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                                conditions = listOf(ComponentOverride.Condition.Medium),
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("medium")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.EXPANDED),
+                                conditions = listOf(ComponentOverride.Condition.Expanded),
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("expanded")),
                             ),
                         )

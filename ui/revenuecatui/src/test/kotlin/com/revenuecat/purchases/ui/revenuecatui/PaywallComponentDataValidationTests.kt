@@ -339,7 +339,7 @@ class PaywallComponentDataValidationTests {
                                 color = textColor,
                                 fontName = missingFontAlias1,
                                 overrides = listOf(ComponentOverride(
-                                    conditions = listOf(ComponentOverride.Condition.INTRO_OFFER),
+                                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
                                     properties = PartialTextComponent(fontName = missingFontAlias2),
                                 ))
                             ),

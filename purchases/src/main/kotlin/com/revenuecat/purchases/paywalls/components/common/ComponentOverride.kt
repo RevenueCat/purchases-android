@@ -1,16 +1,13 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
-import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
@@ -23,14 +20,14 @@ class ComponentOverride<T : PartialComponent>(
 ) {
 
     @Serializable(with = ConditionSerializer::class)
-    enum class Condition {
-        COMPACT,
-        MEDIUM,
-        EXPANDED,
-        INTRO_OFFER,
-        MULTIPLE_INTRO_OFFERS,
-        SELECTED,
-        UNSUPPORTED,
+    sealed interface Condition {
+        object Compact : Condition
+        object Medium : Condition
+        object Expanded : Condition
+        object IntroOffer : Condition
+        object MultipleIntroOffers : Condition
+        object Selected : Condition
+        object Unsupported : Condition
     }
 
     private object ConditionSerializer : KSerializer<Condition> {
@@ -44,25 +41,25 @@ class ComponentOverride<T : PartialComponent>(
 
         override fun deserialize(decoder: Decoder): Condition {
             val composite = decoder.beginStructure(descriptor)
-            var result: Condition? = null
+            var typeValue: String? = null
 
             loop@ while (true) {
-                when (val index = composite.decodeElementIndex(descriptor)) {
-                    CompositeDecoder.DECODE_DONE -> break@loop
-                    0 -> {
-                        val typeValue = composite.decodeStringElement(descriptor, 0)
-                        result = try {
-                            Condition.valueOf(typeValue.uppercase())
-                        } catch (_: IllegalArgumentException) {
-                            warnLog("Paywalls: Unknown override condition. Value: $typeValue. Override won't apply.")
-                            Condition.UNSUPPORTED
-                        }
-                    }
-                    else -> throw SerializationException("Unexpected index: $index")
+                when (composite.decodeElementIndex(descriptor)) {
+                    0 -> typeValue = composite.decodeStringElement(descriptor, 0)
+                    else -> break@loop
                 }
             }
             composite.endStructure(descriptor)
-            return result ?: throw SerializationException("Missing 'type' property")
+
+            return when (typeValue) {
+                "compact" -> Condition.Compact
+                "medium" -> Condition.Medium
+                "expanded" -> Condition.Expanded
+                "intro_offer" -> Condition.IntroOffer
+                "multiple_intro_offers" -> Condition.MultipleIntroOffers
+                "selected" -> Condition.Selected
+                else -> Condition.Unsupported
+            }
         }
     }
 }

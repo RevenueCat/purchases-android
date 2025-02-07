@@ -80,7 +80,7 @@ internal class TextComponentViewWindowTests {
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.COMPACT),
+                    conditions = listOf(ComponentOverride.Condition.Compact),
                     properties = PartialTextComponent(
                         text = compactLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedCompactTextColor.toArgb())),
@@ -88,7 +88,7 @@ internal class TextComponentViewWindowTests {
                     )
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                    conditions = listOf(ComponentOverride.Condition.Medium),
                     properties = PartialTextComponent(
                         text = mediumLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMediumTextColor.toArgb())),
@@ -96,7 +96,7 @@ internal class TextComponentViewWindowTests {
                     )
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.EXPANDED),
+                    conditions = listOf(ComponentOverride.Condition.Expanded),
                     properties = PartialTextComponent(
                         text = expandedLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedExpandedTextColor.toArgb())),
