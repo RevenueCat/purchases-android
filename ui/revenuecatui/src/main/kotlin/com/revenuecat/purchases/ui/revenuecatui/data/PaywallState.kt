@@ -152,8 +152,10 @@ internal sealed interface PaywallState {
                 }
             }
 
-            // FIXME Needs to be per tab AS WELL AS globally
-            val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
+            val mostExpensivePricePerMonthMicros by derivedStateOf {
+                (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
+                    .mostExpensivePricePerMonthMicros()
+            }
 
             val currentDate: Date
                 get() = dateProvider()
@@ -188,9 +190,9 @@ internal sealed interface PaywallState {
                     // Find the first locale we have a LocalizationDictionary for.
                     .first { id -> locales.contains(id) }
 
-            private fun List<Package>.mostExpensivePricePerMonthMicros(): Long? =
+            private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()
-                    .map { pkg -> pkg.product }
+                    .map { info -> info.pkg.product }
                     .mapNotNull { product -> product.pricePerMonth() }
                     .maxByOrNull { price -> price.amountMicros }
                     ?.amountMicros
