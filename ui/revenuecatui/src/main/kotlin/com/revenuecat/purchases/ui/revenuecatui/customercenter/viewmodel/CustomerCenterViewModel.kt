@@ -63,14 +63,15 @@ internal interface CustomerCenterViewModel {
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
     fun loadAndDisplayPromotionalOffer(
+        context: Context,
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
-    )
+    ): Boolean
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
-    fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
-    fun onNavigationButtonPressed()
+    fun dismissPromotionalOffer(context: Context, originalPath: CustomerCenterConfigData.HelpPath)
+    fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit)
     suspend fun loadCustomerCenter()
     fun openURL(
         context: Context,
@@ -134,11 +135,15 @@ internal class CustomerCenterViewModelImpl(
                 goBackToMain()
                 option?.let {
                     if (product != null && it.promotionalOffer != null) {
-                        loadAndDisplayPromotionalOffer(
+                        val loaded = loadAndDisplayPromotionalOffer(
+                            context,
                             product,
                             it.promotionalOffer!!,
                             path,
                         )
+                        if (!loaded) {
+                            mainPathAction(path, context)
+                        }
                     } else {
                         mainPathAction(path, context)
                     }
@@ -148,11 +153,15 @@ internal class CustomerCenterViewModelImpl(
         }
 
         if (product != null && path.promotionalOffer != null) {
-            loadAndDisplayPromotionalOffer(
+            val loaded = loadAndDisplayPromotionalOffer(
+                context,
                 product,
                 path.promotionalOffer!!,
                 path,
             )
+            if (!loaded) {
+                mainPathAction(path, context)
+            }
         } else {
             mainPathAction(path, context)
         }
@@ -381,10 +390,11 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun loadAndDisplayPromotionalOffer(
+        context: Context,
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
-    ) {
+    ): Boolean {
         val offerIdentifier = promotionalOffer.productMapping[product.id]
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
             when (option) {
@@ -408,11 +418,13 @@ internal class CustomerCenterViewModelImpl(
                             pricingPhasesDescription,
                         ),
                     )
+                    return true
                 } else {
                     currentState
                 }
             }
         }
+        return false
     }
 
     override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
@@ -436,7 +448,10 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context) {
+    override fun dismissPromotionalOffer(
+        context: Context,
+        originalPath: CustomerCenterConfigData.HelpPath,
+    ) {
         // Continue with the original action and remove the promotional offer data
         mainPathAction(originalPath, context)
 
@@ -450,17 +465,24 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun onNavigationButtonPressed() {
-        _state.update { currentState ->
-            when {
-                currentState is CustomerCenterState.Success &&
-                    currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
-                    currentState.resetToMainScreen()
+    override fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit) {
+        val currentState = _state.value
+        if (currentState is CustomerCenterState.Success && currentState.promotionalOfferData != null) {
+            dismissPromotionalOffer(context, currentState.promotionalOfferData.originalPath)
+        } else {
+            // Perform the default navigation action
+            _state.update { state ->
+                when {
+                    state is CustomerCenterState.Success &&
+                        state.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                        state.resetToMainScreen()
+                    }
+                    else -> CustomerCenterState.NotLoaded
                 }
-                currentState is CustomerCenterState.Success -> {
-                    CustomerCenterState.NotLoaded
-                }
-                else -> currentState
+            }
+            val buttonType = state.value.navigationButtonType
+            if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+                onDismiss()
             }
         }
     }
