@@ -58,7 +58,9 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent? {
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
-internal fun PaywallEvent.toBackendStoredEvent(appUserID: String): BackendStoredEvent {
+internal fun PaywallEvent.toBackendStoredEvent(
+    appUserID: String,
+): BackendStoredEvent {
     return BackendStoredEvent.Paywalls(
         BackendEvent.Paywalls(
             id = creationData.id.toString(),
@@ -85,18 +87,20 @@ internal fun PaywallEvent.toBackendStoredEvent(appUserID: String): BackendStored
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
-internal fun CustomerCenterEvent.toBackendStoredEvent(appUserID: String): BackendStoredEvent {
+internal fun CustomerCenterEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
     return BackendStoredEvent.CustomerCenter(
         BackendEvent.CustomerCenter(
             id = creationData.id.toString(),
             revisionID = data.revisionID,
             type = data.type,
             appUserID = appUserID,
-            appSessionID = data.sessionIdentifier.toString(),
+            appSessionID = appSessionID,
             timestamp = data.timestamp.time,
             darkMode = data.darkMode,
             locale = data.locale,
-            isSandbox = data.isSandbox,
             displayMode = data.displayMode,
         ),
     )

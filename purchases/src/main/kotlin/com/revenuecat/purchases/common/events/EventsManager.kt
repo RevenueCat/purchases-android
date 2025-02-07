@@ -16,6 +16,7 @@ import com.revenuecat.purchases.utils.EventsFileHelper
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import java.util.UUID
 
 /**
  * Manages the tracking, storing, and syncing of events in RevenueCat.
@@ -27,6 +28,7 @@ import kotlinx.serialization.modules.polymorphic
  * @property postEvents Function for sending events to the backend.
  */
 internal class EventsManager(
+    private val appSessionID: UUID = UUID.randomUUID(),
     private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
     private val fileHelper: EventsFileHelper<BackendStoredEvent>,
     private val identityManager: IdentityManager,
@@ -103,8 +105,13 @@ internal class EventsManager(
             debugLog("Tracking event: $event")
 
             val backendEvent = when (event) {
-                is PaywallEvent -> event.toBackendStoredEvent(identityManager.currentAppUserID)
-                is CustomerCenterEvent -> event.toBackendStoredEvent(identityManager.currentAppUserID)
+                is PaywallEvent -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                )
+                is CustomerCenterEvent -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
                 else -> null
             }
 

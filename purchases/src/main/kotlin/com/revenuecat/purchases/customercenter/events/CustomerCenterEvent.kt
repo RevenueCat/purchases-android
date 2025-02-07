@@ -18,7 +18,7 @@ import java.util.UUID
 @Poko
 @Serializable
 class CustomerCenterEvent(
-    val creationData: CreationData,
+    val creationData: CreationData = CreationData(),
     val data: Data,
 ) : FeatureEvent {
 
@@ -32,9 +32,9 @@ class CustomerCenterEvent(
     @Serializable
     class CreationData(
         @Serializable(with = UUIDSerializer::class)
-        val id: UUID,
+        val id: UUID = UUID.randomUUID(),
         @Serializable(with = DateSerializer::class)
-        val date: Date,
+        val date: Date = Date(),
     )
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -45,33 +45,27 @@ class CustomerCenterEvent(
         val type: CustomerCenterEventType,
         @Serializable(with = DateSerializer::class)
         val timestamp: Date,
-        @Serializable(with = UUIDSerializer::class)
-        val sessionIdentifier: UUID,
         val darkMode: Boolean,
         val locale: String,
-        val isSandbox: Boolean,
         val version: Int = 1,
         val revisionID: Int = 1,
         val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
+        // isSandbox not available in Android
     ) {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal fun copy(
             type: CustomerCenterEventType = this.type,
             timestamp: Date = this.timestamp,
-            sessionIdentifier: UUID = this.sessionIdentifier,
             darkMode: Boolean = this.darkMode,
             locale: String = this.locale,
-            isSandbox: Boolean = this.isSandbox,
             version: Int = this.version,
             revisionID: Int = this.revisionID,
             displayMode: CustomerCenterDisplayMode = this.displayMode,
         ) = Data(
             type,
             Date(timestamp.time),
-            sessionIdentifier,
             darkMode,
             locale,
-            isSandbox,
             version,
             revisionID,
             displayMode,

@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,13 +54,18 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
 
+@Suppress("LongMethod")
 @JvmSynthetic
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
-    viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(),
+    viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(
+        isDarkMode = isSystemInDarkTheme(),
+    ),
     onDismiss: () -> Unit,
 ) {
+    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -68,6 +74,10 @@ internal fun InternalCustomerCenter(
         coroutineScope.launch {
             viewModel.loadCustomerCenter()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.trackImpression()
     }
 
     BackHandler {
@@ -322,9 +332,14 @@ private fun getTitleForState(state: CustomerCenterState): String? {
 
 @Composable
 private fun getCustomerCenterViewModel(
+    isDarkMode: Boolean,
     purchases: PurchasesType = PurchasesImpl(),
     viewModel: CustomerCenterViewModel = viewModel<CustomerCenterViewModelImpl>(
-        factory = CustomerCenterViewModelFactory(purchases),
+        factory = CustomerCenterViewModelFactory(
+            purchases,
+            MaterialTheme.colorScheme,
+            isDarkMode = isDarkMode,
+        ),
     ),
 ): CustomerCenterViewModel {
     return viewModel

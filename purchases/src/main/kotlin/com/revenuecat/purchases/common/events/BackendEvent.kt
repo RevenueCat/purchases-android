@@ -44,8 +44,6 @@ internal sealed class BackendEvent : Event {
         @SerialName("dark_mode")
         val darkMode: Boolean,
         val locale: String,
-        @SerialName("is_sandbox")
-        val isSandbox: Boolean,
         @SerialName("display_mode")
         val displayMode: CustomerCenterDisplayMode,
     ) : BackendEvent()

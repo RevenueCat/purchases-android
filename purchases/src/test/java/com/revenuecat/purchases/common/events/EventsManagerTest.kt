@@ -63,16 +63,15 @@ class EventsManagerTest {
         data = CustomerCenterEvent.Data(
             type = CustomerCenterEventType.IMPRESSION,
             timestamp = Date(1699270688884),
-            sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
             darkMode = true,
-            locale = "es_ES",
-            isSandbox = true,
+            locale = "es_ES"
         )
     )
     private val storedEvent = PaywallStoredEvent(paywallEvent, userID)
 
     private val testFolder = "temp_test_folder"
 
+    private var appSessionID = UUID.randomUUID()
     private lateinit var legacyFileHelper: EventsFileHelper<PaywallStoredEvent>
     private lateinit var fileHelper: EventsFileHelper<BackendStoredEvent>
 
@@ -102,6 +101,7 @@ class EventsManagerTest {
         backend = mockk()
 
         eventsManager = EventsManager(
+            appSessionID,
             legacyFileHelper,
             fileHelper,
             identityManager,
@@ -144,7 +144,7 @@ class EventsManagerTest {
         eventsManager.track(customerCenterEvent)
         eventsManager.track(paywallEvent)
         checkFileContents(
-            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","is_sandbox":true,"display_mode":"full_screen"}}""".trimIndent()
+            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
                 + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
@@ -156,7 +156,7 @@ class EventsManagerTest {
         eventsManager.track(customerCenterEvent)
 
         checkFileContents(
-            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","is_sandbox":true,"display_mode":"full_screen"}}""".trimIndent() + "\n"
+            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent() + "\n"
         )
 
         var surveyEvent = CustomerCenterEvent(
@@ -165,9 +165,9 @@ class EventsManagerTest {
         )
         eventsManager.track(surveyEvent)
         checkFileContents(
-            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","is_sandbox":true,"display_mode":"full_screen"}}""".trimIndent()
+            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
-                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","is_sandbox":true,"display_mode":"full_screen"}}""".trimIndent()
+                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
         )
     }

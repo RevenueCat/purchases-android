@@ -30,6 +30,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -1057,12 +1058,15 @@ class PaywallViewModelTest {
         model.closePaywall()
         verify(exactly = 1) {
             purchases.track(
-                withArg {
-                    assertThat(it.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
-                    assertThat(it.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
-                    assertThat(it.data.displayMode).isEqualTo("full_screen")
-                    assertThat(it.data.darkMode).isFalse
-                    assertThat(it.type).isEqualTo(PaywallEventType.CLOSE)
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    assertThat(paywallEvent.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
+                    assertThat(paywallEvent.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
+                    assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
+                    assertThat(paywallEvent.data.darkMode).isFalse
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CLOSE)
                 }
             )
         }
@@ -1257,12 +1261,15 @@ class PaywallViewModelTest {
     ) {
         verify(exactly = times) {
             purchases.track(
-                withArg {
-                    assertThat(it.data.offeringIdentifier).isEqualTo(offeringIdentifier)
-                    assertThat(it.data.paywallRevision).isEqualTo(paywallRevision)
-                    assertThat(it.data.displayMode).isEqualTo("full_screen")
-                    assertThat(it.data.darkMode).isFalse
-                    assertThat(it.type).isEqualTo(eventType)
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    assertThat(paywallEvent.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
+                    assertThat(paywallEvent.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
+                    assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
+                    assertThat(paywallEvent.data.darkMode).isFalse
+                    assertThat(paywallEvent.type).isEqualTo(eventType)
                 }
             )
         }
@@ -1271,8 +1278,10 @@ class PaywallViewModelTest {
     private fun verifyNoEventsOfTypeTracked(eventType: PaywallEventType) {
         verify(exactly = 0) {
             purchases.track(
-                withArg {
-                    assertThat(it.type).isEqualTo(eventType)
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CLOSE)
                 }
             )
         }

@@ -5,9 +5,11 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
@@ -22,6 +24,8 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -78,6 +82,13 @@ internal interface CustomerCenterViewModel {
         method: CustomerCenterConfigData.HelpPath.OpenMethod = CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
     )
     fun clearActionError()
+
+    // trigger state refresh
+    fun refreshStateIfLocaleChanged()
+    fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
+
+    // events
+    fun trackImpression()
 }
 
 internal sealed class TransactionDetails(
@@ -104,11 +115,15 @@ internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
     private val dateFormatter: DateFormatter = DefaultDateFormatter(),
     private val locale: Locale = Locale.getDefault(),
+    private val colorScheme: ColorScheme,
+    private var isDarkMode: Boolean,
 ) : ViewModel(), CustomerCenterViewModel {
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
     }
 
+    private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
+    private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
     override val state = _state
         .onStart {
@@ -476,6 +491,47 @@ internal class CustomerCenterViewModelImpl(
         } catch (e: PurchasesException) {
             _state.value = CustomerCenterState.Error(e.error)
         }
+    }
+
+    override fun refreshStateIfLocaleChanged() {
+        val currentLocaleList = getCurrentLocaleList()
+        if (_lastLocaleList.value != currentLocaleList) {
+            _lastLocaleList.value = currentLocaleList
+        }
+    }
+
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean) {
+        var shouldRefresh = false
+
+        if (isDarkMode != isDark) {
+            isDarkMode = isDark
+            shouldRefresh = true
+        }
+        if (_colorScheme.value != colorScheme) {
+            _colorScheme.value = colorScheme
+            shouldRefresh = true
+        }
+
+        if (shouldRefresh) {
+            _state.update { it }
+        }
+    }
+
+    override fun trackImpression() {
+        val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
+        val event = CustomerCenterEvent(
+            data = CustomerCenterEvent.Data(
+                type = CustomerCenterEventType.IMPRESSION,
+                timestamp = Date(),
+                darkMode = isDarkMode,
+                locale = locale.toString(),
+            ),
+        )
+        purchases.track(event)
+    }
+
+    private fun getCurrentLocaleList(): LocaleListCompat {
+        return LocaleListCompat.getDefault()
     }
 
     private fun displayFeedbackSurvey(

@@ -313,8 +313,8 @@ internal class PurchasesFactory(
             EventsManager(
                 legacyEventsFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context)),
                 fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context)),
-                identityManager,
-                eventsDispatcher,
+                identityManager = identityManager,
+                eventsDispatcher = eventsDispatcher,
                 postEvents = { request, onSuccess, onError ->
                     backend.postEvents(
                         paywallEventRequest = request,
