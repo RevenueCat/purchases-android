@@ -111,6 +111,16 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             aliases = emptyMap(),
             fontAliases = emptyMap(),
         ).getOrThrow()
+        private val introOfferAndSelectedPartial = LocalizedTextPartial(
+            from = PartialTextComponent(),
+            using = nonEmptyMapOf(
+                localeId to nonEmptyMapOf(
+                    LocalizationKey("key") to LocalizationData.Text("Hello intro and selected"),
+                )
+            ),
+            aliases = emptyMap(),
+            fontAliases = emptyMap(),
+        ).getOrThrow()
 
         @JvmStatic
         private fun buildPresentedOverrides(
@@ -395,6 +405,58 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     state = SELECTED,
                     expected = introOfferPartial,
                 ),
+            ),
+            arrayOf(
+                "overrides with multiple conditions that are all applicable should override previous overrides",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                            properties = mediumPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.SELECTED),
+                            properties = selectedPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.MEDIUM,
+                                ComponentOverride.Condition.SELECTED,
+                            ),
+                            properties = introOfferAndSelectedPartial,
+                        ),
+                    ),
+                    windowSize = EXPANDED,
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = SELECTED,
+                    expected = introOfferAndSelectedPartial,
+                )
+            ),
+            arrayOf(
+                "overrides with multiple conditions that are not all applicable should not override previous overrides",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.MEDIUM),
+                            properties = mediumPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.SELECTED),
+                            properties = selectedPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.MEDIUM,
+                                ComponentOverride.Condition.SELECTED,
+                            ),
+                            properties = introOfferAndSelectedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = SELECTED,
+                    expected = selectedPartial,
+                )
             ),
             arrayOf(
                 "should combine all window overrides when they're all available and applicable",
