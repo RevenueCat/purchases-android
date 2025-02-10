@@ -3,7 +3,7 @@ package com.revenuecat.purchases.paywalls.components
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.IconComponent.Formats
 import com.revenuecat.purchases.paywalls.components.IconComponent.IconBackground
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
@@ -43,7 +43,7 @@ class IconComponent(
     @SerialName("icon_background")
     val iconBackground: IconBackground? = null,
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialIconComponent>? = null,
+    val overrides: List<ComponentOverride<PartialIconComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @Poko

@@ -24,8 +24,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -124,13 +123,10 @@ class PackageComponentViewTests {
                         text = unselectedKeyYearly,
                         color = textColor,
                         horizontalAlignment = HorizontalAlignment.LEADING,
-                        overrides = ComponentOverrides(
-                            states = ComponentStates(
-                                selected = PartialTextComponent(
-                                    text = selectedKeyYearly,
-                                )
-                            )
-                        )
+                        overrides = listOf(ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Selected),
+                            properties = PartialTextComponent(text = selectedKeyYearly)
+                        ))
                     )
                 ),
             )
@@ -144,13 +140,10 @@ class PackageComponentViewTests {
                         text = unselectedKeyMonthly,
                         color = textColor,
                         horizontalAlignment = HorizontalAlignment.LEADING,
-                        overrides = ComponentOverrides(
-                            states = ComponentStates(
-                                selected = PartialTextComponent(
-                                    text = selectedKeyMonthly,
-                                )
-                            )
-                        )
+                        overrides = listOf(ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Selected),
+                            properties = PartialTextComponent(text = selectedKeyMonthly),
+                        ))
                     )
                 ),
             )

@@ -28,8 +28,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -318,17 +317,16 @@ class TextComponentViewTests {
                         text = unselectedLocalizationKey,
                         color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedTextColor.toArgb())),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedUnselectedBackgroundColor.toArgb())),
-                        overrides = ComponentOverrides(
-                            states = ComponentStates(
-                                selected = PartialTextComponent(
-                                    text = selectedLocalizationKey,
-                                    color = ColorScheme(ColorInfo.Hex(expectedSelectedTextColor.toArgb())),
-                                    backgroundColor = ColorScheme(
-                                        ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())
-                                    ),
+                        overrides = listOf(ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Selected),
+                            properties = PartialTextComponent(
+                                text = selectedLocalizationKey,
+                                color = ColorScheme(ColorInfo.Hex(expectedSelectedTextColor.toArgb())),
+                                backgroundColor = ColorScheme(
+                                    ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())
                                 ),
                             ),
-                        )
+                        ))
                     )
                 )
             )
@@ -397,17 +395,23 @@ class TextComponentViewTests {
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleTextColor.toArgb())),
             backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
-            overrides = ComponentOverrides(
-                introOffer = PartialTextComponent(
-                    text = singleEligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialTextComponent(
+                        text = singleEligibleLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+                    )
                 ),
-                multipleIntroOffers = PartialTextComponent(
-                    text = multipleEligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
-                )
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    properties = PartialTextComponent(
+                        text = multipleEligibleLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
+                    )
+                ),
             )
         )
         val state = FakePaywallState(
@@ -456,17 +460,23 @@ class TextComponentViewTests {
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleTextColor.toArgb())),
             backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
-            overrides = ComponentOverrides(
-                introOffer = PartialTextComponent(
-                    text = singleEligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialTextComponent(
+                        text = singleEligibleLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+                    )
                 ),
-                multipleIntroOffers = PartialTextComponent(
-                    text = multipleEligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
-                )
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    properties = PartialTextComponent(
+                        text = multipleEligibleLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
+                    )
+                ),
             )
         )
         val noIntroOfferPackageComponent = PackageComponent(
@@ -622,11 +632,12 @@ class TextComponentViewTests {
         val component = TextComponent(
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
-            overrides = ComponentOverrides(
-                introOffer = PartialTextComponent(
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                properties = PartialTextComponent(
                     text = singleEligibleLocalizationKey,
                 ),
-            )
+            )),
         )
         val localizations = nonEmptyMapOf(
             localeIdEnUs to nonEmptyMapOf(

@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -49,7 +49,7 @@ class StackComponent(
     @get:JvmSynthetic
     val badge: Badge? = null,
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialStackComponent>? = null,
+    val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
 ) : PaywallComponent
 
 @Suppress("LongParameterList")

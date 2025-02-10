@@ -99,7 +99,8 @@ private fun previewButtonComponentStyle(
         ),
         badge = null,
         rcPackage = null,
-        overrides = null,
+        tabIndex = null,
+        overrides = emptyList(),
     ),
     action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,
 ): ButtonComponentStyle {

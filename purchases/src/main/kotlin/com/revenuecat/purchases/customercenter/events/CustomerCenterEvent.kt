@@ -19,7 +19,7 @@ import java.util.UUID
 @Serializable
 class CustomerCenterEvent(
     val creationData: CreationData,
-    val eventData: Data,
+    val data: Data,
 ) : FeatureEvent {
 
     companion object {
@@ -38,18 +38,43 @@ class CustomerCenterEvent(
     )
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
-    @Poko
     @Serializable
+    @Poko
     @SuppressWarnings("LongParameterList")
     class Data(
         val type: CustomerCenterEventType,
         @Serializable(with = DateSerializer::class)
         val timestamp: Date,
+        @Serializable(with = UUIDSerializer::class)
+        val sessionIdentifier: UUID,
         val darkMode: Boolean,
         val locale: String,
         val isSandbox: Boolean,
         val version: Int = 1,
-        val revisionId: Int = 1,
+        val revisionID: Int = 1,
         val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
-    )
+    ) {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal fun copy(
+            type: CustomerCenterEventType = this.type,
+            timestamp: Date = this.timestamp,
+            sessionIdentifier: UUID = this.sessionIdentifier,
+            darkMode: Boolean = this.darkMode,
+            locale: String = this.locale,
+            isSandbox: Boolean = this.isSandbox,
+            version: Int = this.version,
+            revisionID: Int = this.revisionID,
+            displayMode: CustomerCenterDisplayMode = this.displayMode,
+        ) = Data(
+            type,
+            Date(timestamp.time),
+            sessionIdentifier,
+            darkMode,
+            locale,
+            isSandbox,
+            version,
+            revisionID,
+            displayMode,
+        )
+    }
 }
