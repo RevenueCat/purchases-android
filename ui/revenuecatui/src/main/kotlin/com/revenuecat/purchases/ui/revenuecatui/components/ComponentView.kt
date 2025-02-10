@@ -2,8 +2,10 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
@@ -35,7 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 /**
  * A Composable that can show any [ComponentStyle].
  */
-@Suppress("LongParameterList", "CyclomaticComplexMethod")
+@Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod")
 @JvmSynthetic
 @Composable
 internal fun ComponentView(
@@ -43,12 +45,14 @@ internal fun ComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    additionalPadding: PaddingValues = PaddingValues(0.dp),
 ) = when (style) {
     is StackComponentStyle -> StackComponentView(
         style = style,
         state = state,
         clickHandler = onClick,
         modifier = modifier,
+        additionalPadding = additionalPadding,
     )
     is TextComponentStyle -> TextComponentView(
         style = style,
@@ -62,6 +66,7 @@ internal fun ComponentView(
         state = state,
         clickHandler = onClick,
         modifier = modifier,
+        additionalPadding = additionalPadding,
     )
     is PackageComponentStyle -> PackageComponentView(style = style, state = state, modifier = modifier)
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)

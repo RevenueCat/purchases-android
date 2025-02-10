@@ -31,7 +31,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -79,6 +78,10 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
+/**
+ * @param additionalPadding Only supported for badgeless stacks as of now, as it is intended to be used to handle
+ * window insets.
+ */
 @Suppress("LongMethod")
 @Composable
 internal fun StackComponentView(
@@ -86,6 +89,7 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    additionalPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -140,7 +144,7 @@ internal fun StackComponentView(
                 MainStackComponent(stackState, state, clickHandler, modifier, badge)
         }
     } else {
-        MainStackComponent(stackState, state, clickHandler, modifier)
+        MainStackComponent(stackState, state, clickHandler, modifier, additionalPadding = additionalPadding)
     }
 }
 
@@ -446,6 +450,7 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
+    additionalPadding: PaddingValues = PaddingValues(0.dp),
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
@@ -523,7 +528,7 @@ private fun MainStackComponent(
     val commonModifier = outerShapeModifier.then(innerShapeModifier)
 
     if (nestedBadge == null && overlay == null) {
-        stack(outerShapeModifier.then(innerShapeModifier))
+        stack(outerShapeModifier.then(innerShapeModifier).padding(additionalPadding))
     } else if (nestedBadge != null) {
         Box(modifier = modifier.then(commonModifier)) {
             stack(Modifier)

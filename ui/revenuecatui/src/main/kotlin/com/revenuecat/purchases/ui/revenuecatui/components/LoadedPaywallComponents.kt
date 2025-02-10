@@ -4,8 +4,12 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -13,7 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -46,6 +52,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
@@ -60,6 +67,10 @@ internal fun LoadedPaywallComponents(
     val configuration = LocalConfiguration.current
     state.update(localeList = configuration.locales)
 
+    val density = LocalDensity.current
+    val bottomSystemBarsHeightDp = with(density) { WindowInsets.systemBars.getBottom(density).toDp() }
+    val bottomSystemBarsPadding = PaddingValues(bottom = bottomSystemBarsHeightDp)
+
     val style = state.stack
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
@@ -72,7 +83,9 @@ internal fun LoadedPaywallComponents(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .conditional(footerComponentStyle == null) { consumeWindowInsets(bottomSystemBarsPadding) },
+            additionalPadding = footerComponentStyle?.let { bottomSystemBarsPadding } ?: PaddingValues(all = 0.dp),
         )
         footerComponentStyle?.let {
             ComponentView(
@@ -80,7 +93,9 @@ internal fun LoadedPaywallComponents(
                 state = state,
                 onClick = clickHandler,
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .consumeWindowInsets(bottomSystemBarsPadding),
+                additionalPadding = bottomSystemBarsPadding,
             )
         }
     }
