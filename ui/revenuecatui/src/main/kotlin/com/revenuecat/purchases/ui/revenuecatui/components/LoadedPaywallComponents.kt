@@ -85,7 +85,7 @@ internal fun LoadedPaywallComponents(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .conditional(footerComponentStyle == null) { consumeWindowInsets(bottomSystemBarsPadding) },
-            additionalPadding = footerComponentStyle?.let { bottomSystemBarsPadding } ?: PaddingValues(all = 0.dp),
+            additionalPadding = footerComponentStyle?.let { PaddingValues(all = 0.dp) } ?: bottomSystemBarsPadding,
         )
         footerComponentStyle?.let {
             ComponentView(
