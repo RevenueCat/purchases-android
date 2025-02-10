@@ -41,9 +41,9 @@ class MostExpensivePricePerMonthMicrosTests {
     @Test
     fun `mostExpensivePricePerMonthMicros should return highest price among multiple monthly packages`() {
         // Arrange
-        val package1 = monthlyPackageWithPrice(1_000_000)
-        val package2 = monthlyPackageWithPrice(2_000_000)
-        val package3 = monthlyPackageWithPrice(500_000)
+        val package1 = monthlyPackageWithPrice(1_000_000, identifier = "1")
+        val package2 = monthlyPackageWithPrice(2_000_000, identifier = "2")
+        val package3 = monthlyPackageWithPrice(500_000, identifier = "3")
         val expected = 2_000_000L
 
         // Act
@@ -117,10 +117,10 @@ class MostExpensivePricePerMonthMicrosTests {
         )
 
     @Suppress("DEPRECATION")
-    private fun monthlyPackageWithPrice(amountMicros: Long) =
+    private fun monthlyPackageWithPrice(amountMicros: Long, identifier: String = PackageType.MONTHLY.identifier!!) =
         Package(
             packageType = PackageType.MONTHLY,
-            identifier = PackageType.MONTHLY.identifier!!,
+            identifier = identifier,
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.monthly_product",

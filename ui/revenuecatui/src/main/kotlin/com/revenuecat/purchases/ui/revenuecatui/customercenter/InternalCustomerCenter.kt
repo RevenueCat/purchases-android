@@ -279,8 +279,8 @@ private fun MainScreen(
             ManageSubscriptionsView(
                 screen = managementScreen,
                 localization = configuration.localization,
-                purchaseInformation = state.purchaseInformation,
                 support = configuration.support,
+                purchaseInformation = state.purchaseInformation,
                 onAction = onAction,
             )
         } ?: run {
