@@ -15,8 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -55,6 +53,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -106,17 +105,11 @@ internal fun TabsComponentView(
     }
 }
 
-private class SelectedTabIndexProvider : PreviewParameterProvider<Int> {
-    override val values: Sequence<Int> = sequenceOf(0, 1, 2)
-}
-
 @Suppress("LongMethod")
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun TabsComponentView_Preview(
-    @PreviewParameter(SelectedTabIndexProvider::class) selectedTabIndex: Int,
-) {
+private fun TabsComponentView_Preview() {
     val boldWhenSelectedOverride = PresentedOverride(
         conditions = listOf(ComponentOverride.Condition.Selected),
         properties = LocalizedTextPartial(
@@ -207,6 +200,7 @@ private fun TabsComponentView_Preview(
                 x = 0.dp,
                 y = 10.dp,
             ),
+            control = TabControlStyle.Buttons(stack = previewStackComponentStyle(emptyList())),
             tabs = nonEmptyListOf(
                 TabsComponentStyle.Tab(
                     stack = previewStackComponentStyle(
@@ -247,7 +241,7 @@ private fun TabsComponentView_Preview(
             ),
             overrides = emptyList(),
         ),
-        state = previewEmptyState(initialSelectedTabIndex = selectedTabIndex),
+        state = previewEmptyState(),
         clickHandler = { },
     )
 }

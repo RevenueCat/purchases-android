@@ -15,6 +15,7 @@ import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -977,12 +978,19 @@ internal class TextComponentViewVariablesTests(
         val localizations = nonEmptyMapOf(defaultLocaleIdentifier to nonEmptyMapOf(textKey to textWithVariable))
         val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
         val textComponent = TextComponent(text = textKey, color = textColor)
+        val packageComponents = packages.map { pkg ->
+            PackageComponent(
+                packageId = pkg.identifier,
+                isSelectedByDefault = false,
+                stack = StackComponent(components = emptyList())
+            )
+        }
         val data = PaywallComponentsData(
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(textComponent)),
+                    stack = StackComponent(components = listOf(textComponent) + packageComponents),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),
