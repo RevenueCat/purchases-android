@@ -47,10 +47,14 @@ internal sealed class BackendEvent : Event {
         val locale: String,
         @SerialName("display_mode")
         val displayMode: CustomerCenterDisplayMode,
+
         // only valid for survey option chosen
         val path: CustomerCenterConfigData.HelpPath.PathType?,
         val url: String?,
-
+        @SerialName("survey_option_id")
+        val surveyOptionID: String?,
+        @SerialName("survey_option_title_key")
+        val surveyOptionTitleKey: String?,
     ) : BackendEvent()
 
     /**

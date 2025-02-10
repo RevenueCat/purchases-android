@@ -43,6 +43,10 @@ class CustomerCenterSurverOptionChosenEvent(
         val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
         val path: CustomerCenterConfigData.HelpPath.PathType,
         val url: String?, // URL if CUSTOM_URL
+        val surveyOptionID: String,
+        val surveyOptionTitleKey: String,
+        val additionalContext: String? = null, // null for now until we support
+
         // isSandbox not available in Android
     ) {
         val type: CustomerCenterEventType = CustomerCenterEventType.SURVEY_OPTION_CHOSEN

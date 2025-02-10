@@ -87,8 +87,8 @@ internal interface CustomerCenterViewModel {
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
 
-    // events
-    fun trackImpression()
+    // tracks customer center impression the first time is shown
+    fun trackImpressionIfNeeded()
 }
 
 internal sealed class TransactionDetails(
@@ -122,6 +122,7 @@ internal class CustomerCenterViewModelImpl(
         private const val STOP_FLOW_TIMEOUT = 5_000L
     }
 
+    private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
@@ -151,6 +152,8 @@ internal class CustomerCenterViewModelImpl(
                     trackCustomerCenterEventOptionChosen(
                         path = path.type,
                         url = path.url,
+                        surveyOptionID = it.id,
+                        surveyOptionTitleKey = it.title,
                     )
 
                     if (product != null && it.promotionalOffer != null) {
@@ -522,21 +525,27 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun trackImpression() {
-        val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
-        val event = CustomerCenterImpressionEvent(
-            data = CustomerCenterImpressionEvent.Data(
-                timestamp = Date(),
-                darkMode = isDarkMode,
-                locale = locale.toString(),
-            ),
-        )
-        purchases.track(event)
+    override fun trackImpressionIfNeeded() {
+        if (impressionCreationData == null) {
+            impressionCreationData = CustomerCenterImpressionEvent.CreationData()
+
+            val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
+            val event = CustomerCenterImpressionEvent(
+                data = CustomerCenterImpressionEvent.Data(
+                    timestamp = Date(),
+                    darkMode = isDarkMode,
+                    locale = locale.toString(),
+                ),
+            )
+            purchases.track(event)
+        }
     }
 
     private fun trackCustomerCenterEventOptionChosen(
         path: CustomerCenterConfigData.HelpPath.PathType,
         url: String?,
+        surveyOptionID: String,
+        surveyOptionTitleKey: String,
     ) {
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         val event = CustomerCenterSurverOptionChosenEvent(
@@ -546,6 +555,8 @@ internal class CustomerCenterViewModelImpl(
                 locale = locale.toString(),
                 path = path,
                 url = url,
+                surveyOptionID = surveyOptionID,
+                surveyOptionTitleKey = surveyOptionTitleKey,
             ),
         )
         purchases.track(event)

@@ -77,7 +77,7 @@ internal fun InternalCustomerCenter(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.trackImpression()
+        viewModel.trackImpressionIfNeeded()
     }
 
     BackHandler {

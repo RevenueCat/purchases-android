@@ -166,14 +166,16 @@ class EventsManagerTest {
                 darkMode = true,
                 locale = "es_ES",
                 path = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
-                url = "PATH2"
+                url = "PATH2",
+                surveyOptionID = "surveyOptionID",
+                surveyOptionTitleKey = "surveyOptionTitleKey"
             )
         )
         eventsManager.track(surveyEvent)
         checkFileContents(
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
-                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen","path":"CANCEL","url":"PATH2"}}""".trimIndent()
+                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen","path":"CANCEL","url":"PATH2","survey_option_id":"surveyOptionID","survey_option_title_key":"surveyOptionTitleKey"}}""".trimIndent()
                 + "\n"
         )
     }
