@@ -47,7 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
@@ -241,7 +241,7 @@ private fun CustomerCenterLoaded(
         FeedbackSurveyView(state.feedbackSurveyData)
     } else if (state.promotionalOfferData != null) {
         val promotionalOfferData = state.promotionalOfferData
-        PromotionalOfferView(
+        PromotionalOfferScreen(
             promotionalOfferData = promotionalOfferData,
             appearance = state.customerCenterConfigData.appearance,
             onAccept = { subscriptionOption ->
