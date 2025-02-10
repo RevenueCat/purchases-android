@@ -248,7 +248,7 @@ internal class StyleFactory(
             border = borderStyles,
             shadow = shadowStyles,
             badge = badge,
-            scrollOrientation = component.scrollOrientation?.toOrientation(),
+            scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
             tabIndex = tabIndex,
             overrides = presentedOverrides,

@@ -137,7 +137,7 @@ internal class StackComponentState(
 
     @get:JvmSynthetic
     val scrollOrientation by derivedStateOf {
-        presentedPartial?.partial?.scrollOrientation?.toOrientation() ?: style.scrollOrientation
+        presentedPartial?.partial?.overflow?.toOrientation(dimension) ?: style.scrollOrientation
     }
 
     @JvmSynthetic

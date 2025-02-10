@@ -124,7 +124,7 @@ internal class StackComponentTests {
                             "x": 23.6,
                             "y": 45.2
                           },
-                          "scroll_orientation": "horizontal"
+                          "overflow": "scroll"
                         }
                         """.trimIndent(),
                         expected = StackComponent(
@@ -151,7 +151,7 @@ internal class StackComponentTests {
                                 x = 23.6,
                                 y = 45.2
                             ),
-                            scrollOrientation = StackComponent.ScrollOrientation.HORIZONTAL,
+                            overflow = StackComponent.Overflow.SCROLL,
                         )
                     ),
                 ),
@@ -331,7 +331,7 @@ internal class StackComponentTests {
                             "x": 23.6,
                             "y": 45.2
                           },
-                          "scroll_orientation": "horizontal"
+                          "overflow": "scroll"
                         }
                         """.trimIndent(),
                         expected = PartialStackComponent(
@@ -356,7 +356,7 @@ internal class StackComponentTests {
                                 x = 23.6,
                                 y = 45.2
                             ),
-                            scrollOrientation = StackComponent.ScrollOrientation.HORIZONTAL,
+                            overflow = StackComponent.Overflow.SCROLL,
                         )
                     )
                 ),
