@@ -1265,8 +1265,8 @@ class PaywallViewModelTest {
                     val paywallEvent = event as? PaywallEvent
                         ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
 
-                    assertThat(paywallEvent.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
-                    assertThat(paywallEvent.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
+                    assertThat(paywallEvent.data.offeringIdentifier).isEqualTo(offeringIdentifier)
+                    assertThat(paywallEvent.data.paywallRevision).isEqualTo(paywallRevision)
                     assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
                     assertThat(paywallEvent.data.darkMode).isFalse
                     assertThat(paywallEvent.type).isEqualTo(eventType)
