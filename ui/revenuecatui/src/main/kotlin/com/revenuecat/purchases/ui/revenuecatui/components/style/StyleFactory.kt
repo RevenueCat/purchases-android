@@ -133,12 +133,13 @@ internal class StyleFactory(
         component: PackageComponent,
         tabControl: TabControlStyle?,
     ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> =
-        offering.getPackage(component.packageId)
+        offering.getPackageOrNull(component.packageId)
             .errorIfNull(
                 nonEmptyListOf(
                     PaywallValidationError.MissingPackage(
                         offeringId = offering.identifier,
-                        packageId = component.packageId,
+                        missingPackageId = component.packageId,
+                        allPackageIds = offering.availablePackages.map { it.identifier },
                     ),
                 ),
             ).flatMap { rcPackage ->
@@ -564,4 +565,12 @@ internal class StyleFactory(
             .orSuccessfullyNull()
             // Ensure the default source keyed by the default locale is present in the result.
             .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
+
+    private fun Offering.getPackageOrNull(identifier: String): Package? =
+        @Suppress("SwallowedException")
+        try {
+            getPackage(identifier)
+        } catch (e: NoSuchElementException) {
+            null
+        }
 }
