@@ -42,11 +42,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
@@ -77,7 +78,7 @@ internal fun TabsComponentView(
     )
     if (!tabsState.visible) return
 
-    val backgroundColorStyle = tabsState.backgroundColor?.forCurrentTheme
+    val backgroundColorStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = tabsState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = tabsState.shadow?.let { rememberShadowStyle(shadow = it) }
 
@@ -179,9 +180,11 @@ private fun TabsComponentView_Preview() {
             size = Size(width = Fill, height = Fill),
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
-            backgroundColor = ColorStyles(
-                light = ColorStyle.Solid(Color.LightGray),
-                dark = ColorStyle.Solid(Color.DarkGray),
+            background = BackgroundStyles.Color(
+                ColorStyles(
+                    light = ColorStyle.Solid(Color.LightGray),
+                    dark = ColorStyle.Solid(Color.DarkGray),
+                ),
             ),
             shape = Shape.Rectangle(CornerRadiuses.Dp(all = 16.0)),
             border = BorderStyles(
@@ -208,9 +211,11 @@ private fun TabsComponentView_Preview() {
                             controlButtons,
                             previewTextComponentStyle(text = "Tab 1 content"),
                         ),
-                        backgroundColor = ColorStyles(
-                            light = ColorStyle.Solid(Color.Red),
-                            dark = ColorStyle.Solid(Color.Blue),
+                        background = BackgroundStyles.Color(
+                            ColorStyles(
+                                light = ColorStyle.Solid(Color.Red),
+                                dark = ColorStyle.Solid(Color.Blue),
+                            ),
                         ),
                     ),
                 ),
@@ -220,9 +225,11 @@ private fun TabsComponentView_Preview() {
                             controlButtons,
                             previewTextComponentStyle(text = "Tab 2 content"),
                         ),
-                        backgroundColor = ColorStyles(
-                            light = ColorStyle.Solid(Color.Yellow),
-                            dark = ColorStyle.Solid(Color.Green),
+                        background = BackgroundStyles.Color(
+                            ColorStyles(
+                                light = ColorStyle.Solid(Color.Yellow),
+                                dark = ColorStyle.Solid(Color.Green),
+                            ),
                         ),
                     ),
                 ),
@@ -232,9 +239,11 @@ private fun TabsComponentView_Preview() {
                             controlButtons,
                             previewTextComponentStyle(text = "Tab 3 content"),
                         ),
-                        backgroundColor = ColorStyles(
-                            light = ColorStyle.Solid(Color.Blue),
-                            dark = ColorStyle.Solid(Color.Red),
+                        background = BackgroundStyles.Color(
+                            ColorStyles(
+                                light = ColorStyle.Solid(Color.Blue),
+                                dark = ColorStyle.Solid(Color.Red),
+                            ),
                         ),
                     ),
                 ),
@@ -252,7 +261,7 @@ private fun previewStackComponentStyle(
     dimension: Dimension = Vertical(alignment = HorizontalAlignment.CENTER, distribution = FlexDistribution.CENTER),
     size: Size = Size(width = Fill, height = Fill),
     spacing: Dp = 0.dp,
-    backgroundColor: ColorStyles = ColorStyles(light = ColorStyle.Solid(Color.Transparent)),
+    background: BackgroundStyles = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Transparent))),
     padding: PaddingValues = PaddingValues(all = 0.dp),
     margin: PaddingValues = PaddingValues(all = 0.dp),
     shape: Shape = Shape.Rectangle(CornerRadiuses.Dp(all = 0.0)),
@@ -265,7 +274,7 @@ private fun previewStackComponentStyle(
         dimension = dimension,
         size = size,
         spacing = spacing,
-        backgroundColor = backgroundColor,
+        background = background,
         padding = padding,
         margin = margin,
         shape = shape,

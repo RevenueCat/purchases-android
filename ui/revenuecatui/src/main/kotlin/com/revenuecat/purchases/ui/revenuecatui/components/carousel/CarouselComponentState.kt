@@ -107,7 +107,7 @@ internal class CarouselComponentState(
     val sidePagePeek by derivedStateOf { presentedPartial?.partial?.sidePagePeek?.dp ?: style.sidePagePeek }
 
     @get:JvmSynthetic
-    val backgroundColor by derivedStateOf { presentedPartial?.backgroundColorStyles ?: style.backgroundColor }
+    val background by derivedStateOf { presentedPartial?.backgroundStyles ?: style.background }
 
     @get:JvmSynthetic
     val spacing by derivedStateOf { presentedPartial?.partial?.spacing?.dp ?: style.spacing }

@@ -84,7 +84,7 @@ internal class TabsComponentState(
     val size by derivedStateOf { presentedPartial?.partial?.size ?: style.size }
 
     @get:JvmSynthetic
-    val backgroundColor by derivedStateOf { presentedPartial?.backgroundColorStyles ?: style.backgroundColor }
+    val background by derivedStateOf { presentedPartial?.backgroundStyles ?: style.background }
 
     @get:JvmSynthetic
     val padding by derivedStateOf { presentedPartial?.partial?.padding?.toPaddingValues() ?: style.padding }

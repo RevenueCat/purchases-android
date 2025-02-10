@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -21,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -65,6 +67,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(10u), height = Fixed(10u)),
                                 spacing = 10f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb()))),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 10.0)),
@@ -93,6 +96,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(20u), height = Fixed(20u)),
                                 spacing = 20f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb()))),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
@@ -121,6 +125,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(20u), height = Fixed(20u)),
                                 spacing = 20f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb()))),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
@@ -154,6 +159,7 @@ internal class PresentedStackPartialTests {
                                 size = null,
                                 spacing = null,
                                 backgroundColor = null,
+                                background = null,
                                 padding = null,
                                 margin = null,
                                 shape = null,
@@ -170,6 +176,7 @@ internal class PresentedStackPartialTests {
                                 size = null,
                                 spacing = null,
                                 backgroundColor = null,
+                                background = null,
                                 padding = null,
                                 margin = null,
                                 shape = null,
@@ -186,6 +193,7 @@ internal class PresentedStackPartialTests {
                                 size = null,
                                 spacing = null,
                                 backgroundColor = null,
+                                background = null,
                                 padding = null,
                                 margin = null,
                                 shape = null,
@@ -207,6 +215,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(10u), height = Fixed(10u)),
                                 spacing = 10f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb()))),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 10.0)),
@@ -236,6 +245,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(10u), height = Fixed(10u)),
                                 spacing = 10f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb()))),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 10.0)),
@@ -260,7 +270,7 @@ internal class PresentedStackPartialTests {
                     )
                 ),
                 arrayOf(
-                    "Should properly override the first 6 individual properties if they are non-null in both",
+                    "Should properly override the first 7 individual properties if they are non-null in both",
                     Args(
                         base = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -269,6 +279,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(10u), height = Fixed(10u)),
                                 spacing = 10f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb()))),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 10.0)),
@@ -297,6 +308,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(20u), height = Fixed(20u)),
                                 spacing = 20f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb()))),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = null,
                                 shape = null,
@@ -313,6 +325,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(20u), height = Fixed(20u)),
                                 spacing = 20f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb()))),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 10.0)),
@@ -337,7 +350,7 @@ internal class PresentedStackPartialTests {
                     )
                 ),
                 arrayOf(
-                    "Should properly override the first 6 individual properties if they are null in the base",
+                    "Should properly override the first 7 individual properties if they are null in the base",
                     Args(
                         base = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -346,6 +359,7 @@ internal class PresentedStackPartialTests {
                                 size = null,
                                 spacing = null,
                                 backgroundColor = null,
+                                background = null,
                                 padding = null,
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 10.0)),
@@ -374,6 +388,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(20u), height = Fixed(20u)),
                                 spacing = 20f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb()))),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = null,
                                 shape = null,
@@ -390,6 +405,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(20u), height = Fixed(20u)),
                                 spacing = 20f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb()))),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 10.0)),
@@ -423,6 +439,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(10u), height = Fixed(10u)),
                                 spacing = 10f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb()))),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 10.0)),
@@ -451,6 +468,7 @@ internal class PresentedStackPartialTests {
                                 size = null,
                                 spacing = null,
                                 backgroundColor = null,
+                                background = null,
                                 padding = null,
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
@@ -479,6 +497,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(10u), height = Fixed(10u)),
                                 spacing = 10f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb()))),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
@@ -512,6 +531,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(10u), height = Fixed(10u)),
                                 spacing = 10f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb()))),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = null,
                                 shape = null,
@@ -528,6 +548,7 @@ internal class PresentedStackPartialTests {
                                 size = null,
                                 spacing = null,
                                 backgroundColor = null,
+                                background = null,
                                 padding = null,
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
@@ -556,6 +577,7 @@ internal class PresentedStackPartialTests {
                                 size = Size(width = Fixed(10u), height = Fixed(10u)),
                                 spacing = 10f,
                                 backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb()))),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
@@ -597,10 +619,12 @@ internal class PresentedStackPartialTests {
         @Test
         fun `Should accumulate errors if the ColorAlias is not found`() {
             // Arrange
+            val missingBackgroundColorKey = ColorAlias("missing-background-color-key")
             val missingBackgroundKey = ColorAlias("missing-background-key")
             val missingBorderKey = ColorAlias("missing-border-key")
             val missingShadowKey = ColorAlias("missing-shadow-key")
             val expected = nonEmptyListOf(
+                PaywallValidationError.MissingColorAlias(missingBackgroundColorKey),
                 PaywallValidationError.MissingColorAlias(missingBackgroundKey),
                 PaywallValidationError.MissingColorAlias(missingBorderKey),
                 PaywallValidationError.MissingColorAlias(missingShadowKey),
@@ -610,6 +634,7 @@ internal class PresentedStackPartialTests {
             val actualResult = PresentedStackPartial(
                 from = PartialStackComponent(
                     backgroundColor = ColorScheme(light = ColorInfo.Alias(missingBackgroundKey)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(missingBackgroundColorKey))),
                     border = Border(color = ColorScheme(light = ColorInfo.Alias(missingBorderKey)), width = 2.0),
                     shadow = Shadow(
                         color = ColorScheme(light = ColorInfo.Alias(missingShadowKey)),
@@ -619,6 +644,7 @@ internal class PresentedStackPartialTests {
                     )
                 ),
                 aliases = mapOf(
+                    ColorAlias("existing-background-color-key") to ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
                     ColorAlias("existing-background-key") to ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
                     ColorAlias("existing-border-key") to ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
                     ColorAlias("existing-shadow-key") to ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
@@ -634,13 +660,16 @@ internal class PresentedStackPartialTests {
         @Test
         fun `Should accumulate errors if the ColorAlias points to another alias`() {
             // Arrange
+            val firstBackgroundColorKey = ColorAlias("first-background-color-key")
             val firstBackgroundKey = ColorAlias("first-background-key")
             val firstBorderKey = ColorAlias("first-border-key")
             val firstShadowKey = ColorAlias("first-shadow-key")
+            val secondBackgroundColorKey = ColorAlias("second-background-color-key")
             val secondBackgroundKey = ColorAlias("second-background-key")
             val secondBorderKey = ColorAlias("second-border-key")
             val secondShadowKey = ColorAlias("second-shadow-key")
             val expected = nonEmptyListOf(
+                PaywallValidationError.AliasedColorIsAlias(firstBackgroundColorKey, secondBackgroundColorKey),
                 PaywallValidationError.AliasedColorIsAlias(firstBackgroundKey, secondBackgroundKey),
                 PaywallValidationError.AliasedColorIsAlias(firstBorderKey, secondBorderKey),
                 PaywallValidationError.AliasedColorIsAlias(firstShadowKey, secondShadowKey),
@@ -650,6 +679,7 @@ internal class PresentedStackPartialTests {
             val actualResult = PresentedStackPartial(
                 from = PartialStackComponent(
                     backgroundColor = ColorScheme(light = ColorInfo.Alias(firstBackgroundKey)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(firstBackgroundColorKey))),
                     border = Border(color = ColorScheme(light = ColorInfo.Alias(firstBorderKey)), width = 2.0),
                     shadow = Shadow(
                         color = ColorScheme(light = ColorInfo.Alias(firstShadowKey)),
@@ -659,6 +689,7 @@ internal class PresentedStackPartialTests {
                     )
                 ),
                 aliases = mapOf(
+                    firstBackgroundColorKey to ColorScheme(light = ColorInfo.Alias(secondBackgroundColorKey)),
                     firstBackgroundKey to ColorScheme(light = ColorInfo.Alias(secondBackgroundKey)),
                     firstBorderKey to ColorScheme(light = ColorInfo.Alias(secondBorderKey)),
                     firstShadowKey to ColorScheme(light = ColorInfo.Alias(secondShadowKey)),
@@ -683,7 +714,7 @@ internal class PresentedStackPartialTests {
             // Act
             val actualResult = PresentedStackPartial(
                 from = PartialStackComponent(
-                    backgroundColor = ColorScheme(light = ColorInfo.Alias(existingBackgroundKey)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(existingBackgroundKey))),
                     border = Border(color = ColorScheme(light = ColorInfo.Alias(existingBorderKey)), width = 2.0),
                     shadow = Shadow(
                         color = ColorScheme(light = ColorInfo.Alias(existingShadowKey)),
@@ -702,11 +733,11 @@ internal class PresentedStackPartialTests {
             // Assert
             assert(actualResult.isSuccess)
             val actual = actualResult.getOrThrow()
-            val actualBackgroundColor = actual.backgroundColorStyles?.light ?: error("Actual background color is null")
+            val actualBackground = actual.backgroundStyles ?: error("Actual background is null")
             val actualBorderColor = actual.borderStyles?.colors?.light ?: error("Actual border color is null")
             val actualShadowColor = actual.shadowStyles?.colors?.light ?: error("Actual shadow color is null")
-            actualBackgroundColor.let { it as ColorStyle.Solid }.also {
-                assert(it.color == expectedBackgroundColor)
+            actualBackground.let { it as BackgroundStyles.Color }.also {
+                assert((it.color.light as ColorStyle.Solid).color == expectedBackgroundColor)
             }
             actualBorderColor.let { it as ColorStyle.Solid }.also {
                 assert(it.color == expectedBorderColor)
@@ -721,7 +752,7 @@ internal class PresentedStackPartialTests {
             // Arrange, Act
             val actualResult = PresentedStackPartial(
                 from = PartialStackComponent(
-                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))),
                     border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())), width = 2.0),
                     shadow = Shadow(
                         color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
@@ -739,13 +770,65 @@ internal class PresentedStackPartialTests {
             assert(actualResult.isSuccess)
         }
 
+        @Test
+        fun `Should use backgroundColor if background not available`() {
+            // Arrange
+            val existingBackgroundColorKey = ColorAlias("existing-background-color-key")
+            val expectedBackgroundColor = Color.Blue
+            // Act
+            val actualResult = PresentedStackPartial(
+                from = PartialStackComponent(
+                    backgroundColor = ColorScheme(light = ColorInfo.Alias(existingBackgroundColorKey)),
+                ),
+                aliases = mapOf(
+                    existingBackgroundColorKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
+                )
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+            val actual = actualResult.getOrThrow()
+            val actualBackground = actual.backgroundStyles ?: error("Actual background is null")
+            actualBackground.let { it as BackgroundStyles.Color }.also {
+                assert((it.color.light as ColorStyle.Solid).color == expectedBackgroundColor)
+            }
+        }
+
+        @Test
+        fun `Should use background over backgroundColor if both available`() {
+            // Arrange
+            val existingBackgroundColorKey = ColorAlias("existing-background-color-key")
+            val existingBackgroundKey = ColorAlias("existing-background-key")
+            val expectedBackgroundColor = Color.Blue
+            val expectedBackground = Color.Red
+            // Act
+            val actualResult = PresentedStackPartial(
+                from = PartialStackComponent(
+                    backgroundColor = ColorScheme(light = ColorInfo.Alias(existingBackgroundColorKey)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(existingBackgroundKey))),
+                ),
+                aliases = mapOf(
+                    existingBackgroundColorKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
+                    existingBackgroundKey to ColorScheme(light = ColorInfo.Hex(expectedBackground.toArgb())),
+                )
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+            val actual = actualResult.getOrThrow()
+            val actualBackground = actual.backgroundStyles ?: error("Actual background is null")
+            actualBackground.let { it as BackgroundStyles.Color }.also {
+                assert((it.color.light as ColorStyle.Solid).color == expectedBackground)
+            }
+        }
+
         @Suppress("MaxLineLength")
         @Test
         fun `Should create successfully if the PartialStackComponent has no ColorAlias, alias map is empty`() {
             // Arrange, Act
             val actualResult = PresentedStackPartial(
                 from = PartialStackComponent(
-                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))),
                     border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())), width = 2.0),
                     shadow = Shadow(
                         color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
@@ -777,10 +860,10 @@ internal class PresentedStackPartialTests {
             val lightShadowKey = ColorAlias("existing-light-shadow-key")
             val darkShadowKey = ColorAlias("existing-dark-shadow-key")
             val partial = PartialStackComponent(
-                backgroundColor = ColorScheme(
+                background = Background.Color(ColorScheme(
                     light = ColorInfo.Alias(lightBackgroundKey),
                     dark = ColorInfo.Alias(darkBackgroundKey)
-                ),
+                )),
                 border = Border(
                     color = ColorScheme(
                         light = ColorInfo.Alias(lightBorderColorKey),
@@ -825,10 +908,10 @@ internal class PresentedStackPartialTests {
                 ),
             )
             val expected = PresentedStackPartial(
-                backgroundColorStyles = ColorStyles(
+                backgroundStyles = BackgroundStyles.Color(ColorStyles(
                     light = ColorStyle.Solid(expectedLightBackgroundColor),
                     dark = ColorStyle.Solid(expectedDarkBackgroundColor),
-                ),
+                )),
                 borderStyles = BorderStyles(
                     width = 2.dp,
                     colors = ColorStyles(
@@ -876,10 +959,10 @@ internal class PresentedStackPartialTests {
             val lightShadowKey = ColorAlias("existing-light-shadow-key")
             val darkShadowKey = ColorAlias("existing-dark-shadow-key")
             val partial = PartialStackComponent(
-                backgroundColor = ColorScheme(
+                background = Background.Color(ColorScheme(
                     light = ColorInfo.Alias(lightBackgroundKey),
                     dark = ColorInfo.Alias(darkBackgroundKey)
-                ),
+                )),
                 border = Border(
                     color = ColorScheme(
                         light = ColorInfo.Alias(lightBorderColorKey),
@@ -918,10 +1001,10 @@ internal class PresentedStackPartialTests {
                 ),
             )
             val expected = PresentedStackPartial(
-                backgroundColorStyles = ColorStyles(
+                backgroundStyles = BackgroundStyles.Color(ColorStyles(
                     light = ColorStyle.Solid(expectedLightBackgroundColor),
                     dark = ColorStyle.Solid(expectedDarkBackgroundColor),
-                ),
+                )),
                 borderStyles = BorderStyles(
                     width = 2.dp,
                     colors = ColorStyles(
@@ -966,10 +1049,10 @@ internal class PresentedStackPartialTests {
             val borderKey = ColorAlias("existing-border-key")
             val shadowKey = ColorAlias("existing-shadow-key")
             val partial = PartialStackComponent(
-                backgroundColor = ColorScheme(
+                background = Background.Color(ColorScheme(
                     light = ColorInfo.Alias(backgroundKey),
                     dark = ColorInfo.Alias(backgroundKey)
-                ),
+                )),
                 border = Border(
                     color = ColorScheme(
                         light = ColorInfo.Alias(borderKey),
@@ -1002,10 +1085,10 @@ internal class PresentedStackPartialTests {
                 ),
             )
             val expected = PresentedStackPartial(
-                backgroundColorStyles = ColorStyles(
+                backgroundStyles = BackgroundStyles.Color(ColorStyles(
                     light = ColorStyle.Solid(expectedLightBackgroundColor),
                     dark = ColorStyle.Solid(expectedDarkBackgroundColor),
-                ),
+                )),
                 borderStyles = BorderStyles(
                     width = 2.dp,
                     colors = ColorStyles(
@@ -1047,10 +1130,10 @@ internal class PresentedStackPartialTests {
             val borderKey = ColorAlias("existing-border-key")
             val shadowKey = ColorAlias("existing-shadow-key")
             val partial = PartialStackComponent(
-                backgroundColor = ColorScheme(
+                background = Background.Color(ColorScheme(
                     light = ColorInfo.Alias(backgroundKey),
                     dark = ColorInfo.Alias(backgroundKey)
-                ),
+                )),
                 border = Border(
                     color = ColorScheme(
                         light = ColorInfo.Alias(borderKey),
@@ -1080,10 +1163,10 @@ internal class PresentedStackPartialTests {
                 ),
             )
             val expected = PresentedStackPartial(
-                backgroundColorStyles = ColorStyles(
+                backgroundStyles = BackgroundStyles.Color(ColorStyles(
                     light = ColorStyle.Solid(expectedBackgroundColor),
                     dark = ColorStyle.Solid(expectedBackgroundColor),
-                ),
+                )),
                 borderStyles = BorderStyles(
                     width = 2.dp,
                     colors = ColorStyles(

@@ -25,6 +25,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -86,7 +87,7 @@ private fun previewButtonComponentStyle(
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
         size = Size(width = Fit, height = Fit),
         spacing = 16.dp,
-        backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
+        background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.Red))),
         padding = PaddingValues(all = 16.dp),
         margin = PaddingValues(all = 16.dp),
         shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
