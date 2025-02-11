@@ -441,7 +441,7 @@ private fun BoxScope.OverlaidBadge(
     )
 }
 
-@Suppress("LongMethod", "LongParameterList")
+@Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 @Composable
 private fun MainStackComponent(
     stackState: StackComponentState,
@@ -684,10 +684,12 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
                 ),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                background = BackgroundStyles.Color(ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
-                    dark = ColorStyle.Solid(Color.Yellow),
-                )),
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
+                ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
@@ -946,10 +948,12 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
                 ),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                background = BackgroundStyles.Color(ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
-                    dark = ColorStyle.Solid(Color.Yellow),
-                )),
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
+                ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
