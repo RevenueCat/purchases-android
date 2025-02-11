@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
@@ -176,17 +177,23 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         first = styleFactory.create(config.stack),
         second = config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
         third = config.background.toBackgroundStyles(aliases = colorAliases),
-    ) { stack, stickyFooter, background ->
+    ) { backendRootComponent, stickyFooter, background ->
+        // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
+        // definite solution for positioning the root component.
+        val rootComponent = (backendRootComponent as? StackComponentStyle)
+            ?.takeIf { it.size.height == SizeConstraint.Fit }
+            ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
+            ?: backendRootComponent
 
-        val packagesOutsideTabs = stack.findPackagesOutsideTabs() + stickyFooter?.findPackagesOutsideTabs().orEmpty()
-        val tabsComponent = stack.findTabsComponentStyle() ?: stickyFooter?.findTabsComponentStyle()
+        val packagesOutsideTabs = rootComponent.findPackagesOutsideTabs() + stickyFooter?.findPackagesOutsideTabs().orEmpty()
+        val tabsComponent = rootComponent.findTabsComponentStyle() ?: stickyFooter?.findTabsComponentStyle()
 
         val packages = AvailablePackages(
             packagesOutsideTabs = packagesOutsideTabs,
             packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
         )
 
-        val stackWithAppliedWindowInsets = stack.applyTopWindowInsetsIfNecessary().run {
+        val stackWithAppliedWindowInsets = rootComponent.applyTopWindowInsetsIfNecessary().run {
             if (stickyFooter == null) applyBottomWindowInsetsIfNecessary() else this
         }
 
