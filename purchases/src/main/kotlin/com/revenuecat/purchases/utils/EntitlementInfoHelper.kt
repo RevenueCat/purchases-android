@@ -2,6 +2,7 @@ package com.revenuecat.purchases.utils
 
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.PeriodType
+
 import java.util.Date
 
 internal object EntitlementInfoHelper {
