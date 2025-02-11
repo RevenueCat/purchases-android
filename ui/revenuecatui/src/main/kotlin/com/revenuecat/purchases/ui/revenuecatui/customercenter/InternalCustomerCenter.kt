@@ -266,8 +266,8 @@ private fun CustomerCenterLoaded(
             state = state.restorePurchasesState,
             onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
             onRestore = { onAction(CustomerCenterAction.PerformRestore) },
-            onContactSupport = {
-                state.customerCenterConfigData.support.email?.let { email ->
+            onContactSupport = state.customerCenterConfigData.support.email?.let { email ->
+                {
                     onAction(CustomerCenterAction.ContactSupport(email))
                 }
             },

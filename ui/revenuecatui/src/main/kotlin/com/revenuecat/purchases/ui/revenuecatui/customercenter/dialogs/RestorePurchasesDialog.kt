@@ -23,7 +23,7 @@ internal fun RestorePurchasesDialog(
     state: RestorePurchasesState,
     onDismiss: () -> Unit,
     onRestore: () -> Unit,
-    onContactSupport: () -> Unit,
+    onContactSupport: (() -> Unit)?,
 ) {
     when (state) {
         RestorePurchasesState.INITIAL -> InitialStateDialog(
@@ -121,7 +121,7 @@ private fun PurchasesRecoveredDialog(onDismiss: () -> Unit) {
 @Composable
 private fun PurchasesNotFoundDialog(
     onDismiss: () -> Unit,
-    onContactSupport: () -> Unit,
+    onContactSupport: (() -> Unit)? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -138,8 +138,10 @@ private fun PurchasesNotFoundDialog(
             )
         },
         confirmButton = {
-            Button(onClick = onContactSupport) {
-                Text("Contact Support")
+            if (onContactSupport != null) {
+                Button(onClick = onContactSupport) {
+                    Text("Contact Support")
+                }
             }
         },
         dismissButton = {
