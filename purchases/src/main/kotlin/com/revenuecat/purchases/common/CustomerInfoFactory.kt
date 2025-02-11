@@ -15,6 +15,7 @@ import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.SerializationException
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
@@ -27,9 +28,11 @@ import java.util.Date
  */
 internal object CustomerInfoFactory {
 
+    @OptIn(ExperimentalSerializationApi::class)
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val json = Json {
         ignoreUnknownKeys = true
+        explicitNulls = false
     }
 
     @Throws(JSONException::class)
