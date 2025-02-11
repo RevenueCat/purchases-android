@@ -2,7 +2,7 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
-import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
@@ -80,11 +80,11 @@ internal fun PaywallEvent.toBackendStoredEvent(
 }
 
 /**
- * Converts a `PaywallEvent` into a `BackendStoredEvent.Paywalls` instance.
+ * Converts a `CustomerCenterImpressionEvent` into a `BackendStoredEvent.CustomerCenter` instance.
  *
- * @receiver The `PaywallEvent` to be converted.
+ * @receiver The `CustomerCenterImpressionEvent` to be converted.
  * @param appUserID The user ID associated with the event.
- * @return A `BackendStoredEvent.Paywalls` containing a `BackendEvent.Paywalls`.
+ * @return A `BackendStoredEvent.CustomerCenter` containing a `BackendEvent.CustomerCenter`.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
@@ -112,15 +112,15 @@ internal fun CustomerCenterImpressionEvent.toBackendStoredEvent(
 }
 
 /**
- * Converts a `PaywallEvent` into a `BackendStoredEvent.Paywalls` instance.
+ * Converts a `CustomerCenterSurveyOptionChosenEvent` into a `BackendStoredEvent.CustomerCenter` instance.
  *
- * @receiver The `PaywallEvent` to be converted.
+ * @receiver The `CustomerCenterSurveyOptionChosenEvent` to be converted.
  * @param appUserID The user ID associated with the event.
- * @return A `BackendStoredEvent.Paywalls` containing a `BackendEvent.Paywalls`.
+ * @return A `BackendStoredEvent.CustomerCenter` containing a `BackendEvent.CustomerCenter`.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
-internal fun CustomerCenterSurverOptionChosenEvent.toBackendStoredEvent(
+internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
     appUserID: String,
     appSessionID: String,
 ): BackendStoredEvent {
