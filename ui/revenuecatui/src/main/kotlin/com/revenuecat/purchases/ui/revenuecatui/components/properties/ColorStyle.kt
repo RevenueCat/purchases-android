@@ -33,7 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import dev.drewhamilton.poko.Poko
 import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.sin
 
 /**
@@ -152,88 +152,53 @@ private fun relativeLinearGradient(
     degrees: Float,
     tileMode: TileMode = TileMode.Clamp,
 ): ShaderBrush {
-    val end = RelativeEndOffset(degrees)
-    return relativeLinearGradient(
-        colorStops = colorStops,
-        start = Offset(x = 1f, y = 1f) - end,
-        end = end,
-        tileMode = tileMode,
-    )
-}
-
-@Stable
-private fun relativeLinearGradient(
-    vararg colorStops: Pair<Float, Color>,
-    start: Offset,
-    end: Offset,
-    tileMode: TileMode = TileMode.Clamp,
-): ShaderBrush =
-    RelativeLinearGradient(
+    return RelativeLinearGradient(
         colors = List(colorStops.size) { i -> colorStops[i].second },
         stops = List(colorStops.size) { i -> colorStops[i].first },
-        start = start,
-        end = end,
+        degrees = degrees,
         tileMode = tileMode,
     )
-
-@Suppress("FunctionName")
-private fun RelativeEndOffset(degrees: Float): Offset {
-    // Convert the angle to radians.
-    val radians = Math.toRadians(degrees.toDouble())
-
-    // Calculate the normalized x and y positions.
-    val xPosition = cos(radians)
-    val yPosition = sin(radians)
-
-    // Determine the scaling factor to move the point to the edge of the enclosing square.
-    val scaleFactor = max(abs(xPosition), abs(yPosition))
-
-    // Scale the x and y coordinates.
-    val scaledX = xPosition / scaleFactor
-    val scaledY = yPosition / scaleFactor
-
-    // Convert the scaled coordinates to an Offset.
-    val x = (scaledX + 1) / 2f
-    val y = (1 - scaledY) / 2f
-
-    return Offset(x.toFloat(), y.toFloat())
 }
 
 /**
- * A brush that uses relative coordinates to draw the linear gradient, instead of absolute ones. Coordinates passed to
- * [start] and [end] must be between 0 and 1 (inclusive).
- *
- * @param start Relative start coordinates. `Offset(x = 0f, y = 0f)` indicates the top left of the drawing area.
- * @param end Relative end coordinates. `Offset(x = 1f, y = 1f)` indicates the bottom right of the drawing area.
+ * A brush that uses relative coordinates to draw the linear gradient, instead of absolute ones.
  */
 @Poko
 @Immutable
 private class RelativeLinearGradient(
     private val colors: List<Color>,
     private val stops: List<Float>? = null,
-    private val start: Offset,
-    private val end: Offset,
+    private val degrees: Float,
     private val tileMode: TileMode = TileMode.Clamp,
 ) : ShaderBrush() {
 
-    init {
-        require(start.x in 0f..1f) {
-            "Coordinates must be between 0 and 1 (inclusive). `start.x` is ${start.x}"
-        }
-        require(start.y in 0f..1f) {
-            "Coordinates must be between 0 and 1 (inclusive). `start.y` is ${start.y}"
-        }
-        require(end.x in 0f..1f) {
-            "Coordinates must be between 0 and 1 (inclusive). `end.x` is ${end.x}"
-        }
-        require(end.y in 0f..1f) {
-            "Coordinates must be between 0 and 1 (inclusive). `end.y` is ${end.y}"
-        }
-    }
-
     override fun createShader(size: Size): Shader {
-        val startPx = Offset(start.x * size.width, start.y * size.height)
-        val endPx = Offset(end.x * size.width, end.y * size.height)
+        // 1. Compute the center of the drawing area.
+        val center = Offset(size.width / 2f, size.height / 2f)
+
+        // 2. Convert degrees to radians and compute the direction vector.
+        val angleRad = -1 * Math.toRadians(degrees.toDouble())
+        val dx = cos(angleRad).toFloat()
+        val dy = sin(angleRad).toFloat()
+
+        // 3. Determine how far we can go from the center before hitting an edge.
+        // Calculate half-dimensions.
+        val halfWidth = size.width / 2f
+        val halfHeight = size.height / 2f
+
+        // Compute scaling factors to reach the vertical and horizontal boundaries.
+        // If dx or dy is 0, we avoid division by zero.
+        val scaleX = if (dx != 0f) halfWidth / abs(dx) else Float.MAX_VALUE
+        val scaleY = if (dy != 0f) halfHeight / abs(dy) else Float.MAX_VALUE
+
+        // The scaling factor that keeps the point inside the rectangle.
+        val scale = min(scaleX, scaleY)
+
+        // 4. Compute the absolute start and end points.
+        // The line goes through the center in both directions.
+        val startPx = center - Offset(dx * scale, dy * scale)
+        val endPx = center + Offset(dx * scale, dy * scale)
+
         return LinearGradientShader(
             colors = colors,
             colorStops = stops,
@@ -265,7 +230,7 @@ private fun LinearGradient_Preview_Square() {
 }
 
 @Suppress("MagicNumber")
-@Preview("Rectangle")
+@Preview
 @Composable
 private fun LinearGradient_Preview_Rectangle() {
     Box(
@@ -276,6 +241,24 @@ private fun LinearGradient_Preview_Rectangle() {
                     colorStops = arrayOf(
                         0f to Color.Yellow,
                         0.5f to Color.Red,
+                        1f to Color.Blue,
+                    ),
+                    degrees = 45f,
+                ),
+            ),
+    )
+}
+
+@Preview
+@Composable
+private fun LinearGradient_Preview_Rectangle_RedBlue() {
+    Box(
+        modifier = Modifier
+            .requiredSize(800.dp, 70.dp)
+            .background(
+                relativeLinearGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Red,
                         1f to Color.Blue,
                     ),
                     degrees = 45f,
