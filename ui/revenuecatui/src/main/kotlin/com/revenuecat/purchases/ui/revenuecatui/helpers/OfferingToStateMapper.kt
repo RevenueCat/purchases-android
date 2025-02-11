@@ -444,10 +444,14 @@ private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.In
 
 /**
  * This checks if the first non-container component is a full-width image, and if so, marks that image with
- * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`.
+ * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`. If such an image is not found, it marks the
+ * root component with `applyTopWindowInsets`.
  */
-private fun ComponentStyle.applyTopWindowInsetsIfNecessary(): ComponentStyle =
-    map { style ->
+@Suppress("CyclomaticComplexMethod")
+private fun ComponentStyle.applyTopWindowInsetsIfNecessary(): ComponentStyle {
+    var fullWidthImageFound = false
+
+    fun ComponentStyle.traverseAndMarkFullWidthImage(): ComponentStyle = map { style ->
         when (style) {
             is ImageComponentStyle -> when (style.size.width) {
                 is SizeConstraint.Fill -> style.copy(ignoreTopWindowInsets = true)
@@ -457,7 +461,7 @@ private fun ComponentStyle.applyTopWindowInsetsIfNecessary(): ComponentStyle =
             }
 
             is StackComponentStyle -> style.children.firstOrNull()
-                ?.applyTopWindowInsetsIfNecessary()
+                ?.traverseAndMarkFullWidthImage()
                 ?.takeIf { it is ImageComponentStyle && it.ignoreTopWindowInsets }
                 ?.let {
                     when (style.dimension) {
@@ -466,12 +470,27 @@ private fun ComponentStyle.applyTopWindowInsetsIfNecessary(): ComponentStyle =
                         -> style
 
                         is Dimension.ZLayer -> style.copy(applyTopWindowInsets = true)
+                            .also { fullWidthImageFound = true }
                     }
                 } ?: style
 
             else -> style
         }
     }
+
+    return traverseAndMarkFullWidthImage()
+        .let { traversed ->
+            // We didn't find a full width image. So we need to apply the top window insets at the root.
+            if (!fullWidthImageFound) {
+                when (traversed) {
+                    is StackComponentStyle -> traversed.copy(applyTopWindowInsets = true)
+                    else -> traversed
+                }
+            } else {
+                traversed
+            }
+        }
+}
 
 @Suppress("UNCHECKED_CAST")
 private fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(): T =
