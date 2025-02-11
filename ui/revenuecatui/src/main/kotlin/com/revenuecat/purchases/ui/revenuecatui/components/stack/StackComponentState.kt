@@ -100,6 +100,9 @@ internal class StackComponentState(
     val applyTopWindowInsets = style.applyTopWindowInsets
 
     @get:JvmSynthetic
+    val applyBottomWindowInsets = style.applyBottomWindowInsets
+
+    @get:JvmSynthetic
     val dimension by derivedStateOf { presentedPartial?.partial?.dimension ?: style.dimension }
 
     @get:JvmSynthetic

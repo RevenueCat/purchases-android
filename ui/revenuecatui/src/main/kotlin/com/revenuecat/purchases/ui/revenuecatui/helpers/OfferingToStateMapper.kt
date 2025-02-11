@@ -186,11 +186,13 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
         )
 
-        val stackWithFirstImageMarked = stack.markFullWidthImageIfItsTheFirst()
+        val stackWithAppliedWindowInsets = stack.applyTopWindowInsetsIfNecessary().run {
+            if (stickyFooter == null) applyBottomWindowInsetsIfNecessary() else this
+        }
 
         PaywallValidationResult.Components(
-            stack = stackWithFirstImageMarked,
-            stickyFooter = stickyFooter,
+            stack = stackWithAppliedWindowInsets,
+            stickyFooter = stickyFooter?.applyBottomWindowInsetsIfNecessary(),
             background = background,
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
@@ -444,7 +446,7 @@ private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.In
  * This checks if the first non-container component is a full-width image, and if so, marks that image with
  * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`.
  */
-private fun ComponentStyle.markFullWidthImageIfItsTheFirst(): ComponentStyle =
+private fun ComponentStyle.applyTopWindowInsetsIfNecessary(): ComponentStyle =
     map { style ->
         when (style) {
             is ImageComponentStyle -> when (style.size.width) {
@@ -455,7 +457,7 @@ private fun ComponentStyle.markFullWidthImageIfItsTheFirst(): ComponentStyle =
             }
 
             is StackComponentStyle -> style.children.firstOrNull()
-                ?.markFullWidthImageIfItsTheFirst()
+                ?.applyTopWindowInsetsIfNecessary()
                 ?.takeIf { it is ImageComponentStyle && it.ignoreTopWindowInsets }
                 ?.let {
                     when (style.dimension) {
@@ -470,6 +472,16 @@ private fun ComponentStyle.markFullWidthImageIfItsTheFirst(): ComponentStyle =
             else -> style
         }
     }
+
+@Suppress("UNCHECKED_CAST")
+private fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(): T =
+    when (this) {
+        is StackComponentStyle -> copy(applyBottomWindowInsets = true)
+        is StickyFooterComponentStyle -> copy(
+            stackComponentStyle = stackComponentStyle.applyBottomWindowInsetsIfNecessary(),
+        )
+        else -> this
+    } as T
 
 /**
  * Returns the first ComponentStyle that satisfies the predicate, or null if none is found.

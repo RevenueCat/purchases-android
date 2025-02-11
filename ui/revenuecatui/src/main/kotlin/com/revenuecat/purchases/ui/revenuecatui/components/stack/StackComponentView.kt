@@ -94,7 +94,6 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    additionalPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -149,7 +148,7 @@ internal fun StackComponentView(
                 MainStackComponent(stackState, state, clickHandler, modifier, badge)
         }
     } else {
-        MainStackComponent(stackState, state, clickHandler, modifier, additionalPadding = additionalPadding)
+        MainStackComponent(stackState, state, clickHandler, modifier)
     }
 }
 
@@ -455,12 +454,17 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
-    additionalPadding: PaddingValues = PaddingValues(0.dp),
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
     val topSystemBarsHeightDp = with(density) { WindowInsets.systemBars.getTop(density).toDp() }
     val topSystemBarsPadding = PaddingValues(top = topSystemBarsHeightDp)
+
+    val bottomSystemBarsPadding = if (stackState.applyBottomWindowInsets) {
+        PaddingValues(bottom = with(density) { WindowInsets.systemBars.getBottom(density).toDp() })
+    } else {
+        PaddingValues(all = 0.dp)
+    }
 
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit =
         remember(stackState.children, stackState.applyTopWindowInsets) {
@@ -552,7 +556,8 @@ private fun MainStackComponent(
         stack(
             outerShapeModifier
                 .then(innerShapeModifier)
-                .padding(additionalPadding)
+                .padding(bottomSystemBarsPadding)
+                .consumeWindowInsets(bottomSystemBarsPadding)
                 .conditional(stackState.applyTopWindowInsets) { consumeWindowInsets(topSystemBarsPadding) },
         )
     } else if (nestedBadge != null) {
