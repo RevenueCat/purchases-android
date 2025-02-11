@@ -509,19 +509,12 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean) {
-        var shouldRefresh = false
-
         if (isDarkMode != isDark) {
             isDarkMode = isDark
-            shouldRefresh = true
-        }
-        if (_colorScheme.value != colorScheme) {
-            _colorScheme.value = colorScheme
-            shouldRefresh = true
         }
 
-        if (shouldRefresh) {
-            _state.update { it }
+        if (_colorScheme.value != colorScheme) {
+            _colorScheme.value = colorScheme
         }
     }
 
