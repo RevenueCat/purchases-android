@@ -8,14 +8,17 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
-import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import java.util.UUID
 
 /**
  * Manages the tracking, storing, and syncing of events in RevenueCat.
@@ -27,6 +30,7 @@ import kotlinx.serialization.modules.polymorphic
  * @property postEvents Function for sending events to the backend.
  */
 internal class EventsManager(
+    private val appSessionID: UUID = Companion.appSessionID,
     private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
     private val fileHelper: EventsFileHelper<BackendStoredEvent>,
     private val identityManager: IdentityManager,
@@ -42,7 +46,9 @@ internal class EventsManager(
         private const val FLUSH_COUNT = 50
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
+        internal val appSessionID: UUID = UUID.randomUUID()
 
+        @OptIn(ExperimentalSerializationApi::class)
         private val json = Json {
             serializersModule = SerializersModule {
                 polymorphic(BackendStoredEvent::class) {
@@ -50,6 +56,7 @@ internal class EventsManager(
                     subclass(BackendStoredEvent.Paywalls::class, BackendStoredEvent.Paywalls.serializer())
                 }
             }
+            explicitNulls = false
         }
 
         /**
@@ -103,8 +110,17 @@ internal class EventsManager(
             debugLog("Tracking event: $event")
 
             val backendEvent = when (event) {
-                is PaywallEvent -> event.toBackendStoredEvent(identityManager.currentAppUserID)
-                is CustomerCenterEvent -> event.toBackendStoredEvent(identityManager.currentAppUserID)
+                is PaywallEvent -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                )
+                is CustomerCenterImpressionEvent -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is CustomerCenterSurverOptionChosenEvent -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
                 else -> null
             }
 
