@@ -254,6 +254,7 @@ private fun CustomerCenterLoaded(
         PromotionalOfferScreen(
             promotionalOfferData = promotionalOfferData,
             appearance = state.customerCenterConfigData.appearance,
+            localization = state.customerCenterConfigData.localization,
             onAccept = { subscriptionOption ->
                 onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
             },
