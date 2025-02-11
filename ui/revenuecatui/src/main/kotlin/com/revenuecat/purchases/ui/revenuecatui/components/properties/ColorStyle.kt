@@ -31,10 +31,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import dev.drewhamilton.poko.Poko
-import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * Used to normalize [ColorInfo.Gradient.Point.percent] values (which are in the range 0..100) to a range of 0..1.
@@ -177,27 +176,21 @@ private class RelativeLinearGradient(
         val center = Offset(size.width / 2f, size.height / 2f)
 
         // 2. Convert degrees to radians and compute the direction vector.
+        // (Note: adjust the sign of degrees if needed to match CSS’s angle definition.)
         val angleRad = -1 * Math.toRadians(degrees.toDouble())
         val dx = cos(angleRad).toFloat()
         val dy = sin(angleRad).toFloat()
 
-        // 3. Determine how far we can go from the center before hitting an edge.
-        // Calculate half-dimensions.
+        // 3. Compute the half-dimensions.
         val halfWidth = size.width / 2f
         val halfHeight = size.height / 2f
 
-        // Compute scaling factors to reach the vertical and horizontal boundaries.
-        // If dx or dy is 0, we avoid division by zero.
-        val scaleX = if (dx != 0f) halfWidth / abs(dx) else Float.MAX_VALUE
-        val scaleY = if (dy != 0f) halfHeight / abs(dy) else Float.MAX_VALUE
+        // 4. Compute the half diagonal (distance from center to the furthest corner).
+        val halfDiagonal = sqrt((halfWidth * halfWidth) + (halfHeight * halfHeight))
 
-        // The scaling factor that keeps the point inside the rectangle.
-        val scale = min(scaleX, scaleY)
-
-        // 4. Compute the absolute start and end points.
-        // The line goes through the center in both directions.
-        val startPx = center - Offset(dx * scale, dy * scale)
-        val endPx = center + Offset(dx * scale, dy * scale)
+        // 5. Compute the absolute start and end points along the gradient line.
+        val startPx = center - Offset(dx * halfDiagonal, dy * halfDiagonal)
+        val endPx = center + Offset(dx * halfDiagonal, dy * halfDiagonal)
 
         return LinearGradientShader(
             colors = colors,
