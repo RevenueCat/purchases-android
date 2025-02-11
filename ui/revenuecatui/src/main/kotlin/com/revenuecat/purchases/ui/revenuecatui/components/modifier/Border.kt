@@ -119,7 +119,7 @@ private fun Border_Preview_LinearGradient(shape: Shape) {
                 border = BorderStyle(
                     width = 10.dp,
                     color = ColorInfo.Gradient.Linear(
-                        degrees = -45f,
+                        degrees = 135f,
                         points = listOf(
                             ColorInfo.Gradient.Point(
                                 color = Color.Cyan.toArgb(),

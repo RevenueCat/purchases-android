@@ -137,7 +137,7 @@ private fun Background_Preview_ColorGradientLinear() {
             .background(
                 BackgroundStyle.Color(
                     ColorInfo.Gradient.Linear(
-                        degrees = 0f,
+                        degrees = 90f,
                         points = listOf(
                             ColorInfo.Gradient.Point(
                                 color = Color.Red.toArgb(),

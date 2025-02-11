@@ -294,7 +294,7 @@ private fun previewItems(
             connector = previewConnectorStyle(
                 margin = connectorMargins,
                 color = ColorInfo.Gradient.Linear(
-                    degrees = 90f,
+                    degrees = 0f,
                     listOf(
                         ColorInfo.Gradient.Point(color = Color(color = 0x000FD483).toArgb(), percent = 0f),
                         ColorInfo.Gradient.Point(color = Color(color = 0xFF0FD483).toArgb(), percent = 100f),
