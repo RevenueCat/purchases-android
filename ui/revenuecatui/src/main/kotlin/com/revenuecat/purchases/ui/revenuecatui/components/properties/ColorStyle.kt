@@ -171,7 +171,7 @@ private class RelativeLinearGradient(
     private val tileMode: TileMode = TileMode.Clamp,
 ) : ShaderBrush() {
 
-    // We need to adjust the degrees to match CSS’s angle definition.
+    // We need to adjust the degrees to match CSS' angle definition.
     @Suppress("MagicNumber")
     private val degrees = degrees - 90f
 
