@@ -25,7 +25,7 @@ import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
-import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -563,8 +563,8 @@ internal class CustomerCenterViewModelImpl(
         surveyOptionTitleKey: String,
     ) {
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
-        val event = CustomerCenterSurverOptionChosenEvent(
-            data = CustomerCenterSurverOptionChosenEvent.Data(
+        val event = CustomerCenterSurveyOptionChosenEvent(
+            data = CustomerCenterSurveyOptionChosenEvent.Data(
                 timestamp = Date(),
                 darkMode = isDarkMode,
                 locale = locale.toString(),

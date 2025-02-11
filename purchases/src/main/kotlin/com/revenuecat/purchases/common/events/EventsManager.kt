@@ -9,7 +9,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
-import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
@@ -117,7 +117,7 @@ internal class EventsManager(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
-                is CustomerCenterSurverOptionChosenEvent -> event.toBackendStoredEvent(
+                is CustomerCenterSurveyOptionChosenEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )

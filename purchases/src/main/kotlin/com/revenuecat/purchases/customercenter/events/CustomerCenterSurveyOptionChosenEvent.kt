@@ -14,7 +14,7 @@ import java.util.UUID
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
-class CustomerCenterSurverOptionChosenEvent(
+class CustomerCenterSurveyOptionChosenEvent(
     val creationData: CreationData = CreationData(),
     val data: Data,
 ) : FeatureEvent {

@@ -11,8 +11,7 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
-import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
-import com.revenuecat.purchases.customercenter.events.CustomerCenterSurverOptionChosenEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -156,12 +155,12 @@ class EventsManagerTest {
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent() + "\n"
         )
 
-        var surveyEvent = CustomerCenterSurverOptionChosenEvent(
-            creationData = CustomerCenterSurverOptionChosenEvent.CreationData(
+        var surveyEvent = CustomerCenterSurveyOptionChosenEvent(
+            creationData = CustomerCenterSurveyOptionChosenEvent.CreationData(
                 id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
                 date = Date(1699270688884)
             ),
-            data = CustomerCenterSurverOptionChosenEvent.Data(
+            data = CustomerCenterSurveyOptionChosenEvent.Data(
                 timestamp = Date(1699270688884),
                 darkMode = true,
                 locale = "es_ES",
