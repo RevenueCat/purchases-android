@@ -458,7 +458,7 @@ private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.In
 private fun ComponentStyle.applyTopWindowInsetsIfNecessary(): ComponentStyle {
     var fullWidthImageFound = false
 
-    fun ComponentStyle.traverseAndMarkFullWidthImage(): ComponentStyle = map { style ->
+    fun ComponentStyle.traverseAndMarkFullWidthImage(): ComponentStyle = recursiveMap { style ->
         when (style) {
             is ImageComponentStyle -> when (style.size.width) {
                 is SizeConstraint.Fill -> style.copy(ignoreTopWindowInsets = true)
@@ -593,45 +593,45 @@ private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun <T : ComponentStyle> T.map(
+private fun <T : ComponentStyle> T.recursiveMap(
     transform: (ComponentStyle) -> ComponentStyle,
 ): T {
     return when (val transformed = transform(this)) {
         is StackComponentStyle -> transformed.copy(
-            children = transformed.children.map { it.map(transform) },
+            children = transformed.children.map { it.recursiveMap(transform) },
         ) as T
 
         is ButtonComponentStyle -> transformed.copy(
-            stackComponentStyle = transformed.stackComponentStyle.map(transform),
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
         ) as T
 
         is PackageComponentStyle -> transformed.copy(
-            stackComponentStyle = transformed.stackComponentStyle.map(transform),
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
         ) as T
 
         is StickyFooterComponentStyle -> transformed.copy(
-            stackComponentStyle = transformed.stackComponentStyle.map(transform),
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
         ) as T
 
         is CarouselComponentStyle -> transformed.copy(
-            slides = transformed.slides.map { it.map(transform) },
+            slides = transformed.slides.map { it.recursiveMap(transform) },
         ) as T
 
         is TabControlButtonComponentStyle -> transformed.copy(
-            stack = transformed.stack.map(transform),
+            stack = transformed.stack.recursiveMap(transform),
         ) as T
 
         is TabControlStyle.Buttons -> transformed.copy(
-            stack = transformed.stack.map(transform),
+            stack = transformed.stack.recursiveMap(transform),
         ) as T
 
         is TabControlStyle.Toggle -> transformed.copy(
-            stack = transformed.stack.map(transform),
+            stack = transformed.stack.recursiveMap(transform),
         ) as T
 
         is TabsComponentStyle -> {
             val newTabs = transformed.tabs.map { tab ->
-                tab.copy(stack = tab.stack.map(transform))
+                tab.copy(stack = tab.stack.recursiveMap(transform))
             }
             transformed.copy(tabs = newTabs) as T
         }
