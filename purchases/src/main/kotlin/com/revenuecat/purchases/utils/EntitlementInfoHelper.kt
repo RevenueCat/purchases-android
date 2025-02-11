@@ -10,11 +10,13 @@ internal object EntitlementInfoHelper {
         expirationDate: Date?,
         unsubscribeDetectedAt: Date?,
         billingIssueDetectedAt: Date?,
+        periodType: PeriodType?,
     ): Boolean {
         val isPromo = store == Store.PROMOTIONAL
         val isLifetime = expirationDate == null
         val hasUnsubscribed = unsubscribeDetectedAt != null
         val hasBillingIssues = billingIssueDetectedAt != null
-        return !(isPromo || isLifetime || hasUnsubscribed || hasBillingIssues)
+        val isPrepaid = periodType == PeriodType.PREPAID
+        return !(isPromo || isLifetime || hasUnsubscribed || hasBillingIssues || isPrepaid)
     }
 }
