@@ -1,12 +1,16 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.responses.PriceResponse
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import java.util.Date
+import java.util.Locale
 
 @Parcelize
 data class Transaction(
@@ -31,7 +35,18 @@ data class Transaction(
     val price: Price,
 ) : Parcelable {
 
-    internal constructor(productId: String, jsonObject: JSONObject) : this(
+    internal companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal val json = Json {
+            ignoreUnknownKeys = true
+        }
+    }
+
+    internal constructor(
+        productId: String,
+        jsonObject: JSONObject,
+        locale: Locale = Locale.getDefault(),
+    ) : this(
         transactionIdentifier = jsonObject.getString("id"),
         revenuecatId = jsonObject.getString("id"),
         productIdentifier = productId,
@@ -46,6 +61,10 @@ data class Transaction(
         },
         isSandbox = jsonObject.optBoolean("sandbox", false),
         originalPurchaseDate = jsonObject.optDate("original_purchase_date"),
-        price = Price(jsonObject.getJSONObject("price")),
+        // Using the PriceResponse class to parse the price JSON object to make it easier to migrate
+        // to Kotlin serialization in the future
+        price = json.decodeFromString<PriceResponse>(
+            jsonObject.getJSONObject("price").toString(),
+        ).toPrice(locale),
     )
 }
