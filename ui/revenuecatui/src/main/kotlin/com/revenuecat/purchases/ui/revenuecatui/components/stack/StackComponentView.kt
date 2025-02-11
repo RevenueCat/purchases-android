@@ -547,9 +547,10 @@ private fun MainStackComponent(
             )
         }
     } else if (overlay != null) {
-        Box(modifier = modifier
-            .then(outerShapeModifier)
-            .clip(composeShape)
+        Box(
+            modifier = modifier
+                .then(outerShapeModifier)
+                .clip(composeShape),
         ) {
             stack(innerShapeModifier)
             overlay()
