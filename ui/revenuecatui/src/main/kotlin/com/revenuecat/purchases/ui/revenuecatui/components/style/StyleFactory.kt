@@ -567,10 +567,9 @@ internal class StyleFactory(
             .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
 
     private fun Offering.getPackageOrNull(identifier: String): Package? =
-        @Suppress("SwallowedException")
         try {
             getPackage(identifier)
-        } catch (e: NoSuchElementException) {
+        } catch (_: NoSuchElementException) {
             null
         }
 }
