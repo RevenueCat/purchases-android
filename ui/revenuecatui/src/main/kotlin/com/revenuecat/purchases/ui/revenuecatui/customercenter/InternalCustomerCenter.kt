@@ -265,6 +265,7 @@ private fun CustomerCenterLoaded(
     } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
+            localization = state.customerCenterConfigData.localization,
             onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
             onRestore = { onAction(CustomerCenterAction.PerformRestore) },
             onContactSupport = state.customerCenterConfigData.support.email?.let { email ->
