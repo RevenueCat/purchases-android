@@ -265,6 +265,13 @@ enum class PeriodType {
      */
     @SerialName("trial")
     TRIAL,
+
+    /**
+     * If the entitlement is under a prepaid period.
+     */
+    @SerialName("prepaid")
+    PREPAID,
+    
 }
 
 /**
