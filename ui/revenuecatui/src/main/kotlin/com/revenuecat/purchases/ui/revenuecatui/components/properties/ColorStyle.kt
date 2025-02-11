@@ -31,10 +31,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import dev.drewhamilton.poko.Poko
-import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.max
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * Used to normalize [ColorInfo.Gradient.Point.percent] values (which are in the range 0..100) to a range of 0..1.
@@ -152,88 +151,52 @@ private fun relativeLinearGradient(
     degrees: Float,
     tileMode: TileMode = TileMode.Clamp,
 ): ShaderBrush {
-    val end = RelativeEndOffset(degrees)
-    return relativeLinearGradient(
-        colorStops = colorStops,
-        start = Offset(x = 1f, y = 1f) - end,
-        end = end,
-        tileMode = tileMode,
-    )
-}
-
-@Stable
-private fun relativeLinearGradient(
-    vararg colorStops: Pair<Float, Color>,
-    start: Offset,
-    end: Offset,
-    tileMode: TileMode = TileMode.Clamp,
-): ShaderBrush =
-    RelativeLinearGradient(
+    return RelativeLinearGradient(
         colors = List(colorStops.size) { i -> colorStops[i].second },
         stops = List(colorStops.size) { i -> colorStops[i].first },
-        start = start,
-        end = end,
+        degrees = degrees,
         tileMode = tileMode,
     )
-
-@Suppress("FunctionName")
-private fun RelativeEndOffset(degrees: Float): Offset {
-    // Convert the angle to radians.
-    val radians = Math.toRadians(degrees.toDouble())
-
-    // Calculate the normalized x and y positions.
-    val xPosition = cos(radians)
-    val yPosition = sin(radians)
-
-    // Determine the scaling factor to move the point to the edge of the enclosing square.
-    val scaleFactor = max(abs(xPosition), abs(yPosition))
-
-    // Scale the x and y coordinates.
-    val scaledX = xPosition / scaleFactor
-    val scaledY = yPosition / scaleFactor
-
-    // Convert the scaled coordinates to an Offset.
-    val x = (scaledX + 1) / 2f
-    val y = (1 - scaledY) / 2f
-
-    return Offset(x.toFloat(), y.toFloat())
 }
 
 /**
- * A brush that uses relative coordinates to draw the linear gradient, instead of absolute ones. Coordinates passed to
- * [start] and [end] must be between 0 and 1 (inclusive).
- *
- * @param start Relative start coordinates. `Offset(x = 0f, y = 0f)` indicates the top left of the drawing area.
- * @param end Relative end coordinates. `Offset(x = 1f, y = 1f)` indicates the bottom right of the drawing area.
+ * A brush that uses relative coordinates to draw the linear gradient, instead of absolute ones.
  */
 @Poko
 @Immutable
 private class RelativeLinearGradient(
     private val colors: List<Color>,
     private val stops: List<Float>? = null,
-    private val start: Offset,
-    private val end: Offset,
+    degrees: Float,
     private val tileMode: TileMode = TileMode.Clamp,
 ) : ShaderBrush() {
 
-    init {
-        require(start.x in 0f..1f) {
-            "Coordinates must be between 0 and 1 (inclusive). `start.x` is ${start.x}"
-        }
-        require(start.y in 0f..1f) {
-            "Coordinates must be between 0 and 1 (inclusive). `start.y` is ${start.y}"
-        }
-        require(end.x in 0f..1f) {
-            "Coordinates must be between 0 and 1 (inclusive). `end.x` is ${end.x}"
-        }
-        require(end.y in 0f..1f) {
-            "Coordinates must be between 0 and 1 (inclusive). `end.y` is ${end.y}"
-        }
-    }
+    // We need to adjust the degrees to match CSS' angle definition.
+    @Suppress("MagicNumber")
+    private val degrees = degrees - 90f
 
+    /**
+     * Creates a linear gradient shader following the
+     * [CSS definition](https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient#composition_of_a_linear_gradient).
+     */
+    @Suppress("MaxLineLength")
     override fun createShader(size: Size): Shader {
-        val startPx = Offset(start.x * size.width, start.y * size.height)
-        val endPx = Offset(end.x * size.width, end.y * size.height)
+        val center = Offset(size.width / 2f, size.height / 2f)
+
+        val radians = Math.toRadians(degrees.toDouble())
+        val dx = cos(radians).toFloat()
+        val dy = sin(radians).toFloat()
+
+        val halfWidth = size.width / 2f
+        val halfHeight = size.height / 2f
+
+        // Compute the distance from the center to the furthest corner.
+        val halfDiagonal = sqrt((halfWidth * halfWidth) + (halfHeight * halfHeight))
+
+        // Compute the absolute start and end points along the gradient line.
+        val startPx = center - Offset(x = dx * halfDiagonal, y = dy * halfDiagonal)
+        val endPx = center + Offset(x = dx * halfDiagonal, y = dy * halfDiagonal)
+
         return LinearGradientShader(
             colors = colors,
             colorStops = stops,
@@ -265,7 +228,7 @@ private fun LinearGradient_Preview_Square() {
 }
 
 @Suppress("MagicNumber")
-@Preview("Rectangle")
+@Preview
 @Composable
 private fun LinearGradient_Preview_Rectangle() {
     Box(
@@ -279,6 +242,70 @@ private fun LinearGradient_Preview_Rectangle() {
                         1f to Color.Blue,
                     ),
                     degrees = 45f,
+                ),
+            ),
+    )
+}
+
+/**
+ * [reference](https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient#gradient_at_a_45-degree_angle)
+ */
+@Preview
+@Composable
+private fun LinearGradient_Preview_Rectangle_RedBlue() {
+    Box(
+        modifier = Modifier
+            .requiredSize(300.dp, 55.dp)
+            .background(
+                relativeLinearGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Red,
+                        1f to Color.Blue,
+                    ),
+                    degrees = 45f,
+                ),
+            ),
+    )
+}
+
+/**
+ * [reference](https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient#gradient_that_starts_at_60_of_the_gradient_line)
+ */
+@Suppress("MagicNumber")
+@Preview
+@Composable
+private fun LinearGradient_Preview_Rectangle_OrangeCyan() {
+    Box(
+        modifier = Modifier
+            .requiredSize(300.dp, 55.dp)
+            .background(
+                relativeLinearGradient(
+                    colorStops = arrayOf(
+                        0.6f to Color(red = 0xFF, green = 0xA5, blue = 0x00),
+                        1f to Color.Cyan,
+                    ),
+                    degrees = 135f,
+                ),
+            ),
+    )
+}
+
+/**
+ * [reference](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_images/Using_CSS_gradients#using_angles)
+ */
+@Preview
+@Composable
+private fun LinearGradient_Preview_Square_BluePink() {
+    Box(
+        modifier = Modifier
+            .requiredSize(100.dp)
+            .background(
+                relativeLinearGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Blue,
+                        1f to Color(red = 0xFF, green = 0xC0, blue = 0xCB),
+                    ),
+                    degrees = 70f,
                 ),
             ),
     )

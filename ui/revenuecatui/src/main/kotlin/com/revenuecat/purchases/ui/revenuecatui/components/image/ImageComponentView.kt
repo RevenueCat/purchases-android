@@ -343,7 +343,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
                 ),
                 overlay = ColorStyles(
                     light = ColorInfo.Gradient.Linear(
-                        degrees = -90f,
+                        degrees = 0f,
                         points = listOf(
                             ColorInfo.Gradient.Point(
                                 color = Color.parseColor("#88FF0000"),
