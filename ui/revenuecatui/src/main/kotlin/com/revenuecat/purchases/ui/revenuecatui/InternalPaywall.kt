@@ -62,12 +62,13 @@ internal fun InternalPaywall(
     BackHandler {
         viewModel.closePaywall()
     }
+
+    viewModel.refreshStateIfLocaleChanged()
+    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+
+    val state = viewModel.state.collectAsState().value
+
     PaywallTheme(fontProvider = options.fontProvider) {
-        viewModel.refreshStateIfLocaleChanged()
-        viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
-
-        val state = viewModel.state.collectAsState().value
-
         AnimatedVisibility(
             visible = state is PaywallState.Loading || state is PaywallState.Error,
             enter = fadeIn(animationSpec = defaultAnimation()),
@@ -79,7 +80,9 @@ internal fun InternalPaywall(
                 onDismiss = viewModel::closePaywall,
             )
         }
+    }
 
+    PaywallTheme(fontProvider = options.fontProvider) {
         AnimatedVisibility(
             visible = state is PaywallState.Loaded.Legacy,
             enter = fadeIn(animationSpec = defaultAnimation()),
@@ -94,42 +97,51 @@ internal fun InternalPaywall(
                 )
             }
         }
+    }
 
-        AnimatedVisibility(
-            visible = state is PaywallState.Loaded.Components,
-            enter = fadeIn(animationSpec = defaultAnimation()),
-            exit = fadeOut(animationSpec = defaultAnimation()),
-        ) {
-            if (state is PaywallState.Loaded.Components) {
-                viewModel.trackPaywallImpressionIfNeeded()
-                LoadedPaywallComponents(
-                    state = state,
-                    clickHandler = rememberPaywallActionHandler(viewModel),
-                )
-            } else {
-                Logger.e(
-                    "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
-                        "from being loaded to a different state. This should not happen.",
-                )
-            }
+    // V2 Paywalls set custom fonts on the dashboard, so we don't want to use FontProvider here to set the fonts.
+    AnimatedVisibility(
+        visible = state is PaywallState.Loaded.Components,
+        enter = fadeIn(animationSpec = defaultAnimation()),
+        exit = fadeOut(animationSpec = defaultAnimation()),
+    ) {
+        if (state is PaywallState.Loaded.Components) {
+            viewModel.trackPaywallImpressionIfNeeded()
+            LoadedPaywallComponents(
+                state = state,
+                clickHandler = rememberPaywallActionHandler(viewModel),
+            )
+        } else {
+            Logger.e(
+                "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
+                    "from being loaded to a different state. This should not happen.",
+            )
         }
+    }
 
-        when (state) {
-            is PaywallState.Loading -> {}
+    when (state) {
+        is PaywallState.Loading -> {}
 
-            is PaywallState.Error -> {
+        is PaywallState.Error -> {
+            PaywallTheme(fontProvider = options.fontProvider) {
                 ErrorDialog(
                     dismissRequest = options.dismissRequest,
                     error = state.errorMessage,
                 )
             }
+        }
 
-            is PaywallState.Loaded -> {
-                viewModel.actionError.value?.let {
+        is PaywallState.Loaded -> {
+            viewModel.actionError.value?.let {
+                val errorDialog = @Composable {
                     ErrorDialog(
                         dismissRequest = viewModel::clearActionError,
                         error = it.message,
                     )
+                }
+                when (state) {
+                    is PaywallState.Loaded.Legacy -> PaywallTheme(fontProvider = options.fontProvider) { errorDialog() }
+                    is PaywallState.Loaded.Components -> errorDialog()
                 }
             }
         }
@@ -247,6 +259,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                 is PaywallAction.NavigateTo -> when (val destination = action.destination) {
                     is PaywallAction.NavigateTo.Destination.CustomerCenter ->
                         Logger.w("Customer Center is not yet implemented on Android.")
+
                     is PaywallAction.NavigateTo.Destination.Url -> context.handleUrlDestination(
                         url = destination.url,
                         method = destination.method,
