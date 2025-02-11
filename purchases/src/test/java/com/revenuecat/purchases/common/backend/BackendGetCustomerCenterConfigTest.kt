@@ -212,7 +212,7 @@ class BackendGetCustomerCenterConfigTest {
                 "free_trial_discounted_then_price" to "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, and {{ price }} thereafter",
                 "purchases_not_found" to "Purchases not found",
                 "purchases_restoring" to "Restoring purchases...",
-            }
+            )
         ),
         support = CustomerCenterConfigData.Support(
             email = "support@revenuecat.com",
