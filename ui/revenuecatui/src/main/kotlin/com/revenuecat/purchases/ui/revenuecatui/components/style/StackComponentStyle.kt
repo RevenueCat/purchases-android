@@ -52,4 +52,9 @@ internal data class StackComponentStyle(
     val tabIndex: Int?,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedStackPartial>>,
+    /**
+     * Will cause this stack to apply the top window insets to all children.
+     */
+    @get:JvmSynthetic
+    val applyTopWindowInsets: Boolean = false,
 ) : ComponentStyle
