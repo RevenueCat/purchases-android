@@ -76,9 +76,21 @@ class SubscriptionInfo(
      * The transaction id in the store of the subscription.
      */
     val storeTransactionId: String?,
+    /**
+     * Date when the subscription will auto-resume.
+     */
     val autoResumeDate: Date?,
+    /**
+     * The display name of the subscription.
+     */
     val displayName: String?,
+    /**
+     * Paid price for the subscription.
+     */
     val price: Price?,
+    /**
+     * The identifier of the product plan.
+     */
     val productPlanIdentifier: String?,
     /**
      * The date the request was made.
