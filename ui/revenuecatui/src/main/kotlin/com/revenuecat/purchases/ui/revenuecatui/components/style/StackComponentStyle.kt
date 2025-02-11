@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
@@ -38,6 +39,8 @@ internal data class StackComponentStyle(
     val shadow: ShadowStyles?,
     @get:JvmSynthetic
     val badge: BadgeStyle?,
+    @get:JvmSynthetic
+    val scrollOrientation: Orientation?,
     /**
      * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
      * available.

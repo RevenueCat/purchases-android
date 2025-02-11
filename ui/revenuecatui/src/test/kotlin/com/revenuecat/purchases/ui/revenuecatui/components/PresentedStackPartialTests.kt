@@ -83,6 +83,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Overlay,
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
+                                overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -111,6 +112,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Nested,
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
+                                overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -139,6 +141,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Nested,
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
+                                overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow()
@@ -159,7 +162,8 @@ internal class PresentedStackPartialTests {
                                 shape = null,
                                 border = null,
                                 shadow = null,
-                                badge = null
+                                badge = null,
+                                overflow = null,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -175,7 +179,8 @@ internal class PresentedStackPartialTests {
                                 shape = null,
                                 border = null,
                                 shadow = null,
-                                badge = null
+                                badge = null,
+                                overflow = null,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -191,7 +196,8 @@ internal class PresentedStackPartialTests {
                                 shape = null,
                                 border = null,
                                 shadow = null,
-                                badge = null
+                                badge = null,
+                                overflow = null,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -225,6 +231,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Overlay,
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
+                                overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -254,6 +261,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Overlay,
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
+                                overflow = StackComponent.Overflow.SCROLL
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -287,6 +295,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Overlay,
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
+                                overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -303,6 +312,7 @@ internal class PresentedStackPartialTests {
                                 border = null,
                                 shadow = null,
                                 badge = null,
+                                overflow = null,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -331,6 +341,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Overlay,
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
+                                overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -364,6 +375,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Overlay,
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
+                                overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -380,6 +392,7 @@ internal class PresentedStackPartialTests {
                                 border = null,
                                 shadow = null,
                                 badge = null,
+                                overflow = null,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -408,13 +421,14 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Overlay,
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
+                                overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
                 arrayOf(
-                    "Should properly override the second 5 individual properties if they are non-null in both",
+                    "Should properly override the second 6 individual properties if they are non-null in both",
                     Args(
                         base = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -441,6 +455,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Overlay,
                                     alignment = TwoDimensionalAlignment.TOP,
                                 ),
+                                overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -469,6 +484,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Nested,
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
+                                overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -497,13 +513,14 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Nested,
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
+                                overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
                 arrayOf(
-                    "Should properly override the second 5 individual properties if they are null in the base",
+                    "Should properly override the second 6 individual properties if they are null in the base",
                     Args(
                         base = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -517,7 +534,8 @@ internal class PresentedStackPartialTests {
                                 shape = null,
                                 border = null,
                                 shadow = null,
-                                badge = null
+                                badge = null,
+                                overflow = null,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -546,6 +564,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Nested,
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
+                                overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),
@@ -574,6 +593,7 @@ internal class PresentedStackPartialTests {
                                     style = Badge.Style.Nested,
                                     alignment = TwoDimensionalAlignment.BOTTOM,
                                 ),
+                                overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
                         ).getOrThrow(),

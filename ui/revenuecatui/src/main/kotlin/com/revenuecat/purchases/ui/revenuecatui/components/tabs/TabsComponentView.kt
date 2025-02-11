@@ -272,6 +272,7 @@ private fun previewStackComponentStyle(
         border = border,
         shadow = shadow,
         badge = null,
+        scrollOrientation = null,
         rcPackage = null,
         tabIndex = tabIndex,
         overrides = emptyList(),

@@ -49,8 +49,20 @@ class StackComponent(
     @get:JvmSynthetic
     val badge: Badge? = null,
     @get:JvmSynthetic
+    val overflow: Overflow? = null,
+    @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
-) : PaywallComponent
+) : PaywallComponent {
+
+    @Serializable
+    enum class Overflow {
+        @SerialName("none")
+        NONE,
+
+        @SerialName("scroll")
+        SCROLL,
+    }
+}
 
 @Suppress("LongParameterList")
 @InternalRevenueCatAPI
@@ -80,4 +92,6 @@ class PartialStackComponent(
     val shadow: Shadow? = null,
     @get:JvmSynthetic
     val badge: Badge? = null,
+    @get:JvmSynthetic
+    val overflow: StackComponent.Overflow? = null,
 ) : PartialComponent
