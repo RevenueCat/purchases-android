@@ -9,13 +9,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import coil.size.Size
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -109,15 +106,9 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
 @Composable
 private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter =
     rememberAsyncImagePainter(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(imageUrls.webp.toString())
-            .size(Size.ORIGINAL)
-            .build(),
+        model = imageUrls.webp.toString(),
         placeholder = rememberAsyncImagePainter(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrls.webpLowRes.toString())
-                .size(Size.ORIGINAL)
-                .build(),
+            model = imageUrls.webpLowRes.toString(),
             error = null,
             fallback = null,
             contentScale = contentScale,
