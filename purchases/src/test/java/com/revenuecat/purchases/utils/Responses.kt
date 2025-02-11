@@ -39,14 +39,24 @@ object Responses {
                           "is_sandbox": true,
                           "original_purchase_date": "1990-08-30T02:40:36Z",
                           "purchase_date": "1990-08-30T02:40:36Z",
-                          "store": "app_store"
+                          "store": "app_store",
+                          "display_name": "100 Coins",
+                          "price": {
+                            "currency": "USD",
+                            "amount": "0.99"
+                          }
                         },
                         {
                           "id": "6229b0bef1",
                           "is_sandbox": true,
                           "original_purchase_date": "2019-11-06T03:26:15Z",
                           "purchase_date": "2019-11-06T03:26:15Z",
-                          "store": "play_store"
+                          "store": "play_store",
+                          "display_name": "100 Coins",
+                          "price": {
+                            "currency": "USD",
+                            "amount": "0.99"
+                          }
                         }
                       ],
                       "7_extra_lives": [
@@ -55,14 +65,24 @@ object Responses {
                           "is_sandbox": true,
                           "original_purchase_date": "2019-07-11T18:36:20Z",
                           "purchase_date": "2019-07-11T18:36:20Z",
-                          "store": "play_store"
+                          "store": "play_store",
+                          "display_name": "7 Extra Lives",
+                          "price": {
+                            "currency": "USD",
+                            "amount": "8.99"
+                          }
                         },
                         {
                           "id": "5b9ba226bc",
                           "is_sandbox": true,
                           "original_purchase_date": "2019-07-26T22:10:27Z",
                           "purchase_date": "2019-07-26T22:10:27Z",
-                          "store": "app_store"
+                          "store": "app_store",
+                          "display_name": "7 Extra Lives",
+                          "price": {
+                            "currency": "USD",
+                            "amount": "8.99"
+                          }
                         }
                       ],
                       "lifetime_access": [
@@ -71,7 +91,12 @@ object Responses {
                           "is_sandbox": true,
                           "original_purchase_date": "2019-09-11T18:36:20Z",
                           "purchase_date": "2019-09-11T18:36:20Z",
-                          "store": "play_store"
+                          "store": "play_store",
+                          "display_name": "Lifetime Access",
+                          "price": {
+                            "currency": "USD",
+                            "amount": "499"
+                          }
                         }
                       ]
                     },
@@ -90,7 +115,12 @@ object Responses {
                         "expires_date": "${Iso8601Utils.format(oneMonthFreeTrialExpirationDate)}",
                         "ownership_type": "PURCHASED",
                         "store_transaction_id" : "GPA.3394-7009-4518-41945..6",
-                        "period_type": "normal"
+                        "period_type": "normal",
+                        "display_name": "Pro Monthly",
+                        "price": {
+                          "currency": "USD",
+                          "amount": "4.99"
+                        }
                       },
                       "basic": {
                         "billing_issues_detected_at": null,
@@ -106,7 +136,12 @@ object Responses {
                         "period_type": "normal",
                         "ownership_type": "PURCHASED",
                         "store_transaction_id" : "GPA.3394-7009-4518-41945..8",
-                        "expires_date": "${Iso8601Utils.format(threeMonthFreeTrialExpirationDate)}"
+                        "expires_date": "${Iso8601Utils.format(threeMonthFreeTrialExpirationDate)}",
+                        "display_name": "Basic Monthly",
+                        "price": {
+                          "currency": "USD",
+                          "amount": "5.99"
+                        }
                       }
                     },
                     "entitlements": {
