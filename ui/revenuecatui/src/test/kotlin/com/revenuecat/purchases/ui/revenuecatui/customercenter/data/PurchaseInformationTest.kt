@@ -3,15 +3,18 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.isSupportedPath
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ago
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fromNow
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
@@ -83,7 +86,8 @@ class PurchaseInformationTest {
             expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
-            product = storeProduct
+            product = storeProduct,
+            isLifetime = false
         )
     }
 
@@ -134,7 +138,8 @@ class PurchaseInformationTest {
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
-            product = storeProduct
+            product = storeProduct,
+            isLifetime = false
         )
     }
 
@@ -186,6 +191,7 @@ class PurchaseInformationTest {
             expirationDateString = "2 Oct 2063",
             store = Store.PLAY_STORE,
             product = storeProduct,
+            isLifetime = false
         )
     }
 
@@ -228,6 +234,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -270,6 +277,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -312,6 +320,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -354,6 +363,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.PROMOTIONAL,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -396,6 +406,7 @@ class PurchaseInformationTest {
             expirationDateString = "",
             store = Store.PROMOTIONAL,
             product = null,
+            isLifetime = true
         )
         assertThat(purchaseInformation.expirationOrRenewal!!.date).isEqualTo(ExpirationOrRenewal.Date.Never)
     }
@@ -439,6 +450,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.STRIPE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -481,6 +493,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.STRIPE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -522,10 +535,103 @@ class PurchaseInformationTest {
             expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
             expirationDateString = "3 Oct 2063",
             product = null,
-            store = Store.STRIPE
+            store = Store.STRIPE,
+            isLifetime = false
         )
     }
 
+
+//    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+//    @Test
+//    fun `isSupportedPath returns false for CANCEL when isLifetime is true`() {
+//        val entitlementInfo = createEntitlementInfo(
+//            isActive = true,
+//            willRenew = false,
+//            store = Store.STRIPE,
+//            productIdentifier = "com.revenuecat.product",
+//            expiresDate = oneDayFromNow
+//        )
+//        val transaction = createTransactionDetails(
+//            isActive = true,
+//            willRenew = false,
+//            store = Store.STRIPE,
+//            productIdentifier = "com.revenuecat.product",
+//            expiresDate = oneDayFromNow
+//        )
+//
+//        val purchaseInformation = PurchaseInformation(
+//            entitlementInfo = entitlementInfo,
+//            subscribedProduct = null,
+//            transaction = transaction,
+//            managementURL = Uri.parse(MANAGEMENT_URL),
+//            dateFormatter = dateFormatter,
+//            locale = locale
+//        )
+//
+//        val result = purchaseInformation.isSupportedPath(CustomerCenterConfigData.HelpPath.PathType.CANCEL)
+//        assert(result)
+//    }    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+//    @Test
+//    fun `isSupportedPath returns false for CANCEL when isLifetime is true`() {
+//        val entitlementInfo = createEntitlementInfo(
+//            isActive = true,
+//            willRenew = false,
+//            store = Store.STRIPE,
+//            productIdentifier = "com.revenuecat.product",
+//            expiresDate = oneDayFromNow
+//        )
+//        val transaction = createTransactionDetails(
+//            isActive = true,
+//            willRenew = false,
+//            store = Store.STRIPE,
+//            productIdentifier = "com.revenuecat.product",
+//            expiresDate = oneDayFromNow
+//        )
+//
+//        val purchaseInformation = PurchaseInformation(
+//            entitlementInfo = entitlementInfo,
+//            subscribedProduct = null,
+//            transaction = transaction,
+//            managementURL = Uri.parse(MANAGEMENT_URL),
+//            dateFormatter = dateFormatter,
+//            locale = locale
+//        )
+//
+//        val result = purchaseInformation.isSupportedPath(CustomerCenterConfigData.HelpPath.PathType.CANCEL)
+//        assert(result)
+//    }
+
+//    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+//    @Test
+//    fun `isSupportedPath returns true for CANCEL when isLifetime is false`() {
+//        val purchaseInfo = PurchaseInformation(isLifetime = false)
+//
+//        val result = purchaseInfo.isSupportedPath(CustomerCenterConfigData.HelpPath.PathType.CANCEL)
+//
+//        assertTrue(result) // CANCEL should be supported for non-lifetime purchases
+//    }
+//
+//    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+//    @Test
+//    fun `isSupportedPath returns true for other paths when isLifetime is true`() {
+//        val purchaseInfo = PurchaseInformation(isLifetime = true)
+//
+//        val result = purchaseInfo.isSupportedPath(CustomerCenterConfigData.HelpPath.PathType.OTHER)
+//
+//        assertTrue(result) // OTHER paths should be supported regardless of isLifetime
+//    }
+//
+//    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+//    @Test
+//    fun `isSupportedPath returns true when PurchaseInformation is null`() {
+//        val purchaseInfo: PurchaseInformation? = null
+//
+//        val result = purchaseInfo?.isSupportedPath(CustomerCenterConfigData.HelpPath.PathType.CANCEL)
+//
+//        assertTrue(result) // Null PurchaseInformation should allow all paths
+//    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun assertPurchaseInformation(
         purchaseInformation: PurchaseInformation,
         title: String?,
@@ -535,12 +641,14 @@ class PurchaseInformationTest {
         expirationLabel: ExpirationOrRenewal.Label,
         expirationDateString: String,
         product: StoreProduct?,
-        store: Store
+        store: Store,
+        isLifetime: Boolean
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
         assertThat(purchaseInformation.durationTitle).isEqualTo(durationTitle)
         assertThat(purchaseInformation.explanation).isEqualTo(explanation)
         assertThat(purchaseInformation.price).isEqualTo(price)
+        assertThat(purchaseInformation.isLifetime).isEqualTo(isLifetime)
 
         assertThat(purchaseInformation.expirationOrRenewal).isNotNull
         assertThat(purchaseInformation.expirationOrRenewal!!.label).isEqualTo(expirationLabel)
@@ -550,6 +658,8 @@ class PurchaseInformationTest {
         }
         assertThat(purchaseInformation.product).isEqualTo(product)
         assertThat(purchaseInformation.store).isEqualTo(store)
+
+        assertThat(purchaseInformation.isSupportedPath(CustomerCenterConfigData.HelpPath.PathType.CANCEL)).isEqualTo(!isLifetime)
     }
 
     private fun createEntitlementInfo(

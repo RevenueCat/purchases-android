@@ -231,6 +231,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 Price("$1.99", 1_990_000, "US"),
                 Period(1, Period.Unit.MONTH, "P1M"),
             ),
+            isLifetime = false,
         ),
         PurchaseInformation(
             title = "Basic",
@@ -252,6 +253,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 Price("$1.99", 1_990_000, "US"),
                 Period(1, Period.Unit.YEAR, "P1Y"),
             ),
+            isLifetime = false,
         ),
         PurchaseInformation(
             title = "Basic",
@@ -273,6 +275,7 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
                 Price("$0.99", 990_000, "US"),
                 Period(1, Period.Unit.WEEK, "P1W"),
             ),
+            isLifetime = false,
         ),
     )
 }

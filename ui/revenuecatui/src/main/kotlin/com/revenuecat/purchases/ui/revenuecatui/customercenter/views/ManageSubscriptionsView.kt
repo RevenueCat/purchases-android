@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathType
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableIconSize
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingTopDescription
@@ -65,7 +66,6 @@ internal fun ManageSubscriptionsView(
         } else {
             NoActiveUserManagementView(
                 screen,
-                null,
                 onButtonPress = {
                     onAction(CustomerCenterAction.PathButtonPressed(it, product = null))
                 },
@@ -102,7 +102,9 @@ private fun ActiveUserManagementView(
         if (purchaseInformation.store == Store.PLAY_STORE) {
             ManageSubscriptionsButtonsView(
                 screen,
-                purchaseInformation,
+                isSupportedPath = {
+                    purchaseInformation.isSupportedPath(it)
+                },
                 onButtonPress = {
                     onAction(CustomerCenterAction.PathButtonPressed(it, purchaseInformation.product))
                 },
@@ -122,7 +124,6 @@ private fun ActiveUserManagementView(
 @Composable
 private fun NoActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
-    purchaseInformation: PurchaseInformation?,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -134,7 +135,7 @@ private fun NoActiveUserManagementView(
 
         ManageSubscriptionsButtonsView(
             screen,
-            purchaseInformation,
+            isSupportedPath = { true },
             onButtonPress,
         )
     }
@@ -179,18 +180,12 @@ private fun ContentUnavailableView(
 @Composable
 private fun ManageSubscriptionsButtonsView(
     screen: CustomerCenterConfigData.Screen,
-    purchaseInformation: PurchaseInformation?,
+    isSupportedPath: (PathType) -> Boolean,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
-    val filteredPaths = if (purchaseInformation?.isLifetime == true) {
-        screen.supportedPaths.filter { it.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL }
-    } else {
-        screen.supportedPaths
-    }
-
     Column {
         HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
-        filteredPaths.forEach { path ->
+        screen.supportedPaths.filter { isSupportedPath(it.type) }.forEach { path ->
             SettingsButton(
                 onClick = { onButtonPress(path) },
                 title = path.title,
@@ -274,4 +269,13 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
         purchaseInformation = null,
         onAction = {},
     )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+internal fun PurchaseInformation.isSupportedPath(pathType: PathType): Boolean {
+    return if (isLifetime) {
+        pathType != CustomerCenterConfigData.HelpPath.PathType.CANCEL
+    } else {
+        true
+    }
 }
