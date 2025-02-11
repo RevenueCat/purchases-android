@@ -10,6 +10,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -192,9 +193,13 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
         )
 
+        val stackWithAppliedWindowInsets = rootComponent.applyTopWindowInsetsIfNecessary().run {
+            if (stickyFooter == null) applyBottomWindowInsetsIfNecessary() else this
+        }
+
         PaywallValidationResult.Components(
-            stack = rootComponent,
-            stickyFooter = stickyFooter,
+            stack = stackWithAppliedWindowInsets,
+            stickyFooter = stickyFooter?.applyBottomWindowInsetsIfNecessary(),
             background = background,
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
@@ -445,6 +450,66 @@ private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.In
     )
 
 /**
+ * This checks if the first non-container component is a full-width image, and if so, marks that image with
+ * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`. If such an image is not found, it marks the
+ * root component with `applyTopWindowInsets`.
+ */
+@Suppress("CyclomaticComplexMethod")
+private fun ComponentStyle.applyTopWindowInsetsIfNecessary(): ComponentStyle {
+    var fullWidthImageFound = false
+
+    fun ComponentStyle.traverseAndMarkFullWidthImage(): ComponentStyle = recursiveMap { style ->
+        when (style) {
+            is ImageComponentStyle -> when (style.size.width) {
+                is SizeConstraint.Fill -> style.copy(ignoreTopWindowInsets = true)
+                is SizeConstraint.Fit,
+                is SizeConstraint.Fixed,
+                -> style
+            }
+
+            is StackComponentStyle -> style.children.firstOrNull()
+                ?.traverseAndMarkFullWidthImage()
+                ?.takeIf { it is ImageComponentStyle && it.ignoreTopWindowInsets }
+                ?.let {
+                    when (style.dimension) {
+                        is Dimension.Horizontal,
+                        is Dimension.Vertical,
+                        -> style
+
+                        is Dimension.ZLayer -> style.copy(applyTopWindowInsets = true)
+                            .also { fullWidthImageFound = true }
+                    }
+                } ?: style
+
+            else -> style
+        }
+    }
+
+    return traverseAndMarkFullWidthImage()
+        .let { traversed ->
+            // We didn't find a full width image. So we need to apply the top window insets at the root.
+            if (!fullWidthImageFound) {
+                when (traversed) {
+                    is StackComponentStyle -> traversed.copy(applyTopWindowInsets = true)
+                    else -> traversed
+                }
+            } else {
+                traversed
+            }
+        }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(): T =
+    when (this) {
+        is StackComponentStyle -> copy(applyBottomWindowInsets = true)
+        is StickyFooterComponentStyle -> copy(
+            stackComponentStyle = stackComponentStyle.applyBottomWindowInsetsIfNecessary(),
+        )
+        else -> this
+    } as T
+
+/**
  * Returns the first ComponentStyle that satisfies the predicate, or null if none is found.
  *
  * Implemented as breadth-first search.
@@ -524,5 +589,58 @@ private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
         -> {
             // These don't have child components.
         }
+    }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun <T : ComponentStyle> T.recursiveMap(
+    transform: (ComponentStyle) -> ComponentStyle,
+): T {
+    return when (val transformed = transform(this)) {
+        is StackComponentStyle -> transformed.copy(
+            children = transformed.children.map { it.recursiveMap(transform) },
+        ) as T
+
+        is ButtonComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
+        ) as T
+
+        is PackageComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
+        ) as T
+
+        is StickyFooterComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
+        ) as T
+
+        is CarouselComponentStyle -> transformed.copy(
+            slides = transformed.slides.map { it.recursiveMap(transform) },
+        ) as T
+
+        is TabControlButtonComponentStyle -> transformed.copy(
+            stack = transformed.stack.recursiveMap(transform),
+        ) as T
+
+        is TabControlStyle.Buttons -> transformed.copy(
+            stack = transformed.stack.recursiveMap(transform),
+        ) as T
+
+        is TabControlStyle.Toggle -> transformed.copy(
+            stack = transformed.stack.recursiveMap(transform),
+        ) as T
+
+        is TabsComponentStyle -> {
+            val newTabs = transformed.tabs.map { tab ->
+                tab.copy(stack = tab.stack.recursiveMap(transform))
+            }
+            transformed.copy(tabs = newTabs) as T
+        }
+
+        is IconComponentStyle,
+        is ImageComponentStyle,
+        is TabControlToggleComponentStyle,
+        is TextComponentStyle,
+        is TimelineComponentStyle,
+        -> transformed as T
     }
 }

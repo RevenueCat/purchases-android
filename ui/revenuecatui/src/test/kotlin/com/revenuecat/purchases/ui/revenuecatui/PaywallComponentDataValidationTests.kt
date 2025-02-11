@@ -7,8 +7,10 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -20,10 +22,19 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
+import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -381,10 +392,12 @@ class PaywallComponentDataValidationTests {
                                 text = LocalizationKey("key1"),
                                 color = textColor,
                                 fontName = missingFontAlias1,
-                                overrides = listOf(ComponentOverride(
-                                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
-                                    properties = PartialTextComponent(fontName = missingFontAlias2),
-                                ))
+                                overrides = listOf(
+                                    ComponentOverride(
+                                        conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                        properties = PartialTextComponent(fontName = missingFontAlias2),
+                                    )
+                                )
                             ),
                             TextComponent(
                                 text = LocalizationKey("key2"),
@@ -432,4 +445,238 @@ class PaywallComponentDataValidationTests {
         assert((validated.stack as StackComponentStyle).size.height == SizeConstraint.Fill)
     }
 
+    @Test
+    fun `Should apply top window insets to the hero image parent`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            StackComponent(
+                                dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+                                components = listOf(
+                                    ImageComponent(
+                                        source = ThemeImageUrls(
+                                            light = ImageUrls(
+                                                original = URL("https://preview"),
+                                                webp = URL("https://preview"),
+                                                webpLowRes = URL("https://preview"),
+                                                width = 100u,
+                                                height = 100u,
+                                            ),
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val validatedComponents = validated as PaywallValidationResult.Components
+        val actualStack = validatedComponents.stack as StackComponentStyle
+        val heroParent = actualStack.children[0] as StackComponentStyle
+        assertTrue(heroParent.applyTopWindowInsets)
+        val heroImage = heroParent.children[0] as ImageComponentStyle
+        assertTrue(heroImage.ignoreTopWindowInsets)
+    }
+
+    @Test
+    fun `Should apply top window insets to the root if there is no hero image`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            StackComponent(
+                                dimension = Dimension.Horizontal(VerticalAlignment.CENTER, START),
+                                components = listOf(
+                                    StackComponent(components = listOf()),
+                                    StackComponent(components = listOf()),
+                                    StackComponent(components = listOf()),
+                                )
+                            )
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val validatedComponents = validated as PaywallValidationResult.Components
+        val actualStack = validatedComponents.stack as StackComponentStyle
+        assertTrue(actualStack.applyTopWindowInsets)
+    }
+
+    @Test
+    fun `Should apply bottom window insets to the sticky footer`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            StackComponent(
+                                dimension = Dimension.Horizontal(VerticalAlignment.CENTER, START),
+                                components = listOf(
+                                    StackComponent(components = listOf()),
+                                    StackComponent(components = listOf()),
+                                    StackComponent(components = listOf()),
+                                )
+                            )
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = StickyFooterComponent(
+                        stack = StackComponent(
+                            dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                            components = listOf(
+                                StackComponent(
+                                    dimension = Dimension.Horizontal(VerticalAlignment.CENTER, START),
+                                    components = listOf(
+                                        StackComponent(components = listOf()),
+                                        StackComponent(components = listOf()),
+                                        StackComponent(components = listOf()),
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val validatedComponents = validated as PaywallValidationResult.Components
+        val actualStickyFooter = validatedComponents.stickyFooter as StickyFooterComponentStyle?
+        assertNotNull(actualStickyFooter)
+        val actualStack = actualStickyFooter!!.stackComponentStyle
+        assertTrue(actualStack.applyBottomWindowInsets)
+    }
+
+    @Test
+    fun `Should apply bottom window insets to the root if there is no sticky footer`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            StackComponent(
+                                dimension = Dimension.Horizontal(VerticalAlignment.CENTER, START),
+                                components = listOf(
+                                    StackComponent(components = listOf()),
+                                    StackComponent(components = listOf()),
+                                    StackComponent(components = listOf()),
+                                )
+                            )
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val validatedComponents = validated as PaywallValidationResult.Components
+        val actualStack = validatedComponents.stack as StackComponentStyle
+        assertTrue(actualStack.applyBottomWindowInsets)
+    }
 }

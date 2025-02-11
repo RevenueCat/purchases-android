@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,6 +80,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberSh
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -452,18 +456,37 @@ private fun MainStackComponent(
     nestedBadge: BadgeStyle? = null,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
-        @Composable { modifierProvider ->
-            stackState.children.forEach { child ->
-                ComponentView(
-                    style = child,
-                    state = state,
-                    onClick = clickHandler,
-                    modifier = modifierProvider(child),
-                )
+    val density = LocalDensity.current
+    val topSystemBarsPadding = if (stackState.applyTopWindowInsets) {
+        PaddingValues(top = with(density) { WindowInsets.systemBars.getTop(density).toDp() })
+    } else {
+        PaddingValues(all = 0.dp)
+    }
+    val bottomSystemBarsPadding = if (stackState.applyBottomWindowInsets) {
+        PaddingValues(bottom = with(density) { WindowInsets.systemBars.getBottom(density).toDp() })
+    } else {
+        PaddingValues(all = 0.dp)
+    }
+
+    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit =
+        remember(stackState.children, topSystemBarsPadding) {
+            @Composable { modifierProvider ->
+                stackState.children.forEach { child ->
+                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                        PaddingValues(all = 0.dp)
+                    } else {
+                        topSystemBarsPadding
+                    }
+
+                    ComponentView(
+                        style = child,
+                        state = state,
+                        onClick = clickHandler,
+                        modifier = modifierProvider(child).padding(childPadding),
+                    )
+                }
             }
         }
-    }
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
@@ -535,7 +558,13 @@ private fun MainStackComponent(
     }
 
     if (nestedBadge == null && overlay == null) {
-        stack(outerShapeModifier.then(innerShapeModifier))
+        stack(
+            outerShapeModifier
+                .then(innerShapeModifier)
+                .padding(bottomSystemBarsPadding)
+                .consumeWindowInsets(bottomSystemBarsPadding)
+                .consumeWindowInsets(topSystemBarsPadding),
+        )
     } else if (nestedBadge != null) {
         Box(modifier = modifier.then(outerShapeModifier).clip(composeShape).then(innerShapeModifier)) {
             stack(Modifier)

@@ -17,7 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 
 @Suppress("LongParameterList")
 @Immutable
-internal class ImageComponentStyle(
+internal data class ImageComponentStyle(
     @get:JvmSynthetic
     val sources: NonEmptyMap<LocaleId, ThemeImageUrls>,
     @get:JvmSynthetic
@@ -50,4 +50,9 @@ internal class ImageComponentStyle(
     val tabIndex: Int?,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedImagePartial>>,
+    /**
+     * This will be read by the parent stack, if that `StackComponentStyle` has `applyTopWindowInsets` set to true.
+     */
+    @get:JvmSynthetic
+    val ignoreTopWindowInsets: Boolean = false,
 ) : ComponentStyle
