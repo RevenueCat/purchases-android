@@ -78,7 +78,7 @@ internal fun TabsComponentView(
     )
     if (!tabsState.visible) return
 
-    val backgroundColorStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
+    val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = tabsState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = tabsState.shadow?.let { rememberShadowStyle(shadow = it) }
 
@@ -87,7 +87,7 @@ internal fun TabsComponentView(
         modifier = modifier
             .padding(tabsState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, tabsState.shape) }
-            .applyIfNotNull(backgroundColorStyle) { background(it, tabsState.shape) }
+            .applyIfNotNull(backgroundStyle) { background(it, tabsState.shape) }
             .clip(tabsState.shape)
             .applyIfNotNull(borderStyle) { border(it, tabsState.shape).padding(it.width) }
             .padding(tabsState.padding),

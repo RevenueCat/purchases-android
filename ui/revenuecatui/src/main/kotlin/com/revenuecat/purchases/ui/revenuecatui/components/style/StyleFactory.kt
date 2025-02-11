@@ -566,7 +566,7 @@ internal class StyleFactory(
         background?.toBackgroundStyles(colorAliases)
             ?: (
                 backgroundColor?.toColorStyles(colorAliases)?.map { color -> BackgroundStyles.Color(color) }
-                    ?: Result.Success(null)
+                    .orSuccessfullyNull()
                 )
 
     private fun ThemeImageUrls.withLocalizedOverrides(
