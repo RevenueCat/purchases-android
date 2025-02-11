@@ -130,7 +130,13 @@ class SubscriptionInfo(
                 refundedAt: $refundedAt,
                 storeTransactionId: $storeTransactionId,
                 isActive: $isActive,
-                willRenew: $willRenew
+                willRenew: $willRenew,
+                price: $price,
+                productPlanIdentifier: $productPlanIdentifier,
+                displayName: $displayName,
+                autoResumeDate: $autoResumeDate,
+                requestDate: $requestDate,
+                productIdentifier: $productIdentifier
             }
         """.trimIndent()
     }
