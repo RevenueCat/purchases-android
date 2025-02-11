@@ -79,7 +79,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
@@ -457,8 +456,11 @@ private fun MainStackComponent(
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
-    val topSystemBarsPadding = PaddingValues(top = with(density) { WindowInsets.systemBars.getTop(density).toDp() })
-
+    val topSystemBarsPadding = if (stackState.applyTopWindowInsets) {
+        PaddingValues(top = with(density) { WindowInsets.systemBars.getTop(density).toDp() })
+    } else {
+        PaddingValues(all = 0.dp)
+    }
     val bottomSystemBarsPadding = if (stackState.applyBottomWindowInsets) {
         PaddingValues(bottom = with(density) { WindowInsets.systemBars.getBottom(density).toDp() })
     } else {
@@ -466,25 +468,20 @@ private fun MainStackComponent(
     }
 
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit =
-        remember(stackState.children, stackState.applyTopWindowInsets, topSystemBarsPadding) {
+        remember(stackState.children, topSystemBarsPadding) {
             @Composable { modifierProvider ->
                 stackState.children.forEach { child ->
-                    val additionalModifier = if (stackState.applyTopWindowInsets) {
-                        val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
-                            PaddingValues(all = 0.dp)
-                        } else {
-                            topSystemBarsPadding
-                        }
-                        Modifier.padding(childPadding)
+                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                        PaddingValues(all = 0.dp)
                     } else {
-                        Modifier
+                        topSystemBarsPadding
                     }
 
                     ComponentView(
                         style = child,
                         state = state,
                         onClick = clickHandler,
-                        modifier = modifierProvider(child).then(additionalModifier),
+                        modifier = modifierProvider(child).padding(childPadding),
                     )
                 }
             }
@@ -557,7 +554,7 @@ private fun MainStackComponent(
                 .then(innerShapeModifier)
                 .padding(bottomSystemBarsPadding)
                 .consumeWindowInsets(bottomSystemBarsPadding)
-                .conditional(stackState.applyTopWindowInsets) { consumeWindowInsets(topSystemBarsPadding) },
+                .consumeWindowInsets(topSystemBarsPadding),
         )
     } else if (nestedBadge != null) {
         Box(modifier = modifier.then(commonModifier)) {
