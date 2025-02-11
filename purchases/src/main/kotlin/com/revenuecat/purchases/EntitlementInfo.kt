@@ -270,7 +270,7 @@ enum class PeriodType {
      * If the entitlement is under a prepaid period.
      */
     @SerialName("prepaid")
-    PREPAID,    
+    PREPAID,
 }
 
 /**
