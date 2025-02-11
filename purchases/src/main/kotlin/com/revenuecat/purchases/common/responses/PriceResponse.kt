@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.common.responses
 
 import com.revenuecat.purchases.models.Price
@@ -16,6 +18,7 @@ internal class PriceResponse(
     val currencyCode: String,
 ) {
 
+    @JvmSynthetic
     override fun toString(): String {
         return """
             PriceResponse {
@@ -25,6 +28,7 @@ internal class PriceResponse(
         """.trimIndent()
     }
 
+    @JvmSynthetic
     fun toPrice(locale: Locale): Price {
         val numberFormat = NumberFormat.getCurrencyInstance(locale)
         numberFormat.currency = Currency.getInstance(currencyCode)
