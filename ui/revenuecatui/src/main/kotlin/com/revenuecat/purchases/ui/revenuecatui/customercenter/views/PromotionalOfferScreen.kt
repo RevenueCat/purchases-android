@@ -90,6 +90,9 @@ internal fun PromotionalOfferScreen(
 
         TextButton(
             onClick = { onDismiss() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
         ) {
             Text(
                 text = localization.commonLocalizedString(
