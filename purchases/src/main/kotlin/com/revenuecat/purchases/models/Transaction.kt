@@ -32,7 +32,7 @@ data class Transaction(
     val displayName: String?,
     val isSandbox: Boolean = false,
     val originalPurchaseDate: Date?,
-    val price: Price,
+    val price: Price?,
 ) : Parcelable {
 
     internal companion object {
@@ -63,8 +63,8 @@ data class Transaction(
         originalPurchaseDate = jsonObject.optDate("original_purchase_date"),
         // Using the PriceResponse class to parse the price JSON object to make it easier to migrate
         // to Kotlin serialization in the future
-        price = json.decodeFromString<PriceResponse>(
-            jsonObject.getJSONObject("price").toString(),
-        ).toPrice(locale),
+        price = jsonObject.optJSONObject("price")?.toString()?.let {
+            json.decodeFromString<PriceResponse>(it).toPrice(locale)
+        },
     )
 }
