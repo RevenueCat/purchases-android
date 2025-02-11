@@ -15,14 +15,12 @@ class CustomerCenterImpressionEvent(
     val creationData: CreationData = CreationData(),
     val data: Data,
 ) : FeatureEvent {
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     @Poko
     class CreationData(
         val id: UUID = UUID.randomUUID(),
         val date: Date = Date(),
     )
 
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     @Poko
     @SuppressWarnings("LongParameterList")
     class Data(

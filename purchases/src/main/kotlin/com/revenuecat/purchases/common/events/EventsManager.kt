@@ -30,7 +30,7 @@ import java.util.UUID
  * @property postEvents Function for sending events to the backend.
  */
 internal class EventsManager(
-    private val appSessionID: UUID = UUID.randomUUID(),
+    private val appSessionID: UUID = Companion.appSessionID,
     private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
     private val fileHelper: EventsFileHelper<BackendStoredEvent>,
     private val identityManager: IdentityManager,
@@ -46,6 +46,7 @@ internal class EventsManager(
         private const val FLUSH_COUNT = 50
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
+        internal val appSessionID: UUID = UUID.randomUUID()
 
         @OptIn(ExperimentalSerializationApi::class)
         private val json = Json {
