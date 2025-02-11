@@ -65,6 +65,7 @@ internal fun ManageSubscriptionsView(
         } else {
             NoActiveUserManagementView(
                 screen,
+                null,
                 onButtonPress = {
                     onAction(CustomerCenterAction.PathButtonPressed(it, product = null))
                 },
@@ -99,9 +100,13 @@ private fun ActiveUserManagementView(
         SubscriptionDetailsView(details = purchaseInformation, localization = localization)
 
         if (purchaseInformation.store == Store.PLAY_STORE) {
-            ManageSubscriptionsButtonsView(screen, onButtonPress = {
-                onAction(CustomerCenterAction.PathButtonPressed(it, purchaseInformation.product))
-            })
+            ManageSubscriptionsButtonsView(
+                screen,
+                purchaseInformation,
+                onButtonPress = {
+                    onAction(CustomerCenterAction.PathButtonPressed(it, purchaseInformation.product))
+                },
+            )
         } else {
             OtherPlatformSubscriptionButtonsView(
                 localization = localization,
@@ -117,6 +122,7 @@ private fun ActiveUserManagementView(
 @Composable
 private fun NoActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
+    purchaseInformation: PurchaseInformation?,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -128,6 +134,7 @@ private fun NoActiveUserManagementView(
 
         ManageSubscriptionsButtonsView(
             screen,
+            purchaseInformation,
             onButtonPress,
         )
     }
@@ -172,11 +179,18 @@ private fun ContentUnavailableView(
 @Composable
 private fun ManageSubscriptionsButtonsView(
     screen: CustomerCenterConfigData.Screen,
+    purchaseInformation: PurchaseInformation?,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
+    val filteredPaths = if (purchaseInformation?.isLifetime == true) {
+        screen.supportedPaths.filter { it.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL }
+    } else {
+        screen.supportedPaths
+    }
+
     Column {
         HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
-        screen.supportedPaths.forEach { path ->
+        filteredPaths.forEach { path ->
             SettingsButton(
                 onClick = { onButtonPress(path) },
                 title = path.title,
