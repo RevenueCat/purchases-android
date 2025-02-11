@@ -79,6 +79,7 @@ final class EntitlementInfoAPI {
             case NORMAL:
             case INTRO:
             case TRIAL:
+            case PREPAID:
         }
     }
 
