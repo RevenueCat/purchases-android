@@ -3,9 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
@@ -18,7 +19,7 @@ import dev.drewhamilton.poko.Poko
 
 @Poko
 internal class PresentedStackPartial(
-    @get:JvmSynthetic val backgroundColorStyles: ColorStyles?,
+    @get:JvmSynthetic val backgroundStyles: BackgroundStyles?,
     @get:JvmSynthetic val borderStyles: BorderStyles?,
     @get:JvmSynthetic val shadowStyles: ShadowStyles?,
     @get:JvmSynthetic val partial: PartialStackComponent,
@@ -36,18 +37,21 @@ internal class PresentedStackPartial(
             from: PartialStackComponent,
             aliases: Map<ColorAlias, ColorScheme>,
         ): Result<PresentedStackPartial, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-            first = from.backgroundColor
+            first = from.background
+                ?.toBackgroundStyles(aliases = aliases)
+                .orSuccessfullyNull(),
+            second = from.backgroundColor
                 ?.toColorStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-            second = from.border
+            third = from.border
                 ?.toBorderStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-            third = from.shadow
+            fourth = from.shadow
                 ?.toShadowStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-        ) { backgroundColorStyles, borderStyles, shadowStyles ->
+        ) { backgroundStyles, backgroundColorStyles, borderStyles, shadowStyles ->
             PresentedStackPartial(
-                backgroundColorStyles = backgroundColorStyles,
+                backgroundStyles = backgroundStyles ?: backgroundColorStyles?.let { BackgroundStyles.Color(it) },
                 borderStyles = borderStyles,
                 shadowStyles = shadowStyles,
                 partial = from,
@@ -60,7 +64,7 @@ internal class PresentedStackPartial(
         val otherPartial = with?.partial
 
         return PresentedStackPartial(
-            backgroundColorStyles = with?.backgroundColorStyles ?: backgroundColorStyles,
+            backgroundStyles = with?.backgroundStyles ?: backgroundStyles,
             borderStyles = with?.borderStyles ?: borderStyles,
             shadowStyles = with?.shadowStyles ?: shadowStyles,
             partial = PartialStackComponent(
@@ -69,6 +73,7 @@ internal class PresentedStackPartial(
                 size = otherPartial?.size ?: partial.size,
                 spacing = otherPartial?.spacing ?: partial.spacing,
                 backgroundColor = otherPartial?.backgroundColor ?: partial.backgroundColor,
+                background = otherPartial?.background ?: partial.background,
                 padding = otherPartial?.padding ?: partial.padding,
                 margin = otherPartial?.margin ?: partial.margin,
                 shape = otherPartial?.shape ?: partial.shape,

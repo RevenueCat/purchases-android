@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.PartialCarouselComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -13,6 +14,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
@@ -27,6 +29,7 @@ internal class PresentedCarouselPartialTests {
     @Test
     fun `Should accumulate errors if the ColorAlias is not found`() {
         // Arrange
+        val missingBackgroundColorKey = ColorAlias("missing-background-color-key")
         val missingBackgroundKey = ColorAlias("missing-background-key")
         val missingBorderKey = ColorAlias("missing-border-key")
         val missingShadowKey = ColorAlias("missing-shadow-key")
@@ -34,6 +37,7 @@ internal class PresentedCarouselPartialTests {
         val missingDefaultIndicatorKey = ColorAlias("missing-default-indicator-key")
 
         val expected = nonEmptyListOf(
+            PaywallValidationError.MissingColorAlias(missingBackgroundColorKey),
             PaywallValidationError.MissingColorAlias(missingBackgroundKey),
             PaywallValidationError.MissingColorAlias(missingBorderKey),
             PaywallValidationError.MissingColorAlias(missingShadowKey),
@@ -45,6 +49,7 @@ internal class PresentedCarouselPartialTests {
         val actualResult = PresentedCarouselPartial(
             from = PartialCarouselComponent(
                 backgroundColor = ColorScheme(light = ColorInfo.Alias(missingBackgroundKey)),
+                background = Background.Color(ColorScheme(light = ColorInfo.Alias(missingBackgroundColorKey))),
                 border = Border(color = ColorScheme(light = ColorInfo.Alias(missingBorderKey)), width = 2.0),
                 shadow = Shadow(
                     color = ColorScheme(light = ColorInfo.Alias(missingShadowKey)), radius = 2.0, x = 2.0, y = 2.0
@@ -66,6 +71,7 @@ internal class PresentedCarouselPartialTests {
                 )
             ),
             aliases = mapOf(
+                ColorAlias("existing-background-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                 ColorAlias("existing-background-key") to ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
                 ColorAlias("existing-border-key") to ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb())),
                 ColorAlias("existing-shadow-key") to ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
@@ -87,11 +93,13 @@ internal class PresentedCarouselPartialTests {
     @Test
     fun `Should accumulate errors if the ColorAlias points to another alias`() {
         // Arrange
+        val firstBackgroundColorKey = ColorAlias("first-background-color-key")
         val firstBackgroundKey = ColorAlias("first-background-key")
         val firstBorderKey = ColorAlias("first-border-key")
         val firstShadowKey = ColorAlias("first-shadow-key")
         val firstActiveIndicatorKey = ColorAlias("first-active-indicator-key")
         val firstDefaultIndicatorKey = ColorAlias("first-default-indicator-key")
+        val secondBackgroundColorKey = ColorAlias("second-background-color-key")
         val secondBackgroundKey = ColorAlias("second-background-key")
         val secondBorderKey = ColorAlias("second-border-key")
         val secondShadowKey = ColorAlias("second-shadow-key")
@@ -99,6 +107,7 @@ internal class PresentedCarouselPartialTests {
         val secondDefaultIndicatorKey = ColorAlias("second-default-indicator-key")
         val expected = nonEmptyListOf(
             PaywallValidationError.AliasedColorIsAlias(firstBackgroundKey, secondBackgroundKey),
+            PaywallValidationError.AliasedColorIsAlias(firstBackgroundColorKey, secondBackgroundColorKey),
             PaywallValidationError.AliasedColorIsAlias(firstBorderKey, secondBorderKey),
             PaywallValidationError.AliasedColorIsAlias(firstShadowKey, secondShadowKey),
             PaywallValidationError.AliasedColorIsAlias(firstActiveIndicatorKey, secondActiveIndicatorKey),
@@ -108,7 +117,8 @@ internal class PresentedCarouselPartialTests {
         // Act
         val actualResult = PresentedCarouselPartial(
             from = PartialCarouselComponent(
-                backgroundColor = ColorScheme(light = ColorInfo.Alias(firstBackgroundKey)),
+                backgroundColor = ColorScheme(light = ColorInfo.Alias(firstBackgroundColorKey)),
+                background = Background.Color(ColorScheme(light = ColorInfo.Alias(firstBackgroundKey))),
                 border = Border(color = ColorScheme(light = ColorInfo.Alias(firstBorderKey)), width = 2.0),
                 shadow = Shadow(
                     color = ColorScheme(light = ColorInfo.Alias(firstShadowKey)), radius = 2.0, x = 2.0, y = 2.0
@@ -130,6 +140,7 @@ internal class PresentedCarouselPartialTests {
                 )
             ),
             aliases = mapOf(
+                firstBackgroundColorKey to ColorScheme(light = ColorInfo.Alias(secondBackgroundColorKey)),
                 firstBackgroundKey to ColorScheme(light = ColorInfo.Alias(secondBackgroundKey)),
                 firstBorderKey to ColorScheme(light = ColorInfo.Alias(secondBorderKey)),
                 firstShadowKey to ColorScheme(light = ColorInfo.Alias(secondShadowKey)),
@@ -161,7 +172,7 @@ internal class PresentedCarouselPartialTests {
         // Act
         val actualResult = PresentedCarouselPartial(
             from = PartialCarouselComponent(
-                backgroundColor = ColorScheme(light = ColorInfo.Alias(existingBackgroundKey)),
+                background = Background.Color(ColorScheme(light = ColorInfo.Alias(existingBackgroundKey))),
                 border = Border(color = ColorScheme(light = ColorInfo.Alias(existingBorderKey)), width = 2.0),
                 shadow = Shadow(
                     color = ColorScheme(light = ColorInfo.Alias(existingShadowKey)), radius = 2.0, x = 2.0, y = 2.0
@@ -196,15 +207,15 @@ internal class PresentedCarouselPartialTests {
         // Assert
         assert(actualResult.isSuccess)
         val actual = actualResult.getOrThrow()
-        val actualBackgroundColor = actual.backgroundColorStyles?.light ?: error("Actual background color is null")
+        val actualBackgroundColor = actual.backgroundStyles ?: error("Actual background color is null")
         val actualBorderColor = actual.borderStyles?.colors?.light ?: error("Actual border color is null")
         val actualShadowColor = actual.shadowStyles?.colors?.light ?: error("Actual shadow color is null")
         val actualActiveIndicatorColor = actual.pageControlStyles?.active?.color?.light
             ?: error("Actual active indicator color is null")
         val actualDefaultIndicatorColor = actual.pageControlStyles?.default?.color?.light
             ?: error("Actual default indicator color is null")
-        actualBackgroundColor.let { it as ColorStyle.Solid }.also {
-            assert(it.color == expectedBackgroundColor)
+        actualBackgroundColor.let { it as BackgroundStyles.Color }.also {
+            assert((it.color.light as ColorStyle.Solid).color == expectedBackgroundColor)
         }
         actualBorderColor.let { it as ColorStyle.Solid }.also {
             assert(it.color == expectedBorderColor)
@@ -225,7 +236,7 @@ internal class PresentedCarouselPartialTests {
         // Arrange, Act
         val actualResult = PresentedCarouselPartial(
             from = PartialCarouselComponent(
-                backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb()))),
                 border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())), width = 2.0),
                 shadow = Shadow(
                     color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())), radius = 2.0, x = 2.0, y = 2.0
@@ -255,13 +266,65 @@ internal class PresentedCarouselPartialTests {
         assert(actualResult.isSuccess)
     }
 
+    @Test
+    fun `Should use backgroundColor if background not available`() {
+        // Arrange
+        val existingBackgroundColorKey = ColorAlias("existing-background-color-key")
+        val expectedBackgroundColor = Color.Blue
+        // Act
+        val actualResult = PresentedCarouselPartial(
+            from = PartialCarouselComponent(
+                backgroundColor = ColorScheme(light = ColorInfo.Alias(existingBackgroundColorKey)),
+            ),
+            aliases = mapOf(
+                existingBackgroundColorKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
+            )
+        )
+
+        // Assert
+        assert(actualResult.isSuccess)
+        val actual = actualResult.getOrThrow()
+        val actualBackground = actual.backgroundStyles ?: error("Actual background is null")
+        actualBackground.let { it as BackgroundStyles.Color }.also {
+            assert((it.color.light as ColorStyle.Solid).color == expectedBackgroundColor)
+        }
+    }
+
+    @Test
+    fun `Should use background over backgroundColor if both available`() {
+        // Arrange
+        val existingBackgroundColorKey = ColorAlias("existing-background-color-key")
+        val existingBackgroundKey = ColorAlias("existing-background-key")
+        val expectedBackgroundColor = Color.Blue
+        val expectedBackground = Color.Red
+        // Act
+        val actualResult = PresentedCarouselPartial(
+            from = PartialCarouselComponent(
+                backgroundColor = ColorScheme(light = ColorInfo.Alias(existingBackgroundColorKey)),
+                background = Background.Color(ColorScheme(light = ColorInfo.Alias(existingBackgroundKey))),
+            ),
+            aliases = mapOf(
+                existingBackgroundColorKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
+                existingBackgroundKey to ColorScheme(light = ColorInfo.Hex(expectedBackground.toArgb())),
+            )
+        )
+
+        // Assert
+        assert(actualResult.isSuccess)
+        val actual = actualResult.getOrThrow()
+        val actualBackground = actual.backgroundStyles ?: error("Actual background is null")
+        actualBackground.let { it as BackgroundStyles.Color }.also {
+            assert((it.color.light as ColorStyle.Solid).color == expectedBackground)
+        }
+    }
+
     @Suppress("MaxLineLength")
     @Test
     fun `Should create successfully if the PartialCarouselComponent has no ColorAlias, alias map is empty`() {
         // Arrange, Act
         val actualResult = PresentedCarouselPartial(
             from = PartialCarouselComponent(
-                backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))),
                 border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())), width = 2.0),
                 shadow = Shadow(
                     color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())), radius = 2.0, x = 2.0, y = 2.0

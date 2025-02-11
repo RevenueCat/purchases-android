@@ -3,9 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialCarouselComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
@@ -20,7 +21,7 @@ import dev.drewhamilton.poko.Poko
 
 @Poko
 internal class PresentedCarouselPartial(
-    @get:JvmSynthetic val backgroundColorStyles: ColorStyles?,
+    @get:JvmSynthetic val backgroundStyles: BackgroundStyles?,
     @get:JvmSynthetic val borderStyles: BorderStyles?,
     @get:JvmSynthetic val shadowStyles: ShadowStyles?,
     @get:JvmSynthetic val pageControlStyles: CarouselComponentStyle.PageControlStyles?,
@@ -33,21 +34,24 @@ internal class PresentedCarouselPartial(
             from: PartialCarouselComponent,
             aliases: Map<ColorAlias, ColorScheme>,
         ): Result<PresentedCarouselPartial, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-            first = from.backgroundColor
+            first = from.background
+                ?.toBackgroundStyles(aliases = aliases)
+                .orSuccessfullyNull(),
+            second = from.backgroundColor
                 ?.toColorStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-            second = from.border
+            third = from.border
                 ?.toBorderStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-            third = from.shadow
+            fourth = from.shadow
                 ?.toShadowStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-            fourth = from.pageControl
+            fifth = from.pageControl
                 ?.toPageControlStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-        ) { backgroundColor, borderStyles, shadowStyles, pageControlStyles ->
+        ) { background, backgroundColor, borderStyles, shadowStyles, pageControlStyles ->
             PresentedCarouselPartial(
-                backgroundColorStyles = backgroundColor,
+                backgroundStyles = background ?: backgroundColor?.let { BackgroundStyles.Color(it) },
                 borderStyles = borderStyles,
                 shadowStyles = shadowStyles,
                 pageControlStyles = pageControlStyles,
@@ -61,7 +65,7 @@ internal class PresentedCarouselPartial(
         val otherPartial = with?.partial
 
         return PresentedCarouselPartial(
-            backgroundColorStyles = backgroundColorStyles ?: with?.backgroundColorStyles,
+            backgroundStyles = backgroundStyles ?: with?.backgroundStyles,
             borderStyles = borderStyles ?: with?.borderStyles,
             shadowStyles = shadowStyles ?: with?.shadowStyles,
             pageControlStyles = pageControlStyles ?: with?.pageControlStyles,
@@ -73,6 +77,7 @@ internal class PresentedCarouselPartial(
                 sidePagePeek = otherPartial?.sidePagePeek ?: partial.sidePagePeek,
                 spacing = otherPartial?.spacing ?: partial.spacing,
                 backgroundColor = otherPartial?.backgroundColor ?: partial.backgroundColor,
+                background = otherPartial?.background ?: partial.background,
                 padding = otherPartial?.padding ?: partial.padding,
                 margin = otherPartial?.margin ?: partial.margin,
                 shape = otherPartial?.shape ?: partial.shape,
