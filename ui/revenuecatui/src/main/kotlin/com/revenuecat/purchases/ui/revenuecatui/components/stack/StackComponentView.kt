@@ -457,8 +457,7 @@ private fun MainStackComponent(
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
-    val topSystemBarsHeightDp = with(density) { WindowInsets.systemBars.getTop(density).toDp() }
-    val topSystemBarsPadding = PaddingValues(top = topSystemBarsHeightDp)
+    val topSystemBarsPadding = PaddingValues(top = with(density) { WindowInsets.systemBars.getTop(density).toDp() })
 
     val bottomSystemBarsPadding = if (stackState.applyBottomWindowInsets) {
         PaddingValues(bottom = with(density) { WindowInsets.systemBars.getBottom(density).toDp() })
@@ -467,7 +466,7 @@ private fun MainStackComponent(
     }
 
     val content: @Composable ((ComponentStyle) -> Modifier) -> Unit =
-        remember(stackState.children, stackState.applyTopWindowInsets) {
+        remember(stackState.children, stackState.applyTopWindowInsets, topSystemBarsPadding) {
             @Composable { modifierProvider ->
                 stackState.children.forEach { child ->
                     val additionalModifier = if (stackState.applyTopWindowInsets) {
