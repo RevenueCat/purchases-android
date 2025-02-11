@@ -10,6 +10,8 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
@@ -184,8 +186,10 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
         )
 
+        val stackWithFirstImageMarked = stack.markFullWidthImageIfItsTheFirst()
+
         PaywallValidationResult.Components(
-            stack = stack,
+            stack = stackWithFirstImageMarked,
             stickyFooter = stickyFooter,
             background = background,
             locales = localizations.keys,
@@ -437,6 +441,37 @@ private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.In
     )
 
 /**
+ * This checks if the first non-container component is a full-width image, and if so, marks that image with
+ * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`.
+ */
+private fun ComponentStyle.markFullWidthImageIfItsTheFirst(): ComponentStyle =
+    map { style ->
+        when (style) {
+            is ImageComponentStyle -> when (style.size.width) {
+                is SizeConstraint.Fill -> style.copy(ignoreTopWindowInsets = true)
+                is SizeConstraint.Fit,
+                is SizeConstraint.Fixed,
+                -> style
+            }
+
+            is StackComponentStyle -> style.children.firstOrNull()
+                ?.markFullWidthImageIfItsTheFirst()
+                ?.takeIf { it is ImageComponentStyle && it.ignoreTopWindowInsets }
+                ?.let {
+                    when (style.dimension) {
+                        is Dimension.Horizontal,
+                        is Dimension.Vertical,
+                        -> style
+
+                        is Dimension.ZLayer -> style.copy(applyTopWindowInsets = true)
+                    }
+                } ?: style
+
+            else -> style
+        }
+    }
+
+/**
  * Returns the first ComponentStyle that satisfies the predicate, or null if none is found.
  *
  * Implemented as breadth-first search.
@@ -516,5 +551,58 @@ private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
         -> {
             // These don't have child components.
         }
+    }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun <T : ComponentStyle> T.map(
+    transform: (ComponentStyle) -> ComponentStyle,
+): T {
+    return when (val transformed = transform(this)) {
+        is StackComponentStyle -> transformed.copy(
+            children = transformed.children.map { it.map(transform) },
+        ) as T
+
+        is ButtonComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.map(transform),
+        ) as T
+
+        is PackageComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.map(transform),
+        ) as T
+
+        is StickyFooterComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.map(transform),
+        ) as T
+
+        is CarouselComponentStyle -> transformed.copy(
+            slides = transformed.slides.map { it.map(transform) },
+        ) as T
+
+        is TabControlButtonComponentStyle -> transformed.copy(
+            stack = transformed.stack.map(transform),
+        ) as T
+
+        is TabControlStyle.Buttons -> transformed.copy(
+            stack = transformed.stack.map(transform),
+        ) as T
+
+        is TabControlStyle.Toggle -> transformed.copy(
+            stack = transformed.stack.map(transform),
+        ) as T
+
+        is TabsComponentStyle -> {
+            val newTabs = transformed.tabs.map { tab ->
+                tab.copy(stack = tab.stack.map(transform))
+            }
+            transformed.copy(tabs = newTabs) as T
+        }
+
+        is IconComponentStyle,
+        is ImageComponentStyle,
+        is TabControlToggleComponentStyle,
+        is TextComponentStyle,
+        is TimelineComponentStyle,
+        -> transformed as T
     }
 }

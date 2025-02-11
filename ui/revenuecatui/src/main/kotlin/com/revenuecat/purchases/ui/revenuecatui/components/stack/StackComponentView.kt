@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -72,9 +75,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberSh
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
@@ -442,7 +447,7 @@ private fun BoxScope.OverlaidBadge(
     )
 }
 
-@Suppress("LongMethod", "LongParameterList")
+@Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 @Composable
 private fun MainStackComponent(
     stackState: StackComponentState,
@@ -453,18 +458,34 @@ private fun MainStackComponent(
     additionalPadding: PaddingValues = PaddingValues(0.dp),
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit = remember(stackState.children) {
-        @Composable { modifierProvider ->
-            stackState.children.forEach { child ->
-                ComponentView(
-                    style = child,
-                    state = state,
-                    onClick = clickHandler,
-                    modifier = modifierProvider(child),
-                )
+    val density = LocalDensity.current
+    val topSystemBarsHeightDp = with(density) { WindowInsets.systemBars.getTop(density).toDp() }
+    val topSystemBarsPadding = PaddingValues(top = topSystemBarsHeightDp)
+
+    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit =
+        remember(stackState.children, stackState.applyTopWindowInsets) {
+            @Composable { modifierProvider ->
+                stackState.children.forEach { child ->
+                    val additionalModifier = if (stackState.applyTopWindowInsets) {
+                        val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                            PaddingValues(all = 0.dp)
+                        } else {
+                            topSystemBarsPadding
+                        }
+                        Modifier.padding(childPadding)
+                    } else {
+                        Modifier
+                    }
+
+                    ComponentView(
+                        style = child,
+                        state = state,
+                        onClick = clickHandler,
+                        modifier = modifierProvider(child).then(additionalModifier),
+                    )
+                }
             }
         }
-    }
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
@@ -528,7 +549,12 @@ private fun MainStackComponent(
     val commonModifier = outerShapeModifier.then(innerShapeModifier)
 
     if (nestedBadge == null && overlay == null) {
-        stack(outerShapeModifier.then(innerShapeModifier).padding(additionalPadding))
+        stack(
+            outerShapeModifier
+                .then(innerShapeModifier)
+                .padding(additionalPadding)
+                .conditional(stackState.applyTopWindowInsets) { consumeWindowInsets(topSystemBarsPadding) },
+        )
     } else if (nestedBadge != null) {
         Box(modifier = modifier.then(commonModifier)) {
             stack(Modifier)
