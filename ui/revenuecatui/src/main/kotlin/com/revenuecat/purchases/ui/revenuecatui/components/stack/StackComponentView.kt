@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
@@ -38,12 +39,14 @@ import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
@@ -76,6 +79,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import java.net.URL
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
@@ -621,6 +625,55 @@ private fun StackComponentView_Preview_Vertical() {
                         light = ColorStyle.Solid(Color.Red),
                         dark = ColorStyle.Solid(Color.Yellow),
                     ),
+                ),
+                padding = PaddingValues(all = 16.dp),
+                margin = PaddingValues(all = 16.dp),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
+                shadow = ShadowStyles(
+                    colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                    radius = 10.dp,
+                    x = 0.dp,
+                    y = 3.dp,
+                ),
+                badge = null,
+                rcPackage = null,
+                tabIndex = null,
+                overrides = emptyList(),
+            ),
+            state = previewEmptyState(),
+            clickHandler = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_Image_Background() {
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                children = previewChildren(),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.CENTER,
+                    distribution = FlexDistribution.START,
+                ),
+                size = Size(width = Fit, height = Fit),
+                spacing = 16.dp,
+                background = BackgroundStyles.Image(
+                    sources = ThemeImageUrls(
+                        light = ImageUrls(
+                            original = URL("https://assets.pawwalls.com/1181742_1738248446.webp"),
+                            webp = URL("https://assets.pawwalls.com/1181742_1738248446.webp"),
+                            webpLowRes = URL("https://assets.pawwalls.com/1181742_1738248446.webp"),
+                            width = 200u,
+                            height = 200u,
+                        ),
+                    ),
+                    contentScale = ContentScale.Fit,
+                    colorOverlay = null,
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
