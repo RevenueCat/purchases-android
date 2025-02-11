@@ -167,30 +167,35 @@ private fun relativeLinearGradient(
 private class RelativeLinearGradient(
     private val colors: List<Color>,
     private val stops: List<Float>? = null,
-    private val degrees: Float,
+    degrees: Float,
     private val tileMode: TileMode = TileMode.Clamp,
 ) : ShaderBrush() {
 
+    // We need to adjust the degrees to match CSS’s angle definition.
+    @Suppress("MagicNumber")
+    private val degrees = degrees - 90f
+
+    /**
+     * Creates a linear gradient shader following the
+     * [CSS definition](https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient#composition_of_a_linear_gradient).
+     */
+    @Suppress("MaxLineLength")
     override fun createShader(size: Size): Shader {
-        // 1. Compute the center of the drawing area.
         val center = Offset(size.width / 2f, size.height / 2f)
 
-        // 2. Convert degrees to radians and compute the direction vector.
-        // (Note: adjust the sign of degrees if needed to match CSS’s angle definition.)
-        val angleRad = -1 * Math.toRadians(degrees.toDouble())
-        val dx = cos(angleRad).toFloat()
-        val dy = sin(angleRad).toFloat()
+        val radians = Math.toRadians(degrees.toDouble())
+        val dx = cos(radians).toFloat()
+        val dy = sin(radians).toFloat()
 
-        // 3. Compute the half-dimensions.
         val halfWidth = size.width / 2f
         val halfHeight = size.height / 2f
 
-        // 4. Compute the half diagonal (distance from center to the furthest corner).
+        // Compute the distance from the center to the furthest corner.
         val halfDiagonal = sqrt((halfWidth * halfWidth) + (halfHeight * halfHeight))
 
-        // 5. Compute the absolute start and end points along the gradient line.
-        val startPx = center - Offset(dx * halfDiagonal, dy * halfDiagonal)
-        val endPx = center + Offset(dx * halfDiagonal, dy * halfDiagonal)
+        // Compute the absolute start and end points along the gradient line.
+        val startPx = center - Offset(x = dx * halfDiagonal, y = dy * halfDiagonal)
+        val endPx = center + Offset(x = dx * halfDiagonal, y = dy * halfDiagonal)
 
         return LinearGradientShader(
             colors = colors,
@@ -242,12 +247,15 @@ private fun LinearGradient_Preview_Rectangle() {
     )
 }
 
+/**
+ * [reference](https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient#gradient_at_a_45-degree_angle)
+ */
 @Preview
 @Composable
 private fun LinearGradient_Preview_Rectangle_RedBlue() {
     Box(
         modifier = Modifier
-            .requiredSize(800.dp, 70.dp)
+            .requiredSize(300.dp, 55.dp)
             .background(
                 relativeLinearGradient(
                     colorStops = arrayOf(
@@ -255,6 +263,49 @@ private fun LinearGradient_Preview_Rectangle_RedBlue() {
                         1f to Color.Blue,
                     ),
                     degrees = 45f,
+                ),
+            ),
+    )
+}
+
+/**
+ * [reference](https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient#gradient_that_starts_at_60_of_the_gradient_line)
+ */
+@Suppress("MagicNumber")
+@Preview
+@Composable
+private fun LinearGradient_Preview_Rectangle_OrangeCyan() {
+    Box(
+        modifier = Modifier
+            .requiredSize(300.dp, 55.dp)
+            .background(
+                relativeLinearGradient(
+                    colorStops = arrayOf(
+                        0.6f to Color(red = 0xFF, green = 0xA5, blue = 0x00),
+                        1f to Color.Cyan,
+                    ),
+                    degrees = 135f,
+                ),
+            ),
+    )
+}
+
+/**
+ * [reference](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_images/Using_CSS_gradients#using_angles)
+ */
+@Preview
+@Composable
+private fun LinearGradient_Preview_Square_BluePink() {
+    Box(
+        modifier = Modifier
+            .requiredSize(100.dp)
+            .background(
+                relativeLinearGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Blue,
+                        1f to Color(red = 0xFF, green = 0xC0, blue = 0xCB),
+                    ),
+                    degrees = 70f,
                 ),
             ),
     )
