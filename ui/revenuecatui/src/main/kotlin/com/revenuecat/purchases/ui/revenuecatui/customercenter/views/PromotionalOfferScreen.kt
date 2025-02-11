@@ -32,7 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.previewSubscriptionOption
 
 @JvmSynthetic
 @Composable
-internal fun PromotionalOfferView(
+internal fun PromotionalOfferScreen(
     promotionalOfferData: PromotionalOfferData,
     appearance: CustomerCenterConfigData.Appearance,
     onAccept: (SubscriptionOption) -> Unit,
@@ -120,7 +120,7 @@ internal fun PromotionalOfferViewPreview() {
         ),
         localizedPricingPhasesDescription = "1 month for $7.99, then $9.99/mth",
     )
-    PromotionalOfferView(
+    PromotionalOfferScreen(
         data,
         appearance = CustomerCenterConfigTestData.customerCenterData().appearance,
         onAccept = {},

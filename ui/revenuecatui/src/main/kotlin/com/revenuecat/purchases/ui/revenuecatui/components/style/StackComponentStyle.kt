@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
@@ -9,8 +10,8 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 
 @Suppress("LongParameterList")
@@ -25,7 +26,7 @@ internal data class StackComponentStyle(
     @get:JvmSynthetic
     val spacing: Dp,
     @get:JvmSynthetic
-    val backgroundColor: ColorStyles?,
+    val background: BackgroundStyles?,
     @get:JvmSynthetic
     val padding: PaddingValues,
     @get:JvmSynthetic
@@ -38,6 +39,8 @@ internal data class StackComponentStyle(
     val shadow: ShadowStyles?,
     @get:JvmSynthetic
     val badge: BadgeStyle?,
+    @get:JvmSynthetic
+    val scrollOrientation: Orientation?,
     /**
      * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
      * available.

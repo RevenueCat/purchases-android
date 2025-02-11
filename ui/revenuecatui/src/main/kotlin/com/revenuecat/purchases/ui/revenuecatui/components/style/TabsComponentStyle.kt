@@ -9,6 +9,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
@@ -49,7 +50,7 @@ internal data class TabsComponentStyle(
     @get:JvmSynthetic
     val margin: PaddingValues,
     @get:JvmSynthetic
-    val backgroundColor: ColorStyles?,
+    val background: BackgroundStyles?,
     @get:JvmSynthetic
     val shape: Shape,
     @get:JvmSynthetic

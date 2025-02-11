@@ -22,6 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 
 @JvmSynthetic
 @Composable
@@ -112,7 +113,7 @@ internal class StackComponentState(
     val spacing by derivedStateOf { presentedPartial?.partial?.spacing?.dp ?: style.spacing }
 
     @get:JvmSynthetic
-    val backgroundColor by derivedStateOf { presentedPartial?.backgroundColorStyles ?: style.backgroundColor }
+    val background by derivedStateOf { presentedPartial?.backgroundStyles ?: style.background }
 
     @get:JvmSynthetic
     val padding by derivedStateOf { presentedPartial?.partial?.padding?.toPaddingValues() ?: style.padding }
@@ -138,6 +139,11 @@ internal class StackComponentState(
                 alignment = presentedPartial?.partial?.badge?.alignment ?: badgeStyle.alignment,
             )
         }
+    }
+
+    @get:JvmSynthetic
+    val scrollOrientation by derivedStateOf {
+        presentedPartial?.partial?.overflow?.toOrientation(dimension) ?: style.scrollOrientation
     }
 
     @JvmSynthetic

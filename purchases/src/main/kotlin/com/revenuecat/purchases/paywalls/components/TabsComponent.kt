@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -70,6 +71,8 @@ class TabsComponent(
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
+    val background: Background? = null,
+    @get:JvmSynthetic
     val shape: Shape? = null,
     @get:JvmSynthetic
     val border: Border? = null,
@@ -122,6 +125,8 @@ class PartialTabsComponent(
     @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
+    @get:JvmSynthetic
+    val background: Background? = null,
     @get:JvmSynthetic
     val shape: Shape? = null,
     @get:JvmSynthetic

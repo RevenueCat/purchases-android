@@ -9,6 +9,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
@@ -27,7 +28,6 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
@@ -468,12 +468,12 @@ class Purchases internal constructor(
     }
 
     /**
-     * Used by `RevenueCatUI` to keep track of [PaywallEvent]s.
+     * Used by `RevenueCatUI` to keep track of [FeatureEvent]s.
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @JvmSynthetic
-    fun track(paywallEvent: PaywallEvent) {
-        purchasesOrchestrator.track(paywallEvent)
+    fun track(event: FeatureEvent) {
+        purchasesOrchestrator.track(event)
     }
 
     // Kept internal since it's not meant for public usage.

@@ -14,10 +14,10 @@ import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases.paywalls.events.PaywallEvent
 
 /**
  * Abstraction over [Purchases] that can be mocked.
@@ -38,7 +38,7 @@ internal interface PurchasesType {
 
     suspend fun awaitGetProduct(productId: String, basePlan: String?): StoreProduct?
 
-    fun track(event: PaywallEvent)
+    fun track(event: FeatureEvent)
 
     val purchasesAreCompletedBy: PurchasesAreCompletedBy
 
@@ -76,7 +76,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         } ?: products.firstOrNull()
     }
 
-    override fun track(event: PaywallEvent) {
+    override fun track(event: FeatureEvent) {
         purchases.track(event)
     }
 

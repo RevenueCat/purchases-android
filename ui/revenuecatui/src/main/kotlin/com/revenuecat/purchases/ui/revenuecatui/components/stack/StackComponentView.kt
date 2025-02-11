@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import android.content.res.Configuration
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -60,16 +62,18 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrange
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.padding
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.scrollable
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
@@ -82,10 +86,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
-/**
- * @param additionalPadding Only supported for badgeless stacks as of now, as it is intended to be used to handle
- * window insets.
- */
 @Suppress("LongMethod")
 @Composable
 internal fun StackComponentView(
@@ -202,7 +202,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 // The background and border is applied to the parent container so we null it out here.
                 // We make the badge use all the available width without increasing the size of the main content.
                 badgeStack.copy(
-                    backgroundColor = null,
+                    background = null,
                     size = Size(width = Fill, height = badgeStack.size.height),
                     border = null,
                     margin = PaddingValues(0.dp),
@@ -220,7 +220,7 @@ private fun StackWithLongEdgeToEdgeBadge(
 
         // Subcompose the background
         val backgroundMeasurable = subcompose("background") {
-            val backgroundColorStyle = badgeStack.backgroundColor?.forCurrentTheme
+            val backgroundStyle = badgeStack.background?.let { rememberBackgroundStyle(background = it) }
             val borderStyle = badgeStack.border?.let { rememberBorderStyle(border = it) }
             val shadowStyle = badgeStack.shadow?.let { rememberShadowStyle(shadow = it) }
             val backgroundShape = when (val badgeCornerRadiuses = badgeStack.shape.cornerRadiuses) {
@@ -288,10 +288,10 @@ private fun StackWithLongEdgeToEdgeBadge(
                 }
             }
 
-            val backgroundModifier = remember(badgeStack, backgroundColorStyle, borderStyle, shadowStyle) {
+            val backgroundModifier = remember(badgeStack, backgroundStyle, borderStyle, shadowStyle) {
                 Modifier
                     .padding(badgeStack.margin)
-                    .applyIfNotNull(backgroundColorStyle) { background(it, backgroundShape) }
+                    .applyIfNotNull(backgroundStyle) { background(it, backgroundShape) }
                     .applyIfNotNull(backgroundShape) { clip(it) }
                     .applyIfNotNull(borderStyle) { border(it, badgeStack.shape.toShape()) }
             }
@@ -489,10 +489,15 @@ private fun MainStackComponent(
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
+        val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
+
         when (val dimension = stackState.dimension) {
             is Dimension.Horizontal -> Row(
                 modifier = modifier
                     .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                    .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                        scrollable(state, orientation)
+                    }
                     .then(rootModifier),
                 verticalAlignment = dimension.alignment.toAlignment(),
                 horizontalArrangement = dimension.distribution.toHorizontalArrangement(
@@ -503,6 +508,9 @@ private fun MainStackComponent(
             is Dimension.Vertical -> Column(
                 modifier = modifier
                     .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                    .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                        scrollable(state, orientation)
+                    }
                     .then(rootModifier),
                 verticalArrangement = dimension.distribution.toVerticalArrangement(
                     spacing = stackState.spacing,
@@ -517,22 +525,25 @@ private fun MainStackComponent(
                         horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
                         verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
                     )
+                    .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                        scrollable(state, orientation)
+                    }
                     .then(rootModifier),
                 contentAlignment = dimension.alignment.toAlignment(),
             ) { content { child -> Modifier } }
         }
     }
 
-    val backgroundColorStyle = stackState.backgroundColor?.forCurrentTheme
+    val backgroundStyle = stackState.background?.let { rememberBackgroundStyle(background = it) }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
     val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
 
-    val outerShapeModifier = remember(backgroundColorStyle, shadowStyle) {
+    val outerShapeModifier = remember(backgroundStyle, shadowStyle) {
         Modifier
             .padding(stackState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
+            .applyIfNotNull(backgroundStyle) { background(it, composeShape) }
             .clip(composeShape)
     }
 
@@ -648,9 +659,11 @@ private fun StackComponentView_Preview_Vertical() {
                 ),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
-                    dark = ColorStyle.Solid(Color.Yellow),
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
@@ -663,6 +676,61 @@ private fun StackComponentView_Preview_Vertical() {
                     y = 3.dp,
                 ),
                 badge = null,
+                scrollOrientation = null,
+                rcPackage = null,
+                tabIndex = null,
+                overrides = emptyList(),
+            ),
+            state = previewEmptyState(),
+            clickHandler = {},
+        )
+    }
+}
+
+@Suppress("MagicNumber")
+@Preview
+@Composable
+private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
+    val children = (0..30).map {
+        previewTextComponentStyle(
+            text = "Hello $it",
+            backgroundColor = ColorStyles(
+                light = ColorStyle.Solid(Color.Blue),
+            ),
+            size = Size(width = Fit, height = Fit),
+            padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
+        )
+    }
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                children = children,
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.CENTER,
+                    distribution = FlexDistribution.START,
+                ),
+                size = Size(width = Fit, height = Fit),
+                spacing = 16.dp,
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
+                ),
+                padding = PaddingValues(all = 16.dp),
+                margin = PaddingValues(all = 16.dp),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
+                shadow = ShadowStyles(
+                    colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                    radius = 10.dp,
+                    x = 0.dp,
+                    y = 3.dp,
+                ),
+                badge = null,
+                scrollOrientation = Orientation.Vertical,
                 rcPackage = null,
                 tabIndex = null,
                 overrides = emptyList(),
@@ -709,8 +777,10 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 ),
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                    ),
                 ),
                 padding = PaddingValues(all = 12.dp),
                 margin = PaddingValues(all = 0.dp),
@@ -718,6 +788,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 border = BorderStyles(width = 10.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Overlay, alignment, badgeShape),
+                scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
                 overrides = emptyList(),
@@ -767,8 +838,10 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 ),
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                    ),
                 ),
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
@@ -776,6 +849,7 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.EdgeToEdge, alignment, Shape.Pill),
+                scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
                 overrides = emptyList(),
@@ -811,8 +885,10 @@ private fun StackComponentView_Preview_Nested_Badge(
                 ),
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                    ),
                 ),
                 padding = PaddingValues(all = 0.dp),
                 margin = PaddingValues(all = 0.dp),
@@ -820,6 +896,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                 border = BorderStyles(width = 10.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Yellow))),
                 shadow = null,
                 badge = previewBadge(Badge.Style.Nested, alignment, badgeShape),
+                scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
                 overrides = emptyList(),
@@ -846,9 +923,11 @@ private fun StackComponentView_Preview_Horizontal() {
                 ),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
-                    dark = ColorStyle.Solid(Color.Yellow),
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
@@ -861,6 +940,61 @@ private fun StackComponentView_Preview_Horizontal() {
                     y = 5.dp,
                 ),
                 badge = null,
+                scrollOrientation = null,
+                rcPackage = null,
+                tabIndex = null,
+                overrides = emptyList(),
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+        )
+    }
+}
+
+@Suppress("MagicNumber")
+@Preview
+@Composable
+private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll() {
+    val children = (0..10).map {
+        previewTextComponentStyle(
+            text = "Hello $it",
+            backgroundColor = ColorStyles(
+                light = ColorStyle.Solid(Color.Blue),
+            ),
+            size = Size(width = Fit, height = Fit),
+            padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
+        )
+    }
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                children = children,
+                dimension = Dimension.Horizontal(
+                    alignment = VerticalAlignment.CENTER,
+                    distribution = FlexDistribution.START,
+                ),
+                size = Size(width = Fit, height = Fit),
+                spacing = 16.dp,
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
+                ),
+                padding = PaddingValues(all = 16.dp),
+                margin = PaddingValues(all = 16.dp),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
+                shadow = ShadowStyles(
+                    colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                    radius = 10.dp,
+                    x = 0.dp,
+                    y = 5.dp,
+                ),
+                badge = null,
+                scrollOrientation = Orientation.Horizontal,
                 rcPackage = null,
                 tabIndex = null,
                 overrides = emptyList(),
@@ -904,9 +1038,11 @@ private fun StackComponentView_Preview_ZLayer() {
                 dimension = Dimension.ZLayer(alignment = TwoDimensionalAlignment.BOTTOM_TRAILING),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                backgroundColor = ColorStyles(
-                    light = ColorStyle.Solid(Color.Red),
-                    dark = ColorStyle.Solid(Color.Yellow),
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
@@ -919,6 +1055,7 @@ private fun StackComponentView_Preview_ZLayer() {
                     y = 5.dp,
                 ),
                 badge = null,
+                scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
                 overrides = emptyList(),
@@ -952,12 +1089,13 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             ),
             size = Size(width = Fixed(200u), height = Fit),
             spacing = 16.dp,
-            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
+            background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
             shape = Shape.Rectangle(corners = null),
             border = null,
             shadow = null,
+            scrollOrientation = null,
             overrides = emptyList(),
             rcPackage = null,
             tabIndex = null,
@@ -991,12 +1129,13 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             ),
             size = Size(width = Fit, height = Fixed(200u)),
             spacing = 16.dp,
-            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
+            background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
             shape = Shape.Rectangle(),
             border = null,
             shadow = null,
+            scrollOrientation = null,
             overrides = emptyList(),
             rcPackage = null,
             tabIndex = null,
@@ -1052,13 +1191,14 @@ private fun StackComponentView_Preview_Distribution(
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fit, height = Fit),
             spacing = 16.dp,
-            backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
+            background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 16.dp),
             shape = Shape.Rectangle(),
             border = null,
             shadow = null,
             badge = null,
+            scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
             overrides = emptyList(),
@@ -1110,14 +1250,16 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
             ),
             size = Size(width = Fit, height = Fit),
             spacing = 0.dp,
-            backgroundColor = ColorStyles(
-                light = ColorInfo.Gradient.Linear(
-                    degrees = 45f,
-                    points = listOf(
-                        ColorInfo.Gradient.Point(Color.Green.toArgb(), percent = 0f),
-                        ColorInfo.Gradient.Point(Color.Yellow.toArgb(), percent = 80f),
-                    ),
-                ).toColorStyle(),
+            background = BackgroundStyles.Color(
+                ColorStyles(
+                    light = ColorInfo.Gradient.Linear(
+                        degrees = 45f,
+                        points = listOf(
+                            ColorInfo.Gradient.Point(Color.Green.toArgb(), percent = 0f),
+                            ColorInfo.Gradient.Point(Color.Yellow.toArgb(), percent = 80f),
+                        ),
+                    ).toColorStyle(),
+                ),
             ),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 0.dp),
@@ -1125,6 +1267,7 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
             border = null,
             shadow = null,
             badge = null,
+            scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
             overrides = emptyList(),
