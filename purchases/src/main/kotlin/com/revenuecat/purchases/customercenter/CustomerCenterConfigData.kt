@@ -156,6 +156,12 @@ data class CustomerCenterConfigData(
             @SerialName("purchases_not_recovered")
             PURCHASES_NOT_RECOVERED,
 
+            @SerialName("purchases_not_found")
+            PURCHASES_NOT_FOUND,
+
+            @SerialName("purchases_restoring")
+            PURCHASES_RESTORING,
+
             @SerialName("manage_subscription")
             MANAGE_SUBSCRIPTION,
 
@@ -236,6 +242,10 @@ data class CustomerCenterConfigData(
                     PURCHASES_NOT_RECOVERED ->
                         "We couldn't find any additional purchases under this account. " +
                             "Contact support for assistance if you think this is an error."
+                    PURCHASES_NOT_FOUND ->
+                        "Purchases not found"
+                    PURCHASES_RESTORING ->
+                        "Restoring purchases..."
                     MANAGE_SUBSCRIPTION -> "Manage your subscription"
                     YOU_HAVE_PROMO -> "You've been granted a subscription that doesn’t renew"
                     YOU_HAVE_LIFETIME -> "Your active lifetime subscription"
