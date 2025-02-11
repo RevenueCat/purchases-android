@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -521,7 +522,6 @@ private fun MainStackComponent(
             .padding(stackState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
             .applyIfNotNull(backgroundStyle) { background(it, composeShape) }
-            .clip(composeShape)
     }
 
     val innerShapeModifier = remember(stackState, borderStyle) {
@@ -534,12 +534,10 @@ private fun MainStackComponent(
             .padding(stackState.dimension, stackState.spacing)
     }
 
-    val commonModifier = outerShapeModifier.then(innerShapeModifier)
-
     if (nestedBadge == null && overlay == null) {
         stack(outerShapeModifier.then(innerShapeModifier))
     } else if (nestedBadge != null) {
-        Box(modifier = modifier.then(commonModifier)) {
+        Box(modifier = modifier.then(outerShapeModifier).clip(composeShape).then(innerShapeModifier)) {
             stack(Modifier)
             StackComponentView(
                 nestedBadge.stackStyle,
@@ -550,7 +548,11 @@ private fun MainStackComponent(
             )
         }
     } else if (overlay != null) {
-        Box(modifier = modifier.then(outerShapeModifier)) {
+        Box(
+            modifier = modifier
+                .then(outerShapeModifier)
+                .clip(composeShape),
+        ) {
             stack(innerShapeModifier)
             overlay()
         }
@@ -910,6 +912,59 @@ private fun StackComponentView_Preview_Horizontal() {
                     x = 0.dp,
                     y = 5.dp,
                 ),
+                badge = null,
+                scrollOrientation = null,
+                rcPackage = null,
+                tabIndex = null,
+                overrides = emptyList(),
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
+    Box(
+        modifier = Modifier.padding(all = 32.dp).background(Color.Gray),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                children = listOf(
+                    previewStackComponentStyle(
+                        children = previewChildren(),
+                        shadow = ShadowStyles(
+                            colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                            radius = 10.dp,
+                            x = 0.dp,
+                            y = 3.dp,
+                        ),
+                        badge = previewBadge(
+                            Badge.Style.Overlay,
+                            TwoDimensionalAlignment.TOP_TRAILING,
+                            Shape.Rectangle(),
+                        ),
+                    ),
+                ),
+                dimension = Dimension.Horizontal(
+                    alignment = VerticalAlignment.CENTER,
+                    distribution = FlexDistribution.START,
+                ),
+                size = Size(width = Fit, height = Fit),
+                spacing = 16.dp,
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
+                ),
+                padding = PaddingValues(all = 0.dp),
+                margin = PaddingValues(all = 16.dp),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+                border = null,
+                shadow = null,
                 badge = null,
                 scrollOrientation = null,
                 rcPackage = null,

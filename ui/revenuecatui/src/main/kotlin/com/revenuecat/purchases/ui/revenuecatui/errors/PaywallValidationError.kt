@@ -81,10 +81,12 @@ internal sealed class PaywallValidationError : Throwable() {
     }
     data class MissingPackage(
         val offeringId: String,
-        val packageId: String,
+        val missingPackageId: String,
+        val allPackageIds: Collection<String>,
     ) : PaywallValidationError() {
         override val message: String =
-            PaywallValidationErrorStrings.ALL_LOCALIZATIONS_MISSING_FOR_LOCALE.format(offeringId, packageId)
+            PaywallValidationErrorStrings.MISSING_PACKAGE
+                .format(offeringId, missingPackageId, allPackageIds.joinToString())
     }
     data class MissingColorAlias(
         val alias: ColorAlias,

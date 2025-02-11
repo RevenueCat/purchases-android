@@ -20,6 +20,8 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -28,8 +30,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.AllLocalizationsMissing
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingStringLocalization
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -39,6 +43,45 @@ import org.junit.Test
 import java.net.URL
 
 class PaywallComponentDataValidationTests {
+
+    private companion object {
+        private val localizationKey = LocalizationKey("hello-world")
+
+        const val EXPECTED_TEXT_EN = "Hello, world!"
+
+        val paywallComponents = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = localizationKey,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
+                            )
+                        ),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                LocaleId("en_US") to mapOf(
+                    localizationKey to LocalizationData.Text(EXPECTED_TEXT_EN),
+                ),
+            ),
+            defaultLocaleIdentifier = LocaleId("en_US"),
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), paywallComponents),
+        )
+    }
+
 
     @Test
     fun `Head of localizations map should always be the default locale`() {
@@ -379,6 +422,14 @@ class PaywallComponentDataValidationTests {
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias1)))
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias2)))
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias3)))
+    }
+
+    // This tests a temporal hack to make the root component fill the screen. This will be removed once we have a
+    // definite solution for positioning the root component.
+    @Test
+    fun `Should use Fill size in root component even if given Fit`() {
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        assert((validated.stack as StackComponentStyle).size.height == SizeConstraint.Fill)
     }
 
 }
