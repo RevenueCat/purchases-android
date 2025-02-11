@@ -214,7 +214,7 @@ private fun Shadow_Preview_Gradient_CustomShape() {
                 .shadow(
                     shadow = ShadowStyle(
                         color = ColorInfo.Gradient.Linear(
-                            degrees = 0f,
+                            degrees = 90f,
                             points = listOf(
                                 ColorInfo.Gradient.Point(
                                     color = Color.Red.toArgb(),
