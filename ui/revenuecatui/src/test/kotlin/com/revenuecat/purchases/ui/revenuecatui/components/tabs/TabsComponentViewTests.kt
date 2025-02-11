@@ -1225,9 +1225,9 @@ class TabsComponentViewTests {
         LocalizationData.Text(value.replace('_', ' '))
 
     /**
-     * Returns all ComponentStyles that satisfy the predicate.
+     * Returns all PaywallComponent that satisfy the predicate.
      *
-     * Implemented as breadth-first search.
+     * Implemented as breadth-first search. Duplicated in OfferingImagePreDownloader.
      */
     private fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): List<PaywallComponent> {
         val matches = mutableListOf<PaywallComponent>()
