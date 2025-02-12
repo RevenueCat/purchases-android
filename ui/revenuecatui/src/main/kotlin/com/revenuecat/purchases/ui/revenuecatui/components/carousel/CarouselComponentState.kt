@@ -98,7 +98,9 @@ internal class CarouselComponentState(
     val pages by derivedStateOf { style.pages }
 
     @get:JvmSynthetic
-    val pageAlignment by derivedStateOf { presentedPartial?.partial?.pageAlignment?.toAlignment() ?: style.pageAlignment }
+    val pageAlignment by derivedStateOf {
+        presentedPartial?.partial?.pageAlignment?.toAlignment() ?: style.pageAlignment
+    }
 
     @get:JvmSynthetic
     val size by derivedStateOf { presentedPartial?.partial?.size ?: style.size }
