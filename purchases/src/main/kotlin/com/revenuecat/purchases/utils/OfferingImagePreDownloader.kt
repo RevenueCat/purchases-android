@@ -67,7 +67,7 @@ internal class OfferingImagePreDownloader(
         offering.paywallComponents?.let { paywallComponents ->
             val imageUrls = findImageUrisToDownload(paywallComponents)
             imageUrls.forEach {
-                debugLog("Pre-downloading Paywall V2 paywall image: $it")
+                debugLog("Pre-downloading Paywall V2 image: $it")
                 coilImageDownloader.downloadImage(it)
             }
         }
