@@ -267,10 +267,10 @@ private fun NoActiveSubscriptionsViewPreview() {
 @Composable
 private fun NoActiveSubscriptionsViewNoDescription_Preview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
-    val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
+    val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!.copy(subtitle = null)
 
     ManageSubscriptionsView(
-        screenTitle = noActiveScreen.copy(subtitle = null).title,
+        screenTitle = noActiveScreen.title,
         screenSubtitle = noActiveScreen.subtitle,
         screenType = noActiveScreen.type,
         supportedPaths = noActiveScreen.supportedPaths,
