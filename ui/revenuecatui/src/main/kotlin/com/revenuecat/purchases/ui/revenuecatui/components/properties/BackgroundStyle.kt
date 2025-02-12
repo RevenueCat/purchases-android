@@ -3,12 +3,16 @@ package com.revenuecat.purchases.ui.revenuecatui.components.properties
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
@@ -23,8 +27,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getRevenueCatUIImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 
@@ -104,19 +110,28 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
     }
 
 @Composable
-private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter =
-    rememberAsyncImagePainter(
+private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter {
+    var useCache by remember { mutableStateOf(true) }
+    val imageLoader = LocalContext.current.applicationContext.getRevenueCatUIImageLoader(readCache = useCache)
+    return rememberAsyncImagePainter(
         model = imageUrls.webp.toString(),
+        imageLoader = imageLoader,
         placeholder = rememberAsyncImagePainter(
             model = imageUrls.webpLowRes.toString(),
+            imageLoader = imageLoader,
             error = null,
             fallback = null,
             contentScale = contentScale,
         ),
         error = null,
         fallback = null,
+        onError = {
+            Logger.w("AsyncImagePainter failed to load. Will try again disabling cache")
+            useCache = false
+        },
         contentScale = contentScale,
     )
+}
 
 @Preview
 @Composable
