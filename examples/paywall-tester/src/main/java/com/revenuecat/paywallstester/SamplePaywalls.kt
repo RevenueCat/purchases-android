@@ -953,6 +953,7 @@ private fun variableLocalizationKeysForEnUs(): Map<VariableLocalizationKey, Stri
             VariableLocalizationKey.MONTH -> "month"
             VariableLocalizationKey.MONTH_SHORT -> "mo"
             VariableLocalizationKey.MONTHLY -> "monthly"
+            VariableLocalizationKey.LIFETIME -> "lifetime"
             VariableLocalizationKey.NUM_DAY_FEW -> "%d days"
             VariableLocalizationKey.NUM_DAY_MANY -> "%d days"
             VariableLocalizationKey.NUM_DAY_ONE -> "%d day"

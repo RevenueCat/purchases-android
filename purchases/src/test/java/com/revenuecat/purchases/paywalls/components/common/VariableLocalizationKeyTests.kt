@@ -32,6 +32,7 @@ internal class VariableLocalizationKeyTests(
                 VariableLocalizationKey.ANNUAL -> "\"annual\""
                 VariableLocalizationKey.ANNUALLY -> "\"annually\""
                 VariableLocalizationKey.ANNUAL_SHORT -> "\"annual_short\""
+                VariableLocalizationKey.LIFETIME -> "\"lifetime\""
                 VariableLocalizationKey.FREE_PRICE -> "\"free_price\""
                 VariableLocalizationKey.PERCENT -> "\"percent\""
                 VariableLocalizationKey.NUM_DAY_ZERO -> "\"num_day_zero\""

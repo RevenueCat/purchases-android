@@ -168,6 +168,9 @@ enum class VariableLocalizationKey {
     @SerialName("annual_short")
     ANNUAL_SHORT,
 
+    @SerialName("lifetime")
+    LIFETIME,
+
     @SerialName("free_price")
     FREE_PRICE,
 
