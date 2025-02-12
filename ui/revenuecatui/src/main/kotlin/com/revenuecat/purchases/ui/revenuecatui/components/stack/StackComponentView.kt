@@ -184,8 +184,12 @@ private fun StackWithLongEdgeToEdgeBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
+
     SubcomposeLayout(
-        modifier = modifier,
+        modifier = modifier
+            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) },
     ) { constraints ->
         // Subcompose and measure the stack
         val stackMeasurable = subcompose("stack") {
@@ -193,6 +197,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 stackState,
                 state,
                 clickHandler,
+                shouldApplyShadow = false,
             )
         }.first()
         val stackPlaceable = stackMeasurable.measure(constraints)
@@ -454,6 +459,7 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
+    shouldApplyShadow: Boolean = true,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
@@ -537,7 +543,11 @@ private fun MainStackComponent(
 
     val backgroundStyle = stackState.background?.let { rememberBackgroundStyle(background = it) }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
-    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val shadowStyle = if (shouldApplyShadow) {
+        stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    } else {
+        null
+    }
     val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
 
     val outerShapeModifier = remember(backgroundStyle, shadowStyle) {
