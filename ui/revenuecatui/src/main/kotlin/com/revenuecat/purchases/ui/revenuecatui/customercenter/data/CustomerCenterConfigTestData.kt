@@ -143,6 +143,7 @@ internal object CustomerCenterConfigTestData {
             Price("$4.99", 4_990_000, "US"),
             Period(1, Period.Unit.MONTH, "P1M"),
         ),
+        isLifetime = false,
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -165,5 +166,6 @@ internal object CustomerCenterConfigTestData {
             Price("$40.99", 40_990_000, "US"),
             Period(1, Period.Unit.YEAR, "P1Y"),
         ),
+        isLifetime = false,
     )
 }

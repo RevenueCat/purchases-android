@@ -289,9 +289,12 @@ private fun MainScreen(
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
-                screen = managementScreen,
+                screenTitle = managementScreen.title,
+                screenSubtitle = managementScreen.subtitle,
+                screenType = managementScreen.type,
+                supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                support = configuration.support,
                 purchaseInformation = state.purchaseInformation,
                 onAction = onAction,
             )
@@ -302,9 +305,12 @@ private fun MainScreen(
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
-                screen = noActiveScreen,
+                screenTitle = noActiveScreen.title,
+                screenSubtitle = noActiveScreen.subtitle,
+                screenType = noActiveScreen.type,
+                supportedPaths = emptyList(),
+                contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                support = configuration.support,
                 onAction = onAction,
             )
         } ?: run {
@@ -399,6 +405,7 @@ internal fun CustomerCenterLoadedPreview() {
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
             purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+            supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
         ),
         modifier = Modifier
             .fillMaxSize()

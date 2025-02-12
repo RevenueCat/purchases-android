@@ -3,10 +3,12 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -83,7 +85,8 @@ class PurchaseInformationTest {
             expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
             expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
-            product = storeProduct
+            product = storeProduct,
+            isLifetime = false
         )
     }
 
@@ -134,7 +137,8 @@ class PurchaseInformationTest {
             expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
             expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
-            product = storeProduct
+            product = storeProduct,
+            isLifetime = false
         )
     }
 
@@ -186,6 +190,7 @@ class PurchaseInformationTest {
             expirationDateString = "2 Oct 2063",
             store = Store.PLAY_STORE,
             product = storeProduct,
+            isLifetime = false
         )
     }
 
@@ -228,6 +233,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -270,6 +276,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -312,6 +319,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -354,6 +362,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.PROMOTIONAL,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -396,6 +405,7 @@ class PurchaseInformationTest {
             expirationDateString = "",
             store = Store.PROMOTIONAL,
             product = null,
+            isLifetime = true
         )
         assertThat(purchaseInformation.expirationOrRenewal!!.date).isEqualTo(ExpirationOrRenewal.Date.Never)
     }
@@ -439,6 +449,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.STRIPE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -481,6 +492,7 @@ class PurchaseInformationTest {
             expirationDateString = "3 Oct 2063",
             store = Store.STRIPE,
             product = null,
+            isLifetime = false
         )
     }
 
@@ -522,10 +534,12 @@ class PurchaseInformationTest {
             expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
             expirationDateString = "3 Oct 2063",
             product = null,
-            store = Store.STRIPE
+            store = Store.STRIPE,
+            isLifetime = false
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun assertPurchaseInformation(
         purchaseInformation: PurchaseInformation,
         title: String?,
@@ -535,12 +549,14 @@ class PurchaseInformationTest {
         expirationLabel: ExpirationOrRenewal.Label,
         expirationDateString: String,
         product: StoreProduct?,
-        store: Store
+        store: Store,
+        isLifetime: Boolean
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
         assertThat(purchaseInformation.durationTitle).isEqualTo(durationTitle)
         assertThat(purchaseInformation.explanation).isEqualTo(explanation)
         assertThat(purchaseInformation.price).isEqualTo(price)
+        assertThat(purchaseInformation.isLifetime).isEqualTo(isLifetime)
 
         assertThat(purchaseInformation.expirationOrRenewal).isNotNull
         assertThat(purchaseInformation.expirationOrRenewal!!.label).isEqualTo(expirationLabel)

@@ -290,6 +290,19 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    private fun supportedPaths(
+        purchaseInformation: PurchaseInformation?,
+        screen: CustomerCenterConfigData.Screen,
+    ): List<CustomerCenterConfigData.HelpPath> {
+        return purchaseInformation?.let { info ->
+            if (info.isLifetime) {
+                screen.supportedPaths.filter { it.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL }
+            } else {
+                screen.supportedPaths
+            }
+        } ?: emptyList()
+    }
+
     private suspend fun loadPurchaseInformation(
         dateFormatter: DateFormatter,
         locale: Locale,
@@ -517,7 +530,13 @@ internal class CustomerCenterViewModelImpl(
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
-            _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
+            _state.value = CustomerCenterState.Success(
+                customerCenterConfigData,
+                purchaseInformation,
+                supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
+                    supportedPaths(purchaseInformation, it)
+                },
+            )
         } catch (e: PurchasesException) {
             _state.value = CustomerCenterState.Error(e.error)
         }
