@@ -58,8 +58,6 @@ android {
 dependencies {
 
     implementation project(path: ':purchases')
-    testImplementation project(':purchases')
-    testImplementation project(':purchases')
 
     compileOnly libs.emerge.snapshots.annotations
     implementation(platform(libs.kotlin.bom))
