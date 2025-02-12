@@ -334,5 +334,9 @@ internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalization
             VariableLocalizationKey.YEAR -> "year"
             VariableLocalizationKey.YEAR_SHORT -> "yr"
             VariableLocalizationKey.YEARLY -> "yearly"
+            VariableLocalizationKey.NUM_DAYS_SHORT -> "%dd"
+            VariableLocalizationKey.NUM_WEEKS_SHORT -> "%dwk"
+            VariableLocalizationKey.NUM_MONTHS_SHORT -> "%dmo"
+            VariableLocalizationKey.NUM_YEARS_SHORT -> "%dyr"
         }
     }.toNonEmptyMapOrNull()!!

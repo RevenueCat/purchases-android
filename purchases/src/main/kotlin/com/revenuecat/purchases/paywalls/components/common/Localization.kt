@@ -75,7 +75,8 @@ private object LocalizationDataSerializer : KSerializer<LocalizationData> {
  */
 @Suppress("MaxLineLength")
 @InternalRevenueCatAPI
-internal object LocalizedVariableLocalizationKeyMapSerializer : KSerializer<Map<LocaleId, Map<VariableLocalizationKey, String>>> {
+internal object LocalizedVariableLocalizationKeyMapSerializer :
+    KSerializer<Map<LocaleId, Map<VariableLocalizationKey, String>>> {
     private val delegate = MapSerializer(
         keySerializer = LocaleId.serializer(),
         valueSerializer = VariableLocalizationKeyMapSerializer,
@@ -248,4 +249,16 @@ enum class VariableLocalizationKey {
 
     @SerialName("num_year_other")
     NUM_YEAR_OTHER,
+
+    @SerialName("num_days_short")
+    NUM_DAYS_SHORT,
+
+    @SerialName("num_weeks_short")
+    NUM_WEEKS_SHORT,
+
+    @SerialName("num_months_short")
+    NUM_MONTHS_SHORT,
+
+    @SerialName("num_years_short")
+    NUM_YEARS_SHORT,
 }
