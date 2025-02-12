@@ -63,6 +63,7 @@ class SubscriptionInfo(
      * - [PeriodType.NORMAL]: The product is in a normal period (default)
      * - [PeriodType.TRIAL]: The product is in a free trial period
      * - [PeriodType.INTRO]: The product is in an introductory pricing period
+     * - [PeriodType.PREPAID]: The product is in a prepaid pricing period
      */
     val periodType: PeriodType,
     /**
@@ -92,6 +93,7 @@ class SubscriptionInfo(
         expiresDate,
         unsubscribeDetectedAt,
         billingIssuesDetectedAt,
+        periodType,
     )
 
     override fun toString(): String {
