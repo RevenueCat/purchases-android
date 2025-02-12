@@ -826,7 +826,7 @@ private fun StackComponentView_Preview_EdgeToEdge_Badge(
                     radius = 20.dp,
                     x = 0.dp,
                     y = 5.dp,
-                )
+                ),
             ),
             state = previewEmptyState(),
             clickHandler = { },
