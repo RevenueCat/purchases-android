@@ -23,13 +23,13 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val initialPageIndex: Int,
     @get:JvmSynthetic
-    val alignment: Alignment.Vertical,
+    val pageAlignment: Alignment.Vertical,
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
-    val sidePagePeek: Dp,
+    val pagePeek: Dp,
     @get:JvmSynthetic
-    val spacing: Dp,
+    val pageSpacing: Dp,
     @get:JvmSynthetic
     val background: BackgroundStyles?,
     @get:JvmSynthetic

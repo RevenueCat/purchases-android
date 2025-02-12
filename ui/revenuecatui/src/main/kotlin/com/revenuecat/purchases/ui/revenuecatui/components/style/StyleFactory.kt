@@ -455,7 +455,7 @@ internal class StyleFactory(
             initialPageIndex = component.initialPageIndex ?: 0,
             alignment = component.pageAlignment.toAlignment(),
             size = component.size,
-            sidePagePeek = component.pagePeek?.dp ?: 0.dp,
+            pagePeek = component.pagePeek?.dp ?: 0.dp,
             spacing = (component.pageSpacing ?: DEFAULT_SPACING).dp,
             background = background,
             padding = component.padding.toPaddingValues(),

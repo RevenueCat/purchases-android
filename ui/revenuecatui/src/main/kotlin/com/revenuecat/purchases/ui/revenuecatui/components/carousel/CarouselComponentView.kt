@@ -128,11 +128,11 @@ internal fun CarouselComponentView(
     ) {
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = carouselState.sidePagePeek),
+            contentPadding = PaddingValues(horizontal = carouselState.pagePeek),
             // This will load all the pages at once, which allows the pager to always have the correct size
             beyondViewportPageCount = pageCount,
-            pageSpacing = carouselState.spacing,
-            verticalAlignment = carouselState.alignment,
+            pageSpacing = carouselState.pageSpacing,
+            verticalAlignment = carouselState.pageAlignment,
             userScrollEnabled = style.autoAdvance == null,
         ) { page ->
             StackComponentView(
@@ -351,10 +351,10 @@ private fun previewCarouselComponentStyle(
     return CarouselComponentStyle(
         pages = pages,
         initialPageIndex = initialPageIndex,
-        alignment = alignment,
+        pageAlignment = alignment,
         size = size,
-        sidePagePeek = sidePagePeek,
-        spacing = spacing,
+        pagePeek = sidePagePeek,
+        pageSpacing = spacing,
         background = BackgroundStyles.Color(
             ColorStyles(
                 light = ColorStyle.Solid(backgroundColor),
