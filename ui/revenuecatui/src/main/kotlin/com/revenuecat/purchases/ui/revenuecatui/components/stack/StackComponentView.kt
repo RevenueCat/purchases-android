@@ -566,8 +566,12 @@ private fun MainStackComponent(
                 .consumeWindowInsets(topSystemBarsPadding),
         )
     } else if (nestedBadge != null) {
-        Box(modifier = modifier.then(outerShapeModifier).clip(composeShape).then(innerShapeModifier)) {
-            stack(Modifier)
+        Box(
+            modifier = modifier
+                .then(outerShapeModifier)
+                .clip(composeShape),
+        ) {
+            stack(Modifier.then(innerShapeModifier))
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
