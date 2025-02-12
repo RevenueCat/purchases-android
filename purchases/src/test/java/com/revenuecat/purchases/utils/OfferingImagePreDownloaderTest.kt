@@ -14,6 +14,7 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -135,6 +136,8 @@ class OfferingImagePreDownloaderTest {
             "https://pawwalls.com/test_sticky_footer_override_2_light_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_override_2_dark_low_res.webp",
             "https://pawwalls.com/test_icon_2.webp",
+            "https://pawwalls.com/test_icon_3.webp",
+            "https://pawwalls.com/test_icon_4.webp",
         )
 
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall(
@@ -195,6 +198,40 @@ class OfferingImagePreDownloaderTest {
                                 value = ThemeImageUrls(
                                     light = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_tabs_light_low_res.webp"),
                                 ),
+                            ),
+                        ),
+                        TimelineComponent(
+                            itemSpacing = 0,
+                            textSpacing = 0,
+                            columnGutter = 0,
+                            iconAlignment = TimelineComponent.IconAlignment.Title,
+                            items = listOf(
+                                TimelineComponent.Item(
+                                    title = TextComponent(
+                                        text = localizationKey,
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias(""))),
+                                    ),
+                                    icon = IconComponent(
+                                        baseUrl = "https://pawwalls.com",
+                                        iconName = "test_icon",
+                                        formats = IconComponent.Formats(
+                                            webp = "test_icon_3.webp",
+                                        ),
+                                    ),
+                                ),
+                                TimelineComponent.Item(
+                                    title = TextComponent(
+                                        text = localizationKey,
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias(""))),
+                                    ),
+                                    icon = IconComponent(
+                                        baseUrl = "https://pawwalls.com",
+                                        iconName = "test_icon",
+                                        formats = IconComponent.Formats(
+                                            webp = "test_icon_4.webp",
+                                        ),
+                                    ),
+                                )
                             ),
                         )
                     )

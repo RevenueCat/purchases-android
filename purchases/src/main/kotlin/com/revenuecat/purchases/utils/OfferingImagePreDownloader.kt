@@ -77,7 +77,7 @@ internal class OfferingImagePreDownloader(
         val paywallComponentsConfig = paywallComponents.data.componentsConfig.base
 
         return paywallComponentsConfig.stack.findImageUrisToDownload() +
-            (paywallComponentsConfig.stickyFooter?.stack?.findImageUrisToDownload() ?: emptyList()) +
+            (paywallComponentsConfig.stickyFooter?.stack?.findImageUrisToDownload().orEmpty()) +
             paywallComponentsConfig.background.findImageUrisToDownload()
     }
 
@@ -88,34 +88,34 @@ internal class OfferingImagePreDownloader(
                 it is CarouselComponent ||
                 it is TabsComponent ||
                 it is ImageComponent
-        }.flatMap { component ->
+        }.flatMapTo(mutableSetOf()) { component ->
             when (component) {
                 is StackComponent -> {
-                    component.background.findImageUrisToDownload() + component.overrides.flatMap { override ->
-                        override.properties.background.findImageUrisToDownload()
-                    }.toSet()
+                    component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
+                        it.properties.background.findImageUrisToDownload()
+                    }
                 }
                 is IconComponent -> {
                     setOf(Uri.parse(component.baseUrl).buildUpon().path(component.formats.webp).build())
                 }
                 is CarouselComponent -> {
-                    component.background.findImageUrisToDownload() + component.overrides.flatMap { override ->
-                        override.properties.background.findImageUrisToDownload()
-                    }.toSet()
+                    component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
+                        it.properties.background.findImageUrisToDownload()
+                    }
                 }
                 is TabsComponent -> {
-                    component.background.findImageUrisToDownload() + component.overrides.flatMap { override ->
-                        override.properties.background.findImageUrisToDownload()
-                    }.toSet()
+                    component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
+                        it.properties.background.findImageUrisToDownload()
+                    }
                 }
                 is ImageComponent -> {
-                    component.source.findImageUrisToDownload() + component.overrides.flatMap { override ->
-                        override.properties.source?.findImageUrisToDownload() ?: emptySet()
-                    }.toSet()
+                    component.source.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
+                        it.properties.source?.findImageUrisToDownload().orEmpty()
+                    }
                 }
                 else -> emptySet()
             }
-        }.toSet()
+        }
     }
 
     private fun Background?.findImageUrisToDownload(): Set<Uri> {
@@ -141,6 +141,7 @@ internal class OfferingImagePreDownloader(
      *
      * Implemented as breadth-first search.
      */
+    @Suppress("CyclomaticComplexMethod")
     private fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): List<PaywallComponent> {
         val matches = mutableListOf<PaywallComponent>()
         val queue = ArrayDeque<PaywallComponent>()
@@ -168,10 +169,12 @@ internal class OfferingImagePreDownloader(
                     }
                     queue.addAll(current.tabs.map { it.stack })
                 }
+                is TimelineComponent -> {
+                    queue.addAll(current.items.flatMap { listOfNotNull(it.title, it.description, it.icon) })
+                }
 
                 is TabControlToggleComponent,
                 is TabControlComponent,
-                is TimelineComponent,
                 is ImageComponent,
                 is IconComponent,
                 is TextComponent,
