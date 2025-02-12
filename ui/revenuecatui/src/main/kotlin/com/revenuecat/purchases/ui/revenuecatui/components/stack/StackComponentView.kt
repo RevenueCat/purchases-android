@@ -547,12 +547,16 @@ private fun MainStackComponent(
             .applyIfNotNull(backgroundStyle) { background(it, composeShape) }
     }
 
-    val innerShapeModifier = remember(stackState, borderStyle) {
+    val borderModifier = remember(stackState, borderStyle) {
         Modifier
             .applyIfNotNull(borderStyle) {
                 border(it, composeShape)
                     .padding(it.width)
             }
+    }
+
+    val innerShapeModifier = remember(stackState, borderStyle) {
+        Modifier
             .padding(stackState.padding)
             .padding(stackState.dimension, stackState.spacing)
     }
@@ -560,6 +564,7 @@ private fun MainStackComponent(
     if (nestedBadge == null && overlay == null) {
         stack(
             outerShapeModifier
+                .then(borderModifier)
                 .then(innerShapeModifier)
                 .padding(bottomSystemBarsPadding)
                 .consumeWindowInsets(bottomSystemBarsPadding)
@@ -569,7 +574,8 @@ private fun MainStackComponent(
         Box(
             modifier = modifier
                 .then(outerShapeModifier)
-                .clip(composeShape),
+                .clip(composeShape)
+                .then(borderModifier),
         ) {
             stack(Modifier.then(innerShapeModifier))
             StackComponentView(
@@ -586,7 +592,7 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            stack(innerShapeModifier)
+            stack(borderModifier.then(innerShapeModifier))
             overlay()
         }
     }
