@@ -417,30 +417,55 @@ internal object VariableProcessorV2 {
     }
 
     private fun Package.productPeriodly(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? {
-        val key = if (isLifetime) {
-            VariableLocalizationKey.LIFETIME
-        } else {
-            product.period?.let { period ->
-                when (period.unit) {
-                    Period.Unit.DAY -> VariableLocalizationKey.DAILY
-                    Period.Unit.WEEK -> VariableLocalizationKey.WEEKLY
-                    Period.Unit.MONTH -> VariableLocalizationKey.MONTHLY
-                    Period.Unit.YEAR -> VariableLocalizationKey.YEARLY
-                    Period.Unit.UNKNOWN -> null
-                }
-            }
-        }
+        val period = product.period
 
-        return key?.let { localizedVariableKeys.getStringOrLogError(key) }
+        return when {
+            isLifetime -> localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.LIFETIME)
+            period == null -> null
+            period.value > 1 ->
+                localizedVariableKeys
+                    .getStringOrLogError(period.periodValueWithUnitLocalizationKey)
+                    ?.format(period.value)
+
+            else -> when (period.unit) {
+                Period.Unit.DAY -> VariableLocalizationKey.DAILY
+                Period.Unit.WEEK -> VariableLocalizationKey.WEEKLY
+                Period.Unit.MONTH -> VariableLocalizationKey.MONTHLY
+                Period.Unit.YEAR -> VariableLocalizationKey.YEARLY
+                Period.Unit.UNKNOWN -> null
+            }?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
+        }
     }
 
-    private fun Package.productPeriod(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? =
-        periodLocalizationKey?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
+    private fun Package.productPeriod(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? {
+        val period = product.period
+
+        return when {
+            isLifetime -> localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.LIFETIME)
+            period == null -> null
+            period.value > 1 ->
+                localizedVariableKeys
+                    .getStringOrLogError(period.periodValueWithUnitLocalizationKey)
+                    ?.format(period.value)
+            else -> periodUnitLocalizationKey?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
+        }
+    }
 
     private fun Package.productPeriodAbbreviated(
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? =
-        periodAbbreviatedLocalizationKey?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
+    ): String? {
+        val period = product.period
+
+        return when {
+            isLifetime -> localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.LIFETIME)
+            period == null -> null
+            period.value > 1 -> period.periodValueWithUnitAbbreviatedLocalizationKey?.let { key ->
+                localizedVariableKeys.getStringOrLogError(key)?.format(period.value)
+            }
+
+            else -> periodUnitAbbreviatedLocalizationKey?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
+        }
+    }
 
     private fun Package.productPeriodWithUnit(
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
@@ -448,7 +473,9 @@ internal object VariableProcessorV2 {
         when {
             isLifetime -> localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.LIFETIME)
             else -> product.period?.let { period ->
-                localizedVariableKeys.getStringOrLogError(period.unitPeriodLocalizationKey)?.format(period.value)
+                localizedVariableKeys
+                    .getStringOrLogError(period.periodValueWithUnitLocalizationKey)
+                    ?.format(period.value)
             }
         }
 
@@ -502,13 +529,13 @@ internal object VariableProcessorV2 {
 
     private fun PricingPhase.productOfferPeriod(
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? = billingPeriod.periodLocalizationKey?.let { key ->
+    ): String? = billingPeriod.periodUnitLocalizationKey?.let { key ->
         localizedVariableKeys.getStringOrLogError(key)
     }
 
     private fun PricingPhase.productOfferPeriodAbbreviated(
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? = billingPeriod.periodAbbreviatedLocalizationKey?.let { key ->
+    ): String? = billingPeriod.periodUnitAbbreviatedLocalizationKey?.let { key ->
         localizedVariableKeys.getStringOrLogError(key)
     }
 
@@ -533,7 +560,9 @@ internal object VariableProcessorV2 {
     private fun PricingPhase.productOfferPeriodWithUnit(
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
     ): String? =
-        localizedVariableKeys.getStringOrLogError(billingPeriod.unitPeriodLocalizationKey)?.format(billingPeriod.value)
+        localizedVariableKeys
+            .getStringOrLogError(billingPeriod.periodValueWithUnitLocalizationKey)
+            ?.format(billingPeriod.value)
 
     private fun PricingPhase.productOfferEndDate(locale: Locale, date: Date): String? {
         val futureDate = Calendar.getInstance(locale)
@@ -561,13 +590,17 @@ internal object VariableProcessorV2 {
     private val Package.isLifetime: Boolean
         get() = packageType == PackageType.LIFETIME
 
-    private val Package.periodLocalizationKey: VariableLocalizationKey?
-        get() = if (isLifetime) VariableLocalizationKey.LIFETIME else product.period?.periodLocalizationKey
+    private val Package.periodUnitLocalizationKey: VariableLocalizationKey?
+        get() = if (isLifetime) VariableLocalizationKey.LIFETIME else product.period?.periodUnitLocalizationKey
 
-    private val Package.periodAbbreviatedLocalizationKey: VariableLocalizationKey?
-        get() = if (isLifetime) VariableLocalizationKey.LIFETIME else product.period?.periodAbbreviatedLocalizationKey
+    private val Package.periodUnitAbbreviatedLocalizationKey: VariableLocalizationKey?
+        get() = if (isLifetime) {
+            VariableLocalizationKey.LIFETIME
+        } else {
+            product.period?.periodUnitAbbreviatedLocalizationKey
+        }
 
-    private val Period.periodLocalizationKey: VariableLocalizationKey?
+    private val Period.periodUnitLocalizationKey: VariableLocalizationKey?
         get() = when (unit) {
             Period.Unit.DAY -> VariableLocalizationKey.DAY
             Period.Unit.WEEK -> VariableLocalizationKey.WEEK
@@ -576,7 +609,7 @@ internal object VariableProcessorV2 {
             Period.Unit.UNKNOWN -> null
         }
 
-    private val Period.periodAbbreviatedLocalizationKey: VariableLocalizationKey?
+    private val Period.periodUnitAbbreviatedLocalizationKey: VariableLocalizationKey?
         get() = when (unit) {
             Period.Unit.DAY -> VariableLocalizationKey.DAY_SHORT
             Period.Unit.WEEK -> VariableLocalizationKey.WEEK_SHORT
@@ -586,7 +619,7 @@ internal object VariableProcessorV2 {
         }
 
     @Suppress("MagicNumber")
-    private val Period.unitPeriodLocalizationKey: VariableLocalizationKey
+    private val Period.periodValueWithUnitLocalizationKey: VariableLocalizationKey
         get() = when {
             // Zero
             value == 0 && unit == Period.Unit.DAY -> VariableLocalizationKey.NUM_DAY_ZERO
@@ -625,6 +658,15 @@ internal object VariableProcessorV2 {
             unit == Period.Unit.YEAR -> VariableLocalizationKey.NUM_YEAR_OTHER
 
             else -> VariableLocalizationKey.NUM_DAY_OTHER
+        }
+
+    private val Period.periodValueWithUnitAbbreviatedLocalizationKey: VariableLocalizationKey?
+        get() = when (unit) {
+            Period.Unit.DAY -> VariableLocalizationKey.NUM_DAYS_SHORT
+            Period.Unit.WEEK -> VariableLocalizationKey.NUM_WEEKS_SHORT
+            Period.Unit.MONTH -> VariableLocalizationKey.NUM_MONTHS_SHORT
+            Period.Unit.YEAR -> VariableLocalizationKey.NUM_YEARS_SHORT
+            Period.Unit.UNKNOWN -> null
         }
 
     private val Period.roundedValueInDays: String
