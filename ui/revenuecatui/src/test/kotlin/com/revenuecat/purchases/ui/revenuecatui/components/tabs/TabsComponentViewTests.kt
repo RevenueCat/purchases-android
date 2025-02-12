@@ -1225,7 +1225,7 @@ class TabsComponentViewTests {
         LocalizationData.Text(value.replace('_', ' '))
 
     /**
-     * Returns all PaywallComponent that satisfy the predicate.
+     * Returns all PaywallComponents that satisfy the predicate.
      *
      * Implemented as breadth-first search. Duplicated in OfferingImagePreDownloader.
      */
