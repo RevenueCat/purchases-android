@@ -14,7 +14,6 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.isSupportedPath
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ago
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fromNow
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
@@ -567,8 +566,6 @@ class PurchaseInformationTest {
         }
         assertThat(purchaseInformation.product).isEqualTo(product)
         assertThat(purchaseInformation.store).isEqualTo(store)
-
-        assertThat(purchaseInformation.isSupportedPath(CustomerCenterConfigData.HelpPath.PathType.CANCEL)).isEqualTo(!isLifetime)
     }
 
     private fun createEntitlementInfo(

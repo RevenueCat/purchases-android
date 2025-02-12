@@ -92,6 +92,7 @@ internal fun InternalCustomerCenter(
     }
 
     InternalCustomerCenter(
+        viewModel,
         state,
         modifier,
         onAction = { action ->
@@ -130,6 +131,7 @@ internal fun InternalCustomerCenter(
 
 @Composable
 private fun InternalCustomerCenter(
+    viewModel: CustomerCenterViewModel,
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
     onAction: (CustomerCenterAction) -> Unit,
@@ -176,6 +178,7 @@ private fun InternalCustomerCenter(
                 is CustomerCenterState.Loading -> CustomerCenterLoading()
                 is CustomerCenterState.Error -> CustomerCenterError(state)
                 is CustomerCenterState.Success -> CustomerCenterLoaded(
+                    viewModel,
                     state,
                     onAction,
                 )
@@ -244,6 +247,7 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
 
 @Composable
 private fun CustomerCenterLoaded(
+    viewModel: CustomerCenterViewModel,
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
@@ -275,12 +279,13 @@ private fun CustomerCenterLoaded(
         )
     } else {
         val configuration = state.customerCenterConfigData
-        MainScreen(state, configuration, onAction)
+        MainScreen(viewModel, state, configuration, onAction)
     }
 }
 
 @Composable
 private fun MainScreen(
+    viewModel: CustomerCenterViewModel,
     state: CustomerCenterState.Success,
     configuration: CustomerCenterConfigData,
     onAction: (CustomerCenterAction) -> Unit,
@@ -288,9 +293,12 @@ private fun MainScreen(
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
-                screen = managementScreen,
+                screenTitle = managementScreen.title,
+                screenSubtitle = managementScreen.subtitle,
+                screenType = managementScreen.type,
+                supportedPaths = viewModel.supportedPaths(state.purchaseInformation, managementScreen),
+                contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                support = configuration.support,
                 purchaseInformation = state.purchaseInformation,
                 onAction = onAction,
             )
@@ -301,9 +309,12 @@ private fun MainScreen(
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
-                screen = noActiveScreen,
+                screenTitle = noActiveScreen.title,
+                screenSubtitle = noActiveScreen.subtitle,
+                screenType = noActiveScreen.type,
+                supportedPaths = viewModel.supportedPaths(state.purchaseInformation, noActiveScreen),
+                contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                support = configuration.support,
                 onAction = onAction,
             )
         } ?: run {
@@ -371,6 +382,7 @@ private val previewConfigData = CustomerCenterConfigData(
 @Composable
 internal fun CustomerCenterLoadingPreview() {
     InternalCustomerCenter(
+        viewModel = getCustomerCenterViewModel(false),
         state = CustomerCenterState.Loading,
         modifier = Modifier
             .fillMaxSize()
@@ -383,6 +395,7 @@ internal fun CustomerCenterLoadingPreview() {
 @Composable
 internal fun CustomerCenterErrorPreview() {
     InternalCustomerCenter(
+        viewModel = getCustomerCenterViewModel(false),
         state = CustomerCenterState.Error(PurchasesError(PurchasesErrorCode.UnknownBackendError)),
         modifier = Modifier
             .fillMaxSize()
@@ -395,6 +408,7 @@ internal fun CustomerCenterErrorPreview() {
 @Composable
 internal fun CustomerCenterLoadedPreview() {
     InternalCustomerCenter(
+        viewModel = getCustomerCenterViewModel(false),
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
             purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,

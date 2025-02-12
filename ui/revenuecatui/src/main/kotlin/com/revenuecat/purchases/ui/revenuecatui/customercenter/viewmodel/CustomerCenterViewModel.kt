@@ -63,6 +63,11 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct?,
     )
 
+    fun supportedPaths(
+        purchaseInformation: PurchaseInformation?,
+        screen: CustomerCenterConfigData.Screen,
+    ): List<CustomerCenterConfigData.HelpPath>
+
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
@@ -288,6 +293,19 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
         }
+    }
+
+    override fun supportedPaths(
+        purchaseInformation: PurchaseInformation?,
+        screen: CustomerCenterConfigData.Screen,
+    ): List<CustomerCenterConfigData.HelpPath> {
+        return purchaseInformation?.let { info ->
+            if (info.isLifetime) {
+                screen.supportedPaths.filter { it.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL }
+            } else {
+                screen.supportedPaths
+            }
+        } ?: emptyList()
     }
 
     private suspend fun loadPurchaseInformation(
