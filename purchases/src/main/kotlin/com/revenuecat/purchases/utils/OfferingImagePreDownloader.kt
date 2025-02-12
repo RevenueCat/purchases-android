@@ -57,7 +57,7 @@ internal class OfferingImagePreDownloader(
                 Uri.parse(paywallData.assetBaseURL.toString()).buildUpon().path(it).build()
             }
             imageUris.forEach {
-                debugLog("Pre-downloading Paywall V1 paywall image: $it")
+                debugLog("Pre-downloading Paywall V1 image: $it")
                 coilImageDownloader.downloadImage(it)
             }
         }
