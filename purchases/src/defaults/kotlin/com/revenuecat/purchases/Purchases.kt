@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.VisibleForTesting
+import coil.ImageLoader
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -809,6 +810,11 @@ class Purchases internal constructor(
      */
     fun redeemWebPurchase(webPurchaseRedemption: WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {
         purchasesOrchestrator.redeemWebPurchase(webPurchaseRedemption, listener)
+    }
+
+    @InternalRevenueCatAPI
+    fun getImageLoader(): ImageLoader? {
+        return purchasesOrchestrator.imageLoader
     }
 
     // region Static
