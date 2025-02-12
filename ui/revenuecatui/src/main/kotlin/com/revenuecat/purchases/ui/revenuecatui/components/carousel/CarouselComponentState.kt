@@ -92,25 +92,25 @@ internal class CarouselComponentState(
     val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
 
     @get:JvmSynthetic
-    val initialSlideIndex by derivedStateOf { presentedPartial?.partial?.initialSlideIndex ?: style.initialSlideIndex }
+    val initialPageIndex by derivedStateOf { presentedPartial?.partial?.initialPageIndex ?: style.initialPageIndex }
 
     @get:JvmSynthetic
-    val slides by derivedStateOf { style.slides }
+    val pages by derivedStateOf { style.pages }
 
     @get:JvmSynthetic
-    val alignment by derivedStateOf { presentedPartial?.partial?.alignment?.toAlignment() ?: style.alignment }
+    val alignment by derivedStateOf { presentedPartial?.partial?.pageAlignment?.toAlignment() ?: style.alignment }
 
     @get:JvmSynthetic
     val size by derivedStateOf { presentedPartial?.partial?.size ?: style.size }
 
     @get:JvmSynthetic
-    val sidePagePeek by derivedStateOf { presentedPartial?.partial?.sidePagePeek?.dp ?: style.sidePagePeek }
+    val sidePagePeek by derivedStateOf { presentedPartial?.partial?.pagePeek?.dp ?: style.sidePagePeek }
 
     @get:JvmSynthetic
     val background by derivedStateOf { presentedPartial?.backgroundStyles ?: style.background }
 
     @get:JvmSynthetic
-    val spacing by derivedStateOf { presentedPartial?.partial?.spacing?.dp ?: style.spacing }
+    val spacing by derivedStateOf { presentedPartial?.partial?.pageSpacing?.dp ?: style.spacing }
 
     @get:JvmSynthetic
     val padding by derivedStateOf { presentedPartial?.partial?.padding?.toPaddingValues() ?: style.padding }

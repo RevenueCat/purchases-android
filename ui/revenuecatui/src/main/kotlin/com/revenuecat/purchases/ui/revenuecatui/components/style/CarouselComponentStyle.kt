@@ -19,9 +19,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyl
 @Immutable
 internal data class CarouselComponentStyle(
     @get:JvmSynthetic
-    val slides: List<StackComponentStyle>,
+    val pages: List<StackComponentStyle>,
     @get:JvmSynthetic
-    val initialSlideIndex: Int,
+    val initialPageIndex: Int,
     @get:JvmSynthetic
     val alignment: Alignment.Vertical,
     @get:JvmSynthetic
@@ -47,7 +47,7 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val loop: Boolean,
     @get:JvmSynthetic
-    val autoAdvance: CarouselComponent.AutoAdvanceSlides?,
+    val autoAdvance: CarouselComponent.AutoAdvancePages?,
     /**
      * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
      * available.

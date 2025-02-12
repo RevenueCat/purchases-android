@@ -83,7 +83,7 @@ internal fun CarouselComponentView(
     val borderStyle = carouselState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = carouselState.shadow?.let { rememberShadowStyle(shadow = it) }
 
-    val pageCount = style.slides.size
+    val pageCount = style.pages.size
 
     val initialPage = getInitialPage(carouselState)
 
@@ -98,7 +98,7 @@ internal fun CarouselComponentView(
     carouselState.autoAdvance?.let { autoAdvance ->
         LaunchedEffect(Unit) {
             while (true) {
-                delay(autoAdvance.msTimePerSlide.toLong())
+                delay(autoAdvance.msTimePerPage.toLong())
                 val nextPage = if (carouselState.loop) {
                     pagerState.currentPage + 1
                 } else {
@@ -136,7 +136,7 @@ internal fun CarouselComponentView(
             userScrollEnabled = style.autoAdvance == null,
         ) { page ->
             StackComponentView(
-                style = carouselState.slides[page % pageCount],
+                style = carouselState.pages[page % pageCount],
                 state = state,
                 clickHandler = clickHandler,
             )
@@ -271,14 +271,14 @@ private fun Indicator(
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
     // When looping, we use a very large number of pages to allow for "infinite" scrolling
     // We need to calculate the initial page index in the middle of that large number of pages to make the carousel
-    // start at the correct slide
+    // start at the correct page
     var currentPage = Int.MAX_VALUE / 2
-    while ((currentPage % carouselState.slides.size) != carouselState.initialSlideIndex) {
+    while ((currentPage % carouselState.pages.size) != carouselState.initialPageIndex) {
         currentPage++
     }
     currentPage
 } else {
-    carouselState.initialSlideIndex
+    carouselState.initialPageIndex
 }
 
 @Preview
@@ -300,8 +300,8 @@ private fun CarouselComponentView_Loop_Preview() {
         CarouselComponentView(
             style = previewCarouselComponentStyle(
                 loop = true,
-                autoAdvance = CarouselComponent.AutoAdvanceSlides(
-                    msTimePerSlide = 1000,
+                autoAdvance = CarouselComponent.AutoAdvancePages(
+                    msTimePerPage = 1000,
                     msTransitionTime = 500,
                 ),
             ),
@@ -313,8 +313,8 @@ private fun CarouselComponentView_Loop_Preview() {
 
 @Suppress("LongParameterList")
 private fun previewCarouselComponentStyle(
-    slides: List<StackComponentStyle> = previewSlides(),
-    initialSlideIndex: Int = 0,
+    pages: List<StackComponentStyle> = previewPages(),
+    initialPageIndex: Int = 0,
     alignment: Alignment.Vertical = Alignment.CenterVertically,
     size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     sidePagePeek: Dp = 20.dp,
@@ -346,11 +346,11 @@ private fun previewCarouselComponentStyle(
         ),
     ),
     loop: Boolean = false,
-    autoAdvance: CarouselComponent.AutoAdvanceSlides? = null,
+    autoAdvance: CarouselComponent.AutoAdvancePages? = null,
 ): CarouselComponentStyle {
     return CarouselComponentStyle(
-        slides = slides,
-        initialSlideIndex = initialSlideIndex,
+        pages = pages,
+        initialPageIndex = initialPageIndex,
         alignment = alignment,
         size = size,
         sidePagePeek = sidePagePeek,
@@ -374,24 +374,24 @@ private fun previewCarouselComponentStyle(
     )
 }
 
-private fun previewSlides(): List<StackComponentStyle> {
+private fun previewPages(): List<StackComponentStyle> {
     return listOf(
-        previewSlide("Slide 1", Color.Red, height = 200u),
-        previewSlide("Slide 2", Color.Green, height = 100u),
-        previewSlide("Slide 3", Color.Blue, height = 300u),
-        previewSlide("Slide 4", Color.Yellow, height = 200u),
+        previewPage("Page 1", Color.Red, height = 200u),
+        previewPage("Page 2", Color.Green, height = 100u),
+        previewPage("Page 3", Color.Blue, height = 300u),
+        previewPage("Page 4", Color.Yellow, height = 200u),
     )
 }
 
-private fun previewSlide(
-    slideText: String,
+private fun previewPage(
+    pageText: String,
     backgroundColor: Color,
     height: UInt,
 ): StackComponentStyle {
     return StackComponentStyle(
         children = listOf(
             previewTextComponentStyle(
-                text = slideText,
+                text = pageText,
             ),
         ),
         dimension = Dimension.Vertical(

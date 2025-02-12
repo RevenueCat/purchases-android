@@ -574,7 +574,7 @@ private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
         is ButtonComponentStyle -> add(parent.stackComponentStyle)
         is PackageComponentStyle -> add(parent.stackComponentStyle)
         is StickyFooterComponentStyle -> add(parent.stackComponentStyle)
-        is CarouselComponentStyle -> addAll(parent.slides)
+        is CarouselComponentStyle -> addAll(parent.pages)
         is TabControlButtonComponentStyle -> add(parent.stack)
         is TabControlStyle.Buttons -> add(parent.stack)
         is TabControlStyle.Toggle -> add(parent.stack)
@@ -614,7 +614,7 @@ private fun <T : ComponentStyle> T.recursiveMap(
         ) as T
 
         is CarouselComponentStyle -> transformed.copy(
-            slides = transformed.slides.map { it.recursiveMap(transform) },
+            pages = transformed.pages.map { it.recursiveMap(transform) },
         ) as T
 
         is TabControlButtonComponentStyle -> transformed.copy(

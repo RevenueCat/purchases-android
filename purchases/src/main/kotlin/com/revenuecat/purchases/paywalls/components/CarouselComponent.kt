@@ -23,19 +23,21 @@ import kotlinx.serialization.Serializable
 @SerialName("carousel")
 class CarouselComponent(
     @get:JvmSynthetic
-    val slides: List<StackComponent>,
+    val pages: List<StackComponent>,
     @get:JvmSynthetic
-    @SerialName("initial_slide_index")
-    val initialSlideIndex: Int? = null,
+    @SerialName("initial_page_index")
+    val initialPageIndex: Int? = null,
     @get:JvmSynthetic
-    val alignment: VerticalAlignment,
+    @SerialName("page_alignment")
+    val pageAlignment: VerticalAlignment,
     @get:JvmSynthetic
     val size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     @get:JvmSynthetic
-    @SerialName("side_page_peek")
-    val sidePagePeek: Int? = null,
+    @SerialName("page_peek")
+    val pagePeek: Int? = null,
     @get:JvmSynthetic
-    val spacing: Float? = null,
+    @SerialName("page_spacing")
+    val pageSpacing: Float? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
@@ -58,17 +60,17 @@ class CarouselComponent(
     val loop: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("auto_advance")
-    val autoAdvance: AutoAdvanceSlides? = null,
+    val autoAdvance: AutoAdvancePages? = null,
     @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @Poko
     @Serializable
-    class AutoAdvanceSlides(
+    class AutoAdvancePages(
         @get:JvmSynthetic
-        @SerialName("ms_time_per_slide")
-        val msTimePerSlide: Int,
+        @SerialName("ms_time_per_page")
+        val msTimePerPage: Int,
         @get:JvmSynthetic
         @SerialName("ms_transition_time")
         val msTransitionTime: Int,
@@ -108,17 +110,19 @@ class PartialCarouselComponent(
     @get:JvmSynthetic
     val visible: Boolean? = null,
     @get:JvmSynthetic
-    @SerialName("initial_slide_index")
-    val initialSlideIndex: Int? = null,
+    @SerialName("initial_page_index")
+    val initialPageIndex: Int? = null,
     @get:JvmSynthetic
-    val alignment: VerticalAlignment? = null,
+    @SerialName("page_alignment")
+    val pageAlignment: VerticalAlignment? = null,
     @get:JvmSynthetic
     val size: Size? = null,
     @get:JvmSynthetic
-    @SerialName("side_page_peek")
-    val sidePagePeek: Int? = null,
+    @SerialName("page_peek")
+    val pagePeek: Int? = null,
     @get:JvmSynthetic
-    val spacing: Float? = null,
+    @SerialName("page_spacing")
+    val pageSpacing: Float? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
@@ -141,5 +145,5 @@ class PartialCarouselComponent(
     val loop: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("auto_advance")
-    val autoAdvance: CarouselComponent.AutoAdvanceSlides? = null,
+    val autoAdvance: CarouselComponent.AutoAdvancePages? = null,
 ) : PartialComponent

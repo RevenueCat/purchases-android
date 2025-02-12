@@ -42,8 +42,8 @@ internal class CarouselComponentTests {
                         json = """
                         {
                           "type": "carousel",
-                          "initial_slide_index": 2,
-                          "alignment": "center",
+                          "initial_page_index": 2,
+                          "page_alignment": "center",
                           "size": {
                             "height": {
                               "type": "fit",
@@ -54,7 +54,7 @@ internal class CarouselComponentTests {
                               "value": null
                             }
                           },
-                          "side_page_peek": 10,
+                          "page_peek": 10,
                           "padding": {
                             "top": 1,
                             "leading": 2,
@@ -70,7 +70,7 @@ internal class CarouselComponentTests {
                           "shape": {
                             "type": "pill"
                           },
-                          "spacing": 8,
+                          "page_spacing": 8,
                           "background_color": {
                             "light": {
                               "type": "alias",
@@ -173,10 +173,10 @@ internal class CarouselComponentTests {
                           },
                           "loop": true,
                           "auto_advance": {
-                            "ms_time_per_slide": 1000,
+                            "ms_time_per_page": 1000,
                             "ms_transition_time": 500
                           },
-                          "slides": [
+                          "pages": [
                             {
                               "type": "stack",
                               "components": []
@@ -185,15 +185,15 @@ internal class CarouselComponentTests {
                         }
                         """.trimIndent(),
                         expected = CarouselComponent(
-                            slides = listOf(
+                            pages = listOf(
                                 StackComponent(
                                     components = emptyList()
                                 )
                             ),
-                            initialSlideIndex = 2,
-                            alignment = VerticalAlignment.CENTER,
+                            initialPageIndex = 2,
+                            pageAlignment = VerticalAlignment.CENTER,
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
-                            sidePagePeek = 10,
+                            pagePeek = 10,
                             padding = Padding(
                                 top = 1.0,
                                 leading = 2.0,
@@ -207,7 +207,7 @@ internal class CarouselComponentTests {
                                 trailing = 8.0
                             ),
                             shape = Shape.Pill,
-                            spacing = 8f,
+                            pageSpacing = 8f,
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Alias(ColorAlias("tertiary")),
                                 dark = ColorInfo.Alias(ColorAlias("another_alias"))
@@ -263,8 +263,8 @@ internal class CarouselComponentTests {
                                 )
                             ),
                             loop = true,
-                            autoAdvance = CarouselComponent.AutoAdvanceSlides(
-                                msTimePerSlide = 1000,
+                            autoAdvance = CarouselComponent.AutoAdvancePages(
+                                msTimePerPage = 1000,
                                 msTransitionTime = 500
                             )
                         )
@@ -276,8 +276,8 @@ internal class CarouselComponentTests {
                         json = """
                         {
                           "type": "carousel",
-                          "alignment": "center",
-                          "slides": [
+                          "page_alignment": "center",
+                          "pages": [
                             {
                               "type": "stack",
                               "components": []
@@ -286,12 +286,12 @@ internal class CarouselComponentTests {
                         }
                         """.trimIndent(),
                         expected = CarouselComponent(
-                            slides = listOf(
+                            pages = listOf(
                                 StackComponent(
                                     components = emptyList()
                                 )
                             ),
-                            alignment = VerticalAlignment.CENTER,
+                            pageAlignment = VerticalAlignment.CENTER,
                         )
                     ),
                 ),
@@ -341,8 +341,8 @@ internal class CarouselComponentTests {
                         json = """
                         {
                           "visible": true,
-                          "initial_slide_index": 2,
-                          "alignment": "center",
+                          "initial_page_index": 2,
+                          "page_alignment": "center",
                           "size": {
                             "height": {
                               "type": "fit",
@@ -353,7 +353,7 @@ internal class CarouselComponentTests {
                               "value": null
                             }
                           },
-                          "side_page_peek": 10,
+                          "page_peek": 10,
                           "padding": {
                             "top": 1,
                             "leading": 2,
@@ -369,7 +369,7 @@ internal class CarouselComponentTests {
                           "shape": {
                             "type": "pill"
                           },
-                          "spacing": 8,
+                          "page_spacing": 8,
                           "background_color": {
                             "light": {
                               "type": "alias",
@@ -472,17 +472,17 @@ internal class CarouselComponentTests {
                           },
                           "loop": true,
                           "auto_advance": {
-                            "ms_time_per_slide": 1000,
+                            "ms_time_per_page": 1000,
                             "ms_transition_time": 500
                           }
                         }
                         """.trimIndent(),
                         expected = PartialCarouselComponent(
                             visible = true,
-                            initialSlideIndex = 2,
-                            alignment = VerticalAlignment.CENTER,
+                            initialPageIndex = 2,
+                            pageAlignment = VerticalAlignment.CENTER,
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
-                            spacing = 8f,
+                            pageSpacing = 8f,
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Alias(ColorAlias("tertiary")),
                                 dark = ColorInfo.Alias(ColorAlias("another_alias"))
@@ -490,7 +490,7 @@ internal class CarouselComponentTests {
                             background = Background.Color(
                                 value = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                             ),
-                            sidePagePeek = 10,
+                            pagePeek = 10,
                             padding = Padding(
                                 top = 1.0,
                                 leading = 2.0,
@@ -552,8 +552,8 @@ internal class CarouselComponentTests {
                                 )
                             ),
                             loop = true,
-                            autoAdvance = CarouselComponent.AutoAdvanceSlides(
-                                msTimePerSlide = 1000,
+                            autoAdvance = CarouselComponent.AutoAdvancePages(
+                                msTimePerPage = 1000,
                                 msTransitionTime = 500
                             )
                         )
