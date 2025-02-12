@@ -125,6 +125,18 @@ internal class TextComponentViewVariablesTests(
             description = "Lifetime",
             period = null,
         )
+        private val productOneTimePurchaseUsd = TestStoreProduct(
+            id = "com.revenuecat.otp_product",
+            name = "OneTimePurchase",
+            title = "OneTimePurchase (App name)",
+            price = Price(
+                amountMicros = 200_000_000,
+                currencyCode = "USD",
+                formatted = "$ 200.00",
+            ),
+            description = "OneTimePurchase",
+            period = null,
+        )
         private val productWithUpperCaseName = productYearlyUsdTwoOffers.copy(name = "ANNUAL")
         private val productWithLowerCaseName = productYearlyUsdTwoOffers.copy(name = "annual")
 
@@ -155,9 +167,16 @@ internal class TextComponentViewVariablesTests(
         @Suppress("DEPRECATION")
         private val packageLifetimeUsd = Package(
             packageType = PackageType.LIFETIME,
-            identifier = "package_lifetime",
+            identifier = PackageType.LIFETIME.identifier!!,
             offering = OFFERING_ID,
             product = productLifetimeUsd,
+        )
+        @Suppress("DEPRECATION")
+        private val packageOneTimePurchaseUsd = Package(
+            packageType = PackageType.CUSTOM,
+            identifier = "package_otp",
+            offering = OFFERING_ID,
+            product = productOneTimePurchaseUsd,
         )
 
         private val packageWithUpperCaseName = packageYearlyUsdTwoOffers.copy(product = productWithUpperCaseName)
@@ -582,16 +601,16 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "lifetime"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE.identifier} }}",
                 Args(
-                    packages = listOf(packageYearlyMxnOneOffer),
-                    locale = "es_$STORE_COUNTRY_WITHOUT_DECIMALS",
-                    storefrontCountryCode = STORE_COUNTRY_WITHOUT_DECIMALS,
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEsMx(),
                 ),
-                "\$200"
+                "\$ 200.00",
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
                 Args(
@@ -600,7 +619,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
                 Args(
@@ -609,7 +628,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
                 Args(
@@ -627,7 +646,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
                 Args(
@@ -636,7 +655,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
                 Args(
@@ -645,7 +664,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
                 Args(
@@ -654,7 +673,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "lifetime"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD_ABBREVIATED.identifier} }}",
                 Args(
@@ -663,7 +682,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "lifetime"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD_IN_DAYS.identifier} }}",
                 Args(
@@ -708,7 +727,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "lifetime"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_RELATIVE_DISCOUNT.identifier} }}",
                 Args(
