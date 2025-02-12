@@ -918,7 +918,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                         light = ColorStyle.Solid(Color.Red),
                     ),
                 ),
-                padding = PaddingValues(all = 0.dp),
+                padding = PaddingValues(all = 20.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = BorderStyles(width = 10.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Yellow))),
