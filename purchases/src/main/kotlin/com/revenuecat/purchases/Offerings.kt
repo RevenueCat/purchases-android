@@ -69,6 +69,7 @@ data class Offerings internal constructor(
     )
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 internal fun Offering.withPresentedContext(placementId: String?, targeting: Offerings.Targeting?): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
         val oldContext = it.presentedOfferingContext
@@ -95,5 +96,6 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
         metadata = this.metadata,
         availablePackages = updatedAvailablePackages,
         paywall = this.paywall,
+        paywallComponents = this.paywallComponents,
     )
 }
