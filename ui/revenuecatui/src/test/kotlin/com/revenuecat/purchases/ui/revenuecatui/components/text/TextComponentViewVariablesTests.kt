@@ -100,6 +100,18 @@ internal class TextComponentViewVariablesTests(
             description = "Monthly",
             period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
         )
+        private val productQuarterlyUsdNoOffers = TestStoreProduct(
+            id = "com.revenuecat.quarterly_product",
+            name = "3 month",
+            title = "3 month (App name)",
+            price = Price(
+                amountMicros = 23_990_000,
+                currencyCode = "USD",
+                formatted = "$23.99"
+            ),
+            description = "3 month",
+            period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
+        )
         private val productYearlyMxnOneOffer = TestStoreProduct(
             id = "com.revenuecat.annual_product",
             name = "Annual",
@@ -154,6 +166,14 @@ internal class TextComponentViewVariablesTests(
             identifier = "package_monthly",
             offering = OFFERING_ID,
             product = productMonthlyUsdOneOffer,
+        )
+
+        @Suppress("DEPRECATION")
+        private val packageQuarterlyUsdNoOffers = Package(
+            packageType = PackageType.THREE_MONTH,
+            identifier = PackageType.THREE_MONTH.identifier!!,
+            offering = OFFERING_ID,
+            product = productQuarterlyUsdNoOffers,
         )
 
         @Suppress("DEPRECATION")
@@ -1146,6 +1166,57 @@ internal class TextComponentViewVariablesTests(
                     )
                 ),
                 "ANNUAL"
+            ),
+            // Products with a period spanning multiple months:
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PERIODLY.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "3 months",
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "$23.99/3 months",
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "$23.99/3mo",
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "3 months",
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "3mo",
             ),
         )
     }
