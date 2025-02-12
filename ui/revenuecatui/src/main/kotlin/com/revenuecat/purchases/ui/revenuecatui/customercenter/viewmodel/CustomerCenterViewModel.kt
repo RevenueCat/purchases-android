@@ -63,11 +63,6 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct?,
     )
 
-    fun supportedPaths(
-        purchaseInformation: PurchaseInformation?,
-        screen: CustomerCenterConfigData.Screen,
-    ): List<CustomerCenterConfigData.HelpPath>
-
     fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
@@ -295,7 +290,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun supportedPaths(
+    private fun supportedPaths(
         purchaseInformation: PurchaseInformation?,
         screen: CustomerCenterConfigData.Screen,
     ): List<CustomerCenterConfigData.HelpPath> {
@@ -535,7 +530,13 @@ internal class CustomerCenterViewModelImpl(
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
-            _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
+            _state.value = CustomerCenterState.Success(
+                customerCenterConfigData,
+                purchaseInformation,
+                supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
+                    supportedPaths(purchaseInformation, it)
+                },
+            )
         } catch (e: PurchasesException) {
             _state.value = CustomerCenterState.Error(e.error)
         }
