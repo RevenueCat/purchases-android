@@ -26,7 +26,7 @@ internal object CustomerCenterConfigTestData {
                     paths = listOf(
                         CustomerCenterConfigData.HelpPath(
                             id = "1",
-                            title = "Didn't receive purchase",
+                            title = "Check for previous purchases",
                             type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
                         ),
                         CustomerCenterConfigData.HelpPath(
@@ -80,12 +80,12 @@ internal object CustomerCenterConfigTestData {
                 ),
                 CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE to CustomerCenterConfigData.Screen(
                     type = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
-                    title = "No Active Subscription",
-                    subtitle = "You currently have no active subscriptions",
+                    title = "No subscriptions found",
+                    subtitle = "We can try checking your account for any previous purchases",
                     paths = listOf(
                         CustomerCenterConfigData.HelpPath(
                             id = "9q9719171o",
-                            title = "Check purchases",
+                            title = "Check for previous purchases",
                             type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
                         ),
                     ),
