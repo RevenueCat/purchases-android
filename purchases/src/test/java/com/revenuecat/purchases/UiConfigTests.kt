@@ -253,6 +253,7 @@ internal class UiConfigTests {
                   "annual": "ANNUAL",
                   "annually": "ANNUALLY",
                   "annual_short": "ANNUAL_SHORT",
+                  "lifetime": "LIFETIME",
                   "free_price": "FREE_PRICE",
                   "percent": "PERCENT",
                   "num_day_zero": "NUM_DAY_ZERO",
