@@ -10,6 +10,7 @@ android {
     productFlavors {
         defaults {
             dimension "apis"
+            getIsDefault().set(true)
         }
         customEntitlementComputation {
             dimension "apis"
