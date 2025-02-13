@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -79,11 +82,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBo
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
@@ -468,26 +471,6 @@ private fun MainStackComponent(
         PaddingValues(all = 0.dp)
     }
 
-    val content: @Composable ((ComponentStyle) -> Modifier) -> Unit =
-        remember(stackState.children, topSystemBarsPadding) {
-            @Composable { modifierProvider ->
-                stackState.children.forEach { child ->
-                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
-                        PaddingValues(all = 0.dp)
-                    } else {
-                        topSystemBarsPadding
-                    }
-
-                    ComponentView(
-                        style = child,
-                        state = state,
-                        onClick = clickHandler,
-                        modifier = modifierProvider(child).padding(childPadding),
-                    )
-                }
-            }
-        }
-
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
@@ -504,7 +487,49 @@ private fun MainStackComponent(
                 horizontalArrangement = dimension.distribution.toHorizontalArrangement(
                     spacing = stackState.spacing,
                 ),
-            ) { content { child -> if (child.size.width == Fill) Modifier.weight(1f) else Modifier } }
+            ) {
+                val fillSpaceSpacer = @Composable {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
+                }
+                if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+                ) {
+                    fillSpaceSpacer()
+                }
+                val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
+                stackState.children.forEachIndexed { index, child ->
+                    val isLast = index == stackState.children.size - 1
+                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                        PaddingValues(all = 0.dp)
+                    } else {
+                        topSystemBarsPadding
+                    }
+
+                    ComponentView(
+                        style = child,
+                        state = state,
+                        onClick = clickHandler,
+                        modifier = Modifier
+                            .conditional(child.size.width == Fill) { Modifier.weight(1f) }
+                            .padding(childPadding),
+                    )
+
+                    if (hasChildrenWithFillWidth && !isLast) {
+                        Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
+                    } else if (!hasChildrenWithFillWidth &&
+                        dimension.distribution.usesAllAvailableSpace &&
+                        !isLast
+                    ) {
+                        fillSpaceSpacer()
+                    }
+                }
+                if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+                ) {
+                    fillSpaceSpacer()
+                }
+            }
 
             is Dimension.Vertical -> Column(
                 modifier = modifier
@@ -517,7 +542,49 @@ private fun MainStackComponent(
                     spacing = stackState.spacing,
                 ),
                 horizontalAlignment = dimension.alignment.toAlignment(),
-            ) { content { child -> if (child.size.height == Fill) Modifier.weight(1f) else Modifier } }
+            ) {
+                val fillSpaceSpacer = @Composable {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
+                }
+                if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+                ) {
+                    fillSpaceSpacer()
+                }
+                val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
+                stackState.children.forEachIndexed { index, child ->
+                    val isLast = index == stackState.children.size - 1
+                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                        PaddingValues(all = 0.dp)
+                    } else {
+                        topSystemBarsPadding
+                    }
+
+                    ComponentView(
+                        style = child,
+                        state = state,
+                        onClick = clickHandler,
+                        modifier = Modifier
+                            .conditional(child.size.height == Fill) { Modifier.weight(1f) }
+                            .padding(childPadding),
+                    )
+
+                    if (hasChildrenWithFillHeight && !isLast) {
+                        Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
+                    } else if (!hasChildrenWithFillHeight &&
+                        dimension.distribution.usesAllAvailableSpace &&
+                        !isLast
+                    ) {
+                        fillSpaceSpacer()
+                    }
+                }
+                if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+                ) {
+                    fillSpaceSpacer()
+                }
+            }
 
             is Dimension.ZLayer -> Box(
                 modifier = modifier
@@ -531,7 +598,22 @@ private fun MainStackComponent(
                     }
                     .then(rootModifier),
                 contentAlignment = dimension.alignment.toAlignment(),
-            ) { content { child -> Modifier } }
+            ) {
+                stackState.children.forEach { child ->
+                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                        PaddingValues(all = 0.dp)
+                    } else {
+                        topSystemBarsPadding
+                    }
+
+                    ComponentView(
+                        style = child,
+                        state = state,
+                        onClick = clickHandler,
+                        modifier = Modifier.padding(childPadding),
+                    )
+                }
+            }
         }
     }
 
@@ -644,6 +726,19 @@ private fun CornerSize.makeAbsolute(placeable: Placeable, density: Density) =
  */
 private fun CornerSize.makeAbsolute(shapeSize: ComposeSize, density: Density) =
     CornerSize(size = toPx(shapeSize, density))
+
+private val FlexDistribution.usesAllAvailableSpace: Boolean
+    get() = when (this) {
+        FlexDistribution.SPACE_AROUND,
+        FlexDistribution.SPACE_BETWEEN,
+        FlexDistribution.SPACE_EVENLY,
+        -> true
+
+        FlexDistribution.START,
+        FlexDistribution.END,
+        FlexDistribution.CENTER,
+        -> false
+    }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
