@@ -119,7 +119,7 @@ internal fun PromotionalOfferViewPreview() {
         ),
         originalPath = CustomerCenterConfigData.HelpPath(
             id = "1",
-            title = "Didn't receive purchase",
+            title = "Check for previous purchases",
             type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
         ),
         localizedPricingPhasesDescription = "1 month for $7.99, then $9.99/mth",
