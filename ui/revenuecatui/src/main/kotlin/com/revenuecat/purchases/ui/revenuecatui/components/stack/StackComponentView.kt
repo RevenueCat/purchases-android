@@ -65,7 +65,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.padding
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.scrollable
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -490,14 +489,14 @@ private fun MainStackComponent(
             ) {
                 val fillSpaceSpacer = @Composable {
                     Spacer(modifier = Modifier.weight(1f))
-                    Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
                 }
+                val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
+
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
                     dimension.distribution == FlexDistribution.SPACE_EVENLY
                 ) {
                     fillSpaceSpacer()
                 }
-                val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
                 stackState.children.forEachIndexed { index, child ->
                     val isLast = index == stackState.children.size - 1
                     val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
@@ -515,13 +514,11 @@ private fun MainStackComponent(
                             .padding(childPadding),
                     )
 
-                    if (hasChildrenWithFillWidth && !isLast) {
+                    if (dimension.distribution.usesAllAvailableSpace && !isLast) {
                         Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
-                    } else if (!hasChildrenWithFillWidth &&
-                        dimension.distribution.usesAllAvailableSpace &&
-                        !isLast
-                    ) {
-                        fillSpaceSpacer()
+                        if (!hasChildrenWithFillWidth) {
+                            fillSpaceSpacer()
+                        }
                     }
                 }
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
@@ -570,13 +567,12 @@ private fun MainStackComponent(
                             .padding(childPadding),
                     )
 
-                    if (hasChildrenWithFillHeight && !isLast) {
-                        Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
-                    } else if (!hasChildrenWithFillHeight &&
-                        dimension.distribution.usesAllAvailableSpace &&
-                        !isLast
-                    ) {
-                        fillSpaceSpacer()
+                    if (dimension.distribution.usesAllAvailableSpace && !isLast) {
+                        if (hasChildrenWithFillHeight) {
+                            Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
+                        } else {
+                            fillSpaceSpacer()
+                        }
                     }
                 }
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
@@ -636,7 +632,6 @@ private fun MainStackComponent(
                     .padding(it.width)
             }
             .padding(stackState.padding)
-            .padding(stackState.dimension, stackState.spacing)
     }
 
     if (nestedBadge == null && overlay == null) {
