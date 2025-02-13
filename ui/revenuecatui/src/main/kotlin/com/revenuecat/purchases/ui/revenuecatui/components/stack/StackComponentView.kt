@@ -490,13 +490,13 @@ private fun MainStackComponent(
                 val fillSpaceSpacer = @Composable {
                     Spacer(modifier = Modifier.weight(1f))
                 }
-                val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
 
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
                     dimension.distribution == FlexDistribution.SPACE_EVENLY
                 ) {
                     fillSpaceSpacer()
                 }
+                val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
                 stackState.children.forEachIndexed { index, child ->
                     val isLast = index == stackState.children.size - 1
                     val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
@@ -542,7 +542,6 @@ private fun MainStackComponent(
             ) {
                 val fillSpaceSpacer = @Composable {
                     Spacer(modifier = Modifier.weight(1f))
-                    Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
                 }
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
                     dimension.distribution == FlexDistribution.SPACE_EVENLY
@@ -568,9 +567,8 @@ private fun MainStackComponent(
                     )
 
                     if (dimension.distribution.usesAllAvailableSpace && !isLast) {
-                        if (hasChildrenWithFillHeight) {
-                            Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
-                        } else {
+                        Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
+                        if (!hasChildrenWithFillHeight) {
                             fillSpaceSpacer()
                         }
                     }
