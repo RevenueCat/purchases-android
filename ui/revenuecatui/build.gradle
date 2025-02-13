@@ -24,6 +24,7 @@ android {
     productFlavors {
         defaults {
             dimension "apis"
+            getIsDefault().set(true)
         }
     }
 
