@@ -84,6 +84,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBo
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -531,7 +532,7 @@ private fun MainStackComponent(
                     val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
                     stackState.children.forEachIndexed { index, child ->
                         val isLast = index == stackState.children.size - 1
-                        val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                        val childPadding = if (child.ignoreTopWindowInsets) {
                             PaddingValues(all = 0.dp)
                         } else {
                             topSystemBarsPadding
@@ -589,7 +590,9 @@ private fun MainStackComponent(
                     val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
                     stackState.children.forEachIndexed { index, child ->
                         val isLast = index == stackState.children.size - 1
-                        val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                        // In a Vertical container, we only want to apply topSystemBarsPadding to the first child,
+                        // except when that child has `ignoreTopWindowInsets` set to true.
+                        val childPadding = if (index != 0 || child.ignoreTopWindowInsets) {
                             PaddingValues(all = 0.dp)
                         } else {
                             topSystemBarsPadding
@@ -629,7 +632,7 @@ private fun MainStackComponent(
                     contentAlignment = dimension.alignment.toAlignment(),
                 ) {
                     stackState.children.forEach { child ->
-                        val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                        val childPadding = if (child.ignoreTopWindowInsets) {
                             PaddingValues(all = 0.dp)
                         } else {
                             topSystemBarsPadding
@@ -782,6 +785,9 @@ private val FlexDistribution.usesAllAvailableSpace: Boolean
         FlexDistribution.CENTER,
         -> false
     }
+
+private val ComponentStyle.ignoreTopWindowInsets: Boolean
+    get() = this is ImageComponentStyle && ignoreTopWindowInsets
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
