@@ -16,7 +16,7 @@ import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.JsonHelper
+import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.asMap
 import io.mockk.every
@@ -70,7 +70,7 @@ class BackendPaywallEventTest {
     fun setUp() {
         appConfig = mockk()
         httpClient = mockk()
-        unmockkObject(JsonHelper)
+        unmockkObject(JsonProvider)
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
 
         val asyncDispatcher1 = createAsyncDispatcher()
@@ -196,10 +196,10 @@ class BackendPaywallEventTest {
 
     @Test
     fun `postPaywallEvents calls error handler with shouldMarkAsSynced true if json error`() {
-        mockkObject(JsonHelper)
+        mockkObject(JsonProvider)
         val mockJson = mockk<Json>()
         every {
-            JsonHelper.json
+            JsonProvider.defaultJson
         } returns mockJson
 
         every {
@@ -264,8 +264,8 @@ class BackendPaywallEventTest {
     }
 
     private fun verifyCallWithBody(body: String) {
-        val expectedRequest: EventsRequest = JsonHelper.json.decodeFromString(body)
-        val expectedBody = JsonHelper.json.encodeToJsonElement(expectedRequest).asMap()
+        val expectedRequest: EventsRequest = JsonProvider.defaultJson.decodeFromString(body)
+        val expectedBody = JsonProvider.defaultJson.encodeToJsonElement(expectedRequest).asMap()
         verify(exactly = 1) {
             httpClient.performRequest(
                 AppConfig.paywallEventsURL,

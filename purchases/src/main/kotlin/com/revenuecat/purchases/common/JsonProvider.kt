@@ -5,9 +5,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 
-internal object JsonHelper {
+internal sealed class JsonProvider {
     companion object {
-        val json = Json {
+        val defaultJson = Json {
             serializersModule = SerializersModule {
                 polymorphic(BackendEvent::class) {
                     subclass(BackendEvent.CustomerCenter::class, BackendEvent.CustomerCenter.serializer())

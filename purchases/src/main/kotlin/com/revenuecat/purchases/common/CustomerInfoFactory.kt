@@ -98,7 +98,7 @@ internal object CustomerInfoFactory {
         try {
             subscriptions.keys().forEach { productId ->
                 val subscriptionJSONObject = subscriptions.getJSONObject(productId)
-                val subscriptionInfoResponse = JsonHelper.json.decodeFromString<SubscriptionInfoResponse>(
+                val subscriptionInfoResponse = JsonProvider.defaultJson.decodeFromString<SubscriptionInfoResponse>(
                     subscriptionJSONObject.toString(),
                 )
                 subscriptionMap[productId] = SubscriptionInfo(productId, requestDate, subscriptionInfoResponse)
