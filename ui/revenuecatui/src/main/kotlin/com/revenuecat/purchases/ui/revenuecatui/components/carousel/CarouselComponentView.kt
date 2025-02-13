@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.carousel
 
@@ -293,6 +294,20 @@ private fun CarouselComponentView_Preview() {
 
 @Preview
 @Composable
+private fun CarouselComponentView_Top_Preview() {
+    Box(modifier = Modifier.background(Color.White)) {
+        CarouselComponentView(
+            style = previewCarouselComponentStyle(
+                pageControl = previewPageControl(CarouselComponent.PageControl.Position.TOP),
+            ),
+            state = previewEmptyState(),
+            clickHandler = {},
+        )
+    }
+}
+
+@Preview
+@Composable
 private fun CarouselComponentView_Loop_Preview() {
     Box(modifier = Modifier.background(Color.White)) {
         CarouselComponentView(
@@ -328,8 +343,41 @@ private fun previewCarouselComponentStyle(
         x = 0.dp,
         y = 3.dp,
     ),
-    pageControl: CarouselComponentStyle.PageControlStyles? = CarouselComponentStyle.PageControlStyles(
-        position = CarouselComponent.PageControl.Position.BOTTOM,
+    pageControl: CarouselComponentStyle.PageControlStyles? = previewPageControl(),
+    loop: Boolean = false,
+    autoAdvance: CarouselComponent.AutoAdvancePages? = null,
+): CarouselComponentStyle {
+    return CarouselComponentStyle(
+        pages = pages,
+        initialPageIndex = initialPageIndex,
+        pageAlignment = alignment,
+        size = size,
+        pagePeek = sidePagePeek,
+        pageSpacing = spacing,
+        background = BackgroundStyles.Color(
+            ColorStyles(
+                light = ColorStyle.Solid(backgroundColor),
+            ),
+        ),
+        padding = padding,
+        margin = margin,
+        shape = shape,
+        border = borderStyle,
+        shadow = shadowStyle,
+        pageControl = pageControl,
+        loop = loop,
+        autoAdvance = autoAdvance,
+        rcPackage = null,
+        tabIndex = null,
+        overrides = emptyList(),
+    )
+}
+
+private fun previewPageControl(
+    position: CarouselComponent.PageControl.Position = CarouselComponent.PageControl.Position.BOTTOM,
+): CarouselComponentStyle.PageControlStyles {
+    return CarouselComponentStyle.PageControlStyles(
+        position = position,
         spacing = 4.dp,
         padding = PaddingValues(all = 8.dp),
         margin = PaddingValues(all = 8.dp),
@@ -357,33 +405,6 @@ private fun previewCarouselComponentStyle(
             height = 8.dp,
             color = ColorStyles(light = ColorStyle.Solid(Color.Gray)),
         ),
-    ),
-    loop: Boolean = false,
-    autoAdvance: CarouselComponent.AutoAdvancePages? = null,
-): CarouselComponentStyle {
-    return CarouselComponentStyle(
-        pages = pages,
-        initialPageIndex = initialPageIndex,
-        pageAlignment = alignment,
-        size = size,
-        pagePeek = sidePagePeek,
-        pageSpacing = spacing,
-        background = BackgroundStyles.Color(
-            ColorStyles(
-                light = ColorStyle.Solid(backgroundColor),
-            ),
-        ),
-        padding = padding,
-        margin = margin,
-        shape = shape,
-        border = borderStyle,
-        shadow = shadowStyle,
-        pageControl = pageControl,
-        loop = loop,
-        autoAdvance = autoAdvance,
-        rcPackage = null,
-        tabIndex = null,
-        overrides = emptyList(),
     )
 }
 

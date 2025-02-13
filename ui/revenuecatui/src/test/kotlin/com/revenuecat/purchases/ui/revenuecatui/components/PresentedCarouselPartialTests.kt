@@ -9,11 +9,7 @@ import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
-import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
-import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -55,18 +51,16 @@ internal class PresentedCarouselPartialTests {
                     color = ColorScheme(light = ColorInfo.Alias(missingShadowKey)), radius = 2.0, x = 2.0, y = 2.0
                 ),
                 pageControl = CarouselComponent.PageControl(
-                    position = VerticalAlignment.TOP,
+                    position = CarouselComponent.PageControl.Position.TOP,
                     active = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Alias(missingActiveIndicatorKey)),
-                        margin = Padding.zero,
                     ),
                     default = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Alias(missingDefaultIndicatorKey)),
-                        margin = Padding.zero,
                     )
                 )
             ),
@@ -124,18 +118,16 @@ internal class PresentedCarouselPartialTests {
                     color = ColorScheme(light = ColorInfo.Alias(firstShadowKey)), radius = 2.0, x = 2.0, y = 2.0
                 ),
                 pageControl = CarouselComponent.PageControl(
-                    position = VerticalAlignment.TOP,
+                    position = CarouselComponent.PageControl.Position.TOP,
                     active = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Alias(firstActiveIndicatorKey)),
-                        margin = Padding.zero,
                     ),
                     default = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Alias(firstDefaultIndicatorKey)),
-                        margin = Padding.zero,
                     )
                 )
             ),
@@ -178,18 +170,16 @@ internal class PresentedCarouselPartialTests {
                     color = ColorScheme(light = ColorInfo.Alias(existingShadowKey)), radius = 2.0, x = 2.0, y = 2.0
                 ),
                 pageControl = CarouselComponent.PageControl(
-                    position = VerticalAlignment.TOP,
+                    position = CarouselComponent.PageControl.Position.TOP,
                     active = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Alias(existingActiveIndicatorKey)),
-                        margin = Padding.zero,
                     ),
                     default = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Alias(existingDefaultIndicatorKey)),
-                        margin = Padding.zero,
                     )
                 )
             ),
@@ -242,18 +232,16 @@ internal class PresentedCarouselPartialTests {
                     color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())), radius = 2.0, x = 2.0, y = 2.0
                 ),
                 pageControl = CarouselComponent.PageControl(
-                    position = VerticalAlignment.TOP,
+                    position = CarouselComponent.PageControl.Position.TOP,
                     active = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
-                        margin = Padding.zero,
                     ),
                     default = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-                        margin = Padding.zero,
                     )
                 )
             ),
@@ -330,18 +318,16 @@ internal class PresentedCarouselPartialTests {
                     color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())), radius = 2.0, x = 2.0, y = 2.0
                 ),
                 pageControl = CarouselComponent.PageControl(
-                    position = VerticalAlignment.TOP,
+                    position = CarouselComponent.PageControl.Position.TOP,
                     active = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
-                        margin = Padding.zero,
                     ),
                     default = CarouselComponent.PageControl.Indicator(
-                        size = Size(width = SizeConstraint.Fixed(10u), height = SizeConstraint.Fixed(10u)),
-                        spacing = 2f,
+                        width = 10u,
+                        height = 10u,
                         color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-                        margin = Padding.zero,
                     )
                 )
             ),
