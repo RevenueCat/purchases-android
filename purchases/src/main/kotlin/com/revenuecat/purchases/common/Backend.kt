@@ -497,7 +497,7 @@ internal class Backend(
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
-        val body = EventsRequest.json.encodeToJsonElement(paywallEventRequest).asMap()
+        val body = JsonProvider.defaultJson.encodeToJsonElement(paywallEventRequest).asMap()
         if (body == null) {
             onErrorHandler(
                 PurchasesError(
