@@ -25,6 +25,7 @@ import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
+import coil.request.CachePolicy
 import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.request.SuccessResult
@@ -122,19 +123,21 @@ private fun Image(
         return ImageForPreviews(modifier)
     }
 
-    var useCache by remember { mutableStateOf(true) }
+    var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
-    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(useCache) {
-        applicationContext.getRevenueCatUIImageLoader(readCache = useCache)
+    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
+        applicationContext.getRevenueCatUIImageLoader()
     }
 
     val imageRequest = ImageRequest.Builder(LocalContext.current)
         .data(source.data)
         .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
         .transformations(listOfNotNull(transformation))
+        .diskCachePolicy(cachePolicy)
+        .memoryCachePolicy(cachePolicy)
         .build()
 
-    if (useCache) {
+    if (cachePolicy == CachePolicy.ENABLED) {
         AsyncImage(
             source = source,
             placeholderSource = placeholderSource,
@@ -147,7 +150,7 @@ private fun Image(
             colorFilter = colorFilter,
             onError = {
                 Logger.w("Image failed to load. Will try again disabling cache")
-                useCache = false
+                cachePolicy = CachePolicy.WRITE_ONLY
             },
         )
     } else {
