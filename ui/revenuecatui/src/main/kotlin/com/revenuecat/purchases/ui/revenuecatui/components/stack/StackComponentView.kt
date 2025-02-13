@@ -6,6 +6,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.stack
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -16,12 +17,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -186,8 +189,12 @@ private fun StackWithLongEdgeToEdgeBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
+
     SubcomposeLayout(
-        modifier = modifier,
+        modifier = modifier
+            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) },
     ) { constraints ->
         // Subcompose and measure the stack
         val stackMeasurable = subcompose("stack") {
@@ -195,6 +202,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 stackState,
                 state,
                 clickHandler,
+                shouldApplyShadow = false,
             )
         }.first()
         val stackPlaceable = stackMeasurable.measure(constraints)
@@ -456,6 +464,7 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
+    shouldApplyShadow: Boolean = true,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
@@ -474,138 +483,148 @@ private fun MainStackComponent(
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
-        when (val dimension = stackState.dimension) {
-            is Dimension.Horizontal -> Row(
+        // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
+        // to draw "boxes" using whatever stack they please, for instance to create dividers.
+        if (stackState.children.isEmpty()) {
+            Box(
                 modifier = modifier
-                    .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
-                    .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                        scrollable(state, orientation)
-                    }
+                    .size(stackState.size)
                     .then(rootModifier),
-                verticalAlignment = dimension.alignment.toAlignment(),
-                horizontalArrangement = dimension.distribution.toHorizontalArrangement(
-                    spacing = stackState.spacing,
-                ),
-            ) {
-                val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
-                    Spacer(modifier = Modifier.weight(weight))
-                }
-
-                if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+            )
+        } else {
+            when (val dimension = stackState.dimension) {
+                is Dimension.Horizontal -> Row(
+                    modifier = modifier
+                        .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            scrollable(state, orientation)
+                        }
+                        .then(rootModifier),
+                    verticalAlignment = dimension.alignment.toAlignment(),
+                    horizontalArrangement = dimension.distribution.toHorizontalArrangement(
+                        spacing = stackState.spacing,
+                    ),
                 ) {
-                    fillSpaceSpacer(1f)
-                }
-                val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
-                stackState.children.forEachIndexed { index, child ->
-                    val isLast = index == stackState.children.size - 1
-                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
-                        PaddingValues(all = 0.dp)
-                    } else {
-                        topSystemBarsPadding
+                    val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
+                        Spacer(modifier = Modifier.weight(weight))
                     }
 
-                    ComponentView(
-                        style = child,
-                        state = state,
-                        onClick = clickHandler,
-                        modifier = Modifier
-                            .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                            .padding(childPadding),
-                    )
+                    if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                        dimension.distribution == FlexDistribution.SPACE_EVENLY
+                    ) {
+                        fillSpaceSpacer(1f)
+                    }
+                    val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
+                    stackState.children.forEachIndexed { index, child ->
+                        val isLast = index == stackState.children.size - 1
+                        val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                            PaddingValues(all = 0.dp)
+                        } else {
+                            topSystemBarsPadding
+                        }
 
-                    if (dimension.distribution.usesAllAvailableSpace && !isLast) {
-                        Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
-                        if (!hasChildrenWithFillWidth) {
-                            fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            modifier = Modifier
+                                .conditional(child.size.width == Fill) { Modifier.weight(1f) }
+                                .padding(childPadding),
+                        )
+
+                        if (dimension.distribution.usesAllAvailableSpace && !isLast) {
+                            Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
+                            if (!hasChildrenWithFillWidth) {
+                                fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
+                            }
                         }
                     }
-                }
-                if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                    dimension.distribution == FlexDistribution.SPACE_EVENLY
-                ) {
-                    fillSpaceSpacer(1f)
-                }
-            }
-
-            is Dimension.Vertical -> Column(
-                modifier = modifier
-                    .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                    .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                        scrollable(state, orientation)
+                    if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                        dimension.distribution == FlexDistribution.SPACE_EVENLY
+                    ) {
+                        fillSpaceSpacer(1f)
                     }
-                    .then(rootModifier),
-                verticalArrangement = dimension.distribution.toVerticalArrangement(
-                    spacing = stackState.spacing,
-                ),
-                horizontalAlignment = dimension.alignment.toAlignment(),
-            ) {
-                val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
-                    Spacer(modifier = Modifier.weight(weight))
                 }
-                if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+
+                is Dimension.Vertical -> Column(
+                    modifier = modifier
+                        .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            scrollable(state, orientation)
+                        }
+                        .then(rootModifier),
+                    verticalArrangement = dimension.distribution.toVerticalArrangement(
+                        spacing = stackState.spacing,
+                    ),
+                    horizontalAlignment = dimension.alignment.toAlignment(),
                 ) {
-                    fillSpaceSpacer(1f)
-                }
-                val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
-                stackState.children.forEachIndexed { index, child ->
-                    val isLast = index == stackState.children.size - 1
-                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
-                        PaddingValues(all = 0.dp)
-                    } else {
-                        topSystemBarsPadding
+                    val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
+                        Spacer(modifier = Modifier.weight(weight))
                     }
+                    if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                        dimension.distribution == FlexDistribution.SPACE_EVENLY
+                    ) {
+                        fillSpaceSpacer(1f)
+                    }
+                    val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
+                    stackState.children.forEachIndexed { index, child ->
+                        val isLast = index == stackState.children.size - 1
+                        val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                            PaddingValues(all = 0.dp)
+                        } else {
+                            topSystemBarsPadding
+                        }
 
-                    ComponentView(
-                        style = child,
-                        state = state,
-                        onClick = clickHandler,
-                        modifier = Modifier
-                            .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                            .padding(childPadding),
-                    )
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            modifier = Modifier
+                                .conditional(child.size.height == Fill) { Modifier.weight(1f) }
+                                .padding(childPadding),
+                        )
 
-                    if (dimension.distribution.usesAllAvailableSpace && !isLast) {
-                        Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
-                        if (!hasChildrenWithFillHeight) {
-                            fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
+                        if (dimension.distribution.usesAllAvailableSpace && !isLast) {
+                            Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
+                            if (!hasChildrenWithFillHeight) {
+                                fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
+                            }
                         }
                     }
+                    if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                        dimension.distribution == FlexDistribution.SPACE_EVENLY
+                    ) {
+                        fillSpaceSpacer(1f)
+                    }
                 }
-                if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+
+                is Dimension.ZLayer -> Box(
+                    modifier = modifier
+                        .size(
+                            size = stackState.size,
+                            horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                            verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                        )
+                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            scrollable(state, orientation)
+                        }
+                        .then(rootModifier),
+                    contentAlignment = dimension.alignment.toAlignment(),
                 ) {
-                    fillSpaceSpacer(1f)
-                }
-            }
+                    stackState.children.forEach { child ->
+                        val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
+                            PaddingValues(all = 0.dp)
+                        } else {
+                            topSystemBarsPadding
+                        }
 
-            is Dimension.ZLayer -> Box(
-                modifier = modifier
-                    .size(
-                        size = stackState.size,
-                        horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                        verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                    )
-                    .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                        scrollable(state, orientation)
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            modifier = Modifier.padding(childPadding),
+                        )
                     }
-                    .then(rootModifier),
-                contentAlignment = dimension.alignment.toAlignment(),
-            ) {
-                stackState.children.forEach { child ->
-                    val childPadding = if (child is ImageComponentStyle && child.ignoreTopWindowInsets) {
-                        PaddingValues(all = 0.dp)
-                    } else {
-                        topSystemBarsPadding
-                    }
-
-                    ComponentView(
-                        style = child,
-                        state = state,
-                        onClick = clickHandler,
-                        modifier = Modifier.padding(childPadding),
-                    )
                 }
             }
         }
@@ -613,7 +632,11 @@ private fun MainStackComponent(
 
     val backgroundStyle = stackState.background?.let { rememberBackgroundStyle(background = it) }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
-    val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val shadowStyle = if (shouldApplyShadow) {
+        stackState.shadow?.let { rememberShadowStyle(shadow = it) }
+    } else {
+        null
+    }
     val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
 
     val outerShapeModifier = remember(backgroundStyle, shadowStyle) {
@@ -623,26 +646,36 @@ private fun MainStackComponent(
             .applyIfNotNull(backgroundStyle) { background(it, composeShape) }
     }
 
-    val innerShapeModifier = remember(stackState, borderStyle) {
+    val borderModifier = remember(stackState, borderStyle) {
         Modifier
             .applyIfNotNull(borderStyle) {
                 border(it, composeShape)
                     .padding(it.width)
             }
+    }
+
+    val innerShapeModifier = remember(stackState, borderStyle) {
+        Modifier
             .padding(stackState.padding)
     }
 
     if (nestedBadge == null && overlay == null) {
         stack(
             outerShapeModifier
+                .then(borderModifier)
                 .then(innerShapeModifier)
                 .padding(bottomSystemBarsPadding)
                 .consumeWindowInsets(bottomSystemBarsPadding)
                 .consumeWindowInsets(topSystemBarsPadding),
         )
     } else if (nestedBadge != null) {
-        Box(modifier = modifier.then(outerShapeModifier).clip(composeShape).then(innerShapeModifier)) {
-            stack(Modifier)
+        Box(
+            modifier = modifier
+                .then(outerShapeModifier)
+                .clip(composeShape)
+                .then(borderModifier),
+        ) {
+            stack(Modifier.then(innerShapeModifier))
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
@@ -657,7 +690,7 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            stack(innerShapeModifier)
+            stack(borderModifier.then(innerShapeModifier))
             overlay()
         }
     }
@@ -996,7 +1029,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                         light = ColorStyle.Solid(Color.Red),
                     ),
                 ),
-                padding = PaddingValues(all = 0.dp),
+                padding = PaddingValues(all = 20.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = BorderStyles(width = 10.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Yellow))),
@@ -1420,6 +1453,67 @@ private fun StackComponentView_Preview_Distribution_With_Spacing(
         state = previewEmptyState(),
         clickHandler = { },
     )
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_HorizontalDivider() {
+    Column(
+        verticalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        Text("There should be a divider below this text.")
+        StackComponentView(
+            style = previewStackComponentStyle(
+                children = emptyList(),
+                size = Size(width = Fill, height = Fixed(1u)),
+                dimension = Dimension.Vertical(alignment = HorizontalAlignment.LEADING, FlexDistribution.SPACE_BETWEEN),
+                spacing = 0.dp,
+                // Explicitly applying vertical margin to make sure it doesn't "eat up" the divider.
+                margin = PaddingValues(vertical = 40.dp),
+                border = null,
+                background = BackgroundStyles.Color(
+                    color = ColorStyles(ColorStyle.Solid(Color(red = 0xc8, green = 0xc8, blue = 0xc8))),
+                ),
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+        )
+        Text("There should be a divider above this text.")
+    }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_VerticalDivider() {
+    Row(
+        modifier = Modifier.height(100.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        Text(
+            text = "There should be a divider to the right of this text.",
+            modifier = Modifier.weight(1f),
+        )
+        StackComponentView(
+            style = previewStackComponentStyle(
+                children = emptyList(),
+                size = Size(width = Fixed(1u), height = Fill),
+                dimension = Dimension.Horizontal(alignment = VerticalAlignment.TOP, FlexDistribution.SPACE_BETWEEN),
+                spacing = 0.dp,
+                // Explicitly applying horizontal margin to make sure it doesn't "eat up" the divider.
+                margin = PaddingValues(horizontal = 40.dp),
+                border = null,
+                background = BackgroundStyles.Color(
+                    color = ColorStyles(ColorStyle.Solid(Color(red = 0xc8, green = 0xc8, blue = 0xc8))),
+                ),
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+        )
+        Text(
+            text = "There should be a divider to the left of this text.",
+            modifier = Modifier.weight(1f),
+        )
+    }
 }
 
 @Composable
