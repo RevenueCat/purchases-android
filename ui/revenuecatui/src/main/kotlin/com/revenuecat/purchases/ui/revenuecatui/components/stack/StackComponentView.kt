@@ -505,15 +505,23 @@ private fun MainStackComponent(
                         spacing = stackState.spacing,
                     ),
                 ) {
+                    val shouldApplyFillSpacers = stackState.size.width != Fit
                     val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
                         Spacer(modifier = Modifier.weight(weight))
                     }
-
-                    if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                        dimension.distribution == FlexDistribution.SPACE_EVENLY
-                    ) {
-                        fillSpaceSpacer(1f)
+                    val edgeSpacerIfNeeded = @Composable {
+                        if (shouldApplyFillSpacers &&
+                            (
+                                dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+                                )
+                        ) {
+                            fillSpaceSpacer(1f)
+                        }
                     }
+
+                    edgeSpacerIfNeeded()
+
                     val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
                     stackState.children.forEachIndexed { index, child ->
                         val isLast = index == stackState.children.size - 1
@@ -534,16 +542,13 @@ private fun MainStackComponent(
 
                         if (dimension.distribution.usesAllAvailableSpace && !isLast) {
                             Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
-                            if (!hasChildrenWithFillWidth) {
+                            if (!hasChildrenWithFillWidth && shouldApplyFillSpacers) {
                                 fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
                             }
                         }
                     }
-                    if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                        dimension.distribution == FlexDistribution.SPACE_EVENLY
-                    ) {
-                        fillSpaceSpacer(1f)
-                    }
+
+                    edgeSpacerIfNeeded()
                 }
 
                 is Dimension.Vertical -> Column(
@@ -558,14 +563,23 @@ private fun MainStackComponent(
                     ),
                     horizontalAlignment = dimension.alignment.toAlignment(),
                 ) {
+                    val shouldApplyFillSpacers = stackState.size.height != Fit
                     val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
                         Spacer(modifier = Modifier.weight(weight))
                     }
-                    if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                        dimension.distribution == FlexDistribution.SPACE_EVENLY
-                    ) {
-                        fillSpaceSpacer(1f)
+                    val edgeSpacerIfNeeded = @Composable {
+                        if (shouldApplyFillSpacers &&
+                            (
+                                dimension.distribution == FlexDistribution.SPACE_AROUND ||
+                                    dimension.distribution == FlexDistribution.SPACE_EVENLY
+                                )
+                        ) {
+                            fillSpaceSpacer(1f)
+                        }
                     }
+
+                    edgeSpacerIfNeeded()
+
                     val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
                     stackState.children.forEachIndexed { index, child ->
                         val isLast = index == stackState.children.size - 1
@@ -586,16 +600,13 @@ private fun MainStackComponent(
 
                         if (dimension.distribution.usesAllAvailableSpace && !isLast) {
                             Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
-                            if (!hasChildrenWithFillHeight) {
+                            if (!hasChildrenWithFillHeight && shouldApplyFillSpacers) {
                                 fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
                             }
                         }
                     }
-                    if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                        dimension.distribution == FlexDistribution.SPACE_EVENLY
-                    ) {
-                        fillSpaceSpacer(1f)
-                    }
+
+                    edgeSpacerIfNeeded()
                 }
 
                 is Dimension.ZLayer -> Box(
@@ -1357,7 +1368,7 @@ private class DistributionProvider : PreviewParameterProvider<Dimension> {
 
 @Preview
 @Composable
-private fun StackComponentView_Preview_Distribution_Without_Spacing(
+private fun StackComponentView_Preview_Distribution_Without_Spacing_Fit_Size(
     @PreviewParameter(DistributionProvider::class) dimension: Dimension,
 ) {
     val distribution = when (dimension) {
@@ -1407,6 +1418,56 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing(
 
 @Preview
 @Composable
+private fun StackComponentView_Preview_Distribution_Without_Spacing(
+    @PreviewParameter(DistributionProvider::class) dimension: Dimension,
+) {
+    val distribution = when (dimension) {
+        is Dimension.Horizontal -> dimension.distribution
+        is Dimension.Vertical -> dimension.distribution
+        is Dimension.ZLayer -> null
+    }
+    StackComponentView(
+        style = StackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Hello",
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
+                    size = Size(width = Fit, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = distribution?.name ?: "null",
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Green)),
+                    size = Size(width = Fit, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "World",
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
+                    size = Size(width = Fit, height = Fit),
+                ),
+            ),
+            dimension = dimension,
+            // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
+            size = Size(width = Fixed(300u), height = Fixed(300u)),
+            spacing = 0.dp,
+            background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
+            padding = PaddingValues(all = 0.dp),
+            margin = PaddingValues(all = 16.dp),
+            shape = Shape.Rectangle(),
+            border = null,
+            shadow = null,
+            badge = null,
+            scrollOrientation = null,
+            rcPackage = null,
+            tabIndex = null,
+            overrides = emptyList(),
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+    )
+}
+
+@Preview
+@Composable
 private fun StackComponentView_Preview_Distribution_With_Spacing(
     @PreviewParameter(DistributionProvider::class) dimension: Dimension,
 ) {
@@ -1436,7 +1497,7 @@ private fun StackComponentView_Preview_Distribution_With_Spacing(
             ),
             dimension = dimension,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fixed(300u), height = Fixed(300u)),
             spacing = 16.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
             padding = PaddingValues(all = 0.dp),
