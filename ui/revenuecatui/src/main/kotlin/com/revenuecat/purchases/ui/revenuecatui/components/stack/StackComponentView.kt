@@ -172,7 +172,13 @@ private fun StackWithOverlaidBadge(
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
         }
-        OverlaidBadge(badgeStack, state, alignment, mainStackBorderWidthPx)
+        OverlaidBadge(
+            badgeStack,
+            state,
+            alignment,
+            mainStackBorderWidthPx,
+            modifier = Modifier.padding(stackState.margin),
+        )
     }
 }
 
@@ -917,7 +923,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                     ),
                 ),
                 padding = PaddingValues(all = 12.dp),
-                margin = PaddingValues(all = 0.dp),
+                margin = PaddingValues(all = 12.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = BorderStyles(width = 10.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = ShadowStyles(
@@ -926,7 +932,12 @@ private fun StackComponentView_Preview_Overlay_Badge(
                     x = 0.dp,
                     y = 5.dp,
                 ),
-                badge = previewBadge(Badge.Style.Overlay, alignment, badgeShape),
+                badge = previewBadge(
+                    Badge.Style.Overlay,
+                    alignment,
+                    badgeShape,
+                    margin = PaddingValues(horizontal = 8.dp),
+                ),
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
@@ -1598,7 +1609,13 @@ private fun previewChildren() = listOf(
 )
 
 @Suppress("LongMethod")
-private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment, shape: Shape): BadgeStyle {
+private fun previewBadge(
+    style: Badge.Style,
+    alignment: TwoDimensionalAlignment,
+    shape: Shape,
+    padding: PaddingValues = PaddingValues(all = 0.dp),
+    margin: PaddingValues = PaddingValues(all = 0.dp),
+): BadgeStyle {
     return BadgeStyle(
         stackStyle = StackComponentStyle(
             children = listOf(
@@ -1630,8 +1647,8 @@ private fun previewBadge(style: Badge.Style, alignment: TwoDimensionalAlignment,
                     ).toColorStyle(),
                 ),
             ),
-            padding = PaddingValues(all = 0.dp),
-            margin = PaddingValues(all = 0.dp),
+            padding = padding,
+            margin = margin,
             shape = shape,
             border = null,
             shadow = null,
