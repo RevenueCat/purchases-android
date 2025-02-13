@@ -57,7 +57,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.extensions.dpOrNull
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
 
@@ -126,6 +125,20 @@ internal fun CarouselComponentView(
             }
             .padding(carouselState.padding),
     ) {
+        val pageControl = @Composable {
+            carouselState.pageControl?.let {
+                PagerIndicator(
+                    pageControl = it,
+                    pageCount = pageCount,
+                    pagerState = pagerState,
+                )
+            }
+        }
+
+        if (carouselState.pageControl?.position == CarouselComponent.PageControl.Position.TOP) {
+            pageControl()
+        }
+
         HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = carouselState.pagePeek),
@@ -142,14 +155,8 @@ internal fun CarouselComponentView(
             )
         }
 
-        carouselState.pageControl?.let {
-            // The margin between the pager and the indicators is indicated
-            // by the margins configured in the indicators themselves
-            PagerIndicator(
-                pageControl = it,
-                pageCount = pageCount,
-                pagerState = pagerState,
-            )
+        if (carouselState.pageControl?.position == CarouselComponent.PageControl.Position.BOTTOM) {
+            pageControl()
         }
     }
 }
@@ -161,8 +168,19 @@ private fun ColumnScope.PagerIndicator(
     pagerState: PagerState,
     modifier: Modifier = Modifier,
 ) {
+    val backgroundColorStyle = pageControl.backgroundColor?.forCurrentTheme
+    val borderStyle = pageControl.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = pageControl.shadow?.let { rememberShadowStyle(shadow = it) }
+    val composeShape by remember(pageControl.shape) { derivedStateOf { pageControl.shape.toShape() } }
+
     Row(
-        modifier = modifier.align(Alignment.CenterHorizontally),
+        modifier = modifier
+            .align(Alignment.CenterHorizontally)
+            .padding(pageControl.margin)
+            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
+            .applyIfNotNull(borderStyle) { border(it, composeShape) }
+            .padding(pageControl.padding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -209,31 +227,18 @@ private fun Indicator(
 
     val targetWidth by remember {
         derivedStateOf {
-            // We assume the size of the indicator to be Fixed.
-            // It won't show otherwise.
             lerpUnit(
-                pageControl.default.size.width.dpOrNull() ?: 0.dp,
-                pageControl.active.size.width.dpOrNull() ?: 0.dp,
+                pageControl.default.width,
+                pageControl.active.width,
                 progress,
             )
         }
     }
     val targetHeight by remember {
         derivedStateOf {
-            // We assume the size of the indicator to be Fixed.
-            // It won't show otherwise.
             lerpUnit(
-                pageControl.default.size.height.dpOrNull() ?: 0.dp,
-                pageControl.active.size.height.dpOrNull() ?: 0.dp,
-                progress,
-            )
-        }
-    }
-    val targetSpacing by remember {
-        derivedStateOf {
-            lerpUnit(
-                pageControl.default.spacing,
-                pageControl.active.spacing,
+                pageControl.default.height,
+                pageControl.active.height,
                 progress,
             )
         }
@@ -245,23 +250,16 @@ private fun Indicator(
     val height by animateDpAsState(
         targetValue = targetHeight,
     )
-    val spacing by animateDpAsState(
-        targetValue = targetSpacing,
-    )
 
     val color = lerp(
         (pageControl.default.color.forCurrentTheme as? ColorStyle.Solid)?.color ?: Color.Transparent,
         (pageControl.active.color.forCurrentTheme as? ColorStyle.Solid)?.color ?: Color.Transparent,
         progress,
     )
-    val isCurrentPage = pageIndex == (pagerState.currentPage % pageCount)
 
     Box(
         modifier = Modifier
-            // Indicator margin only indicates vertical margins, and we don't want to animate those,
-            // or it might jump around during transitions.
-            .padding(if (isCurrentPage) pageControl.active.margin else pageControl.default.margin)
-            .padding(horizontal = spacing / 2)
+            .padding(horizontal = pageControl.spacing / 2)
             .clip(Shape.Pill.toShape())
             .background(color)
             .size(width = width, height = height),
@@ -331,18 +329,33 @@ private fun previewCarouselComponentStyle(
         y = 3.dp,
     ),
     pageControl: CarouselComponentStyle.PageControlStyles? = CarouselComponentStyle.PageControlStyles(
-        alignment = Alignment.Bottom,
+        position = CarouselComponent.PageControl.Position.BOTTOM,
+        spacing = 4.dp,
+        padding = PaddingValues(all = 8.dp),
+        margin = PaddingValues(all = 8.dp),
+        backgroundColor = ColorStyles(
+            light = ColorStyle.Solid(Color.Green),
+        ),
+        shape = Shape.Pill,
+        border = BorderStyles(
+            width = 4.dp,
+            colors = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
+        ),
+        shadow = ShadowStyles(
+            colors = ColorStyles(light = ColorStyle.Solid(Color.Black)),
+            radius = 20.dp,
+            x = 8.dp,
+            y = 8.dp,
+        ),
         active = CarouselComponentStyle.IndicatorStyles(
-            size = Size(width = SizeConstraint.Fixed(14u), height = SizeConstraint.Fixed(10u)),
-            spacing = 4.dp,
+            width = 14.dp,
+            height = 10.dp,
             color = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
-            margin = PaddingValues(vertical = 10.dp),
         ),
         default = CarouselComponentStyle.IndicatorStyles(
-            size = Size(width = SizeConstraint.Fixed(8u), height = SizeConstraint.Fixed(8u)),
-            spacing = 4.dp,
+            width = 8.dp,
+            height = 8.dp,
             color = ColorStyles(light = ColorStyle.Solid(Color.Gray)),
-            margin = PaddingValues(vertical = 10.dp),
         ),
     ),
     loop: Boolean = false,
