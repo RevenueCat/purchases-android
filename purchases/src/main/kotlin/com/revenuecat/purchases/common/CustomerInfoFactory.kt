@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.SubscriptionInfo
@@ -15,7 +14,6 @@ import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.SerializationException
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
-import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Collections.emptyMap
@@ -26,12 +24,6 @@ import java.util.Date
  * @throws [JSONException] If the json is invalid.
  */
 internal object CustomerInfoFactory {
-
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val json = Json {
-        ignoreUnknownKeys = true
-    }
-
     @Throws(JSONException::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
@@ -106,7 +98,7 @@ internal object CustomerInfoFactory {
         try {
             subscriptions.keys().forEach { productId ->
                 val subscriptionJSONObject = subscriptions.getJSONObject(productId)
-                val subscriptionInfoResponse = json.decodeFromString<SubscriptionInfoResponse>(
+                val subscriptionInfoResponse = JsonHelper.json.decodeFromString<SubscriptionInfoResponse>(
                     subscriptionJSONObject.toString(),
                 )
                 subscriptionMap[productId] = SubscriptionInfo(productId, requestDate, subscriptionInfoResponse)

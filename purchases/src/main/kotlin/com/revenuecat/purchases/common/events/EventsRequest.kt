@@ -1,9 +1,6 @@
 package com.revenuecat.purchases.common.events
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
 
 /**
  * A request object for handling events.
@@ -14,31 +11,6 @@ import kotlinx.serialization.modules.polymorphic
 data class EventsRequest internal constructor(
     internal val events: List<BackendEvent>,
 ) {
-
-    /**
-     * Companion object to provide serialization configuration for [EventsRequest].
-     */
-    companion object {
-        /**
-         * JSON configuration with custom serialization rules for handling polymorphic [BackendEvent] types.
-         *
-         * - Uses a `discriminator` field to distinguish subclasses.
-         * - Enables encoding of default values.
-         * - Ignores unknown keys to ensure forward compatibility.
-         */
-        val json = Json {
-            serializersModule = SerializersModule {
-                polymorphic(BackendEvent::class) {
-                    subclass(BackendEvent.CustomerCenter::class, BackendEvent.CustomerCenter.serializer())
-                    subclass(BackendEvent.Paywalls::class, BackendEvent.Paywalls.serializer())
-                }
-            }
-            classDiscriminator = "discriminator"
-            encodeDefaults = false
-            ignoreUnknownKeys = true
-        }
-    }
-
     /**
      * Generates a cache key based on the hash codes of the contained events.
      *

@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.events.toBackendEvent
+import com.revenuecat.purchases.common.JsonHelper
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions
 import org.junit.Test
@@ -35,7 +36,7 @@ class PaywallEventsRequestSerializationTest {
 
     @Test
     fun `can encode paywall event request correctly`() {
-        val requestString = EventsRequest.json.encodeToString(request)
+        val requestString = JsonHelper.json.encodeToString(request)
         Assertions.assertThat(requestString).isEqualTo(
             "{" +
                 "\"events\":[" +
@@ -60,8 +61,8 @@ class PaywallEventsRequestSerializationTest {
 
     @Test
     fun `can encode and decode event correctly`() {
-        val requestString = EventsRequest.json.encodeToString(request)
-        val decodedRequest = EventsRequest.json.decodeFromString<EventsRequest>(requestString)
+        val requestString = JsonHelper.json.encodeToString(request)
+        val decodedRequest = JsonHelper.json.decodeFromString<EventsRequest>(requestString)
         Assertions.assertThat(decodedRequest).isEqualTo(request)
     }
 }
