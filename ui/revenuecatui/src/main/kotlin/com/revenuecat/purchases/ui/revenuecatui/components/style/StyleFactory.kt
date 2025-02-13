@@ -20,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
@@ -43,13 +44,16 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
@@ -133,12 +137,13 @@ internal class StyleFactory(
         component: PackageComponent,
         tabControl: TabControlStyle?,
     ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> =
-        offering.getPackage(component.packageId)
+        offering.getPackageOrNull(component.packageId)
             .errorIfNull(
                 nonEmptyListOf(
                     PaywallValidationError.MissingPackage(
                         offeringId = offering.identifier,
-                        packageId = component.packageId,
+                        missingPackageId = component.packageId,
+                        allPackageIds = offering.availablePackages.map { it.identifier },
                     ),
                 ),
             ).flatMap { rcPackage ->
@@ -231,22 +236,23 @@ internal class StyleFactory(
                     )
                 }
         }.orSuccessfullyNull(),
-        fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+        fourth = createBackgroundStyles(component.background, component.backgroundColor),
         fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
-    ) { presentedOverrides, children, badge, backgroundColorStyles, borderStyles, shadowStyles ->
+    ) { presentedOverrides, children, badge, background, borderStyles, shadowStyles ->
         StackComponentStyle(
             children = children,
             dimension = component.dimension,
             size = component.size,
             spacing = (component.spacing ?: DEFAULT_SPACING).dp,
-            backgroundColor = backgroundColorStyles,
+            background = background,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             shape = component.shape ?: DEFAULT_SHAPE,
             border = borderStyles,
             shadow = shadowStyles,
             badge = badge,
+            scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
             tabIndex = tabIndex,
             overrides = presentedOverrides,
@@ -441,9 +447,9 @@ internal class StyleFactory(
             .mapOrAccumulate { it },
         third = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         fourth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
-        fifth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+        fifth = createBackgroundStyles(component.background, component.backgroundColor),
         sixth = component.pageControl?.toPageControlStyles(colorAliases).orSuccessfullyNull(),
-    ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles, backgroundColor, pageControlStyles ->
+    ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles, background, pageControlStyles ->
         CarouselComponentStyle(
             slides = stackComponentStyles,
             initialSlideIndex = component.initialSlideIndex ?: 0,
@@ -451,7 +457,7 @@ internal class StyleFactory(
             size = component.size,
             sidePagePeek = component.sidePagePeek?.dp ?: 0.dp,
             spacing = (component.spacing ?: DEFAULT_SPACING).dp,
-            backgroundColor = backgroundColor,
+            background = background,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             shape = component.shape ?: DEFAULT_SHAPE,
@@ -499,7 +505,7 @@ internal class StyleFactory(
                     .toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
                     .mapError { nonEmptyListOf(it) },
                 second = createTabsComponentStyleTabs(component.tabs, control),
-                third = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
+                third = createBackgroundStyles(component.background, component.backgroundColor),
                 fourth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
                 fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
             ) { overrides, tabs, backgroundColor, border, shadow ->
@@ -507,7 +513,7 @@ internal class StyleFactory(
                     size = component.size,
                     padding = component.padding.toPaddingValues(),
                     margin = component.margin.toPaddingValues(),
-                    backgroundColor = backgroundColor,
+                    background = backgroundColor,
                     shape = component.shape ?: DEFAULT_SHAPE,
                     border = border,
                     shadow = shadow,
@@ -556,6 +562,16 @@ internal class StyleFactory(
         createStackComponentStyle(componentTag.stack, rcPackage = null, tabControl = control, tabIndex = null)
             .map { stack -> TabsComponentStyle.Tab(stack) }
 
+    private fun createBackgroundStyles(
+        background: Background?,
+        backgroundColor: ColorScheme?,
+    ): Result<BackgroundStyles?, NonEmptyList<PaywallValidationError>> =
+        background?.toBackgroundStyles(colorAliases)
+            ?: (
+                backgroundColor?.toColorStyles(colorAliases)?.map { color -> BackgroundStyles.Color(color) }
+                    .orSuccessfullyNull()
+                )
+
     private fun ThemeImageUrls.withLocalizedOverrides(
         overrideSourceLid: LocalizationKey?,
     ): Result<NonEmptyMap<LocaleId, ThemeImageUrls>, NonEmptyList<PaywallValidationError.MissingImageLocalization>> =
@@ -564,4 +580,11 @@ internal class StyleFactory(
             .orSuccessfullyNull()
             // Ensure the default source keyed by the default locale is present in the result.
             .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
+
+    private fun Offering.getPackageOrNull(identifier: String): Package? =
+        try {
+            getPackage(identifier)
+        } catch (_: NoSuchElementException) {
+            null
+        }
 }

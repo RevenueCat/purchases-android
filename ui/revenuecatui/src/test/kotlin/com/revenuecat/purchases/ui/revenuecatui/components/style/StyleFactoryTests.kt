@@ -17,6 +17,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -25,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
@@ -130,6 +132,49 @@ class StyleFactoryTests {
         }
         with(style.children[1] as TextComponentStyle) {
             assertThat(texts[localeId]).isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_2]!!.value)
+        }
+    }
+
+    @Test
+    fun `Should create a StackComponentStyle with backgroundColor if background not present`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = emptyList(),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            spacing = 8f
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value as StackComponentStyle
+        with(style.background as BackgroundStyles.Color) {
+            val colorStyle = color.light as ColorStyle.Solid
+            assertThat(colorStyle.color).isEqualTo(Color.Red)
+        }
+    }
+
+    @Test
+    fun `Should create a StackComponentStyle where background takes preference over backgroundColor`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = emptyList(),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+            spacing = 8f
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value as StackComponentStyle
+        with(style.background as BackgroundStyles.Color) {
+            val colorStyle = color.light as ColorStyle.Solid
+            assertThat(colorStyle.color).isEqualTo(Color.Blue)
         }
     }
 

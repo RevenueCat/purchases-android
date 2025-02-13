@@ -26,7 +26,7 @@ internal object CustomerCenterConfigTestData {
                     paths = listOf(
                         CustomerCenterConfigData.HelpPath(
                             id = "1",
-                            title = "Didn't receive purchase",
+                            title = "Check for previous purchases",
                             type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
                         ),
                         CustomerCenterConfigData.HelpPath(
@@ -80,12 +80,12 @@ internal object CustomerCenterConfigTestData {
                 ),
                 CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE to CustomerCenterConfigData.Screen(
                     type = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
-                    title = "No Active Subscription",
-                    subtitle = "You currently have no active subscriptions",
+                    title = "No subscriptions found",
+                    subtitle = "We can try checking your account for any previous purchases",
                     paths = listOf(
                         CustomerCenterConfigData.HelpPath(
                             id = "9q9719171o",
-                            title = "Check purchases",
+                            title = "Check for previous purchases",
                             type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
                         ),
                     ),
@@ -143,6 +143,7 @@ internal object CustomerCenterConfigTestData {
             Price("$4.99", 4_990_000, "US"),
             Period(1, Period.Unit.MONTH, "P1M"),
         ),
+        isLifetime = false,
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -165,5 +166,6 @@ internal object CustomerCenterConfigTestData {
             Price("$40.99", 40_990_000, "US"),
             Period(1, Period.Unit.YEAR, "P1Y"),
         ),
+        isLifetime = false,
     )
 }

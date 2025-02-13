@@ -308,7 +308,7 @@ private fun TextComponentView_Preview_LinearGradient() {
                 "Tell them to put some sunglasses on.",
             color = ColorStyles(
                 light = ColorInfo.Gradient.Linear(
-                    degrees = -45f,
+                    degrees = 135f,
                     points = listOf(
                         ColorInfo.Gradient.Point(
                             color = Color.Cyan.toArgb(),

@@ -100,6 +100,18 @@ internal class TextComponentViewVariablesTests(
             description = "Monthly",
             period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
         )
+        private val productQuarterlyUsdNoOffers = TestStoreProduct(
+            id = "com.revenuecat.quarterly_product",
+            name = "3 month",
+            title = "3 month (App name)",
+            price = Price(
+                amountMicros = 23_990_000,
+                currencyCode = "USD",
+                formatted = "$23.99"
+            ),
+            description = "3 month",
+            period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
+        )
         private val productYearlyMxnOneOffer = TestStoreProduct(
             id = "com.revenuecat.annual_product",
             name = "Annual",
@@ -125,6 +137,18 @@ internal class TextComponentViewVariablesTests(
             description = "Lifetime",
             period = null,
         )
+        private val productOneTimePurchaseUsd = TestStoreProduct(
+            id = "com.revenuecat.otp_product",
+            name = "OneTimePurchase",
+            title = "OneTimePurchase (App name)",
+            price = Price(
+                amountMicros = 200_000_000,
+                currencyCode = "USD",
+                formatted = "$ 200.00",
+            ),
+            description = "OneTimePurchase",
+            period = null,
+        )
         private val productWithUpperCaseName = productYearlyUsdTwoOffers.copy(name = "ANNUAL")
         private val productWithLowerCaseName = productYearlyUsdTwoOffers.copy(name = "annual")
 
@@ -145,6 +169,14 @@ internal class TextComponentViewVariablesTests(
         )
 
         @Suppress("DEPRECATION")
+        private val packageQuarterlyUsdNoOffers = Package(
+            packageType = PackageType.THREE_MONTH,
+            identifier = PackageType.THREE_MONTH.identifier!!,
+            offering = OFFERING_ID,
+            product = productQuarterlyUsdNoOffers,
+        )
+
+        @Suppress("DEPRECATION")
         private val packageYearlyMxnOneOffer = Package(
             packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
@@ -155,9 +187,16 @@ internal class TextComponentViewVariablesTests(
         @Suppress("DEPRECATION")
         private val packageLifetimeUsd = Package(
             packageType = PackageType.LIFETIME,
-            identifier = "package_lifetime",
+            identifier = PackageType.LIFETIME.identifier!!,
             offering = OFFERING_ID,
             product = productLifetimeUsd,
+        )
+        @Suppress("DEPRECATION")
+        private val packageOneTimePurchaseUsd = Package(
+            packageType = PackageType.CUSTOM,
+            identifier = "package_otp",
+            offering = OFFERING_ID,
+            product = productOneTimePurchaseUsd,
         )
 
         private val packageWithUpperCaseName = packageYearlyUsdTwoOffers.copy(product = productWithUpperCaseName)
@@ -582,16 +621,16 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "lifetime"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE.identifier} }}",
                 Args(
-                    packages = listOf(packageYearlyMxnOneOffer),
-                    locale = "es_$STORE_COUNTRY_WITHOUT_DECIMALS",
-                    storefrontCountryCode = STORE_COUNTRY_WITHOUT_DECIMALS,
-                    variableLocalizations = variableLocalizationKeysForEsMx(),
+                    packages = listOf(packageLifetimeUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$200"
+                "\$ 200.00",
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
                 Args(
@@ -600,7 +639,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
                 Args(
@@ -609,7 +648,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
                 Args(
@@ -618,7 +657,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
                 Args(
@@ -627,7 +666,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
                 Args(
@@ -636,7 +675,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
                 Args(
@@ -645,7 +684,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$ 200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
                 Args(
@@ -654,7 +693,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "lifetime"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD_ABBREVIATED.identifier} }}",
                 Args(
@@ -663,7 +702,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "lifetime"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD_IN_DAYS.identifier} }}",
                 Args(
@@ -708,7 +747,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "lifetime"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_RELATIVE_DISCOUNT.identifier} }}",
                 Args(
@@ -727,6 +766,180 @@ internal class TextComponentViewVariablesTests(
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
                 "Lifetime"
+            )
+        ) + listOf(
+            // One-time purchase:
+            arrayOf(
+                "{{ ${Variable.PRODUCT_CURRENCY_CODE.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "USD"
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_CURRENCY_SYMBOL.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "\$"
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIODLY.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "\$ 200.00"
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_IN_DAYS.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_IN_WEEKS.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_IN_MONTHS.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_IN_YEARS.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_WITH_UNIT.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_RELATIVE_DISCOUNT.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd, packageMonthlyUsdOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                ""
+            ), arrayOf(
+                "{{ ${Variable.PRODUCT_STORE_PRODUCT_NAME.identifier} }}",
+                Args(
+                    packages = listOf(packageOneTimePurchaseUsd),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "OneTimePurchase"
             )
         ) + listOf(
             // Foreign currency:
@@ -953,6 +1166,57 @@ internal class TextComponentViewVariablesTests(
                     )
                 ),
                 "ANNUAL"
+            ),
+            // Products with a period spanning multiple months:
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PERIODLY.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "3 months",
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "$23.99/3 months",
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "$23.99/3mo",
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "3 months",
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageQuarterlyUsdNoOffers),
+                    locale = "en_US",
+                    storefrontCountryCode = "US",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "3mo",
             ),
         )
     }

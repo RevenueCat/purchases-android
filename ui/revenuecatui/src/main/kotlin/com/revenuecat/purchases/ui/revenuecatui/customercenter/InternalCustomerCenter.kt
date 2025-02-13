@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,19 +48,24 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
 
+@Suppress("LongMethod")
 @JvmSynthetic
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
-    viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(),
+    viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(
+        isDarkMode = isSystemInDarkTheme(),
+    ),
     onDismiss: () -> Unit,
 ) {
+    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -68,6 +74,10 @@ internal fun InternalCustomerCenter(
         coroutineScope.launch {
             viewModel.loadCustomerCenter()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.trackImpressionIfNeeded()
     }
 
     BackHandler {
@@ -241,9 +251,10 @@ private fun CustomerCenterLoaded(
         FeedbackSurveyView(state.feedbackSurveyData)
     } else if (state.promotionalOfferData != null) {
         val promotionalOfferData = state.promotionalOfferData
-        PromotionalOfferView(
+        PromotionalOfferScreen(
             promotionalOfferData = promotionalOfferData,
             appearance = state.customerCenterConfigData.appearance,
+            localization = state.customerCenterConfigData.localization,
             onAccept = { subscriptionOption ->
                 onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
             },
@@ -254,10 +265,11 @@ private fun CustomerCenterLoaded(
     } else if (state.showRestoreDialog) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
+            localization = state.customerCenterConfigData.localization,
             onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
             onRestore = { onAction(CustomerCenterAction.PerformRestore) },
-            onContactSupport = {
-                state.customerCenterConfigData.support.email?.let { email ->
+            onContactSupport = state.customerCenterConfigData.support.email?.let { email ->
+                {
                     onAction(CustomerCenterAction.ContactSupport(email))
                 }
             },
@@ -277,9 +289,12 @@ private fun MainScreen(
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
-                screen = managementScreen,
+                screenTitle = managementScreen.title,
+                screenSubtitle = managementScreen.subtitle,
+                screenType = managementScreen.type,
+                supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                support = configuration.support,
                 purchaseInformation = state.purchaseInformation,
                 onAction = onAction,
             )
@@ -290,9 +305,12 @@ private fun MainScreen(
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
-                screen = noActiveScreen,
+                screenTitle = noActiveScreen.title,
+                screenSubtitle = noActiveScreen.subtitle,
+                screenType = noActiveScreen.type,
+                supportedPaths = emptyList(),
+                contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                support = configuration.support,
                 onAction = onAction,
             )
         } ?: run {
@@ -314,9 +332,14 @@ private fun getTitleForState(state: CustomerCenterState): String? {
 
 @Composable
 private fun getCustomerCenterViewModel(
+    isDarkMode: Boolean,
     purchases: PurchasesType = PurchasesImpl(),
     viewModel: CustomerCenterViewModel = viewModel<CustomerCenterViewModelImpl>(
-        factory = CustomerCenterViewModelFactory(purchases),
+        factory = CustomerCenterViewModelFactory(
+            purchases,
+            MaterialTheme.colorScheme,
+            isDarkMode = isDarkMode,
+        ),
     ),
 ): CustomerCenterViewModel {
     return viewModel
@@ -382,6 +405,7 @@ internal fun CustomerCenterLoadedPreview() {
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
             purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+            supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
         ),
         modifier = Modifier
             .fillMaxSize()

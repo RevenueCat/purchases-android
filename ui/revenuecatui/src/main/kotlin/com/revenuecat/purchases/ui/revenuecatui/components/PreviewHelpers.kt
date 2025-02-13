@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.VisibleForTesting
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -48,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -140,8 +142,8 @@ internal fun previewStackComponentStyle(
     ),
     size: Size = Size(width = Fixed(200u), height = Fit),
     spacing: Dp = 16.dp,
-    backgroundColor: ColorStyles = ColorStyles(
-        light = ColorStyle.Solid(Color.Red),
+    background: BackgroundStyles = BackgroundStyles.Color(
+        color = ColorStyles(light = ColorStyle.Solid(Color.Red)),
     ),
     padding: PaddingValues = PaddingValues(all = 0.dp),
     margin: PaddingValues = PaddingValues(all = 0.dp),
@@ -152,19 +154,21 @@ internal fun previewStackComponentStyle(
     ),
     shadow: ShadowStyles? = null,
     badge: BadgeStyle? = null,
+    scrollOrientation: Orientation? = null,
 ): StackComponentStyle {
     return StackComponentStyle(
         children = children,
         dimension = dimension,
         size = size,
         spacing = spacing,
-        backgroundColor = backgroundColor,
+        background = background,
         padding = padding,
         margin = margin,
         shape = shape,
         border = border,
         shadow = shadow,
         badge = badge,
+        scrollOrientation = scrollOrientation,
         rcPackage = null,
         tabIndex = null,
         overrides = emptyList(),
@@ -298,6 +302,7 @@ internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalization
             VariableLocalizationKey.MONTH -> "month"
             VariableLocalizationKey.MONTH_SHORT -> "mo"
             VariableLocalizationKey.MONTHLY -> "monthly"
+            VariableLocalizationKey.LIFETIME -> "lifetime"
             VariableLocalizationKey.NUM_DAY_FEW -> "%d days"
             VariableLocalizationKey.NUM_DAY_MANY -> "%d days"
             VariableLocalizationKey.NUM_DAY_ONE -> "%d day"
@@ -329,5 +334,9 @@ internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalization
             VariableLocalizationKey.YEAR -> "year"
             VariableLocalizationKey.YEAR_SHORT -> "yr"
             VariableLocalizationKey.YEARLY -> "yearly"
+            VariableLocalizationKey.NUM_DAYS_SHORT -> "%dd"
+            VariableLocalizationKey.NUM_WEEKS_SHORT -> "%dwk"
+            VariableLocalizationKey.NUM_MONTHS_SHORT -> "%dmo"
+            VariableLocalizationKey.NUM_YEARS_SHORT -> "%dyr"
         }
     }.toNonEmptyMapOrNull()!!

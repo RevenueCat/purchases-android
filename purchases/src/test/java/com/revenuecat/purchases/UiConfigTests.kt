@@ -253,6 +253,7 @@ internal class UiConfigTests {
                   "annual": "ANNUAL",
                   "annually": "ANNUALLY",
                   "annual_short": "ANNUAL_SHORT",
+                  "lifetime": "LIFETIME",
                   "free_price": "FREE_PRICE",
                   "percent": "PERCENT",
                   "num_day_zero": "NUM_DAY_ZERO",
@@ -278,7 +279,11 @@ internal class UiConfigTests {
                   "num_year_two": "NUM_YEAR_TWO",
                   "num_year_few": "NUM_YEAR_FEW",
                   "num_year_many": "NUM_YEAR_MANY",
-                  "num_year_other": "NUM_YEAR_OTHER"
+                  "num_year_other": "NUM_YEAR_OTHER",
+                  "num_days_short": "NUM_DAYS_SHORT",
+                  "num_weeks_short": "NUM_WEEKS_SHORT",
+                  "num_months_short": "NUM_MONTHS_SHORT",
+                  "num_years_short": "NUM_YEARS_SHORT"
                 }
               }
             }

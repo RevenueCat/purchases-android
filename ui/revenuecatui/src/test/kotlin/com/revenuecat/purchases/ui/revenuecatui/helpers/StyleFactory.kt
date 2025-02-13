@@ -58,6 +58,7 @@ internal fun variableLocalizationKeysForEsMx(): NonEmptyMap<VariableLocalization
             VariableLocalizationKey.MONTH -> "mes"
             VariableLocalizationKey.MONTH_SHORT -> "mes"
             VariableLocalizationKey.MONTHLY -> "mensual"
+            VariableLocalizationKey.LIFETIME -> "indefinido"
             VariableLocalizationKey.NUM_DAY_FEW -> "%d días"
             VariableLocalizationKey.NUM_DAY_MANY -> "%d días"
             VariableLocalizationKey.NUM_DAY_ONE -> "%d día"
@@ -89,5 +90,9 @@ internal fun variableLocalizationKeysForEsMx(): NonEmptyMap<VariableLocalization
             VariableLocalizationKey.YEAR -> "año"
             VariableLocalizationKey.YEAR_SHORT -> "año"
             VariableLocalizationKey.YEARLY -> "anualmente"
+            VariableLocalizationKey.NUM_DAYS_SHORT -> "%ddía"
+            VariableLocalizationKey.NUM_WEEKS_SHORT -> "%dsem"
+            VariableLocalizationKey.NUM_MONTHS_SHORT -> "%dmes"
+            VariableLocalizationKey.NUM_YEARS_SHORT -> "%daño"
         }
     }.toNonEmptyMapOrNull()!!

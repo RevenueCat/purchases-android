@@ -105,6 +105,7 @@ private class EntitlementInfoAPI {
             PeriodType.NORMAL,
             PeriodType.INTRO,
             PeriodType.TRIAL,
+            PeriodType.PREPAID,
             -> {}
         }.exhaustive
     }

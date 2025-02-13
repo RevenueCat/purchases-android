@@ -953,6 +953,7 @@ private fun variableLocalizationKeysForEnUs(): Map<VariableLocalizationKey, Stri
             VariableLocalizationKey.MONTH -> "month"
             VariableLocalizationKey.MONTH_SHORT -> "mo"
             VariableLocalizationKey.MONTHLY -> "monthly"
+            VariableLocalizationKey.LIFETIME -> "lifetime"
             VariableLocalizationKey.NUM_DAY_FEW -> "%d days"
             VariableLocalizationKey.NUM_DAY_MANY -> "%d days"
             VariableLocalizationKey.NUM_DAY_ONE -> "%d day"
@@ -984,5 +985,9 @@ private fun variableLocalizationKeysForEnUs(): Map<VariableLocalizationKey, Stri
             VariableLocalizationKey.YEAR -> "year"
             VariableLocalizationKey.YEAR_SHORT -> "yr"
             VariableLocalizationKey.YEARLY -> "yearly"
+            VariableLocalizationKey.NUM_DAYS_SHORT -> "%dd"
+            VariableLocalizationKey.NUM_WEEKS_SHORT -> "%dwk"
+            VariableLocalizationKey.NUM_MONTHS_SHORT -> "%dmo"
+            VariableLocalizationKey.NUM_YEARS_SHORT -> "%dyr"
         }
     }

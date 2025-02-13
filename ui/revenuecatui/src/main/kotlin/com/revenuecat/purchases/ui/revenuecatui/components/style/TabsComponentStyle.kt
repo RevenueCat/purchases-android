@@ -9,13 +9,14 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 
 @Immutable
-internal class TabControlButtonComponentStyle(
+internal data class TabControlButtonComponentStyle(
     @get:JvmSynthetic
     val tabIndex: Int,
     @get:JvmSynthetic
@@ -41,7 +42,7 @@ internal class TabControlToggleComponentStyle(
 }
 
 @Immutable
-internal class TabsComponentStyle(
+internal data class TabsComponentStyle(
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
@@ -49,7 +50,7 @@ internal class TabsComponentStyle(
     @get:JvmSynthetic
     val margin: PaddingValues,
     @get:JvmSynthetic
-    val backgroundColor: ColorStyles?,
+    val background: BackgroundStyles?,
     @get:JvmSynthetic
     val shape: Shape,
     @get:JvmSynthetic
@@ -65,18 +66,18 @@ internal class TabsComponentStyle(
 ) : ComponentStyle {
 
     @Immutable
-    class Tab(@get:JvmSynthetic val stack: StackComponentStyle)
+    data class Tab(@get:JvmSynthetic val stack: StackComponentStyle)
 }
 
 @Immutable
 internal sealed interface TabControlStyle : ComponentStyle {
     @Immutable
-    class Buttons(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
+    data class Buttons(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
         override val size: Size = stack.size
     }
 
     @Immutable
-    class Toggle(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
+    data class Toggle(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
         override val size: Size = stack.size
     }
 }

@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -78,6 +79,15 @@ internal class CarouselComponentTests {
                             "dark": {
                               "type": "alias",
                               "value": "another_alias"
+                            }
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
                             }
                           },
                           "shadow": {
@@ -201,6 +211,9 @@ internal class CarouselComponentTests {
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Alias(ColorAlias("tertiary")),
                                 dark = ColorInfo.Alias(ColorAlias("another_alias"))
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                             ),
                             shadow = Shadow(
                                 color = ColorScheme(light = ColorInfo.Alias(ColorAlias("tertiary"))),
@@ -367,6 +380,15 @@ internal class CarouselComponentTests {
                               "value": "another_alias"
                             }
                           },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
                           "shadow": {
                             "color": {
                               "light": {
@@ -464,6 +486,9 @@ internal class CarouselComponentTests {
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Alias(ColorAlias("tertiary")),
                                 dark = ColorInfo.Alias(ColorAlias("another_alias"))
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                             ),
                             sidePagePeek = 10,
                             padding = Padding(

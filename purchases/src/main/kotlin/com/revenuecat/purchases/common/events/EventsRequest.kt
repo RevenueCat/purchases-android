@@ -34,7 +34,7 @@ data class EventsRequest internal constructor(
                 }
             }
             classDiscriminator = "discriminator"
-            encodeDefaults = true
+            encodeDefaults = false
             ignoreUnknownKeys = true
         }
     }

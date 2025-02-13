@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -205,6 +206,15 @@ internal class TabsComponentTests {
                               "value": "secondary"
                             }
                           },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
                           "border": {
                             "color": {
                               "light": {
@@ -275,6 +285,9 @@ internal class TabsComponentTests {
                             ),
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
+                            background = Background.Color(
+                                ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                            ),
                             padding = Padding(top = 12.0, leading = 14.0, bottom = 16.0, trailing = 10.0),
                             margin = Padding(top = 14.0, leading = 12.0, bottom = 10.0, trailing = 16.0),
                             shape = Shape.Pill,
@@ -435,6 +448,15 @@ internal class TabsComponentTests {
                               "value": "primary"
                             }
                           },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
                           "padding": {
                             "bottom": 2,
                             "leading": 3,
@@ -478,6 +500,9 @@ internal class TabsComponentTests {
                             padding = Padding(top = 1.0, bottom = 2.0, leading = 3.0, trailing = 4.0),
                             margin = Padding(top = 4.0, bottom = 3.0, leading = 2.0, trailing = 1.0),
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                            background = Background.Color(
+                                ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                            ),
                             shape = Shape.Pill,
                             border = Border(
                                 color = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),

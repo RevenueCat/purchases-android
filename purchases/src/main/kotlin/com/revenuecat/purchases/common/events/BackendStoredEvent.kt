@@ -1,7 +1,8 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.customercenter.events.CustomerCenterEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
@@ -58,7 +59,9 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent? {
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
-internal fun PaywallEvent.toBackendStoredEvent(appUserID: String): BackendStoredEvent {
+internal fun PaywallEvent.toBackendStoredEvent(
+    appUserID: String,
+): BackendStoredEvent {
     return BackendStoredEvent.Paywalls(
         BackendEvent.Paywalls(
             id = creationData.id.toString(),
@@ -77,27 +80,65 @@ internal fun PaywallEvent.toBackendStoredEvent(appUserID: String): BackendStored
 }
 
 /**
- * Converts a `PaywallEvent` into a `BackendStoredEvent.Paywalls` instance.
+ * Converts a `CustomerCenterImpressionEvent` into a `BackendStoredEvent.CustomerCenter` instance.
  *
- * @receiver The `PaywallEvent` to be converted.
+ * @receiver The `CustomerCenterImpressionEvent` to be converted.
  * @param appUserID The user ID associated with the event.
- * @return A `BackendStoredEvent.Paywalls` containing a `BackendEvent.Paywalls`.
+ * @return A `BackendStoredEvent.CustomerCenter` containing a `BackendEvent.CustomerCenter`.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
-internal fun CustomerCenterEvent.toBackendStoredEvent(appUserID: String): BackendStoredEvent {
+internal fun CustomerCenterImpressionEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
     return BackendStoredEvent.CustomerCenter(
         BackendEvent.CustomerCenter(
             id = creationData.id.toString(),
             revisionID = data.revisionID,
             type = data.type,
             appUserID = appUserID,
-            appSessionID = data.sessionIdentifier.toString(),
+            appSessionID = appSessionID,
             timestamp = data.timestamp.time,
             darkMode = data.darkMode,
             locale = data.locale,
-            isSandbox = data.isSandbox,
             displayMode = data.displayMode,
+            path = null,
+            url = null,
+            surveyOptionID = null,
+            surveyOptionTitleKey = null,
+        ),
+    )
+}
+
+/**
+ * Converts a `CustomerCenterSurveyOptionChosenEvent` into a `BackendStoredEvent.CustomerCenter` instance.
+ *
+ * @receiver The `CustomerCenterSurveyOptionChosenEvent` to be converted.
+ * @param appUserID The user ID associated with the event.
+ * @return A `BackendStoredEvent.CustomerCenter` containing a `BackendEvent.CustomerCenter`.
+ */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
+internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.CustomerCenter(
+        BackendEvent.CustomerCenter(
+            id = creationData.id.toString(),
+            revisionID = data.revisionID,
+            type = data.type,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            timestamp = data.timestamp.time,
+            darkMode = data.darkMode,
+            locale = data.locale,
+            displayMode = data.displayMode,
+            path = data.path,
+            url = data.url,
+            surveyOptionID = data.surveyOptionID,
+            surveyOptionTitleKey = data.surveyOptionTitleKey,
         ),
     )
 }
