@@ -557,12 +557,16 @@ private fun MainStackComponent(
             .applyIfNotNull(backgroundStyle) { background(it, composeShape) }
     }
 
-    val innerShapeModifier = remember(stackState, borderStyle) {
+    val borderModifier = remember(stackState, borderStyle) {
         Modifier
             .applyIfNotNull(borderStyle) {
                 border(it, composeShape)
                     .padding(it.width)
             }
+    }
+
+    val innerShapeModifier = remember(stackState, borderStyle) {
+        Modifier
             .padding(stackState.padding)
             .padding(stackState.dimension, stackState.spacing)
     }
@@ -570,14 +574,20 @@ private fun MainStackComponent(
     if (nestedBadge == null && overlay == null) {
         stack(
             outerShapeModifier
+                .then(borderModifier)
                 .then(innerShapeModifier)
                 .padding(bottomSystemBarsPadding)
                 .consumeWindowInsets(bottomSystemBarsPadding)
                 .consumeWindowInsets(topSystemBarsPadding),
         )
     } else if (nestedBadge != null) {
-        Box(modifier = modifier.then(outerShapeModifier).clip(composeShape).then(innerShapeModifier)) {
-            stack(Modifier)
+        Box(
+            modifier = modifier
+                .then(outerShapeModifier)
+                .clip(composeShape)
+                .then(borderModifier),
+        ) {
+            stack(Modifier.then(innerShapeModifier))
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
@@ -592,7 +602,7 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            stack(innerShapeModifier)
+            stack(borderModifier.then(innerShapeModifier))
             overlay()
         }
     }
@@ -918,7 +928,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                         light = ColorStyle.Solid(Color.Red),
                     ),
                 ),
-                padding = PaddingValues(all = 0.dp),
+                padding = PaddingValues(all = 20.dp),
                 margin = PaddingValues(all = 0.dp),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = BorderStyles(width = 10.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Yellow))),
