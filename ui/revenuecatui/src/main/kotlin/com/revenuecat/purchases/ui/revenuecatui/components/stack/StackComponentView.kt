@@ -487,14 +487,14 @@ private fun MainStackComponent(
                     spacing = stackState.spacing,
                 ),
             ) {
-                val fillSpaceSpacer = @Composable {
-                    Spacer(modifier = Modifier.weight(1f))
+                val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
+                    Spacer(modifier = Modifier.weight(weight))
                 }
 
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
                     dimension.distribution == FlexDistribution.SPACE_EVENLY
                 ) {
-                    fillSpaceSpacer()
+                    fillSpaceSpacer(1f)
                 }
                 val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
                 stackState.children.forEachIndexed { index, child ->
@@ -517,14 +517,14 @@ private fun MainStackComponent(
                     if (dimension.distribution.usesAllAvailableSpace && !isLast) {
                         Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
                         if (!hasChildrenWithFillWidth) {
-                            fillSpaceSpacer()
+                            fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
                         }
                     }
                 }
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
                     dimension.distribution == FlexDistribution.SPACE_EVENLY
                 ) {
-                    fillSpaceSpacer()
+                    fillSpaceSpacer(1f)
                 }
             }
 
@@ -540,13 +540,13 @@ private fun MainStackComponent(
                 ),
                 horizontalAlignment = dimension.alignment.toAlignment(),
             ) {
-                val fillSpaceSpacer = @Composable {
-                    Spacer(modifier = Modifier.weight(1f))
+                val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
+                    Spacer(modifier = Modifier.weight(weight))
                 }
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
                     dimension.distribution == FlexDistribution.SPACE_EVENLY
                 ) {
-                    fillSpaceSpacer()
+                    fillSpaceSpacer(1f)
                 }
                 val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
                 stackState.children.forEachIndexed { index, child ->
@@ -569,14 +569,14 @@ private fun MainStackComponent(
                     if (dimension.distribution.usesAllAvailableSpace && !isLast) {
                         Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
                         if (!hasChildrenWithFillHeight) {
-                            fillSpaceSpacer()
+                            fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
                         }
                     }
                 }
                 if (dimension.distribution == FlexDistribution.SPACE_AROUND ||
                     dimension.distribution == FlexDistribution.SPACE_EVENLY
                 ) {
-                    fillSpaceSpacer()
+                    fillSpaceSpacer(1f)
                 }
             }
 
