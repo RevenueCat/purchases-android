@@ -59,6 +59,8 @@ class TimelineComponent(
         @get:JvmSynthetic
         val title: TextComponent,
         @get:JvmSynthetic
+        val visible: Boolean? = null,
+        @get:JvmSynthetic
         val description: TextComponent? = null,
         @get:JvmSynthetic
         val icon: IconComponent,

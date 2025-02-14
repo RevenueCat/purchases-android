@@ -254,6 +254,7 @@ private fun previewItems(
                 horizontalAlignment = HorizontalAlignment.LEADING,
                 fontWeight = FontWeight.BOLD,
             ),
+            visible = true,
             description = previewTextComponentStyle(
                 text = "Description of what you get today if you subscribe",
                 horizontalAlignment = HorizontalAlignment.LEADING,
@@ -271,6 +272,7 @@ private fun previewItems(
                 fontWeight = FontWeight.BOLD,
                 textAlign = HorizontalAlignment.LEADING,
             ),
+            visible = true,
             description = previewTextComponentStyle(
                 text = "We'll remind you that your trial is ending soon",
                 horizontalAlignment = HorizontalAlignment.LEADING,
@@ -288,6 +290,7 @@ private fun previewItems(
                 fontWeight = FontWeight.BOLD,
                 textAlign = HorizontalAlignment.LEADING,
             ),
+            visible = true,
             description = previewTextComponentStyle(
                 text = "You'll be charged. You can cancel anytime before.",
                 horizontalAlignment = HorizontalAlignment.LEADING,

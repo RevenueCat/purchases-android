@@ -51,6 +51,8 @@ internal data class TimelineComponentStyle(
         @get:JvmSynthetic
         val title: TextComponentStyle,
         @get:JvmSynthetic
+        val visible: Boolean,
+        @get:JvmSynthetic
         val description: TextComponentStyle?,
         @get:JvmSynthetic
         val icon: IconComponentStyle,

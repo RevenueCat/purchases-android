@@ -94,7 +94,8 @@ internal class TimelineComponentTests {
                                       "trailing": 12
                                     },
                                     "color": { "light": { "type": "alias", "value": "primary" } }
-                                 }
+                                 },
+                                 "visible": false
                               }
                           ],
                           "visible": false
@@ -129,6 +130,7 @@ internal class TimelineComponentTests {
                                             )
                                         )
                                     ),
+                                    visible = false,
                                     description = TextComponent(
                                         text = LocalizationKey("description"),
                                         color = ColorScheme(

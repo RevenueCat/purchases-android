@@ -430,6 +430,7 @@ internal class StyleFactory(
         }
         TimelineComponentStyle.ItemStyle(
             title = title,
+            visible = item.visible ?: DEFAULT_VISIBILITY,
             description = description,
             icon = icon,
             connector = connectorStyle,
