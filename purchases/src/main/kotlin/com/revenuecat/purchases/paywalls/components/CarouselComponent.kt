@@ -80,7 +80,22 @@ class CarouselComponent(
     @Serializable
     class PageControl(
         @get:JvmSynthetic
-        val alignment: VerticalAlignment,
+        val position: Position,
+        @get:JvmSynthetic
+        val spacing: Int? = null,
+        @get:JvmSynthetic
+        val padding: Padding = Padding.zero,
+        @get:JvmSynthetic
+        val margin: Padding = Padding.zero,
+        @get:JvmSynthetic
+        @SerialName("background_color")
+        val backgroundColor: ColorScheme? = null,
+        @get:JvmSynthetic
+        val shape: Shape? = null,
+        @get:JvmSynthetic
+        val border: Border? = null,
+        @get:JvmSynthetic
+        val shadow: Shadow? = null,
         @get:JvmSynthetic
         val active: Indicator,
         @get:JvmSynthetic
@@ -91,14 +106,21 @@ class CarouselComponent(
         @Serializable
         class Indicator(
             @get:JvmSynthetic
-            val size: Size,
+            val width: UInt,
             @get:JvmSynthetic
-            val spacing: Float? = null,
+            val height: UInt,
             @get:JvmSynthetic
             val color: ColorScheme,
-            @get:JvmSynthetic
-            val margin: Padding,
         )
+
+        @Serializable
+        enum class Position {
+            @SerialName("top")
+            TOP,
+
+            @SerialName("bottom")
+            BOTTOM,
+        }
     }
 }
 

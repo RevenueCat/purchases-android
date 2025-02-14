@@ -66,7 +66,21 @@ internal data class CarouselComponentStyle(
     @Immutable
     data class PageControlStyles(
         @get:JvmSynthetic
-        val alignment: Alignment.Vertical,
+        val position: CarouselComponent.PageControl.Position,
+        @get:JvmSynthetic
+        val spacing: Dp,
+        @get:JvmSynthetic
+        val padding: PaddingValues,
+        @get:JvmSynthetic
+        val margin: PaddingValues,
+        @get:JvmSynthetic
+        val backgroundColor: ColorStyles?,
+        @get:JvmSynthetic
+        val shape: Shape,
+        @get:JvmSynthetic
+        val border: BorderStyles?,
+        @get:JvmSynthetic
+        val shadow: ShadowStyles?,
         @get:JvmSynthetic
         val active: IndicatorStyles,
         @get:JvmSynthetic
@@ -76,12 +90,10 @@ internal data class CarouselComponentStyle(
     @Immutable
     data class IndicatorStyles(
         @get:JvmSynthetic
-        val size: Size,
+        val width: Dp,
         @get:JvmSynthetic
-        val spacing: Dp,
+        val height: Dp,
         @get:JvmSynthetic
         val color: ColorStyles,
-        @get:JvmSynthetic
-        val margin: PaddingValues,
     )
 }

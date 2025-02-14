@@ -79,9 +79,9 @@ internal class StyleFactory(
     private val offering: Offering,
 ) {
 
-    private companion object {
+    internal companion object {
         private const val DEFAULT_SPACING = 0f
-        private val DEFAULT_SHAPE = Shape.Rectangle()
+        internal val DEFAULT_SHAPE = Shape.Rectangle()
     }
 
     @Suppress("CyclomaticComplexMethod")
@@ -453,10 +453,10 @@ internal class StyleFactory(
         CarouselComponentStyle(
             pages = stackComponentStyles,
             initialPageIndex = component.initialPageIndex ?: 0,
-            alignment = component.pageAlignment.toAlignment(),
+            pageAlignment = component.pageAlignment.toAlignment(),
             size = component.size,
             pagePeek = component.pagePeek?.dp ?: 0.dp,
-            spacing = (component.pageSpacing ?: DEFAULT_SPACING).dp,
+            pageSpacing = (component.pageSpacing ?: DEFAULT_SPACING).dp,
             background = background,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
