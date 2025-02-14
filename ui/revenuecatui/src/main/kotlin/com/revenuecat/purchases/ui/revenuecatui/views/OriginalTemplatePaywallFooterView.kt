@@ -13,16 +13,45 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
-import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
+import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 /**
- * View that wraps the [PaywallFooter] Composable to display the Paywall Footer through XML layouts and the View system.
+ * View that wraps the [OriginalTemplatePaywallFooter] Composable to display the Paywall Footer
+ * through XML layouts and the View system.
  */
-open class PaywallFooterView : FrameLayout {
+@Deprecated(
+    "Use OriginalTemplatePaywallFooterView instead",
+    ReplaceWith(
+        "OriginalTemplatePaywallFooterView",
+    ),
+)
+open class PaywallFooterView(
+    context: Context,
+    attrs: AttributeSet?,
+    defStyleAttr: Int,
+) : OriginalTemplatePaywallFooterView(context, attrs, defStyleAttr) {
+    constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
+
+    @JvmOverloads
+    constructor(
+        context: Context,
+        offering: Offering? = null,
+        listener: PaywallListener? = null,
+        fontProvider: FontProvider? = null,
+        condensed: Boolean = PaywallViewAttributesReader.DEFAULT_CONDENSED,
+        dismissHandler: (() -> Unit)? = null,
+    ) : this(context, attrs = null)
+}
+
+/**
+ * View that wraps the [OriginalTemplatePaywallFooter] Composable to display the Paywall Footer
+ * through XML layouts and the View system.
+ */
+open class OriginalTemplatePaywallFooterView : FrameLayout {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
@@ -112,6 +141,7 @@ open class PaywallFooterView : FrameLayout {
 
     /**
      * Sets the font provider to be used for the Paywall. If not set, the default one will be used.
+     * Only available for original template paywalls. Ignored for V2 Paywalls.
      */
     fun setFontProvider(fontProvider: FontProvider?) {
         paywallOptions = paywallOptions.copy(fontProvider = fontProvider)
@@ -130,7 +160,7 @@ open class PaywallFooterView : FrameLayout {
                     val paywallOptions by remember {
                         paywallOptionsState
                     }
-                    PaywallFooter(
+                    OriginalTemplatePaywallFooter(
                         options = paywallOptions,
                         condensed = initialCondensed,
                     )
