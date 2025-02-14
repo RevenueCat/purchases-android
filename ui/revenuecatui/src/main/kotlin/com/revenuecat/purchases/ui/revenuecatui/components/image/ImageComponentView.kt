@@ -100,6 +100,8 @@ internal fun ImageComponentView(
         // in order to have the border applied on top of the overlay, which uses onDrawWithContent
         Box(
             modifier = modifier
+                .size(imageState.size)
+                .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
                 .padding(imageState.margin)
                 .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
                 .clip(composeShape)
