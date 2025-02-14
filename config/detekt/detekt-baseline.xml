@@ -65,6 +65,7 @@
     <ID>ModifierMissing:InsetSpacers.kt$SystemBarsSpacer</ID>
     <ID>ModifierMissing:MainScreen.kt$MainScreen</ID>
     <ID>ModifierMissing:MainScreen.kt$MainScreenNavigation</ID>
+    <ID>ModifierMissing:PaywallFooter.kt$OriginalTemplatePaywallFooter</ID>
     <ID>ModifierMissing:PaywallFooter.kt$PaywallFooter</ID>
     <ID>ModifierMissing:PaywallFooterScreen.kt$PaywallFooterScreen</ID>
     <ID>ModifierMissing:PaywallScreen.kt$PaywallScreen</ID>
