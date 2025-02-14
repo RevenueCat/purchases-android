@@ -6,12 +6,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.LinearGradientShader
@@ -19,6 +23,8 @@ import androidx.compose.ui.graphics.Shader
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -31,7 +37,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import dev.drewhamilton.poko.Poko
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.acos
 import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -160,8 +170,13 @@ private fun relativeLinearGradient(
 }
 
 /**
- * A brush that uses relative coordinates to draw the linear gradient, instead of absolute ones.
+ * A brush that uses relative coordinates to draw the linear gradient, instead of absolute ones. It also follows CSS'
+ * [linear-gradient](https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient) spec.
+ *
+ * Heavily inspired by
+ * [this blog post by Mukhtar Bimurat](https://medium.com/@bimurat.mukhtar/how-to-implement-linear-gradient-with-any-angle-in-jetpack-compose-3ded798c81f5).
  */
+@Suppress("MagicNumber", "ComplexCondition", "MaxLineLength")
 @Poko
 @Immutable
 private class RelativeLinearGradient(
@@ -171,31 +186,26 @@ private class RelativeLinearGradient(
     private val tileMode: TileMode = TileMode.Clamp,
 ) : ShaderBrush() {
 
-    // We need to adjust the degrees to match CSS' angle definition.
-    @Suppress("MagicNumber")
-    private val degrees = degrees - 90f
+    // Handling extreme degrees.
+    private val degrees: Float = ((90 - degrees) % 360 + 360) % 360
+    private val radians: Float = Math.toRadians(this.degrees.toDouble()).toFloat()
 
-    /**
-     * Creates a linear gradient shader following the
-     * [CSS definition](https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient#composition_of_a_linear_gradient).
-     */
-    @Suppress("MaxLineLength")
     override fun createShader(size: Size): Shader {
-        val center = Offset(size.width / 2f, size.height / 2f)
+        val diagonal = sqrt(size.width.pow(2) + size.height.pow(2))
+        val angleBetweenDiagonalAndWidth = acos(size.width / diagonal)
+        val angleBetweenDiagonalAndGradientLine =
+            if ((degrees > 90 && degrees < 180) || (degrees > 270 && degrees < 360)) {
+                PI.toFloat() - radians - angleBetweenDiagonalAndWidth
+            } else {
+                radians - angleBetweenDiagonalAndWidth
+            }
+        val halfGradientLine = abs(cos(angleBetweenDiagonalAndGradientLine) * diagonal) / 2
 
-        val radians = Math.toRadians(degrees.toDouble())
-        val dx = cos(radians).toFloat()
-        val dy = sin(radians).toFloat()
+        val horizontalOffset = halfGradientLine * cos(radians)
+        val verticalOffset = halfGradientLine * sin(radians)
 
-        val halfWidth = size.width / 2f
-        val halfHeight = size.height / 2f
-
-        // Compute the distance from the center to the furthest corner.
-        val halfDiagonal = sqrt((halfWidth * halfWidth) + (halfHeight * halfHeight))
-
-        // Compute the absolute start and end points along the gradient line.
-        val startPx = center - Offset(x = dx * halfDiagonal, y = dy * halfDiagonal)
-        val endPx = center + Offset(x = dx * halfDiagonal, y = dy * halfDiagonal)
+        val startPx = size.center + Offset(-horizontalOffset, verticalOffset)
+        val endPx = size.center + Offset(horizontalOffset, -verticalOffset)
 
         return LinearGradientShader(
             colors = colors,
@@ -290,6 +300,27 @@ private fun LinearGradient_Preview_Rectangle_OrangeCyan() {
     )
 }
 
+@Suppress("MagicNumber")
+@Preview
+@Composable
+private fun LinearGradient_Preview_Rectangle_Template014Button() {
+    Box(
+        modifier = Modifier
+            .requiredSize(300.dp, 55.dp)
+            .background(
+                relativeLinearGradient(
+                    colorStops = arrayOf(
+                        0f to Color(red = 0x01, green = 0x01, blue = 0x57),
+                        0.46f to Color(red = 0x23, green = 0x23, blue = 0x97),
+                        1f to Color(red = 0xDD, green = 0x02, blue = 0x5C),
+                    ),
+                    degrees = 8f,
+                ),
+                shape = RoundedCornerShape(50),
+            ),
+    )
+}
+
 /**
  * [reference](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_images/Using_CSS_gradients#using_angles)
  */
@@ -309,4 +340,42 @@ private fun LinearGradient_Preview_Square_BluePink() {
                 ),
             ),
     )
+}
+
+@Suppress("MagicNumber")
+private class DegreesProvider : PreviewParameterProvider<Float> {
+    override val values: Sequence<Float> = sequenceOf(
+        0f,
+        90f,
+        180f,
+        -90f,
+    )
+}
+
+/**
+ * [reference](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_images/Using_CSS_gradients#using_angles)
+ */
+@Preview
+@Composable
+private fun LinearGradient_Preview_SquaresDegrees(
+    @PreviewParameter(DegreesProvider::class) degrees: Float,
+) {
+    Box(
+        modifier = Modifier
+            .requiredSize(100.dp)
+            .background(
+                relativeLinearGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Red,
+                        1f to Color.White,
+                    ),
+                    degrees = degrees,
+                ),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "${degrees}deg",
+        )
+    }
 }
