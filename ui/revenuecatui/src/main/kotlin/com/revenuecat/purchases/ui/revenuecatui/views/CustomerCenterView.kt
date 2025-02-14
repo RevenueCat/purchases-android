@@ -17,26 +17,17 @@ class CustomerCenterView : AbstractComposeView {
 
     constructor(
         context: Context,
-        dismissHandler: () -> Unit,
+        dismissHandler: (CustomerCenterView) -> Unit,
     ) : super(context) {
-        setDismissHandler(dismissHandler)
-    }
-
-    private var dismissHandler: (() -> Unit)? = null
-
-    /**
-     * Sets a dismiss handler which will be called:
-     * - If the user taps on the close button
-     * - If the user calls the back button with the Customer Center present.
-     */
-    fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
     }
 
+    private var dismissHandler: ((CustomerCenterView) -> Unit) = {}
+
     @Composable
     override fun Content() {
-        dismissHandler?.let {
-            CustomerCenter(onDismiss = it)
+        CustomerCenter {
+            dismissHandler(this)
         }
     }
 }
