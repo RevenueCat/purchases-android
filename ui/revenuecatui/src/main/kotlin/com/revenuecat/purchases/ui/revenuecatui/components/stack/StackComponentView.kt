@@ -512,7 +512,8 @@ private fun MainStackComponent(
                         spacing = stackState.spacing,
                     ),
                 ) {
-                    val shouldApplyFillSpacers = stackState.size.width != Fit
+                    val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
+                    val shouldApplyFillSpacers = stackState.size.width != Fit && !hasChildrenWithFillWidth
                     val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
                         Spacer(modifier = Modifier.weight(weight))
                     }
@@ -529,7 +530,6 @@ private fun MainStackComponent(
 
                     edgeSpacerIfNeeded()
 
-                    val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
                     stackState.children.forEachIndexed { index, child ->
                         val isLast = index == stackState.children.size - 1
                         val childPadding = if (child.ignoreTopWindowInsets) {
@@ -549,7 +549,7 @@ private fun MainStackComponent(
 
                         if (dimension.distribution.usesAllAvailableSpace && !isLast) {
                             Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
-                            if (!hasChildrenWithFillWidth && shouldApplyFillSpacers) {
+                            if (shouldApplyFillSpacers) {
                                 fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
                             }
                         }
@@ -570,7 +570,8 @@ private fun MainStackComponent(
                     ),
                     horizontalAlignment = dimension.alignment.toAlignment(),
                 ) {
-                    val shouldApplyFillSpacers = stackState.size.height != Fit
+                    val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
+                    val shouldApplyFillSpacers = stackState.size.height != Fit && !hasChildrenWithFillHeight
                     val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
                         Spacer(modifier = Modifier.weight(weight))
                     }
@@ -587,7 +588,6 @@ private fun MainStackComponent(
 
                     edgeSpacerIfNeeded()
 
-                    val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
                     stackState.children.forEachIndexed { index, child ->
                         val isLast = index == stackState.children.size - 1
                         // In a Vertical container, we only want to apply topSystemBarsPadding to the first child,
@@ -609,7 +609,7 @@ private fun MainStackComponent(
 
                         if (dimension.distribution.usesAllAvailableSpace && !isLast) {
                             Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
-                            if (!hasChildrenWithFillHeight && shouldApplyFillSpacers) {
+                            if (shouldApplyFillSpacers) {
                                 fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
                             }
                         }
@@ -1466,6 +1466,52 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing(
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fixed(300u), height = Fixed(300u)),
             spacing = 0.dp,
+            background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
+            padding = PaddingValues(all = 0.dp),
+            margin = PaddingValues(all = 16.dp),
+            shape = Shape.Rectangle(),
+            border = null,
+            shadow = null,
+            badge = null,
+            scrollOrientation = null,
+            rcPackage = null,
+            tabIndex = null,
+            overrides = emptyList(),
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+    )
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_Distribution_SpaceAround_With_Fill_Children() {
+    StackComponentView(
+        style = StackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Hello",
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
+                    size = Size(width = Fill, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "SPACE_AROUND",
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Green)),
+                    size = Size(width = Fit, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "World",
+                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
+                    size = Size(width = Fit, height = Fit),
+                ),
+            ),
+            dimension = Dimension.Horizontal(
+                alignment = VerticalAlignment.CENTER,
+                distribution = FlexDistribution.SPACE_AROUND,
+            ),
+            // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
+            size = Size(width = Fixed(300u), height = Fixed(300u)),
+            spacing = 8.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 16.dp),
