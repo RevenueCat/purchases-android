@@ -182,8 +182,8 @@ class OfferingImagePreDownloaderTest {
                             ),
                         ),
                         CarouselComponent(
-                            slides = emptyList(),
-                            alignment = VerticalAlignment.TOP,
+                            pages = emptyList(),
+                            pageAlignment = VerticalAlignment.TOP,
                             background = Background.Image(
                                 value = ThemeImageUrls(
                                     light = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_carousel_light_low_res.webp"),

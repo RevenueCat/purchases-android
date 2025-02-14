@@ -308,7 +308,7 @@ private fun MainScreen(
                 screenTitle = noActiveScreen.title,
                 screenSubtitle = noActiveScreen.subtitle,
                 screenType = noActiveScreen.type,
-                supportedPaths = emptyList(),
+                supportedPaths = noActiveScreen.paths,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
                 onAction = onAction,
