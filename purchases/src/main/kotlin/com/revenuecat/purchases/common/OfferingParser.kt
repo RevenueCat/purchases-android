@@ -8,7 +8,6 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
@@ -140,17 +139,13 @@ internal abstract class OfferingParser {
 
         @Suppress("TooGenericExceptionCaught")
         val paywallComponentsData: PaywallComponentsData? =
-            if (BuildConfig.FLAG_PAYWALL_COMPONENTS) {
-                offeringJson.optJSONObject("paywall_components")?.let {
-                    try {
-                        json.decodeFromString<PaywallComponentsData>(it.toString())
-                    } catch (e: Throwable) {
-                        errorLog("Error deserializing paywall components data", e)
-                        null
-                    }
+            offeringJson.optJSONObject("paywall_components")?.let {
+                try {
+                    json.decodeFromString<PaywallComponentsData>(it.toString())
+                } catch (e: Throwable) {
+                    errorLog("Error deserializing paywall components data", e)
+                    null
                 }
-            } else {
-                null
             }
 
         val paywallComponents = if (paywallComponentsData != null && uiConfig != null) {
