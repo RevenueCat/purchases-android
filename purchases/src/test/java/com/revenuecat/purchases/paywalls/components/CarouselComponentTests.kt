@@ -42,8 +42,8 @@ internal class CarouselComponentTests {
                         json = """
                         {
                           "type": "carousel",
-                          "initial_slide_index": 2,
-                          "alignment": "center",
+                          "initial_page_index": 2,
+                          "page_alignment": "center",
                           "size": {
                             "height": {
                               "type": "fit",
@@ -54,7 +54,7 @@ internal class CarouselComponentTests {
                               "value": null
                             }
                           },
-                          "side_page_peek": 10,
+                          "page_peek": 10,
                           "padding": {
                             "top": 1,
                             "leading": 2,
@@ -70,7 +70,7 @@ internal class CarouselComponentTests {
                           "shape": {
                             "type": "pill"
                           },
-                          "spacing": 8,
+                          "page_spacing": 8,
                           "background_color": {
                             "light": {
                               "type": "alias",
@@ -111,19 +111,52 @@ internal class CarouselComponentTests {
                             "width": 123
                           },
                           "page_control": {
-                            "alignment": "top",
-                            "active": {
-                              "size": {
-                                "width": {
-                                  "type": "fixed",
-                                  "value": 10
-                                },
-                                "height": {
-                                  "type": "fixed",
-                                  "value": 20
+                            "position": "top",
+                            "spacing": 5,
+                            "margin": {
+                              "top": 1,
+                              "leading": 2,
+                              "bottom": 3,
+                              "trailing": 4
+                            },
+                            "padding": {
+                              "top": 5,
+                              "leading": 6,
+                              "bottom": 7,
+                              "trailing": 8
+                            },
+                            "background_color": {
+                              "light": {
+                                "type": "alias",
+                                "value": "secondary"
+                              }
+                            },
+                            "shape": {
+                              "type": "pill"
+                            },
+                            "shadow": {
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "tertiary"
                                 }
                               },
-                              "spacing": 5,
+                              "radius": 20.1,
+                              "x": 23.6,
+                              "y": 45.2
+                            },
+                            "border": {
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "primary"
+                                }
+                              },
+                              "width": 123
+                            },
+                            "active": {
+                              "width": 10,
+                              "height": 20,
                               "color": {
                                 "light": {
                                   "type": "alias",
@@ -133,26 +166,11 @@ internal class CarouselComponentTests {
                                   "type": "alias",
                                   "value": "secondary"
                                 }
-                              },
-                              "margin": {
-                                "top": 1,
-                                "leading": 2,
-                                "bottom": 3,
-                                "trailing": 4
                               }
                             },
                             "default": {
-                              "size": {
-                                "width": {
-                                  "type": "fixed",
-                                  "value": 20
-                                },
-                                "height": {
-                                  "type": "fixed",
-                                  "value": 10
-                                }
-                              },
-                              "spacing": 2,
+                              "width": 30,
+                              "height": 40,
                               "color": {
                                 "light": {
                                   "type": "alias",
@@ -162,21 +180,15 @@ internal class CarouselComponentTests {
                                   "type": "alias",
                                   "value": "another_alias"
                                 }
-                              },
-                              "margin": {
-                                "top": 5,
-                                "leading": 6,
-                                "bottom": 7,
-                                "trailing": 8
                               }
                             }
                           },
                           "loop": true,
                           "auto_advance": {
-                            "ms_time_per_slide": 1000,
+                            "ms_time_per_page": 1000,
                             "ms_transition_time": 500
                           },
-                          "slides": [
+                          "pages": [
                             {
                               "type": "stack",
                               "components": []
@@ -185,15 +197,15 @@ internal class CarouselComponentTests {
                         }
                         """.trimIndent(),
                         expected = CarouselComponent(
-                            slides = listOf(
+                            pages = listOf(
                                 StackComponent(
                                     components = emptyList()
                                 )
                             ),
-                            initialSlideIndex = 2,
-                            alignment = VerticalAlignment.CENTER,
+                            initialPageIndex = 2,
+                            pageAlignment = VerticalAlignment.CENTER,
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
-                            sidePagePeek = 10,
+                            pagePeek = 10,
                             padding = Padding(
                                 top = 1.0,
                                 leading = 2.0,
@@ -207,7 +219,7 @@ internal class CarouselComponentTests {
                                 trailing = 8.0
                             ),
                             shape = Shape.Pill,
-                            spacing = 8f,
+                            pageSpacing = 8f,
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Alias(ColorAlias("tertiary")),
                                 dark = ColorInfo.Alias(ColorAlias("another_alias"))
@@ -226,45 +238,54 @@ internal class CarouselComponentTests {
                                 width = 123.0
                             ),
                             pageControl = CarouselComponent.PageControl(
-                                alignment = VerticalAlignment.TOP,
+                                position = CarouselComponent.PageControl.Position.TOP,
+                                spacing = 5,
+                                padding = Padding(
+                                    top = 5.0,
+                                    leading = 6.0,
+                                    bottom = 7.0,
+                                    trailing = 8.0
+                                ),
+                                margin = Padding(
+                                    top = 1.0,
+                                    leading = 2.0,
+                                    bottom = 3.0,
+                                    trailing = 4.0
+                                ),
+                                backgroundColor = ColorScheme(
+                                    light = ColorInfo.Alias(ColorAlias("secondary"))
+                                ),
+                                shape = Shape.Pill,
+                                shadow = Shadow(
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("tertiary"))),
+                                    radius = 20.1,
+                                    x = 23.6,
+                                    y = 45.2
+                                ),
+                                border = Border(
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                    width = 123.0
+                                ),
                                 active = CarouselComponent.PageControl.Indicator(
-                                    size = Size(
-                                        width = SizeConstraint.Fixed(10u),
-                                        height = SizeConstraint.Fixed(20u),
-                                    ),
-                                    spacing = 5f,
+                                    width = 10u,
+                                    height = 20u,
                                     color = ColorScheme(
                                         light = ColorInfo.Alias(ColorAlias("primary")),
                                         dark = ColorInfo.Alias(ColorAlias("secondary"))
                                     ),
-                                    margin = Padding(
-                                        top = 1.0,
-                                        leading = 2.0,
-                                        bottom = 3.0,
-                                        trailing = 4.0
-                                    ),
                                 ),
                                 default = CarouselComponent.PageControl.Indicator(
-                                    size = Size(
-                                        width = SizeConstraint.Fixed(20u),
-                                        height = SizeConstraint.Fixed(10u),
-                                    ),
-                                    spacing = 2f,
+                                    width = 30u,
+                                    height = 40u,
                                     color = ColorScheme(
                                         light = ColorInfo.Alias(ColorAlias("tertiary")),
                                         dark = ColorInfo.Alias(ColorAlias("another_alias"))
                                     ),
-                                    margin = Padding(
-                                        top = 5.0,
-                                        leading = 6.0,
-                                        bottom = 7.0,
-                                        trailing = 8.0
-                                    ),
                                 )
                             ),
                             loop = true,
-                            autoAdvance = CarouselComponent.AutoAdvanceSlides(
-                                msTimePerSlide = 1000,
+                            autoAdvance = CarouselComponent.AutoAdvancePages(
+                                msTimePerPage = 1000,
                                 msTransitionTime = 500
                             )
                         )
@@ -276,8 +297,8 @@ internal class CarouselComponentTests {
                         json = """
                         {
                           "type": "carousel",
-                          "alignment": "center",
-                          "slides": [
+                          "page_alignment": "center",
+                          "pages": [
                             {
                               "type": "stack",
                               "components": []
@@ -286,12 +307,12 @@ internal class CarouselComponentTests {
                         }
                         """.trimIndent(),
                         expected = CarouselComponent(
-                            slides = listOf(
+                            pages = listOf(
                                 StackComponent(
                                     components = emptyList()
                                 )
                             ),
-                            alignment = VerticalAlignment.CENTER,
+                            pageAlignment = VerticalAlignment.CENTER,
                         )
                     ),
                 ),
@@ -341,8 +362,8 @@ internal class CarouselComponentTests {
                         json = """
                         {
                           "visible": true,
-                          "initial_slide_index": 2,
-                          "alignment": "center",
+                          "initial_page_index": 2,
+                          "page_alignment": "center",
                           "size": {
                             "height": {
                               "type": "fit",
@@ -353,7 +374,7 @@ internal class CarouselComponentTests {
                               "value": null
                             }
                           },
-                          "side_page_peek": 10,
+                          "page_peek": 10,
                           "padding": {
                             "top": 1,
                             "leading": 2,
@@ -369,7 +390,7 @@ internal class CarouselComponentTests {
                           "shape": {
                             "type": "pill"
                           },
-                          "spacing": 8,
+                          "page_spacing": 8,
                           "background_color": {
                             "light": {
                               "type": "alias",
@@ -410,19 +431,52 @@ internal class CarouselComponentTests {
                             "width": 123
                           },
                           "page_control": {
-                            "alignment": "top",
-                            "active": {
-                              "size": {
-                                "width": {
-                                  "type": "fixed",
-                                  "value": 10
-                                },
-                                "height": {
-                                  "type": "fixed",
-                                  "value": 20
+                            "position": "top",
+                            "spacing": 5,
+                            "margin": {
+                              "top": 1,
+                              "leading": 2,
+                              "bottom": 3,
+                              "trailing": 4
+                            },
+                            "padding": {
+                              "top": 5,
+                              "leading": 6,
+                              "bottom": 7,
+                              "trailing": 8
+                            },
+                            "background_color": {
+                              "light": {
+                                "type": "alias",
+                                "value": "secondary"
+                              }
+                            },
+                            "shape": {
+                              "type": "pill"
+                            },
+                            "shadow": {
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "tertiary"
                                 }
                               },
-                              "spacing": 5,
+                              "radius": 20.1,
+                              "x": 23.6,
+                              "y": 45.2
+                            },
+                            "border": {
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "primary"
+                                }
+                              },
+                              "width": 123
+                            },
+                            "active": {
+                              "width": 10,
+                              "height": 20,
                               "color": {
                                 "light": {
                                   "type": "alias",
@@ -432,26 +486,11 @@ internal class CarouselComponentTests {
                                   "type": "alias",
                                   "value": "secondary"
                                 }
-                              },
-                              "margin": {
-                                "top": 1,
-                                "leading": 2,
-                                "bottom": 3,
-                                "trailing": 4
                               }
                             },
                             "default": {
-                              "size": {
-                                "width": {
-                                  "type": "fixed",
-                                  "value": 20
-                                },
-                                "height": {
-                                  "type": "fixed",
-                                  "value": 10
-                                }
-                              },
-                              "spacing": 2,
+                              "width": 30,
+                              "height": 40,
                               "color": {
                                 "light": {
                                   "type": "alias",
@@ -461,28 +500,22 @@ internal class CarouselComponentTests {
                                   "type": "alias",
                                   "value": "another_alias"
                                 }
-                              },
-                              "margin": {
-                                "top": 5,
-                                "leading": 6,
-                                "bottom": 7,
-                                "trailing": 8
                               }
                             }
                           },
                           "loop": true,
                           "auto_advance": {
-                            "ms_time_per_slide": 1000,
+                            "ms_time_per_page": 1000,
                             "ms_transition_time": 500
                           }
                         }
                         """.trimIndent(),
                         expected = PartialCarouselComponent(
                             visible = true,
-                            initialSlideIndex = 2,
-                            alignment = VerticalAlignment.CENTER,
+                            initialPageIndex = 2,
+                            pageAlignment = VerticalAlignment.CENTER,
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
-                            spacing = 8f,
+                            pageSpacing = 8f,
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Alias(ColorAlias("tertiary")),
                                 dark = ColorInfo.Alias(ColorAlias("another_alias"))
@@ -490,7 +523,7 @@ internal class CarouselComponentTests {
                             background = Background.Color(
                                 value = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                             ),
-                            sidePagePeek = 10,
+                            pagePeek = 10,
                             padding = Padding(
                                 top = 1.0,
                                 leading = 2.0,
@@ -515,45 +548,54 @@ internal class CarouselComponentTests {
                                 width = 123.0
                             ),
                             pageControl = CarouselComponent.PageControl(
-                                alignment = VerticalAlignment.TOP,
+                                position = CarouselComponent.PageControl.Position.TOP,
+                                spacing = 5,
+                                margin = Padding(
+                                    top = 1.0,
+                                    leading = 2.0,
+                                    bottom = 3.0,
+                                    trailing = 4.0
+                                ),
+                                padding = Padding(
+                                    top = 5.0,
+                                    leading = 6.0,
+                                    bottom = 7.0,
+                                    trailing = 8.0
+                                ),
+                                backgroundColor = ColorScheme(
+                                    light = ColorInfo.Alias(ColorAlias("secondary"))
+                                ),
+                                shape = Shape.Pill,
+                                shadow = Shadow(
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("tertiary"))),
+                                    radius = 20.1,
+                                    x = 23.6,
+                                    y = 45.2
+                                ),
+                                border = Border(
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                    width = 123.0
+                                ),
                                 active = CarouselComponent.PageControl.Indicator(
-                                    size = Size(
-                                        width = SizeConstraint.Fixed(10u),
-                                        height = SizeConstraint.Fixed(20u),
-                                    ),
-                                    spacing = 5f,
+                                    width = 10u,
+                                    height = 20u,
                                     color = ColorScheme(
                                         light = ColorInfo.Alias(ColorAlias("primary")),
                                         dark = ColorInfo.Alias(ColorAlias("secondary"))
                                     ),
-                                    margin = Padding(
-                                        top = 1.0,
-                                        leading = 2.0,
-                                        bottom = 3.0,
-                                        trailing = 4.0
-                                    ),
                                 ),
                                 default = CarouselComponent.PageControl.Indicator(
-                                    size = Size(
-                                        width = SizeConstraint.Fixed(20u),
-                                        height = SizeConstraint.Fixed(10u),
-                                    ),
-                                    spacing = 2f,
+                                    width = 30u,
+                                    height = 40u,
                                     color = ColorScheme(
                                         light = ColorInfo.Alias(ColorAlias("tertiary")),
                                         dark = ColorInfo.Alias(ColorAlias("another_alias"))
                                     ),
-                                    margin = Padding(
-                                        top = 5.0,
-                                        leading = 6.0,
-                                        bottom = 7.0,
-                                        trailing = 8.0
-                                    ),
                                 )
                             ),
                             loop = true,
-                            autoAdvance = CarouselComponent.AutoAdvanceSlides(
-                                msTimePerSlide = 1000,
+                            autoAdvance = CarouselComponent.AutoAdvancePages(
+                                msTimePerPage = 1000,
                                 msTransitionTime = 500
                             )
                         )

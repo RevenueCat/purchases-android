@@ -19,17 +19,17 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyl
 @Immutable
 internal data class CarouselComponentStyle(
     @get:JvmSynthetic
-    val slides: List<StackComponentStyle>,
+    val pages: List<StackComponentStyle>,
     @get:JvmSynthetic
-    val initialSlideIndex: Int,
+    val initialPageIndex: Int,
     @get:JvmSynthetic
-    val alignment: Alignment.Vertical,
+    val pageAlignment: Alignment.Vertical,
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
-    val sidePagePeek: Dp,
+    val pagePeek: Dp,
     @get:JvmSynthetic
-    val spacing: Dp,
+    val pageSpacing: Dp,
     @get:JvmSynthetic
     val background: BackgroundStyles?,
     @get:JvmSynthetic
@@ -47,7 +47,7 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val loop: Boolean,
     @get:JvmSynthetic
-    val autoAdvance: CarouselComponent.AutoAdvanceSlides?,
+    val autoAdvance: CarouselComponent.AutoAdvancePages?,
     /**
      * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
      * available.
@@ -66,7 +66,21 @@ internal data class CarouselComponentStyle(
     @Immutable
     data class PageControlStyles(
         @get:JvmSynthetic
-        val alignment: Alignment.Vertical,
+        val position: CarouselComponent.PageControl.Position,
+        @get:JvmSynthetic
+        val spacing: Dp,
+        @get:JvmSynthetic
+        val padding: PaddingValues,
+        @get:JvmSynthetic
+        val margin: PaddingValues,
+        @get:JvmSynthetic
+        val backgroundColor: ColorStyles?,
+        @get:JvmSynthetic
+        val shape: Shape,
+        @get:JvmSynthetic
+        val border: BorderStyles?,
+        @get:JvmSynthetic
+        val shadow: ShadowStyles?,
         @get:JvmSynthetic
         val active: IndicatorStyles,
         @get:JvmSynthetic
@@ -76,12 +90,10 @@ internal data class CarouselComponentStyle(
     @Immutable
     data class IndicatorStyles(
         @get:JvmSynthetic
-        val size: Size,
+        val width: Dp,
         @get:JvmSynthetic
-        val spacing: Dp,
+        val height: Dp,
         @get:JvmSynthetic
         val color: ColorStyles,
-        @get:JvmSynthetic
-        val margin: PaddingValues,
     )
 }

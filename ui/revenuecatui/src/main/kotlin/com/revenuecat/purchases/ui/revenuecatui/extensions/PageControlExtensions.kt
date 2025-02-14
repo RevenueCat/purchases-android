@@ -6,10 +6,13 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
 @JvmSynthetic
@@ -17,20 +20,28 @@ internal fun CarouselComponent.PageControl.toPageControlStyles(aliases: Map<Colo
     zipOrAccumulate(
         first = active.color.toColorStyles(aliases = aliases),
         second = default.color.toColorStyles(aliases = aliases),
-    ) { activeColor, defaultColor ->
+        third = backgroundColor?.toColorStyles(aliases = aliases).orSuccessfullyNull(),
+        fourth = border?.toBorderStyles(aliases = aliases).orSuccessfullyNull(),
+        fifth = shadow?.toShadowStyles(aliases = aliases).orSuccessfullyNull(),
+    ) { activeColor, defaultColor, backgroundColor, borderStyle, shadowStyle ->
         CarouselComponentStyle.PageControlStyles(
-            alignment = alignment.toAlignment(),
+            position = position,
+            spacing = spacing?.dp ?: 0.dp,
+            padding = padding.toPaddingValues(),
+            margin = margin.toPaddingValues(),
+            backgroundColor = backgroundColor,
+            shape = shape ?: StyleFactory.DEFAULT_SHAPE,
+            border = borderStyle,
+            shadow = shadowStyle,
             active = CarouselComponentStyle.IndicatorStyles(
-                size = active.size,
-                spacing = active.spacing?.dp ?: 0.dp,
+                width = active.width.toInt().dp,
+                height = active.height.toInt().dp,
                 color = activeColor,
-                margin = active.margin.toPaddingValues(),
             ),
             default = CarouselComponentStyle.IndicatorStyles(
-                size = default.size,
-                spacing = default.spacing?.dp ?: 0.dp,
+                width = default.width.toInt().dp,
+                height = default.height.toInt().dp,
                 color = defaultColor,
-                margin = default.margin.toPaddingValues(),
             ),
         )
     }

@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.carousel
 
@@ -57,7 +58,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.extensions.dpOrNull
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
 
@@ -83,7 +83,7 @@ internal fun CarouselComponentView(
     val borderStyle = carouselState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = carouselState.shadow?.let { rememberShadowStyle(shadow = it) }
 
-    val pageCount = style.slides.size
+    val pageCount = style.pages.size
 
     val initialPage = getInitialPage(carouselState)
 
@@ -98,7 +98,7 @@ internal fun CarouselComponentView(
     carouselState.autoAdvance?.let { autoAdvance ->
         LaunchedEffect(Unit) {
             while (true) {
-                delay(autoAdvance.msTimePerSlide.toLong())
+                delay(autoAdvance.msTimePerPage.toLong())
                 val nextPage = if (carouselState.loop) {
                     pagerState.currentPage + 1
                 } else {
@@ -126,30 +126,38 @@ internal fun CarouselComponentView(
             }
             .padding(carouselState.padding),
     ) {
+        val pageControl = @Composable {
+            carouselState.pageControl?.let {
+                PagerIndicator(
+                    pageControl = it,
+                    pageCount = pageCount,
+                    pagerState = pagerState,
+                )
+            }
+        }
+
+        if (carouselState.pageControl?.position == CarouselComponent.PageControl.Position.TOP) {
+            pageControl()
+        }
+
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = carouselState.sidePagePeek),
+            contentPadding = PaddingValues(horizontal = carouselState.pagePeek),
             // This will load all the pages at once, which allows the pager to always have the correct size
             beyondViewportPageCount = pageCount,
-            pageSpacing = carouselState.spacing,
-            verticalAlignment = carouselState.alignment,
+            pageSpacing = carouselState.pageSpacing,
+            verticalAlignment = carouselState.pageAlignment,
             userScrollEnabled = style.autoAdvance == null,
         ) { page ->
             StackComponentView(
-                style = carouselState.slides[page % pageCount],
+                style = carouselState.pages[page % pageCount],
                 state = state,
                 clickHandler = clickHandler,
             )
         }
 
-        carouselState.pageControl?.let {
-            // The margin between the pager and the indicators is indicated
-            // by the margins configured in the indicators themselves
-            PagerIndicator(
-                pageControl = it,
-                pageCount = pageCount,
-                pagerState = pagerState,
-            )
+        if (carouselState.pageControl?.position == CarouselComponent.PageControl.Position.BOTTOM) {
+            pageControl()
         }
     }
 }
@@ -161,8 +169,19 @@ private fun ColumnScope.PagerIndicator(
     pagerState: PagerState,
     modifier: Modifier = Modifier,
 ) {
+    val backgroundColorStyle = pageControl.backgroundColor?.forCurrentTheme
+    val borderStyle = pageControl.border?.let { rememberBorderStyle(border = it) }
+    val shadowStyle = pageControl.shadow?.let { rememberShadowStyle(shadow = it) }
+    val composeShape by remember(pageControl.shape) { derivedStateOf { pageControl.shape.toShape() } }
+
     Row(
-        modifier = modifier.align(Alignment.CenterHorizontally),
+        modifier = modifier
+            .align(Alignment.CenterHorizontally)
+            .padding(pageControl.margin)
+            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+            .applyIfNotNull(backgroundColorStyle) { background(it, composeShape) }
+            .applyIfNotNull(borderStyle) { border(it, composeShape) }
+            .padding(pageControl.padding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -209,31 +228,18 @@ private fun Indicator(
 
     val targetWidth by remember {
         derivedStateOf {
-            // We assume the size of the indicator to be Fixed.
-            // It won't show otherwise.
             lerpUnit(
-                pageControl.default.size.width.dpOrNull() ?: 0.dp,
-                pageControl.active.size.width.dpOrNull() ?: 0.dp,
+                pageControl.default.width,
+                pageControl.active.width,
                 progress,
             )
         }
     }
     val targetHeight by remember {
         derivedStateOf {
-            // We assume the size of the indicator to be Fixed.
-            // It won't show otherwise.
             lerpUnit(
-                pageControl.default.size.height.dpOrNull() ?: 0.dp,
-                pageControl.active.size.height.dpOrNull() ?: 0.dp,
-                progress,
-            )
-        }
-    }
-    val targetSpacing by remember {
-        derivedStateOf {
-            lerpUnit(
-                pageControl.default.spacing,
-                pageControl.active.spacing,
+                pageControl.default.height,
+                pageControl.active.height,
                 progress,
             )
         }
@@ -245,23 +251,16 @@ private fun Indicator(
     val height by animateDpAsState(
         targetValue = targetHeight,
     )
-    val spacing by animateDpAsState(
-        targetValue = targetSpacing,
-    )
 
     val color = lerp(
         (pageControl.default.color.forCurrentTheme as? ColorStyle.Solid)?.color ?: Color.Transparent,
         (pageControl.active.color.forCurrentTheme as? ColorStyle.Solid)?.color ?: Color.Transparent,
         progress,
     )
-    val isCurrentPage = pageIndex == (pagerState.currentPage % pageCount)
 
     Box(
         modifier = Modifier
-            // Indicator margin only indicates vertical margins, and we don't want to animate those,
-            // or it might jump around during transitions.
-            .padding(if (isCurrentPage) pageControl.active.margin else pageControl.default.margin)
-            .padding(horizontal = spacing / 2)
+            .padding(horizontal = pageControl.spacing / 2)
             .clip(Shape.Pill.toShape())
             .background(color)
             .size(width = width, height = height),
@@ -271,14 +270,14 @@ private fun Indicator(
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
     // When looping, we use a very large number of pages to allow for "infinite" scrolling
     // We need to calculate the initial page index in the middle of that large number of pages to make the carousel
-    // start at the correct slide
+    // start at the correct page
     var currentPage = Int.MAX_VALUE / 2
-    while ((currentPage % carouselState.slides.size) != carouselState.initialSlideIndex) {
+    while ((currentPage % carouselState.pages.size) != carouselState.initialPageIndex) {
         currentPage++
     }
     currentPage
 } else {
-    carouselState.initialSlideIndex
+    carouselState.initialPageIndex
 }
 
 @Preview
@@ -295,13 +294,27 @@ private fun CarouselComponentView_Preview() {
 
 @Preview
 @Composable
+private fun CarouselComponentView_Top_Preview() {
+    Box(modifier = Modifier.background(Color.White)) {
+        CarouselComponentView(
+            style = previewCarouselComponentStyle(
+                pageControl = previewPageControl(CarouselComponent.PageControl.Position.TOP),
+            ),
+            state = previewEmptyState(),
+            clickHandler = {},
+        )
+    }
+}
+
+@Preview
+@Composable
 private fun CarouselComponentView_Loop_Preview() {
     Box(modifier = Modifier.background(Color.White)) {
         CarouselComponentView(
             style = previewCarouselComponentStyle(
                 loop = true,
-                autoAdvance = CarouselComponent.AutoAdvanceSlides(
-                    msTimePerSlide = 1000,
+                autoAdvance = CarouselComponent.AutoAdvancePages(
+                    msTimePerPage = 1000,
                     msTransitionTime = 500,
                 ),
             ),
@@ -313,8 +326,8 @@ private fun CarouselComponentView_Loop_Preview() {
 
 @Suppress("LongParameterList")
 private fun previewCarouselComponentStyle(
-    slides: List<StackComponentStyle> = previewSlides(),
-    initialSlideIndex: Int = 0,
+    pages: List<StackComponentStyle> = previewPages(),
+    initialPageIndex: Int = 0,
     alignment: Alignment.Vertical = Alignment.CenterVertically,
     size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     sidePagePeek: Dp = 20.dp,
@@ -330,31 +343,17 @@ private fun previewCarouselComponentStyle(
         x = 0.dp,
         y = 3.dp,
     ),
-    pageControl: CarouselComponentStyle.PageControlStyles? = CarouselComponentStyle.PageControlStyles(
-        alignment = Alignment.Bottom,
-        active = CarouselComponentStyle.IndicatorStyles(
-            size = Size(width = SizeConstraint.Fixed(14u), height = SizeConstraint.Fixed(10u)),
-            spacing = 4.dp,
-            color = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
-            margin = PaddingValues(vertical = 10.dp),
-        ),
-        default = CarouselComponentStyle.IndicatorStyles(
-            size = Size(width = SizeConstraint.Fixed(8u), height = SizeConstraint.Fixed(8u)),
-            spacing = 4.dp,
-            color = ColorStyles(light = ColorStyle.Solid(Color.Gray)),
-            margin = PaddingValues(vertical = 10.dp),
-        ),
-    ),
+    pageControl: CarouselComponentStyle.PageControlStyles? = previewPageControl(),
     loop: Boolean = false,
-    autoAdvance: CarouselComponent.AutoAdvanceSlides? = null,
+    autoAdvance: CarouselComponent.AutoAdvancePages? = null,
 ): CarouselComponentStyle {
     return CarouselComponentStyle(
-        slides = slides,
-        initialSlideIndex = initialSlideIndex,
-        alignment = alignment,
+        pages = pages,
+        initialPageIndex = initialPageIndex,
+        pageAlignment = alignment,
         size = size,
-        sidePagePeek = sidePagePeek,
-        spacing = spacing,
+        pagePeek = sidePagePeek,
+        pageSpacing = spacing,
         background = BackgroundStyles.Color(
             ColorStyles(
                 light = ColorStyle.Solid(backgroundColor),
@@ -374,24 +373,59 @@ private fun previewCarouselComponentStyle(
     )
 }
 
-private fun previewSlides(): List<StackComponentStyle> {
-    return listOf(
-        previewSlide("Slide 1", Color.Red, height = 200u),
-        previewSlide("Slide 2", Color.Green, height = 100u),
-        previewSlide("Slide 3", Color.Blue, height = 300u),
-        previewSlide("Slide 4", Color.Yellow, height = 200u),
+private fun previewPageControl(
+    position: CarouselComponent.PageControl.Position = CarouselComponent.PageControl.Position.BOTTOM,
+): CarouselComponentStyle.PageControlStyles {
+    return CarouselComponentStyle.PageControlStyles(
+        position = position,
+        spacing = 4.dp,
+        padding = PaddingValues(all = 8.dp),
+        margin = PaddingValues(all = 8.dp),
+        backgroundColor = ColorStyles(
+            light = ColorStyle.Solid(Color.Green),
+        ),
+        shape = Shape.Pill,
+        border = BorderStyles(
+            width = 4.dp,
+            colors = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
+        ),
+        shadow = ShadowStyles(
+            colors = ColorStyles(light = ColorStyle.Solid(Color.Black)),
+            radius = 20.dp,
+            x = 8.dp,
+            y = 8.dp,
+        ),
+        active = CarouselComponentStyle.IndicatorStyles(
+            width = 14.dp,
+            height = 10.dp,
+            color = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
+        ),
+        default = CarouselComponentStyle.IndicatorStyles(
+            width = 8.dp,
+            height = 8.dp,
+            color = ColorStyles(light = ColorStyle.Solid(Color.Gray)),
+        ),
     )
 }
 
-private fun previewSlide(
-    slideText: String,
+private fun previewPages(): List<StackComponentStyle> {
+    return listOf(
+        previewPage("Page 1", Color.Red, height = 200u),
+        previewPage("Page 2", Color.Green, height = 100u),
+        previewPage("Page 3", Color.Blue, height = 300u),
+        previewPage("Page 4", Color.Yellow, height = 200u),
+    )
+}
+
+private fun previewPage(
+    pageText: String,
     backgroundColor: Color,
     height: UInt,
 ): StackComponentStyle {
     return StackComponentStyle(
         children = listOf(
             previewTextComponentStyle(
-                text = slideText,
+                text = pageText,
             ),
         ),
         dimension = Dimension.Vertical(
