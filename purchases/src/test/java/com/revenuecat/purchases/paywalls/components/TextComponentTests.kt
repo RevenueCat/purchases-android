@@ -82,7 +82,8 @@ internal class TextComponentTests {
                             }
                           },
                           "text_lid": "7bkohQjzIE",
-                          "type": "text"
+                          "type": "text",
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = TextComponent(
@@ -90,6 +91,7 @@ internal class TextComponentTests {
                             color = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0, green = 0, blue = 0))
                             ),
+                            visible = false,
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0xee, green = 0xee, blue = 0xee))
                             ),

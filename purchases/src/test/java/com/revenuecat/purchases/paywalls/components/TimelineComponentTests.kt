@@ -96,7 +96,8 @@ internal class TimelineComponentTests {
                                     "color": { "light": { "type": "alias", "value": "primary" } }
                                  }
                               }
-                          ]
+                          ],
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = TimelineComponent(
@@ -104,6 +105,7 @@ internal class TimelineComponentTests {
                             textSpacing = 20,
                             columnGutter = 30,
                             iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
+                            visible = false,
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             padding = Padding(
                                 top = 1.0,

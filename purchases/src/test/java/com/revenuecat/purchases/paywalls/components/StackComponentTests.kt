@@ -134,7 +134,8 @@ internal class StackComponentTests {
                             "x": 23.6,
                             "y": 45.2
                           },
-                          "overflow": "scroll"
+                          "overflow": "scroll",
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = StackComponent(
@@ -144,6 +145,7 @@ internal class StackComponentTests {
                                     color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                 )
                             ),
+                            visible = false,
                             dimension = Dimension.Vertical(
                                 alignment = HorizontalAlignment.LEADING,
                                 distribution = FlexDistribution.SPACE_BETWEEN
