@@ -22,6 +22,8 @@ internal data class TimelineComponentStyle(
     @get:JvmSynthetic
     val iconAlignment: IconAlignment,
     @get:JvmSynthetic
+    override val visible: Boolean,
+    @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
     val padding: PaddingValues,

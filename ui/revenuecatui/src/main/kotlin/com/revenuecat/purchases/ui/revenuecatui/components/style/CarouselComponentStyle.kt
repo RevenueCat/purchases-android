@@ -25,6 +25,8 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val pageAlignment: Alignment.Vertical,
     @get:JvmSynthetic
+    override val visible: Boolean,
+    @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
     val pagePeek: Dp,

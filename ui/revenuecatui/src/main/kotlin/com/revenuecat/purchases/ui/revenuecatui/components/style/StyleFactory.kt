@@ -81,6 +81,7 @@ internal class StyleFactory(
 
     internal companion object {
         private const val DEFAULT_SPACING = 0f
+        private const val DEFAULT_VISIBILITY = true
         internal val DEFAULT_SHAPE = Shape.Rectangle()
     }
 
@@ -243,6 +244,7 @@ internal class StyleFactory(
         StackComponentStyle(
             children = children,
             dimension = component.dimension,
+            visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
             spacing = (component.spacing ?: DEFAULT_SPACING).dp,
             background = background,
@@ -294,6 +296,7 @@ internal class StyleFactory(
             textAlign = component.horizontalAlignment.toTextAlign(),
             horizontalAlignment = component.horizontalAlignment.toAlignment(),
             backgroundColor = backgroundColor,
+            visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
@@ -326,6 +329,7 @@ internal class StyleFactory(
     ) { sources, presentedOverrides, overlay, border, shadow ->
         ImageComponentStyle(
             sources,
+            visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
@@ -360,6 +364,7 @@ internal class StyleFactory(
                 baseUrl = component.baseUrl,
                 iconName = component.iconName,
                 formats = component.formats,
+                visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
                 color = colorStyles,
                 padding = component.padding.toPaddingValues(),
@@ -388,6 +393,7 @@ internal class StyleFactory(
             textSpacing = component.textSpacing,
             columnGutter = component.columnGutter,
             iconAlignment = component.iconAlignment,
+            visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
@@ -454,6 +460,7 @@ internal class StyleFactory(
             pages = stackComponentStyles,
             initialPageIndex = component.initialPageIndex ?: 0,
             pageAlignment = component.pageAlignment.toAlignment(),
+            visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
             pagePeek = component.pagePeek?.dp ?: 0.dp,
             pageSpacing = (component.pageSpacing ?: DEFAULT_SPACING).dp,
@@ -510,6 +517,7 @@ internal class StyleFactory(
                 fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
             ) { overrides, tabs, backgroundColor, border, shadow ->
                 TabsComponentStyle(
+                    visible = component.visible ?: DEFAULT_VISIBILITY,
                     size = component.size,
                     padding = component.padding.toPaddingValues(),
                     margin = component.margin.toPaddingValues(),
