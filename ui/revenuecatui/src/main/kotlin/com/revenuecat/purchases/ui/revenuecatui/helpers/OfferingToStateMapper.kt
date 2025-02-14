@@ -9,13 +9,32 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggleComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -25,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
+import java.util.Date
 import kotlin.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 
@@ -90,7 +110,7 @@ private fun Offering.fallbackPaywall(
         errors,
     )
 
-@Suppress("MaxLineLength", "ReturnCount")
+@Suppress("MaxLineLength", "ReturnCount", "LongMethod")
 internal fun Offering.validatePaywallComponentsDataOrNull(
     resourceProvider: ResourceProvider,
 ): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? {
@@ -115,6 +135,27 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     }.mapValuesOrAccumulate { it }
         .getOrElse { error -> return RcResult.Error(error) }
 
+    // Check that the default variable localization is present in the localizations map.
+    val defaultVariableLocalization = paywallComponents.defaultVariableLocalization
+        .errorIfNull(
+            PaywallValidationError.AllVariableLocalizationsMissing(paywallComponents.data.defaultLocaleIdentifier),
+        )
+        .mapError { nonEmptyListOf(it) }
+        .getOrElse { error -> return RcResult.Error(error) }
+
+    // Build a NonEmptyMap of variable localizations, ensuring that we always have the default localization as fallback.
+    val variableLocalizations = nonEmptyMapOf(
+        paywallComponents.data.defaultLocaleIdentifier to defaultVariableLocalization,
+        paywallComponents.uiConfig.localizations,
+    ).mapValues { (locale, map) ->
+        // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>. If a certain locale
+        // has an empty Map, we add an AllLocalizationsMissing error for that locale to our list of errors.
+        map.toNonEmptyMapOrNull()
+            .errorIfNull(PaywallValidationError.AllLocalizationsMissing(locale))
+            .mapError { nonEmptyListOf(it) }
+    }.mapValuesOrAccumulate { it }
+        .getOrElse { error -> return RcResult.Error(error) }
+
     val colorAliases = paywallComponents.uiConfig.app.colors
 
     // Build a map of FontAliases to FontSpecs.
@@ -126,7 +167,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         localizations = localizations,
         colorAliases = colorAliases,
         fontAliases = fontAliases,
-        variableLocalizations = paywallComponents.uiConfig.localizations,
+        variableLocalizations = variableLocalizations,
         offering = this,
     )
     val config = paywallComponents.data.componentsConfig.base
@@ -136,13 +177,35 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         first = styleFactory.create(config.stack),
         second = config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
         third = config.background.toBackgroundStyles(aliases = colorAliases),
-    ) { stack, stickyFooter, background ->
+    ) { backendRootComponent, stickyFooter, background ->
+        // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
+        // definite solution for positioning the root component.
+        val rootComponent = (backendRootComponent as? StackComponentStyle)
+            ?.takeIf { it.size.height == SizeConstraint.Fit }
+            ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
+            ?: backendRootComponent
+
+        val packagesOutsideTabs = rootComponent.findPackagesOutsideTabs() + stickyFooter?.findPackagesOutsideTabs().orEmpty()
+        val tabsComponent = rootComponent.findTabsComponentStyle() ?: stickyFooter?.findTabsComponentStyle()
+
+        val packages = AvailablePackages(
+            packagesOutsideTabs = packagesOutsideTabs,
+            packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
+        )
+
+        val stackWithAppliedWindowInsets = rootComponent.applyTopWindowInsetsIfNecessary().run {
+            if (stickyFooter == null) applyBottomWindowInsetsIfNecessary() else this
+        }
+
         PaywallValidationResult.Components(
-            stack = stack,
-            stickyFooter = stickyFooter,
+            stack = stackWithAppliedWindowInsets,
+            stickyFooter = stickyFooter?.applyBottomWindowInsetsIfNecessary(),
             background = background,
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
+            variableConfig = paywallComponents.uiConfig.variableConfig,
+            packages = packages,
+            initialSelectedTabIndex = tabsComponent?.defaultTabIndex,
         )
     }
 }
@@ -160,6 +223,7 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
                 return Result.failure(error)
             }
         }
+
         PackageConfigurationType.MULTITIER -> {
             // Step 1: Validate tiers in config is not empty
             val tiers = config.tiers ?: emptyList()
@@ -258,11 +322,13 @@ internal fun Offering.toLegacyPaywallState(
     )
 }
 
+@Suppress("LongParameterList")
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
     activelySubscribedProductIds: Set<String>,
     purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
+    dateProvider: () -> Date,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -273,10 +339,14 @@ internal fun Offering.toComponentsPaywallState(
         stickyFooter = validationResult.stickyFooter,
         background = validationResult.background,
         showPricesWithDecimals = showPricesWithDecimals,
+        variableConfig = validationResult.variableConfig,
         offering = this,
         locales = validationResult.locales,
         activelySubscribedProductIds = activelySubscribedProductIds,
         purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
+        dateProvider = dateProvider,
+        packages = validationResult.packages,
+        initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
     )
 }
 
@@ -337,3 +407,240 @@ private fun PaywallData.validateTemplate(): PaywallTemplate? {
 
 private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, LocalizationData>?
     get() = componentsLocalizations[defaultLocaleIdentifier]
+
+private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
+    get() = uiConfig.localizations[data.defaultLocaleIdentifier]
+
+private val TabsComponentStyle.defaultTabIndex: Int
+    get() = when (control) {
+        // Button control doesn't have a default tab.
+        is TabControlStyle.Buttons -> 0
+        is TabControlStyle.Toggle -> {
+            control.stack
+                .firstOrNull { it is TabControlToggleComponentStyle }
+                .let { it as TabControlToggleComponentStyle? }
+                ?.defaultValue
+                .let { if (it == true) 1 else 0 }
+        }
+    }
+
+private fun ComponentStyle.findTabsComponentStyle(): TabsComponentStyle? =
+    firstOrNull { it is TabsComponentStyle } as TabsComponentStyle?
+
+private fun ComponentStyle.findPackagesOutsideTabs(): List<AvailablePackages.Info> =
+    filter(
+        predicate = { it is PackageComponentStyle },
+        skip = { it is TabsComponentStyle },
+    ).map { (it as PackageComponentStyle).toAvailablePackageInfo() }
+
+private val TabsComponentStyle.packagesByTab: Map<Int, List<AvailablePackages.Info>>
+    get() = buildMap(tabs.size) {
+        tabs.forEachIndexed { index, tab ->
+            val packages = tab.stack
+                .filterIsInstance<PackageComponentStyle>()
+                .map { it.toAvailablePackageInfo() }
+            put(index, packages)
+        }
+    }
+
+private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.Info =
+    AvailablePackages.Info(
+        pkg = rcPackage,
+        isSelectedByDefault = isSelectedByDefault,
+    )
+
+/**
+ * This checks if the first non-container component is a full-width image, and if so, marks that image with
+ * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`. If such an image is not found, it marks the
+ * root component with `applyTopWindowInsets`.
+ */
+@Suppress("CyclomaticComplexMethod")
+private fun ComponentStyle.applyTopWindowInsetsIfNecessary(): ComponentStyle {
+    var fullWidthImageFound = false
+
+    fun ComponentStyle.traverseAndMarkFullWidthImage(): ComponentStyle = recursiveMap { style ->
+        when (style) {
+            is ImageComponentStyle -> when (style.size.width) {
+                is SizeConstraint.Fill -> style.copy(ignoreTopWindowInsets = true)
+                is SizeConstraint.Fit,
+                is SizeConstraint.Fixed,
+                -> style
+            }
+
+            is StackComponentStyle -> style.children.firstOrNull()
+                ?.traverseAndMarkFullWidthImage()
+                ?.takeIf { it is ImageComponentStyle && it.ignoreTopWindowInsets }
+                ?.let {
+                    when (style.dimension) {
+                        is Dimension.Horizontal,
+                        is Dimension.Vertical,
+                        -> style
+
+                        is Dimension.ZLayer -> style.copy(applyTopWindowInsets = true)
+                            .also { fullWidthImageFound = true }
+                    }
+                } ?: style
+
+            else -> style
+        }
+    }
+
+    return traverseAndMarkFullWidthImage()
+        .let { traversed ->
+            // We didn't find a full width image. So we need to apply the top window insets at the root.
+            if (!fullWidthImageFound) {
+                when (traversed) {
+                    is StackComponentStyle -> traversed.copy(applyTopWindowInsets = true)
+                    else -> traversed
+                }
+            } else {
+                traversed
+            }
+        }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(): T =
+    when (this) {
+        is StackComponentStyle -> copy(applyBottomWindowInsets = true)
+        is StickyFooterComponentStyle -> copy(
+            stackComponentStyle = stackComponentStyle.applyBottomWindowInsetsIfNecessary(),
+        )
+        else -> this
+    } as T
+
+/**
+ * Returns the first ComponentStyle that satisfies the predicate, or null if none is found.
+ *
+ * Implemented as breadth-first search.
+ */
+private fun ComponentStyle.firstOrNull(predicate: (ComponentStyle) -> Boolean): ComponentStyle? {
+    val queue = ArrayDeque<ComponentStyle>()
+    queue.add(this)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+        if (predicate(current)) return current
+        queue.addChildrenOf(current)
+    }
+
+    return null
+}
+
+private inline fun <reified R : ComponentStyle> ComponentStyle.filterIsInstance(): List<R> {
+    val matches = mutableListOf<R>()
+    val queue = ArrayDeque<ComponentStyle>()
+    queue.add(this)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+        if (current is R) matches.add(current)
+        queue.addChildrenOf(current)
+    }
+
+    return matches
+}
+
+/**
+ * Returns all ComponentStyles that satisfy the predicate, skipping any nodes (and their children) that satisfy the
+ * skip predicate.
+ *
+ * Implemented as breadth-first search.
+ */
+@Suppress("CyclomaticComplexMethod")
+private fun ComponentStyle.filter(
+    predicate: (ComponentStyle) -> Boolean,
+    skip: (ComponentStyle) -> Boolean,
+): List<ComponentStyle> {
+    val matches = mutableListOf<ComponentStyle>()
+    val queue = ArrayDeque<ComponentStyle>()
+    queue.add(this)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+
+        if (skip(current)) continue
+        if (predicate(current)) matches.add(current)
+
+        queue.addChildrenOf(current)
+    }
+
+    return matches
+}
+
+private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
+    when (parent) {
+        is StackComponentStyle -> addAll(parent.children)
+        is ButtonComponentStyle -> add(parent.stackComponentStyle)
+        is PackageComponentStyle -> add(parent.stackComponentStyle)
+        is StickyFooterComponentStyle -> add(parent.stackComponentStyle)
+        is CarouselComponentStyle -> addAll(parent.slides)
+        is TabControlButtonComponentStyle -> add(parent.stack)
+        is TabControlStyle.Buttons -> add(parent.stack)
+        is TabControlStyle.Toggle -> add(parent.stack)
+        is TabsComponentStyle -> addAll(parent.tabs.map { it.stack })
+        is TimelineComponentStyle ->
+            addAll(parent.items.flatMap { item -> listOfNotNull(item.title, item.description, item.icon) })
+
+        is TabControlToggleComponentStyle,
+        is ImageComponentStyle,
+        is IconComponentStyle,
+        is TextComponentStyle,
+        -> {
+            // These don't have child components.
+        }
+    }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun <T : ComponentStyle> T.recursiveMap(
+    transform: (ComponentStyle) -> ComponentStyle,
+): T {
+    return when (val transformed = transform(this)) {
+        is StackComponentStyle -> transformed.copy(
+            children = transformed.children.map { it.recursiveMap(transform) },
+        ) as T
+
+        is ButtonComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
+        ) as T
+
+        is PackageComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
+        ) as T
+
+        is StickyFooterComponentStyle -> transformed.copy(
+            stackComponentStyle = transformed.stackComponentStyle.recursiveMap(transform),
+        ) as T
+
+        is CarouselComponentStyle -> transformed.copy(
+            slides = transformed.slides.map { it.recursiveMap(transform) },
+        ) as T
+
+        is TabControlButtonComponentStyle -> transformed.copy(
+            stack = transformed.stack.recursiveMap(transform),
+        ) as T
+
+        is TabControlStyle.Buttons -> transformed.copy(
+            stack = transformed.stack.recursiveMap(transform),
+        ) as T
+
+        is TabControlStyle.Toggle -> transformed.copy(
+            stack = transformed.stack.recursiveMap(transform),
+        ) as T
+
+        is TabsComponentStyle -> {
+            val newTabs = transformed.tabs.map { tab ->
+                tab.copy(stack = tab.stack.recursiveMap(transform))
+            }
+            transformed.copy(tabs = newTabs) as T
+        }
+
+        is IconComponentStyle,
+        is ImageComponentStyle,
+        is TabControlToggleComponentStyle,
+        is TextComponentStyle,
+        is TimelineComponentStyle,
+        -> transformed as T
+    }
+}

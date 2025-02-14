@@ -47,6 +47,10 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "icon" -> jsonDecoder.json.decodeFromString<IconComponent>(json.toString())
             "timeline" -> jsonDecoder.json.decodeFromString<TimelineComponent>(json.toString())
             "carousel" -> jsonDecoder.json.decodeFromString<CarouselComponent>(json.toString())
+            "tab_control_button" -> jsonDecoder.json.decodeFromString<TabControlButtonComponent>(json.toString())
+            "tab_control_toggle" -> jsonDecoder.json.decodeFromString<TabControlToggleComponent>(json.toString())
+            "tab_control" -> jsonDecoder.json.decodeFromString<TabControlComponent>(json.toString())
+            "tabs" -> jsonDecoder.json.decodeFromString<TabsComponent>(json.toString())
             else -> json["fallback"]
                 ?.let { it as? JsonObject }
                 ?.toString()

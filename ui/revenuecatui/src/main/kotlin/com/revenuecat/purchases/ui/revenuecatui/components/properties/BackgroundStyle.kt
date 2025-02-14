@@ -1,18 +1,25 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
+import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -23,8 +30,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getRevenueCatUIImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 
@@ -104,19 +113,38 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
     }
 
 @Composable
-private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter =
-    rememberAsyncImagePainter(
-        model = imageUrls.webp.toString(),
+private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter {
+    var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
+    val context = LocalContext.current
+    val imageLoader = remember(context) {
+        context.applicationContext.getRevenueCatUIImageLoader()
+    }
+    return rememberAsyncImagePainter(
+        model = getImageRequest(context, imageUrls.webp.toString(), cachePolicy),
+        imageLoader = imageLoader,
         placeholder = rememberAsyncImagePainter(
-            model = imageUrls.webpLowRes.toString(),
+            model = getImageRequest(context, imageUrls.webpLowRes.toString(), cachePolicy),
+            imageLoader = imageLoader,
             error = null,
             fallback = null,
             contentScale = contentScale,
         ),
         error = null,
         fallback = null,
+        onError = {
+            Logger.w("AsyncImagePainter failed to load. Will try again disabling cache")
+            cachePolicy = CachePolicy.WRITE_ONLY
+        },
         contentScale = contentScale,
     )
+}
+
+private fun getImageRequest(context: Context, url: String, cachePolicy: CachePolicy): ImageRequest =
+    ImageRequest.Builder(context)
+        .data(url)
+        .diskCachePolicy(cachePolicy)
+        .memoryCachePolicy(cachePolicy)
+        .build()
 
 @Preview
 @Composable
@@ -137,7 +165,7 @@ private fun Background_Preview_ColorGradientLinear() {
             .background(
                 BackgroundStyle.Color(
                     ColorInfo.Gradient.Linear(
-                        degrees = 0f,
+                        degrees = 90f,
                         points = listOf(
                             ColorInfo.Gradient.Point(
                                 color = Color.Red.toArgb(),

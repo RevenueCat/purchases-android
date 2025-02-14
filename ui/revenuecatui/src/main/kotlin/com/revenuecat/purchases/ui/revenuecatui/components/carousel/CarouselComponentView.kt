@@ -43,11 +43,13 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
@@ -77,7 +79,7 @@ internal fun CarouselComponentView(
         return
     }
 
-    val backgroundColorStyle = carouselState.backgroundColor?.forCurrentTheme
+    val backgroundColorStyle = carouselState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = carouselState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = carouselState.shadow?.let { rememberShadowStyle(shadow = it) }
 
@@ -353,8 +355,10 @@ private fun previewCarouselComponentStyle(
         size = size,
         sidePagePeek = sidePagePeek,
         spacing = spacing,
-        backgroundColor = ColorStyles(
-            light = ColorStyle.Solid(backgroundColor),
+        background = BackgroundStyles.Color(
+            ColorStyles(
+                light = ColorStyle.Solid(backgroundColor),
+            ),
         ),
         padding = padding,
         margin = margin,
@@ -365,7 +369,8 @@ private fun previewCarouselComponentStyle(
         loop = loop,
         autoAdvance = autoAdvance,
         rcPackage = null,
-        overrides = null,
+        tabIndex = null,
+        overrides = emptyList(),
     )
 }
 
@@ -395,8 +400,8 @@ private fun previewSlide(
         ),
         size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fixed(height)),
         spacing = 8.dp,
-        backgroundColor = ColorStyles(
-            light = ColorStyle.Solid(backgroundColor),
+        background = BackgroundStyles.Color(
+            color = ColorStyles(light = ColorStyle.Solid(backgroundColor)),
         ),
         padding = PaddingValues(vertical = 16.dp),
         margin = PaddingValues(0.dp),
@@ -404,7 +409,9 @@ private fun previewSlide(
         border = null,
         shadow = null,
         badge = null,
+        scrollOrientation = null,
         rcPackage = null,
-        overrides = null,
+        tabIndex = null,
+        overrides = emptyList(),
     )
 }

@@ -5,9 +5,11 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
@@ -22,6 +24,8 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -63,14 +67,15 @@ internal interface CustomerCenterViewModel {
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
     fun loadAndDisplayPromotionalOffer(
+        context: Context,
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
-    )
+    ): Boolean
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
-    fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context)
-    fun onNavigationButtonPressed()
+    fun dismissPromotionalOffer(context: Context, originalPath: CustomerCenterConfigData.HelpPath)
+    fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit)
     suspend fun loadCustomerCenter()
     fun openURL(
         context: Context,
@@ -78,6 +83,13 @@ internal interface CustomerCenterViewModel {
         method: CustomerCenterConfigData.HelpPath.OpenMethod = CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
     )
     fun clearActionError()
+
+    // trigger state refresh
+    fun refreshStateIfLocaleChanged()
+    fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
+
+    // tracks customer center impression the first time is shown
+    fun trackImpressionIfNeeded()
 }
 
 internal sealed class TransactionDetails(
@@ -104,11 +116,16 @@ internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
     private val dateFormatter: DateFormatter = DefaultDateFormatter(),
     private val locale: Locale = Locale.getDefault(),
+    private val colorScheme: ColorScheme,
+    private var isDarkMode: Boolean,
 ) : ViewModel(), CustomerCenterViewModel {
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
     }
 
+    private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
+    private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
+    private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
     override val state = _state
         .onStart {
@@ -133,12 +150,23 @@ internal class CustomerCenterViewModelImpl(
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 goBackToMain()
                 option?.let {
+                    trackCustomerCenterEventOptionChosen(
+                        path = path.type,
+                        url = path.url,
+                        surveyOptionID = it.id,
+                        surveyOptionTitleKey = it.title,
+                    )
+
                     if (product != null && it.promotionalOffer != null) {
-                        loadAndDisplayPromotionalOffer(
+                        val loaded = loadAndDisplayPromotionalOffer(
+                            context,
                             product,
                             it.promotionalOffer!!,
                             path,
                         )
+                        if (!loaded) {
+                            mainPathAction(path, context)
+                        }
                     } else {
                         mainPathAction(path, context)
                     }
@@ -148,11 +176,15 @@ internal class CustomerCenterViewModelImpl(
         }
 
         if (product != null && path.promotionalOffer != null) {
-            loadAndDisplayPromotionalOffer(
+            val loaded = loadAndDisplayPromotionalOffer(
+                context,
                 product,
                 path.promotionalOffer!!,
                 path,
             )
+            if (!loaded) {
+                mainPathAction(path, context)
+            }
         } else {
             mainPathAction(path, context)
         }
@@ -256,6 +288,19 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
         }
+    }
+
+    private fun supportedPaths(
+        purchaseInformation: PurchaseInformation?,
+        screen: CustomerCenterConfigData.Screen,
+    ): List<CustomerCenterConfigData.HelpPath> {
+        return purchaseInformation?.let { info ->
+            if (info.isLifetime) {
+                screen.supportedPaths.filter { it.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL }
+            } else {
+                screen.supportedPaths
+            }
+        } ?: emptyList()
     }
 
     private suspend fun loadPurchaseInformation(
@@ -381,10 +426,11 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun loadAndDisplayPromotionalOffer(
+        context: Context,
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
-    ) {
+    ): Boolean {
         val offerIdentifier = promotionalOffer.productMapping[product.id]
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
             when (option) {
@@ -408,11 +454,13 @@ internal class CustomerCenterViewModelImpl(
                             pricingPhasesDescription,
                         ),
                     )
+                    return true
                 } else {
                     currentState
                 }
             }
         }
+        return false
     }
 
     override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
@@ -436,7 +484,10 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun dismissPromotionalOffer(originalPath: CustomerCenterConfigData.HelpPath, context: Context) {
+    override fun dismissPromotionalOffer(
+        context: Context,
+        originalPath: CustomerCenterConfigData.HelpPath,
+    ) {
         // Continue with the original action and remove the promotional offer data
         mainPathAction(originalPath, context)
 
@@ -450,18 +501,24 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun onNavigationButtonPressed() {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success &&
-                currentState.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK
-            ) {
-                currentState.copy(
-                    feedbackSurveyData = null,
-                    showRestoreDialog = false,
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                )
-            } else {
-                CustomerCenterState.NotLoaded
+    override fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit) {
+        val currentState = _state.value
+        if (currentState is CustomerCenterState.Success && currentState.promotionalOfferData != null) {
+            dismissPromotionalOffer(context, currentState.promotionalOfferData.originalPath)
+        } else {
+            // Perform the default navigation action
+            _state.update { state ->
+                when {
+                    state is CustomerCenterState.Success &&
+                        state.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                        state.resetToMainScreen()
+                    }
+                    else -> CustomerCenterState.NotLoaded
+                }
+            }
+            val buttonType = state.value.navigationButtonType
+            if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+                onDismiss()
             }
         }
     }
@@ -473,10 +530,74 @@ internal class CustomerCenterViewModelImpl(
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
-            _state.value = CustomerCenterState.Success(customerCenterConfigData, purchaseInformation)
+            _state.value = CustomerCenterState.Success(
+                customerCenterConfigData,
+                purchaseInformation,
+                supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
+                    supportedPaths(purchaseInformation, it)
+                },
+            )
         } catch (e: PurchasesException) {
             _state.value = CustomerCenterState.Error(e.error)
         }
+    }
+
+    override fun refreshStateIfLocaleChanged() {
+        val currentLocaleList = getCurrentLocaleList()
+        if (_lastLocaleList.value != currentLocaleList) {
+            _lastLocaleList.value = currentLocaleList
+        }
+    }
+
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean) {
+        if (isDarkMode != isDark) {
+            isDarkMode = isDark
+        }
+
+        if (_colorScheme.value != colorScheme) {
+            _colorScheme.value = colorScheme
+        }
+    }
+
+    override fun trackImpressionIfNeeded() {
+        if (impressionCreationData == null) {
+            impressionCreationData = CustomerCenterImpressionEvent.CreationData()
+
+            val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
+            val event = CustomerCenterImpressionEvent(
+                data = CustomerCenterImpressionEvent.Data(
+                    timestamp = Date(),
+                    darkMode = isDarkMode,
+                    locale = locale.toString(),
+                ),
+            )
+            purchases.track(event)
+        }
+    }
+
+    private fun trackCustomerCenterEventOptionChosen(
+        path: CustomerCenterConfigData.HelpPath.PathType,
+        url: String?,
+        surveyOptionID: String,
+        surveyOptionTitleKey: String,
+    ) {
+        val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
+        val event = CustomerCenterSurveyOptionChosenEvent(
+            data = CustomerCenterSurveyOptionChosenEvent.Data(
+                timestamp = Date(),
+                darkMode = isDarkMode,
+                locale = locale.toString(),
+                path = path,
+                url = url,
+                surveyOptionID = surveyOptionID,
+                surveyOptionTitleKey = surveyOptionTitleKey,
+            ),
+        )
+        purchases.track(event)
+    }
+
+    private fun getCurrentLocaleList(): LocaleListCompat {
+        return LocaleListCompat.getDefault()
     }
 
     private fun displayFeedbackSurvey(
@@ -498,19 +619,21 @@ internal class CustomerCenterViewModelImpl(
 
     private fun goBackToMain() {
         _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    feedbackSurveyData = null,
-                    promotionalOfferData = null,
-                    showRestoreDialog = false,
-                    title = null,
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                )
-            } else {
-                currentState
+            when (currentState) {
+                is CustomerCenterState.Success -> currentState.resetToMainScreen()
+                else -> currentState
             }
         }
     }
+
+    private fun CustomerCenterState.Success.resetToMainScreen() =
+        copy(
+            feedbackSurveyData = null,
+            promotionalOfferData = null,
+            showRestoreDialog = false,
+            title = null,
+            navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+        )
 
     private fun showManageSubscriptions(context: Context, productId: String) {
         try {

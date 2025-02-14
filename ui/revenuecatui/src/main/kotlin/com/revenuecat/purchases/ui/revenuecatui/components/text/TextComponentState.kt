@@ -39,6 +39,7 @@ internal fun rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
 @JvmSynthetic
@@ -47,6 +48,7 @@ internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
+    selectedTabIndexProvider: () -> Int,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -56,6 +58,7 @@ internal fun rememberUpdatedTextComponentState(
             style = style,
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -70,11 +73,19 @@ internal class TextComponentState(
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+        if (style.rcPackage != null) {
+            style.rcPackage.identifier == selectedPackageProvider()?.identifier
+        } else if (style.tabIndex != null) {
+            style.tabIndex == selectedTabIndexProvider()
+        } else {
+            false
+        }
     }
+    private val localeId by derivedStateOf { localeProvider().toLocaleId() }
 
     /**
      * The package to take variable values from and to consider for intro offer eligibility.
@@ -88,7 +99,7 @@ internal class TextComponentState(
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
 
     @get:JvmSynthetic
@@ -96,10 +107,13 @@ internal class TextComponentState(
 
     @get:JvmSynthetic
     val text by derivedStateOf {
-        val localeId = localeProvider().toLocaleId()
-
         presentedPartial?.texts?.run { getOrDefault(localeId, entry.value) }
             ?: style.texts.run { getOrDefault(localeId, entry.value) }
+    }
+
+    @get:JvmSynthetic
+    val localizedVariableKeys by derivedStateOf {
+        style.variableLocalizations.run { getOrDefault(localeId, entry.value) }
     }
 
     @get:JvmSynthetic

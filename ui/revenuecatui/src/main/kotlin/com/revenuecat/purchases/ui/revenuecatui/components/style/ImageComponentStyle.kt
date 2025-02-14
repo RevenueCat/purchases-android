@@ -9,7 +9,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
@@ -17,7 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 
 @Suppress("LongParameterList")
 @Immutable
-internal class ImageComponentStyle(
+internal data class ImageComponentStyle(
     @get:JvmSynthetic
     val sources: NonEmptyMap<LocaleId, ThemeImageUrls>,
     @get:JvmSynthetic
@@ -42,6 +42,17 @@ internal class ImageComponentStyle(
      */
     @get:JvmSynthetic
     val rcPackage: Package?,
+    /**
+     * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
+     * available. This should only be set for images inside tab control elements. Not for all images within a tab.
+     */
     @get:JvmSynthetic
-    val overrides: PresentedOverrides<PresentedImagePartial>?,
+    val tabIndex: Int?,
+    @get:JvmSynthetic
+    val overrides: List<PresentedOverride<PresentedImagePartial>>,
+    /**
+     * This will be read by the parent stack, if that `StackComponentStyle` has `applyTopWindowInsets` set to true.
+     */
+    @get:JvmSynthetic
+    val ignoreTopWindowInsets: Boolean = false,
 ) : ComponentStyle

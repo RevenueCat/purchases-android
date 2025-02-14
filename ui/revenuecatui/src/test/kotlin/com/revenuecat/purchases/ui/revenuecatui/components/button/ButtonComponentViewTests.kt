@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -85,16 +86,17 @@ class ButtonComponentViewTests {
                             margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
                                 .toPaddingValues(),
                             rcPackage = null,
+                            tabIndex = null,
                             variableLocalizations = nonEmptyMapOf(
                                 LocaleId("en_US") to variableLocalizationKeysForEnUs()
                             ),
-                            overrides = null,
+                            overrides = emptyList(),
                         ),
                     ),
                     dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
                     size = Size(width = Fill, height = Fill),
                     spacing = 16.dp,
-                    backgroundColor = ColorStyles(ColorStyle.Solid(Color.Red)),
+                    background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Red))),
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
                     shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
@@ -106,8 +108,10 @@ class ButtonComponentViewTests {
                         y = 3.dp,
                     ),
                     badge = null,
+                    scrollOrientation = null,
                     rcPackage = null,
-                    overrides = null,
+                    tabIndex = null,
+                    overrides = emptyList(),
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage,
             )

@@ -19,6 +19,7 @@ internal class PurchaseInformation(
     val expirationOrRenewal: ExpirationOrRenewal?,
     val product: StoreProduct?,
     val store: Store,
+    var isLifetime: Boolean,
     val managementURL: Uri?,
 ) {
 
@@ -75,6 +76,16 @@ internal class PurchaseInformation(
             PriceDetails.Free
         } else {
             subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
+        },
+        isLifetime = entitlementInfo?.let {
+            it.expirationDate == null
+        } ?: when (transaction) {
+            is TransactionDetails.Subscription -> {
+                false
+            }
+
+            is TransactionDetails.NonSubscription ->
+                true
         },
         managementURL = managementURL,
     )

@@ -2,7 +2,8 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.CarouselComponent.PageControl
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -39,6 +40,8 @@ class CarouselComponent(
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
+    val background: Background? = null,
+    @get:JvmSynthetic
     val padding: Padding = Padding.zero,
     @get:JvmSynthetic
     val margin: Padding = Padding.zero,
@@ -57,7 +60,7 @@ class CarouselComponent(
     @SerialName("auto_advance")
     val autoAdvance: AutoAdvanceSlides? = null,
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialCarouselComponent>? = null,
+    val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @Poko
@@ -119,6 +122,8 @@ class PartialCarouselComponent(
     @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
+    @get:JvmSynthetic
+    val background: Background? = null,
     @get:JvmSynthetic
     val padding: Padding? = null,
     @get:JvmSynthetic

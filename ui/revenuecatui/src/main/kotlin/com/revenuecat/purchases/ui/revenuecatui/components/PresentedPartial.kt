@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialComponent
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -34,53 +34,15 @@ private fun <T : PresentedPartial<T>> PresentedPartial<T>?.combineOrReplace(with
  * Structure holding override configurations for different presentation states.
  */
 @Poko
-internal class PresentedOverrides<T : PresentedPartial<T>>(
+internal class PresentedOverride<T : PresentedPartial<T>>(
     /**
-     * Override when the user is eligible for a single offer.
+     * Conditions that need to be met to present the given partial
      */
-    @get:JvmSynthetic val introOffer: T?,
+    @get:JvmSynthetic val conditions: List<ComponentOverride.Condition>,
     /**
-     * Override when the user is eligible for multiple offers.
+     * Partial that needs to be applied if the conditions are met
      */
-    @get:JvmSynthetic val multipleIntroOffers: T?,
-    /**
-     * Override for different selection states.
-     */
-    @get:JvmSynthetic val states: PresentedStates<T>?,
-    /**
-     * Override for different screen size conditions.
-     */
-    @get:JvmSynthetic val conditions: PresentedConditions<T>?,
-)
-
-/**
- * Structure defining states for selected/unselected components.
- */
-@Poko
-internal class PresentedStates<T : PresentedPartial<T>>(
-    /**
-     * Override for selected state
-     */
-    @get:JvmSynthetic val selected: T?,
-)
-
-/**
- * Structure defining overrides for different screen size conditions.
- */
-@Poko
-internal class PresentedConditions<T : PresentedPartial<T>>(
-    /**
-     * Override for compact size
-     */
-    @get:JvmSynthetic val compact: T?,
-    /**
-     * Override for medium size
-     */
-    @get:JvmSynthetic val medium: T?,
-    /**
-     * Override for expanded size
-     */
-    @get:JvmSynthetic val expanded: T?,
+    @get:JvmSynthetic val properties: T,
 )
 
 /**
@@ -88,36 +50,18 @@ internal class PresentedConditions<T : PresentedPartial<T>>(
  */
 @Suppress("ReturnCount")
 @JvmSynthetic
-internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<T>.toPresentedOverrides(
+internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverride<T>>.toPresentedOverrides(
     transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
-): Result<PresentedOverrides<P>, PaywallValidationError> {
-    val introOffer = introOffer?.let(transform)
-        ?.getOrElse { return Result.Error(it.head) }
+): Result<List<PresentedOverride<P>>, PaywallValidationError> {
+    return this.map { override ->
+        val properties = transform(override.properties)
+            .getOrElse { return Result.Error(it.head) }
 
-    val multipleIntroOffers = multipleIntroOffers?.let(transform)
-        ?.getOrElse { return Result.Error(it.head) }
-
-    val selectedState = states?.selected?.let(transform)
-        ?.getOrElse { return Result.Error(it.head) }
-
-    val states = states?.let { PresentedStates(selected = selectedState) }
-
-    val conditions = conditions?.let { conditions ->
-        PresentedConditions(
-            compact = conditions.compact?.let(transform)?.getOrElse { return Result.Error(it.head) },
-            medium = conditions.medium?.let(transform)?.getOrElse { return Result.Error(it.head) },
-            expanded = conditions.expanded?.let(transform)?.getOrElse { return Result.Error(it.head) },
+        PresentedOverride(
+            conditions = override.conditions,
+            properties = properties,
         )
-    }
-
-    return Result.Success(
-        PresentedOverrides(
-            introOffer = introOffer,
-            multipleIntroOffers = multipleIntroOffers,
-            states = states,
-            conditions = conditions,
-        ),
-    )
+    }.let { Result.Success(it) }
 }
 
 /**
@@ -128,77 +72,62 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
  * @param introOfferEligibility Whether the user is eligible for an intro offer.
  * @param state Current view state (selected / unselected).
  *
- * @return A presentable partial component, or null if [this] [PresentedOverrides] did not contain any
+ * @return A presentable partial component, or null if [this] the list of [PresentedOverride] did not contain any
  * available overrides to use.
  */
 @JvmSynthetic
-internal fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildPresentedPartial(
+internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
     windowSize: ScreenCondition,
     introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
 ): T? {
-    var conditionPartial = buildScreenConditionPartial(windowSize)
-
-    when (introOfferEligibility) {
-        IntroOfferEligibility.INELIGIBLE -> {
-            // Nothing to do.
-        }
-        IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> {
-            // If conditionPartial is null here, we want to continue with the introOffer partial.
-            conditionPartial = conditionPartial.combineOrReplace(introOffer)
-        }
-        IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> {
-            // If conditionPartial is null here, we want to continue with the multipleIntroOffers partial.
-            conditionPartial = conditionPartial.combineOrReplace(multipleIntroOffers)
+    var partial: T? = null
+    for (override in this) {
+        if (override.shouldApply(windowSize, introOfferEligibility, state)) {
+            partial = partial.combineOrReplace(override.properties)
         }
     }
-
-    when (state) {
-        ComponentViewState.DEFAULT -> {
-            // Nothing to do.
-        }
-
-        ComponentViewState.SELECTED -> {
-            // If conditionPartial is null here, we want to continue with the selected state partial.
-            conditionPartial = conditionPartial.combineOrReplace(states?.selected)
-        }
-    }
-
-    return conditionPartial
+    return partial
 }
 
-/**
- * Builds a partial component based on the current screen conditions.
- * @param currentScreenCondition Screen size condition.
- * @return Configured partial component for the given screen condition, or null if this
- * `PresentedOverrides.conditions` is null, which means there are no overrides defined for screen conditions.
- */
-private fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildScreenConditionPartial(
-    currentScreenCondition: ScreenCondition,
-): T? {
-    val availableScreenOverrides: PresentedConditions<T>? = conditions
-    val applicableScreenOverrides: List<T> = currentScreenCondition.applicableConditions
-        .mapNotNull { type ->
-            when (type) {
-                ScreenCondition.COMPACT -> availableScreenOverrides?.compact
-                ScreenCondition.MEDIUM -> availableScreenOverrides?.medium
-                ScreenCondition.EXPANDED -> availableScreenOverrides?.expanded
+@Suppress("ReturnCount")
+private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
+    windowSize: ScreenCondition,
+    introOfferEligibility: IntroOfferEligibility,
+    state: ComponentViewState,
+): Boolean {
+    for (condition in conditions) {
+        when (condition) {
+            ComponentOverride.Condition.Compact,
+            ComponentOverride.Condition.Medium,
+            ComponentOverride.Condition.Expanded,
+            -> {
+                if (!windowSize.applicableConditions.contains(condition)) return false
+            }
+            ComponentOverride.Condition.MultipleIntroOffers -> {
+                if (introOfferEligibility != IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE) return false
+            }
+            ComponentOverride.Condition.IntroOffer -> {
+                if (introOfferEligibility == IntroOfferEligibility.INELIGIBLE) return false
+            }
+            ComponentOverride.Condition.Selected -> {
+                if (state != ComponentViewState.SELECTED) return false
+            }
+            ComponentOverride.Condition.Unsupported -> {
+                return false
             }
         }
-
-    // Combine all applicable overrides into a single one.
-    return applicableScreenOverrides.reduceOrNull { partial, next ->
-        partial.combine(with = next)
     }
+    return true
 }
 
-private val ScreenCondition.applicableConditions: List<ScreenCondition>
+private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>
     get() = when (this) {
-        ScreenCondition.COMPACT -> listOf(ScreenCondition.COMPACT)
-        ScreenCondition.MEDIUM -> listOf(ScreenCondition.COMPACT, ScreenCondition.MEDIUM)
-        ScreenCondition.EXPANDED -> listOf(
-            ScreenCondition.COMPACT,
-            ScreenCondition.MEDIUM,
-            ScreenCondition.EXPANDED,
+        ScreenCondition.COMPACT -> setOf(ComponentOverride.Condition.Compact)
+        ScreenCondition.MEDIUM -> setOf(ComponentOverride.Condition.Compact, ComponentOverride.Condition.Medium)
+        ScreenCondition.EXPANDED -> setOf(
+            ComponentOverride.Condition.Compact,
+            ComponentOverride.Condition.Medium,
+            ComponentOverride.Condition.Expanded,
         )
     }

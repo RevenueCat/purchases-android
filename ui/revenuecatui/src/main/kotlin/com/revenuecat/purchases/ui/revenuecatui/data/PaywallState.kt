@@ -6,11 +6,14 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -22,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscrib
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+import java.util.Date
 import android.os.LocaleList as FrameworkLocaleList
 
 internal sealed interface PaywallState {
@@ -72,6 +76,7 @@ internal sealed interface PaywallState {
              * for that.
              */
             val showPricesWithDecimals: Boolean,
+            val variableConfig: VariableConfig,
             override val offering: Offering,
             /**
              * All locales that this paywall supports, with `locales.head` being the default one.
@@ -79,20 +84,61 @@ internal sealed interface PaywallState {
             private val locales: NonEmptySet<LocaleId>,
             private val activelySubscribedProductIds: Set<String>,
             private val purchasedNonSubscriptionProductIds: Set<String>,
+            private val dateProvider: () -> Date,
+            private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
-            initialSelectedPackage: Package? = null,
+            initialSelectedTabIndex: Int? = null,
         ) : Loaded {
+
+            data class AvailablePackages(
+                val packagesOutsideTabs: List<Info>,
+                val packagesByTab: Map<Int, List<Info>>,
+            ) {
+                data class Info(
+                    val pkg: Package,
+                    val isSelectedByDefault: Boolean,
+                )
+            }
 
             data class SelectedPackageInfo(
                 val rcPackage: Package,
                 val currentlySubscribed: Boolean,
             )
 
+            private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
+                .firstOrNull { it.isSelectedByDefault }
+                ?.pkg
+            private val packagesOutsideTabs: Set<Package> = packages.packagesOutsideTabs
+                .mapTo(mutableSetOf()) { it.pkg }
+            private val tabsByPackage: Map<Package, Set<Int>> = mutableMapOf<Package, Set<Int>>().apply {
+                packages.packagesByTab.forEach { (tabIndex, packages) ->
+                    packages.forEach { packageInfo ->
+                        val pkg = packageInfo.pkg
+                        val tabIndices = getOrDefault(pkg, emptySet())
+                        put(pkg, tabIndices + tabIndex)
+                    }
+                }
+            }
+
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
             val locale by derivedStateOf { localeId.toComposeLocale() }
 
-            private var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage)
+            private val selectedPackageByTab = mutableStateMapOf<Int, Package?>().apply {
+                putAll(
+                    packages.packagesByTab.mapValues { (_, packages) ->
+                        packages.firstOrNull { it.isSelectedByDefault }?.pkg
+                    },
+                )
+            }
+
+            var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
+                private set
+
+            private val initialSelectedPackage = initialSelectedPackageOutsideTabs
+                ?: initialSelectedTabIndex?.let { selectedPackageByTab[it] }
+
+            private var selectedPackage by mutableStateOf(initialSelectedPackage)
 
             val selectedPackageInfo by derivedStateOf {
                 selectedPackage?.let { rcPackage ->
@@ -106,14 +152,36 @@ internal sealed interface PaywallState {
                 }
             }
 
-            val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
-
-            fun update(localeList: FrameworkLocaleList? = null) {
-                if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
+            val mostExpensivePricePerMonthMicros by derivedStateOf {
+                (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
+                    .mostExpensivePricePerMonthMicros()
             }
 
-            fun update(selectedPackage: Package?) {
+            val currentDate: Date
+                get() = dateProvider()
+
+            fun update(localeList: FrameworkLocaleList? = null, selectedTabIndex: Int? = null) {
+                if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
+
+                if (selectedTabIndex != null) {
+                    this.selectedTabIndex = selectedTabIndex
+                    // If our currently selected package exists outside of tabs, we don't have to change the selected
+                    // package when the tab changes.
+                    if (packagesOutsideTabs.contains(selectedPackage)) return
+
+                    selectedPackage = selectedPackageByTab[selectedTabIndex] ?: initialSelectedPackageOutsideTabs
+                }
+            }
+
+            fun update(selectedPackage: Package) {
                 this.selectedPackage = selectedPackage
+
+                // Check if the package (also) exists on the currently selected tab. We need to remember this so we can
+                // reselect this package when the user navigates away and back to the current tab.
+                val currentTabIndex = selectedTabIndex
+                val tabsWithThisPackage = tabsByPackage[selectedPackage]
+                val currentTabContainsThisPackage = tabsWithThisPackage?.contains(currentTabIndex) == true
+                if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackage
             }
 
             private fun LocaleList.toLocaleId(): LocaleId =
@@ -122,9 +190,9 @@ internal sealed interface PaywallState {
                     // Find the first locale we have a LocalizationDictionary for.
                     .first { id -> locales.contains(id) }
 
-            private fun List<Package>.mostExpensivePricePerMonthMicros(): Long? =
+            private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()
-                    .map { pkg -> pkg.product }
+                    .map { info -> info.pkg.product }
                     .mapNotNull { product -> product.pricePerMonth() }
                     .maxByOrNull { price -> price.amountMicros }
                     ?.amountMicros
@@ -139,6 +207,7 @@ internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
             is PaywallState.Loaded.Legacy -> state
             is PaywallState.Loaded.Components -> null
         }
+
         is PaywallState.Loading -> null
     }
 }

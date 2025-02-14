@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import org.robolectric.ParameterizedRobolectricTestRunner
 
 @RunWith(Enclosed::class)
 internal class ComponentOverridesTests {
@@ -16,7 +17,7 @@ internal class ComponentOverridesTests {
     // This tests deserialization of ComponentOverrides containing PartialTextComponent and PartialImageComponent, just
     // to make sure deserialization of generics works as expected.
 
-    @RunWith(Parameterized::class)
+    @RunWith(ParameterizedRobolectricTestRunner::class)
     class ComponentOverridesPartialTextComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
@@ -25,65 +26,128 @@ internal class ComponentOverridesTests {
         class Args(
             @Language("json")
             val json: String,
-            val expected: ComponentOverrides<PartialTextComponent>,
+            val expected: List<ComponentOverride<PartialTextComponent>>,
         )
 
         companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
-            @Parameterized.Parameters(name = "{0}")
+            @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
             fun parameters(): Collection<*> = listOf(
                 arrayOf(
-                    "all values present",
+                    "all conditions present",
                     Args(
                         json = """
-                        {
-                          "intro_offer": {
-                            "font_name": "intro font"
-                          },
-                          "multiple_intro_offers": {
-                            "font_name": "multiple intros font"
-                          },
-                          "states": {
-                            "selected": {
-                              "font_name": "selected font"
-                            }
-                          },
-                          "conditions": {
-                            "compact": {
-                              "font_name": "compact font"
-                            },
-                            "medium": {
-                              "font_name": "medium font"
-                            },
-                            "expanded": {
-                              "font_name": "expanded font"
-                            }
-                          }
-                        }
+                            [
+                              {
+                                "conditions": [ { "type": "intro_offer" } ],
+                                "properties": {
+                                  "font_name": "intro font"
+                                }
+                              },
+                              {
+                                "conditions": [ { "type": "multiple_intro_offers" } ],
+                                "properties": {
+                                  "font_name": "multiple intros font"
+                                }
+                              },
+                              {
+                                "conditions": [ { "type": "selected" } ],
+                                "properties": {
+                                  "font_name": "selected font"
+                                }
+                              },
+                              {
+                                "conditions": [ { "type": "expanded" } ],
+                                "properties": {
+                                  "font_name": "expanded font"
+                                }
+                              },
+                              {
+                                "conditions": [ { "type": "medium" } ],
+                                "properties": {
+                                  "font_name": "medium font"
+                                }
+                              },
+                              {
+                                "conditions": [ { "type": "compact" } ],
+                                "properties": {
+                                  "font_name": "compact font"
+                                }
+                              },
+                              {
+                                "conditions": [ { "type": "selected" }, { "type": "intro_offer" } ],
+                                "properties": {
+                                  "font_name": "compact font"
+                                }
+                              },
+                              {
+                                "conditions": [ { "type": "unknown" } ],
+                                "properties": {
+                                  "font_name": "unknown condition font"
+                                }
+                              },
+                              {
+                                "conditions": [ { "type": "selected", "other_property": "value" } ],
+                                "properties": {
+                                  "font_name": "condition with other unknown property"
+                                }
+                              }
+                            ]
                         """.trimIndent(),
-                        expected = ComponentOverrides(
-                            introOffer = PartialTextComponent(fontName = FontAlias("intro font")),
-                            multipleIntroOffers = PartialTextComponent(fontName = FontAlias("multiple intros font")),
-                            states = ComponentStates(
-                                selected = PartialTextComponent(fontName = FontAlias("selected font"))
+                        expected = listOf(
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                properties = PartialTextComponent(fontName = FontAlias("intro font")),
                             ),
-                            conditions = ComponentConditions(
-                                compact = PartialTextComponent(fontName = FontAlias("compact font")),
-                                medium = PartialTextComponent(fontName = FontAlias("medium font")),
-                                expanded = PartialTextComponent(fontName = FontAlias("expanded font")),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                properties = PartialTextComponent(fontName = FontAlias("multiple intros font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Selected),
+                                properties = PartialTextComponent(fontName = FontAlias("selected font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Expanded),
+                                properties = PartialTextComponent(fontName = FontAlias("expanded font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Medium),
+                                properties = PartialTextComponent(fontName = FontAlias("medium font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Compact),
+                                properties = PartialTextComponent(fontName = FontAlias("compact font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.Selected,
+                                    ComponentOverride.Condition.IntroOffer,
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("compact font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Unsupported),
+                                properties = PartialTextComponent(fontName = FontAlias("unknown condition font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Selected),
+                                properties = PartialTextComponent(
+                                    fontName = FontAlias("condition with other unknown property"),
+                                ),
                             )
                         )
                     )
                 ),
                 arrayOf(
-                    "all values absent",
+                    "no overrides",
                     Args(
                         json = """
-                        { }
+                        []
                         """.trimIndent(),
-                        expected = ComponentOverrides()
+                        expected = emptyList()
                     )
                 ),
             )
@@ -92,7 +156,7 @@ internal class ComponentOverridesTests {
         @Test
         fun `Should properly deserialize ComponentOverrides containing PartialTextComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ComponentOverrides<PartialTextComponent>>(args.json)
+            val actual = OfferingParser.json.decodeFromString<List<ComponentOverride<PartialTextComponent>>>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -108,7 +172,7 @@ internal class ComponentOverridesTests {
         class Args(
             @Language("json")
             val json: String,
-            val expected: ComponentOverrides<PartialImageComponent>,
+            val expected: List<ComponentOverride<PartialImageComponent>>,
         )
 
         companion object {
@@ -118,57 +182,73 @@ internal class ComponentOverridesTests {
             @Parameterized.Parameters(name = "{0}")
             fun parameters(): Collection<*> = listOf(
                 arrayOf(
-                    "all values present",
+                    "all conditions present",
                     Args(
                         json = """
-                        {
-                          "intro_offer": {
-                            "override_source_lid": "intro"
+                        [
+                          {
+                            "conditions": [ { "type": "intro_offer" } ],
+                            "properties": { "override_source_lid": "intro" }
                           },
-                          "multiple_intro_offers": {
-                            "override_source_lid": "multiple_intros"
+                          {
+                            "conditions": [ { "type": "multiple_intro_offers" } ],
+                            "properties": { "override_source_lid": "multiple_intros" }
                           },
-                          "states": {
-                            "selected": {
-                              "override_source_lid": "selected"
-                            }
+                          {
+                            "conditions": [ { "type": "selected" } ],
+                            "properties": { "override_source_lid": "selected" }
                           },
-                          "conditions": {
-                            "compact": {
-                              "override_source_lid": "compact"
-                            },
-                            "medium": {
-                              "override_source_lid": "medium"
-                            },
-                            "expanded": {
-                              "override_source_lid": "expanded"
-                            }
+                          {
+                            "conditions": [ { "type": "compact" } ],
+                            "properties": { "override_source_lid": "compact" }
+                          },
+                          {
+                            "conditions": [ { "type": "medium" } ],
+                            "properties": { "override_source_lid": "medium" }
+                          },
+                          {
+                            "conditions": [ { "type": "expanded" } ],
+                            "properties": { "override_source_lid": "expanded" }
                           }
-                        }
+                        ]
                         """.trimIndent(),
-                        expected = ComponentOverrides(
-                            introOffer = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
-                            multipleIntroOffers = PartialImageComponent(
-                                overrideSourceLid = LocalizationKey("multiple_intros")
+                        expected = listOf(
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                properties = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
                             ),
-                            states = ComponentStates(
-                                selected = PartialImageComponent(overrideSourceLid = LocalizationKey("selected"))
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                properties = PartialImageComponent(
+                                    overrideSourceLid = LocalizationKey("multiple_intros")
+                                ),
                             ),
-                            conditions = ComponentConditions(
-                                compact = PartialImageComponent(overrideSourceLid = LocalizationKey("compact")),
-                                medium = PartialImageComponent(overrideSourceLid = LocalizationKey("medium")),
-                                expanded = PartialImageComponent(overrideSourceLid = LocalizationKey("expanded")),
-                            )
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Selected),
+                                properties = PartialImageComponent(overrideSourceLid = LocalizationKey("selected")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Compact),
+                                properties = PartialImageComponent(overrideSourceLid = LocalizationKey("compact")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Medium),
+                                properties = PartialImageComponent(overrideSourceLid = LocalizationKey("medium")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Expanded),
+                                properties = PartialImageComponent(overrideSourceLid = LocalizationKey("expanded")),
+                            ),
                         )
                     )
                 ),
                 arrayOf(
-                    "all values absent",
+                    "no overrides",
                     Args(
                         json = """
-                        { }
+                        []
                         """.trimIndent(),
-                        expected = ComponentOverrides()
+                        expected = emptyList()
                     )
                 ),
             )
@@ -177,7 +257,7 @@ internal class ComponentOverridesTests {
         @Test
         fun `Should properly deserialize ComponentOverrides containing PartialImageComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ComponentOverrides<PartialImageComponent>>(args.json)
+            val actual = OfferingParser.json.decodeFromString<List<ComponentOverride<PartialImageComponent>>>(args.json)
 
             // Assert
             assert(actual == args.expected)

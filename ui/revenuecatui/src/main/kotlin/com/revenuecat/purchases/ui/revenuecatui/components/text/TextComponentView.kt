@@ -26,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
@@ -41,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
@@ -117,6 +119,7 @@ private fun rememberProcessedText(
     val processedText by remember(state, textState) {
         derivedStateOf {
             textState.applicablePackage?.let { packageToUse ->
+                val locale = state.locale.toJavaLocale()
 
                 val introEligibility = packageToUse.introEligibility
 
@@ -134,12 +137,16 @@ private fun rememberProcessedText(
                     discountRelativeToMostExpensivePerMonth = discount,
                     showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
                 )
-                VariableProcessor.processVariables(
+
+                VariableProcessorV2.processVariables(
+                    template = textState.text,
+                    localizedVariableKeys = textState.localizedVariableKeys,
+                    variableConfig = state.variableConfig,
                     variableDataProvider = variables,
-                    context = variableContext,
-                    originalString = textState.text,
+                    packageContext = variableContext,
                     rcPackage = packageToUse,
-                    locale = java.util.Locale.forLanguageTag(state.locale.toLanguageTag()),
+                    locale = locale,
+                    date = state.currentDate,
                 )
             } ?: textState.text
         }
@@ -230,20 +237,6 @@ private fun TextComponentView_Preview_MonospaceFont() {
     )
 }
 
-@Preview(name = "CursiveFont")
-@Composable
-private fun TextComponentView_Preview_CursiveFont() {
-    TextComponentView(
-        style = previewTextComponentStyle(
-            text = "Hello, world",
-            color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            fontSpec = FontSpec.Generic.Cursive,
-            size = Size(width = Fit, height = Fit),
-        ),
-        state = previewEmptyState(),
-    )
-}
-
 @Preview
 @Composable
 private fun TextComponentView_Preview_FontSize() {
@@ -315,7 +308,7 @@ private fun TextComponentView_Preview_LinearGradient() {
                 "Tell them to put some sunglasses on.",
             color = ColorStyles(
                 light = ColorInfo.Gradient.Linear(
-                    degrees = -45f,
+                    degrees = 135f,
                     points = listOf(
                         ColorInfo.Gradient.Point(
                             color = Color.Cyan.toArgb(),

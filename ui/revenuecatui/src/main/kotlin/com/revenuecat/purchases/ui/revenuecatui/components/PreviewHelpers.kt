@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.VisibleForTesting
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -16,6 +17,8 @@ import coil.decode.DataSource
 import coil.request.SuccessResult
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.UiConfig.AppConfig
+import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -46,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -69,6 +73,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
+import java.util.Date
+
+private const val MILLIS_2025_01_25 = 1737763200000
 
 @Composable
 @JvmSynthetic
@@ -109,8 +116,22 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
     )
 }
+
+internal fun previewUiConfig(
+    app: AppConfig = AppConfig(),
+    localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = mapOf(
+        LocaleId("en_US") to variableLocalizationKeysForEnUs(),
+    ),
+    variableConfig: VariableConfig = VariableConfig(),
+): UiConfig =
+    UiConfig(
+        app = app,
+        localizations = localizations,
+        variableConfig = variableConfig,
+    )
 
 @Suppress("LongParameterList")
 internal fun previewStackComponentStyle(
@@ -121,8 +142,8 @@ internal fun previewStackComponentStyle(
     ),
     size: Size = Size(width = Fixed(200u), height = Fit),
     spacing: Dp = 16.dp,
-    backgroundColor: ColorStyles = ColorStyles(
-        light = ColorStyle.Solid(Color.Red),
+    background: BackgroundStyles = BackgroundStyles.Color(
+        color = ColorStyles(light = ColorStyle.Solid(Color.Red)),
     ),
     padding: PaddingValues = PaddingValues(all = 0.dp),
     margin: PaddingValues = PaddingValues(all = 0.dp),
@@ -133,21 +154,24 @@ internal fun previewStackComponentStyle(
     ),
     shadow: ShadowStyles? = null,
     badge: BadgeStyle? = null,
+    scrollOrientation: Orientation? = null,
 ): StackComponentStyle {
     return StackComponentStyle(
         children = children,
         dimension = dimension,
         size = size,
         spacing = spacing,
-        backgroundColor = backgroundColor,
+        background = background,
         padding = padding,
         margin = margin,
         shape = shape,
         border = border,
         shadow = shadow,
         badge = badge,
+        scrollOrientation = scrollOrientation,
         rcPackage = null,
-        overrides = null,
+        tabIndex = null,
+        overrides = emptyList(),
     )
 }
 
@@ -165,6 +189,8 @@ internal fun previewTextComponentStyle(
     size: Size = Size(width = Fill, height = Fit),
     padding: Padding = zero,
     margin: Padding = zero,
+    tabIndex: Int? = null,
+    overrides: List<PresentedOverride<LocalizedTextPartial>> = emptyList(),
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
     val localeId = LocaleId("en_US")
@@ -181,8 +207,9 @@ internal fun previewTextComponentStyle(
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
         rcPackage = null,
+        tabIndex = tabIndex,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
-        overrides = null,
+        overrides = overrides,
     )
 }
 
@@ -226,7 +253,8 @@ internal fun previewIconComponentStyle(
         color = backgroundColor,
     ),
     rcPackage = null,
-    overrides = null,
+    tabIndex = null,
+    overrides = emptyList(),
 )
 
 @Composable
@@ -274,6 +302,7 @@ internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalization
             VariableLocalizationKey.MONTH -> "month"
             VariableLocalizationKey.MONTH_SHORT -> "mo"
             VariableLocalizationKey.MONTHLY -> "monthly"
+            VariableLocalizationKey.LIFETIME -> "lifetime"
             VariableLocalizationKey.NUM_DAY_FEW -> "%d days"
             VariableLocalizationKey.NUM_DAY_MANY -> "%d days"
             VariableLocalizationKey.NUM_DAY_ONE -> "%d day"
@@ -305,5 +334,9 @@ internal fun variableLocalizationKeysForEnUs(): NonEmptyMap<VariableLocalization
             VariableLocalizationKey.YEAR -> "year"
             VariableLocalizationKey.YEAR_SHORT -> "yr"
             VariableLocalizationKey.YEARLY -> "yearly"
+            VariableLocalizationKey.NUM_DAYS_SHORT -> "%dd"
+            VariableLocalizationKey.NUM_WEEKS_SHORT -> "%dwk"
+            VariableLocalizationKey.NUM_MONTHS_SHORT -> "%dmo"
+            VariableLocalizationKey.NUM_YEARS_SHORT -> "%dyr"
         }
     }.toNonEmptyMapOrNull()!!

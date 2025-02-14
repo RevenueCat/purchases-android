@@ -12,10 +12,13 @@ import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
+import com.revenuecat.purchases.paywalls.components.TabControlComponent
+import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
+import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
-import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -23,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
@@ -115,8 +119,8 @@ class StyleFactoryTests {
             spacing = 8f
         )
 
-            // Act
-            val result = styleFactory.create(stackComponent)
+        // Act
+        val result = styleFactory.create(stackComponent)
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
@@ -128,6 +132,49 @@ class StyleFactoryTests {
         }
         with(style.children[1] as TextComponentStyle) {
             assertThat(texts[localeId]).isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_2]!!.value)
+        }
+    }
+
+    @Test
+    fun `Should create a StackComponentStyle with backgroundColor if background not present`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = emptyList(),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            spacing = 8f
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value as StackComponentStyle
+        with(style.background as BackgroundStyles.Color) {
+            val colorStyle = color.light as ColorStyle.Solid
+            assertThat(colorStyle.color).isEqualTo(Color.Red)
+        }
+    }
+
+    @Test
+    fun `Should create a StackComponentStyle where background takes preference over backgroundColor`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = emptyList(),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+            spacing = 8f
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value as StackComponentStyle
+        with(style.background as BackgroundStyles.Color) {
+            val colorStyle = color.light as ColorStyle.Solid
+            assertThat(colorStyle.color).isEqualTo(Color.Blue)
         }
     }
 
@@ -182,7 +229,10 @@ class StyleFactoryTests {
         val component = TextComponent(
             text = baseLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
-            overrides = ComponentOverrides(introOffer = PartialTextComponent(text = overrideLocalizationKey))
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                properties = PartialTextComponent(text = overrideLocalizationKey)
+            ))
         )
         val incorrectStyleFactory = StyleFactory(
             localizations = nonEmptyMapOf(
@@ -223,7 +273,10 @@ class StyleFactoryTests {
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             fontName = fontAliasBase,
-            overrides = ComponentOverrides(introOffer = PartialTextComponent(fontName = fontAliasOverride))
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                properties = PartialTextComponent(fontName = fontAliasOverride)
+            ))
         )
         val correctStyleFactory = StyleFactory(
             localizations = localizations,
@@ -244,8 +297,9 @@ class StyleFactoryTests {
         assertThat(result.isSuccess).isTrue()
         val textComponentStyle = result.getOrThrow() as TextComponentStyle
         val actualBaseFontSpec = textComponentStyle.fontSpec
-        val actualOverrideFontSpec = textComponentStyle.overrides?.introOffer?.fontSpec
+        val actualOverrideFontSpec = textComponentStyle.overrides.firstOrNull()?.properties?.fontSpec
 
+        assertThat(textComponentStyle.overrides).hasSize(1)
         assertThat(actualBaseFontSpec).isEqualTo(expectedBaseFontSpec)
         assertThat(actualOverrideFontSpec).isEqualTo(expectedOverrideFontSpec)
     }
@@ -286,7 +340,10 @@ class StyleFactoryTests {
         val component = TextComponent(
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            overrides = ComponentOverrides(introOffer = PartialTextComponent(fontName = expectedMissingFontAlias))
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                properties = PartialTextComponent(fontName = expectedMissingFontAlias)
+            ))
         )
         val incorrectStyleFactory = StyleFactory(
             localizations = localizations,
@@ -376,13 +433,26 @@ class StyleFactoryTests {
 
         val component = ImageComponent(
             source = expectedBaseSource,
-            overrides = ComponentOverrides(
-                introOffer = PartialImageComponent(source = expectedIntroSource),
-                states = ComponentStates(selected = PartialImageComponent(source = expectedSelectedSource)),
-                conditions = ComponentConditions(
-                    compact = PartialImageComponent(source = expectedCompactSource),
-                    medium = PartialImageComponent(source = expectedMediumSource),
-                    expanded = PartialImageComponent(source = expectedExpandedSource),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialImageComponent(source = expectedIntroSource),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialImageComponent(source = expectedSelectedSource),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialImageComponent(source = expectedCompactSource),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Medium),
+                    properties = PartialImageComponent(source = expectedMediumSource),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Expanded),
+                    properties = PartialImageComponent(source = expectedExpandedSource),
                 ),
             )
         )
@@ -403,22 +473,195 @@ class StyleFactoryTests {
         with(imageComponentStyle) {
             assertThat(sources.size).isEqualTo(1)
             assertThat(sources.getValue(defaultLocale)).isEqualTo(expectedBaseSource)
-            assertThat(overrides?.introOffer?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.introOffer?.sources?.getValue(defaultLocale)).isEqualTo(expectedIntroSource)
+            assertThat(overrides).hasSize(5)
+            assertThat(overrides[0].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[0].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedIntroSource)
 
-            assertThat(overrides?.states?.selected?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.states?.selected?.sources?.getValue(defaultLocale)).isEqualTo(expectedSelectedSource)
+            assertThat(overrides[1].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[1].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedSelectedSource)
 
-            assertThat(overrides?.conditions?.compact?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.conditions?.compact?.sources?.getValue(defaultLocale))
+            assertThat(overrides[2].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[2].properties.sources?.getValue(defaultLocale))
                 .isEqualTo(expectedCompactSource)
 
-            assertThat(overrides?.conditions?.medium?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.conditions?.medium?.sources?.getValue(defaultLocale)).isEqualTo(expectedMediumSource)
+            assertThat(overrides[3].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[3].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedMediumSource)
 
-            assertThat(overrides?.conditions?.expanded?.sources?.size).isEqualTo(1)
-            assertThat(overrides?.conditions?.expanded?.sources?.getValue(defaultLocale))
+            assertThat(overrides[4].properties.sources?.size).isEqualTo(1)
+            assertThat(overrides[4].properties.sources?.getValue(defaultLocale))
                 .isEqualTo(expectedExpandedSource)
         }
+    }
+
+    @Test
+    fun `Should successfully create a buttons TabControlComponent inside a TabComponent`() {
+        // Arrange
+        // TabControlComponent is in a Tab, 2 levels deep.
+        val component = TabsComponent(
+            tabs = listOf(
+                TabsComponent.Tab(
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlButtonComponent(
+                            tabIndex = 0,
+                            stack = StackComponent(
+                                components = emptyList()
+                            )
+                        ),
+                        TabControlButtonComponent(
+                            tabIndex = 1,
+                            stack = StackComponent(
+                                components = emptyList()
+                            )
+                        ),
+                    )
+                )
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value as TabsComponentStyle
+        assertThat(style.tabs.size).isEqualTo(2)
+        assertThat(style.control).isInstanceOf(TabControlStyle.Buttons::class.java)
+        repeat(2) { index ->
+            val firstChildOfTab = style.tabs[index].stack.children[0] as StackComponentStyle
+            assertThat(firstChildOfTab.children.size).isEqualTo(1)
+            val tabControlInTab = firstChildOfTab.children[0]
+            assertThat(tabControlInTab).isInstanceOf(TabControlStyle.Buttons::class.java)
+            assertThat(style.control).isEqualTo(tabControlInTab)
+        }
+    }
+
+    @Test
+    fun `Should successfully create a toggle TabControlComponent inside a TabComponent`() {
+        // Arrange
+        // TabControlComponent is in a Tab, 2 levels deep.
+        val component = TabsComponent(
+            tabs = listOf(
+                TabsComponent.Tab(
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value as TabsComponentStyle
+        assertThat(style.tabs.size).isEqualTo(2)
+        assertThat(style.control).isInstanceOf(TabControlStyle.Toggle::class.java)
+        repeat(2) { index ->
+            val firstChildOfTab = style.tabs[index].stack.children[0] as StackComponentStyle
+            assertThat(firstChildOfTab.children.size).isEqualTo(1)
+            val tabControlInTab = firstChildOfTab.children[0]
+            assertThat(tabControlInTab).isInstanceOf(TabControlStyle.Toggle::class.java)
+            assertThat(style.control).isEqualTo(tabControlInTab)
+        }
+    }
+
+    @Test
+    fun `Should fail to create a TabControlComponent outside of a TabComponent`() {
+        // Arrange
+        // TabControlComponent has 2 Stack ancestors, but no Tab.
+        val component = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(TabControlComponent)
+                )
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Error::class.java)
+        val errors = (result as Result.Error).value
+        assertThat(errors.size).isEqualTo(1)
+        assertThat(errors[0]).isInstanceOf(PaywallValidationError.TabControlNotInTab::class.java)
+    }
+
+    @Test
+    fun `Should fail to create a TabsComponent without tabs`() {
+        // Arrange
+        val component = TabsComponent(
+            // Empty on purpose.
+            tabs = emptyList(),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Error::class.java)
+        val errors = (result as Result.Error).value
+        assertThat(errors.size).isEqualTo(1)
+        assertThat(errors[0]).isInstanceOf(PaywallValidationError.TabsComponentWithoutTabs::class.java)
     }
 }

@@ -5,6 +5,8 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.TabControlNotInTab.message
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.TabsComponentWithoutTabs.message
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 
 internal sealed class PaywallValidationError : Throwable() {
@@ -32,11 +34,14 @@ internal sealed class PaywallValidationError : Throwable() {
             is MissingStringLocalization -> message
             is MissingImageLocalization -> message
             is AllLocalizationsMissing -> message
+            is AllVariableLocalizationsMissing -> message
             is MissingPackage -> message
             is MissingColorAlias -> message
             is AliasedColorIsAlias -> message
             is MissingFontAlias -> message
             is InvalidModeForComponentsPaywall -> PaywallValidationErrorStrings.INVALID_MODE_FOR_COMPONENTS_PAYWALL
+            is TabsComponentWithoutTabs -> message
+            is TabControlNotInTab -> message
         }
     }
 
@@ -68,12 +73,20 @@ internal sealed class PaywallValidationError : Throwable() {
         override val message: String =
             PaywallValidationErrorStrings.ALL_LOCALIZATIONS_MISSING_FOR_LOCALE.format(locale.value)
     }
-    data class MissingPackage(
-        val offeringId: String,
-        val packageId: String,
+    data class AllVariableLocalizationsMissing(
+        val locale: LocaleId,
     ) : PaywallValidationError() {
         override val message: String =
-            PaywallValidationErrorStrings.ALL_LOCALIZATIONS_MISSING_FOR_LOCALE.format(offeringId, packageId)
+            PaywallValidationErrorStrings.ALL_VARIABLE_LOCALIZATIONS_MISSING_FOR_LOCALE.format(locale.value)
+    }
+    data class MissingPackage(
+        val offeringId: String,
+        val missingPackageId: String,
+        val allPackageIds: Collection<String>,
+    ) : PaywallValidationError() {
+        override val message: String =
+            PaywallValidationErrorStrings.MISSING_PACKAGE
+                .format(offeringId, missingPackageId, allPackageIds.joinToString())
     }
     data class MissingColorAlias(
         val alias: ColorAlias,
@@ -93,4 +106,10 @@ internal sealed class PaywallValidationError : Throwable() {
         override val message: String = PaywallValidationErrorStrings.MISSING_FONT_ALIAS.format(alias.value)
     }
     object InvalidModeForComponentsPaywall : PaywallValidationError()
+    object TabsComponentWithoutTabs : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.TABS_COMPONENT_WITHOUT_TABS
+    }
+    object TabControlNotInTab : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.TAB_CONTROL_NOT_IN_TAB
+    }
 }

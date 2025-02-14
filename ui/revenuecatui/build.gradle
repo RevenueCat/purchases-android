@@ -24,6 +24,7 @@ android {
     productFlavors {
         defaults {
             dimension "apis"
+            getIsDefault().set(true)
         }
     }
 
@@ -56,8 +57,10 @@ android {
 }
 
 dependencies {
+
     implementation project(path: ':purchases')
 
+    compileOnly libs.emerge.snapshots.annotations
     implementation(platform(libs.kotlin.bom))
     implementation libs.androidx.core
     implementation platform(libs.compose.bom)

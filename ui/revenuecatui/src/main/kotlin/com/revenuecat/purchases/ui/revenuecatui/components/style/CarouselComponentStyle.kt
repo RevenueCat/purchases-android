@@ -9,7 +9,8 @@ import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
@@ -30,7 +31,7 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val spacing: Dp,
     @get:JvmSynthetic
-    val backgroundColor: ColorStyles?,
+    val background: BackgroundStyles?,
     @get:JvmSynthetic
     val padding: PaddingValues,
     @get:JvmSynthetic
@@ -53,8 +54,14 @@ internal data class CarouselComponentStyle(
      */
     @get:JvmSynthetic
     val rcPackage: Package?,
+    /**
+     * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
+     * available. This should only be set for carousels inside tab control elements. Not for all carousels within a tab.
+     */
     @get:JvmSynthetic
-    val overrides: PresentedOverrides<PresentedCarouselPartial>?,
+    val tabIndex: Int?,
+    @get:JvmSynthetic
+    val overrides: List<PresentedOverride<PresentedCarouselPartial>>,
 ) : ComponentStyle {
     @Immutable
     data class PageControlStyles(

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import android.content.Context
 import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -26,8 +25,6 @@ import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.request.ErrorResult
 import coil.request.ImageRequest
@@ -37,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIP
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getRevenueCatUIImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
@@ -125,19 +123,21 @@ private fun Image(
         return ImageForPreviews(modifier)
     }
 
-    var useCache by remember { mutableStateOf(true) }
+    var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
-    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(useCache) {
-        applicationContext.getRevenueCatUIImageLoader(readCache = useCache)
+    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
+        applicationContext.getRevenueCatUIImageLoader()
     }
 
     val imageRequest = ImageRequest.Builder(LocalContext.current)
         .data(source.data)
         .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
         .transformations(listOfNotNull(transformation))
+        .diskCachePolicy(cachePolicy)
+        .memoryCachePolicy(cachePolicy)
         .build()
 
-    if (useCache) {
+    if (cachePolicy == CachePolicy.ENABLED) {
         AsyncImage(
             source = source,
             placeholderSource = placeholderSource,
@@ -150,7 +150,7 @@ private fun Image(
             colorFilter = colorFilter,
             onError = {
                 Logger.w("Image failed to load. Will try again disabling cache")
-                useCache = false
+                cachePolicy = CachePolicy.WRITE_ONLY
             },
         )
     } else {
@@ -226,35 +226,6 @@ private fun ImageLoader.getPreviewPlaceholder(imageRequest: ImageRequest): Paint
         is SuccessResult -> DrawablePainter(result.drawable)
         is ErrorResult -> throw result.throwable
     }
-
-// Note: these values have to match those in CoilImageDownloader
-private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
-private const val PAYWALL_IMAGE_CACHE_FOLDER = "revenuecatui_cache"
-
-/**
- * This downloads paywall images in a specific cache for RevenueCat.
- * If you update this, make sure the version in the [CoilImageDownloader] class is also updated.
- *
- * @param readCache: set to false to ignore cache for reading, but allow overwriting with updated image.
- */
-private fun Context.getRevenueCatUIImageLoader(readCache: Boolean): ImageLoader {
-    val cachePolicy = if (readCache) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY
-
-    return ImageLoader.Builder(this)
-        .diskCache {
-            DiskCache.Builder()
-                .directory(cacheDir.resolve(PAYWALL_IMAGE_CACHE_FOLDER))
-                .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
-                .build()
-        }
-        .memoryCache(
-            MemoryCache.Builder(this)
-                .build(),
-        )
-        .diskCachePolicy(cachePolicy)
-        .memoryCachePolicy(cachePolicy)
-        .build()
-}
 
 /**
  * This is loosely based on [Accompanist's Drawable Painter](https://google.github.io/accompanist/drawablepainter/).

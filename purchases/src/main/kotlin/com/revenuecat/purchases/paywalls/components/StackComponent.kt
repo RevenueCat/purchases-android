@@ -1,7 +1,8 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -37,6 +38,8 @@ class StackComponent(
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
+    val background: Background? = null,
+    @get:JvmSynthetic
     val padding: Padding = zero,
     @get:JvmSynthetic
     val margin: Padding = zero,
@@ -49,8 +52,20 @@ class StackComponent(
     @get:JvmSynthetic
     val badge: Badge? = null,
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialStackComponent>? = null,
-) : PaywallComponent
+    val overflow: Overflow? = null,
+    @get:JvmSynthetic
+    val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
+) : PaywallComponent {
+
+    @Serializable
+    enum class Overflow {
+        @SerialName("none")
+        NONE,
+
+        @SerialName("scroll")
+        SCROLL,
+    }
+}
 
 @Suppress("LongParameterList")
 @InternalRevenueCatAPI
@@ -69,6 +84,8 @@ class PartialStackComponent(
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
+    val background: Background? = null,
+    @get:JvmSynthetic
     val padding: Padding? = null,
     @get:JvmSynthetic
     val margin: Padding? = null,
@@ -80,4 +97,6 @@ class PartialStackComponent(
     val shadow: Shadow? = null,
     @get:JvmSynthetic
     val badge: Badge? = null,
+    @get:JvmSynthetic
+    val overflow: StackComponent.Overflow? = null,
 ) : PartialComponent

@@ -16,7 +16,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape as RcShape
  * The scale factor to use on the Y axis when drawing a Concave or Convex shape. This will be multiplied by Y to
  * determine the maximum distance of the curve to the bottom of the shape.
  */
-private const val SCALE_Y_OFFSET_CONCAVE_CONVEX = 0.2f
+private const val SCALE_Y_OFFSET_CONCAVE_CONVEX = 0.1f
 
 @JvmSynthetic
 internal fun RcShape.toShape(): Shape = cornerRadiuses.convertCornerRadiusesToShape()
