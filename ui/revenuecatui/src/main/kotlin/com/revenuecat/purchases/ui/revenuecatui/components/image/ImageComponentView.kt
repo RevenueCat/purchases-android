@@ -112,7 +112,7 @@ internal fun ImageComponentView(
                 modifier = Modifier
                     .size(imageState.size)
                     .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
-                    .applyIfNotNull(overlay) { overlay(it, composeShape) }
+                    .applyIfNotNull(overlay) { overlay(it) }
                     .padding(imageState.padding),
                 placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
                 contentScale = imageState.contentScale,
