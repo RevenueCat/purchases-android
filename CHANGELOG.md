@@ -4,23 +4,21 @@
 * fix: Add prepaid as a period type (#2141) via Greenie (@greenietea)
 
 ## RevenueCatUI SDK
-### Paywallv2
+### Paywalls v2
 #### ✨ New Features
 * [Paywalls V2] Adds support for Paywalls V2! (#2127) via JayShortway (@JayShortway)
-* [Paywalls V2] Deprecate PaywallFooter in favor of OriginalTemplatePaywallFooter (#2111) via Toni Rico (@tonidero)
-#### 🐞 Bugfixes
-* Rename carousel slide to page (#2144) via Josh Holtz (@joshdholtz)
 ### Customer Center
 #### ✨ New Features
-* Make `CustomerCenter` public (#2156) via Cesar de la Vega (@vegaro)
+* Adds support for  `CustomerCenter` (#2156) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Paywalls V2] Deprecate PaywallFooter in favor of OriginalTemplatePaywallFooter (#2111) via Toni Rico (@tonidero)
 * feat: Filter CANCEL from help path if lifetime (#2140) via Facundo Menzella (@facumenzella)
 * fix: Localize Restore Purchases Dialog (#2139) via Facundo Menzella (@facumenzella)
 * fix: Hide contact support if there's no email (#2135) via Facundo Menzella (@facumenzella)
 * feat: Track IMPRESSION and SURVER_OPTION_CHOSEN for CustomerCenter (#2124) via Facundo Menzella (@facumenzella)
-#### 🐞 Bugfixes
 * fix: Use TextButton instead of outline for Promotionals (#2138) via Facundo Menzella (@facumenzella)
-
-### 🔄 Other Changes
+* Rename carousel slide to page (#2144) via Josh Holtz (@joshdholtz)
 * [Paywalls V2] Make border draw on top of the image overlay (#2165) via Toni Rico (@tonidero)
 * [Paywalls V2] Gradients Reloaded: Makes linear gradients match CSS even more closely (#2166) via JayShortway (@JayShortway)
 * [Paywalls V2] Fix wrong spacers in Stack when some children are Fill (#2164) via Toni Rico (@tonidero)
