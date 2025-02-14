@@ -160,7 +160,7 @@ internal class OfferingImagePreDownloader(
                 is ButtonComponent -> queue.add(current.stack)
                 is PackageComponent -> queue.add(current.stack)
                 is StickyFooterComponent -> queue.add(current.stack)
-                is CarouselComponent -> queue.addAll(current.slides)
+                is CarouselComponent -> queue.addAll(current.pages)
                 is TabControlButtonComponent -> queue.add(current.stack)
                 is TabsComponent -> {
                     when (val control = current.control) {
