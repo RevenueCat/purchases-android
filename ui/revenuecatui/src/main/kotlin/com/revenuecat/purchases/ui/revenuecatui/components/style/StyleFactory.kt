@@ -79,9 +79,9 @@ internal class StyleFactory(
     private val offering: Offering,
 ) {
 
-    private companion object {
+    internal companion object {
         private const val DEFAULT_SPACING = 0f
-        private val DEFAULT_SHAPE = Shape.Rectangle()
+        internal val DEFAULT_SHAPE = Shape.Rectangle()
     }
 
     @Suppress("CyclomaticComplexMethod")
@@ -442,7 +442,7 @@ internal class StyleFactory(
         first = component.overrides
             .toPresentedOverrides { partial -> PresentedCarouselPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
-        second = component.slides
+        second = component.pages
             .map { createStackComponentStyle(it, rcPackage, tabControl, tabIndex) }
             .mapOrAccumulate { it },
         third = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
@@ -451,12 +451,12 @@ internal class StyleFactory(
         sixth = component.pageControl?.toPageControlStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles, background, pageControlStyles ->
         CarouselComponentStyle(
-            slides = stackComponentStyles,
-            initialSlideIndex = component.initialSlideIndex ?: 0,
-            alignment = component.alignment.toAlignment(),
+            pages = stackComponentStyles,
+            initialPageIndex = component.initialPageIndex ?: 0,
+            pageAlignment = component.pageAlignment.toAlignment(),
             size = component.size,
-            sidePagePeek = component.sidePagePeek?.dp ?: 0.dp,
-            spacing = (component.spacing ?: DEFAULT_SPACING).dp,
+            pagePeek = component.pagePeek?.dp ?: 0.dp,
+            pageSpacing = (component.pageSpacing ?: DEFAULT_SPACING).dp,
             background = background,
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
