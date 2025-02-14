@@ -505,20 +505,20 @@ internal class CustomerCenterViewModelImpl(
         val currentState = _state.value
         if (currentState is CustomerCenterState.Success && currentState.promotionalOfferData != null) {
             dismissPromotionalOffer(context, currentState.promotionalOfferData.originalPath)
-        } else {
-            // Perform the default navigation action
-            _state.update { state ->
-                when {
-                    state is CustomerCenterState.Success &&
-                        state.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
-                        state.resetToMainScreen()
-                    }
-                    else -> CustomerCenterState.NotLoaded
+            return
+        }
+        val buttonType = state.value.navigationButtonType
+        if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+            onDismiss()
+            return
+        }
+        _state.update { state ->
+            when {
+                state is CustomerCenterState.Success &&
+                    state.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                    state.resetToMainScreen()
                 }
-            }
-            val buttonType = state.value.navigationButtonType
-            if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
-                onDismiss()
+                else -> CustomerCenterState.NotLoaded
             }
         }
     }
