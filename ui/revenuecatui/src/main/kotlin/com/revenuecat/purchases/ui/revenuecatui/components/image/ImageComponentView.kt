@@ -96,21 +96,27 @@ internal fun ImageComponentView(
         val shadowStyle = imageState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(imageState.shape) { derivedStateOf { imageState.shape ?: RectangleShape } }
 
-        RemoteImage(
-            urlString = imageState.imageUrls.webp.toString(),
+        // We are using a Box here instead of applying the modifiers directly to the RemoteImage
+        // in order to have the border applied on top of the overlay, which uses onDrawWithContent
+        Box(
             modifier = modifier
-                .size(imageState.size)
-                .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
                 .padding(imageState.margin)
                 .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-                .applyIfNotNull(overlay) { overlay(it, composeShape) }
                 .clip(composeShape)
-                .applyIfNotNull(borderStyle) { border(it, composeShape) }
-                .padding(imageState.padding),
-            placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
-            contentScale = imageState.contentScale,
-            previewImageLoader = previewImageLoader,
-        )
+                .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
+        ) {
+            RemoteImage(
+                urlString = imageState.imageUrls.webp.toString(),
+                modifier = Modifier
+                    .size(imageState.size)
+                    .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
+                    .applyIfNotNull(overlay) { overlay(it, composeShape) }
+                    .padding(imageState.padding),
+                placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
+                contentScale = imageState.contentScale,
+                previewImageLoader = previewImageLoader,
+            )
+        }
     }
 }
 
@@ -339,6 +345,12 @@ private fun ImageComponentView_Preview_LinearGradient() {
                         topTrailing = 20.0,
                         bottomLeading = 20.0,
                         bottomTrailing = 20.0,
+                    ),
+                ),
+                border = BorderStyles(
+                    width = 10.dp,
+                    colors = ColorStyles(
+                        light = ColorStyle.Solid(ComposeColor.Blue),
                     ),
                 ),
                 overlay = ColorStyles(
