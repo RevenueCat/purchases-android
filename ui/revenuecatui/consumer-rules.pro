@@ -1,0 +1,1 @@
+-dontwarn com.emergetools.snapshots.annotations.IgnoreEmergeSnapshot

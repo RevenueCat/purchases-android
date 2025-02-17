@@ -60,7 +60,7 @@ dependencies {
 
     implementation project(path: ':purchases')
 
-    implementation libs.emerge.snapshots.annotations
+    compileOnly libs.emerge.snapshots.annotations
     implementation(platform(libs.kotlin.bom))
     implementation libs.androidx.core
     implementation platform(libs.compose.bom)
