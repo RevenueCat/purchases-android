@@ -329,6 +329,7 @@ private fun previewCarouselComponentStyle(
     pages: List<StackComponentStyle> = previewPages(),
     initialPageIndex: Int = 0,
     alignment: Alignment.Vertical = Alignment.CenterVertically,
+    visible: Boolean = true,
     size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     sidePagePeek: Dp = 20.dp,
     spacing: Dp = 8.dp,
@@ -351,6 +352,7 @@ private fun previewCarouselComponentStyle(
         pages = pages,
         initialPageIndex = initialPageIndex,
         pageAlignment = alignment,
+        visible = visible,
         size = size,
         pagePeek = sidePagePeek,
         pageSpacing = spacing,
@@ -432,6 +434,7 @@ private fun previewPage(
             alignment = HorizontalAlignment.CENTER,
             distribution = FlexDistribution.CENTER,
         ),
+        visible = true,
         size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fixed(height)),
         spacing = 8.dp,
         background = BackgroundStyles.Color(

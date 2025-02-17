@@ -28,6 +28,8 @@ class ImageComponent(
     @get:JvmSynthetic
     val source: ThemeImageUrls,
     @get:JvmSynthetic
+    val visible: Boolean? = null,
+    @get:JvmSynthetic
     val size: Size = Size(width = Fill, height = Fit),
     @get:JvmSynthetic
     @SerialName("override_source_lid")

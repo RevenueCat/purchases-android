@@ -22,6 +22,8 @@ internal data class StackComponentStyle(
     @get:JvmSynthetic
     val dimension: Dimension,
     @get:JvmSynthetic
+    override val visible: Boolean,
+    @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
     val spacing: Dp,

@@ -140,6 +140,7 @@ internal fun previewStackComponentStyle(
         alignment = HorizontalAlignment.CENTER,
         distribution = FlexDistribution.START,
     ),
+    visible: Boolean = true,
     size: Size = Size(width = Fixed(200u), height = Fit),
     spacing: Dp = 16.dp,
     background: BackgroundStyles = BackgroundStyles.Color(
@@ -159,6 +160,7 @@ internal fun previewStackComponentStyle(
     return StackComponentStyle(
         children = children,
         dimension = dimension,
+        visible = visible,
         size = size,
         spacing = spacing,
         background = background,
@@ -186,6 +188,7 @@ internal fun previewTextComponentStyle(
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
+    visible: Boolean = true,
     size: Size = Size(width = Fill, height = Fit),
     padding: Padding = zero,
     margin: Padding = zero,
@@ -203,6 +206,7 @@ internal fun previewTextComponentStyle(
         textAlign = textAlign.toTextAlign(),
         horizontalAlignment = horizontalAlignment.toAlignment(),
         backgroundColor = backgroundColor,
+        visible = visible,
         size = size,
         padding = padding.toPaddingValues(),
         margin = margin.toPaddingValues(),
@@ -217,6 +221,7 @@ internal fun previewTextComponentStyle(
 @Composable
 internal fun previewIconComponentStyle(
     size: Size,
+    visible: Boolean = true,
     color: ColorStyles = ColorStyles(
         light = ColorStyle.Solid(Color.Cyan),
     ),
@@ -242,6 +247,7 @@ internal fun previewIconComponentStyle(
     formats = IconComponent.Formats(
         webp = "test-webp",
     ),
+    visible = visible,
     size = size,
     color = color,
     padding = paddingValues,

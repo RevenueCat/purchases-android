@@ -86,7 +86,7 @@ internal class TimelineComponentState(
     }
 
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
+    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
     @get:JvmSynthetic
     val itemSpacing by derivedStateOf { presentedPartial?.partial?.itemSpacing ?: style.itemSpacing }
@@ -153,7 +153,7 @@ internal class TimelineComponentState(
         }
 
         @get:JvmSynthetic
-        val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
+        val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
         @get:JvmSynthetic
         val title by derivedStateOf { style.title }

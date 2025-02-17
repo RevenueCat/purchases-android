@@ -32,5 +32,6 @@ internal data class ButtonComponentStyle(
         }
     }
 
+    override val visible: Boolean = stackComponentStyle.visible
     override val size: Size = stackComponentStyle.size
 }

@@ -468,6 +468,7 @@ private fun previewImageComponentStyle(
     size: Size,
     fitMode: FitMode,
     shape: MaskShape,
+    visible: Boolean = true,
     overlay: ColorStyles? = null,
     paddingValues: PaddingValues = PaddingValues(0.dp),
     marginValues: PaddingValues = PaddingValues(0.dp),
@@ -483,6 +484,7 @@ private fun previewImageComponentStyle(
     ),
 ) = ImageComponentStyle(
     sources = nonEmptyMapOf(LocaleId("en_US") to themeImageUrls),
+    visible = visible,
     size = size,
     shape = shape.toShape(),
     padding = paddingValues,

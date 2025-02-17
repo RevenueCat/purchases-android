@@ -110,7 +110,8 @@ internal class IconComponentTests {
                               "width": 123
                             }
                           },
-                          "type": "icon"
+                          "type": "icon",
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = IconComponent(
@@ -119,6 +120,7 @@ internal class IconComponentTests {
                             formats = IconComponent.Formats(
                                 webp = "test.webp"
                             ),
+                            visible = false,
                             size = Size(
                                 height = SizeConstraint.Fixed(200u),
                                 width = SizeConstraint.Fixed(200u),

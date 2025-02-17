@@ -35,6 +35,8 @@ internal class IconComponentStyle(
     @get:JvmSynthetic
     val formats: Formats,
     @get:JvmSynthetic
+    override val visible: Boolean,
+    @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
     val color: ColorStyles?,

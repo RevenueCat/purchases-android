@@ -89,7 +89,7 @@ internal class CarouselComponentState(
     }
 
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
+    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
     @get:JvmSynthetic
     val initialPageIndex by derivedStateOf { presentedPartial?.partial?.initialPageIndex ?: style.initialPageIndex }

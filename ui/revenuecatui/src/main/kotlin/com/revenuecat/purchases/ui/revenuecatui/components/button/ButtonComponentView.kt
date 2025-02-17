@@ -85,6 +85,7 @@ private fun previewButtonComponentStyle(
             ),
         ),
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
+        visible = true,
         size = Size(width = Fit, height = Fit),
         spacing = 16.dp,
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.Red))),

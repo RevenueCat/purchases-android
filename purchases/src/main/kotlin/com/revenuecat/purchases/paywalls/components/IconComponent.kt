@@ -32,6 +32,8 @@ class IconComponent(
     @get:JvmSynthetic
     val formats: Formats,
     @get:JvmSynthetic
+    val visible: Boolean? = null,
+    @get:JvmSynthetic
     val size: Size = Size(width = Fill, height = Fit),
     @get:JvmSynthetic
     val color: ColorScheme? = null,

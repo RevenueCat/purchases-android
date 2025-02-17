@@ -22,6 +22,7 @@ internal data class TabControlButtonComponentStyle(
     @get:JvmSynthetic
     val stack: StackComponentStyle,
 ) : ComponentStyle {
+    override val visible: Boolean = stack.visible
     override val size: Size = stack.size
 }
 
@@ -38,11 +39,14 @@ internal class TabControlToggleComponentStyle(
     @get:JvmSynthetic
     val trackColorOff: ColorStyles,
 ) : ComponentStyle {
+    override val visible: Boolean = true
     override val size: Size = Size(width = Fit, height = Fit)
 }
 
 @Immutable
 internal data class TabsComponentStyle(
+    @get:JvmSynthetic
+    override val visible: Boolean,
     @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
@@ -73,11 +77,13 @@ internal data class TabsComponentStyle(
 internal sealed interface TabControlStyle : ComponentStyle {
     @Immutable
     data class Buttons(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
+        override val visible: Boolean = stack.visible
         override val size: Size = stack.size
     }
 
     @Immutable
     data class Toggle(@get:JvmSynthetic val stack: StackComponentStyle) : TabControlStyle {
+        override val visible: Boolean = stack.visible
         override val size: Size = stack.size
     }
 }

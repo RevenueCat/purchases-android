@@ -220,6 +220,7 @@ private fun previewStyle(
     textSpacing: Int = 4,
     columnGutter: Int = 8,
     iconAlignment: TimelineComponent.IconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
+    visible: Boolean = true,
     size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
     padding: PaddingValues = PaddingValues(all = 5.dp),
     margin: PaddingValues = PaddingValues(all = 5.dp),
@@ -230,6 +231,7 @@ private fun previewStyle(
         textSpacing = textSpacing,
         columnGutter = columnGutter,
         iconAlignment = iconAlignment,
+        visible = visible,
         size = size,
         padding = padding,
         margin = margin,
@@ -252,6 +254,7 @@ private fun previewItems(
                 horizontalAlignment = HorizontalAlignment.LEADING,
                 fontWeight = FontWeight.BOLD,
             ),
+            visible = true,
             description = previewTextComponentStyle(
                 text = "Description of what you get today if you subscribe",
                 horizontalAlignment = HorizontalAlignment.LEADING,
@@ -269,6 +272,7 @@ private fun previewItems(
                 fontWeight = FontWeight.BOLD,
                 textAlign = HorizontalAlignment.LEADING,
             ),
+            visible = true,
             description = previewTextComponentStyle(
                 text = "We'll remind you that your trial is ending soon",
                 horizontalAlignment = HorizontalAlignment.LEADING,
@@ -286,6 +290,7 @@ private fun previewItems(
                 fontWeight = FontWeight.BOLD,
                 textAlign = HorizontalAlignment.LEADING,
             ),
+            visible = true,
             description = previewTextComponentStyle(
                 text = "You'll be charged. You can cancel anytime before.",
                 horizontalAlignment = HorizontalAlignment.LEADING,

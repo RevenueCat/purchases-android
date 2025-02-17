@@ -21,6 +21,8 @@ internal data class ImageComponentStyle(
     @get:JvmSynthetic
     val sources: NonEmptyMap<LocaleId, ThemeImageUrls>,
     @get:JvmSynthetic
+    override val visible: Boolean,
+    @get:JvmSynthetic
     override val size: Size,
     @get:JvmSynthetic
     val padding: PaddingValues,

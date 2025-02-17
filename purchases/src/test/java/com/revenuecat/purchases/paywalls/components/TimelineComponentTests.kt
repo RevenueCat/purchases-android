@@ -94,9 +94,11 @@ internal class TimelineComponentTests {
                                       "trailing": 12
                                     },
                                     "color": { "light": { "type": "alias", "value": "primary" } }
-                                 }
+                                 },
+                                 "visible": false
                               }
-                          ]
+                          ],
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = TimelineComponent(
@@ -104,6 +106,7 @@ internal class TimelineComponentTests {
                             textSpacing = 20,
                             columnGutter = 30,
                             iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
+                            visible = false,
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             padding = Padding(
                                 top = 1.0,
@@ -127,6 +130,7 @@ internal class TimelineComponentTests {
                                             )
                                         )
                                     ),
+                                    visible = false,
                                     description = TextComponent(
                                         text = LocalizationKey("description"),
                                         color = ColorScheme(
