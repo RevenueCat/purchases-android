@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.errorLog
 
 internal object OfferingParserFactory {
 
+    @OptIn(InternalRevenueCatAPI::class)
     fun createOfferingParser(
         store: Store,
     ) = when (store) {
