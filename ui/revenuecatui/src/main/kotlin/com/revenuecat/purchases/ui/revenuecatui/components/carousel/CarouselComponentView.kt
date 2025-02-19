@@ -58,6 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
 
@@ -96,22 +97,7 @@ internal fun CarouselComponentView(
     }
 
     carouselState.autoAdvance?.let { autoAdvance ->
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(autoAdvance.msTimePerPage.toLong())
-                val nextPage = if (carouselState.loop) {
-                    pagerState.currentPage + 1
-                } else {
-                    (pagerState.currentPage + 1) % pageCount
-                }
-                pagerState.animateScrollToPage(
-                    page = nextPage,
-                    animationSpec = tween(
-                        autoAdvance.msTransitionTime,
-                    ),
-                )
-            }
-        }
+        EnableAutoAdvance(autoAdvance, pagerState, carouselState.loop, pageCount)
     }
 
     Column(
@@ -147,7 +133,6 @@ internal fun CarouselComponentView(
             beyondViewportPageCount = pageCount,
             pageSpacing = carouselState.pageSpacing,
             verticalAlignment = carouselState.pageAlignment,
-            userScrollEnabled = style.autoAdvance == null,
         ) { page ->
             StackComponentView(
                 style = carouselState.pages[page % pageCount],
@@ -265,6 +250,36 @@ private fun Indicator(
             .background(color)
             .size(width = width, height = height),
     )
+}
+
+@Composable
+private fun EnableAutoAdvance(
+    autoAdvance: CarouselComponent.AutoAdvancePages,
+    pagerState: PagerState,
+    shouldLoop: Boolean,
+    pageCount: Int,
+) {
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(autoAdvance.msTimePerPage.toLong())
+            if (pagerState.isScrollInProgress) continue
+            val nextPage = if (shouldLoop) {
+                pagerState.currentPage + 1
+            } else {
+                (pagerState.currentPage + 1) % pageCount
+            }
+            try {
+                pagerState.animateScrollToPage(
+                    page = nextPage,
+                    animationSpec = tween(
+                        autoAdvance.msTransitionTime,
+                    ),
+                )
+            } catch (_: CancellationException) {
+                // Do nothing, so we continue scrolling on the next loop
+            }
+        }
+    }
 }
 
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
