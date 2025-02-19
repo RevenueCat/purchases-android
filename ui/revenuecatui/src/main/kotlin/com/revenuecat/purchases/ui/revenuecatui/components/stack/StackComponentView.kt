@@ -803,6 +803,7 @@ private fun StackComponentView_Preview_Vertical() {
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -843,6 +844,7 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
             backgroundColor = ColorStyles(
                 light = ColorStyle.Solid(Color.Blue),
             ),
+            visible = true,
             size = Size(width = Fit, height = Fit),
             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
         )
@@ -857,6 +859,7 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -921,6 +924,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -998,6 +1002,7 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1050,6 +1055,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1093,6 +1099,7 @@ private fun StackComponentView_Preview_Horizontal() {
                     alignment = VerticalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1151,6 +1158,7 @@ private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
                     alignment = VerticalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1186,6 +1194,7 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
             backgroundColor = ColorStyles(
                 light = ColorStyle.Solid(Color.Blue),
             ),
+            visible = true,
             size = Size(width = Fit, height = Fit),
             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
         )
@@ -1200,6 +1209,7 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
                     alignment = VerticalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1261,6 +1271,7 @@ private fun StackComponentView_Preview_ZLayer() {
                     ),
                 ),
                 dimension = Dimension.ZLayer(alignment = TwoDimensionalAlignment.BOTTOM_TRAILING),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1312,6 +1323,7 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
                 alignment = VerticalAlignment.CENTER,
                 distribution = FlexDistribution.START,
             ),
+            visible = true,
             size = Size(width = Fixed(200u), height = Fit),
             spacing = 16.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
@@ -1352,6 +1364,7 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
                 alignment = HorizontalAlignment.CENTER,
                 distribution = FlexDistribution.START,
             ),
+            visible = true,
             size = Size(width = Fit, height = Fixed(200u)),
             spacing = 16.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
@@ -1413,6 +1426,7 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing_Fit_Size(
                 ),
             ),
             dimension = dimension,
+            visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fit, height = Fit),
             spacing = 0.dp,
@@ -1463,6 +1477,7 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing(
                 ),
             ),
             dimension = dimension,
+            visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fixed(300u), height = Fixed(300u)),
             spacing = 0.dp,
@@ -1509,6 +1524,7 @@ private fun StackComponentView_Preview_Distribution_SpaceAround_With_Fill_Childr
                 alignment = VerticalAlignment.CENTER,
                 distribution = FlexDistribution.SPACE_AROUND,
             ),
+            visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fixed(300u), height = Fixed(300u)),
             spacing = 8.dp,
@@ -1559,6 +1575,7 @@ private fun StackComponentView_Preview_Distribution_With_Spacing(
                 ),
             ),
             dimension = dimension,
+            visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fixed(300u), height = Fixed(300u)),
             spacing = 16.dp,
@@ -1589,6 +1606,7 @@ private fun StackComponentView_Preview_HorizontalDivider() {
         StackComponentView(
             style = previewStackComponentStyle(
                 children = emptyList(),
+                visible = true,
                 size = Size(width = Fill, height = Fixed(1u)),
                 dimension = Dimension.Vertical(alignment = HorizontalAlignment.LEADING, FlexDistribution.SPACE_BETWEEN),
                 spacing = 0.dp,
@@ -1620,6 +1638,7 @@ private fun StackComponentView_Preview_VerticalDivider() {
         StackComponentView(
             style = previewStackComponentStyle(
                 children = emptyList(),
+                visible = true,
                 size = Size(width = Fixed(1u), height = Fill),
                 dimension = Dimension.Horizontal(alignment = VerticalAlignment.TOP, FlexDistribution.SPACE_BETWEEN),
                 spacing = 0.dp,
@@ -1686,6 +1705,7 @@ private fun previewBadge(
                 alignment = HorizontalAlignment.CENTER,
                 distribution = FlexDistribution.CENTER,
             ),
+            visible = true,
             size = Size(width = Fit, height = Fit),
             spacing = 0.dp,
             background = BackgroundStyles.Color(

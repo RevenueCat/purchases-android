@@ -193,7 +193,8 @@ internal class CarouselComponentTests {
                               "type": "stack",
                               "components": []
                             }
-                          ]
+                          ],
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = CarouselComponent(
@@ -202,6 +203,7 @@ internal class CarouselComponentTests {
                                     components = emptyList()
                                 )
                             ),
+                            visible = false,
                             initialPageIndex = 2,
                             pageAlignment = VerticalAlignment.CENTER,
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
