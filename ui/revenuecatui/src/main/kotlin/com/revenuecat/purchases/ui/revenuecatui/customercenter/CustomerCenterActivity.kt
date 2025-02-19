@@ -7,11 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import java.lang.ref.WeakReference
 
-class CustomerCenterActivity : ComponentActivity() {
+internal class CustomerCenterActivity : ComponentActivity() {
     companion object {
-        fun createIntent(context: Context): Intent {
+        internal fun createIntent(context: Context): Intent {
             return Intent(context, CustomerCenterActivity::class.java)
         }
     }
@@ -23,24 +22,10 @@ class CustomerCenterActivity : ComponentActivity() {
             CustomerCenter(
                 modifier = Modifier.fillMaxSize(),
                 onDismiss = {
-                    CustomerCenterEventBus.onDismissed()
+                    setResult(RESULT_OK)
                     finish()
                 }
             )
         }
-    }
-}
-
-internal object CustomerCenterEventBus {
-    private var weakHandler = WeakReference<CustomerCenterEventHandler>(null)
-
-    fun setEventHandler(handler: CustomerCenterEventHandler?) {
-        weakHandler = WeakReference(handler)
-    }
-
-    fun onDismissed() {
-        weakHandler.get()?.onDismissed()
-        // Clear reference after dismissal
-        weakHandler.clear()
     }
 } 
