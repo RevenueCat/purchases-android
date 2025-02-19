@@ -1,11 +1,9 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
-@OptIn(InternalRevenueCatAPI::class)
 internal class GoogleOfferingParser : OfferingParser() {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,

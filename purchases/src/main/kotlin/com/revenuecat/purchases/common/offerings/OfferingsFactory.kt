@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.offerings
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -19,7 +18,6 @@ import org.json.JSONObject
 
 internal class OfferingsFactory(
     private val billing: BillingAbstract,
-    @OptIn(InternalRevenueCatAPI::class)
     private val offeringParser: OfferingParser,
     private val dispatcher: Dispatcher,
 ) {
@@ -46,7 +44,6 @@ internal class OfferingsFactory(
                         try {
                             logMissingProducts(allRequestedProductIdentifiers, productsById)
 
-                            @OptIn(InternalRevenueCatAPI::class)
                             val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
                             if (offerings.all.isEmpty()) {
                                 onError(

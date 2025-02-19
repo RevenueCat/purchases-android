@@ -231,7 +231,6 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
             )
 
-            @OptIn(InternalRevenueCatAPI::class)
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
@@ -257,7 +256,6 @@ internal class PurchasesFactory(
                 postReceiptHelper,
             )
 
-            @OptIn(InternalRevenueCatAPI::class)
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,

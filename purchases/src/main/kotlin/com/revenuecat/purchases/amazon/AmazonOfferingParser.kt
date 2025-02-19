@@ -1,11 +1,9 @@
 package com.revenuecat.purchases.amazon
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
-@OptIn(InternalRevenueCatAPI::class)
 internal class AmazonOfferingParser : OfferingParser() {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
