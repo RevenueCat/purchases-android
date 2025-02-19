@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
+import coil.ImageLoader
+import coil.disk.DiskCache
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -255,11 +257,24 @@ internal class PurchasesFactory(
                 postReceiptHelper,
             )
 
+            val imageLoader = if (OfferingImagePreDownloader.shouldPredownloadImages()) {
+                application.getRevenueCatUIImageLoader()
+            } else {
+                null
+            }
+
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
-                OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
+                if (imageLoader != null) {
+                    OfferingImagePreDownloader(
+                        coilImageDownloader = CoilImageDownloader(application),
+                        imageLoader = imageLoader,
+                    )
+                } else {
+                    null
+                },
             )
 
             log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
@@ -294,6 +309,7 @@ internal class PurchasesFactory(
                 purchasesStateProvider,
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
+                imageLoader = imageLoader,
             )
 
             return Purchases(purchasesOrchestrator)
@@ -356,6 +372,25 @@ internal class PurchasesFactory(
 
     private fun createEventsExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
+    }
+
+    /**
+     * This downloads paywall images in a specific cache for RevenueCat.
+     * If you update this, make sure the version in the [RemoteImage] composable is also updated.
+     */
+    @Suppress("MagicNumber")
+    private fun Context.getRevenueCatUIImageLoader(): ImageLoader {
+        // Note: these values have to match those in RemoteImage
+        val maxCacheSizeBytes = 25 * 1024 * 1024L // 25 MB
+        val cacheFolder = "revenuecatui_cache"
+        return ImageLoader.Builder(this)
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve(cacheFolder))
+                    .maxSizeBytes(maxCacheSizeBytes)
+                    .build()
+            }
+            .build()
     }
 
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
