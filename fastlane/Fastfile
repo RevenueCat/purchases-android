@@ -594,6 +594,96 @@ DESC
     )
   end
 
+  desc "Updates offerings_paywalls_v2_templates.json file and creates/updates PR"
+  lane :update_paywall_templates do |options|
+    branch_name = "pw2-update-templates-json"
+
+    # Ensure we're starting from an up-to-date main
+    sh("git", "fetch", "origin")
+
+    # Check if branch exists locally or remotely
+    branch_exists_locally = sh("git", "branch", "--list", branch_name).length > 0
+    branch_exists_remotely = sh("git", "ls-remote", "--heads", "origin", branch_name).length > 0
+
+    if branch_exists_locally || branch_exists_remotely
+      UI.message("Branch #{branch_name} already exists, checking it out")
+      sh("git", "checkout", branch_name)
+      if branch_exists_remotely
+        sh("git", "pull", "origin", branch_name)
+      end
+    else
+      UI.message("Creating new branch #{branch_name}")
+      sh("git", "checkout", "-b", branch_name)
+    end
+
+    # Ensure API key is available
+    api_key = ENV["PAYWALLS_V2_ALPHA_API_KEY"]
+    UI.user_error!("Missing PAYWALLS_V2_ALPHA_API_KEY environment variable") unless api_key
+
+    app_user_id = "purchases-android-ci"
+
+    require 'rest-client'
+    require 'json'
+
+    # Make API request
+    begin
+      response = RestClient.get(
+        "https://api.revenuecat.com/v1/subscribers/#{app_user_id}/offerings",
+        {
+          'Content-Type' => 'application/json',
+          'X-Platform' => 'Android',
+          'Authorization' => "Bearer #{api_key}"
+        }
+      )
+
+      # Save response to file
+      templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
+      File.write(templates_file, JSON.pretty_generate(JSON.parse(response.body)))
+      UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
+    rescue RestClient::Exception => e
+      UI.error("API request failed: #{e.response}")
+      raise
+    rescue => e
+      UI.error("Error: #{e.message}")
+      raise
+    end
+
+    # Check if there are any changes to commit
+    if sh("git", "status", "--porcelain").empty?
+      UI.message("No changes to commit")
+      next
+    end
+
+    # Commit and push changes
+    Dir.chdir("..") do  # Move up one directory to the root of the project
+      sh("git", "add", ".")
+      sh("git", "commit", "-m", "[Automated] Update templates.json")
+      sh("git", "push", "-u", "origin", branch_name)
+    end
+
+    # Check if PR already exists
+    existing_pr = github_api(
+      api_token: ENV["GITHUB_TOKEN"],
+      path: "/repos/RevenueCat/#{repo_name}/pulls?head=RevenueCat:#{branch_name}&state=open"
+    )
+
+    if existing_pr.length == 0
+      # Create new PR if one doesn't exist
+      create_pull_request(
+        repo: "RevenueCat/#{repo_name}",
+        title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
+        body: "This is an automatic update of the Compose previews of all templates.",
+        base: "main",
+        head: branch_name,
+        api_token: ENV["GITHUB_TOKEN"],
+        labels: ["pr:other"],
+        team_reviewers: ['coresdk', 'monetization']
+      )
+    else
+      UI.message("PR already exists, changes have been pushed")
+    end
+  end
+
   desc "Clones or updates snapshots repo"
   lane :fetch_snapshots do
     Dir.chdir("..") do
