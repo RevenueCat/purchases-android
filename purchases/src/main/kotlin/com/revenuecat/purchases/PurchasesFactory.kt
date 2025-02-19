@@ -230,7 +230,6 @@ internal class PurchasesFactory(
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,
             )
-
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null

@@ -21,7 +21,7 @@ import com.revenuecat.purchases.withPresentedContext
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 
-abstract class OfferingParser {
+internal abstract class OfferingParser {
 
     companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
