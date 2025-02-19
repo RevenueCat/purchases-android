@@ -15,6 +15,9 @@ import org.json.JSONObject
 import java.io.File
 import java.util.Date
 
+/**
+ * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
+ */
 private class OfferingProvider : PreviewParameterProvider<Offering> {
     private val offeringsJsonFileName = "offerings_paywalls_v2_templates.json"
     private val packagesJsonFileName = "packages.json"
