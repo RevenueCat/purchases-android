@@ -63,7 +63,7 @@ class EventsManagerTest {
             locale = "es_ES"
         )
     )
-    private val storedEvent = PaywallStoredEvent(paywallEvent, userID)
+    private val paywallStoredEvent = PaywallStoredEvent(paywallEvent, userID)
 
     private val testFolder = "temp_test_folder"
 
@@ -183,16 +183,21 @@ class EventsManagerTest {
     fun `flushEvents sends available events to backend`() {
         mockBackendResponse(success = true)
         eventsManager.track(paywallEvent)
-        eventsManager.track(paywallEvent)
+        eventsManager.track(customerCenterImpressionEvent)
         eventsManager.flushEvents()
         checkFileContents("")
         val expectedRequest = EventsRequest(
             listOf(
                 BackendStoredEvent.Paywalls(
-                    storedEvent.toBackendEvent()
+                    paywallStoredEvent.toBackendEvent()
                 ),
-                BackendStoredEvent.Paywalls(
-                    storedEvent.toBackendEvent()
+                BackendStoredEvent.CustomerCenter(
+                    customerCenterImpressionEvent
+                        .toBackendStoredEvent(
+                            appUserID = userID.toString(),
+                            appSessionID = appSessionID.toString(),
+                        )
+                        .toBackendEvent() as BackendEvent.CustomerCenter
                 )
             ).mapNotNull { it.toBackendEvent() }
         )
@@ -347,7 +352,7 @@ class EventsManagerTest {
 
     private fun expectNumberOfEventsSynced(eventsSynced: Int) {
         val expectedRequest = EventsRequest(
-            List(eventsSynced) { BackendStoredEvent.Paywalls(storedEvent.toBackendEvent()) }.mapNotNull { it.toBackendEvent() }
+            List(eventsSynced) { BackendStoredEvent.Paywalls(paywallStoredEvent.toBackendEvent()) }.mapNotNull { it.toBackendEvent() }
         )
         verify(exactly = 1) {
             backend.postEvents(

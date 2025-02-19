@@ -1,3 +1,21 @@
+## 8.12.2
+## RevenueCatUI SDK
+#### 🐞 Bugfixes
+* Fix issue with release minification with Emerge's annotation  (#2176) via Toni Rico (@tonidero)
+### Customer Center
+#### 🐞 Bugfixes
+* fix: Track customer center events (#2178) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Enable paywall tester minification (#2177) via Toni Rico (@tonidero)
+
+## 8.12.1
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Fix promotional offer not being displayed (#2173) via Cesar de la Vega (@vegaro)
+* Fix back button dismissing the Customer Center (#2171) via Cesar de la Vega (@vegaro)
+
 ## 8.12.0
 ## RevenueCat SDK
 ### 🐞 Bugfixes

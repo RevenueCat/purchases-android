@@ -129,6 +129,29 @@ commands:
       - store_test_results:
           path: ~/gsutil/
 
+  build-paywall-tester:
+    steps:
+      - android/accept-licenses
+      - android/restore-gradle-cache
+      - android/restore-build-cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/paywall-tester
+          command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Replace API_KEY
+          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
+          command: |
+            sed -i s/\"API_KEY\"/\"$PAYWALLS_V2_ALPHA_API_KEY\"/ Constants.kt
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_paywall_tester_bundle
+      - store_artifacts:
+          path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
+      - android/save-gradle-cache
+      - android/save-build-cache
+
 jobs:
 
   assemble-magic-weather-compose-sample-app:
@@ -352,6 +375,15 @@ jobs:
             command: |
               bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
 
+  assemble-paywall-tester-release:
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-paywall-tester
+
   publish-paywall-tester-release:
     <<: *android-executor
     parameters:
@@ -362,26 +394,7 @@ jobs:
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept-licenses
-      - android/restore-gradle-cache
-      - android/restore-build-cache
-      - run:
-          name: Prepare Keystore
-          working_directory: examples/paywall-tester
-          command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
-      - run:
-          name: Replace API_KEY
-          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
-          command: |
-            sed -i s/\"API_KEY\"/\"$PAYWALLS_V2_ALPHA_API_KEY\"/ Constants.kt
-      - run:
-          name: Create app bundle
-          command: |
-            bundle exec fastlane android build_paywall_tester_bundle
-      - store_artifacts:
-          path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
-      - android/save-gradle-cache
-      - android/save-build-cache
+      - build-paywall-tester
       - run:
             name: Publish aab
             command: |
@@ -654,6 +667,7 @@ workflows:
       - test
       - detekt
       - assemble-purchase-tester
+      - assemble-paywall-tester-release
       - run-backend-integration-tests
       - verify-revenuecatui-snapshots
       - run-revenuecatui-ui-tests
@@ -678,6 +692,7 @@ workflows:
           requires:
             - test
             - assemble-purchase-tester
+            - assemble-paywall-tester-release
             - run-backend-integration-tests
             - run-revenuecatui-ui-tests
             - run-firebase-tests
