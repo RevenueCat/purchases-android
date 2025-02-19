@@ -41,6 +41,8 @@ constructor(
     @get:JvmSynthetic
     val color: ColorScheme,
     @get:JvmSynthetic
+    val visible: Boolean? = null,
+    @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic

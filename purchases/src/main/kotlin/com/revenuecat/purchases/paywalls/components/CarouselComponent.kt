@@ -25,6 +25,8 @@ class CarouselComponent(
     @get:JvmSynthetic
     val pages: List<StackComponent>,
     @get:JvmSynthetic
+    val visible: Boolean? = null,
+    @get:JvmSynthetic
     @SerialName("initial_page_index")
     val initialPageIndex: Int? = null,
     @get:JvmSynthetic

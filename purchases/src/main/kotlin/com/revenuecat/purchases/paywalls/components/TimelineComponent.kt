@@ -31,6 +31,8 @@ class TimelineComponent(
     @SerialName("icon_alignment")
     val iconAlignment: IconAlignment,
     @get:JvmSynthetic
+    val visible: Boolean? = null,
+    @get:JvmSynthetic
     val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
     @get:JvmSynthetic
     val padding: Padding = zero,
@@ -56,6 +58,8 @@ class TimelineComponent(
     class Item(
         @get:JvmSynthetic
         val title: TextComponent,
+        @get:JvmSynthetic
+        val visible: Boolean? = null,
         @get:JvmSynthetic
         val description: TextComponent? = null,
         @get:JvmSynthetic
