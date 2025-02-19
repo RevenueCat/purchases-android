@@ -5,53 +5,13 @@
       "description": "FOR_DUPLICATION",
       "identifier": "FOR_DUPLICATION",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ]
+      "packages": []
     },
     {
       "description": "Template 001",
       "identifier": "template_001",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -1472,27 +1432,7 @@
       "description": "Template 002",
       "identifier": "template_002",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -4682,27 +4622,7 @@
       "description": "Template 003",
       "identifier": "template_003",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -7034,27 +6954,7 @@
       "description": "Template 004",
       "identifier": "template_004",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -9131,27 +9031,7 @@
       "description": "Template 005",
       "identifier": "template_005",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -11484,27 +11364,7 @@
       "description": "Template 006",
       "identifier": "template_006",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -13497,27 +13357,7 @@
       "description": "Template 007",
       "identifier": "template_007",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -15965,27 +15805,7 @@
       "description": "Template 008",
       "identifier": "template_008",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -18380,53 +18200,13 @@
       "description": "Template 009",
       "identifier": "template_009",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ]
+      "packages": []
     },
     {
       "description": "Template 010",
       "identifier": "template_010",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -21038,27 +20818,7 @@
       "description": "Template 011",
       "identifier": "template_011",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -22733,27 +22493,7 @@
       "description": "Template 012",
       "identifier": "template_012",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -24980,54 +24720,14 @@
       "description": "Template 013",
       "identifier": "template_013",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": null
     },
     {
       "description": "Template 014",
       "identifier": "template_014",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -26577,54 +26277,14 @@
       "description": "josh_dup_template_003_debug",
       "identifier": "josh_dup_template_003_debug",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": null
     },
     {
       "description": "Template 015",
       "identifier": "template_015",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -29046,79 +28706,19 @@
       "description": "josh_badge_debug",
       "identifier": "josh_badge_debug",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ]
+      "packages": []
     },
     {
       "description": "template_016",
       "identifier": "template_016",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ]
+      "packages": []
     },
     {
       "description": "Template 017",
       "identifier": "template_017",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -30194,7 +29794,7 @@
                   ],
                   "dimension": {
                     "alignment": "leading",
-                    "distribution": "space_between",
+                    "distribution": "start",
                     "type": "vertical"
                   },
                   "id": "KT-k7rQS7C",
@@ -30388,7 +29988,7 @@
                               },
                               "size": {
                                 "height": {
-                                  "type": "fill",
+                                  "type": "fit",
                                   "value": null
                                 },
                                 "width": {
@@ -30720,7 +30320,7 @@
                               },
                               "size": {
                                 "height": {
-                                  "type": "fill",
+                                  "type": "fit",
                                   "value": null
                                 },
                                 "width": {
@@ -31100,7 +30700,7 @@
                               },
                               "size": {
                                 "height": {
-                                  "type": "fill",
+                                  "type": "fit",
                                   "value": null
                                 },
                                 "width": {
@@ -31480,7 +31080,7 @@
                               },
                               "size": {
                                 "height": {
-                                  "type": "fill",
+                                  "type": "fit",
                                   "value": null
                                 },
                                 "width": {
@@ -31860,7 +31460,7 @@
                               },
                               "size": {
                                 "height": {
-                                  "type": "fill",
+                                  "type": "fit",
                                   "value": null
                                 },
                                 "width": {
@@ -32134,7 +31734,7 @@
                   ],
                   "dimension": {
                     "alignment": "leading",
-                    "distribution": "space_between",
+                    "distribution": "start",
                     "type": "vertical"
                   },
                   "id": "kkHaxW7eVV",
@@ -32495,7 +32095,7 @@
                 },
                 "name": "Footer",
                 "padding": {
-                  "bottom": 20,
+                  "bottom": 8,
                   "leading": 0,
                   "top": 20,
                   "trailing": 0
@@ -32562,7 +32162,7 @@
           }
         },
         "default_locale": "en_US",
-        "revision": 41,
+        "revision": 45,
         "template_name": "components",
         "zero_decimal_place_countries": {
           "apple": [
@@ -32586,27 +32186,7 @@
       "description": "Template 018",
       "identifier": "template_018",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -34435,27 +34015,7 @@
       "description": "Template 019",
       "identifier": "template_019",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -34898,7 +34458,7 @@
                           ],
                           "dimension": {
                             "alignment": "center",
-                            "distribution": "start",
+                            "distribution": "center",
                             "type": "horizontal"
                           },
                           "id": "CO2vXSEu_C",
@@ -35210,7 +34770,7 @@
                           ],
                           "dimension": {
                             "alignment": "center",
-                            "distribution": "start",
+                            "distribution": "center",
                             "type": "horizontal"
                           },
                           "id": "cGC2vziprb",
@@ -35348,18 +34908,21 @@
                               "border": null,
                               "components": [
                                 {
-                                  "background_color": null,
-                                  "color": {
+                                  "background_color": {
                                     "light": {
                                       "type": "hex",
                                       "value": "#ccccccff"
                                     }
                                   },
-                                  "font_name": null,
-                                  "font_size": 24,
-                                  "font_weight": "regular",
-                                  "horizontal_alignment": "leading",
-                                  "id": "PWfb3fgYe7",
+                                  "badge": null,
+                                  "border": null,
+                                  "components": [],
+                                  "dimension": {
+                                    "alignment": "leading",
+                                    "distribution": "space_between",
+                                    "type": "vertical"
+                                  },
+                                  "id": "P2Vwa-u3pQ",
                                   "margin": {
                                     "bottom": 0,
                                     "leading": 0,
@@ -35373,18 +34936,28 @@
                                     "top": 0,
                                     "trailing": 0
                                   },
+                                  "shadow": null,
+                                  "shape": {
+                                    "corners": {
+                                      "bottom_leading": 0,
+                                      "bottom_trailing": 0,
+                                      "top_leading": 0,
+                                      "top_trailing": 0
+                                    },
+                                    "type": "rectangle"
+                                  },
                                   "size": {
                                     "height": {
-                                      "type": "fit",
-                                      "value": null
+                                      "type": "fixed",
+                                      "value": 2
                                     },
                                     "width": {
-                                      "type": "fit",
-                                      "value": null
+                                      "type": "fixed",
+                                      "value": 12
                                     }
                                   },
-                                  "text_lid": "-bvqzgRdum",
-                                  "type": "text"
+                                  "spacing": 0,
+                                  "type": "stack"
                                 }
                               ],
                               "dimension": {
@@ -35519,7 +35092,7 @@
                           ],
                           "dimension": {
                             "alignment": "center",
-                            "distribution": "start",
+                            "distribution": "center",
                             "type": "horizontal"
                           },
                           "id": "C12OrsfZqc",
@@ -35657,18 +35230,21 @@
                               "border": null,
                               "components": [
                                 {
-                                  "background_color": null,
-                                  "color": {
+                                  "background_color": {
                                     "light": {
                                       "type": "hex",
                                       "value": "#ccccccff"
                                     }
                                   },
-                                  "font_name": null,
-                                  "font_size": 24,
-                                  "font_weight": "regular",
-                                  "horizontal_alignment": "leading",
-                                  "id": "s5wQqXJrGR",
+                                  "badge": null,
+                                  "border": null,
+                                  "components": [],
+                                  "dimension": {
+                                    "alignment": "leading",
+                                    "distribution": "space_between",
+                                    "type": "vertical"
+                                  },
+                                  "id": "KcOpDqiYp3",
                                   "margin": {
                                     "bottom": 0,
                                     "leading": 0,
@@ -35682,18 +35258,28 @@
                                     "top": 0,
                                     "trailing": 0
                                   },
+                                  "shadow": null,
+                                  "shape": {
+                                    "corners": {
+                                      "bottom_leading": 0,
+                                      "bottom_trailing": 0,
+                                      "top_leading": 0,
+                                      "top_trailing": 0
+                                    },
+                                    "type": "rectangle"
+                                  },
                                   "size": {
                                     "height": {
-                                      "type": "fit",
-                                      "value": null
+                                      "type": "fixed",
+                                      "value": 2
                                     },
                                     "width": {
-                                      "type": "fit",
-                                      "value": null
+                                      "type": "fixed",
+                                      "value": 12
                                     }
                                   },
-                                  "text_lid": "wJWI4AivYT",
-                                  "type": "text"
+                                  "spacing": 0,
+                                  "type": "stack"
                                 }
                               ],
                               "dimension": {
@@ -35828,7 +35414,7 @@
                           ],
                           "dimension": {
                             "alignment": "center",
-                            "distribution": "start",
+                            "distribution": "center",
                             "type": "horizontal"
                           },
                           "id": "gJeiVWci-c",
@@ -35966,18 +35552,21 @@
                               "border": null,
                               "components": [
                                 {
-                                  "background_color": null,
-                                  "color": {
+                                  "background_color": {
                                     "light": {
                                       "type": "hex",
                                       "value": "#ccccccff"
                                     }
                                   },
-                                  "font_name": null,
-                                  "font_size": 24,
-                                  "font_weight": "regular",
-                                  "horizontal_alignment": "leading",
-                                  "id": "xiVmRNis8x",
+                                  "badge": null,
+                                  "border": null,
+                                  "components": [],
+                                  "dimension": {
+                                    "alignment": "leading",
+                                    "distribution": "space_between",
+                                    "type": "vertical"
+                                  },
+                                  "id": "KNkQlWgGcv",
                                   "margin": {
                                     "bottom": 0,
                                     "leading": 0,
@@ -35991,18 +35580,28 @@
                                     "top": 0,
                                     "trailing": 0
                                   },
+                                  "shadow": null,
+                                  "shape": {
+                                    "corners": {
+                                      "bottom_leading": 0,
+                                      "bottom_trailing": 0,
+                                      "top_leading": 0,
+                                      "top_trailing": 0
+                                    },
+                                    "type": "rectangle"
+                                  },
                                   "size": {
                                     "height": {
-                                      "type": "fit",
-                                      "value": null
+                                      "type": "fixed",
+                                      "value": 2
                                     },
                                     "width": {
-                                      "type": "fit",
-                                      "value": null
+                                      "type": "fixed",
+                                      "value": 12
                                     }
                                   },
-                                  "text_lid": "T2-lA7To1i",
-                                  "type": "text"
+                                  "spacing": 0,
+                                  "type": "stack"
                                 }
                               ],
                               "dimension": {
@@ -36137,7 +35736,7 @@
                           ],
                           "dimension": {
                             "alignment": "center",
-                            "distribution": "start",
+                            "distribution": "center",
                             "type": "horizontal"
                           },
                           "id": "RF9sReUZg6",
@@ -36275,18 +35874,21 @@
                               "border": null,
                               "components": [
                                 {
-                                  "background_color": null,
-                                  "color": {
+                                  "background_color": {
                                     "light": {
                                       "type": "hex",
                                       "value": "#ccccccff"
                                     }
                                   },
-                                  "font_name": null,
-                                  "font_size": 24,
-                                  "font_weight": "regular",
-                                  "horizontal_alignment": "leading",
-                                  "id": "fStwhyX5M4",
+                                  "badge": null,
+                                  "border": null,
+                                  "components": [],
+                                  "dimension": {
+                                    "alignment": "leading",
+                                    "distribution": "space_between",
+                                    "type": "vertical"
+                                  },
+                                  "id": "F5SOCMliP3",
                                   "margin": {
                                     "bottom": 0,
                                     "leading": 0,
@@ -36300,18 +35902,28 @@
                                     "top": 0,
                                     "trailing": 0
                                   },
+                                  "shadow": null,
+                                  "shape": {
+                                    "corners": {
+                                      "bottom_leading": 0,
+                                      "bottom_trailing": 0,
+                                      "top_leading": 0,
+                                      "top_trailing": 0
+                                    },
+                                    "type": "rectangle"
+                                  },
                                   "size": {
                                     "height": {
-                                      "type": "fit",
-                                      "value": null
+                                      "type": "fixed",
+                                      "value": 2
                                     },
                                     "width": {
-                                      "type": "fit",
-                                      "value": null
+                                      "type": "fixed",
+                                      "value": 12
                                     }
                                   },
-                                  "text_lid": "7Z7-23wD6z",
-                                  "type": "text"
+                                  "spacing": 0,
+                                  "type": "stack"
                                 }
                               ],
                               "dimension": {
@@ -36446,7 +36058,7 @@
                           ],
                           "dimension": {
                             "alignment": "center",
-                            "distribution": "start",
+                            "distribution": "center",
                             "type": "horizontal"
                           },
                           "id": "JJInWTwAHu",
@@ -36489,7 +36101,7 @@
                       ],
                       "dimension": {
                         "alignment": "center",
-                        "distribution": "start",
+                        "distribution": "center",
                         "type": "vertical"
                       },
                       "id": "RPNB56wU90",
@@ -36575,7 +36187,7 @@
               ],
               "dimension": {
                 "alignment": "center",
-                "distribution": "start",
+                "distribution": "center",
                 "type": "vertical"
               },
               "id": "uiQ_lIwkLb",
@@ -36777,7 +36389,7 @@
                                 }
                               },
                               "font_name": null,
-                              "font_size": 14,
+                              "font_size": 16,
                               "font_weight": "semibold",
                               "horizontal_alignment": "center",
                               "id": "Z-Gg6Zcq0g",
@@ -36796,6 +36408,7 @@
                                     }
                                   ],
                                   "properties": {
+                                    "font_size": 14,
                                     "text_lid": "wvq0hZwzHN"
                                   }
                                 }
@@ -36834,9 +36447,9 @@
                           },
                           "name": "",
                           "padding": {
-                            "bottom": 12,
+                            "bottom": 16,
                             "leading": 8,
-                            "top": 12,
+                            "top": 16,
                             "trailing": 8
                           },
                           "shadow": {
@@ -37071,14 +36684,11 @@
         },
         "components_localizations": {
           "en_US": {
-            "-bvqzgRdum": "–",
             "4HAasJwYxR": " ",
-            "7Z7-23wD6z": "–",
             "MEM14HMw5x": "Assignment Tracker",
             "NBxq95Ez75": "AI-generated Study Plans",
             "QCZKZTPjNM": "Try free for {{ product.offer_period_with_unit }}, then {{ product.price_per_period_abbreviated }}",
             "RKBuvTg6Kn": "Continue",
-            "T2-lA7To1i": "–",
             "VjVfEywVAV": "Pro Note Organization",
             "WTRosKdLY1": "Restore purchases",
             "ZA3y7pYsXD": "Pomodoro Timer",
@@ -37087,12 +36697,11 @@
             "njFz_53-zG": "Unlock Your Smartest Study Routine",
             "oGTQv-YXlg": "+1,000 Flashcards",
             "oxyTYEk6ZZ": "PRO",
-            "wJWI4AivYT": "–",
             "wvq0hZwzHN": "Redeem my free {{ product.offer_period }}"
           }
         },
         "default_locale": "en_US",
-        "revision": 41,
+        "revision": 54,
         "template_name": "components",
         "zero_decimal_place_countries": {
           "apple": [
@@ -37116,27 +36725,7 @@
       "description": "Template 020",
       "identifier": "template_020",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": {
         "asset_base_url": "https://assets.pawwalls.com",
         "components_config": {
@@ -38474,108 +38063,28 @@
       "description": "josh_debug_18",
       "identifier": "josh_debug_18",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": null
     },
     {
       "description": "barbara_debug_019 TO DELETE",
       "identifier": "barbara_debug_019",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": null
     },
     {
       "description": "template_020_with connector",
       "identifier": "template_020_with connector",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ],
+      "packages": [],
       "paywall_components": null
     },
     {
       "description": "barbara_debug_019_02",
       "identifier": "barbara_debug_019_02",
       "metadata": null,
-      "packages": [
-        {
-          "identifier": "$rc_monthly",
-          "platform_product_identifier": "onemonth_freetrial",
-          "platform_product_plan_identifier": "p1m"
-        },
-        {
-          "identifier": "$rc_annual",
-          "platform_product_identifier": "annual_freetrial",
-          "platform_product_plan_identifier": "p1y"
-        },
-        {
-          "identifier": "$rc_lifetime",
-          "platform_product_identifier": "consumable"
-        },
-        {
-          "identifier": "$rc_weekly",
-          "platform_product_identifier": "rc_7999_1year",
-          "platform_product_plan_identifier": "annual"
-        }
-      ]
+      "packages": []
     }
   ],
   "placements": {

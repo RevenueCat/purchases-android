@@ -1,0 +1,38 @@
+{
+  "packages": [
+    {
+      "identifier": "$rc_lifetime",
+      "platform_product_identifier": "com.revenuecat.lifetime_product"
+    },
+    {
+      "identifier": "$rc_annual",
+      "platform_product_identifier": "com.revenuecat.annual_product",
+      "platform_product_plan_identifier": "p1y"
+    },
+    {
+      "identifier": "$rc_six_month",
+      "platform_product_identifier": "com.revenuecat.semester_product",
+      "platform_product_plan_identifier": "p6m"
+    },
+    {
+      "identifier": "$rc_three_month",
+      "platform_product_identifier": "com.revenuecat.quarterly_product",
+      "platform_product_plan_identifier": "p3m"
+    },
+    {
+      "identifier": "$rc_two_month",
+      "platform_product_identifier": "com.revenuecat.bimonthly_product",
+      "platform_product_plan_identifier": "p2m"
+    },
+    {
+      "identifier": "$rc_monthly",
+      "platform_product_identifier": "com.revenuecat.monthly_product",
+      "platform_product_plan_identifier": "p1m"
+    },
+    {
+      "identifier": "$rc_weekly",
+      "platform_product_identifier": "com.revenuecat.weekly_product",
+      "platform_product_plan_identifier": "p1w"
+    }
+  ]
+}

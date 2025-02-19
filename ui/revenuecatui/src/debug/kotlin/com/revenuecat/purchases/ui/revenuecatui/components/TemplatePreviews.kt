@@ -9,7 +9,6 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
-import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
@@ -42,38 +41,44 @@ private object PreviewOfferingParser : OfferingParser() {
 
 private class OfferingProvider : PreviewParameterProvider<Offering> {
 
-    // We could place the JSON file in the res folder and read it in a more straightforward way. However that means we
-    // need a Context to read it, which we don't have access to in a PreviewParameterProvider. It's beneficial to read
-    // the file directly in the PreviewParameterProvider, so we can parse the offering IDs and avoid hardcoding them.
-    private val jsonFileName = "offerings_paywalls_v2_templates.json"
+    private val offeringsJsonFileName = "offerings_paywalls_v2_templates.json"
+    private val packagesJsonFileName = "packages.json"
 
-    // The ClassLoader is used on Android, e.g. when the preview is shown on a device/emulator, and the PROJECT_DIR is
-    // used when the preview is shown in Android Studio.
-    private val jsonString = object {}.javaClass.getResource("/$jsonFileName")?.readText()
-        ?: File(BuildConfig.PROJECT_DIR).resolve("src/debug/resources/$jsonFileName").readText()
-    private val json = JSONObject(jsonString)
+    private val packagesJsonArray =
+        JSONObject(getResource(packagesJsonFileName).decodeToString()).getJSONArray("packages")
+    private val offeringsJsonObject = JSONObject(getResource(offeringsJsonFileName).decodeToString()).apply {
+        // Make sure every offering has all packages.
+        getJSONArray("offerings").forEach { index -> getJSONObject(index).put("packages", packagesJsonArray) }
+    }
 
-    private val offeringIds: List<String> = json.getJSONArray("offerings")
+    private val offeringIds: List<String> = offeringsJsonObject.getJSONArray("offerings")
         .mapNotNull { index ->
             val offering = getJSONObject(index)
             val hasPaywall = offering.optString("paywall_components").isNotBlank()
             if (hasPaywall) offering.getString("identifier") else null
         }
-    private val offerings = PreviewOfferingParser.createOfferings(json, emptyMap())
+    private val offerings = PreviewOfferingParser.createOfferings(offeringsJsonObject, emptyMap())
 
     override val values: Sequence<Offering> = offeringIds.asSequence()
+        .sorted()
         .mapNotNull { offeringId ->
             offerings.getOffering(offeringId)
                 ?.takeUnless { offering -> offering.paywallComponents == null }
         }
 
-    private inline fun <R : Any> JSONArray.mapNotNull(transform: JSONArray.(index: Int) -> R?): List<R> {
-        val result = mutableListOf<R>()
+    private inline fun <T : Any> JSONArray.mapNotNull(transform: JSONArray.(index: Int) -> T?): List<T> {
+        val result = mutableListOf<T>()
         for (i in 0 until length()) {
             val transformed = transform(i)
             if (transformed != null) result.add(transformed)
         }
         return result
+    }
+
+    private inline fun JSONArray.forEach(block: JSONArray.(index: Int) -> Unit) {
+        for (i in 0 until length()) {
+            block(i)
+        }
     }
 }
 
@@ -96,3 +101,16 @@ private fun PaywallComponentsTemplate_Preview(
         clickHandler = { },
     )
 }
+
+/**
+ *  Reads from the `resources` directory. It uses the ClassLoader on Android, e.g. when the preview is shown on a
+ *  device/emulator, and the PROJECT_DIR when the preview is shown in Android Studio.
+ *
+ *  We could place our files in the res folder and read them in a more straightforward way. However that means we need
+ *  a Context to read them, which we don't have access to in a PreviewParameterProvider. It's beneficial to read the
+ *  offerings JSON file directly in the PreviewParameterProvider, so we can parse the offering IDs and avoid hardcoding
+ *  them.
+ */
+private fun getResource(fileName: String): ByteArray =
+    object {}.javaClass.getResource("/$fileName")?.readBytes()
+        ?: File(BuildConfig.PROJECT_DIR).resolve("src/debug/resources/$fileName").readBytes()
