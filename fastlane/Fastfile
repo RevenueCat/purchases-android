@@ -597,43 +597,23 @@ DESC
   desc "Updates offerings_paywalls_v2_templates.json file and creates/updates PR"
   lane :update_paywall_templates do |options|
     branch_name = "pw2-update-templates-json"
+    templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
+    # Ensure API key is available
+    api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"]
+    UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable") unless api_key
     
     # Ensure we're starting from an up-to-date main
     sh("git", "fetch", "origin")
     
     create_or_checkout_branch(branch_name: branch_name)
-    
-    # Ensure API key is available
-    api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"]
-    UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable") unless api_key
 
-    app_user_id = "purchases-android-ci"
-
-    require 'rest-client'
-    require 'json'
-
-    # Make API request
-    begin
-      response = RestClient.get(
-        "https://api.revenuecat.com/v1/subscribers/#{app_user_id}/offerings",
-        {
-          'Content-Type' => 'application/json',
-          'X-Platform' => 'Android',
-          'Authorization' => "Bearer #{api_key}"
-        }
-      )
-
-      # Save response to file
-      templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
-      File.write(templates_file, JSON.pretty_generate(JSON.parse(response.body)))
-      UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
-    rescue RestClient::Exception => e
-      UI.error("API request failed: #{e.response}")
-      raise
-    rescue => e
-      UI.error("Error: #{e.message}")
-      raise
-    end
+    # Get offerings and save to file
+    offerings_response = get_offerings(
+      app_user_id: "purchases-android-ci",
+      api_key: api_key
+    )
+    File.write(templates_file, JSON.pretty_generate(offerings_response))
+    UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
     # Check if there are any changes to commit
     if sh("git", "status", "--porcelain").empty?
@@ -830,6 +810,34 @@ DESC
     else
       UI.message("Creating new branch #{branch_name}")
       sh("git", "checkout", "-b", branch_name)
+    end
+  end
+
+  private_lane :get_offerings do |options|
+    app_user_id = options[:app_user_id] || UI.user_error!("No app_user_id provided")
+    api_key = options[:api_key] || UI.user_error!("No api_key provided")
+
+    require 'rest-client'
+    require 'json'
+
+    begin
+      response = RestClient.get(
+        "https://api.revenuecat.com/v1/subscribers/#{app_user_id}/offerings",
+        {
+          'Content-Type' => 'application/json',
+          'X-Platform' => 'Android',
+          'Authorization' => "Bearer #{api_key}"
+        }
+      )
+
+      # Parse and return the response
+      JSON.parse(response.body)
+    rescue RestClient::Exception => e
+      UI.error("API request failed: #{e.response}")
+      raise
+    rescue => e
+      UI.error("Error: #{e.message}")
+      raise
     end
   end
 end
