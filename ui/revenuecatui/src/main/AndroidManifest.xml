@@ -5,6 +5,9 @@
         <activity
                 android:name=".activity.PaywallActivity"
                 android:exported="false" />
+        <activity
+                android:name=".customercenter.CustomerCenterActivity"
+                android:exported="false" />
     </application>
 
 </manifest>
