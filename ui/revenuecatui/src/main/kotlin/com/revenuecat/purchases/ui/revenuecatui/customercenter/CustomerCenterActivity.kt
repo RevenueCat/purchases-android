@@ -24,8 +24,8 @@ internal class CustomerCenterActivity : ComponentActivity() {
                 onDismiss = {
                     setResult(RESULT_OK)
                     finish()
-                }
+                },
             )
         }
     }
-} 
+}

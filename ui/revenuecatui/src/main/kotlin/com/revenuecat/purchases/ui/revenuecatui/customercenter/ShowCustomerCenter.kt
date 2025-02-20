@@ -6,14 +6,14 @@ import androidx.activity.result.contract.ActivityResultContract
 
 /**
  * Contract for launching the Customer Center.
- * 
+ *
  * Usage:
  * ```
  * class MyActivity : ComponentActivity() {
  *     private val customerCenter = registerForActivityResult(ShowCustomerCenter()) {
  *         // Handle the dismissal
  *     }
- *     
+ *
  *     fun showCustomerCenter() {
  *         customerCenter.launch()
  *     }
@@ -30,4 +30,4 @@ class ShowCustomerCenter : ActivityResultContract<Unit, Unit>() {
     override fun parseResult(resultCode: Int, intent: Intent?) {
         // No result to parse since Customer Center doesn't return any data
     }
-} 
+}
