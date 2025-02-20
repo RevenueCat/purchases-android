@@ -666,11 +666,11 @@ DESC
       api_token: ENV["GITHUB_TOKEN"],
       path: "/repos/RevenueCat/#{repo_name}/pulls?head=RevenueCat:#{branch_name}&state=open"
     )
-
-    if existing_pr.length == 0
+    
+    if existing_pr[:json].length == 0
       # Create new PR if one doesn't exist
       create_pull_request(
-        repo: "RevenueCat/#{repo_name}",
+        repo: "revenuecat/#{repo_name}",
         title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
         body: "This is an automatic update of the Compose previews of all templates.",
         base: "main",
@@ -813,7 +813,7 @@ DESC
       body = "Requested by #{username} for [#{base_branch}](#{branch_link})"
 
       create_pull_request(
-        repo: options[:repo],
+        repo: options[:repo] || "revenuecat/#{repo_name}",  # Note: using lowercase 'revenuecat'
         title: "Generating new test snapshots for `#{base_branch}`",
         body: body,
         base: base_branch,
