@@ -598,8 +598,7 @@ DESC
   lane :update_paywall_templates do |options|
     branch_name = "pw2-update-templates-json"
     templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
-    api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"]
-    UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable") unless api_key
+    api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"] || UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable")
     
     # Ensure we're starting from an up-to-date main.
     sh("git", "fetch", "origin")
@@ -611,7 +610,7 @@ DESC
       app_user_id: "purchases-android-ci",
       api_key: api_key
     )
-    File.write(templates_file, JSON.pretty_generate(offerings_response))
+    File.write(templates_file, offerings_response)
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
     # Commit, push, and create PR.
@@ -806,7 +805,7 @@ DESC
       )
 
       # Parse and return the response
-      JSON.parse(response.body)
+      JSON.pretty_generate(JSON.parse(response.body))
     rescue RestClient::Exception => e
       UI.error("API request failed: #{e.response}")
       raise
