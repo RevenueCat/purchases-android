@@ -615,21 +615,10 @@ DESC
     File.write(templates_file, JSON.pretty_generate(offerings_response))
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
-    # Check if there are any changes to commit
-    if sh("git", "status", "--porcelain").empty?
-      UI.message("No changes to commit")
-    else
-      # Commit changes
-      Dir.chdir("..") do
-        sh("git", "add", ".")
-        sh("git", "commit", "-m", "[Automated] Updates offerings_paywalls_v2_templates.json.")
-      end
-    end
-
-    # Always push the branch, even if there were no new changes
-    Dir.chdir("..") do
-      sh("git", "push", "-u", "origin", branch_name)
-    end
+    commit_and_push(
+      branch_name: branch_name,
+      commit_message: "[Automated] Updates offerings_paywalls_v2_templates.json."
+    )
 
     # Check if PR already exists
     existing_pr = github_api(
@@ -838,6 +827,27 @@ DESC
     rescue => e
       UI.error("Error: #{e.message}")
       raise
+    end
+  end
+
+  private_lane :commit_and_push do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
+    commit_message = options[:commit_message] || UI.user_error!("No commit_message provided")
+
+    # Check if there are any changes to commit
+    if sh("git", "status", "--porcelain").empty?
+      UI.message("No changes to commit")
+    else
+      # Commit changes
+      Dir.chdir("..") do
+        sh("git", "add", ".")
+        sh("git", "commit", "-m", commit_message)
+      end
+    end
+
+    # Always push the branch, even if there were no new changes
+    Dir.chdir("..") do
+      sh("git", "push", "-u", "origin", branch_name)
     end
   end
 end
