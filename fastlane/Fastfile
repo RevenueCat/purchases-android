@@ -617,8 +617,8 @@ DESC
     end
 
     # Ensure API key is available
-    api_key = ENV["PAYWALLS_V2_ALPHA_API_KEY"]
-    UI.user_error!("Missing PAYWALLS_V2_ALPHA_API_KEY environment variable") unless api_key
+    api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"]
+    UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable") unless api_key
 
     app_user_id = "purchases-android-ci"
 
@@ -677,7 +677,7 @@ DESC
         head: branch_name,
         api_token: ENV["GITHUB_TOKEN"],
         labels: ["pr:other"],
-        team_reviewers: ['coresdk', 'monetization']
+        # TODO: team_reviewers: ['coresdk', 'monetization'],
       )
     else
       UI.message("PR already exists, changes have been pushed")
