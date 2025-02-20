@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots, deploy_snapshot_release]
+    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots, deploy_snapshot_release, update_paywall_templates]
     default: default
 
 commands:
@@ -629,6 +629,18 @@ jobs:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
+  update-paywall-templates:
+    docker:
+      - image: cimg/base:2025.02
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - run:
+          name: Update paywall templates
+          command: bundle exec fastlane android update_paywall_templates
+
 workflows:
   version: 2
   danger:
@@ -771,3 +783,9 @@ workflows:
       equal: [ generate_revenuecatui_snapshots, << pipeline.parameters.action >> ]
     jobs:
       - record-revenuecatui-snapshots
+
+  update-paywall-templates:
+    when:
+      equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
+    jobs:
+      - update-paywall-templates
