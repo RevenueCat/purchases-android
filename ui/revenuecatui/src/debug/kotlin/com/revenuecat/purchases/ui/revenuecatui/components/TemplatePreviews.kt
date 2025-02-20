@@ -23,9 +23,9 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     private val offeringsJsonFileName = "offerings_paywalls_v2_templates.json"
     private val packagesJsonFileName = "packages.json"
 
-    private val packagesJsonArray = JSONObject(getResource(packagesJsonFileName).decodeToString())
+    private val packagesJsonArray = JSONObject(getResourceStream(packagesJsonFileName).readBytes().decodeToString())
         .getJSONArray("packages")
-    private val uiConfigJsonObject = JSONObject(getResource(offeringsJsonFileName).inputStream().readUiConfig())
+    private val uiConfigJsonObject = JSONObject(getResourceStream(offeringsJsonFileName).readUiConfig())
 
     private val offeringParser = Class.forName("com.revenuecat.purchases.utils.PreviewOfferingParser")
         .getDeclaredConstructor()
@@ -79,9 +79,6 @@ private fun PaywallComponentsTemplate_Preview(
     )
 }
 
-private fun getResource(fileName: String): ByteArray =
-    getResourceStream(fileName).readBytes()
-
 /**
  *  Reads from the `resources` directory. It uses the ClassLoader on Android, e.g. when the preview is shown on a
  *  device/emulator, and the PROJECT_DIR when the preview is shown in Android Studio.
@@ -96,13 +93,11 @@ private fun getResourceStream(fileName: String): InputStream =
         ?: File(BuildConfig.PROJECT_DIR).resolve("src/debug/resources/$fileName").inputStream()
 
 /**
- * Returns a sequence of JSON strings, each representing a single offering.
- * This simplistic parser assumes that the JSON structure is well-formed and that
- * object boundaries (i.e. `{` and `}`) do not appear in string literals.
+ * A very limited streaming JSON parser that will look for offerings and will return each one in a Sequence.
  */
 private fun InputStream.offeringJsonStringSequence(): Sequence<String> = sequence {
     val reader = bufferedReader()
-    // Read until we reach the offerings array
+    // Read until we reach the offerings array.
     var line: String? = reader.readLine()
     while (line != null && !line.contains("\"offerings\": [")) {
         line = reader.readLine()
@@ -115,7 +110,7 @@ private fun InputStream.offeringJsonStringSequence(): Sequence<String> = sequenc
     var braceCount = 0
     while (reader.read().also { c = it } != -1) {
         val char = c.toChar()
-        // When we encounter the start of an object, initialize our counter.
+        // When we encounter the start of an object, start counting braces to be able to handle nested objects.
         if (char == '{') {
             if (!insideObject) {
                 insideObject = true
@@ -134,13 +129,9 @@ private fun InputStream.offeringJsonStringSequence(): Sequence<String> = sequenc
                 insideObject = false
             }
         }
-        // Optionally, stop if we hit the end of the offerings array.
-        if (!insideObject && char == ']') {
-            println("TESTING hit the end!")
-            break
-        }
+        // We hit the end of the offerings array.
+        if (!insideObject && char == ']') break
     }
-    println("TESTING c: $c")
     reader.close()
 }
 
