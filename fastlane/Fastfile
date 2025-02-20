@@ -598,16 +598,15 @@ DESC
   lane :update_paywall_templates do |options|
     branch_name = "pw2-update-templates-json"
     templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
-    # Ensure API key is available
     api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"]
     UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable") unless api_key
     
-    # Ensure we're starting from an up-to-date main
+    # Ensure we're starting from an up-to-date main.
     sh("git", "fetch", "origin")
     
     create_or_checkout_branch(branch_name: branch_name)
 
-    # Get offerings and save to file
+    # Get offerings and save to file.
     offerings_response = get_offerings(
       app_user_id: "purchases-android-ci",
       api_key: api_key
@@ -615,32 +614,19 @@ DESC
     File.write(templates_file, JSON.pretty_generate(offerings_response))
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
+    # Commit, push, and create PR.
     commit_and_push(
       branch_name: branch_name,
       commit_message: "[Automated] Updates offerings_paywalls_v2_templates.json."
     )
 
-    # Check if PR already exists
-    existing_pr = github_api(
-      api_token: ENV["GITHUB_TOKEN"],
-      path: "/repos/RevenueCat/#{repo_name}/pulls?head=RevenueCat:#{branch_name}&state=open"
+    create_pr_if_necessary(
+      branch_name: branch_name,
+      title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
+      body: "This is an automatic update of the Compose previews of all templates.",
+      labels: ["pr:other"],
+      # TODO: team_reviewers: ["coresdk", "monetization"]
     )
-    
-    if existing_pr[:json].length == 0
-      # Create new PR if one doesn't exist
-      create_pull_request(
-        repo: "RevenueCat/#{repo_name}",
-        title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
-        body: "This is an automatic update of the Compose previews of all templates.",
-        base: "main",
-        head: branch_name,
-        api_token: ENV["GITHUB_TOKEN"],
-        labels: ["pr:other"],
-        # TODO: team_reviewers: ['coresdk', 'monetization'],
-      )
-    else
-      UI.message("PR already exists, changes have been pushed")
-    end
   end
 
   desc "Clones or updates snapshots repo"
@@ -848,6 +834,36 @@ DESC
     # Always push the branch, even if there were no new changes
     Dir.chdir("..") do
       sh("git", "push", "-u", "origin", branch_name)
+    end
+  end
+
+  private_lane :create_pr_if_necessary do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
+    title = options[:title] || UI.user_error!("No title provided")
+    body = options[:body] || UI.user_error!("No body provided")
+    repo = options[:repo] || "RevenueCat/#{repo_name}"
+    base = options[:base] || "main"
+    labels = options[:labels] || []
+    team_reviewers = options[:team_reviewers] || []
+
+    existing_pr = github_api(
+      api_token: ENV["GITHUB_TOKEN"],
+      path: "/repos/#{repo}/pulls?head=RevenueCat:#{branch_name}&state=open"
+    )    
+    
+    if existing_pr[:json].length == 0
+      create_pull_request(
+        repo: repo,
+        title: title,
+        body: body,
+        base: base,
+        head: branch_name,
+        api_token: ENV["GITHUB_TOKEN"],
+        labels: labels,
+        team_reviewers: team_reviewers
+      )
+    else
+      UI.message("PR already exists.")
     end
   end
 end
