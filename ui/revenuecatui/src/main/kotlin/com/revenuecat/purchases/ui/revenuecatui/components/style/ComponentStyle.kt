@@ -8,5 +8,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
  * Marker interface for component styles.
  */
 internal sealed interface ComponentStyle {
+    val visible: Boolean
     val size: Size
 }
