@@ -597,25 +597,12 @@ DESC
   desc "Updates offerings_paywalls_v2_templates.json file and creates/updates PR"
   lane :update_paywall_templates do |options|
     branch_name = "pw2-update-templates-json"
-
+    
     # Ensure we're starting from an up-to-date main
     sh("git", "fetch", "origin")
-
-    # Check if branch exists locally or remotely
-    branch_exists_locally = sh("git", "branch", "--list", branch_name).length > 0
-    branch_exists_remotely = sh("git", "ls-remote", "--heads", "origin", branch_name).length > 0
-
-    if branch_exists_locally || branch_exists_remotely
-      UI.message("Branch #{branch_name} already exists, checking it out")
-      sh("git", "checkout", branch_name)
-      if branch_exists_remotely
-        sh("git", "pull", "origin", branch_name)
-      end
-    else
-      UI.message("Creating new branch #{branch_name}")
-      sh("git", "checkout", "-b", branch_name)
-    end
-
+    
+    create_or_checkout_branch(branch_name: branch_name)
+    
     # Ensure API key is available
     api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"]
     UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable") unless api_key
@@ -824,6 +811,25 @@ DESC
         head: branch_name,
         labels: ["test"]
       )
+    end
+  end
+
+  private_lane :create_or_checkout_branch do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch name provided")
+
+    # Check if branch exists locally or remotely
+    branch_exists_locally = sh("git", "branch", "--list", branch_name).length > 0
+    branch_exists_remotely = sh("git", "ls-remote", "--heads", "origin", branch_name).length > 0
+
+    if branch_exists_locally || branch_exists_remotely
+      UI.message("Branch #{branch_name} already exists, checking it out")
+      sh("git", "checkout", branch_name)
+      if branch_exists_remotely
+        sh("git", "pull", "origin", branch_name)
+      end
+    else
+      UI.message("Creating new branch #{branch_name}")
+      sh("git", "checkout", "-b", branch_name)
     end
   end
 end
