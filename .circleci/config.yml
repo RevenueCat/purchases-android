@@ -25,8 +25,8 @@ aliases:
 
   android-executor: &android-executor
     executor:
-      name: android/android-docker
-      resource-class: large
+      name: android/android_docker
+      resource_class: large
       tag: 2025.02.1
     environment:
       JVM_OPTS: -Xmx6g
@@ -34,7 +34,7 @@ aliases:
 
   android-machine-emulator: &android-machine-emulator
     executor:
-      name: android/android-machine
+      name: android/android_machine
       resource-class: large
       tag: 2025.02.1
 
@@ -168,7 +168,7 @@ jobs:
       - run:
           name: Build sample app
           command: bundle exec fastlane android build_magic_weather_compose
-      - android/save-build_cache
+      - android/save_build_cache
 
   assemble-custom-entitlement-computation-sample-app:
     <<: *android-executor
@@ -217,7 +217,7 @@ jobs:
           command: ./gradlew purchases:koverXmlReportDefaultsRelease
       - codecov/upload:
           file: purchases/build/reports/kover/reportDefaultsRelease.xml
-      - android/save-build_cache
+      - android/save_build_cache
       - store_artifacts:
           path: build/reports
       - run:
@@ -309,18 +309,18 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache:
-          cache-prefix: v1a
+          cache_prefix: v1a
       - android/restore_build_cache:
-          cache-prefix: v1a
+          cache_prefix: v1a
       - prepare-signing-key
       - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy_snapshot
       - android/save_gradle_cache:
-          cache-prefix: v1a
+          cache_prefix: v1a
       - android/save_build_cache:
-          cache-prefix: v1a
+          cache_prefix: v1a
 
   assemble-purchase-tester:
     <<: *android-executor
