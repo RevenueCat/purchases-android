@@ -651,13 +651,16 @@ DESC
     # Check if there are any changes to commit
     if sh("git", "status", "--porcelain").empty?
       UI.message("No changes to commit")
-      next
+    else
+      # Commit changes
+      Dir.chdir("..") do
+        sh("git", "add", ".")
+        sh("git", "commit", "-m", "[Automated] Updates offerings_paywalls_v2_templates.json.")
+      end
     end
 
-    # Commit and push changes
-    Dir.chdir("..") do  # Move up one directory to the root of the project
-      sh("git", "add", ".")
-      sh("git", "commit", "-m", "[Automated] Update templates.json")
+    # Always push the branch, even if there were no new changes
+    Dir.chdir("..") do
       sh("git", "push", "-u", "origin", branch_name)
     end
 
@@ -666,8 +669,8 @@ DESC
       api_token: ENV["GITHUB_TOKEN"],
       path: "/repos/RevenueCat/#{repo_name}/pulls?head=RevenueCat:#{branch_name}&state=open"
     )
-
-    if existing_pr.length == 0
+    
+    if existing_pr[:json].length == 0
       # Create new PR if one doesn't exist
       create_pull_request(
         repo: "RevenueCat/#{repo_name}",
