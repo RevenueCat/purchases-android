@@ -28,6 +28,12 @@ android {
         }
     }
 
+    buildTypes {
+        debug {
+            buildConfigField("String", "PROJECT_DIR", "\"$projectDir\"")
+        }
+    }
+
     defaultConfig {
         minSdkVersion 24 // MeasureFormat requires API 24
         vectorDrawables {
@@ -36,6 +42,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig true
         compose true
     }
     composeOptions {
