@@ -2,12 +2,6 @@
   "current_offering_id": "FOR_DUPLICATION",
   "offerings": [
     {
-      "description": "FOR_DUPLICATION",
-      "identifier": "FOR_DUPLICATION",
-      "metadata": null,
-      "packages": []
-    },
-    {
       "description": "Template 001",
       "identifier": "template_001",
       "metadata": null,
