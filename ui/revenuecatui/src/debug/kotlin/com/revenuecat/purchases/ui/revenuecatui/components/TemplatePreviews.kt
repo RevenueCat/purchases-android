@@ -36,31 +36,37 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
 
     override val values: Sequence<Offering> = sequence {
         var index = 0
+        @Suppress("LoopWithTooManyJumpStatements")
         while (true) {
-            // Reopen the stream for each offering and skip previous ones.
-            val offeringJsonString = getOfferingJsonStringAt(index) ?: break
+            // Reopen the stream for each offering and skip previous ones. While we could keep the stream open for the
+            // entirety of the sequence and yield offerings as we encounter them, we found that Emerge Snapshots closes
+            // the stream prematurely in this case. To avoid that, we reopen the stream for each offering.
+            val offeringJsonObject = getResourceStream(offeringsJsonFileName)
+                .offeringJsonStringSequence()
+                .get(index)
+                ?.let { JSONObject(it) }
+                ?: break // Break if there are no more offerings.
 
-            val offeringJson = JSONObject(offeringJsonString)
-            val hasPaywall = offeringJson.optString("paywall_components").isNotBlank()
+            val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
             // Skip any offering that doesn't have a paywall.
             if (!hasPaywall) {
                 index++
                 continue
             }
 
-            val offeringId = offeringJson.getString("identifier")
-            // Inject packages and ui_config into the offering JSON.
-            val offeringJsonObject = offeringJson.put("packages", packagesJsonArray)
+            // Ensure that the offering has all packages.
+            offeringJsonObject.put("packages", packagesJsonArray)
+            val offeringId = offeringJsonObject.getString("identifier")
             val offeringsJsonObject = JSONObject()
                 .put("current_offering_id", offeringId)
                 .put("offerings", JSONArray().put(offeringJsonObject))
                 .put("ui_config", uiConfigJsonObject)
-            val offeringInstance = createOfferings(offeringsJsonObject)
+
+            createOfferings(offeringsJsonObject)
                 .current
                 ?.takeUnless { it.paywallComponents == null }
-            if (offeringInstance != null) {
-                yield(offeringInstance)
-            }
+                ?.also { offering -> yield(offering) }
+
             index++
         }
     }
@@ -69,13 +75,8 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
         createOfferingsMethod(offeringParser, offeringsJsonObject, emptyMap<String, List<StoreProduct>>()) as Offerings
 
-    private fun getOfferingJsonStringAt(index: Int): String? {
-        // Reopen the stream each time and drop already-processed offerings.
-        return getResourceStream(offeringsJsonFileName)
-            .offeringJsonStringSequence()
-            .drop(index)
-            .firstOrNull()
-    }
+    private fun <T> Sequence<T>.get(index: Int): T? =
+        drop(index).firstOrNull()
 }
 
 @Preview(device = "id:pixel_9")
@@ -114,44 +115,44 @@ private fun getResourceStream(fileName: String): InputStream =
 /**
  * A very limited streaming JSON parser that will look for offerings and will return each one in a Sequence.
  */
+@Suppress("CyclomaticComplexMethod")
 private fun InputStream.offeringJsonStringSequence(): Sequence<String> = sequence {
-    val reader = bufferedReader()
-    // Read until we reach the offerings array.
-    var line: String? = reader.readLine()
-    while (line != null && !line.contains("\"offerings\": [")) {
-        line = reader.readLine()
-    }
+    bufferedReader().use { reader ->
+        // Read until we reach the offerings array.
+        var line: String? = reader.readLine()
+        while (line != null && !line.contains("\"offerings\": [")) line = reader.readLine()
 
-    // Now start reading each offering.
-    var c: Int
-    val sb = StringBuilder()
-    var insideObject = false
-    var braceCount = 0
-    while (reader.read().also { c = it } != -1) {
-        val char = c.toChar()
-        // When we encounter the start of an object, start counting braces to be able to handle nested objects.
-        if (char == '{') {
-            if (!insideObject) {
-                insideObject = true
-                sb.clear()
+        // Now start reading each offering.
+        var c: Int
+        val stringBuilder = StringBuilder()
+        var insideObject = false
+        var braceCount = 0
+        while (reader.read().also { c = it } != -1) {
+            val char = c.toChar()
+            // When we encounter the start of an object, start counting braces to be able to handle nested objects.
+            if (char == '{') {
+                if (!insideObject) {
+                    insideObject = true
+                    stringBuilder.clear()
+                }
+                braceCount++
             }
-            braceCount++
-        }
-        if (insideObject) {
-            sb.append(char)
-        }
-        if (char == '}') {
-            braceCount--
-            if (braceCount == 0 && insideObject) {
-                // We have a complete JSON object.
-                yield(sb.toString())
-                insideObject = false
+
+            if (insideObject) stringBuilder.append(char)
+
+            if (char == '}') {
+                braceCount--
+                if (braceCount == 0 && insideObject) {
+                    // We have a complete JSON object.
+                    yield(stringBuilder.toString())
+                    insideObject = false
+                }
             }
+
+            // We hit the end of the offerings array.
+            if (!insideObject && char == ']') break
         }
-        // We hit the end of the offerings array.
-        if (!insideObject && char == ']') break
     }
-    reader.close()
 }
 
 /**
@@ -162,9 +163,7 @@ private fun InputStream.readUiConfig(): String =
         var line: String? = reader.readLine()
 
         // Read until we encounter the start of the ui_config object.
-        while (line != null && !line.contains("\"ui_config\": {")) {
-            line = reader.readLine()
-        }
+        while (line != null && !line.contains("\"ui_config\": {")) line = reader.readLine()
 
         buildString {
             appendLine("{")
