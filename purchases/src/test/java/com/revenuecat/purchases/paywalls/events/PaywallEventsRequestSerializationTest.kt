@@ -32,7 +32,7 @@ class PaywallEventsRequestSerializationTest {
                 localeIdentifier = "en_US",
             )
         )
-    ).mapNotNull { it.toBackendEvent() })
+    ).map { it.toBackendEvent() })
 
     @Test
     fun `can encode paywall event request correctly`() {

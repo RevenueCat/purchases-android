@@ -184,7 +184,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                     localeIdentifier = "en_US",
                 )
             )
-        ).mapNotNull { it.toBackendEvent() })
+        ).map { it.toBackendEvent() })
 
         ensureBlockFinishes { latch ->
             backend.postEvents(
@@ -226,7 +226,6 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         customerCenterConfigData?.let {
             val managementScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?: fail("Expected management screen")
-            val noActiveScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE] ?: fail("Expected no active screen")
             assertThat(managementScreen.type).isEqualTo(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)
             assertThat(managementScreen.paths.size).isEqualTo(4)
             val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { it.name.lowercase() }.toTypedArray()

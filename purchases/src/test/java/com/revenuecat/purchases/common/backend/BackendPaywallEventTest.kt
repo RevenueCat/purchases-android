@@ -58,7 +58,7 @@ class BackendPaywallEventTest {
                 localeIdentifier = "en_US",
             )
         )
-    ).mapNotNull { it.toBackendEvent() })
+    ).map { it.toBackendEvent() })
 
     private lateinit var appConfig: AppConfig
     private lateinit var httpClient: HTTPClient
