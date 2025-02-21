@@ -34,29 +34,48 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     private val createOfferingsMethod = offeringParser::class.java
         .getMethod("createOfferings", JSONObject::class.java, Map::class.java)
 
-    override val values: Sequence<Offering> = getResourceStream(offeringsJsonFileName)
-        .offeringJsonStringSequence()
-        .mapNotNull { offeringJsonString ->
+    override val values: Sequence<Offering> = sequence {
+        var index = 0
+        while (true) {
+            // Reopen the stream for each offering and skip previous ones.
+            val offeringJsonString = getOfferingJsonStringAt(index) ?: break
+
             val offeringJson = JSONObject(offeringJsonString)
             val hasPaywall = offeringJson.optString("paywall_components").isNotBlank()
-
-            if (!hasPaywall) return@mapNotNull null
+            // Skip any offering that doesn't have a paywall.
+            if (!hasPaywall) {
+                index++
+                continue
+            }
 
             val offeringId = offeringJson.getString("identifier")
-
+            // Inject packages and ui_config into the offering JSON.
             val offeringJsonObject = offeringJson.put("packages", packagesJsonArray)
             val offeringsJsonObject = JSONObject()
                 .put("current_offering_id", offeringId)
                 .put("offerings", JSONArray().put(offeringJsonObject))
                 .put("ui_config", uiConfigJsonObject)
-            createOfferings(offeringsJsonObject)
+            val offeringInstance = createOfferings(offeringsJsonObject)
                 .current
-                ?.takeUnless { offering -> offering.paywallComponents == null }
+                ?.takeUnless { it.paywallComponents == null }
+            if (offeringInstance != null) {
+                yield(offeringInstance)
+            }
+            index++
         }
+    }
     // Re-enable: .sortedBy { it.identifier }
 
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
         createOfferingsMethod(offeringParser, offeringsJsonObject, emptyMap<String, List<StoreProduct>>()) as Offerings
+
+    private fun getOfferingJsonStringAt(index: Int): String? {
+        // Reopen the stream each time and drop already-processed offerings.
+        return getResourceStream(offeringsJsonFileName)
+            .offeringJsonStringSequence()
+            .drop(index)
+            .firstOrNull()
+    }
 }
 
 @Preview
