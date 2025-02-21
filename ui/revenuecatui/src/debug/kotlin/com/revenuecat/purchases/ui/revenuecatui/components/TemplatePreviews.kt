@@ -79,7 +79,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
         drop(index).firstOrNull()
 }
 
-@Preview(device = "id:pixel_9")
+@Preview
 @Composable
 private fun PaywallComponentsTemplate_Preview(
     @PreviewParameter(OfferingProvider::class) offering: Offering,
