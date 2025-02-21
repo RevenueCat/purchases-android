@@ -78,7 +78,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     }
 }
 
-@Preview
+@Preview(device = "id:pixel_9")
 @Composable
 private fun PaywallComponentsTemplate_Preview(
     @PreviewParameter(OfferingProvider::class) offering: Offering,
