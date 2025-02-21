@@ -154,39 +154,26 @@ private fun InputStream.offeringJsonStringSequence(): Sequence<String> = sequenc
     reader.close()
 }
 
-private fun InputStream.readUiConfig(): String {
-    val reader = bufferedReader()
-    var line: String?
-    var uiConfigStarted = false
-    val sb = StringBuilder()
-    var braceCount = 0
+/**
+ * Reads the ui_config from this stream without reading the entire file into memory.
+ */
+private fun InputStream.readUiConfig(): String =
+    bufferedReader().use { reader ->
+        var line: String? = reader.readLine()
 
-    while (reader.readLine().also { line = it } != null) {
-        if (!uiConfigStarted) {
-            // Look for the "ui_config" key.
-            if (line!!.contains("\"ui_config\"")) {
-                // Look for the first '{' on the same line.
-                val braceIndex = line!!.indexOf("{")
-                if (braceIndex != -1) {
-                    uiConfigStarted = true
-                    val subLine = line!!.substring(braceIndex)
-                    sb.append(subLine)
-                    // Count braces: add for '{', subtract for '}'.
-                    braceCount += subLine.count { it == '{' } - subLine.count { it == '}' }
-                    if (braceCount <= 0) break // The object closed on the same line.
-                }
-            }
-        } else {
-            // Already in ui_config: append the full line.
-            sb.append("\n").append(line)
-            braceCount += line!!.count { it == '{' } - line!!.count { it == '}' }
-            if (braceCount <= 0) {
-                // Finished reading the ui_config object.
-                break
+        // Read until we encounter the start of the ui_config object.
+        while (line != null && !line.contains("\"ui_config\": {")) {
+            line = reader.readLine()
+        }
+
+        buildString {
+            appendLine("{")
+            // Count braces to be able to handle nested objects.
+            var braceCount = 1
+            while (reader.readLine().also { line = it } != null) {
+                appendLine(line)
+                braceCount += line!!.count { it == '{' } - line!!.count { it == '}' }
+                if (braceCount <= 0) break
             }
         }
     }
-    reader.close()
-    check(uiConfigStarted && braceCount == 0) { "Failed to locate or parse ui_config in JSON" }
-    return sb.toString()
-}
