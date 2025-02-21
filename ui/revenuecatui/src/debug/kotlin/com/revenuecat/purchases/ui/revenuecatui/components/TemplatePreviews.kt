@@ -69,8 +69,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
 
             index++
         }
-    }
-    // Re-enable: .sortedBy { it.identifier }
+    }.sortedBy { it.identifier }
 
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
         createOfferingsMethod(offeringParser, offeringsJsonObject, emptyMap<String, List<StoreProduct>>()) as Offerings
