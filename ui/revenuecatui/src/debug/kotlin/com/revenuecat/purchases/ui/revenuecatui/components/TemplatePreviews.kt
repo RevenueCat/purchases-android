@@ -1,9 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreProduct
@@ -95,6 +98,10 @@ private fun PaywallComponentsTemplate_Preview(
     LoadedPaywallComponents(
         state = state,
         clickHandler = { },
+        modifier = Modifier
+            // Mimicking dimensions of a mobile device. Using the @Preview annotation's device parameter does not work
+            // in Emerge Snapshots.
+            .requiredSize(width = 400.dp, height = 850.dp),
     )
 }
 
