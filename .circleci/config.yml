@@ -631,7 +631,7 @@ jobs:
 
   update-paywall-templates:
     docker:
-      - image: cimg/base:2025.02
+      - image: cimg/ruby:3.2.0
     steps:
       - checkout
       - install-sdkman
