@@ -613,7 +613,6 @@ DESC
     File.write(templates_file, offerings_response)
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
-    # Only proceed with commit, push and PR if there are changes
     has_changes = !sh("git", "status", "--porcelain").empty?
 
     if has_changes
@@ -626,7 +625,8 @@ DESC
         branch_name: branch_name,
         title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
         body: "This is an automatic update of the Compose previews of all templates.",
-        labels: ["pr:other"]
+        labels: ["pr:other"],
+        team_reviewers: ["coresdk", "monetization"]
       )
     else
       UI.message("No changes detected in templates file, skipping PR creation")
