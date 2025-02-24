@@ -362,6 +362,18 @@ private val previewConfigData = CustomerCenterConfigData(
                 ),
             ),
         ),
+        CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE to CustomerCenterConfigData.Screen(
+            type = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
+            title = "No subscriptions found",
+            subtitle = "We can try checking your account for any previous purchases",
+            paths = listOf(
+                CustomerCenterConfigData.HelpPath(
+                    id = "9q9719171o",
+                    title = "Check for previous purchases",
+                    type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
+                ),
+            ),
+        ),
     ),
     appearance = CustomerCenterConfigData.Appearance(),
     localization = CustomerCenterConfigData.Localization(
@@ -373,6 +385,22 @@ private val previewConfigData = CustomerCenterConfigData(
     ),
     support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
 )
+
+@Preview
+@Composable
+internal fun CustomerCenterNoActiveScreenPreview() {
+    InternalCustomerCenter(
+        state = CustomerCenterState.Success(
+            customerCenterConfigData = previewConfigData,
+            purchaseInformation = null,
+            supportedPathsForManagementScreen = listOf(),
+        ),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        onAction = {},
+    )
+}
 
 @Preview
 @Composable
