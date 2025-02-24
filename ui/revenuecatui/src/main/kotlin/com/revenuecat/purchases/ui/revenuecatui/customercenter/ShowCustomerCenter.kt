@@ -22,9 +22,7 @@ import androidx.activity.result.contract.ActivityResultContract
  */
 class ShowCustomerCenter : ActivityResultContract<Unit, Unit>() {
     override fun createIntent(context: Context, input: Unit): Intent {
-        return CustomerCenterActivity.createIntent(context).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+        return CustomerCenterActivity.createIntent(context)
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?) {
