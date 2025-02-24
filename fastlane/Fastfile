@@ -613,19 +613,24 @@ DESC
     File.write(templates_file, offerings_response)
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
-    # Commit, push, and create PR.
-    commit_and_push(
-      branch_name: branch_name,
-      commit_message: "[Automated] Updates offerings_paywalls_v2_templates.json."
-    )
+    # Only proceed with commit, push and PR if there are changes
+    has_changes = !sh("git", "status", "--porcelain").empty?
 
-    create_pr_if_necessary(
-      branch_name: branch_name,
-      title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
-      body: "This is an automatic update of the Compose previews of all templates.",
-      labels: ["pr:other"],
-      # TODO: team_reviewers: ["coresdk", "monetization"]
-    )
+    if has_changes
+      commit_and_push(
+        branch_name: branch_name,
+        commit_message: "[Automated] Updates offerings_paywalls_v2_templates.json."
+      )
+
+      create_pr_if_necessary(
+        branch_name: branch_name,
+        title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
+        body: "This is an automatic update of the Compose previews of all templates.",
+        labels: ["pr:other"]
+      )
+    else
+      UI.message("No changes detected in templates file, skipping PR creation")
+    end
   end
 
   desc "Clones or updates snapshots repo"
@@ -827,12 +832,8 @@ DESC
       Dir.chdir("..") do
         sh("git", "add", ".")
         sh("git", "commit", "-m", commit_message)
+        sh("git", "push", "-u", "origin", branch_name)
       end
-    end
-
-    # Always push the branch, even if there were no new changes
-    Dir.chdir("..") do
-      sh("git", "push", "-u", "origin", branch_name)
     end
   end
 
