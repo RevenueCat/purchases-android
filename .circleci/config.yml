@@ -634,9 +634,9 @@ jobs:
       - image: cimg/ruby:3.2.0
     steps:
       - checkout
-      - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
+      - revenuecat/setup-git-credentials
       - run:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_templates
