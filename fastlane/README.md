@@ -171,13 +171,13 @@ Build and run purchases module custom entitlement computation integration tests
 
 This requires the google cloud cli to be installed and initialized.
 
-### android publish_to_test_track
+### android publish_to_track
 
 ```sh
-[bundle exec] fastlane android publish_to_test_track
+[bundle exec] fastlane android publish_to_track
 ```
 
-Publish to test track in Play Console
+Publish to Google Play
 
 ### android publish_purchase_tester
 
@@ -193,7 +193,7 @@ Publish purchase tester to test track in Play Console
 [bundle exec] fastlane android publish_paywall_tester
 ```
 
-Publish paywall tester to test track in Play Console
+Publish paywall tester to the specified track on Google Play
 
 ### android build_magic_weather_compose
 
@@ -246,6 +246,14 @@ Builds a Purchase Tester APK and prompts for:
 ```
 
 
+
+### android update_paywall_templates
+
+```sh
+[bundle exec] fastlane android update_paywall_templates
+```
+
+Updates offerings_paywalls_v2_templates.json file and creates/updates PR
 
 ### android fetch_snapshots
 
