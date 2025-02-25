@@ -5,6 +5,10 @@
         <activity
                 android:name=".activity.PaywallActivity"
                 android:exported="false" />
+        <activity
+                android:name=".customercenter.CustomerCenterActivity"
+                android:theme="@android:style/Theme.NoTitleBar"
+                android:exported="false" />
     </application>
 
 </manifest>
