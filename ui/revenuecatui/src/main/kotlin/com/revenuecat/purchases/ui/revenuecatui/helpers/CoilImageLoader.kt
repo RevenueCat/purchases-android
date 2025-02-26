@@ -6,6 +6,7 @@ import android.content.Context
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import com.revenuecat.purchases.Purchases
 
 // Note: these values have to match those in CoilImageDownloader
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
@@ -26,19 +27,25 @@ internal fun Context.getRevenueCatUIImageLoader(): ImageLoader {
     return synchronized(Unit) {
         val currentImageLoader = cachedImageLoader
         if (currentImageLoader == null) {
-            val newImageLoader = ImageLoader.Builder(this)
-                .diskCache {
-                    DiskCache.Builder()
-                        .directory(cacheDir.resolve(PAYWALL_IMAGE_CACHE_FOLDER))
-                        .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
-                        .build()
-                }
-                .memoryCache(
-                    MemoryCache.Builder(this)
-                        .build(),
-                )
-                .build()
-            cachedImageLoader = newImageLoader
+            var newImageLoader = Purchases.sharedInstance.getImageLoader()
+            if (newImageLoader != null) {
+                cachedImageLoader = newImageLoader
+            } else {
+                Logger.w("Creating new Coil ImageLoader for RevenueCatUI since not found from RevenueCat SDK.")
+                newImageLoader = ImageLoader.Builder(this)
+                    .diskCache {
+                        DiskCache.Builder()
+                            .directory(cacheDir.resolve(PAYWALL_IMAGE_CACHE_FOLDER))
+                            .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
+                            .build()
+                    }
+                    .memoryCache(
+                        MemoryCache.Builder(this)
+                            .build(),
+                    )
+                    .build()
+                cachedImageLoader = newImageLoader
+            }
             newImageLoader
         } else {
             currentImageLoader
