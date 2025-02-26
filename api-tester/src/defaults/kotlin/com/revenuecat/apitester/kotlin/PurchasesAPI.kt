@@ -2,11 +2,13 @@ package com.revenuecat.apitester.kotlin
 
 import android.content.Context
 import android.content.Intent
+import coil.ImageLoader
 import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -42,6 +44,7 @@ import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
 private class PurchasesAPI {
+    @OptIn(InternalRevenueCatAPI::class)
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
@@ -102,6 +105,8 @@ private class PurchasesAPI {
         purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
         val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
+
+        val imageLoader: ImageLoader? = purchases.getImageLoader()
     }
 
     @Suppress("LongMethod", "LongParameterList")

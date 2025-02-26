@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.AmazonLWAConsentStatus;
@@ -11,6 +12,7 @@ import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
+import com.revenuecat.purchases.InternalRevenueCatAPI;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesAreCompletedBy;
@@ -31,8 +33,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import coil.ImageLoader;
+
 @SuppressWarnings({"unused"})
 final class PurchasesAPI {
+    @OptIn(markerClass = InternalRevenueCatAPI.class)
     static void check(
             final Purchases purchases,
             final WebPurchaseRedemption webPurchaseRedemption,
@@ -116,6 +121,8 @@ final class PurchasesAPI {
 
         final WebPurchaseRedemption webPurchaseRedemption1 = Purchases.parseAsWebPurchaseRedemption(intent);
         final WebPurchaseRedemption webPurchaseRedemption2 = Purchases.parseAsWebPurchaseRedemption("");
+
+        final @Nullable ImageLoader imageLoader = purchases.getImageLoader();
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {
