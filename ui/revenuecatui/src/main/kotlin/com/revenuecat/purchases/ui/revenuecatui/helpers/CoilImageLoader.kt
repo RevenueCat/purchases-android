@@ -27,7 +27,11 @@ internal fun Context.getRevenueCatUIImageLoader(): ImageLoader {
     return synchronized(Unit) {
         val currentImageLoader = cachedImageLoader
         if (currentImageLoader == null) {
-            var newImageLoader = Purchases.sharedInstance.getImageLoader()
+            var newImageLoader = if (Purchases.isConfigured) {
+                Purchases.sharedInstance.getImageLoader()
+            } else {
+                null
+            }
             if (newImageLoader != null) {
                 cachedImageLoader = newImageLoader
             } else {
