@@ -2,6 +2,7 @@ package com.revenuecat.purchases.utils
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import coil.ImageLoader
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -42,6 +43,7 @@ import java.net.URL
 class OfferingImagePreDownloaderTest {
 
     private lateinit var coilImageDownloader: CoilImageDownloader
+    private lateinit var imageLoader: ImageLoader
 
     private lateinit var preDownloader: OfferingImagePreDownloader
 
@@ -49,11 +51,12 @@ class OfferingImagePreDownloaderTest {
 
     @Before
     fun setUp() {
+        imageLoader = mockk()
         coilImageDownloader = mockk<CoilImageDownloader>().apply {
-            every { downloadImage(any()) } just Runs
+            every { downloadImage(any(), imageLoader) } just Runs
         }
 
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = true, coilImageDownloader)
+        preDownloader = OfferingImagePreDownloader(coilImageDownloader, imageLoader)
     }
 
     @Test
@@ -66,17 +69,7 @@ class OfferingImagePreDownloaderTest {
         )
 
         verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
-    }
-
-    @Test
-    fun `if disabled, it does not download anything`() {
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = false, coilImageDownloader)
-        preDownloader.preDownloadOfferingImages(createOfferings())
-
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
+            coilImageDownloader.downloadImage(any(), imageLoader)
         }
     }
 
@@ -87,9 +80,9 @@ class OfferingImagePreDownloaderTest {
         preDownloader.preDownloadOfferingImages(createOfferings())
 
         verifyAll {
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_header.png"))
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_background.png"))
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_icon.png"))
+            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_header.png"), imageLoader)
+            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_background.png"), imageLoader)
+            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_icon.png"), imageLoader)
         }
     }
 
@@ -98,7 +91,7 @@ class OfferingImagePreDownloaderTest {
         preDownloader.preDownloadOfferingImages(createOfferings(null, null, null))
 
         verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
+            coilImageDownloader.downloadImage(any(), imageLoader)
         }
     }
 
@@ -111,7 +104,7 @@ class OfferingImagePreDownloaderTest {
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
 
         verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
+            coilImageDownloader.downloadImage(any(), imageLoader)
         }
     }
 
@@ -294,7 +287,7 @@ class OfferingImagePreDownloaderTest {
 
         verifyAll {
             expectedImageDownloads.forEach { url ->
-                coilImageDownloader.downloadImage(Uri.parse(url))
+                coilImageDownloader.downloadImage(Uri.parse(url), imageLoader)
             }
         }
     }

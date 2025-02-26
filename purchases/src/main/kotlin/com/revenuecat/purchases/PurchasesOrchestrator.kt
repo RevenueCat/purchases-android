@@ -113,7 +113,7 @@ internal class PurchasesOrchestrator(
             offlineEntitlementsManager,
             customerInfoUpdateHandler,
         ),
-    internal val imageLoader: ImageLoader? = null,
+    val imageLoader: ImageLoader? = null,
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
