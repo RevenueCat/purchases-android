@@ -2,8 +2,8 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -13,9 +13,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -28,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
+import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
@@ -39,7 +41,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
+@Suppress("LongMethod")
 @Composable
 internal fun ButtonComponentView(
     style: ButtonComponentStyle,
@@ -56,25 +60,35 @@ internal fun ButtonComponentView(
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
 
-    val progressIndicator: (@Composable BoxScope.(Modifier) -> Unit)? by remember {
+    val contentAlpha by remember { derivedStateOf { if (isClickable) 1f else 0f } }
+    val progressAlpha by remember { derivedStateOf { if (isClickable) 0f else 1f } }
+    val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
+    val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
+    val progressIndicator: (@Composable () -> Unit)? by remember {
         derivedStateOf {
             if (isClickable) {
                 null
             } else {
-                @Composable { modifier ->
+                @Composable {
                     CircularProgressIndicator(
-                        modifier = modifier.align(Alignment.Center),
+                        modifier = Modifier.alpha(animatedProgressAlpha),
                     )
                 }
             }
         }
     }
 
-    StackComponentView(
-        style = style.stackComponentStyle,
-        state = state,
-        // We're the button, so we're handling the click already.
-        clickHandler = { },
+    Layout(
+        content = {
+            StackComponentView(
+                style = style.stackComponentStyle,
+                state = state,
+                // We're the button, so we're handling the click already.
+                clickHandler = { },
+                contentAlpha = animatedContentAlpha,
+            )
+            progressIndicator?.invoke()
+        },
         modifier = modifier.clickable(enabled = isClickable) {
             isClickable = false
             coroutineScope.launch {
@@ -82,7 +96,26 @@ internal fun ButtonComponentView(
                 isClickable = true
             }
         },
-        progressIndicator = progressIndicator,
+        measurePolicy = { measurables, constraints ->
+            val stack = measurables[0].measure(constraints)
+            // Ensure that the progress indicator is not bigger than the stack.
+            val progress = measurables.getOrNull(1)?.measure(
+                constraints.copy(maxHeight = stack.height, maxWidth = stack.width),
+            )
+            val totalWidth = stack.width
+            val totalHeight = stack.height
+            layout(
+                width = totalWidth,
+                height = totalHeight,
+            ) {
+                stack.placeRelative(x = 0, y = 0)
+                // Center the progress indicator.
+                progress?.placeRelative(
+                    x = ((totalWidth / 2f) - (progress.width / 2f)).roundToInt(),
+                    y = ((totalHeight / 2f) - (progress.height / 2f)).roundToInt(),
+                )
+            }
+        },
     )
 }
 
@@ -90,6 +123,25 @@ internal fun ButtonComponentView(
 @Composable
 private fun ButtonComponentView_Preview_Default() {
     ButtonComponentView(previewButtonComponentStyle(), previewEmptyState(), { })
+}
+
+@Preview
+@Composable
+private fun ButtonComponentView_Preview_Narrow() {
+    ButtonComponentView(
+        style = previewButtonComponentStyle(
+            stackComponentStyle = previewStackComponentStyle(
+                children = listOf(
+                    previewTextComponentStyle(
+                        text = "Restore purchases",
+                        backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Yellow)),
+                    ),
+                ),
+            ),
+        ),
+        state = previewEmptyState(),
+        onClick = { },
+    )
 }
 
 @Composable
