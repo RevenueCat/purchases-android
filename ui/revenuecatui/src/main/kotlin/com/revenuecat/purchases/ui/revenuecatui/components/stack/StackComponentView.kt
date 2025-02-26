@@ -4,6 +4,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import android.content.res.Configuration
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
@@ -24,12 +26,15 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -100,6 +105,7 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    progressIndicator: (@Composable BoxScope.(Modifier) -> Unit)? = null,
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -121,6 +127,7 @@ internal fun StackComponentView(
                     badge.stackStyle,
                     badge.alignment,
                     clickHandler,
+                    progressIndicator,
                     modifier,
                 )
             }
@@ -135,6 +142,7 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment.isTop,
                         clickHandler,
+                        progressIndicator,
                         modifier,
                     )
 
@@ -145,16 +153,17 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment,
                         clickHandler,
+                        progressIndicator,
                         modifier,
                     )
                 }
             }
 
             Badge.Style.Nested ->
-                MainStackComponent(stackState, state, clickHandler, modifier, badge)
+                MainStackComponent(stackState, state, clickHandler, progressIndicator, modifier, badge)
         }
     } else {
-        MainStackComponent(stackState, state, clickHandler, modifier)
+        MainStackComponent(stackState, state, clickHandler, progressIndicator, modifier)
     }
 }
 
@@ -166,10 +175,11 @@ private fun StackWithOverlaidBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    progressIndicator: (@Composable BoxScope.(Modifier) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        MainStackComponent(stackState, state, clickHandler)
+        MainStackComponent(stackState, state, clickHandler, progressIndicator)
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
         }
@@ -194,6 +204,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     topBadge: Boolean,
     clickHandler: suspend (PaywallAction) -> Unit,
+    progressIndicator: (@Composable BoxScope.(Modifier) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
@@ -209,6 +220,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 stackState,
                 state,
                 clickHandler,
+                progressIndicator,
                 shouldApplyShadow = false,
             )
         }.first()
@@ -356,6 +368,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    progressIndicator: (@Composable BoxScope.(Modifier) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val adjustedCornerRadiuses: CornerRadiuses = when (val badgeRectangleCorners = badgeStack.shape.cornerRadiuses) {
@@ -427,7 +440,7 @@ private fun StackWithShortEdgeToEdgeBadge(
             }
         }
     }
-    MainStackComponent(stackState, state, clickHandler, modifier) {
+    MainStackComponent(stackState, state, clickHandler, progressIndicator, modifier) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
             state,
@@ -469,6 +482,7 @@ private fun MainStackComponent(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
+    progressIndicator: (@Composable BoxScope.(Modifier) -> Unit)?,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
@@ -485,6 +499,17 @@ private fun MainStackComponent(
     } else {
         PaddingValues(all = 0.dp)
     }
+
+    val childAlpha = if (progressIndicator != null) 0.0f else 1.0f
+    val progressIndicatorAlpha = if (progressIndicator != null) 1.0f else 0.0f
+    val animatedChildAlpha by animateFloatAsState(
+        targetValue = childAlpha,
+        animationSpec = progressIndicatorAnimationSpec,
+    )
+    val animatedProgressIndicatorAlpha by animateFloatAsState(
+        targetValue = progressIndicatorAlpha,
+        animationSpec = progressIndicatorAnimationSpec,
+    )
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
@@ -544,7 +569,8 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .padding(childPadding),
+                                .padding(childPadding)
+                                .alpha(animatedChildAlpha),
                         )
 
                         if (dimension.distribution.usesAllAvailableSpace && !isLast) {
@@ -604,7 +630,8 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                                .padding(childPadding),
+                                .padding(childPadding)
+                                .alpha(animatedChildAlpha),
                         )
 
                         if (dimension.distribution.usesAllAvailableSpace && !isLast) {
@@ -642,7 +669,9 @@ private fun MainStackComponent(
                             style = child,
                             state = state,
                             onClick = clickHandler,
-                            modifier = Modifier.padding(childPadding),
+                            modifier = Modifier
+                                .padding(childPadding)
+                                .alpha(animatedChildAlpha),
                         )
                     }
                 }
@@ -680,14 +709,17 @@ private fun MainStackComponent(
     }
 
     if (nestedBadge == null && overlay == null) {
-        stack(
-            outerShapeModifier
-                .then(borderModifier)
-                .then(innerShapeModifier)
-                .padding(bottomSystemBarsPadding)
-                .consumeWindowInsets(bottomSystemBarsPadding)
-                .consumeWindowInsets(topSystemBarsPadding),
-        )
+        Box {
+            stack(
+                outerShapeModifier
+                    .then(borderModifier)
+                    .then(innerShapeModifier)
+                    .padding(bottomSystemBarsPadding)
+                    .consumeWindowInsets(bottomSystemBarsPadding)
+                    .consumeWindowInsets(topSystemBarsPadding),
+            )
+            progressIndicator?.invoke(this, Modifier.alpha(animatedProgressIndicatorAlpha))
+        }
     } else if (nestedBadge != null) {
         Box(
             modifier = modifier
@@ -703,6 +735,7 @@ private fun MainStackComponent(
                 modifier = Modifier
                     .align(nestedBadge.alignment.toAlignment()),
             )
+            progressIndicator?.invoke(this, Modifier.alpha(animatedProgressIndicatorAlpha))
         }
     } else if (overlay != null) {
         Box(
@@ -712,9 +745,13 @@ private fun MainStackComponent(
         ) {
             stack(borderModifier.then(innerShapeModifier))
             overlay()
+            progressIndicator?.invoke(this, Modifier.alpha(animatedProgressIndicatorAlpha))
         }
     }
 }
+
+@Suppress("MagicNumber")
+private val progressIndicatorAnimationSpec = tween<Float>(90)
 
 private val TwoDimensionalAlignment.isTop: Boolean
     get() = when (this) {
@@ -1134,7 +1171,9 @@ private fun StackComponentView_Preview_Horizontal() {
 @Composable
 private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
     Box(
-        modifier = Modifier.padding(all = 32.dp).background(Color.Gray),
+        modifier = Modifier
+            .padding(all = 32.dp)
+            .background(Color.Gray),
     ) {
         StackComponentView(
             style = StackComponentStyle(
@@ -1655,6 +1694,27 @@ private fun StackComponentView_Preview_VerticalDivider() {
         Text(
             text = "There should be a divider to the left of this text.",
             modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_ProgressIndicator() {
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = previewStackComponentStyle(
+                children = previewChildren(),
+            ),
+            state = previewEmptyState(),
+            clickHandler = {},
+            progressIndicator = { modifier ->
+                CircularProgressIndicator(
+                    modifier = modifier.align(Alignment.Center),
+                )
+            },
         )
     }
 }

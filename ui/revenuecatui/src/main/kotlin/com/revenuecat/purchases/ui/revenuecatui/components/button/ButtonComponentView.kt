@@ -3,13 +3,17 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,6 +55,21 @@ internal fun ButtonComponentView(
 
     val coroutineScope = rememberCoroutineScope()
     var isClickable by remember { mutableStateOf(true) }
+
+    val progressIndicator: (@Composable BoxScope.(Modifier) -> Unit)? by remember {
+        derivedStateOf {
+            if (isClickable) {
+                null
+            } else {
+                @Composable { modifier ->
+                    CircularProgressIndicator(
+                        modifier = modifier.align(Alignment.Center),
+                    )
+                }
+            }
+        }
+    }
+
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
@@ -63,6 +82,7 @@ internal fun ButtonComponentView(
                 isClickable = true
             }
         },
+        progressIndicator = progressIndicator,
     )
 }
 
