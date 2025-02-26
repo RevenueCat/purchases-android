@@ -30,6 +30,10 @@ internal class OfferingImagePreDownloader(
     private val imageLoader: ImageLoader,
 ) {
     companion object {
+        /**
+         * We check for the existence of the paywalls SDK. If so, the Coil SDK should be available to
+         * pre-download the images.
+         */
         internal fun shouldPredownloadImages(): Boolean = try {
             Class.forName("com.revenuecat.purchases.ui.revenuecatui.PaywallKt")
             true
