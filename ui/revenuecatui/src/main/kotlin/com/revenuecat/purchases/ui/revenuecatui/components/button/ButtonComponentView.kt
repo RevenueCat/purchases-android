@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -35,13 +36,23 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.Background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.GradientBrush
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+// Standard luminance coefficients for sRGB (per ITU-R BT.709)
+private const val COEFFICIENT_LUMINANCE_RED = 0.299f
+private const val COEFFICIENT_LUMINANCE_GREEN = 0.587f
+private const val COEFFICIENT_LUMINANCE_BLUE = 0.114f
+
+// The brightness value below which we'll use a white progress indicator
+private const val BRIGHTNESS_CUTOFF = 0.6f
 
 @Suppress("LongMethod")
 @Composable
@@ -72,6 +83,7 @@ internal fun ButtonComponentView(
                 @Composable {
                     CircularProgressIndicator(
                         modifier = Modifier.alpha(animatedProgressAlpha),
+                        color = progressColorFor(style.stackComponentStyle.background),
                     )
                 }
             }
@@ -118,6 +130,31 @@ internal fun ButtonComponentView(
         },
     )
 }
+
+@Composable
+private fun progressColorFor(backgroundStyles: BackgroundStyles?): Color {
+    if (backgroundStyles == null) return if (isSystemInDarkTheme()) Color.White else Color.Black
+
+    return when (backgroundStyles) {
+        is BackgroundStyles.Color -> progressColorFor(backgroundStyles.color.forCurrentTheme)
+        is BackgroundStyles.Image -> Color.White
+    }
+}
+
+private fun progressColorFor(colorStyle: ColorStyle): Color =
+    when (colorStyle) {
+        is ColorStyle.Solid -> if (colorStyle.color.brightness > BRIGHTNESS_CUTOFF) Color.Black else Color.White
+        is ColorStyle.Gradient -> {
+            val brush = colorStyle.brush as GradientBrush
+            val averageBrightness = brush.colors.map { it.brightness }.average()
+            if (averageBrightness > BRIGHTNESS_CUTOFF) Color.Black else Color.White
+        }
+    }
+
+private val Color.brightness: Float
+    get() = red * COEFFICIENT_LUMINANCE_RED +
+        green * COEFFICIENT_LUMINANCE_GREEN +
+        blue * COEFFICIENT_LUMINANCE_BLUE
 
 @Preview
 @Composable

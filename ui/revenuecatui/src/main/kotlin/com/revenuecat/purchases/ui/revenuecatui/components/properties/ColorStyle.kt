@@ -155,6 +155,15 @@ private fun List<ColorInfo.Gradient.Point>.toColorStops(): Array<Pair<Float, Col
     map { point -> point.percent / PERCENT_SCALE to Color(point.color) }
         .toTypedArray()
 
+/**
+ * An intermediate type for linear and radial gradients that allows for reading the [colors] after the brush has been
+ * constructed.
+ */
+internal abstract class GradientBrush : ShaderBrush() {
+    @get:JvmSynthetic
+    internal abstract val colors: List<Color>
+}
+
 @Stable
 private fun relativeLinearGradient(
     vararg colorStops: Pair<Float, Color>,
@@ -180,11 +189,11 @@ private fun relativeLinearGradient(
 @Poko
 @Immutable
 private class RelativeLinearGradient(
-    private val colors: List<Color>,
+    override val colors: List<Color>,
     private val stops: List<Float>? = null,
     degrees: Float,
     private val tileMode: TileMode = TileMode.Clamp,
-) : ShaderBrush() {
+) : GradientBrush() {
 
     // Handling extreme degrees.
     private val degrees: Float = ((90 - degrees) % 360 + 360) % 360
