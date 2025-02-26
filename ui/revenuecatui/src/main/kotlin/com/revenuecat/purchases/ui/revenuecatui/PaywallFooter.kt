@@ -39,7 +39,7 @@ fun PaywallFooter(
 /**
  * Composable offering a minified screen Paywall UI configured from the RevenueCat dashboard.
  * You can pass in your own Composables to be displayed in the main content area.
- * Only compatible with original Paywalls. If using V2 Paywalls, this will display a fallback paywall instead.
+ * Only compatible with original Paywalls. If using v2 Paywalls, this will display a fallback paywall instead.
  *
  * @param options The options to configure the [Paywall] if needed.
  * @param condensed Whether to condense the composable even more.
