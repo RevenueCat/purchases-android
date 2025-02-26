@@ -191,6 +191,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
         assertThat(request.getHeader("X-Storefront")).isEqualTo("JP")
         assertThat(request.getHeader("X-Is-Debug-Build")).isEqualTo("false")
+        assertThat(request.getHeader("X-Kotlin-Version")).isEqualTo(KotlinVersion.CURRENT.toString())
     }
 
     @Test
