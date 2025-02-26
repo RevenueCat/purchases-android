@@ -36,7 +36,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.Background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.GradientBrush
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
@@ -145,8 +144,7 @@ private fun progressColorFor(colorStyle: ColorStyle): Color =
     when (colorStyle) {
         is ColorStyle.Solid -> if (colorStyle.color.brightness > BRIGHTNESS_CUTOFF) Color.Black else Color.White
         is ColorStyle.Gradient -> {
-            val brush = colorStyle.brush as GradientBrush
-            val averageBrightness = brush.colors.map { it.brightness }.average()
+            val averageBrightness = colorStyle.brush.colors.map { it.brightness }.average()
             if (averageBrightness > BRIGHTNESS_CUTOFF) Color.Black else Color.White
         }
     }

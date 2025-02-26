@@ -59,7 +59,7 @@ internal sealed interface ColorStyle {
     value class Solid(@JvmSynthetic val color: Color) : ColorStyle
 
     @JvmInline
-    value class Gradient(@JvmSynthetic val brush: Brush) : ColorStyle
+    value class Gradient(@JvmSynthetic val brush: GradientBrush) : ColorStyle
 }
 
 /**
@@ -87,7 +87,7 @@ internal fun ColorInfo.Gradient.toColorStyle(): ColorStyle =
                 degrees = degrees,
             )
 
-            is ColorInfo.Gradient.Radial -> Brush.radialGradient(
+            is ColorInfo.Gradient.Radial -> radialGradient(
                 colorStops = points.toColorStops(),
             )
         },
@@ -142,7 +142,7 @@ internal fun ColorInfo.toColorStyle(
                         degrees = degrees,
                     )
 
-                    is ColorInfo.Gradient.Radial -> Brush.radialGradient(
+                    is ColorInfo.Gradient.Radial -> radialGradient(
                         colorStops = points.toColorStops(),
                     )
                 },
@@ -169,7 +169,7 @@ private fun relativeLinearGradient(
     vararg colorStops: Pair<Float, Color>,
     degrees: Float,
     tileMode: TileMode = TileMode.Clamp,
-): ShaderBrush {
+): GradientBrush {
     return RelativeLinearGradient(
         colors = List(colorStops.size) { i -> colorStops[i].second },
         stops = List(colorStops.size) { i -> colorStops[i].first },
@@ -224,6 +224,50 @@ private class RelativeLinearGradient(
             tileMode = tileMode,
         )
     }
+}
+
+@Stable
+private fun radialGradient(
+    vararg colorStops: Pair<Float, Color>,
+    center: Offset = Offset.Unspecified,
+    radius: Float = Float.POSITIVE_INFINITY,
+    tileMode: TileMode = TileMode.Clamp,
+): GradientBrush =
+    RadialGradient(
+        colorStops = colorStops,
+        center = center,
+        radius = radius,
+        tileMode = tileMode,
+    )
+
+/**
+ * A simple wrapper around [Brush.radialGradient] to make it conform to [GradientBrush].
+ */
+private class RadialGradient(
+    vararg colorStops: Pair<Float, Color>,
+    center: Offset = Offset.Unspecified,
+    radius: Float = Float.POSITIVE_INFINITY,
+    tileMode: TileMode = TileMode.Clamp,
+) : GradientBrush() {
+    private val brush: ShaderBrush = radialGradient(
+        colorStops = colorStops,
+        center = center,
+        radius = radius,
+        tileMode = tileMode,
+    ) as ShaderBrush
+
+    override val colors: List<Color> = colorStops.map { it.second }
+
+    override val intrinsicSize: Size
+        get() = brush.intrinsicSize
+
+    override fun createShader(size: Size): Shader = brush.createShader(size)
+
+    override fun equals(other: Any?): Boolean = brush == other
+
+    override fun hashCode(): Int = brush.hashCode()
+
+    override fun toString(): String = brush.toString()
 }
 
 @Suppress("MagicNumber")
