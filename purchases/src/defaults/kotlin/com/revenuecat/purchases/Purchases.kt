@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
@@ -102,6 +103,17 @@ class Purchases internal constructor(
 
         @Synchronized set(value) {
             purchasesOrchestrator.updatedCustomerInfoListener = value
+        }
+
+    /**
+     * The listener is responsible for handling actions that happened in the Customer Center.
+     * Make sure [removeCustomerCenterListener] is called when the listener needs to be destroyed.
+     */
+    var customerCenterListener: CustomerCenterListener?
+        @Synchronized get() = purchasesOrchestrator.customerCenterListener
+
+        @Synchronized set(value) {
+            purchasesOrchestrator.customerCenterListener = value
         }
 
     /**
@@ -435,6 +447,15 @@ class Purchases internal constructor(
     @Suppress("MemberVisibilityCanBePrivate")
     fun removeUpdatedCustomerInfoListener() {
         purchasesOrchestrator.removeUpdatedCustomerInfoListener()
+    }
+
+    /**
+     * Call this when you are finished using the [CustomerCenterListener]. You should call this
+     * to avoid memory leaks.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun removeCustomerCenterListener() {
+        purchasesOrchestrator.customerCenterListener = null
     }
 
     /**
