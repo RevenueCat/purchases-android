@@ -3,10 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 
 class CustomerCenterOptions internal constructor(
-    val listener: CustomerCenterListener?,
+    internal val listener: CustomerCenterListener?,
 ) {
 
-    constructor(builder: Builder) : this(
+    internal constructor(builder: Builder) : this(
         listener = builder.listener,
     )
 
