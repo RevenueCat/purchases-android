@@ -594,6 +594,45 @@ DESC
     )
   end
 
+  desc "Updates offerings_paywalls_v2_templates.json file and creates/updates PR"
+  lane :update_paywall_templates do |options|
+    branch_name = "pw2-update-templates-json"
+    templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
+    api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"] || UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable")
+    
+    # Ensure we're starting from an up-to-date main.
+    sh("git", "fetch", "origin")
+    
+    create_or_checkout_branch(branch_name: branch_name)
+
+    # Get offerings and save to file.
+    offerings_response = get_offerings(
+      app_user_id: "purchases-android-ci",
+      api_key: api_key
+    )
+    File.write(templates_file, offerings_response)
+    UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
+
+    has_changes = !sh("git", "status", "--porcelain").empty?
+
+    if has_changes
+      commit_and_push(
+        branch_name: branch_name,
+        commit_message: "[Automated] Updates offerings_paywalls_v2_templates.json."
+      )
+
+      create_pr_if_necessary(
+        branch_name: branch_name,
+        title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
+        body: "This is an automatic update of the Compose previews of all templates.",
+        labels: ["pr:other"],
+        team_reviewers: ["coresdk", "monetization"]
+      )
+    else
+      UI.message("No changes detected in templates file, skipping PR creation")
+    end
+  end
+
   desc "Clones or updates snapshots repo"
   lane :fetch_snapshots do
     Dir.chdir("..") do
@@ -731,6 +770,100 @@ DESC
         head: branch_name,
         labels: ["test"]
       )
+    end
+  end
+
+  private_lane :create_or_checkout_branch do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch name provided")
+
+    # Check if branch exists locally or remotely
+    branch_exists_locally = sh("git", "branch", "--list", branch_name).length > 0
+    branch_exists_remotely = sh("git", "ls-remote", "--heads", "origin", branch_name).length > 0
+
+    if branch_exists_locally || branch_exists_remotely
+      UI.message("Branch #{branch_name} already exists, checking it out")
+      sh("git", "checkout", branch_name)
+      if branch_exists_remotely
+        sh("git", "pull", "origin", branch_name)
+      end
+    else
+      UI.message("Creating new branch #{branch_name}")
+      sh("git", "checkout", "-b", branch_name)
+    end
+  end
+
+  private_lane :get_offerings do |options|
+    app_user_id = options[:app_user_id] || UI.user_error!("No app_user_id provided")
+    api_key = options[:api_key] || UI.user_error!("No api_key provided")
+
+    require 'rest-client'
+    require 'json'
+
+    begin
+      response = RestClient.get(
+        "https://api.revenuecat.com/v1/subscribers/#{app_user_id}/offerings",
+        {
+          'Content-Type' => 'application/json',
+          'X-Platform' => 'Android',
+          'Authorization' => "Bearer #{api_key}"
+        }
+      )
+
+      # Parse and return the response
+      JSON.pretty_generate(JSON.parse(response.body))
+    rescue RestClient::Exception => e
+      UI.error("API request failed: #{e.response}")
+      raise
+    rescue => e
+      UI.error("Error: #{e.message}")
+      raise
+    end
+  end
+
+  private_lane :commit_and_push do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
+    commit_message = options[:commit_message] || UI.user_error!("No commit_message provided")
+
+    # Check if there are any changes to commit
+    if sh("git", "status", "--porcelain").empty?
+      UI.message("No changes to commit")
+    else
+      # Commit changes
+      Dir.chdir("..") do
+        sh("git", "add", ".")
+        sh("git", "commit", "-m", commit_message)
+        sh("git", "push", "-u", "origin", branch_name)
+      end
+    end
+  end
+
+  private_lane :create_pr_if_necessary do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
+    title = options[:title] || UI.user_error!("No title provided")
+    body = options[:body] || UI.user_error!("No body provided")
+    repo = options[:repo] || "RevenueCat/#{repo_name}"
+    base = options[:base] || "main"
+    labels = options[:labels] || []
+    team_reviewers = options[:team_reviewers] || []
+
+    existing_pr = github_api(
+      api_token: ENV["GITHUB_TOKEN"],
+      path: "/repos/#{repo}/pulls?head=RevenueCat:#{branch_name}&state=open"
+    )    
+    
+    if existing_pr[:json].length == 0
+      create_pull_request(
+        repo: repo,
+        title: title,
+        body: body,
+        base: base,
+        head: branch_name,
+        api_token: ENV["GITHUB_TOKEN"],
+        labels: labels,
+        team_reviewers: team_reviewers
+      )
+    else
+      UI.message("PR already exists.")
     end
   end
 end

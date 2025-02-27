@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots, deploy_snapshot_release]
+    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots, deploy_snapshot_release, update_paywall_templates]
     default: default
 
 commands:
@@ -261,7 +261,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.13.0-SNAPSHOT s3://purchases-docs/android/8.13.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/8.14.0-SNAPSHOT s3://purchases-docs/android/8.14.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -629,12 +629,26 @@ jobs:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
+  update-paywall-templates:
+    docker:
+      - image: cimg/ruby:3.2.0
+    steps:
+      - checkout
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - revenuecat/setup-git-credentials
+      - run:
+          name: Update paywall templates
+          command: bundle exec fastlane android update_paywall_templates
+
 workflows:
   version: 2
   danger:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/danger
 
@@ -646,23 +660,26 @@ workflows:
 
   snapshot-deploy-sample-app-tests:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - deploy-snapshot: *only-main-branch
+      - deploy-snapshot
       - assemble-magic-weather-compose-sample-app:
-          <<: *only-main-branch
           requires:
             - deploy-snapshot
       - assemble-custom-entitlement-computation-sample-app:
-          <<: *only-main-branch
           requires:
             - deploy-snapshot
 
   build-test-deploy:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - test
       - detekt
@@ -720,10 +737,13 @@ workflows:
 
   snapshot-bump:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - prepare-next-version: *only-main-branch
+      - prepare-next-version
 
   publish-paywall-tester-to-internal-track:
     when:
@@ -731,6 +751,7 @@ workflows:
         - not:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - publish-paywall-tester-release:
           track: "internal"
@@ -771,3 +792,9 @@ workflows:
       equal: [ generate_revenuecatui_snapshots, << pipeline.parameters.action >> ]
     jobs:
       - record-revenuecatui-snapshots
+
+  update-paywall-templates:
+    when:
+      equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
+    jobs:
+      - update-paywall-templates
