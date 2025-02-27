@@ -106,8 +106,20 @@ class Purchases internal constructor(
         }
 
     /**
-     * The listener is responsible for handling actions that happened in the Customer Center.
-     * Make sure [removeCustomerCenterListener] is called when the listener needs to be destroyed.
+     * Listener that receives callbacks for Customer Center events such as restore initiated,
+     * subscription cancellations, and customer feedback submission.
+     *
+     * The Customer Center is a self-service UI component that helps users manage their subscriptions
+     * and provides support features. This listener allows your app to respond to various user
+     * actions taken within the Customer Center.
+     *
+     * Take a look at [our docs] (https://rev.cat/customer-center) for more information.
+     *
+     * @important To prevent memory leaks, always set this property to null when the listener's
+     * lifecycle ends (e.g., in Activity.onDestroy() or Fragment.onDestroyView()).
+     *
+     * @note To use the Customer Center functionality, you need to include the RevenueCat UI SDK
+     * by adding the 'purchases-ui' dependency to your app's build.gradle file.
      */
     var customerCenterListener: CustomerCenterListener?
         @Synchronized get() = purchasesOrchestrator.customerCenterListener
@@ -450,15 +462,6 @@ class Purchases internal constructor(
     }
 
     /**
-     * Call this when you are finished using the [CustomerCenterListener]. You should call this
-     * to avoid memory leaks.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun removeCustomerCenterListener() {
-        purchasesOrchestrator.customerCenterListener = null
-    }
-
-    /**
      * Google Play only, no-op for Amazon.
      * Displays the specified in-app message types to the user as a snackbar if there are any available to be shown.
      * If [PurchasesConfiguration.showInAppMessagesAutomatically] is enabled, this will be done
@@ -630,7 +633,7 @@ class Purchases internal constructor(
      * you should not be calling this function if your app targets children.
      *
      * @warning You must declare the [AD_ID Permission](https://rev.cat/google-advertising-id) when your app targets
-     * Android 13 or above. Apps that don’t declare the permission will get a string of zeros.
+     * Android 13 or above. Apps that don't declare the permission will get a string of zeros.
      */
     fun collectDeviceIdentifiers() {
         purchasesOrchestrator.collectDeviceIdentifiers()
