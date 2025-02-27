@@ -74,20 +74,6 @@ internal fun ButtonComponentView(
     val progressAlpha by remember { derivedStateOf { if (isClickable) 0f else 1f } }
     val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
     val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
-    val progressIndicator: (@Composable () -> Unit)? by remember {
-        derivedStateOf {
-            if (isClickable) {
-                null
-            } else {
-                @Composable {
-                    CircularProgressIndicator(
-                        modifier = Modifier.alpha(animatedProgressAlpha),
-                        color = progressColorFor(style.stackComponentStyle.background),
-                    )
-                }
-            }
-        }
-    }
 
     Layout(
         content = {
@@ -98,7 +84,10 @@ internal fun ButtonComponentView(
                 clickHandler = { },
                 contentAlpha = animatedContentAlpha,
             )
-            progressIndicator?.invoke()
+            CircularProgressIndicator(
+                modifier = Modifier.alpha(animatedProgressAlpha),
+                color = progressColorFor(style.stackComponentStyle.background),
+            )
         },
         modifier = modifier.clickable(enabled = isClickable) {
             isClickable = false
@@ -110,7 +99,7 @@ internal fun ButtonComponentView(
         measurePolicy = { measurables, constraints ->
             val stack = measurables[0].measure(constraints)
             // Ensure that the progress indicator is not bigger than the stack.
-            val progress = measurables.getOrNull(1)?.measure(
+            val progress = measurables[1].measure(
                 constraints.copy(maxHeight = stack.height, maxWidth = stack.width),
             )
             val totalWidth = stack.width
@@ -121,7 +110,7 @@ internal fun ButtonComponentView(
             ) {
                 stack.placeRelative(x = 0, y = 0)
                 // Center the progress indicator.
-                progress?.placeRelative(
+                progress.placeRelative(
                     x = ((totalWidth / 2f) - (progress.width / 2f)).roundToInt(),
                     y = ((totalHeight / 2f) - (progress.height / 2f)).roundToInt(),
                 )
