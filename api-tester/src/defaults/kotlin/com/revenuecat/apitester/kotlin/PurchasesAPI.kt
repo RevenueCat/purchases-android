@@ -106,7 +106,7 @@ private class PurchasesAPI {
         val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
 
-        val imageLoader: ImageLoader? = purchases.getImageLoader()
+        val imageLoader: ImageLoader? = purchases.imageLoader
     }
 
     @Suppress("LongMethod", "LongParameterList")

@@ -813,9 +813,8 @@ class Purchases internal constructor(
     }
 
     @InternalRevenueCatAPI
-    fun getImageLoader(): ImageLoader? {
-        return purchasesOrchestrator.imageLoader
-    }
+    val imageLoader: ImageLoader?
+        get() = purchasesOrchestrator.imageLoader
 
     // region Static
     companion object {
