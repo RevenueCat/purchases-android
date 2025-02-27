@@ -53,10 +53,10 @@ class OfferingImagePreDownloaderTest {
     fun setUp() {
         imageLoader = mockk()
         coilImageDownloader = mockk<CoilImageDownloader>().apply {
-            every { downloadImage(any(), imageLoader) } just Runs
+            every { downloadImage(any()) } just Runs
         }
 
-        preDownloader = OfferingImagePreDownloader(coilImageDownloader, imageLoader)
+        preDownloader = OfferingImagePreDownloader(coilImageDownloader)
     }
 
     @Test
@@ -69,7 +69,7 @@ class OfferingImagePreDownloaderTest {
         )
 
         verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any(), imageLoader)
+            coilImageDownloader.downloadImage(any())
         }
     }
 
@@ -80,9 +80,9 @@ class OfferingImagePreDownloaderTest {
         preDownloader.preDownloadOfferingImages(createOfferings())
 
         verifyAll {
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_header.png"), imageLoader)
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_background.png"), imageLoader)
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_icon.png"), imageLoader)
+            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_header.png"))
+            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_background.png"))
+            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_icon.png"))
         }
     }
 
@@ -91,7 +91,7 @@ class OfferingImagePreDownloaderTest {
         preDownloader.preDownloadOfferingImages(createOfferings(null, null, null))
 
         verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any(), imageLoader)
+            coilImageDownloader.downloadImage(any())
         }
     }
 
@@ -104,7 +104,7 @@ class OfferingImagePreDownloaderTest {
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
 
         verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any(), imageLoader)
+            coilImageDownloader.downloadImage(any())
         }
     }
 
@@ -287,7 +287,7 @@ class OfferingImagePreDownloaderTest {
 
         verifyAll {
             expectedImageDownloads.forEach { url ->
-                coilImageDownloader.downloadImage(Uri.parse(url), imageLoader)
+                coilImageDownloader.downloadImage(Uri.parse(url))
             }
         }
     }
