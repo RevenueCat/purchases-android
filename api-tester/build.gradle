@@ -55,7 +55,6 @@ dependencies {
 
     implementation(platform(libs.kotlin.bom))
     implementation platform(libs.compose.bom)
-    implementation libs.coil.compose
     implementation libs.compose.ui
     implementation libs.activity.compose
     implementation libs.androidx.fragment.ktx

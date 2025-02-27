@@ -259,13 +259,7 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
-                if (OfferingImagePreDownloader.shouldPredownloadImages()) {
-                    OfferingImagePreDownloader(
-                        coilImageDownloader = CoilImageDownloader(application),
-                    )
-                } else {
-                    null
-                },
+                OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
             )
 
             log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)

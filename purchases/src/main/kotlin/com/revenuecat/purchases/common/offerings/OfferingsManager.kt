@@ -17,7 +17,7 @@ internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,
     private val backend: Backend,
     private val offeringsFactory: OfferingsFactory,
-    private val offeringImagePreDownloader: OfferingImagePreDownloader?,
+    private val offeringImagePreDownloader: OfferingImagePreDownloader,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
@@ -102,7 +102,7 @@ internal class OfferingsManager(
             },
             onSuccess = { offerings ->
                 offerings.current?.let {
-                    offeringImagePreDownloader?.preDownloadOfferingImages(it)
+                    offeringImagePreDownloader.preDownloadOfferingImages(it)
                 }
                 offeringsCache.cacheOfferings(offerings, offeringsJSON)
                 dispatch {

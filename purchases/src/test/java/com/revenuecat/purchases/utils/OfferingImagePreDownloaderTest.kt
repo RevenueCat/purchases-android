@@ -53,7 +53,7 @@ class OfferingImagePreDownloaderTest {
             every { downloadImage(any()) } just Runs
         }
 
-        preDownloader = OfferingImagePreDownloader(coilImageDownloader)
+        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = true, coilImageDownloader)
     }
 
     @Test
@@ -64,6 +64,16 @@ class OfferingImagePreDownloaderTest {
                 every { paywallComponents } returns null
             }
         )
+
+        verify(exactly = 0) {
+            coilImageDownloader.downloadImage(any())
+        }
+    }
+
+    @Test
+    fun `if disabled, it does not download anything`() {
+        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = false, coilImageDownloader)
+        preDownloader.preDownloadOfferingImages(createOfferings())
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())

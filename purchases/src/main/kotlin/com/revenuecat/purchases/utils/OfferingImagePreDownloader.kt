@@ -6,6 +6,7 @@ import android.net.Uri
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
@@ -25,22 +26,24 @@ import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
 internal class OfferingImagePreDownloader(
+    /**
+     * We check for the existance of the paywalls SDK. If so, the Coil SDK should be available to
+     * pre-download the images.
+     */
+    private val shouldPredownloadImages: Boolean = try {
+        Class.forName("com.revenuecat.purchases.ui.revenuecatui.PaywallKt")
+        true
+    } catch (_: ClassNotFoundException) {
+        false
+    },
     private val coilImageDownloader: CoilImageDownloader,
 ) {
-    companion object {
-        /**
-         * We check for the existence of the paywalls SDK. If so, the Coil SDK should be available to
-         * pre-download the images.
-         */
-        internal fun shouldPredownloadImages(): Boolean = try {
-            Class.forName("com.revenuecat.purchases.ui.revenuecatui.PaywallKt")
-            true
-        } catch (_: ClassNotFoundException) {
-            false
-        }
-    }
-
     fun preDownloadOfferingImages(offering: Offering) {
+        if (!shouldPredownloadImages) {
+            verboseLog("OfferingImagePreDownloader won't pre-download images")
+            return
+        }
+
         debugLog("OfferingImagePreDownloader: starting image download")
 
         downloadV1Images(offering)
