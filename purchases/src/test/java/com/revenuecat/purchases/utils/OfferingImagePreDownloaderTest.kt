@@ -2,7 +2,6 @@ package com.revenuecat.purchases.utils
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import coil.ImageLoader
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -43,7 +42,6 @@ import java.net.URL
 class OfferingImagePreDownloaderTest {
 
     private lateinit var coilImageDownloader: CoilImageDownloader
-    private lateinit var imageLoader: ImageLoader
 
     private lateinit var preDownloader: OfferingImagePreDownloader
 
@@ -51,7 +49,6 @@ class OfferingImagePreDownloaderTest {
 
     @Before
     fun setUp() {
-        imageLoader = mockk()
         coilImageDownloader = mockk<CoilImageDownloader>().apply {
             every { downloadImage(any()) } just Runs
         }
