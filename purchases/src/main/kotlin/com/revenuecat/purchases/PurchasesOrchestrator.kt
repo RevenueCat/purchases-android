@@ -1288,13 +1288,14 @@ internal class PurchasesOrchestrator(
                 currentLogHandler = value
             }
 
-        var cachedImageLoader: ImageLoader? = null
+        private var cachedImageLoader: ImageLoader? = null
 
         const val frameworkVersion = Config.frameworkVersion
 
         var proxyURL: URL? = null
 
         @Suppress("MagicNumber")
+        @Synchronized
         fun getImageLoader(context: Context): ImageLoader {
             val currentImageLoader = cachedImageLoader
             return if (currentImageLoader == null) {
