@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.utils
 
 import android.net.Uri
-import coil.ImageLoader
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.common.debugLog
@@ -27,7 +26,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
 internal class OfferingImagePreDownloader(
     private val coilImageDownloader: CoilImageDownloader,
-    private val imageLoader: ImageLoader,
 ) {
     companion object {
         /**
@@ -56,7 +54,7 @@ internal class OfferingImagePreDownloader(
             }
             imageUris.forEach {
                 debugLog("Pre-downloading Paywall V1 image: $it")
-                coilImageDownloader.downloadImage(it, imageLoader)
+                coilImageDownloader.downloadImage(it)
             }
         }
     }
@@ -66,7 +64,7 @@ internal class OfferingImagePreDownloader(
             val imageUrls = findImageUrisToDownload(paywallComponents)
             imageUrls.forEach {
                 debugLog("Pre-downloading Paywall V2 image: $it")
-                coilImageDownloader.downloadImage(it, imageLoader)
+                coilImageDownloader.downloadImage(it)
             }
         }
     }

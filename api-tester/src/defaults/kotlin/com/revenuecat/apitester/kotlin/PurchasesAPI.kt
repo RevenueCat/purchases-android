@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin
 
 import android.content.Context
 import android.content.Intent
-import coil.ImageLoader
 import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -47,6 +46,7 @@ private class PurchasesAPI {
     @OptIn(InternalRevenueCatAPI::class)
     @SuppressWarnings("LongParameterList")
     fun check(
+        context: Context,
         purchases: Purchases,
         webPurchaseRedemption: WebPurchaseRedemption,
         redeemWebPurchaseListener: RedeemWebPurchaseListener,
@@ -105,8 +105,6 @@ private class PurchasesAPI {
         purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
         val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
-
-        val imageLoader: ImageLoader? = purchases.imageLoader
     }
 
     @Suppress("LongMethod", "LongParameterList")

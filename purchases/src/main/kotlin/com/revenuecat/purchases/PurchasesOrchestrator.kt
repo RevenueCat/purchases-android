@@ -10,6 +10,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import coil.ImageLoader
+import coil.disk.DiskCache
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
@@ -114,7 +115,6 @@ internal class PurchasesOrchestrator(
             offlineEntitlementsManager,
             customerInfoUpdateHandler,
         ),
-    val imageLoader: ImageLoader? = null,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -1288,9 +1288,32 @@ internal class PurchasesOrchestrator(
                 currentLogHandler = value
             }
 
+        var cachedImageLoader: ImageLoader? = null
+
         const val frameworkVersion = Config.frameworkVersion
 
         var proxyURL: URL? = null
+
+        @Suppress("MagicNumber")
+        fun getImageLoader(context: Context): ImageLoader {
+            val currentImageLoader = cachedImageLoader
+            return if (currentImageLoader == null) {
+                val maxCacheSizeBytes = 25 * 1024 * 1024L // 25 MB
+                val cacheFolder = "revenuecatui_cache"
+                val imageLoader = ImageLoader.Builder(context)
+                    .diskCache {
+                        DiskCache.Builder()
+                            .directory(context.cacheDir.resolve(cacheFolder))
+                            .maxSizeBytes(maxCacheSizeBytes)
+                            .build()
+                    }
+                    .build()
+                cachedImageLoader = imageLoader
+                imageLoader
+            } else {
+                currentImageLoader
+            }
+        }
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.

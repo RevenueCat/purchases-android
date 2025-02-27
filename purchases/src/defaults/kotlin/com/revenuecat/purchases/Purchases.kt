@@ -812,12 +812,13 @@ class Purchases internal constructor(
         purchasesOrchestrator.redeemWebPurchase(webPurchaseRedemption, listener)
     }
 
-    @InternalRevenueCatAPI
-    val imageLoader: ImageLoader?
-        get() = purchasesOrchestrator.imageLoader
-
     // region Static
     companion object {
+
+        @InternalRevenueCatAPI
+        fun getImageLoader(context: Context): ImageLoader {
+            return PurchasesOrchestrator.getImageLoader(context)
+        }
 
         /**
          * Given an intent, parses the associated link if any and returns a [WebPurchaseRedemption], which can
