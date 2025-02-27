@@ -4,13 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.AmazonLWAConsentStatus;
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesAreCompletedBy;

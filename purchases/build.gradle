@@ -101,6 +101,7 @@ dependencies {
 
     dokkaPlugin(project(":dokka-hide-internal"))
 
+    testImplementation libs.coil.compose
     testImplementation libs.bundles.test
     testImplementation libs.billing
     testImplementation libs.coroutines.test

@@ -21,6 +21,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.revenuecat.purchases.ColorAlias
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -33,7 +34,6 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getRevenueCatUIImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 
@@ -117,7 +117,7 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val context = LocalContext.current
     val imageLoader = remember(context) {
-        context.applicationContext.getRevenueCatUIImageLoader()
+        Purchases.getImageLoader(context.applicationContext)
     }
     return rememberAsyncImagePainter(
         model = getImageRequest(context, imageUrls.webp.toString(), cachePolicy),
