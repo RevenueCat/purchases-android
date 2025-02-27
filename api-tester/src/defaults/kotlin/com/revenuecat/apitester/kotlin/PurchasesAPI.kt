@@ -9,6 +9,7 @@ import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.Purchases.Companion.sharedInstance
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
@@ -23,6 +24,7 @@ import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
@@ -233,5 +235,30 @@ private class PurchasesAPI {
     fun checkAmazonConfigurationDiagnostics(context: Context, executorService: ExecutorService) {
         val builder: PurchasesConfiguration.Builder = AmazonConfiguration.Builder(context, "")
             .informationalVerificationModeAndDiagnosticsEnabled(true)
+    }
+
+    fun checkCustomerCenter() {
+        val customerInfoListener: CustomerCenterListener = object : CustomerCenterListener {
+            override fun onRestoreStarted() {
+            }
+        }
+        val customerInfoListener2: CustomerCenterListener = object : CustomerCenterListener {
+            override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
+            }
+
+            override fun onCancelSubscription() {
+            }
+
+            override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+            }
+
+            override fun onRestoreFailed(error: PurchasesError) {
+            }
+
+            override fun onRestoreStarted() {
+            }
+        }
+        sharedInstance.customerCenterListener = object : CustomerCenterListener {}
+        sharedInstance.customerCenterListener = customerInfoListener
     }
 }
