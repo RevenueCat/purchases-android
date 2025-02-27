@@ -75,6 +75,10 @@ internal fun ButtonComponentView(
     val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
     val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
 
+    // We are using a custom Layout instead of a Box to properly handle the case where the StackComponentView is
+    // smaller than the CircularProgressIndicator, in either dimension. In this case, we want the
+    // CircularProgressIndicator to shrink so it doesn't exceed the StackComponentView's bounds. Using IntrinsicSize
+    // and matchParentSize() was considered, but in the end a custom Layout seemed to be the only reliable option.
     Layout(
         content = {
             StackComponentView(
