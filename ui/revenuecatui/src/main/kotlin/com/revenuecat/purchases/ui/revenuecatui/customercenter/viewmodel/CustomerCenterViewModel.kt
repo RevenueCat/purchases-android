@@ -276,6 +276,9 @@ internal class CustomerCenterViewModelImpl(
                     currentState
                 }
             }
+
+            // Reload customer center data to refresh the UI with the latest information
+            loadCustomerCenter()
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases", e)
             _state.update { currentState ->
