@@ -20,7 +20,6 @@ import androidx.constraintlayout.compose.ConstrainedLayoutReference
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintLayoutBaseScope.HorizontalAnchor
 import androidx.constraintlayout.compose.Dimension
-import coil.ImageLoader
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
@@ -42,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
 
 @Suppress("LongMethod", "CyclomaticComplexMethod", "DestructuringDeclarationWithTooManyEntries")
 @Composable
@@ -49,7 +49,6 @@ internal fun TimelineComponentView(
     style: TimelineComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    previewImageLoader: ImageLoader? = null,
 ) {
     val timelineState = rememberUpdatedTimelineComponentState(
         style = style,
@@ -108,7 +107,6 @@ internal fun TimelineComponentView(
                         }
                     }
                 },
-                previewImageLoader = previewImageLoader,
             )
 
             TextComponentView(
@@ -177,39 +175,42 @@ internal fun TimelineComponentView(
 @Preview
 @Composable
 private fun TimelineComponentView_Align_Title_Preview() {
-    Box {
-        TimelineComponentView(
-            style = previewStyle(iconAlignment = TimelineComponent.IconAlignment.Title),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(),
-        )
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        Box {
+            TimelineComponentView(
+                style = previewStyle(iconAlignment = TimelineComponent.IconAlignment.Title),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
 @Preview
 @Composable
 private fun TimelineComponentView_Align_TitleAndDescription_Preview() {
-    Box {
-        TimelineComponentView(
-            style = previewStyle(iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(),
-        )
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        Box {
+            TimelineComponentView(
+                style = previewStyle(iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
 @Preview
 @Composable
 private fun TimelineComponentView_Connector_Margin_Preview() {
-    Box {
-        TimelineComponentView(
-            style = previewStyle(
-                iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
-                items = previewItems(connectorMargins = PaddingValues(0.dp, 12.dp, 0.dp, 12.dp)),
-            ),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(),
-        )
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        Box {
+            TimelineComponentView(
+                style = previewStyle(
+                    iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
+                    items = previewItems(connectorMargins = PaddingValues(0.dp, 12.dp, 0.dp, 12.dp)),
+                ),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
