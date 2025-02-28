@@ -1,12 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
-import android.content.Context
-import androidx.compose.material3.ColorScheme
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Store
@@ -14,39 +11,30 @@ import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathType
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Support
 import com.revenuecat.purchases.models.Transaction
-import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
-import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import io.mockk.Runs
 import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import junit.framework.TestCase.fail
+import io.mockk.spyk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.Collections
 import java.util.Date
 import java.util.Locale
 
@@ -205,5 +193,193 @@ class CustomerCenterViewModelTests {
         }
 
         job.join()
+    }
+    
+    @Test
+    fun `dismissRestoreDialog loads customer center when restoration was successful`() = runTest {
+        // Setup basic mocks
+        every { customerInfo.activeSubscriptions } returns setOf("product-id")
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+        every { customerInfo.entitlements } returns EntitlementInfos(
+            emptyMap(),
+            VerificationResult.VERIFIED,
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+
+        // Setup restore operation to return successful result
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        
+        // Setup other customer center data
+        coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
+        coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns null
+        
+        // Setup screen with a MISSING_PURCHASE path
+        val missingPurchasePath = HelpPath(
+            id = "missing_purchase_id",
+            title = "Restore Purchases",
+            type = HelpPath.PathType.MISSING_PURCHASE
+        )
+        
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(missingPurchasePath)
+        )
+        
+        every { configData.getManagementScreen() } returns managementScreen
+        
+        // Create a spy on the real ViewModel so we can verify loadCustomerCenter is called
+        val model = spyk(
+            CustomerCenterViewModelImpl(
+                purchases = purchases,
+                locale = Locale.US,
+                colorScheme = TestData.Constants.currentColorScheme,
+                isDarkMode = false
+            )
+        )
+        
+        // Wait for initial state to load
+        val initialLoadingCompleted = CompletableDeferred<Boolean>()
+        val dialogShownCompleted = CompletableDeferred<Boolean>()
+        val restoreCompletedWithSuccess = CompletableDeferred<Boolean>()
+        
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    // Track initial load completion
+                    if (!initialLoadingCompleted.isCompleted) {
+                        initialLoadingCompleted.complete(true)
+                    }
+                    
+                    // Track when dialog is shown
+                    if (state.showRestoreDialog && !dialogShownCompleted.isCompleted) {
+                        dialogShownCompleted.complete(true)
+                    }
+                    
+                    // Track when restore completes successfully
+                    if (state.showRestoreDialog && 
+                        state.restorePurchasesState == RestorePurchasesState.PURCHASES_RECOVERED && 
+                        !restoreCompletedWithSuccess.isCompleted) {
+                        restoreCompletedWithSuccess.complete(true)
+                    }
+                }
+            }
+        }
+        
+        // Wait for initial setup to complete
+        initialLoadingCompleted.await()
+        
+        // 1. First show the restore dialog by calling pathButtonPressed with MISSING_PURCHASE path
+        model.pathButtonPressed(mockk(), missingPurchasePath, null)
+        
+        // Wait until dialog is shown
+        dialogShownCompleted.await()
+        
+        // 2. Now perform the restore operation
+        model.restorePurchases()
+        
+        // Wait until restore completes successfully
+        restoreCompletedWithSuccess.await()
+        
+        // Reset mock verification counts before our actual test
+        clearMocks(model, answers = false)
+        
+        // 3. Finally, call the method we're testing
+        model.dismissRestoreDialog(restored = true)
+        
+        // Verify loadCustomerCenter was called
+        coVerify(exactly = 1) { model.loadCustomerCenter() }
+        
+        // Cancel the collection job
+        job.cancel()
+    }
+
+    @Test
+    fun `dismissRestoreDialog does not load customer center when restored is false`() = runTest {
+        // Setup basic mocks
+        every { customerInfo.activeSubscriptions } returns setOf("product-id")
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+        every { customerInfo.entitlements } returns EntitlementInfos(
+            emptyMap(),
+            VerificationResult.VERIFIED,
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+
+        // Setup restore operation to return successful result
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        
+        // Setup other customer center data
+        coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
+        coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns null
+        
+        // Setup screen with a MISSING_PURCHASE path
+        val missingPurchasePath = HelpPath(
+            id = "missing_purchase_id",
+            title = "Restore Purchases",
+            type = HelpPath.PathType.MISSING_PURCHASE
+        )
+        
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(missingPurchasePath)
+        )
+        
+        every { configData.getManagementScreen() } returns managementScreen
+        
+        // Create a spy on the real ViewModel so we can verify loadCustomerCenter is called
+        val model = spyk(
+            CustomerCenterViewModelImpl(
+                purchases = purchases,
+                locale = Locale.US,
+                colorScheme = TestData.Constants.currentColorScheme,
+                isDarkMode = false
+            )
+        )
+        
+        // Wait for initial state to load
+        val initialLoadingCompleted = CompletableDeferred<Boolean>()
+        val dialogShownCompleted = CompletableDeferred<Boolean>()
+        
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    // Track initial load completion
+                    if (!initialLoadingCompleted.isCompleted) {
+                        initialLoadingCompleted.complete(true)
+                    }
+                    
+                    // Track when dialog is shown
+                    if (state.showRestoreDialog && !dialogShownCompleted.isCompleted) {
+                        dialogShownCompleted.complete(true)
+                    }
+                }
+            }
+        }
+        
+        // Wait for initial setup to complete
+        initialLoadingCompleted.await()
+        
+        // Show the restore dialog by calling pathButtonPressed with MISSING_PURCHASE path
+        model.pathButtonPressed(mockk(), missingPurchasePath, null)
+        
+        // Wait until dialog is shown
+        dialogShownCompleted.await()
+        
+        // Reset mock verification counts before our actual test
+        clearMocks(model, answers = false)
+        
+        // Call the method we're testing with restored = false
+        model.dismissRestoreDialog(restored = false)
+        
+        // Verify loadCustomerCenter was NOT called
+        coVerify(exactly = 0) { model.loadCustomerCenter() }
+        
+        // Cancel the collection job
+        job.cancel()
     }
 }
