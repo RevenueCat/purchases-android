@@ -70,8 +70,13 @@ internal fun InternalCustomerCenter(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    if (state is CustomerCenterState.NotLoaded) {
+        coroutineScope.launch {
+            viewModel.loadCustomerCenter()
+        }
+    }
+
     LaunchedEffect(Unit) {
-        viewModel.loadCustomerCenter()
         viewModel.trackImpressionIfNeeded()
     }
 
