@@ -510,6 +510,7 @@ internal class CustomerCenterViewModelImpl(
         }
         val buttonType = state.value.navigationButtonType
         if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+            _state.update { CustomerCenterState.NotLoaded }
             onDismiss()
             return
         }
