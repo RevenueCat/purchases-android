@@ -19,3 +19,6 @@ style:
   UnusedPrivateMember:
     active: true
     ignoreAnnotated: [ 'Preview' ]
+Compose:
+  CompositionLocalAllowlist:
+    allowedCompositionLocals: LocalPreviewImageLoader

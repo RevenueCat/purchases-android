@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
-import coil.ImageLoader
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
@@ -33,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
 
 @JvmSynthetic
 @Composable
@@ -40,7 +40,6 @@ internal fun IconComponentView(
     style: IconComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    previewImageLoader: ImageLoader? = null,
 ) {
     val iconState = rememberUpdatedIconComponentState(
         style = style,
@@ -74,23 +73,23 @@ internal fun IconComponentView(
             .applyIfNotNull(borderStyle) { border(it, composeShape) }
             .padding(iconState.padding),
         colorFilter = colorFilter,
-        previewImageLoader = previewImageLoader,
     )
 }
 
 @Preview
 @Composable
 private fun IconComponentView_Preview() {
-    Box(modifier = Modifier.background(Color.LightGray)) {
-        IconComponentView(
-            style = previewIconComponentStyle(
-                size = Size(
-                    width = SizeConstraint.Fixed(200u),
-                    height = SizeConstraint.Fixed(200u),
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        Box(modifier = Modifier.background(Color.LightGray)) {
+            IconComponentView(
+                style = previewIconComponentStyle(
+                    size = Size(
+                        width = SizeConstraint.Fixed(200u),
+                        height = SizeConstraint.Fixed(200u),
+                    ),
                 ),
-            ),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(),
-        )
+                state = previewEmptyState(),
+            )
+        }
     }
 }

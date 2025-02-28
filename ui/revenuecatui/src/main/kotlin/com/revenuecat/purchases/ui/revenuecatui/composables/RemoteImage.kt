@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.withSave
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
@@ -32,8 +31,8 @@ import coil.request.SuccessResult
 import coil.transform.Transformation
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
-import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import kotlinx.coroutines.runBlocking
@@ -59,7 +58,6 @@ internal fun LocalImage(
         transformation = transformation,
         alpha = alpha,
         colorFilter = colorFilter,
-        previewImageLoader = null,
     )
 }
 
@@ -78,7 +76,6 @@ internal fun RemoteImage(
     transformation: Transformation? = null,
     alpha: Float = 1f,
     colorFilter: ColorFilter? = null,
-    previewImageLoader: ImageLoader? = null,
 ) {
     Image(
         source = ImageSource.Remote(urlString),
@@ -89,7 +86,6 @@ internal fun RemoteImage(
         transformation = transformation,
         alpha = alpha,
         colorFilter = colorFilter,
-        previewImageLoader = previewImageLoader,
     )
 }
 
@@ -115,9 +111,9 @@ private fun Image(
     transformation: Transformation?,
     alpha: Float,
     colorFilter: ColorFilter?,
-    previewImageLoader: ImageLoader?,
 ) {
     // Previews don't support images
+    val previewImageLoader = LocalPreviewImageLoader.current
     val isInPreviewMode = isInPreviewMode()
     if (isInPreviewMode && previewImageLoader == null) {
         return ImageForPreviews(modifier)
@@ -195,7 +191,7 @@ private fun AsyncImage(
                     Logger.e("Error loading placeholder image", errorState.result.throwable)
                 },
             )
-        } ?: if (isInPreviewMode()) painterResource(R.drawable.android) else null,
+        } ?: if (isInPreviewMode()) imageLoader.getPreviewPlaceholder(imageRequest) else null,
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
