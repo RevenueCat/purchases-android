@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.events
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -64,6 +65,7 @@ class EventsManagerTest {
         )
     )
     private val paywallStoredEvent = PaywallStoredEvent(paywallEvent, userID)
+    private var postedRequest: EventsRequest? = null
 
     private val testFolder = "temp_test_folder"
 
@@ -103,6 +105,7 @@ class EventsManagerTest {
             identityManager,
             paywallEventsDispatcher,
             postEvents = { request, onSuccess, onError ->
+                postedRequest = request
                 backend.postEvents(
                     paywallEventRequest = request,
                     onSuccessHandler = onSuccess,
@@ -155,7 +158,7 @@ class EventsManagerTest {
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent() + "\n"
         )
 
-        var surveyEvent = CustomerCenterSurveyOptionChosenEvent(
+        val surveyEvent = CustomerCenterSurveyOptionChosenEvent(
             creationData = CustomerCenterSurveyOptionChosenEvent.CreationData(
                 id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
                 date = Date(1699270688884)
@@ -166,15 +169,14 @@ class EventsManagerTest {
                 locale = "es_ES",
                 path = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
                 url = "PATH2",
-                surveyOptionID = "surveyOptionID",
-                surveyOptionTitleKey = "surveyOptionTitleKey"
+                surveyOptionID = "surveyOptionID"
             )
         )
         eventsManager.track(surveyEvent)
         checkFileContents(
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
-                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen","path":"CANCEL","url":"PATH2","survey_option_id":"surveyOptionID","survey_option_title_key":"surveyOptionTitleKey"}}""".trimIndent()
+                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen","path":"CANCEL","url":"PATH2","survey_option_id":"surveyOptionID"}}""".trimIndent()
                 + "\n"
         )
     }
@@ -199,7 +201,7 @@ class EventsManagerTest {
                         )
                         .toBackendEvent() as BackendEvent.CustomerCenter
                 )
-            ).mapNotNull { it.toBackendEvent() }
+            ).map { it.toBackendEvent() }
         )
         verify(exactly = 1) {
             backend.postEvents(
@@ -325,6 +327,17 @@ class EventsManagerTest {
         expectNumberOfEventsSynced(48)
     }
 
+    @SuppressLint("CheckResult")
+    @Test
+    fun `flushEvents with events stored with removed keys from model, successfully flushes them`() {
+        mockBackendResponse(success = true)
+        eventsManager.track(paywallEvent)
+        appendToFile(
+            """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen","path":"CANCEL","url":"PATH2","survey_option_id":"surveyOptionID","survey_option_title_key":"surveyOptionTitleKey"}}""".trimIndent()
+        )
+        eventsManager.flushEvents()
+        assertThat(postedRequest?.events?.count()  == 2)
+    }
 
     private fun checkFileNumberOfEvents(expectedNumberOfEvents: Int) {
         val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
@@ -352,7 +365,7 @@ class EventsManagerTest {
 
     private fun expectNumberOfEventsSynced(eventsSynced: Int) {
         val expectedRequest = EventsRequest(
-            List(eventsSynced) { BackendStoredEvent.Paywalls(paywallStoredEvent.toBackendEvent()) }.mapNotNull { it.toBackendEvent() }
+            List(eventsSynced) { BackendStoredEvent.Paywalls(paywallStoredEvent.toBackendEvent()) }.map { it.toBackendEvent() }
         )
         verify(exactly = 1) {
             backend.postEvents(

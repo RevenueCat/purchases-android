@@ -52,8 +52,7 @@ internal class ProductionBackendEventsTest: BaseBackendIntegrationTest() {
                             locale = "en_US",
                             path = null,
                             url = null,
-                            surveyOptionID = null,
-                            surveyOptionTitleKey = null,
+                            surveyOptionID = null
                         ),
                         BackendEvent.CustomerCenter(
                             id = UUID.randomUUID().toString(),
@@ -67,7 +66,6 @@ internal class ProductionBackendEventsTest: BaseBackendIntegrationTest() {
                             path = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
                             url = null,
                             surveyOptionID = "surveyOptionID",
-                            surveyOptionTitleKey = "surveyOptionTitleKey",
                             locale = "en_US",
                         )
                     )
