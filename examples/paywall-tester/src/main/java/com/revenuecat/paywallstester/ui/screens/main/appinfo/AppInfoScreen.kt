@@ -27,12 +27,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+
+private const val TAG = "CustomerCenterTest"
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, InternalRevenueCatAPI::class)
 @Composable
@@ -41,8 +47,40 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
     var isCustomerCenterVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
 
+    val customerCenterListener = remember {
+        object : CustomerCenterListener {
+            override fun onRestoreStarted() {
+                Log.d(TAG, "Local listener: onRestoreStarted called")
+            }
+
+            override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                Log.d(
+                    TAG,
+                    "Local listener: onRestoreCompleted called with customer info: ${customerInfo.originalAppUserId}",
+                )
+            }
+
+            override fun onRestoreFailed(error: PurchasesError) {
+                Log.d(TAG, "Local listener: onRestoreFailed called with error: ${error.message}")
+            }
+
+            override fun onManageSubscriptionRequested() {
+                Log.d(TAG, "Local listener: onManageSubscriptionRequested called")
+            }
+
+            override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
+                Log.d(TAG, "Local listener: onFeedbackSurveyCompleted called with option ID: $feedbackSurveyOptionId")
+            }
+        }
+    }
+
     if (isCustomerCenterVisible) {
-        CustomerCenter(modifier = Modifier.fillMaxSize()) {
+        CustomerCenter(
+            modifier = Modifier.fillMaxSize(),
+            options = CustomerCenterOptions.Builder()
+                .setListener(customerCenterListener)
+                .build(),
+        ) {
             isCustomerCenterVisible = false
         }
         return

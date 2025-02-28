@@ -34,9 +34,11 @@ interface CustomerCenterListener {
     }
 
     /**
-     * Called when the user initiates a subscription cancellation through the Customer Center.
+     * Called when the user requests to manage their subscription through the Customer Center.
+     * This happens when the user taps on the cancel subscription button, which takes them
+     * to the Google Play subscription management screen.
      */
-    fun onCancelSubscription() {
+    fun onManageSubscriptionRequested() {
         // Default empty implementation
     }
 

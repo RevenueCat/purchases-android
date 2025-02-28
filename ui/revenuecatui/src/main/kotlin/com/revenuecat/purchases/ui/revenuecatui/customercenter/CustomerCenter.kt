@@ -23,5 +23,9 @@ fun CustomerCenter(
     options: CustomerCenterOptions = CustomerCenterOptions.Builder().build(),
     onDismiss: () -> Unit,
 ) {
-    InternalCustomerCenter(modifier = modifier, onDismiss = onDismiss)
+    InternalCustomerCenter(
+        modifier = modifier,
+        listener = options.listener,
+        onDismiss = onDismiss,
+    )
 }
