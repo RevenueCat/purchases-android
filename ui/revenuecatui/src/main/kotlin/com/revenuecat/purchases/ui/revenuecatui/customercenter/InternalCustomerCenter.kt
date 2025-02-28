@@ -108,7 +108,11 @@ internal fun InternalCustomerCenter(
                     }
                 }
 
-                is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
+                is CustomerCenterAction.DismissRestoreDialog ->
+                    coroutineScope.launch {
+                        viewModel.dismissRestoreDialog(action.restored)
+                    }
+
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
                 is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
                 is CustomerCenterAction.NavigationButtonPressed -> {
@@ -117,6 +121,7 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissPromotionalOffer ->
                     viewModel.dismissPromotionalOffer(context, action.originalPath)
+
                 is CustomerCenterAction.PurchasePromotionalOffer -> {
                     val activity = context.getActivity()
                     coroutineScope.launch {
@@ -266,7 +271,7 @@ private fun CustomerCenterLoaded(
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
             localization = state.customerCenterConfigData.localization,
-            onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
+            onDismiss = { restored -> onAction(CustomerCenterAction.DismissRestoreDialog(restored)) },
             onRestore = { onAction(CustomerCenterAction.PerformRestore) },
             onContactSupport = state.customerCenterConfigData.support.email?.let { email ->
                 {

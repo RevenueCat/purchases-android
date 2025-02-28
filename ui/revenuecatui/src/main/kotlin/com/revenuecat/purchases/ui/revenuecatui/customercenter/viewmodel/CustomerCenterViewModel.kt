@@ -63,7 +63,7 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct?,
     )
 
-    fun dismissRestoreDialog()
+    suspend fun dismissRestoreDialog(restored: Boolean)
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
     fun loadAndDisplayPromotionalOffer(
@@ -235,15 +235,20 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun dismissRestoreDialog() {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    showRestoreDialog = false,
-                    restorePurchasesState = RestorePurchasesState.INITIAL,
-                )
-            } else {
-                currentState
+    override suspend fun dismissRestoreDialog(restored: Boolean) {
+        if (restored) {
+            // Reload customer center data to refresh the UI with the latest information
+            loadCustomerCenter()
+        } else {
+            _state.update { currentState ->
+                if (currentState is CustomerCenterState.Success) {
+                    currentState.copy(
+                        showRestoreDialog = false,
+                        restorePurchasesState = RestorePurchasesState.INITIAL,
+                    )
+                } else {
+                    currentState
+                }
             }
         }
     }
@@ -276,9 +281,6 @@ internal class CustomerCenterViewModelImpl(
                     currentState
                 }
             }
-
-            // Reload customer center data to refresh the UI with the latest information
-            loadCustomerCenter()
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases", e)
             _state.update { currentState ->

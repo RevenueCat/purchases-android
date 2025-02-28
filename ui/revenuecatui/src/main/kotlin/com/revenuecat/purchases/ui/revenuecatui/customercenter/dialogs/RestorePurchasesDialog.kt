@@ -26,14 +26,16 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 internal fun RestorePurchasesDialog(
     state: RestorePurchasesState,
     localization: CustomerCenterConfigData.Localization,
-    onDismiss: () -> Unit,
+    onDismiss: (restored: Boolean) -> Unit,
     onRestore: () -> Unit,
     onContactSupport: (() -> Unit)?,
 ) {
     when (state) {
         RestorePurchasesState.INITIAL -> InitialStateDialog(
             localization = localization,
-            onDismiss = onDismiss,
+            onDismiss = {
+                onDismiss(false)
+            },
             onRestore = onRestore,
         )
         RestorePurchasesState.PURCHASES_RECOVERED -> PurchasesRecoveredDialog(
@@ -42,7 +44,9 @@ internal fun RestorePurchasesDialog(
         )
         RestorePurchasesState.PURCHASES_NOT_FOUND -> PurchasesNotFoundDialog(
             localization,
-            onDismiss = onDismiss,
+            onDismiss = {
+                onDismiss(false)
+            },
             onContactSupport = onContactSupport,
         )
         RestorePurchasesState.RESTORING -> RestoringDialog(
@@ -129,10 +133,10 @@ private fun RestoringDialog(
 @Composable
 private fun PurchasesRecoveredDialog(
     localization: CustomerCenterConfigData.Localization,
-    onDismiss: () -> Unit,
+    onDismiss: (recovered: Boolean) -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { onDismiss(true) },
         title = {
             Text(
                 localization.commonLocalizedString(
@@ -150,10 +154,10 @@ private fun PurchasesRecoveredDialog(
             )
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
+            Button(onClick = { onDismiss(true) }) {
                 Text(
                     localization.commonLocalizedString(
-                        key = CustomerCenterConfigData.Localization.CommonLocalizedString.CANCEL,
+                        key = CustomerCenterConfigData.Localization.CommonLocalizedString.DISMISS,
                     ),
                 )
             }
