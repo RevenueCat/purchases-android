@@ -246,7 +246,7 @@ private class PurchasesAPI {
             override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
             }
 
-            override fun onCancelSubscription() {
+            override fun onManageSubscriptionRequested() {
             }
 
             override fun onRestoreCompleted(customerInfo: CustomerInfo) {
