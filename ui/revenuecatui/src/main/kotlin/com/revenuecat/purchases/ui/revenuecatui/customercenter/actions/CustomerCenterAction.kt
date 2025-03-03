@@ -12,7 +12,7 @@ internal sealed class CustomerCenterAction {
         val product: StoreProduct?,
     ) : CustomerCenterAction()
     object PerformRestore : CustomerCenterAction()
-    data class DismissRestoreDialog(val restored: Boolean) : CustomerCenterAction()
+    object DismissRestoreDialog : CustomerCenterAction()
     data class ContactSupport(val email: String) : CustomerCenterAction()
     data class PurchasePromotionalOffer(val subscriptionOption: SubscriptionOption) : CustomerCenterAction()
     data class DismissPromotionalOffer(val originalPath: CustomerCenterConfigData.HelpPath) : CustomerCenterAction()

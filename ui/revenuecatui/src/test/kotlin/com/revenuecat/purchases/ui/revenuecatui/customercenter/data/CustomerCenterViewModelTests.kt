@@ -287,7 +287,7 @@ class CustomerCenterViewModelTests {
         clearMocks(model, answers = false)
         
         // 3. Finally, call the method we're testing
-        model.dismissRestoreDialog(restored = true)
+        model.dismissRestoreDialog()
         
         // Verify loadCustomerCenter was called
         coVerify(exactly = 1) { model.loadCustomerCenter() }
@@ -374,7 +374,7 @@ class CustomerCenterViewModelTests {
         clearMocks(model, answers = false)
         
         // Call the method we're testing with restored = false
-        model.dismissRestoreDialog(restored = false)
+        model.dismissRestoreDialog()
         
         // Verify loadCustomerCenter was NOT called
         coVerify(exactly = 0) { model.loadCustomerCenter() }

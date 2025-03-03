@@ -110,7 +110,7 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissRestoreDialog ->
                     coroutineScope.launch {
-                        viewModel.dismissRestoreDialog(action.restored)
+                        viewModel.dismissRestoreDialog()
                     }
 
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
@@ -271,7 +271,7 @@ private fun CustomerCenterLoaded(
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
             localization = state.customerCenterConfigData.localization,
-            onDismiss = { restored -> onAction(CustomerCenterAction.DismissRestoreDialog(restored)) },
+            onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
             onRestore = { onAction(CustomerCenterAction.PerformRestore) },
             onContactSupport = state.customerCenterConfigData.support.email?.let { email ->
                 {

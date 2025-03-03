@@ -26,16 +26,14 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 internal fun RestorePurchasesDialog(
     state: RestorePurchasesState,
     localization: CustomerCenterConfigData.Localization,
-    onDismiss: (restored: Boolean) -> Unit,
+    onDismiss: () -> Unit,
     onRestore: () -> Unit,
     onContactSupport: (() -> Unit)?,
 ) {
     when (state) {
         RestorePurchasesState.INITIAL -> InitialStateDialog(
             localization = localization,
-            onDismiss = {
-                onDismiss(false)
-            },
+            onDismiss = onDismiss,
             onRestore = onRestore,
         )
         RestorePurchasesState.PURCHASES_RECOVERED -> PurchasesRecoveredDialog(
@@ -44,9 +42,7 @@ internal fun RestorePurchasesDialog(
         )
         RestorePurchasesState.PURCHASES_NOT_FOUND -> PurchasesNotFoundDialog(
             localization,
-            onDismiss = {
-                onDismiss(false)
-            },
+            onDismiss = onDismiss,
             onContactSupport = onContactSupport,
         )
         RestorePurchasesState.RESTORING -> RestoringDialog(
@@ -133,10 +129,10 @@ private fun RestoringDialog(
 @Composable
 private fun PurchasesRecoveredDialog(
     localization: CustomerCenterConfigData.Localization,
-    onDismiss: (recovered: Boolean) -> Unit,
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = { onDismiss(true) },
+        onDismissRequest = onDismiss,
         title = {
             Text(
                 localization.commonLocalizedString(
@@ -154,7 +150,7 @@ private fun PurchasesRecoveredDialog(
             )
         },
         confirmButton = {
-            Button(onClick = { onDismiss(true) }) {
+            Button(onClick = onDismiss) {
                 Text(
                     localization.commonLocalizedString(
                         key = CustomerCenterConfigData.Localization.CommonLocalizedString.DISMISS,
