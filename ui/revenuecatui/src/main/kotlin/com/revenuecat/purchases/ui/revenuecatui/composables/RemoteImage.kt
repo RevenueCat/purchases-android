@@ -30,11 +30,11 @@ import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.transform.Transformation
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getRevenueCatUIImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
@@ -126,7 +126,7 @@ private fun Image(
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
     val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
-        applicationContext.getRevenueCatUIImageLoader()
+        Purchases.getImageLoader(applicationContext)
     }
 
     val imageRequest = ImageRequest.Builder(LocalContext.current)

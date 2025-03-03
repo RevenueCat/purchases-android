@@ -1,9 +1,11 @@
 ## RevenueCatUI SDK
-#### 🐞 Bugfixes
-* Fix issue with release minification with Emerge's annotation  (#2176) via Toni Rico (@tonidero)
 ### Customer Center
-#### 🐞 Bugfixes
-* fix: Track customer center events (#2178) via Facundo Menzella (@facumenzella)
+#### ✨ New Features
+* Creates a `ShowCustomerCenter ` contract for displaying as an Activity (#2181) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Enable paywall tester minification (#2177) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds template previews (#2184) via JayShortway (@JayShortway)
+* Removes Intent.FLAG_ACTIVITY_NEW_TASK when starting CustomerCenterActivity (#2190) via Cesar de la Vega (@vegaro)
+* chore: Introduce preview for no active subscriptions (#2188) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Allow manual scrolling if auto-advance is enabled (#2182) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds `visible` property to all components (#2172) via JayShortway (@JayShortway)

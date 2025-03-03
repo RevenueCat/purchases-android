@@ -599,10 +599,10 @@ DESC
     branch_name = "pw2-update-templates-json"
     templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
     api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"] || UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable")
-    
+
     # Ensure we're starting from an up-to-date main.
     sh("git", "fetch", "origin")
-    
+
     create_or_checkout_branch(branch_name: branch_name)
 
     # Get offerings and save to file.
@@ -613,7 +613,6 @@ DESC
     File.write(templates_file, offerings_response)
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
-    # Only proceed with commit, push and PR if there are changes
     has_changes = !sh("git", "status", "--porcelain").empty?
 
     if has_changes
@@ -626,7 +625,8 @@ DESC
         branch_name: branch_name,
         title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
         body: "This is an automatic update of the Compose previews of all templates.",
-        labels: ["pr:other"]
+        labels: ["pr:other"],
+        team_reviewers: ["coresdk", "monetization"]
       )
     else
       UI.message("No changes detected in templates file, skipping PR creation")
@@ -849,8 +849,8 @@ DESC
     existing_pr = github_api(
       api_token: ENV["GITHUB_TOKEN"],
       path: "/repos/#{repo}/pulls?head=RevenueCat:#{branch_name}&state=open"
-    )    
-    
+    )
+
     if existing_pr[:json].length == 0
       create_pull_request(
         repo: repo,
