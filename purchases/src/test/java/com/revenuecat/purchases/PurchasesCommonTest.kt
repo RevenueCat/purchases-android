@@ -5,23 +5,15 @@
 
 package com.revenuecat.purchases
 
-import android.os.Handler
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
-import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -36,14 +28,10 @@ import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
-import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkConstructor
-import io.mockk.mockkStatic
-import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
@@ -68,9 +56,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private val subPurchaseToken = "token_sub"
 
     private val initiationSource = PostReceiptInitiationSource.PURCHASE
-
-    private val mockLifecycle = mockk<Lifecycle>()
-    private val mockLifecycleOwner = mockk<LifecycleOwner>()
 
     @After
     fun removeMocks() {
@@ -1460,12 +1445,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `when closing instance, activity lifecycle callbacks are unregistered`() {
         every {
-            ProcessLifecycleOwner.get()
-        } returns mockLifecycleOwner
-        every {
-            mockLifecycleOwner.lifecycle
-        } returns mockLifecycle
-        every {
             mockLifecycle.removeObserver(any())
         } just Runs
         purchases.close()
@@ -1524,9 +1503,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     private fun mockCloseActions() {
-        every {
-            ProcessLifecycleOwner.get()
-        } returns mockLifecycleOwner
         every {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle

@@ -30,6 +30,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -100,6 +101,7 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    contentAlpha: Float = 1f,
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -121,6 +123,7 @@ internal fun StackComponentView(
                     badge.stackStyle,
                     badge.alignment,
                     clickHandler,
+                    contentAlpha,
                     modifier,
                 )
             }
@@ -135,6 +138,7 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment.isTop,
                         clickHandler,
+                        contentAlpha,
                         modifier,
                     )
 
@@ -145,16 +149,17 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment,
                         clickHandler,
+                        contentAlpha,
                         modifier,
                     )
                 }
             }
 
             Badge.Style.Nested ->
-                MainStackComponent(stackState, state, clickHandler, modifier, badge)
+                MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier, badge)
         }
     } else {
-        MainStackComponent(stackState, state, clickHandler, modifier)
+        MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier)
     }
 }
 
@@ -166,10 +171,11 @@ private fun StackWithOverlaidBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        MainStackComponent(stackState, state, clickHandler)
+        MainStackComponent(stackState, state, clickHandler, contentAlpha)
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
         }
@@ -194,6 +200,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     topBadge: Boolean,
     clickHandler: suspend (PaywallAction) -> Unit,
+    contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
@@ -209,6 +216,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 stackState,
                 state,
                 clickHandler,
+                contentAlpha,
                 shouldApplyShadow = false,
             )
         }.first()
@@ -356,6 +364,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
     val adjustedCornerRadiuses: CornerRadiuses = when (val badgeRectangleCorners = badgeStack.shape.cornerRadiuses) {
@@ -427,7 +436,7 @@ private fun StackWithShortEdgeToEdgeBadge(
             }
         }
     }
-    MainStackComponent(stackState, state, clickHandler, modifier) {
+    MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
             state,
@@ -469,6 +478,7 @@ private fun MainStackComponent(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
+    contentAlpha: Float,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
@@ -544,7 +554,8 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .padding(childPadding),
+                                .padding(childPadding)
+                                .alpha(contentAlpha),
                         )
 
                         if (dimension.distribution.usesAllAvailableSpace && !isLast) {
@@ -604,7 +615,8 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                                .padding(childPadding),
+                                .padding(childPadding)
+                                .alpha(contentAlpha),
                         )
 
                         if (dimension.distribution.usesAllAvailableSpace && !isLast) {
@@ -642,7 +654,9 @@ private fun MainStackComponent(
                             style = child,
                             state = state,
                             onClick = clickHandler,
-                            modifier = Modifier.padding(childPadding),
+                            modifier = Modifier
+                                .padding(childPadding)
+                                .alpha(contentAlpha),
                         )
                     }
                 }
@@ -1134,7 +1148,9 @@ private fun StackComponentView_Preview_Horizontal() {
 @Composable
 private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
     Box(
-        modifier = Modifier.padding(all = 32.dp).background(Color.Gray),
+        modifier = Modifier
+            .padding(all = 32.dp)
+            .background(Color.Gray),
     ) {
         StackComponentView(
             style = StackComponentStyle(
@@ -1657,6 +1673,19 @@ private fun StackComponentView_Preview_VerticalDivider() {
             modifier = Modifier.weight(1f),
         )
     }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_ContentAlpha() {
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = previewChildren(),
+        ),
+        state = previewEmptyState(),
+        clickHandler = {},
+        contentAlpha = 0.6f,
+    )
 }
 
 @Composable
