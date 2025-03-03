@@ -11,6 +11,7 @@ import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.testParcelization
+import net.bytebuddy.implementation.bind.MethodDelegationBinder.MethodInvoker.Virtual
 import org.assertj.core.api.Assertions
 import org.json.JSONObject
 import org.junit.Test
@@ -46,7 +47,8 @@ class ParcelableTests {
             firstSeen = Date(System.currentTimeMillis()),
             originalAppUserId = "original_app_user_id",
             managementURL = Uri.parse("https://management.com"),
-            originalPurchaseDate = Date(System.currentTimeMillis())
+            originalPurchaseDate = Date(System.currentTimeMillis()),
+            virtualCurrencies = emptyMap()
         )
     )
 
@@ -91,6 +93,16 @@ class ParcelableTests {
         GoogleReplacementMode.values().forEach { testParcelization(it, true) }
         val nullMode: GoogleReplacementMode? = null
         testParcelization(nullMode, true)
+    }
+
+    @Test
+    fun `VirtualCurrencyInfo is Parcelable`() {
+        testParcelization(
+            VirtualCurrencyInfo(
+                balance = 100,
+                jsonObject = JSONObject(emptyMap<String, Int>())
+            )
+        )
     }
 
     private fun getEntitlementInfo(

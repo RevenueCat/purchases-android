@@ -37,6 +37,7 @@ import java.util.Date
  * If there are multiple for different platforms, it will point to the Play Store
  * @property originalPurchaseDate the purchase date for the version of the application when the user bought the app.
  * Use this for grandfathering users when migrating to subscriptions. This can be null, see -Purchases.restorePurchases
+ * @property virtualCurrencies information of the virtual currencies that the customer owns.
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
@@ -50,6 +51,7 @@ data class CustomerInfo(
     val originalAppUserId: String,
     val managementURL: Uri?,
     val originalPurchaseDate: Date?,
+    val virtualCurrencies: Map<String, VirtualCurrencyInfo>,
     private val jsonObject: JSONObject,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
@@ -235,6 +237,7 @@ private data class ComparableData(
     val firstSeen: Date,
     val originalAppUserId: String,
     val originalPurchaseDate: Date?,
+    val virtualCurrencies: Map<String, VirtualCurrencyInfo>,
 ) {
     constructor(
         customerInfo: CustomerInfo,
@@ -246,5 +249,6 @@ private data class ComparableData(
         firstSeen = customerInfo.firstSeen,
         originalAppUserId = customerInfo.originalAppUserId,
         originalPurchaseDate = customerInfo.originalPurchaseDate,
+        virtualCurrencies = customerInfo.virtualCurrencies
     )
 }
