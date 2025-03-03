@@ -249,6 +249,6 @@ private data class ComparableData(
         firstSeen = customerInfo.firstSeen,
         originalAppUserId = customerInfo.originalAppUserId,
         originalPurchaseDate = customerInfo.originalPurchaseDate,
-        virtualCurrencies = customerInfo.virtualCurrencies
+        virtualCurrencies = customerInfo.virtualCurrencies,
     )
 }

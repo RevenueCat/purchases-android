@@ -12,8 +12,8 @@ import org.json.JSONObject
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class VirtualCurrencyInfo(
     val balance: Long,
-    private val jsonObject: JSONObject
-): Parcelable, RawDataContainer<JSONObject> {
+    private val jsonObject: JSONObject,
+) : Parcelable, RawDataContainer<JSONObject> {
 
     @IgnoredOnParcel
     override val rawData: JSONObject

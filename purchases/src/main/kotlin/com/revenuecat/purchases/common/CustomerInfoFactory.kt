@@ -30,6 +30,7 @@ internal object CustomerInfoFactory {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
     }
 
+    @Suppress("LongMethod")
     @Throws(JSONException::class)
     fun buildCustomerInfo(
         body: JSONObject,
@@ -80,7 +81,7 @@ internal object CustomerInfoFactory {
             }
 
         val virtualCurrenciesObject = subscriber.optJSONObject(
-            CustomerInfoResponseJsonKeys.VIRTUAL_CURRENCIES
+            CustomerInfoResponseJsonKeys.VIRTUAL_CURRENCIES,
         ) ?: JSONObject()
 
         val virtualCurrencies = buildMap<String, VirtualCurrencyInfo> {
@@ -101,7 +102,7 @@ internal object CustomerInfoFactory {
             originalAppUserId = subscriber.optString(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID),
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate,
-            virtualCurrencies = virtualCurrencies
+            virtualCurrencies = virtualCurrencies,
         )
     }
 
