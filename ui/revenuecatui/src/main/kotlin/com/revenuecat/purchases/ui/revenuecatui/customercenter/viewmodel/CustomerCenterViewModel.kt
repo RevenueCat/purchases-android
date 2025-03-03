@@ -516,21 +516,29 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun loadCustomerCenter() {
-        if (_state.value !is CustomerCenterState.Loading) {
-            _state.value = CustomerCenterState.Loading
+        _state.update { state ->
+            if (state !is CustomerCenterState.Loading) {
+                CustomerCenterState.Loading
+            } else {
+                state
+            }
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
-            _state.value = CustomerCenterState.Success(
-                customerCenterConfigData,
-                purchaseInformation,
-                supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
-                    supportedPaths(purchaseInformation, it)
-                },
-            )
+            _state.update {
+                CustomerCenterState.Success(
+                    customerCenterConfigData,
+                    purchaseInformation,
+                    supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
+                        supportedPaths(purchaseInformation, it)
+                    },
+                )
+            }
         } catch (e: PurchasesException) {
-            _state.value = CustomerCenterState.Error(e.error)
+            _state.update {
+                CustomerCenterState.Error(e.error)
+            }
         }
     }
 
