@@ -28703,12 +28703,6 @@
       }
     },
     {
-      "description": "josh_badge_debug",
-      "identifier": "josh_badge_debug",
-      "metadata": null,
-      "packages": []
-    },
-    {
       "description": "template_016",
       "identifier": "template_016",
       "metadata": null,
@@ -38218,8 +38212,7 @@
       "description": "barbara_debug_019 TO DELETE",
       "identifier": "barbara_debug_019",
       "metadata": null,
-      "packages": [],
-      "paywall_components": null
+      "packages": []
     },
     {
       "description": "template_020_with connector",
@@ -38232,7 +38225,61 @@
       "description": "barbara_debug_019_02",
       "identifier": "barbara_debug_019_02",
       "metadata": null,
+      "packages": [],
+      "paywall_components": null
+    },
+    {
+      "description": "Template 021",
+      "identifier": "template_021",
+      "metadata": null,
+      "packages": [],
+      "paywall_components": null
+    },
+    {
+      "description": "template_022",
+      "identifier": "template_022",
+      "metadata": null,
       "packages": []
+    },
+    {
+      "description": "template_023",
+      "identifier": "template_023",
+      "metadata": null,
+      "packages": []
+    },
+    {
+      "description": "template_024",
+      "identifier": "template_024",
+      "metadata": null,
+      "packages": [],
+      "paywall_components": null
+    },
+    {
+      "description": "template_025",
+      "identifier": "template_025",
+      "metadata": null,
+      "packages": [],
+      "paywall_components": null
+    },
+    {
+      "description": "template_026",
+      "identifier": "template_026",
+      "metadata": null,
+      "packages": []
+    },
+    {
+      "description": "template_027",
+      "identifier": "template_027",
+      "metadata": null,
+      "packages": [],
+      "paywall_components": null
+    },
+    {
+      "description": "template_028",
+      "identifier": "template_028",
+      "metadata": null,
+      "packages": [],
+      "paywall_components": null
     }
   ],
   "placements": {
