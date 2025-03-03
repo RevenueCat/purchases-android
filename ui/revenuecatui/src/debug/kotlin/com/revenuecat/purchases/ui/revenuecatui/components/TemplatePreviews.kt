@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.emergetools.snapshots.annotations.IgnoreEmergeSnapshot
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreProduct
@@ -78,6 +79,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
         drop(index).firstOrNull()
 }
 
+@IgnoreEmergeSnapshot
 @Preview
 @Composable
 private fun PaywallComponentsTemplate_Preview(
