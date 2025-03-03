@@ -40,13 +40,15 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     override val values = offeringIndices
         .asSequence()
         .mapNotNull { (start, end) ->
-            // Re-open the stream and read only the current offering.
+            // Re-open the stream and read only the current offering. While we could keep the stream open for the
+            // entirety of the sequence and yield offerings as we encounter them, we found that Emerge Snapshots closes
+            // the stream prematurely in this case. To avoid that, we reopen the stream for each offering.
             val offeringJsonString = getResourceStream(offeringsJsonFileName).readOfferingAt(start, end)
             val offeringJsonObject = JSONObject(offeringJsonString)
             val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
             if (!hasPaywall) return@mapNotNull null
 
-            // Add packages.
+            // Ensure that the offering has all packages.
             offeringJsonObject.put("packages", packagesJsonArray)
             val offeringId = offeringJsonObject.getString("identifier")
             val offeringsJsonObject = JSONObject()
