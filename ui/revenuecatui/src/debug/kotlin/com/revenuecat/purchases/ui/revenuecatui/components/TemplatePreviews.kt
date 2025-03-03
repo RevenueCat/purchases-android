@@ -34,27 +34,19 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     private val createOfferingsMethod = offeringParser::class.java
         .getMethod("createOfferings", JSONObject::class.java, Map::class.java)
 
+    // See where all the offerings are in the JSON.
+    private val offeringIndices = getResourceStream(offeringsJsonFileName).indexOfferings()
+
     override val values: Sequence<Offering> = sequence {
-        var index = 0
-        @Suppress("LoopWithTooManyJumpStatements")
-        while (true) {
-            // Reopen the stream for each offering and skip previous ones. While we could keep the stream open for the
-            // entirety of the sequence and yield offerings as we encounter them, we found that Emerge Snapshots closes
-            // the stream prematurely in this case. To avoid that, we reopen the stream for each offering.
-            val offeringJsonObject = getResourceStream(offeringsJsonFileName)
-                .offeringJsonStringSequence()
-                .get(index)
-                ?.let { JSONObject(it) }
-                ?: break // Break if there are no more offerings.
-
+        for ((start, end) in offeringIndices) {
+            // Re-open the stream and read only the current offering.
+            val offeringJsonString = readOfferingAt(offeringsJsonFileName, start, end)
+            offeringJsonString.lineSequence().forEach { println("TESTING $it") }
+            val offeringJsonObject = JSONObject(offeringJsonString)
             val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
-            // Skip any offering that doesn't have a paywall.
-            if (!hasPaywall) {
-                index++
-                continue
-            }
+            if (!hasPaywall) continue
 
-            // Ensure that the offering has all packages.
+            // Add packages.
             offeringJsonObject.put("packages", packagesJsonArray)
             val offeringId = offeringJsonObject.getString("identifier")
             val offeringsJsonObject = JSONObject()
@@ -62,20 +54,85 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
                 .put("offerings", JSONArray().put(offeringJsonObject))
                 .put("ui_config", uiConfigJsonObject)
 
-            createOfferings(offeringsJsonObject)
+            val offeringInstance = createOfferings(offeringsJsonObject)
                 .current
                 ?.takeUnless { it.paywallComponents == null }
-                ?.also { offering -> yield(offering) }
-
-            index++
+            if (offeringInstance != null) {
+                yield(offeringInstance)
+            }
         }
     }
 
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
         createOfferingsMethod(offeringParser, offeringsJsonObject, emptyMap<String, List<StoreProduct>>()) as Offerings
 
-    private fun <T> Sequence<T>.get(index: Int): T? =
-        drop(index).firstOrNull()
+    @Suppress("CyclomaticComplexMethod")
+    private fun InputStream.indexOfferings(): List<Pair<Int, Int>> = buildList {
+        bufferedReader().use { reader ->
+            val assumedNewLineChars = 1 // Assuming either LF or CR, not CRLF.
+            // Read until we reach the offerings array.
+            var index = 0
+            var line: String? = reader.readLine()?.also { index += it.length + assumedNewLineChars }
+            while (line != null && !line.contains("\"offerings\": [")) {
+                line = reader.readLine()?.also { index += it.length + assumedNewLineChars }
+            }
+
+            // Now start reading each offering.
+            var c: Int
+            var insideObject = false
+            var braceCount = 0
+            var currentStartIndex: Int? = null
+            while (reader.read().also { c = it } != -1) {
+                val char = c.toChar()
+                // When we encounter the start of an object, start counting braces to be able to handle nested objects.
+                if (char == '{') {
+                    if (!insideObject) {
+                        insideObject = true
+                        currentStartIndex = index
+                    }
+                    braceCount++
+                }
+
+                if (char == '}') {
+                    braceCount--
+                    if (braceCount == 0 && insideObject) {
+                        // We have a complete JSON object.
+                        val currentEndIndex = index + 1
+                        add(currentStartIndex!! to currentEndIndex)
+                        currentStartIndex = null
+                        insideObject = false
+                    }
+                }
+
+                // We hit the end of the offerings array.
+                if (!insideObject && char == ']') break
+                index++
+            }
+        }
+    }
+
+    /**
+     * Reopens the file and reads the characters from start (inclusive) to end (exclusive),
+     * returning that substring.
+     */
+    private fun readOfferingAt(fileName: String, start: Int, end: Int): String {
+        val stream = getResourceStream(fileName)
+        val reader = stream.bufferedReader()
+
+        // Skip exactly start characters.
+        reader.skip(start.toLong())
+
+        val length = end - start
+        val charArray = CharArray(length)
+        var totalRead = 0
+        while (totalRead < length) {
+            val readCount = reader.read(charArray, totalRead, length - totalRead)
+            if (readCount == -1) break
+            totalRead += readCount
+        }
+        reader.close()
+        return String(charArray, 0, totalRead)
+    }
 }
 
 @Preview
@@ -110,49 +167,6 @@ private fun PaywallComponentsTemplate_Preview(
 private fun getResourceStream(fileName: String): InputStream =
     object {}.javaClass.getResource("/$fileName")?.openStream()
         ?: File(BuildConfig.PROJECT_DIR).resolve("src/debug/resources/$fileName").inputStream()
-
-/**
- * A very limited streaming JSON parser that will look for offerings and will return each one in a Sequence.
- */
-@Suppress("CyclomaticComplexMethod")
-private fun InputStream.offeringJsonStringSequence(): Sequence<String> = sequence {
-    bufferedReader().use { reader ->
-        // Read until we reach the offerings array.
-        var line: String? = reader.readLine()
-        while (line != null && !line.contains("\"offerings\": [")) line = reader.readLine()
-
-        // Now start reading each offering.
-        var c: Int
-        val stringBuilder = StringBuilder()
-        var insideObject = false
-        var braceCount = 0
-        while (reader.read().also { c = it } != -1) {
-            val char = c.toChar()
-            // When we encounter the start of an object, start counting braces to be able to handle nested objects.
-            if (char == '{') {
-                if (!insideObject) {
-                    insideObject = true
-                    stringBuilder.clear()
-                }
-                braceCount++
-            }
-
-            if (insideObject) stringBuilder.append(char)
-
-            if (char == '}') {
-                braceCount--
-                if (braceCount == 0 && insideObject) {
-                    // We have a complete JSON object.
-                    yield(stringBuilder.toString())
-                    insideObject = false
-                }
-            }
-
-            // We hit the end of the offerings array.
-            if (!insideObject && char == ']') break
-        }
-    }
-}
 
 /**
  * Reads the ui_config from this stream without reading the entire file into memory.
