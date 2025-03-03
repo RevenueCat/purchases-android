@@ -645,8 +645,10 @@ workflows:
   version: 2
   danger:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/danger
 
@@ -658,23 +660,26 @@ workflows:
 
   snapshot-deploy-sample-app-tests:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - deploy-snapshot: *only-main-branch
+      - deploy-snapshot
       - assemble-magic-weather-compose-sample-app:
-          <<: *only-main-branch
           requires:
             - deploy-snapshot
       - assemble-custom-entitlement-computation-sample-app:
-          <<: *only-main-branch
           requires:
             - deploy-snapshot
 
   build-test-deploy:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - test
       - detekt
@@ -732,10 +737,13 @@ workflows:
 
   snapshot-bump:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - prepare-next-version: *only-main-branch
+      - prepare-next-version
 
   publish-paywall-tester-to-internal-track:
     when:
@@ -743,6 +751,7 @@ workflows:
         - not:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - publish-paywall-tester-release:
           track: "internal"

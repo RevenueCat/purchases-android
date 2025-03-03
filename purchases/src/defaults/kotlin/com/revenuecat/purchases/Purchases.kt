@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.VisibleForTesting
+import coil.ImageLoader
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -837,6 +838,11 @@ class Purchases internal constructor(
 
     // region Static
     companion object {
+
+        @InternalRevenueCatAPI
+        fun getImageLoader(context: Context): ImageLoader {
+            return PurchasesOrchestrator.getImageLoader(context)
+        }
 
         /**
          * Given an intent, parses the associated link if any and returns a [WebPurchaseRedemption], which can

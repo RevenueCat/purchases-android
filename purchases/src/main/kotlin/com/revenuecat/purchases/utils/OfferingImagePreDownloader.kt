@@ -38,7 +38,6 @@ internal class OfferingImagePreDownloader(
     },
     private val coilImageDownloader: CoilImageDownloader,
 ) {
-
     fun preDownloadOfferingImages(offering: Offering) {
         if (!shouldPredownloadImages) {
             verboseLog("OfferingImagePreDownloader won't pre-download images")
