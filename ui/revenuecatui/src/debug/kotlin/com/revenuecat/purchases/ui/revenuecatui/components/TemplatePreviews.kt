@@ -34,17 +34,17 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     private val createOfferingsMethod = offeringParser::class.java
         .getMethod("createOfferings", JSONObject::class.java, Map::class.java)
 
-    // See where all the offerings are in the JSON.
+    // Find all start (inclusive) and end (exclusive) indices of each offering in the JSON.
     private val offeringIndices = getResourceStream(offeringsJsonFileName).indexOfferings()
 
-    override val values: Sequence<Offering> = sequence {
-        for ((start, end) in offeringIndices) {
+    override val values = offeringIndices
+        .asSequence()
+        .mapNotNull { (start, end) ->
             // Re-open the stream and read only the current offering.
-            val offeringJsonString = readOfferingAt(offeringsJsonFileName, start, end)
-            offeringJsonString.lineSequence().forEach { println("TESTING $it") }
+            val offeringJsonString = getResourceStream(offeringsJsonFileName).readOfferingAt(start, end)
             val offeringJsonObject = JSONObject(offeringJsonString)
             val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
-            if (!hasPaywall) continue
+            if (!hasPaywall) return@mapNotNull null
 
             // Add packages.
             offeringJsonObject.put("packages", packagesJsonArray)
@@ -54,18 +54,17 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
                 .put("offerings", JSONArray().put(offeringJsonObject))
                 .put("ui_config", uiConfigJsonObject)
 
-            val offeringInstance = createOfferings(offeringsJsonObject)
+            createOfferings(offeringsJsonObject)
                 .current
                 ?.takeUnless { it.paywallComponents == null }
-            if (offeringInstance != null) {
-                yield(offeringInstance)
-            }
         }
-    }
 
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
         createOfferingsMethod(offeringParser, offeringsJsonObject, emptyMap<String, List<StoreProduct>>()) as Offerings
 
+    /**
+     * Finds all start (inclusive) and end (exclusive) indices of each offering in the JSON.
+     */
     @Suppress("CyclomaticComplexMethod")
     private fun InputStream.indexOfferings(): List<Pair<Int, Int>> = buildList {
         bufferedReader().use { reader ->
@@ -115,11 +114,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
      * Reopens the file and reads the characters from start (inclusive) to end (exclusive),
      * returning that substring.
      */
-    private fun readOfferingAt(fileName: String, start: Int, end: Int): String {
-        val stream = getResourceStream(fileName)
-        val reader = stream.bufferedReader()
-
-        // Skip exactly start characters.
+    private fun InputStream.readOfferingAt(start: Int, end: Int): String = bufferedReader().use { reader ->
         reader.skip(start.toLong())
 
         val length = end - start
@@ -130,8 +125,8 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
             if (readCount == -1) break
             totalRead += readCount
         }
-        reader.close()
-        return String(charArray, 0, totalRead)
+
+        String(charArray, 0, totalRead)
     }
 }
 
