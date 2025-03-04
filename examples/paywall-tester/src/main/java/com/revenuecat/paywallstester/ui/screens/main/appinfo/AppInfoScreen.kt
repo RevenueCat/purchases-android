@@ -61,7 +61,9 @@ fun AppInfoScreen(
     ) {
         val state by viewModel.state.collectAsState()
         val currentUserID by remember { derivedStateOf { state.appUserID } }
+        val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
         Text(text = "Current user ID: $currentUserID")
+        Text(text = "Current API key: $currentApiKeyDescription")
         Button(onClick = { showLogInDialog = true }) {
             Text(text = "Log in")
         }
@@ -138,7 +140,7 @@ fun AppInfoScreenPreview() {
     AppInfoScreen(
         viewModel = object : AppInfoScreenViewModel {
             override val state: StateFlow<UiState>
-                get() = MutableStateFlow(UiState.Empty.copy(appUserID = "test-user-id"))
+                get() = MutableStateFlow(UiState(appUserID = "test-user-id", apiKeyDescription = "test-api-key"))
 
             override fun logIn(newAppUserId: String) { }
             override fun logOut() { }

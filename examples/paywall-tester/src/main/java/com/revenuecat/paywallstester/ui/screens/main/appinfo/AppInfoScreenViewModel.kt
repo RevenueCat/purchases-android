@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.revenuecat.paywallstester.ConfigurePurchasesUseCase
+import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
@@ -59,6 +60,7 @@ internal class AppInfoScreenViewModelImpl(
 
     init {
         updateAppUserID()
+        updateApiKeyDescription()
     }
 
     override fun logIn(newAppUserId: String) {
@@ -85,5 +87,17 @@ internal class AppInfoScreenViewModelImpl(
 
     private fun updateAppUserID() {
         _state.update { it.copy(appUserID = Purchases.sharedInstance.appUserID) }
+    }
+
+    private fun updateApiKeyDescription() {
+        _state.update {
+            it.copy(
+                apiKeyDescription = when (val apiKey = Purchases.sharedInstance.currentConfiguration.apiKey) {
+                    Constants.GOOGLE_API_KEY_A -> "A - $apiKey"
+                    Constants.GOOGLE_API_KEY_B -> "B - $apiKey"
+                    else -> apiKey
+                },
+            )
+        }
     }
 }
