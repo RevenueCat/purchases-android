@@ -29,6 +29,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -170,15 +171,126 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
+    fun `onNavigationButtonPressed handles CLOSE and BACK buttons correctly`() = runTest {
+        setupPurchasesMock()
+
+        every { customerInfo.activeSubscriptions } returns setOf("product-id")
+
+        // Setup screen with a path
+        val testPath = HelpPath(
+            id = "test_path_id",
+            title = "Test Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(testPath)
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+
+        // Create the ViewModel
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Track state changes
+        val initialLoadingCompleted = CompletableDeferred<Boolean>()
+        val onDismissCalled = CompletableDeferred<Boolean>()
+        val stateResetToNotLoaded = CompletableDeferred<Boolean>()
+        val stateResetToMainScreen = CompletableDeferred<Boolean>()
+        val onDismissShouldNotBeCalled = CompletableDeferred<Boolean>()
+
+        val job = launch {
+            model.state.collect { state ->
+                when (state) {
+                    is CustomerCenterState.Success -> {
+                        // Track initial load completion
+                        if (!initialLoadingCompleted.isCompleted) {
+                            initialLoadingCompleted.complete(true)
+                        }
+
+                        // Track when state is reset to main screen (BACK button)
+                        if (state.navigationButtonType == CustomerCenterState.NavigationButtonType.CLOSE &&
+                            !stateResetToMainScreen.isCompleted) {
+                            stateResetToMainScreen.complete(true)
+                        }
+                    }
+                    is CustomerCenterState.NotLoaded -> {
+                        // Track when state is reset to NotLoaded (CLOSE button)
+                        if (onDismissCalled.isCompleted && !stateResetToNotLoaded.isCompleted) {
+                            stateResetToNotLoaded.complete(true)
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // Wait for initial setup to complete
+        initialLoadingCompleted.await()
+
+        // Test CLOSE button
+        model.onNavigationButtonPressed(mockk()) {
+            onDismissCalled.complete(true)
+        }
+
+        // Wait for state to be reset to NotLoaded
+        stateResetToNotLoaded.await()
+
+        // Reload the state for BACK button test
+        model.loadCustomerCenter()
+        initialLoadingCompleted.await()
+
+        // Set up state for BACK button test by displaying a feedback survey
+        model.pathButtonPressed(
+            mockk(),
+            HelpPath(
+                id = "feedback_id",
+                title = "Feedback",
+                type = HelpPath.PathType.CUSTOM_URL,
+                feedbackSurvey = HelpPath.PathDetail.FeedbackSurvey(
+                    title = "Feedback",
+                    options = emptyList()
+                )
+            ),
+            null
+        )
+
+        // Test BACK button - verify onDismiss is not called
+        model.onNavigationButtonPressed(mockk()) {
+            onDismissShouldNotBeCalled.complete(true)
+        }
+
+        // Wait for state to be reset to main screen
+        stateResetToMainScreen.await()
+
+        // Verify the state transitions
+        assertThat(onDismissCalled.isCompleted).isTrue()
+        assertThat(onDismissShouldNotBeCalled.isCompleted).isFalse()
+        assertThat(stateResetToNotLoaded.isCompleted).isTrue()
+        assertThat(stateResetToMainScreen.isCompleted).isTrue()
+
+        // Cancel the collection job
+        job.cancel()
+    }
+
+    @Test
     fun `notifyListenersForRestoreStarted calls both listeners`() = runTest {
         setupPurchasesMock()
-        
+
         // Create two separate listeners to verify they're both called
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
-        
+
         every { purchases.customerCenterListener } returns purchasesListener
-        
+
         val model = CustomerCenterViewModelImpl(
             purchases = purchases,
             locale = Locale.US,
@@ -198,12 +310,12 @@ class CustomerCenterViewModelTests {
     @Test
     fun `notifyListenersForRestoreCompleted calls both listeners with correct customer info`() = runTest {
         setupPurchasesMock()
-        
+
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
-        
+
         every { purchases.customerCenterListener } returns purchasesListener
-        
+
         val model = CustomerCenterViewModelImpl(
             purchases = purchases,
             locale = Locale.US,
@@ -223,15 +335,15 @@ class CustomerCenterViewModelTests {
     @Test
     fun `notifyListenersForRestoreFailed calls both listeners with correct error`() = runTest {
         setupPurchasesMock()
-        
+
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
-        
+
         every { purchases.customerCenterListener } returns purchasesListener
-        
+
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "Network error")
         coEvery { purchases.awaitRestore() } throws PurchasesException(error)
-        
+
         val model = CustomerCenterViewModelImpl(
             purchases = purchases,
             locale = Locale.US,
@@ -251,12 +363,12 @@ class CustomerCenterViewModelTests {
     @Test
     fun `notifyListenersForManageSubscription calls both listeners`() = runTest {
         setupPurchasesMock()
-        
+
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
-        
+
         every { purchases.customerCenterListener } returns purchasesListener
-        
+
         // Set up the CustomerInfo to have a subscription
         val subscription = SubscriptionInfo(
             productIdentifier = "test_product_id",
@@ -273,20 +385,20 @@ class CustomerCenterViewModelTests {
             storeTransactionId = null,
             requestDate = Date()
         )
-        
+
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf("test_product_id" to subscription)
         every { customerInfo.activeSubscriptions } returns setOf("test_product_id")
-        
+
         // Create a mock product that will be returned from awaitGetProduct
         val mockProduct = mockk<StoreProduct>(relaxed = true)
         every { mockProduct.id } returns "test_product_id"
         coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
-        
+
         // Create the context mock
         val context = mockk<Context>(relaxed = true)
         every { context.packageName } returns "com.example.app"
         every { context.startActivity(any()) } just Runs
-        
+
         val model = CustomerCenterViewModelImpl(
             purchases = purchases,
             locale = Locale.US,
@@ -294,13 +406,13 @@ class CustomerCenterViewModelTests {
             isDarkMode = false,
             listener = directListener
         )
-        
+
         // Load the customer center to get things initialized
         model.loadCustomerCenter()
-        
+
         // When Cancel path is triggered
         model.pathButtonPressed(
-            context, 
+            context,
             HelpPath(
                 id = "test_id",
                 title = "Cancel",
@@ -317,26 +429,26 @@ class CustomerCenterViewModelTests {
     @Test
     fun `feedback survey completion notifies listeners with correct ID`() = runTest {
         setupPurchasesMock()
-        
+
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
-        
+
         every { purchases.customerCenterListener } returns purchasesListener
-        
+
         val feedbackSurveyOptionId = "test_option_id"
-        
+
         // Create the feedback survey option and path
         val feedbackSurveyOption = HelpPath.PathDetail.FeedbackSurvey.Option(
             id = feedbackSurveyOptionId,
             title = "Option Title",
             promotionalOffer = null
         )
-        
+
         val feedbackSurvey = HelpPath.PathDetail.FeedbackSurvey(
             title = "Survey Title",
             options = listOf(feedbackSurveyOption)
         )
-        
+
         val path = HelpPath(
             id = "test_path_id",
             title = "Test Path",
@@ -344,7 +456,7 @@ class CustomerCenterViewModelTests {
             url = "https://example.com",
             feedbackSurvey = feedbackSurvey
         )
-        
+
         // Ensure we return a proper config
         val mockManagementScreen = Screen(
             type = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT,
@@ -352,14 +464,14 @@ class CustomerCenterViewModelTests {
             subtitle = null,
             paths = listOf(path)
         )
-        
+
         val mockScreens = mapOf(
             CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT to mockManagementScreen
         )
-        
+
         every { configData.getManagementScreen() } returns mockManagementScreen
         every { configData.screens } returns mockScreens
-        
+
         val model = CustomerCenterViewModelImpl(
             purchases = purchases,
             locale = Locale.US,
@@ -367,10 +479,10 @@ class CustomerCenterViewModelTests {
             isDarkMode = false,
             listener = directListener
         )
-        
+
         // Initialize the ViewModel and wait for it to load
         model.loadCustomerCenter()
-        
+
         // Wait for the state to be in Success state before proceeding
         var successState: CustomerCenterState.Success? = null
         val job = launch {
@@ -382,13 +494,13 @@ class CustomerCenterViewModelTests {
             }
         }
         job.join()
-        
+
         assertThat(successState).isNotNull
-        
+
         val context = mockk<Context>(relaxed = true)
-        
+
         model.pathButtonPressed(context, path, null)
-        
+
         // Wait for the state to update with feedback survey data
         var feedbackState: CustomerCenterState.Success? = null
         val feedbackJob = launch {
@@ -400,7 +512,7 @@ class CustomerCenterViewModelTests {
             }
         }
         feedbackJob.join()
-        
+
         // Ensure we have a state with feedback survey data
         assertThat(feedbackState).isNotNull
         assertThat(feedbackState?.feedbackSurveyData).isNotNull
@@ -422,9 +534,9 @@ class CustomerCenterViewModelTests {
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
         every { purchases.syncPurchases() } just Runs
-        
+
         every { configData.getManagementScreen() } returns screens[Screen.ScreenType.MANAGEMENT]
-        
+
         every { customerInfo.managementURL } returns null
         every { customerInfo.activeSubscriptions } returns setOf()
         every { customerInfo.entitlements } returns EntitlementInfos(emptyMap(), VerificationResult.VERIFIED)

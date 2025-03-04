@@ -5,8 +5,6 @@ import android.util.Log
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesAreCompletedBy
-import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 
@@ -19,13 +17,8 @@ class MainApplication : Application() {
 
         Purchases.logLevel = LogLevel.VERBOSE
 
-        Purchases.configure(
-            PurchasesConfiguration.Builder(this, Constants.GOOGLE_API_KEY)
-                .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
-                .appUserID(null)
-                .diagnosticsEnabled(true)
-                .build(),
-        )
+        val configurePurchases = ConfigurePurchasesUseCase(this)
+        configurePurchases(Constants.GOOGLE_API_KEY_A)
         Purchases.sharedInstance.customerCenterListener =
             object : CustomerCenterListener {
                 override fun onRestoreStarted() {
