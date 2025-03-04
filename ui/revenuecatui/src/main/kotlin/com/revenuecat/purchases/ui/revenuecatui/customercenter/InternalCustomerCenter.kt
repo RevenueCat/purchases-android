@@ -111,7 +111,11 @@ internal fun InternalCustomerCenter(
                     }
                 }
 
-                is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
+                is CustomerCenterAction.DismissRestoreDialog ->
+                    coroutineScope.launch {
+                        viewModel.dismissRestoreDialog()
+                    }
+
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
                 is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
                 is CustomerCenterAction.NavigationButtonPressed -> {
@@ -120,6 +124,7 @@ internal fun InternalCustomerCenter(
 
                 is CustomerCenterAction.DismissPromotionalOffer ->
                     viewModel.dismissPromotionalOffer(context, action.originalPath)
+
                 is CustomerCenterAction.PurchasePromotionalOffer -> {
                     val activity = context.getActivity()
                     coroutineScope.launch {

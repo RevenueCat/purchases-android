@@ -64,7 +64,7 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct?,
     )
 
-    fun dismissRestoreDialog()
+    suspend fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
     fun loadAndDisplayPromotionalOffer(
@@ -238,17 +238,8 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun dismissRestoreDialog() {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    showRestoreDialog = false,
-                    restorePurchasesState = RestorePurchasesState.INITIAL,
-                )
-            } else {
-                currentState
-            }
-        }
+    override suspend fun dismissRestoreDialog() {
+        loadCustomerCenter()
     }
 
     override suspend fun restorePurchases() {
@@ -541,21 +532,29 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun loadCustomerCenter() {
-        if (_state.value !is CustomerCenterState.Loading) {
-            _state.value = CustomerCenterState.Loading
+        _state.update { state ->
+            if (state !is CustomerCenterState.Loading) {
+                CustomerCenterState.Loading
+            } else {
+                state
+            }
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
-            _state.value = CustomerCenterState.Success(
-                customerCenterConfigData,
-                purchaseInformation,
-                supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
-                    supportedPaths(purchaseInformation, it)
-                },
-            )
+            _state.update {
+                CustomerCenterState.Success(
+                    customerCenterConfigData,
+                    purchaseInformation,
+                    supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
+                        supportedPaths(purchaseInformation, it)
+                    },
+                )
+            }
         } catch (e: PurchasesException) {
-            _state.value = CustomerCenterState.Error(e.error)
+            _state.update {
+                CustomerCenterState.Error(e.error)
+            }
         }
     }
 
