@@ -29,6 +29,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(InternalRevenueCatAPI::class)
 class OfferingsTest {
 
     private val productIdentifier = "com.myproduct"
@@ -595,6 +596,106 @@ class OfferingsTest {
         assertThat(uiConfig.variableConfig.functionCompatibilityMap["new fun"]).isEqualTo("guaranteed fun")
     }
 
+    @Test
+    fun `hasPaywall returns true when paywall is not null`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly))
+        
+        val offeringJSON = getOfferingJSON(
+            offeringIdentifier = "offering_a",
+            listOf(getPackageJSON(packageIdentifier = monthlyPackageID)),
+            metadata = null,
+            paywall = getPaywallDataJson()
+        )
+
+        // Act
+        val offerings = offeringsParser.createOfferings(
+            JSONObject(
+                """
+                {
+                  'offerings': [
+                    $offeringJSON
+                  ],
+                  'current_offering_id': 'offering_a'
+               }""".trimIndent()
+            ),
+            products
+        )
+
+        // Assert
+        assertThat(offerings).isNotNull
+        assertThat(offerings.all.size).isEqualTo(1)
+        val offering = offerings.all.values.first()
+
+        assertThat(offering.paywall).isNotNull
+        assertThat(offering.hasPaywall).isTrue()
+    }
+
+    @Test
+    fun `hasPaywall returns true when paywallComponents is not null`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = mapOf("primary" to FontInfo.Name("Roboto")),
+            localizations = mapOf("en_US" to mapOf(VariableLocalizationKey.MONTHLY to "monthly")),
+            variableCompatibilityMap = mapOf("new var" to "guaranteed var"),
+            functionCompatibilityMap = mapOf("new fun" to "guaranteed fun")
+        )
+        val offeringJson = getOfferingJSON(paywallComponents = getPaywallComponentsDataJson())
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
+
+        // Act
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+
+        // Assert
+        assertThat(offerings).isNotNull
+        assertThat(offerings.all.size).isEqualTo(1)
+        val offering = offerings.all.values.first()
+
+        assertThat(offering.paywallComponents).isNotNull
+        assertThat(offering.hasPaywall).isTrue()
+    }
+
+    @Test
+    fun `hasPaywall returns false when both paywall and paywallComponents are null`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly))
+        
+        val offeringJSON = getOfferingJSON(
+            offeringIdentifier = "offering_a",
+            listOf(getPackageJSON(packageIdentifier = monthlyPackageID)),
+            metadata = null,
+            paywallComponents = null
+        )
+
+        // Act
+        val offerings = offeringsParser.createOfferings(
+            JSONObject(
+                """
+                {
+                  'offerings': [
+                    $offeringJSON
+                  ],
+                  'current_offering_id': 'offering_a'
+               }""".trimIndent()
+            ),
+            products
+        )
+
+        // Assert
+        assertThat(offerings).isNotNull
+        assertThat(offerings.all.size).isEqualTo(1)
+        val offering = offerings.all.values.first()
+        assertThat(offering.paywall).isNull()
+        assertThat(offering.paywallComponents).isNull()
+        assertThat(offering.hasPaywall).isFalse()
+    }
+
     private fun testPackageType(packageType: PackageType) {
         var identifier = packageType.identifier
         if (identifier == null) {
@@ -862,6 +963,43 @@ class OfferingsTest {
         """.trimIndent()
     )
 
+    private fun getPaywallDataJson() = JSONObject(
+        // language=json
+        """
+        {
+        "template_name": "1",
+        "localized_strings": {
+            "en_US": {
+                "title": "Paywall",
+                "subtitle": "Description",
+                "call_to_action": "Purchase now",
+                "call_to_action_with_intro_offer": "Purchase now",
+                "offer_details": "{{ sub_price_per_month }} per month",
+                "offer_details_with_intro_offer": "Start your {{ sub_offer_duration }} trial, then {{ sub_price_per_month }} per month"
+            }
+        },
+        "config": {
+            "images_heic": {
+                "header": "",
+                "background": "",
+                "icon": ""
+            },
+            "colors": {
+                "light": {
+                    "background": "#FFFFFF",
+                    "text_1": "#FFFFFF",
+                    "call_to_action_background": "#FFFFFF",
+                    "call_to_action_foreground": "#FFFFFF",
+                    "accent_1": "#FFFFFF"
+                },
+                "dark": null
+            }
+        },
+        "asset_base_url": "https://rc-paywalls.s3.amazonaws.com"
+}
+        """.trimIndent()
+    )
+
     private fun getOfferingJSON(
         offeringIdentifier: String = "offering_a",
         packagesJSON: List<JSONObject> = listOf(
@@ -872,12 +1010,14 @@ class OfferingsTest {
             ),
         ),
         metadata: Map<String, Any>? = null,
+        paywall: JSONObject? = null,
         paywallComponents: JSONObject? = null,
     ) = JSONObject().apply {
         put("description", "This is the base offering")
         put("identifier", offeringIdentifier)
         put("packages", JSONArray(packagesJSON))
         if (metadata != null) put("metadata", JSONObject(metadata)) else put("metadata", "null")
+        if (paywall != null) put("paywall", paywall)
         if (paywallComponents != null) put("paywall_components", paywallComponents)
     }
 
