@@ -578,8 +578,8 @@ jobs:
       - store_test_results:
           path: build/test-results
 
-  verify-revenuecatui-snapshots:
-    description: "Verify RevenueCatUI snapshots"
+  verify-revenuecatui-snapshots-paywalls-v1:
+    description: "Verify RevenueCatUI snapshots for Paywalls v1"
     <<: *android-executor
     steps:
       - checkout
@@ -590,11 +590,11 @@ jobs:
       - run:
           name: Build and run RevenueCat UI snapshot tests
           command: |
-            bundle exec fastlane android verify_revenuecatui_snapshots
+            bundle exec fastlane android verify_revenuecatui_snapshots_paywalls_v1 tests:'TemplateSnapshotTest'
       - android/save-build-cache
 
-  record-revenuecatui-snapshots:
-    description: "Record new RevenueCatUI snapshots"
+  record-revenuecatui-snapshots-paywalls-v1:
+    description: "Record new RevenueCatUI snapshots for Paywalls v1"
     <<: *android-executor
     steps:
       - checkout
@@ -606,7 +606,7 @@ jobs:
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
           command: |
-            bundle exec fastlane android record_revenuecatui_snapshots
+            bundle exec fastlane android record_revenuecatui_snapshots tests:'TemplateSnapshotTest'
       - run:
           command: |
             bundle exec fastlane android create_snapshots_repo_pr
@@ -686,7 +686,7 @@ workflows:
       - assemble-purchase-tester
       - assemble-paywall-tester-release
       - run-backend-integration-tests
-      - verify-revenuecatui-snapshots
+      - verify-revenuecatui-snapshots-paywalls-v1
       - run-revenuecatui-ui-tests
       - emerge_purchases_ui_snapshot_tests
       - verify_debug_view_snapshot_tests: *release-branches
@@ -787,11 +787,11 @@ workflows:
         - publish-paywall-tester-release:
             track: "alpha"
 
-  record-revenuecatui-snapshots:
+  record-revenuecatui-snapshots-paywalls-v1:
     when:
       equal: [ generate_revenuecatui_snapshots, << pipeline.parameters.action >> ]
     jobs:
-      - record-revenuecatui-snapshots
+      - record-revenuecatui-snapshots-paywalls-v1
 
   update-paywall-templates:
     when:
