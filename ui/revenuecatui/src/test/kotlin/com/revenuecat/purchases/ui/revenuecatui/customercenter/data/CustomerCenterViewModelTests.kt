@@ -286,22 +286,8 @@ class CustomerCenterViewModelTests {
 
     @Test
     fun `dismissRestoreDialog reloads customer center`() = runTest {
-        // Setup basic mocks
+        setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf("product-id")
-        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
-        every { customerInfo.entitlements } returns EntitlementInfos(
-            emptyMap(),
-            VerificationResult.VERIFIED,
-        )
-        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
-
-        // Setup restore operation to return successful result
-        coEvery { purchases.awaitRestore() } returns customerInfo
-
-        // Setup other customer center data
-        coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
-        coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
-        coEvery { purchases.awaitGetProduct(any(), any()) } returns null
 
         // Setup screen with a MISSING_PURCHASE path
         val missingPurchasePath = HelpPath(
@@ -638,6 +624,7 @@ class CustomerCenterViewModelTests {
 
     // Helper method to setup common mocks
     private fun setupPurchasesMock() {
+        every { purchases.customerCenterListener } returns null
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
