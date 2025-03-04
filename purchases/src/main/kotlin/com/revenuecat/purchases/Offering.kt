@@ -38,6 +38,13 @@ constructor(
     )
 
     /**
+     * Whether the offering contains a paywall.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    val hasPaywall: Boolean
+        get() = paywall != null || paywallComponents != null
+
+    /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.
      */
     val lifetime by lazy { findPackage(PackageType.LIFETIME) }
