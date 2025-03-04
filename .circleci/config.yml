@@ -551,9 +551,19 @@ jobs:
       - checkout
       - install-sdkman
       - run: which -a ruby
+      - run: ruby -v
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
+      - run:
+          # Emerge requires >= 3.2.0.
+          name: Set Ruby 3.2.0
+          command: |
+            eval "$(rbenv init -)"
+            rbenv install -s 3.2.0
+            rbenv global 3.2.0
+            rbenv rehash
       - run: which -a ruby
+      - run: ruby -v
       - run:
           name: Install Emerge CLI
           command: gem install emerge
