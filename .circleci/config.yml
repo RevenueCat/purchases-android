@@ -550,8 +550,10 @@ jobs:
     steps:
       - checkout
       - install-sdkman
+      - run: which -a ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
+      - run: which -a ruby
       - run:
           name: Install Emerge CLI
           command: gem install emerge
