@@ -154,7 +154,6 @@ internal class CustomerCenterViewModelImpl(
                         path = path.type,
                         url = path.url,
                         surveyOptionID = it.id,
-                        surveyOptionTitleKey = it.title,
                     )
 
                     if (product != null && it.promotionalOffer != null) {
@@ -579,7 +578,6 @@ internal class CustomerCenterViewModelImpl(
         path: CustomerCenterConfigData.HelpPath.PathType,
         url: String?,
         surveyOptionID: String,
-        surveyOptionTitleKey: String,
     ) {
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         val event = CustomerCenterSurveyOptionChosenEvent(
@@ -590,7 +588,6 @@ internal class CustomerCenterViewModelImpl(
                 path = path,
                 url = url,
                 surveyOptionID = surveyOptionID,
-                surveyOptionTitleKey = surveyOptionTitleKey,
             ),
         )
         purchases.track(event)

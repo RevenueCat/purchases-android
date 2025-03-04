@@ -103,7 +103,6 @@ internal fun CustomerCenterImpressionEvent.toBackendStoredEvent(
             path = null,
             url = null,
             surveyOptionID = null,
-            surveyOptionTitleKey = null,
         ),
     )
 }
@@ -135,7 +134,6 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
             path = data.path,
             url = data.url,
             surveyOptionID = data.surveyOptionID,
-            surveyOptionTitleKey = data.surveyOptionTitleKey,
         ),
     )
 }
