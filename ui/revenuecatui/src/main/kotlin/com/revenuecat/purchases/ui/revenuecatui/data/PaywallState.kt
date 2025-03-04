@@ -21,6 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.Background
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscribed
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
@@ -77,6 +78,7 @@ internal sealed interface PaywallState {
              */
             val showPricesWithDecimals: Boolean,
             val variableConfig: VariableConfig,
+            val variableDataProvider: VariableDataProvider,
             override val offering: Offering,
             /**
              * All locales that this paywall supports, with `locales.head` being the default one.
