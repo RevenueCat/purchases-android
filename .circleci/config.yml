@@ -543,6 +543,34 @@ jobs:
           command: |
             bundle exec fastlane android emerge_purchases_ui_snapshot_tests
       - android/save-build-cache
+  
+  record-and-upload-paywalls-v2-template-screenshots:
+    description: "Records Paywalls v2 template previews and uploads them to Emerge"
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - run:
+          name: Install Emerge CLI
+          command: gem install emerge
+      - android/restore-build-cache
+      - revenuecat/setup-git-credentials
+      - run:
+          name: Records Paywalls V2 template previews
+          command: |
+            bundle exec fastlane android record_revenuecatui_snapshots tests:'TemplateV2SnapshotTest'
+      - run:
+          name: Upload snapshots to Emerge
+          command: |
+            emerge upload snapshots \
+              --name "Paywalls V2 Templates" \
+              --id "com.revenuecat.testpurchasesuiandroidcompatibility.paywallsv2" \
+              --repo-name "RevenueCat/purchases-android" \
+              --client-library paparazzi \
+              --project-root .
+      - android/save-build-cache
 
   run-firebase-tests:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
@@ -687,6 +715,7 @@ workflows:
       - assemble-paywall-tester-release
       - run-backend-integration-tests
       - verify-revenuecatui-snapshots-paywalls-v1
+      - record-and-upload-paywalls-v2-template-screenshots
       - run-revenuecatui-ui-tests
       - emerge_purchases_ui_snapshot_tests
       - verify_debug_view_snapshot_tests: *release-branches
