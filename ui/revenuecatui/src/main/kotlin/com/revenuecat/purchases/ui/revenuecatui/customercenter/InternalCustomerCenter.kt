@@ -37,6 +37,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
@@ -59,8 +60,10 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
+    listener: CustomerCenterListener? = null,
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(
         isDarkMode = isSystemInDarkTheme(),
+        listener = listener,
     ),
     onDismiss: () -> Unit,
 ) {
@@ -338,12 +341,14 @@ private fun getTitleForState(state: CustomerCenterState): String? {
 @Composable
 private fun getCustomerCenterViewModel(
     isDarkMode: Boolean,
+    listener: CustomerCenterListener? = null,
     purchases: PurchasesType = PurchasesImpl(),
     viewModel: CustomerCenterViewModel = viewModel<CustomerCenterViewModelImpl>(
         factory = CustomerCenterViewModelFactory(
             purchases,
             MaterialTheme.colorScheme,
             isDarkMode = isDarkMode,
+            listener = listener,
         ),
     ),
 ): CustomerCenterViewModel {

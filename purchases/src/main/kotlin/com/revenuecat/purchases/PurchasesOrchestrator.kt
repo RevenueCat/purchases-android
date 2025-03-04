@@ -39,6 +39,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
@@ -148,6 +149,9 @@ internal class PurchasesOrchestrator(
         @Synchronized set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
+
+    @get:Synchronized @set:Synchronized
+    var customerCenterListener: CustomerCenterListener? = null
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
