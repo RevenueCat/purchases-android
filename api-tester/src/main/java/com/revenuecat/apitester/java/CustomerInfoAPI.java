@@ -4,6 +4,7 @@ import android.net.Uri;
 
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementInfos;
+import com.revenuecat.purchases.VirtualCurrencyInfo;
 import com.revenuecat.purchases.models.Transaction;
 
 import java.util.Date;
@@ -35,5 +36,7 @@ final class CustomerInfoAPI {
         final Date pde = customerInfo.getPurchaseDateForEntitlement("");
         final Map<String, Date> allExpirationDatesByProduct = customerInfo.getAllExpirationDatesByProduct();
         final Map<String, Date> allPurchaseDatesByProduct = customerInfo.getAllPurchaseDatesByProduct();
+
+        final Map<String, VirtualCurrencyInfo> vcs = customerInfo.getVirtualCurrencies();
     }
 }
