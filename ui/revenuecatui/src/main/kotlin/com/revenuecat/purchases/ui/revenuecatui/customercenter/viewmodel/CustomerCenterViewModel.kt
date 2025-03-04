@@ -676,8 +676,8 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun notifyListenersForManageSubscription() {
-        listener?.onManageSubscriptionRequested()
-        purchases.customerCenterListener?.onManageSubscriptionRequested()
+        listener?.onShowingManageSubscriptions()
+        purchases.customerCenterListener?.onShowingManageSubscriptions()
     }
 
     private fun notifyListenersForFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {

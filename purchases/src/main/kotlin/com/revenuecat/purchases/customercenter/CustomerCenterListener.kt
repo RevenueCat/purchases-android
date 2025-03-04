@@ -38,7 +38,7 @@ interface CustomerCenterListener {
      * This happens when the user taps on the cancel subscription button, which takes them
      * to the Google Play subscription management screen.
      */
-    fun onManageSubscriptionRequested() {
+    fun onShowingManageSubscriptions() {
         // Default empty implementation
     }
 

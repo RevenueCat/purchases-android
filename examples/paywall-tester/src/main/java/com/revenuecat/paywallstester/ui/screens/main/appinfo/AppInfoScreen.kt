@@ -247,8 +247,8 @@ private fun createCustomerCenterListener(): CustomerCenterListener {
             Log.d(TAG, "Local listener: onRestoreFailed called with error: ${error.message}")
         }
 
-        override fun onManageSubscriptionRequested() {
-            Log.d(TAG, "Local listener: onManageSubscriptionRequested called")
+        override fun onShowingManageSubscriptions() {
+            Log.d(TAG, "Local listener: onShowingManageSubscriptions called")
         }
 
         override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {

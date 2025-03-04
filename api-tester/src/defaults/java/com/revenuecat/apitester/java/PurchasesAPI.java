@@ -179,7 +179,7 @@ final class PurchasesAPI {
             }
 
             @Override
-            public void onManageSubscriptionRequested() {
+            public void onShowingManageSubscriptions() {
             }
 
             @Override

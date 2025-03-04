@@ -422,8 +422,8 @@ class CustomerCenterViewModelTests {
         )
 
         // Then both listeners should be notified
-        verify(exactly = 1) { directListener.onManageSubscriptionRequested() }
-        verify(exactly = 1) { purchasesListener.onManageSubscriptionRequested() }
+        verify(exactly = 1) { directListener.onShowingManageSubscriptions() }
+        verify(exactly = 1) { purchasesListener.onShowingManageSubscriptions() }
     }
 
     @Test

@@ -37,8 +37,8 @@ class MainApplication : Application() {
                     Log.d(TAG, "CustomerCenterListener: onRestoreFailed called with error: ${error.message}")
                 }
 
-                override fun onManageSubscriptionRequested() {
-                    Log.d(TAG, "CustomerCenterListener: onManageSubscriptionRequested called")
+                override fun onShowingManageSubscriptions() {
+                    Log.d(TAG, "CustomerCenterListener: onShowingManageSubscriptions called")
                 }
 
                 override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
