@@ -23,6 +23,7 @@ private class OfferingAPI {
             val metadata: Map<String, Any> = metadata
             val metadataString: String = getMetadataString("key", "default")
             val paywall: PaywallData? = paywall
+            var hasPaywall: Boolean = hasPaywall
 
             Offering(
                 identifier = identifier,
