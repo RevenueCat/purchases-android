@@ -8,7 +8,8 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
@@ -45,9 +46,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.slot
-import io.mockk.unmockkStatic
 import org.junit.After
 import org.junit.Before
 
@@ -76,6 +75,8 @@ internal open class BasePurchasesTest {
     protected val mockOfferingsManager = mockk<OfferingsManager>()
     internal val mockEventsManager = mockk<EventsManager>()
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
+    internal val mockLifecycleOwner = mockk<LifecycleOwner>()
+    internal val mockLifecycle = mockk<Lifecycle>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
@@ -99,8 +100,6 @@ internal open class BasePurchasesTest {
 
     @Before
     fun setUp() {
-        mockkStatic(ProcessLifecycleOwner::class)
-
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
         mockCache()
         mockPostReceiptHelper()
@@ -127,6 +126,12 @@ internal open class BasePurchasesTest {
         every {
             mockEventsManager.flushEvents()
         } just Runs
+        every {
+            mockLifecycleOwner.lifecycle
+        } returns mockLifecycle
+
+        every { mockLifecycle.addObserver(any()) } just Runs
+        every { mockLifecycle.removeObserver(any()) } just Runs
 
         if (shouldConfigureOnSetUp) {
             anonymousSetup(false)
@@ -145,8 +150,9 @@ internal open class BasePurchasesTest {
             mockPostPendingTransactionsHelper,
             mockEventsManager,
             mockWebPurchasesRedemptionHelper,
+            mockLifecycleOwner,
+            mockLifecycle,
         )
-        unmockkStatic(ProcessLifecycleOwner::class)
     }
 
     // region Private Methods
@@ -421,6 +427,7 @@ internal open class BasePurchasesTest {
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(mockContext, "api_key").build(),
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
+            processLifecycleOwnerProvider = { mockLifecycleOwner }
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases
