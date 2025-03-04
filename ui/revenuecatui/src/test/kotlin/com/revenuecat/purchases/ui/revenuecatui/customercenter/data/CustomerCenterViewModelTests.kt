@@ -193,7 +193,128 @@ class CustomerCenterViewModelTests {
 
         job.join()
     }
-    
+
+    @Test
+    fun `onNavigationButtonPressed handles CLOSE and BACK buttons correctly`() = runTest {
+        // Setup basic mocks
+        every { customerInfo.activeSubscriptions } returns setOf("product-id")
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+        every { customerInfo.entitlements } returns EntitlementInfos(
+            emptyMap(),
+            VerificationResult.VERIFIED,
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+
+        // Setup customer center data
+        coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
+        coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns null
+
+        // Setup screen with a path
+        val testPath = HelpPath(
+            id = "test_path_id",
+            title = "Test Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(testPath)
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+
+        // Create the ViewModel
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Track state changes
+        val initialLoadingCompleted = CompletableDeferred<Boolean>()
+        val onDismissCalled = CompletableDeferred<Boolean>()
+        val stateResetToNotLoaded = CompletableDeferred<Boolean>()
+        val stateResetToMainScreen = CompletableDeferred<Boolean>()
+        val onDismissShouldNotBeCalled = CompletableDeferred<Boolean>()
+
+        val job = launch {
+            model.state.collect { state ->
+                when (state) {
+                    is CustomerCenterState.Success -> {
+                        // Track initial load completion
+                        if (!initialLoadingCompleted.isCompleted) {
+                            initialLoadingCompleted.complete(true)
+                        }
+
+                        // Track when state is reset to main screen (BACK button)
+                        if (state.navigationButtonType == CustomerCenterState.NavigationButtonType.CLOSE &&
+                            !stateResetToMainScreen.isCompleted) {
+                            stateResetToMainScreen.complete(true)
+                        }
+                    }
+                    is CustomerCenterState.NotLoaded -> {
+                        // Track when state is reset to NotLoaded (CLOSE button)
+                        if (onDismissCalled.isCompleted && !stateResetToNotLoaded.isCompleted) {
+                            stateResetToNotLoaded.complete(true)
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // Wait for initial setup to complete
+        initialLoadingCompleted.await()
+
+        // Test CLOSE button
+        model.onNavigationButtonPressed(mockk()) {
+            onDismissCalled.complete(true)
+        }
+
+        // Wait for state to be reset to NotLoaded
+        stateResetToNotLoaded.await()
+
+        // Reload the state for BACK button test
+        model.loadCustomerCenter()
+        initialLoadingCompleted.await()
+
+        // Set up state for BACK button test by displaying a feedback survey
+        model.pathButtonPressed(
+            mockk(),
+            HelpPath(
+                id = "feedback_id",
+                title = "Feedback",
+                type = HelpPath.PathType.CUSTOM_URL,
+                feedbackSurvey = HelpPath.PathDetail.FeedbackSurvey(
+                    title = "Feedback",
+                    options = emptyList()
+                )
+            ),
+            null
+        )
+
+        // Test BACK button - verify onDismiss is not called
+        model.onNavigationButtonPressed(mockk()) {
+            onDismissShouldNotBeCalled.complete(true)
+        }
+
+        // Wait for state to be reset to main screen
+        stateResetToMainScreen.await()
+
+        // Verify the state transitions
+        assertThat(onDismissCalled.isCompleted).isTrue()
+        assertThat(onDismissShouldNotBeCalled.isCompleted).isFalse()
+        assertThat(stateResetToNotLoaded.isCompleted).isTrue()
+        assertThat(stateResetToMainScreen.isCompleted).isTrue()
+
+        // Cancel the collection job
+        job.cancel()
+    }
+
     @Test
     fun `dismissRestoreDialog reloads customer center`() = runTest {
         // Setup basic mocks
@@ -207,26 +328,26 @@ class CustomerCenterViewModelTests {
 
         // Setup restore operation to return successful result
         coEvery { purchases.awaitRestore() } returns customerInfo
-        
+
         // Setup other customer center data
         coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null
-        
+
         // Setup screen with a MISSING_PURCHASE path
         val missingPurchasePath = HelpPath(
             id = "missing_purchase_id",
             title = "Restore Purchases",
             type = HelpPath.PathType.MISSING_PURCHASE
         )
-        
+
         val managementScreen = Screen(
             type = Screen.ScreenType.MANAGEMENT,
             title = "Management",
             subtitle = null,
             paths = listOf(missingPurchasePath)
         )
-        
+
         every { configData.getManagementScreen() } returns managementScreen
 
         // Create a spy on the real ViewModel so we can verify loadCustomerCenter is called
@@ -250,7 +371,7 @@ class CustomerCenterViewModelTests {
                     if (!initialLoadingCompleted.isCompleted) {
                         initialLoadingCompleted.complete(true)
                     }
-                    
+
                     // Track when dialog is shown
                     if (state.showRestoreDialog && !dialogShownCompleted.isCompleted) {
                         dialogShownCompleted.complete(true)
@@ -262,8 +383,8 @@ class CustomerCenterViewModelTests {
                     }
 
                     // Track when restore completes successfully
-                    if (state.showRestoreDialog && 
-                        state.restorePurchasesState == RestorePurchasesState.PURCHASES_RECOVERED && 
+                    if (state.showRestoreDialog &&
+                        state.restorePurchasesState == RestorePurchasesState.PURCHASES_RECOVERED &&
                         !restoreCompletedWithSuccess.isCompleted) {
                         restoreCompletedWithSuccess.complete(true)
                     }
@@ -271,22 +392,22 @@ class CustomerCenterViewModelTests {
                 }
             }
         }
-        
+
         // Wait for initial setup to complete
         initialLoadingCompleted.await()
-        
+
         // 1. First show the restore dialog by calling pathButtonPressed with MISSING_PURCHASE path
         model.pathButtonPressed(mockk(), missingPurchasePath, null)
-        
+
         // Wait until dialog is shown
         dialogShownCompleted.await()
-        
+
         // 2. Now perform the restore operation
         model.restorePurchases()
-        
+
         // Wait until restore completes successfully
         restoreCompletedWithSuccess.await()
-        
+
         // Reset mock verification counts before our actual test
         clearMocks(purchases, answers = false)
 

@@ -494,23 +494,28 @@ internal class CustomerCenterViewModelImpl(
 
     override fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit) {
         val currentState = _state.value
+        // Handle special case for promotional offers first
         if (currentState is CustomerCenterState.Success && currentState.promotionalOfferData != null) {
             dismissPromotionalOffer(context, currentState.promotionalOfferData.originalPath)
             return
         }
-        val buttonType = state.value.navigationButtonType
-        if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
-            onDismiss()
-            return
-        }
+
+        val navigationButtonType = state.value.navigationButtonType
+
         _state.update { state ->
             when {
+                // For BACK button: Return to main screen without losing loaded data
                 state is CustomerCenterState.Success &&
-                    state.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                    navigationButtonType == CustomerCenterState.NavigationButtonType.BACK ->
                     state.resetToMainScreen()
-                }
+                // For all other cases (including CLOSE): Reset to NotLoaded
                 else -> CustomerCenterState.NotLoaded
             }
+        }
+
+        // Call onDismiss only for the CLOSE button
+        if (navigationButtonType == CustomerCenterState.NavigationButtonType.CLOSE) {
+            onDismiss()
         }
     }
 
