@@ -41,6 +41,7 @@ constructor(
      * Whether the offering contains a paywall.
      */
     @OptIn(InternalRevenueCatAPI::class)
+    @get:JvmName("hasPaywall")
     val hasPaywall: Boolean
         get() = paywall != null || paywallComponents != null
 

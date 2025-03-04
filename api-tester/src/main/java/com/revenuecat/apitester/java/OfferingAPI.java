@@ -30,7 +30,7 @@ final class OfferingAPI {
         final String metadataString = offering.getMetadataString("key", "default");
 
         final @Nullable PaywallData paywallData = offering.getPaywall();
-        final Boolean hasPaywall = offering.getHasPaywall();
+        final Boolean hasPaywall = offering.hasPaywall()
 
         new Offering(
                 identifier,
