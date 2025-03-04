@@ -17,7 +17,6 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchaseParams
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -657,29 +656,28 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    // Helper methods to call the listener callbacks
     private fun notifyListenersForRestoreStarted() {
         listener?.onRestoreStarted()
-        Purchases.sharedInstance.customerCenterListener?.onRestoreStarted()
+        purchases.customerCenterListener?.onRestoreStarted()
     }
 
     private fun notifyListenersForRestoreCompleted(customerInfo: CustomerInfo) {
         listener?.onRestoreCompleted(customerInfo)
-        Purchases.sharedInstance.customerCenterListener?.onRestoreCompleted(customerInfo)
+        purchases.customerCenterListener?.onRestoreCompleted(customerInfo)
     }
 
     private fun notifyListenersForRestoreFailed(error: PurchasesError) {
         listener?.onRestoreFailed(error)
-        Purchases.sharedInstance.customerCenterListener?.onRestoreFailed(error)
+        purchases.customerCenterListener?.onRestoreFailed(error)
     }
 
     private fun notifyListenersForManageSubscription() {
         listener?.onManageSubscriptionRequested()
-        Purchases.sharedInstance.customerCenterListener?.onManageSubscriptionRequested()
+        purchases.customerCenterListener?.onManageSubscriptionRequested()
     }
 
     private fun notifyListenersForFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
         listener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
-        Purchases.sharedInstance.customerCenterListener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
+        purchases.customerCenterListener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
     }
 }
