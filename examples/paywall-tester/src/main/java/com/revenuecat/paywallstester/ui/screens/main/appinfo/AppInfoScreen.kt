@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
@@ -36,7 +38,11 @@ import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, InternalRevenueCatAPI::class)
 @Composable
-fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>()) {
+fun AppInfoScreen(
+    viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
+        factory = AppInfoScreenViewModelImpl.Factory,
+    ),
+) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
     var isCustomerCenterVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
@@ -53,7 +59,8 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val currentUserID = viewModel.state.collectAsState().value ?: "No user logged in"
+        val state by viewModel.state.collectAsState()
+        val currentUserID by remember { derivedStateOf { state.appUserID } }
         Text(text = "Current user ID: $currentUserID")
         Button(onClick = { showLogInDialog = true }) {
             Text(text = "Log in")
@@ -130,8 +137,8 @@ private fun LoginDialog(viewModel: AppInfoScreenViewModel, onDismissed: () -> Un
 fun AppInfoScreenPreview() {
     AppInfoScreen(
         viewModel = object : AppInfoScreenViewModel {
-            override val state: StateFlow<String?>
-                get() = MutableStateFlow("test-user-id")
+            override val state: StateFlow<UiState>
+                get() = MutableStateFlow(UiState.Empty.copy(appUserID = "test-user-id"))
 
             override fun logIn(newAppUserId: String) { }
             override fun logOut() { }
