@@ -559,7 +559,7 @@ jobs:
           # Emerge requires >= 3.2.0.
           name: Set Ruby 3.2.0
           command: |
-            sudo apt install rbenv
+            sudo apt-get update && apt-get install -y rbenv
             eval "$(rbenv init -)"
             rbenv install -s 3.2.0
             rbenv global 3.2.0
