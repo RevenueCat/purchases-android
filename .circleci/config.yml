@@ -618,7 +618,7 @@ jobs:
       - run:
           name: Build and run RevenueCat UI snapshot tests
           command: |
-            bundle exec fastlane android verify_revenuecatui_snapshots_paywalls_v1 tests:'TemplateSnapshotTest'
+            bundle exec fastlane android verify_revenuecatui_snapshots tests:'TemplateSnapshotTest'
       - android/save-build-cache
 
   record-revenuecatui-snapshots-paywalls-v1:
