@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.runtime.Composable
@@ -20,7 +22,7 @@ import java.util.Date
 /**
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
  */
-private class OfferingProvider : PreviewParameterProvider<Offering> {
+internal class OfferingProvider : PreviewParameterProvider<Offering> {
     private val offeringsJsonFileName = "offerings_paywalls_v2_templates.json"
     private val packagesJsonFileName = "packages.json"
 
@@ -136,7 +138,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
 @IgnoreEmergeSnapshot
 @Preview
 @Composable
-private fun PaywallComponentsTemplate_Preview(
+internal fun PaywallComponentsTemplate_Preview(
     @PreviewParameter(OfferingProvider::class) offering: Offering,
 ) {
     val validationResult = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
