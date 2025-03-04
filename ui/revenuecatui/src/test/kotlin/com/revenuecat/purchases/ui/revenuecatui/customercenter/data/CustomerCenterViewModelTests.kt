@@ -13,12 +13,15 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import io.mockk.Runs
 import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -201,26 +204,26 @@ class CustomerCenterViewModelTests {
             VerificationResult.VERIFIED,
         )
         every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
-        
+
         // Setup customer center data
         coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null
-        
+
         // Setup screen with a path
         val testPath = HelpPath(
             id = "test_path_id",
             title = "Test Path",
             type = HelpPath.PathType.CUSTOM_URL
         )
-        
+
         val managementScreen = Screen(
             type = Screen.ScreenType.MANAGEMENT,
             title = "Management",
             subtitle = null,
             paths = listOf(testPath)
         )
-        
+
         every { configData.getManagementScreen() } returns managementScreen
 
         // Create the ViewModel
@@ -246,9 +249,9 @@ class CustomerCenterViewModelTests {
                         if (!initialLoadingCompleted.isCompleted) {
                             initialLoadingCompleted.complete(true)
                         }
-                        
+
                         // Track when state is reset to main screen (BACK button)
-                        if (state.navigationButtonType == CustomerCenterState.NavigationButtonType.CLOSE && 
+                        if (state.navigationButtonType == CustomerCenterState.NavigationButtonType.CLOSE &&
                             !stateResetToMainScreen.isCompleted) {
                             stateResetToMainScreen.complete(true)
                         }
@@ -263,22 +266,22 @@ class CustomerCenterViewModelTests {
                 }
             }
         }
-        
+
         // Wait for initial setup to complete
         initialLoadingCompleted.await()
-        
+
         // Test CLOSE button
         model.onNavigationButtonPressed(mockk()) {
             onDismissCalled.complete(true)
         }
-        
+
         // Wait for state to be reset to NotLoaded
         stateResetToNotLoaded.await()
-        
+
         // Reload the state for BACK button test
         model.loadCustomerCenter()
         initialLoadingCompleted.await()
-        
+
         // Set up state for BACK button test by displaying a feedback survey
         model.pathButtonPressed(
             mockk(),
@@ -293,12 +296,12 @@ class CustomerCenterViewModelTests {
             ),
             null
         )
-        
+
         // Test BACK button - verify onDismiss is not called
         model.onNavigationButtonPressed(mockk()) {
             onDismissShouldNotBeCalled.complete(true)
         }
-        
+
         // Wait for state to be reset to main screen
         stateResetToMainScreen.await()
 
@@ -311,4 +314,113 @@ class CustomerCenterViewModelTests {
         // Cancel the collection job
         job.cancel()
     }
+
+    @Test
+    fun `dismissRestoreDialog reloads customer center`() = runTest {
+        // Setup basic mocks
+        every { customerInfo.activeSubscriptions } returns setOf("product-id")
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+        every { customerInfo.entitlements } returns EntitlementInfos(
+            emptyMap(),
+            VerificationResult.VERIFIED,
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+
+        // Setup restore operation to return successful result
+        coEvery { purchases.awaitRestore() } returns customerInfo
+
+        // Setup other customer center data
+        coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
+        coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns null
+
+        // Setup screen with a MISSING_PURCHASE path
+        val missingPurchasePath = HelpPath(
+            id = "missing_purchase_id",
+            title = "Restore Purchases",
+            type = HelpPath.PathType.MISSING_PURCHASE
+        )
+
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(missingPurchasePath)
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+
+        // Create a spy on the real ViewModel so we can verify loadCustomerCenter is called
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Wait for initial state to load
+        val initialLoadingCompleted = CompletableDeferred<Boolean>()
+        val reloadingCompleted = CompletableDeferred<Boolean>()
+        val dialogShownCompleted = CompletableDeferred<Boolean>()
+        val restoreCompletedWithSuccess = CompletableDeferred<Boolean>()
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    // Track initial load completion
+                    if (!initialLoadingCompleted.isCompleted) {
+                        initialLoadingCompleted.complete(true)
+                    }
+
+                    // Track when dialog is shown
+                    if (state.showRestoreDialog && !dialogShownCompleted.isCompleted) {
+                        dialogShownCompleted.complete(true)
+                    }
+
+                    // Track reload completion
+                    if (restoreCompletedWithSuccess.isCompleted && initialLoadingCompleted.isCompleted && !reloadingCompleted.isCompleted) {
+                        reloadingCompleted.complete(true)
+                    }
+
+                    // Track when restore completes successfully
+                    if (state.showRestoreDialog &&
+                        state.restorePurchasesState == RestorePurchasesState.PURCHASES_RECOVERED &&
+                        !restoreCompletedWithSuccess.isCompleted) {
+                        restoreCompletedWithSuccess.complete(true)
+                    }
+
+                }
+            }
+        }
+
+        // Wait for initial setup to complete
+        initialLoadingCompleted.await()
+
+        // 1. First show the restore dialog by calling pathButtonPressed with MISSING_PURCHASE path
+        model.pathButtonPressed(mockk(), missingPurchasePath, null)
+
+        // Wait until dialog is shown
+        dialogShownCompleted.await()
+
+        // 2. Now perform the restore operation
+        model.restorePurchases()
+
+        // Wait until restore completes successfully
+        restoreCompletedWithSuccess.await()
+
+        // Reset mock verification counts before our actual test
+        clearMocks(purchases, answers = false)
+
+        // 3. Finally, call the method we're testing
+        model.dismissRestoreDialog()
+
+        reloadingCompleted.await()
+
+        // Verify loadCustomerCenter was called
+        coVerify (exactly = 1) { purchases.awaitCustomerCenterConfigData() }
+
+        // Cancel the collection job
+        job.cancel()
+    }
+
 }
