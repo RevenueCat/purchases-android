@@ -35,6 +35,7 @@ interface AppInfoScreenViewModel {
 
     fun logIn(newAppUserId: String)
     fun logOut()
+    fun switchApiKey(newApiKey: String)
 }
 
 internal class AppInfoScreenViewModelImpl(
@@ -83,6 +84,11 @@ internal class AppInfoScreenViewModelImpl(
                 _state.update { it.copy(appUserID = "Error logging out: ${e.message}") }
             }
         }
+    }
+
+    override fun switchApiKey(newApiKey: String) {
+        configurePurchases(newApiKey)
+        updateApiKeyDescription()
     }
 
     private fun updateAppUserID() {

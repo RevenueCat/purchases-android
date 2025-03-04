@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
@@ -46,6 +47,7 @@ fun AppInfoScreen(
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
     var isCustomerCenterVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
+    var showApiKeyDialog by remember { mutableStateOf(false) }
 
     if (isCustomerCenterVisible) {
         CustomerCenter(modifier = Modifier.fillMaxSize()) {
@@ -70,6 +72,9 @@ fun AppInfoScreen(
         Button(onClick = { viewModel.logOut() }) {
             Text(text = "Log out")
         }
+        Button(onClick = { showApiKeyDialog = true }) {
+            Text(text = "Switch API key")
+        }
         Button(onClick = { isDebugBottomSheetVisible = true }) {
             Text(text = "Show debug view")
         }
@@ -82,6 +87,14 @@ fun AppInfoScreen(
 
     if (showLogInDialog) {
         LoginDialog(viewModel) { showLogInDialog = false }
+    }
+    if (showApiKeyDialog) {
+        ApiKeyDialog(
+            onApiKeyClick = {
+                viewModel.switchApiKey(it)
+                showApiKeyDialog = false
+            },
+        ) { showApiKeyDialog = false }
     }
 
     DebugRevenueCatBottomSheet(
@@ -133,6 +146,52 @@ private fun LoginDialog(viewModel: AppInfoScreenViewModel, onDismissed: () -> Un
     }
 }
 
+@Composable
+private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Unit) {
+    Dialog(onDismissRequest = { onDismissed() }) {
+        Surface(shape = MaterialTheme.shapes.medium) {
+            Column(Modifier.padding(all = 16.dp)) {
+                ApiKeyButton(
+                    label = "API Key A",
+                    apiKey = Constants.GOOGLE_API_KEY_A,
+                    onClick = onApiKeyClick,
+                )
+
+                ApiKeyButton(
+                    label = "API Key B",
+                    apiKey = Constants.GOOGLE_API_KEY_B,
+                    onClick = onApiKeyClick,
+                )
+
+                Spacer(Modifier.size(4.dp))
+                Row(
+                    Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth(),
+                    Arrangement.spacedBy(8.dp, Alignment.End),
+                ) {
+                    TextButton(onClick = { onDismissed() }) {
+                        Text("CANCEL")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ApiKeyButton(label: String, apiKey: String, onClick: (String) -> Unit) {
+    TextButton(onClick = { onClick(apiKey) }) {
+        Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+            )
+            Text(text = apiKey)
+        }
+    }
+}
+
 @Suppress("EmptyFunctionBlock")
 @Preview(showBackground = true)
 @Composable
@@ -144,6 +203,16 @@ fun AppInfoScreenPreview() {
 
             override fun logIn(newAppUserId: String) { }
             override fun logOut() { }
+            override fun switchApiKey(newApiKey: String) { }
         },
+    )
+}
+
+@Preview
+@Composable
+private fun ApiKeyDialog_Preview() {
+    ApiKeyDialog(
+        onApiKeyClick = {},
+        onDismissed = {},
     )
 }
