@@ -157,6 +157,7 @@ internal class CustomerCenterViewModelImpl(
                         url = path.url,
                         surveyOptionID = it.id,
                     )
+                    notifyListenersForFeedbackSurveyCompleted(it.id)
 
                     if (product != null && it.promotionalOffer != null) {
                         val loaded = loadAndDisplayPromotionalOffer(
@@ -603,8 +604,6 @@ internal class CustomerCenterViewModelImpl(
             ),
         )
         purchases.track(event)
-
-        notifyListenersForFeedbackSurveyCompleted(surveyOptionID)
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
