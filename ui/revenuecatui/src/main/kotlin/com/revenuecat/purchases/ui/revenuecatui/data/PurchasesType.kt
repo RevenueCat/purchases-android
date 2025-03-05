@@ -16,6 +16,7 @@ import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 
@@ -45,6 +46,8 @@ internal interface PurchasesType {
     fun syncPurchases()
 
     val storefrontCountryCode: String?
+
+    val customerCenterListener: CustomerCenterListener?
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -89,4 +92,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val storefrontCountryCode: String?
         get() = purchases.storefrontCountryCode
+
+    override val customerCenterListener: CustomerCenterListener?
+        get() = purchases.customerCenterListener
 }
