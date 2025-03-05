@@ -153,7 +153,7 @@ private fun PurchasesRecoveredDialog(
             Button(onClick = onDismiss) {
                 Text(
                     localization.commonLocalizedString(
-                        key = CustomerCenterConfigData.Localization.CommonLocalizedString.CANCEL,
+                        key = CustomerCenterConfigData.Localization.CommonLocalizedString.DISMISS,
                     ),
                 )
             }
