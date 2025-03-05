@@ -551,10 +551,6 @@ jobs:
     steps:
       - checkout
       - install-sdkman
-      - run: which -a ruby
-      - run: ruby -v
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
       - run:
           # Emerge CLI requires >= 3.2.0.
           name: Install RVM and Ruby 3.2.0
@@ -571,11 +567,11 @@ jobs:
             echo 'rvm use 3.2.0' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
-      - run: which -a ruby
-      - run: ruby -v
       - run:
           name: Install Emerge CLI
           command: gem install emerge
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - android/restore-build-cache
       - revenuecat/setup-git-credentials
       - run:
