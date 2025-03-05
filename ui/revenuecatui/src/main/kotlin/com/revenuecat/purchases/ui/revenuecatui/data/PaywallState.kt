@@ -88,7 +88,6 @@ internal sealed interface PaywallState {
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
-            initialActionInProgress: Boolean = false,
         ) : Loaded {
 
             data class AvailablePackages(
@@ -161,7 +160,7 @@ internal sealed interface PaywallState {
             val currentDate: Date
                 get() = dateProvider()
 
-            var actionInProgress by mutableStateOf(initialActionInProgress)
+            var actionInProgress by mutableStateOf(false)
                 private set
 
             fun update(
