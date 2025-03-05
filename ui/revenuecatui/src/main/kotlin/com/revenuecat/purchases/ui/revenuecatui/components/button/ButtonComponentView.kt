@@ -43,6 +43,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import kotlinx.coroutines.launch
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 // Standard luminance coefficients for sRGB (per ITU-R BT.709)
@@ -111,8 +112,9 @@ internal fun ButtonComponentView(
         measurePolicy = { measurables, constraints ->
             val stack = measurables[0].measure(constraints)
             // Ensure that the progress indicator is not bigger than the stack.
+            val progressSize = min(stack.width, stack.height)
             val progress = measurables[1].measure(
-                constraints.copy(maxHeight = stack.height, maxWidth = stack.width),
+                constraints.copy(maxHeight = progressSize, maxWidth = progressSize),
             )
             val totalWidth = stack.width
             val totalHeight = stack.height
