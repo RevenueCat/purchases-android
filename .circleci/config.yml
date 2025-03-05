@@ -556,14 +556,17 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - run:
-          # Emerge requires >= 3.2.0.
-          name: Set Ruby 3.2.0
+          # Emerge CLI requires >= 3.2.0.
+          name: Install RVM and Ruby 3.2.0
           command: |
-            sudo apt-get update && apt-get install -y rbenv
-            eval "$(rbenv init -)"
-            rbenv install -s 3.2.0
-            rbenv global 3.2.0
-            rbenv rehash
+            \curl -sSL https://get.rvm.io | bash -s stable
+            source ~/.rvm/scripts/rvm
+            rvm install 3.2.0
+            rvm use 3.2.0
+            echo 'source ~/.rvm/scripts/rvm' >> $BASH_ENV
+            echo 'rvm use 3.2.0' >> $BASH_ENV
+            source $BASH_ENV
+            ruby -v
       - run: which -a ruby
       - run: ruby -v
       - run:
