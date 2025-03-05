@@ -17,6 +17,7 @@ import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.WebPurchaseRedemption;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
+import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
@@ -164,5 +165,36 @@ final class PurchasesAPI {
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
                 .showInAppMessagesAutomatically(true)
                 .build();
+    }
+
+    static void checkCustomerCenter() {
+        CustomerCenterListener customerInfoListener = new CustomerCenterListener() {
+            @Override
+            public void onRestoreStarted() {
+            }
+        };
+        CustomerCenterListener customerInfoListener2 = new CustomerCenterListener() {
+            @Override
+            public void onFeedbackSurveyCompleted(@NonNull String feedbackSurveyOptionId) {
+            }
+
+            @Override
+            public void onShowingManageSubscriptions() {
+            }
+
+            @Override
+            public void onRestoreCompleted(@NonNull CustomerInfo customerInfo) {
+            }
+
+            @Override
+            public void onRestoreFailed(@NonNull PurchasesError error) {
+            }
+
+            @Override
+            public void onRestoreStarted() {
+            }
+        };
+        Purchases.getSharedInstance().setCustomerCenterListener(new CustomerCenterListener() {});
+        Purchases.getSharedInstance().setCustomerCenterListener(customerInfoListener);
     }
 }

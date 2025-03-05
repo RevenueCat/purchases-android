@@ -20,7 +20,12 @@ import androidx.compose.ui.Modifier
 @Composable
 fun CustomerCenter(
     modifier: Modifier = Modifier,
+    options: CustomerCenterOptions = CustomerCenterOptions.Builder().build(),
     onDismiss: () -> Unit,
 ) {
-    InternalCustomerCenter(modifier = modifier, onDismiss = onDismiss)
+    InternalCustomerCenter(
+        modifier = modifier,
+        listener = options.listener,
+        onDismiss = onDismiss,
+    )
 }

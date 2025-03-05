@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.revenuecat.paywallstester.ConfigurePurchasesUseCase
 import com.revenuecat.paywallstester.Constants
+import com.revenuecat.paywallstester.data.ApiKeyStore
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
@@ -40,15 +41,16 @@ interface AppInfoScreenViewModel {
 
 internal class AppInfoScreenViewModelImpl(
     private val configurePurchases: ConfigurePurchasesUseCase,
+    private val apiKeyStore: ApiKeyStore,
 ) : ViewModel(), AppInfoScreenViewModel {
 
     companion object {
         val Factory = viewModelFactory {
             initializer {
+                val context = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!
                 AppInfoScreenViewModelImpl(
-                    configurePurchases = ConfigurePurchasesUseCase(
-                        context = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!,
-                    ),
+                    configurePurchases = ConfigurePurchasesUseCase(context),
+                    apiKeyStore = ApiKeyStore(context),
                 )
             }
         }
@@ -87,6 +89,7 @@ internal class AppInfoScreenViewModelImpl(
     }
 
     override fun switchApiKey(newApiKey: String) {
+        apiKeyStore.setLastUsedApiKey(newApiKey)
         configurePurchases(newApiKey)
         updateApiKeyDescription()
     }
@@ -99,9 +102,9 @@ internal class AppInfoScreenViewModelImpl(
         _state.update {
             it.copy(
                 apiKeyDescription = when (val apiKey = Purchases.sharedInstance.currentConfiguration.apiKey) {
-                    Constants.GOOGLE_API_KEY_A -> "A - $apiKey"
-                    Constants.GOOGLE_API_KEY_B -> "B - $apiKey"
-                    else -> apiKey
+                    Constants.GOOGLE_API_KEY_A -> Constants.GOOGLE_API_KEY_A_LABEL
+                    Constants.GOOGLE_API_KEY_B -> Constants.GOOGLE_API_KEY_B_LABEL
+                    else -> "Custom: $apiKey"
                 },
             )
         }

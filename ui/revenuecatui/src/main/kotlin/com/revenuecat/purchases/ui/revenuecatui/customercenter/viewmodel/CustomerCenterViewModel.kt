@@ -24,6 +24,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -63,7 +64,7 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct?,
     )
 
-    fun dismissRestoreDialog()
+    suspend fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
     fun loadAndDisplayPromotionalOffer(
@@ -118,6 +119,7 @@ internal class CustomerCenterViewModelImpl(
     private val locale: Locale = Locale.getDefault(),
     private val colorScheme: ColorScheme,
     private var isDarkMode: Boolean,
+    private val listener: CustomerCenterListener? = null,
 ) : ViewModel(), CustomerCenterViewModel {
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
@@ -155,6 +157,7 @@ internal class CustomerCenterViewModelImpl(
                         url = path.url,
                         surveyOptionID = it.id,
                     )
+                    notifyListenersForFeedbackSurveyCompleted(it.id)
 
                     if (product != null && it.promotionalOffer != null) {
                         val loaded = loadAndDisplayPromotionalOffer(
@@ -210,6 +213,7 @@ internal class CustomerCenterViewModelImpl(
                 when (val currentState = _state.value) {
                     is CustomerCenterState.Success -> {
                         currentState.purchaseInformation?.product?.let {
+                            notifyListenersForManageSubscription()
                             showManageSubscriptions(context, it.id)
                         }
                     }
@@ -234,20 +238,13 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun dismissRestoreDialog() {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    showRestoreDialog = false,
-                    restorePurchasesState = RestorePurchasesState.INITIAL,
-                )
-            } else {
-                currentState
-            }
-        }
+    override suspend fun dismissRestoreDialog() {
+        loadCustomerCenter()
     }
 
     override suspend fun restorePurchases() {
+        notifyListenersForRestoreStarted()
+
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
@@ -262,6 +259,9 @@ internal class CustomerCenterViewModelImpl(
             val hasPurchases =
                 customerInfo.activeSubscriptions.isNotEmpty() ||
                     customerInfo.nonSubscriptionTransactions.isNotEmpty()
+
+            notifyListenersForRestoreCompleted(customerInfo)
+
             _state.update { currentState ->
                 if (currentState is CustomerCenterState.Success) {
                     currentState.copy(
@@ -277,6 +277,9 @@ internal class CustomerCenterViewModelImpl(
             }
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases", e)
+
+            notifyListenersForRestoreFailed(e.error)
+
             _state.update { currentState ->
                 if (currentState is CustomerCenterState.Success) {
                     currentState.copy(
@@ -529,21 +532,29 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun loadCustomerCenter() {
-        if (_state.value !is CustomerCenterState.Loading) {
-            _state.value = CustomerCenterState.Loading
+        _state.update { state ->
+            if (state !is CustomerCenterState.Loading) {
+                CustomerCenterState.Loading
+            } else {
+                state
+            }
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
-            _state.value = CustomerCenterState.Success(
-                customerCenterConfigData,
-                purchaseInformation,
-                supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
-                    supportedPaths(purchaseInformation, it)
-                },
-            )
+            _state.update {
+                CustomerCenterState.Success(
+                    customerCenterConfigData,
+                    purchaseInformation,
+                    supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
+                        supportedPaths(purchaseInformation, it)
+                    },
+                )
+            }
         } catch (e: PurchasesException) {
-            _state.value = CustomerCenterState.Error(e.error)
+            _state.update {
+                CustomerCenterState.Error(e.error)
+            }
         }
     }
 
@@ -646,5 +657,30 @@ internal class CustomerCenterViewModelImpl(
         } catch (e: ActivityNotFoundException) {
             Logger.e("Error opening manage subscriptions", e)
         }
+    }
+
+    private fun notifyListenersForRestoreStarted() {
+        listener?.onRestoreStarted()
+        purchases.customerCenterListener?.onRestoreStarted()
+    }
+
+    private fun notifyListenersForRestoreCompleted(customerInfo: CustomerInfo) {
+        listener?.onRestoreCompleted(customerInfo)
+        purchases.customerCenterListener?.onRestoreCompleted(customerInfo)
+    }
+
+    private fun notifyListenersForRestoreFailed(error: PurchasesError) {
+        listener?.onRestoreFailed(error)
+        purchases.customerCenterListener?.onRestoreFailed(error)
+    }
+
+    private fun notifyListenersForManageSubscription() {
+        listener?.onShowingManageSubscriptions()
+        purchases.customerCenterListener?.onShowingManageSubscriptions()
+    }
+
+    private fun notifyListenersForFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
+        listener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
+        purchases.customerCenterListener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
     }
 }
