@@ -44,6 +44,7 @@ class CustomerInfoTest {
         assertThat(emptyCustomerInfo.allPurchasedProductIds).isEmpty()
         assertThat(emptyCustomerInfo.nonSubscriptionTransactions).isEmpty()
         assertThat(emptyCustomerInfo.latestExpirationDate).isNull()
+        assertThat(emptyCustomerInfo.virtualCurrencies).isEmpty()
     }
 
     @Test
@@ -135,6 +136,21 @@ class CustomerInfoTest {
         assertThat(purchasedSkus).contains("basic:monthly")
         assertThat(purchasedSkus).contains("7_extra_lives")
         assertThat(purchasedSkus).contains("lifetime_access")
+    }
+
+    @Test
+    @Throws(JSONException::class)
+    fun `Given a full response, all virtual currencies are retrieved properly`() {
+        val info = fullCustomerInfo
+        val virtualCurrencies = info.virtualCurrencies
+        val goldInfo = virtualCurrencies["GLD"]
+        val silverInfo = virtualCurrencies["SLV"]
+
+        assertThat(virtualCurrencies.size).isEqualTo(2)
+        assertThat(goldInfo).isNotNull()
+        assertThat(goldInfo?.balance).isEqualTo(100)
+        assertThat(silverInfo).isNotNull()
+        assertThat(silverInfo?.balance).isEqualTo(1000)
     }
 
     @Test

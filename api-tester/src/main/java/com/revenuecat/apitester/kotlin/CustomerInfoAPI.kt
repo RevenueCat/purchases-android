@@ -3,6 +3,7 @@ package com.revenuecat.apitester.kotlin
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.VirtualCurrencyInfo
 import com.revenuecat.purchases.models.Transaction
 import java.util.Date
 
@@ -29,6 +30,7 @@ private class CustomerInfoAPI {
             val pde: Date? = getPurchaseDateForEntitlement("")
             val allExpirationDatesByProduct: Map<String, Date?> = allExpirationDatesByProduct
             val allPurchaseDatesByProduct: Map<String, Date?> = allPurchaseDatesByProduct
+            val virtualCurrencies: Map<String, VirtualCurrencyInfo> = virtualCurrencies
         }
     }
 }
