@@ -17,6 +17,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -1220,15 +1221,21 @@ class PaywallViewModelTest {
 
     private fun mockNonSubscriptionTransactions(productIdentifiers: Set<String>) {
         every { customerInfo.nonSubscriptionTransactions } returns productIdentifiers
-            .map {
+            .map { productIdentifier ->
                 Transaction(
-                    UUID.randomUUID().toString(),
-                    UUID.randomUUID().toString(),
-                    it,
-                    it,
-                    Date(),
-                    UUID.randomUUID().toString(),
-                    Store.PLAY_STORE,
+                    transactionIdentifier = UUID.randomUUID().toString(),
+                    revenuecatId = UUID.randomUUID().toString(),
+                    productIdentifier = productIdentifier,
+                    productId = productIdentifier,
+                    purchaseDate = Date(),
+                    storeTransactionId = UUID.randomUUID().toString(),
+                    store = Store.PLAY_STORE,
+                    displayName = "Product $productIdentifier",
+                    isSandbox = false,
+                    originalPurchaseDate = Date(),
+                    price = (1..100).random().toDouble().let {
+                        Price("$it", it.toLong() * 1_000_000, "USD")
+                    },
                 )
             }
     }
