@@ -4,6 +4,11 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 import org.json.JSONObject
 
+/**
+ * A class representing information about a virtual currency in the app.
+ *
+ * @property balance The current balance of the virtual currency.
+ */
 @Parcelize
 data class VirtualCurrencyInfo internal constructor(
     val balance: Long,
