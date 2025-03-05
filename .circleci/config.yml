@@ -142,9 +142,9 @@ commands:
           name: Replace API_KEY
           working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
           command: |
-            sed -i s/\"API_KEY_A_LABEL\"/\"Paywalls V2 Alpha\"/ Constants.kt
+            sed -i 's/"API_KEY_A_LABEL"/"Paywalls V2 Alpha"/' Constants.kt
             sed -i s/\"API_KEY_A\"/\"$PAYWALLS_V2_ALPHA_API_KEY\"/ Constants.kt
-            sed -i s/\"API_KEY_B_LABEL\"/\"Official Paywalls V2 Template Repo\"/ Constants.kt
+            sed -i 's/"API_KEY_B_LABEL"/"Official Paywalls V2 Template Repo"/' Constants.kt
             sed -i s/\"API_KEY_B\"/\"$PAYWALLS_V2_TEMPLATE_REPO_API_KEY\"/ Constants.kt
       - run:
           name: Create app bundle
