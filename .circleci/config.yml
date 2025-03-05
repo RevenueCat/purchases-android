@@ -559,6 +559,10 @@ jobs:
           # Emerge CLI requires >= 3.2.0.
           name: Install RVM and Ruby 3.2.0
           command: |
+            # Import GPG keys first
+            command curl -sSL https://rvm.io/mpapis.asc | gpg --import -
+            command curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
+            # Install RVM and Ruby 3.2.0
             \curl -sSL https://get.rvm.io | bash -s stable
             source ~/.rvm/scripts/rvm
             rvm install 3.2.0
