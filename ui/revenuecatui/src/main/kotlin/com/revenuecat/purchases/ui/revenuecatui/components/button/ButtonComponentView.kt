@@ -53,6 +53,8 @@ private const val COEFFICIENT_LUMINANCE_BLUE = 0.114f
 // The brightness value below which we'll use a white progress indicator
 private const val BRIGHTNESS_CUTOFF = 0.6f
 
+private const val ALPHA_DISABLED = 0.6f
+
 @Suppress("LongMethod")
 @Composable
 internal fun ButtonComponentView(
@@ -69,10 +71,12 @@ internal fun ButtonComponentView(
 
     val coroutineScope = rememberCoroutineScope()
     // Whether there's an action in progress anywhere on the paywall.
-    val anyActionInProgress = state.actionInProgress
+    val anyActionInProgress by state::actionInProgress
     // Whether this button's action is in progress.
     var myActionInProgress by remember { mutableStateOf(false) }
-    val contentAlpha by remember { derivedStateOf { if (myActionInProgress) 0f else 1f } }
+    val contentAlpha by remember {
+        derivedStateOf { if (myActionInProgress) 0f else if (anyActionInProgress) ALPHA_DISABLED else 1f }
+    }
     val progressAlpha by remember { derivedStateOf { if (myActionInProgress) 1f else 0f } }
     val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
     val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
