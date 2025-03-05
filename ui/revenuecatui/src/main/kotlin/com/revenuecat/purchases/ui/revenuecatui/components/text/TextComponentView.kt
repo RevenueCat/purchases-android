@@ -14,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -40,12 +39,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 
 @Composable
 internal fun TextComponentView(
@@ -60,12 +57,9 @@ internal fun TextComponentView(
     )
 
     // Process any variables in the text.
-    val context = LocalContext.current
-    val variableDataProvider = remember { VariableDataProvider(context.toResourceProvider()) }
     val text = rememberProcessedText(
         state = state,
         textState = textState,
-        variables = variableDataProvider,
     )
 
     val colorStyle = textState.color.forCurrentTheme
@@ -114,7 +108,6 @@ internal fun TextComponentView(
 private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
-    variables: VariableDataProvider,
 ): String {
     val processedText by remember(state, textState) {
         derivedStateOf {
@@ -142,7 +135,7 @@ private fun rememberProcessedText(
                     template = textState.text,
                     localizedVariableKeys = textState.localizedVariableKeys,
                     variableConfig = state.variableConfig,
-                    variableDataProvider = variables,
+                    variableDataProvider = state.variableDataProvider,
                     packageContext = variableContext,
                     rcPackage = packageToUse,
                     locale = locale,
