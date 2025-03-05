@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -114,7 +115,12 @@ internal fun ButtonComponentView(
             // Ensure that the progress indicator is not bigger than the stack.
             val progressSize = min(stack.width, stack.height)
             val progress = measurables[1].measure(
-                constraints.copy(maxHeight = progressSize, maxWidth = progressSize),
+                Constraints(
+                    minWidth = progressSize,
+                    maxWidth = progressSize,
+                    minHeight = progressSize,
+                    maxHeight = progressSize,
+                ),
             )
             val totalWidth = stack.width
             val totalHeight = stack.height
