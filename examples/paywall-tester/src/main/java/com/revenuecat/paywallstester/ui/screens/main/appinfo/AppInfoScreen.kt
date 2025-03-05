@@ -30,14 +30,18 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, InternalRevenueCatAPI::class)
+private const val TAG = "CustomerCenterTest"
+
+@SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
@@ -49,8 +53,16 @@ fun AppInfoScreen(
     var showLogInDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
 
+    // Use remember to cache the listener across recompositions
+    val customerCenterListener = remember { createCustomerCenterListener() }
+
     if (isCustomerCenterVisible) {
-        CustomerCenter(modifier = Modifier.fillMaxSize()) {
+        CustomerCenter(
+            modifier = Modifier.fillMaxSize(),
+            options = CustomerCenterOptions.Builder()
+                .setListener(customerCenterListener)
+                .build(),
+        ) {
             isCustomerCenterVisible = false
         }
         return
@@ -215,4 +227,32 @@ private fun ApiKeyDialog_Preview() {
         onApiKeyClick = {},
         onDismissed = {},
     )
+}
+
+private fun createCustomerCenterListener(): CustomerCenterListener {
+    return object : CustomerCenterListener {
+        override fun onRestoreStarted() {
+            Log.d(TAG, "Local listener: onRestoreStarted called")
+        }
+
+        override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+            Log.d(
+                TAG,
+                "Local listener: onRestoreCompleted called with customer info: " +
+                    customerInfo.originalAppUserId,
+            )
+        }
+
+        override fun onRestoreFailed(error: PurchasesError) {
+            Log.d(TAG, "Local listener: onRestoreFailed called with error: ${error.message}")
+        }
+
+        override fun onShowingManageSubscriptions() {
+            Log.d(TAG, "Local listener: onShowingManageSubscriptions called")
+        }
+
+        override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
+            Log.d(TAG, "Local listener: onFeedbackSurveyCompleted called with option ID: $feedbackSurveyOptionId")
+        }
+    }
 }
