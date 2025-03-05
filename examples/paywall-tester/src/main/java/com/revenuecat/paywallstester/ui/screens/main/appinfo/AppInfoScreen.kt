@@ -164,13 +164,13 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
         Surface(shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(all = 16.dp)) {
                 ApiKeyButton(
-                    label = "API Key A",
+                    label = Constants.GOOGLE_API_KEY_A_LABEL,
                     apiKey = Constants.GOOGLE_API_KEY_A,
                     onClick = onApiKeyClick,
                 )
 
                 ApiKeyButton(
-                    label = "API Key B",
+                    label = Constants.GOOGLE_API_KEY_B_LABEL,
                     apiKey = Constants.GOOGLE_API_KEY_B,
                     onClick = onApiKeyClick,
                 )
