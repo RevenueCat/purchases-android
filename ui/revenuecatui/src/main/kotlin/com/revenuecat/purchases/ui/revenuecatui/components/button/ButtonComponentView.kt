@@ -68,10 +68,12 @@ internal fun ButtonComponentView(
     )
 
     val coroutineScope = rememberCoroutineScope()
-    var isClickable by remember { mutableStateOf(true) }
-
-    val contentAlpha by remember { derivedStateOf { if (isClickable) 1f else 0f } }
-    val progressAlpha by remember { derivedStateOf { if (isClickable) 0f else 1f } }
+    // Whether there's an action in progress anywhere on the paywall.
+    val anyActionInProgress = state.actionInProgress
+    // Whether this button's action is in progress.
+    var myActionInProgress by remember { mutableStateOf(false) }
+    val contentAlpha by remember { derivedStateOf { if (myActionInProgress) 0f else 1f } }
+    val progressAlpha by remember { derivedStateOf { if (myActionInProgress) 1f else 0f } }
     val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
     val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
 
@@ -93,11 +95,13 @@ internal fun ButtonComponentView(
                 color = progressColorFor(style.stackComponentStyle.background),
             )
         },
-        modifier = modifier.clickable(enabled = isClickable) {
-            isClickable = false
+        modifier = modifier.clickable(enabled = !anyActionInProgress) {
+            myActionInProgress = true
+            state.update(actionInProgress = true)
             coroutineScope.launch {
                 onClick(buttonState.action)
-                isClickable = true
+                myActionInProgress = false
+                state.update(actionInProgress = false)
             }
         },
         measurePolicy = { measurables, constraints ->

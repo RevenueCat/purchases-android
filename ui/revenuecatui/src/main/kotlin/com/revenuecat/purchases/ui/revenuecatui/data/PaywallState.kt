@@ -88,6 +88,7 @@ internal sealed interface PaywallState {
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
+            initialActionInProgress: Boolean = false,
         ) : Loaded {
 
             data class AvailablePackages(
@@ -160,7 +161,14 @@ internal sealed interface PaywallState {
             val currentDate: Date
                 get() = dateProvider()
 
-            fun update(localeList: FrameworkLocaleList? = null, selectedTabIndex: Int? = null) {
+            var actionInProgress by mutableStateOf(initialActionInProgress)
+                private set
+
+            fun update(
+                localeList: FrameworkLocaleList? = null,
+                selectedTabIndex: Int? = null,
+                actionInProgress: Boolean? = null,
+            ) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
 
                 if (selectedTabIndex != null) {
@@ -171,6 +179,8 @@ internal sealed interface PaywallState {
 
                     selectedPackage = selectedPackageByTab[selectedTabIndex] ?: initialSelectedPackageOutsideTabs
                 }
+
+                if (actionInProgress != null) this.actionInProgress = actionInProgress
             }
 
             fun update(selectedPackage: Package) {
