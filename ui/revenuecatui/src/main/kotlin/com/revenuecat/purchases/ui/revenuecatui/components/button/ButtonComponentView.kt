@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -43,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import kotlinx.coroutines.launch
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 // Standard luminance coefficients for sRGB (per ITU-R BT.709)
@@ -52,6 +54,8 @@ private const val COEFFICIENT_LUMINANCE_BLUE = 0.114f
 
 // The brightness value below which we'll use a white progress indicator
 private const val BRIGHTNESS_CUTOFF = 0.6f
+
+private const val ALPHA_DISABLED = 0.6f
 
 @Suppress("LongMethod")
 @Composable
@@ -68,10 +72,14 @@ internal fun ButtonComponentView(
     )
 
     val coroutineScope = rememberCoroutineScope()
-    var isClickable by remember { mutableStateOf(true) }
-
-    val contentAlpha by remember { derivedStateOf { if (isClickable) 1f else 0f } }
-    val progressAlpha by remember { derivedStateOf { if (isClickable) 0f else 1f } }
+    // Whether there's an action in progress anywhere on the paywall.
+    val anyActionInProgress by state::actionInProgress
+    // Whether this button's action is in progress.
+    var myActionInProgress by remember { mutableStateOf(false) }
+    val contentAlpha by remember {
+        derivedStateOf { if (myActionInProgress) 0f else if (anyActionInProgress) ALPHA_DISABLED else 1f }
+    }
+    val progressAlpha by remember { derivedStateOf { if (myActionInProgress) 1f else 0f } }
     val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
     val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
 
@@ -93,18 +101,26 @@ internal fun ButtonComponentView(
                 color = progressColorFor(style.stackComponentStyle.background),
             )
         },
-        modifier = modifier.clickable(enabled = isClickable) {
-            isClickable = false
+        modifier = modifier.clickable(enabled = !anyActionInProgress) {
+            myActionInProgress = true
+            state.update(actionInProgress = true)
             coroutineScope.launch {
                 onClick(buttonState.action)
-                isClickable = true
+                myActionInProgress = false
+                state.update(actionInProgress = false)
             }
         },
         measurePolicy = { measurables, constraints ->
             val stack = measurables[0].measure(constraints)
             // Ensure that the progress indicator is not bigger than the stack.
+            val progressSize = min(stack.width, stack.height)
             val progress = measurables[1].measure(
-                constraints.copy(maxHeight = stack.height, maxWidth = stack.width),
+                Constraints(
+                    minWidth = progressSize,
+                    maxWidth = progressSize,
+                    minHeight = progressSize,
+                    maxHeight = progressSize,
+                ),
             )
             val totalWidth = stack.width
             val totalHeight = stack.height
