@@ -11,7 +11,6 @@ import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.testParcelization
-import net.bytebuddy.implementation.bind.MethodDelegationBinder.MethodInvoker.Virtual
 import org.assertj.core.api.Assertions
 import org.json.JSONObject
 import org.junit.Test
@@ -48,7 +47,9 @@ class ParcelableTests {
             originalAppUserId = "original_app_user_id",
             managementURL = Uri.parse("https://management.com"),
             originalPurchaseDate = Date(System.currentTimeMillis()),
-            virtualCurrencies = emptyMap()
+            virtualCurrencies =  mapOf(
+                Pair("COIN", VirtualCurrencyInfo(balance = 100))
+            )
         )
     )
 
@@ -99,8 +100,7 @@ class ParcelableTests {
     fun `VirtualCurrencyInfo is Parcelable`() {
         testParcelization(
             VirtualCurrencyInfo(
-                balance = 100,
-                jsonObject = JSONObject(emptyMap<String, Int>())
+                balance = 100
             )
         )
     }

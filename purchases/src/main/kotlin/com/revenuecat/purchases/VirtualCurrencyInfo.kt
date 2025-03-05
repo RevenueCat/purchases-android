@@ -9,16 +9,9 @@ import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 
 @Parcelize
-@TypeParceler<JSONObject, JSONObjectParceler>()
-data class VirtualCurrencyInfo(
+data class VirtualCurrencyInfo internal constructor(
     val balance: Long,
-    private val jsonObject: JSONObject,
-) : Parcelable, RawDataContainer<JSONObject> {
-
-    @IgnoredOnParcel
-    override val rawData: JSONObject
-        get() = jsonObject
-
+) : Parcelable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -34,7 +27,7 @@ data class VirtualCurrencyInfo(
     companion object {
         fun fromJson(json: JSONObject): VirtualCurrencyInfo {
             val balance = json.getLong("amount")
-            return VirtualCurrencyInfo(balance, json)
+            return VirtualCurrencyInfo(balance)
         }
     }
 }
