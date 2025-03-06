@@ -28,7 +28,7 @@ class VirtualCurrencyInfo internal constructor(
     }
 
     companion object {
-        fun fromJson(json: JSONObject): VirtualCurrencyInfo {
+        internal fun fromJson(json: JSONObject): VirtualCurrencyInfo {
             val balance = json.getLong("amount")
             return VirtualCurrencyInfo(balance)
         }
