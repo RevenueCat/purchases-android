@@ -3,12 +3,14 @@ package com.revenuecat.apitester.kotlin
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.VirtualCurrencyInfo
 import com.revenuecat.purchases.models.Transaction
 import java.util.Date
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class CustomerInfoAPI {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun check(customerInfo: CustomerInfo) {
         with(customerInfo) {
             val entitlementInfo: EntitlementInfos = entitlements
