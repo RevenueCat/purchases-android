@@ -31,6 +31,7 @@ class ParcelableTests {
         )
     )
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `CustomerInfo is Parcelable`() = testParcelization(
         CustomerInfo(
@@ -96,6 +97,7 @@ class ParcelableTests {
         testParcelization(nullMode, true)
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `VirtualCurrencyInfo is Parcelable`() {
         testParcelization(
