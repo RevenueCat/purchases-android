@@ -32,6 +32,7 @@ import coil.transform.Transformation
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.extensions.getImageLoaderTyped
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
@@ -122,7 +123,7 @@ private fun Image(
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
     val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
-        Purchases.getImageLoader(applicationContext) as ImageLoader
+        Purchases.getImageLoaderTyped(applicationContext)
     }
 
     val imageRequest = ImageRequest.Builder(LocalContext.current)
