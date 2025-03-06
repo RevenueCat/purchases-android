@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VirtualCurrencyInfo
@@ -30,6 +31,7 @@ internal object CustomerInfoFactory {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod")
     @Throws(JSONException::class)
     fun buildCustomerInfo(

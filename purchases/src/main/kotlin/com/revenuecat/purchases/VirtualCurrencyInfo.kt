@@ -10,6 +10,7 @@ import org.json.JSONObject
  *
  * @property balance The current balance of the virtual currency.
  */
+@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 @Parcelize
 class VirtualCurrencyInfo internal constructor(
