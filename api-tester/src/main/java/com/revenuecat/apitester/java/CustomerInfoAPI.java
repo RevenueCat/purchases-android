@@ -4,6 +4,7 @@ import android.net.Uri;
 
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementInfos;
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.VirtualCurrencyInfo;
 import com.revenuecat.purchases.models.Transaction;
 
@@ -14,6 +15,7 @@ import java.util.Set;
 
 @SuppressWarnings({"unused", "SpellCheckingInspection"})
 final class CustomerInfoAPI {
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     static void check(final CustomerInfo customerInfo) {
         final EntitlementInfos entitlementInfo = customerInfo.getEntitlements();
         final Set<String> asubs = customerInfo.getActiveSubscriptions();
