@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 
 /**
@@ -23,9 +26,12 @@ fun CustomerCenter(
     options: CustomerCenterOptions = CustomerCenterOptions.Builder().build(),
     onDismiss: () -> Unit,
 ) {
-    InternalCustomerCenter(
-        modifier = modifier,
-        listener = options.listener,
-        onDismiss = onDismiss,
-    )
+    // Ensure proper content color is set for the entire CustomerCenter
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+        InternalCustomerCenter(
+            modifier = modifier,
+            listener = options.listener,
+            onDismiss = onDismiss,
+        )
+    }
 }
