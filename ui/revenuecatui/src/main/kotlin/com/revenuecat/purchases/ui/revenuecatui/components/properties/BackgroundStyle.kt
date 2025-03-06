@@ -16,6 +16,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.ImageLoader
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
@@ -117,7 +118,7 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val context = LocalContext.current
     val imageLoader = remember(context) {
-        Purchases.getImageLoader(context.applicationContext)
+        Purchases.getImageLoader(context.applicationContext) as ImageLoader
     }
     return rememberAsyncImagePainter(
         model = getImageRequest(context, imageUrls.webp.toString(), cachePolicy),

@@ -835,7 +835,7 @@ class Purchases internal constructor(
     companion object {
 
         @InternalRevenueCatAPI
-        fun getImageLoader(context: Context): ImageLoader {
+        fun getImageLoader(context: Context): Any {
             return PurchasesOrchestrator.getImageLoader(context)
         }
 

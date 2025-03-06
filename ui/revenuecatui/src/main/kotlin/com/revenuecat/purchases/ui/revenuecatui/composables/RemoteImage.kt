@@ -122,7 +122,7 @@ private fun Image(
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
     val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
-        Purchases.getImageLoader(applicationContext)
+        Purchases.getImageLoader(applicationContext) as ImageLoader
     }
 
     val imageRequest = ImageRequest.Builder(LocalContext.current)
