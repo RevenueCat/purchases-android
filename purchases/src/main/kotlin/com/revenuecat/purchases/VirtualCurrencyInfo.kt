@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 import org.json.JSONObject
 
@@ -9,8 +10,9 @@ import org.json.JSONObject
  *
  * @property balance The current balance of the virtual currency.
  */
+@Poko
 @Parcelize
-data class VirtualCurrencyInfo internal constructor(
+class VirtualCurrencyInfo internal constructor(
     val balance: Long,
 ) : Parcelable {
     override fun equals(other: Any?): Boolean {
