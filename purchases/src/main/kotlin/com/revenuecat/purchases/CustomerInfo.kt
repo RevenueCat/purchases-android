@@ -41,7 +41,8 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class CustomerInfo @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) constructor(
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+data class CustomerInfo(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
@@ -231,7 +232,8 @@ data class CustomerInfo @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
  * won't be considered different if they were refreshed at a different point in time
  * jsonObject is excluded because we're already using the parsed fields for comparisons.
  */
-private data class ComparableData @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) constructor(
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+private data class ComparableData(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
