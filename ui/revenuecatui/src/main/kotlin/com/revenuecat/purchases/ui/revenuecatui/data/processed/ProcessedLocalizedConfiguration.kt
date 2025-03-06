@@ -42,9 +42,7 @@ internal data class ProcessedLocalizedConfiguration(
                 // with pre-existing behavior of this feature
                 // but ONLY IF overrides are NOT being used
                 val offerBadge = if (offerOverride != null) {
-                    offerOverride.let { override ->
-                        override.offerBadge?.processVariables()
-                    }
+                    offerOverride.offerBadge?.processVariables()
                 } else {
                     context.discountRelativeToMostExpensivePerMonth?.let {
                         variableDataProvider.localizedRelativeDiscount(it)
