@@ -23,7 +23,14 @@ import kotlinx.serialization.encoding.Encoder
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class LocaleId(@get:JvmSynthetic val value: String)
+value class LocaleId(@get:JvmSynthetic val value: String) {
+
+    val language: String
+        get() = value.split('-', '_').getOrNull(0).orEmpty()
+
+    val region: String
+        get() = value.split('-', '_').getOrNull(1).orEmpty()
+}
 
 @InternalRevenueCatAPI
 @Serializable
