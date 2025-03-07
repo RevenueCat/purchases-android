@@ -197,7 +197,10 @@ internal sealed interface PaywallState {
                 // Configured locales take precedence over the default one.
                 map { it.toLocaleId() }.plus(locales.head)
                     // Find the first locale we have a LocalizationDictionary for.
-                    .first { id -> locales.contains(id) }
+                    .firstNotNullOf { locale ->
+                        locale.takeIf { locales.contains(it) }
+                            ?: locale.languageOnly().takeIf { locales.contains(it) }
+                    }
 
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()
@@ -205,6 +208,9 @@ internal sealed interface PaywallState {
                     .mapNotNull { product -> product.pricePerMonth() }
                     .maxByOrNull { price -> price.amountMicros }
                     ?.amountMicros
+
+            private fun LocaleId.languageOnly(): LocaleId =
+                LocaleId(language)
         }
     }
 }

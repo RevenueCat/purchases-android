@@ -64,14 +64,16 @@ internal abstract class BaseHTTPClientTest {
         dateProvider: DateProvider = DefaultDateProvider(),
         eTagManager: ETagManager = mockETagManager,
         signingManager: SigningManager? = null,
-        storefrontProvider: StorefrontProvider = mockStorefrontProvider
+        storefrontProvider: StorefrontProvider = mockStorefrontProvider,
+        localeProvider: LocaleProvider = DefaultLocaleProvider()
     ) = HTTPClient(
         appConfig,
         eTagManager,
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
         storefrontProvider,
-        dateProvider
+        dateProvider,
+        localeProvider = localeProvider
     )
 
     protected fun createAppConfig(

@@ -5,7 +5,11 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
 
 internal class CustomerCenterActivity : ComponentActivity() {
@@ -19,13 +23,20 @@ internal class CustomerCenterActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            CustomerCenter(
-                modifier = Modifier.fillMaxSize(),
-                onDismiss = {
-                    setResult(RESULT_OK)
-                    finish()
-                },
-            )
+            val isDarkTheme = isSystemInDarkTheme()
+            val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
+
+            MaterialTheme(
+                colorScheme = colorScheme,
+            ) {
+                CustomerCenter(
+                    modifier = Modifier.fillMaxSize(),
+                    onDismiss = {
+                        setResult(RESULT_OK)
+                        finish()
+                    },
+                )
+            }
         }
     }
 }

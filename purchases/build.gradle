@@ -54,7 +54,7 @@ android {
 
 tasks.withType(KotlinCompilationTask).configureEach {
     compilerOptions {
-        freeCompilerArgs.add("-Xjvm-default=all")
+        freeCompilerArgs.add("-Xjvm-default=all-compatibility")
     }
 
     // Opt-in to InternalRevenueCatAPI for tests only. This avoids having to explicitly opt in for every test file
