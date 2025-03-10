@@ -20,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.languageOnly
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -36,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -167,6 +169,48 @@ class PaywallComponentDataValidationTests {
         assertNotNull(validated.errors)
         assertEquals(validated.errors?.size, 1)
         assertEquals(validated.errors?.first(), AllLocalizationsMissing(defaultLocale))
+    }
+
+    @Test
+    fun `Should use language-only localizations if available`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        // Our localizations map contains the default locale without a region.
+        val localizations = mapOf(
+            defaultLocale.languageOnly() to mapOf(LocalizationKey("key") to LocalizationData.Text("value"))
+        )
+        // Our variableLocalizations map contains the default locale without a region.
+        val variableLocalizations = mapOf(
+            defaultLocale.languageOnly() to variableLocalizationKeysForEnUs()
+        )
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = emptyList()),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(UiConfig(localizations = variableLocalizations), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        check(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        assertEquals(defaultLocale, validated.locales.head)
     }
 
     @Test
