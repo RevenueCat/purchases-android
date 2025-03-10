@@ -69,7 +69,7 @@ data class CustomerInfo(
         originalAppUserId: String,
         managementURL: Uri?,
         originalPurchaseDate: Date?,
-        jsonObject: JSONObject
+        jsonObject: JSONObject,
     ) : this(
         entitlements = entitlements,
         allExpirationDatesByProduct = allExpirationDatesByProduct,
@@ -81,7 +81,7 @@ data class CustomerInfo(
         managementURL = managementURL,
         originalPurchaseDate = originalPurchaseDate,
         virtualCurrencies = emptyMap(),
-        jsonObject = jsonObject
+        jsonObject = jsonObject,
     )
 
     /**
