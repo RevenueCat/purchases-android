@@ -15,6 +15,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.languageOnly
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
@@ -208,9 +209,6 @@ internal sealed interface PaywallState {
                     .mapNotNull { product -> product.pricePerMonth() }
                     .maxByOrNull { price -> price.amountMicros }
                     ?.amountMicros
-
-            private fun LocaleId.languageOnly(): LocaleId =
-                LocaleId(language)
         }
     }
 }
