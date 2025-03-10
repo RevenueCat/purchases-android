@@ -58,6 +58,32 @@ data class CustomerInfo(
     private val jsonObject: JSONObject,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
+    @Deprecated("Use constructor with virtualCurrencies parameter")
+    constructor(
+        entitlements: EntitlementInfos,
+        allExpirationDatesByProduct: Map<String, Date?>,
+        allPurchaseDatesByProduct: Map<String, Date?>,
+        requestDate: Date,
+        schemaVersion: Int,
+        firstSeen: Date,
+        originalAppUserId: String,
+        managementURL: Uri?,
+        originalPurchaseDate: Date?,
+        jsonObject: JSONObject
+    ) : this(
+        entitlements = entitlements,
+        allExpirationDatesByProduct = allExpirationDatesByProduct,
+        allPurchaseDatesByProduct = allPurchaseDatesByProduct,
+        requestDate = requestDate,
+        schemaVersion = schemaVersion,
+        firstSeen = firstSeen,
+        originalAppUserId = originalAppUserId,
+        managementURL = managementURL,
+        originalPurchaseDate = originalPurchaseDate,
+        virtualCurrencies = emptyMap(),
+        jsonObject = jsonObject
+    )
+
     /**
      * @return Set of active subscription productIds
      *
