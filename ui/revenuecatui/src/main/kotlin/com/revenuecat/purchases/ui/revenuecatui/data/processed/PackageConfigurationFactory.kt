@@ -279,7 +279,7 @@ internal object PackageConfigurationFactory {
         storefrontCountryCode: String?,
         zeroDecimalPlaceCountries: List<String>,
     ): List<TemplateConfiguration.PackageInfo> {
-        val filtered = from.filter { filter.contains(it.identifier) }
+        val filtered = filter.mapNotNull { from.find { pkg -> pkg.identifier == it } }
         val mostExpensivePricePerMonth = mostExpensivePricePerMonth(filtered.map { it })
 
         return filtered

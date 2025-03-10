@@ -15,6 +15,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.languageOnly
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
@@ -160,7 +161,14 @@ internal sealed interface PaywallState {
             val currentDate: Date
                 get() = dateProvider()
 
-            fun update(localeList: FrameworkLocaleList? = null, selectedTabIndex: Int? = null) {
+            var actionInProgress by mutableStateOf(false)
+                private set
+
+            fun update(
+                localeList: FrameworkLocaleList? = null,
+                selectedTabIndex: Int? = null,
+                actionInProgress: Boolean? = null,
+            ) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
 
                 if (selectedTabIndex != null) {
@@ -171,6 +179,8 @@ internal sealed interface PaywallState {
 
                     selectedPackage = selectedPackageByTab[selectedTabIndex] ?: initialSelectedPackageOutsideTabs
                 }
+
+                if (actionInProgress != null) this.actionInProgress = actionInProgress
             }
 
             fun update(selectedPackage: Package) {
@@ -188,7 +198,10 @@ internal sealed interface PaywallState {
                 // Configured locales take precedence over the default one.
                 map { it.toLocaleId() }.plus(locales.head)
                     // Find the first locale we have a LocalizationDictionary for.
-                    .first { id -> locales.contains(id) }
+                    .firstNotNullOf { locale ->
+                        locale.takeIf { locales.contains(it) }
+                            ?: locale.languageOnly().takeIf { locales.contains(it) }
+                    }
 
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()
