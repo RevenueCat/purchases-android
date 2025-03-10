@@ -648,23 +648,36 @@ DESC
   end
 
   desc "Verify RevenueCat UI snapshots"
-  lane :verify_revenuecatui_snapshots do
+  lane :verify_revenuecatui_snapshots do |options|
     fetch_snapshots
     Dir.chdir("..") do
       sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
       sh "cp -rf #{snapshots_repo_name}/revenuecatui/** #{revenuecatui_snapshots_location}/"
     end
-    gradle(task: "ui:revenuecatui:verifyPaparazziDebug")
+    
+    gradle_task = "ui:revenuecatui:verifyPaparazziDebug"
+    if options[:tests]
+      gradle(task: gradle_task, flags: "--tests=\"#{options[:tests]}\"")
+    else
+      gradle(task: gradle_task)
+    end
   end
 
   desc "Record RevenueCat UI snapshots"
-  lane :record_revenuecatui_snapshots do
+  lane :record_revenuecatui_snapshots do |options|
     fetch_snapshots
     Dir.chdir("..") do
       sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
       sh "rm", "-rf", "#{snapshots_repo_name}/revenuecatui/*"
     end
-    gradle(task: "ui:revenuecatui:recordPaparazziDebug")
+    
+    gradle_task = "ui:revenuecatui:recordPaparazziDebug"
+    if options[:tests]
+      gradle(task: gradle_task, flags: "--tests=\"#{options[:tests]}\"")
+    else
+      gradle(task: gradle_task)
+    end
+    
     Dir.chdir("..") do
       sh "cp -rf #{revenuecatui_snapshots_location}/** #{snapshots_repo_name}/revenuecatui"
     end
