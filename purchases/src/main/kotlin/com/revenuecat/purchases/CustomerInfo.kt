@@ -37,9 +37,11 @@ import java.util.Date
  * If there are multiple for different platforms, it will point to the Play Store
  * @property originalPurchaseDate the purchase date for the version of the application when the user bought the app.
  * Use this for grandfathering users when migrating to subscriptions. This can be null, see -Purchases.restorePurchases
+ * @property virtualCurrencies information of the virtual currencies that the customer owns.
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 data class CustomerInfo(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
@@ -50,8 +52,37 @@ data class CustomerInfo(
     val originalAppUserId: String,
     val managementURL: Uri?,
     val originalPurchaseDate: Date?,
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    val virtualCurrencies: Map<String, VirtualCurrencyInfo>,
     private val jsonObject: JSONObject,
 ) : Parcelable, RawDataContainer<JSONObject> {
+
+    @Deprecated("Use constructor with virtualCurrencies parameter")
+    constructor(
+        entitlements: EntitlementInfos,
+        allExpirationDatesByProduct: Map<String, Date?>,
+        allPurchaseDatesByProduct: Map<String, Date?>,
+        requestDate: Date,
+        schemaVersion: Int,
+        firstSeen: Date,
+        originalAppUserId: String,
+        managementURL: Uri?,
+        originalPurchaseDate: Date?,
+        jsonObject: JSONObject,
+    ) : this(
+        entitlements = entitlements,
+        allExpirationDatesByProduct = allExpirationDatesByProduct,
+        allPurchaseDatesByProduct = allPurchaseDatesByProduct,
+        requestDate = requestDate,
+        schemaVersion = schemaVersion,
+        firstSeen = firstSeen,
+        originalAppUserId = originalAppUserId,
+        managementURL = managementURL,
+        originalPurchaseDate = originalPurchaseDate,
+        virtualCurrencies = emptyMap(),
+        jsonObject = jsonObject,
+    )
 
     /**
      * @return Set of active subscription productIds
@@ -227,6 +258,7 @@ data class CustomerInfo(
  * won't be considered different if they were refreshed at a different point in time
  * jsonObject is excluded because we're already using the parsed fields for comparisons.
  */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private data class ComparableData(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
@@ -235,7 +267,9 @@ private data class ComparableData(
     val firstSeen: Date,
     val originalAppUserId: String,
     val originalPurchaseDate: Date?,
+    val virtualCurrencies: Map<String, VirtualCurrencyInfo>,
 ) {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     constructor(
         customerInfo: CustomerInfo,
     ) : this(
@@ -246,5 +280,6 @@ private data class ComparableData(
         firstSeen = customerInfo.firstSeen,
         originalAppUserId = customerInfo.originalAppUserId,
         originalPurchaseDate = customerInfo.originalPurchaseDate,
+        virtualCurrencies = customerInfo.virtualCurrencies,
     )
 }

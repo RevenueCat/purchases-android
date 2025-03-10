@@ -31,6 +31,7 @@ class ParcelableTests {
         )
     )
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `CustomerInfo is Parcelable`() = testParcelization(
         CustomerInfo(
@@ -46,7 +47,10 @@ class ParcelableTests {
             firstSeen = Date(System.currentTimeMillis()),
             originalAppUserId = "original_app_user_id",
             managementURL = Uri.parse("https://management.com"),
-            originalPurchaseDate = Date(System.currentTimeMillis())
+            originalPurchaseDate = Date(System.currentTimeMillis()),
+            virtualCurrencies =  mapOf(
+                Pair("COIN", VirtualCurrencyInfo(balance = 100))
+            )
         )
     )
 
@@ -91,6 +95,16 @@ class ParcelableTests {
         GoogleReplacementMode.values().forEach { testParcelization(it, true) }
         val nullMode: GoogleReplacementMode? = null
         testParcelization(nullMode, true)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `VirtualCurrencyInfo is Parcelable`() {
+        testParcelization(
+            VirtualCurrencyInfo(
+                balance = 100
+            )
+        )
     }
 
     private fun getEntitlementInfo(
