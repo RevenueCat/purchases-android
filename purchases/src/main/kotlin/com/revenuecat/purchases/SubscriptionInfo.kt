@@ -1,9 +1,11 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.EntitlementInfoHelper
 import java.util.Date
+import java.util.Locale
 
 /**
  * Subscription purchases of the Customer.
@@ -75,6 +77,22 @@ class SubscriptionInfo(
      */
     val storeTransactionId: String?,
     /**
+     * Date when the subscription will auto-resume.
+     */
+    val autoResumeDate: Date?,
+    /**
+     * The display name of the subscription.
+     */
+    val displayName: String?,
+    /**
+     * Paid price for the subscription.
+     */
+    val price: Price?,
+    /**
+     * The identifier of the product plan.
+     */
+    val productPlanIdentifier: String?,
+    /**
      * The date the request was made.
      */
     private val requestDate: Date,
@@ -112,7 +130,13 @@ class SubscriptionInfo(
                 refundedAt: $refundedAt,
                 storeTransactionId: $storeTransactionId,
                 isActive: $isActive,
-                willRenew: $willRenew
+                willRenew: $willRenew,
+                price: $price,
+                productPlanIdentifier: $productPlanIdentifier,
+                displayName: $displayName,
+                autoResumeDate: $autoResumeDate,
+                requestDate: $requestDate,
+                productIdentifier: $productIdentifier
             }
         """.trimIndent()
     }
@@ -121,6 +145,7 @@ class SubscriptionInfo(
         productIdentifier: String,
         requestDate: Date,
         response: SubscriptionInfoResponse,
+        locale: Locale = Locale.getDefault(),
     ) : this(
         productIdentifier = productIdentifier,
         requestDate = requestDate,
@@ -136,5 +161,9 @@ class SubscriptionInfo(
         periodType = response.periodType,
         refundedAt = response.refundedAt,
         storeTransactionId = response.storeTransactionId,
+        autoResumeDate = response.autoResumeDate,
+        displayName = response.displayName,
+        price = response.price?.toPrice(locale),
+        productPlanIdentifier = response.productPlanIdentifier,
     )
 }
