@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -182,16 +183,19 @@ private fun TextComponentView_Preview_Default() {
 @Composable
 private fun TextComponentView_Preview_HeadingXlExtraBold() {
     // Since we use LocalTextStyle, a MaterialTheme can influence the rendering.
+    // We expect the TextComponentStyle to override the MaterialTheme and LocalTextStyle.
     MaterialTheme {
-        TextComponentView(
-            style = previewTextComponentStyle(
-                text = "Experience Pro today!",
-                color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-                fontSize = 34,
-                fontWeight = FontWeight.EXTRA_BOLD,
-            ),
-            state = previewEmptyState(),
-        )
+        ProvideTextStyle(LocalTextStyle.current.copy(color = Color.Blue)) {
+            TextComponentView(
+                style = previewTextComponentStyle(
+                    text = "Experience Pro today!",
+                    color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
+                    fontSize = 34,
+                    fontWeight = FontWeight.EXTRA_BOLD,
+                ),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
