@@ -33,10 +33,10 @@ internal fun Modifier.background(
     when (background) {
         is BackgroundStyle.Color -> this.background(color = background.color, shape = shape)
         is BackgroundStyle.Image ->
-            this.paint(
-                painter = background.painter,
-                contentScale = background.contentScale,
-            )
+            this.clip(shape)
+                .paint(
+                    painter = background.painter,
+                    contentScale = background.contentScale,
+                )
                 .applyIfNotNull(background.colorOverlay) { underlay(it, shape) }
-                .clip(shape)
     }

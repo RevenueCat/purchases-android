@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.timeline
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -27,6 +28,7 @@ import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignme
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
@@ -176,7 +178,7 @@ internal fun TimelineComponentView(
 @Composable
 private fun TimelineComponentView_Align_Title_Preview() {
     ProvidePreviewImageLoader(previewImageLoader()) {
-        Box {
+        Box(modifier = Modifier.background(Color.White)) {
             TimelineComponentView(
                 style = previewStyle(iconAlignment = TimelineComponent.IconAlignment.Title),
                 state = previewEmptyState(),
@@ -189,7 +191,7 @@ private fun TimelineComponentView_Align_Title_Preview() {
 @Composable
 private fun TimelineComponentView_Align_TitleAndDescription_Preview() {
     ProvidePreviewImageLoader(previewImageLoader()) {
-        Box {
+        Box(modifier = Modifier.background(Color.White)) {
             TimelineComponentView(
                 style = previewStyle(iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription),
                 state = previewEmptyState(),
@@ -202,7 +204,7 @@ private fun TimelineComponentView_Align_TitleAndDescription_Preview() {
 @Composable
 private fun TimelineComponentView_Connector_Margin_Preview() {
     ProvidePreviewImageLoader(previewImageLoader()) {
-        Box {
+        Box(modifier = Modifier.background(Color.White)) {
             TimelineComponentView(
                 style = previewStyle(
                     iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
