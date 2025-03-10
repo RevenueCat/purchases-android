@@ -77,10 +77,10 @@ object Responses {
                     },
                     "virtual_currencies": {
                         "GLD": {
-                            "amount": 100
+                            "balance": 100
                         },
                         "SLV": {
-                            "amount": 1000
+                            "balance": 1000
                         }
                     },
                     "subscriptions": {
