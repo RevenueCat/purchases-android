@@ -33,6 +33,10 @@ value class LocaleId(@get:JvmSynthetic val value: String) {
 }
 
 @InternalRevenueCatAPI
+fun LocaleId.languageOnly(): LocaleId =
+    LocaleId(language)
+
+@InternalRevenueCatAPI
 @Serializable
 @JvmInline
 value class LocalizationKey(@get:JvmSynthetic val value: String)
