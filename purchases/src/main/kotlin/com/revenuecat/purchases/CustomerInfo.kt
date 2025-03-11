@@ -260,7 +260,6 @@ data class CustomerInfo(
  * won't be considered different if they were refreshed at a different point in time
  * jsonObject is excluded because we're already using the parsed fields for comparisons.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private data class ComparableData(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
@@ -269,9 +268,7 @@ private data class ComparableData(
     val firstSeen: Date,
     val originalAppUserId: String,
     val originalPurchaseDate: Date?,
-    val virtualCurrencies: Map<String, VirtualCurrencyInfo>,
 ) {
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     constructor(
         customerInfo: CustomerInfo,
     ) : this(
@@ -282,6 +279,5 @@ private data class ComparableData(
         firstSeen = customerInfo.firstSeen,
         originalAppUserId = customerInfo.originalAppUserId,
         originalPurchaseDate = customerInfo.originalPurchaseDate,
-        virtualCurrencies = customerInfo.virtualCurrencies,
     )
 }
