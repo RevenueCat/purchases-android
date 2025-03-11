@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
@@ -285,15 +286,17 @@ class Purchases internal constructor(
             context: Context,
             apiKey: String,
             appUserID: String,
+            configurationBuilder: PurchasesConfiguration.Builder = PurchasesConfiguration.Builder(context, apiKey)
+                .appUserID(appUserID)
+                .pendingTransactionsForPrepaidPlansEnabled(true),
         ): Purchases {
             if (isConfigured) {
                 infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
             }
-            val configuration = PurchasesConfiguration.Builder(context, apiKey)
-                .appUserID(appUserID)
+            val configuration = configurationBuilder
                 .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
-                .pendingTransactionsForPrepaidPlansEnabled(true)
                 .build()
+
             return PurchasesFactory(
                 isDebugBuild = DefaultIsDebugBuildProvider(context),
             ).createPurchases(
