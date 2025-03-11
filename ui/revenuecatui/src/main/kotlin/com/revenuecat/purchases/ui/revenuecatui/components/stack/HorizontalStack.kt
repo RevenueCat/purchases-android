@@ -28,8 +28,8 @@ internal fun HorizontalStack(
     size: Size,
     dimension: Dimension.Horizontal,
     spacing: Dp,
-    content: HorizontalStackScope.() -> Unit,
     modifier: Modifier = Modifier,
+    content: HorizontalStackScope.() -> Unit,
 ) {
     Row(
         modifier = modifier,

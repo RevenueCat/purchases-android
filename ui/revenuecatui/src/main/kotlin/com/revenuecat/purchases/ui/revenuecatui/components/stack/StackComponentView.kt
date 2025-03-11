@@ -509,53 +509,51 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    content = {
-                        items(stackState.children) { _, child ->
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                modifier = Modifier
-                                    .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                    .padding(child.horizontalStackChildPadding(topSystemBarsPadding))
-                                    .alpha(contentAlpha),
-                            )
-                        }
-                    },
                     modifier = modifier
                         .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
                         }
                         .then(rootModifier),
-                )
+                ) {
+                    items(stackState.children) { _, child ->
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            modifier = Modifier
+                                .conditional(child.size.width == Fill) { Modifier.weight(1f) }
+                                .padding(child.horizontalStackChildPadding(topSystemBarsPadding))
+                                .alpha(contentAlpha),
+                        )
+                    }
+                }
 
                 is Dimension.Vertical -> VerticalStack(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    content = {
-                        items(stackState.children) { index, child ->
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                modifier = Modifier
-                                    .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                                    .padding(
-                                        child.verticalStackChildPadding(isFirst = index == 0, topSystemBarsPadding),
-                                    )
-                                    .alpha(contentAlpha),
-                            )
-                        }
-                    },
                     modifier = modifier
                         .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
                         }
                         .then(rootModifier),
-                )
+                ) {
+                    items(stackState.children) { index, child ->
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            modifier = Modifier
+                                .conditional(child.size.height == Fill) { Modifier.weight(1f) }
+                                .padding(
+                                    child.verticalStackChildPadding(isFirst = index == 0, topSystemBarsPadding),
+                                )
+                                .alpha(contentAlpha),
+                        )
+                    }
+                }
 
                 is Dimension.ZLayer -> Box(
                     modifier = modifier

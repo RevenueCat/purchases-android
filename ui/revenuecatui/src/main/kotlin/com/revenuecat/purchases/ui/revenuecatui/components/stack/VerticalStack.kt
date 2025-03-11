@@ -28,8 +28,8 @@ internal fun VerticalStack(
     size: Size,
     dimension: Dimension.Vertical,
     spacing: Dp,
-    content: VerticalStackScope.() -> Unit,
     modifier: Modifier = Modifier,
+    content: VerticalStackScope.() -> Unit,
 ) {
     Column(
         modifier = modifier,
