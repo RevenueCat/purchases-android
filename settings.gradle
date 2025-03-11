@@ -10,18 +10,18 @@ def isJitpack = System.getenv('JITPACK') == 'true'
 
 if (!isJitpack) {
     include ':integration-tests'
+    include 'examples:purchase-tester'
+    include ':examples:paywall-tester'
+    include ':test-apps:testpurchasesandroidcompatibility'
+    include ':test-apps:testpurchasesuiandroidcompatibility'
+    include ':examples:web-purchase-redemption-sample'
 } else {
     println "Building on JitPack - excluding integration-tests module"
 }
 
 include ':feature:amazon'
 include ':purchases'
-include 'examples:purchase-tester'
 include ':api-tester'
 include 'ui:debugview'
 include ':ui:revenuecatui'
-include ':examples:paywall-tester'
-include ':test-apps:testpurchasesandroidcompatibility'
-include ':test-apps:testpurchasesuiandroidcompatibility'
-include ':examples:web-purchase-redemption-sample'
 include ':dokka-hide-internal'
