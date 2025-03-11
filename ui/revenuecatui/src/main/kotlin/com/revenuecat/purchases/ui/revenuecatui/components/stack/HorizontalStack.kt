@@ -20,6 +20,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 
+/**
+ * A horizontal stack of components which properly handles the arrangement of items.
+ */
 @Composable
 internal fun HorizontalStack(
     size: Size,
@@ -60,15 +63,15 @@ internal fun HorizontalStack(
         }
 
         edgeSpacerIfNeeded()
-        scope.content.invoke(this)
+        scope.rowContent(this)
         edgeSpacerIfNeeded()
     }
 }
 
 internal interface HorizontalStackScope {
     fun items(
-        children: List<ComponentStyle>,
-        itemContent: @Composable RowScope.(index: Int, child: ComponentStyle) -> Unit,
+        items: List<ComponentStyle>,
+        itemContent: @Composable RowScope.(item: ComponentStyle) -> Unit,
     )
 }
 
@@ -78,20 +81,20 @@ private class HorizontalStackScopeImpl(
     private val fillSpaceSpacer: @Composable (Float) -> Unit,
     private val width: SizeConstraint,
 ) : HorizontalStackScope {
-    var content: @Composable RowScope.() -> Unit = {}
-    private var hasAnyChildrenWithFillWidth = false
+    private var hasAnyItemsWithFillWidth = false
+    var rowContent: @Composable RowScope.() -> Unit = {}
     val shouldApplyFillSpacers: Boolean
-        get() = width != Fit && !hasAnyChildrenWithFillWidth
+        get() = width != Fit && !hasAnyItemsWithFillWidth
 
     override fun items(
-        children: List<ComponentStyle>,
-        itemContent: @Composable RowScope.(index: Int, child: ComponentStyle) -> Unit,
+        items: List<ComponentStyle>,
+        itemContent: @Composable RowScope.(item: ComponentStyle) -> Unit,
     ) {
-        hasAnyChildrenWithFillWidth = children.any { it.size.width == Fill }
-        content = {
-            children.forEachIndexed { index, child ->
-                val isLast = index == children.size - 1
-                itemContent(index, child)
+        hasAnyItemsWithFillWidth = items.any { it.size.width == Fill }
+        rowContent = {
+            items.forEachIndexed { index, item ->
+                val isLast = index == items.size - 1
+                itemContent(item)
 
                 if (distribution.usesAllAvailableSpace && !isLast) {
                     Spacer(modifier = Modifier.widthIn(min = spacing))
