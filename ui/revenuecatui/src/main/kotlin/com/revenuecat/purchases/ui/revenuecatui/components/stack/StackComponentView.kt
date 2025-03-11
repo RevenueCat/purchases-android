@@ -536,21 +536,15 @@ private fun MainStackComponent(
                     spacing = stackState.spacing,
                     content = {
                         items(stackState.children) { index, child ->
-                            // In a Vertical container, we only want to apply topSystemBarsPadding to the first child,
-                            // except when that child has `ignoreTopWindowInsets` set to true.
-                            val childPadding = if (index != 0 || child.ignoreTopWindowInsets) {
-                                PaddingValues(all = 0.dp)
-                            } else {
-                                topSystemBarsPadding
-                            }
-
                             ComponentView(
                                 style = child,
                                 state = state,
                                 onClick = clickHandler,
                                 modifier = Modifier
                                     .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                                    .padding(childPadding)
+                                    .padding(
+                                        child.verticalStackChildPadding(isFirst = index == 0, topSystemBarsPadding),
+                                    )
                                     .alpha(contentAlpha),
                             )
                         }
@@ -738,6 +732,18 @@ private val ComponentStyle.ignoreTopWindowInsets: Boolean
 
 private fun ComponentStyle.horizontalStackChildPadding(topSystemBarsPadding: PaddingValues): PaddingValues =
     if (ignoreTopWindowInsets) {
+        PaddingValues(all = 0.dp)
+    } else {
+        topSystemBarsPadding
+    }
+
+private fun ComponentStyle.verticalStackChildPadding(
+    isFirst: Boolean,
+    topSystemBarsPadding: PaddingValues,
+): PaddingValues =
+    // In a Vertical container, we only want to apply topSystemBarsPadding to the first child,
+    // except when that child has `ignoreTopWindowInsets` set to true.
+    if (!isFirst || ignoreTopWindowInsets) {
         PaddingValues(all = 0.dp)
     } else {
         topSystemBarsPadding
