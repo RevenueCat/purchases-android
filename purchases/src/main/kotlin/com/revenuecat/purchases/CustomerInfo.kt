@@ -81,7 +81,7 @@ data class CustomerInfo(
         originalAppUserId = originalAppUserId,
         managementURL = managementURL,
         originalPurchaseDate = originalPurchaseDate,
-        jsonObject = jsonObject
+        jsonObject = jsonObject,
     ) {
         this.virtualCurrencies = virtualCurrencies
     }

@@ -36,8 +36,8 @@ private class CustomerInfoAPI {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun checkExperimental(customerInfo: CustomerInfo) {
-            with(customerInfo) {
-                val virtualCurrencies: Map<String, VirtualCurrencyInfo> = virtualCurrencies
-            }
+        with(customerInfo) {
+            val virtualCurrencies: Map<String, VirtualCurrencyInfo> = virtualCurrencies
         }
+    }
 }
