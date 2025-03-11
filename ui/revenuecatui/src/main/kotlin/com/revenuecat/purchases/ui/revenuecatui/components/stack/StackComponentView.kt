@@ -512,11 +512,27 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    topSystemBarsPadding = topSystemBarsPadding,
-                    children = stackState.children,
-                    state = state,
-                    clickHandler = clickHandler,
-                    contentAlpha = contentAlpha,
+                    hasAnyChildrenWithFillWidth = stackState.children.any { it.size.width == Fill },
+                    content = {
+                        items(stackState.children.size) { index ->
+                            val child = stackState.children[index]
+                            val childPadding = if (child.ignoreTopWindowInsets) {
+                                PaddingValues(all = 0.dp)
+                            } else {
+                                topSystemBarsPadding
+                            }
+
+                            ComponentView(
+                                style = child,
+                                state = state,
+                                onClick = clickHandler,
+                                modifier = Modifier
+                                    .conditional(child.size.width == Fill) { Modifier.weight(1f) }
+                                    .padding(childPadding)
+                                    .alpha(contentAlpha),
+                            )
+                        }
+                    },
                     modifier = modifier
                         .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
