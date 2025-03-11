@@ -1,9 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -17,37 +17,37 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 
 /**
- * A horizontal stack of components which properly handles the arrangement of items.
+ * A vertical stack of components which properly handles the arrangement of items.
  */
 @Composable
-internal fun HorizontalStack(
+internal fun VerticalStack(
     size: Size,
-    dimension: Dimension.Horizontal,
+    dimension: Dimension.Vertical,
     spacing: Dp,
-    content: HorizontalStackScope.() -> Unit,
+    content: VerticalStackScope.() -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Column(
         modifier = modifier,
-        verticalAlignment = dimension.alignment.toAlignment(),
-        horizontalArrangement = dimension.distribution.toHorizontalArrangement(
+        verticalArrangement = dimension.distribution.toVerticalArrangement(
             spacing = spacing,
         ),
+        horizontalAlignment = dimension.alignment.toAlignment(),
     ) {
         val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
             Spacer(modifier = Modifier.weight(weight))
         }
         val latestContent by rememberUpdatedState(content)
         val scope = remember(dimension.distribution, spacing, latestContent) {
-            HorizontalStackScopeImpl(
+            VerticalStackScopeImpl(
                 distribution = dimension.distribution,
                 spacing = spacing,
                 fillSpaceSpacer = fillSpaceSpacer,
-                width = size.width,
+                height = size.height,
             ).apply(latestContent)
         }
 
@@ -63,41 +63,41 @@ internal fun HorizontalStack(
         }
 
         edgeSpacerIfNeeded()
-        scope.rowContent(this)
+        scope.columnContent(this)
         edgeSpacerIfNeeded()
     }
 }
 
-internal interface HorizontalStackScope {
+internal interface VerticalStackScope {
     fun items(
         items: List<ComponentStyle>,
-        itemContent: @Composable RowScope.(index: Int, item: ComponentStyle) -> Unit,
+        itemContent: @Composable ColumnScope.(index: Int, item: ComponentStyle) -> Unit,
     )
 }
 
-private class HorizontalStackScopeImpl(
+private class VerticalStackScopeImpl(
     private val distribution: FlexDistribution,
     private val spacing: Dp,
     private val fillSpaceSpacer: @Composable (Float) -> Unit,
-    private val width: SizeConstraint,
-) : HorizontalStackScope {
-    private var hasAnyItemsWithFillWidth = false
+    private val height: SizeConstraint,
+) : VerticalStackScope {
+    private var hasAnyItemsWithFillHeight = false
     val shouldApplyFillSpacers: Boolean
-        get() = width != Fit && !hasAnyItemsWithFillWidth
-    var rowContent: @Composable RowScope.() -> Unit = {}
+        get() = height != Fit && !hasAnyItemsWithFillHeight
+    var columnContent: @Composable ColumnScope.() -> Unit = {}
 
     override fun items(
         items: List<ComponentStyle>,
-        itemContent: @Composable RowScope.(index: Int, item: ComponentStyle) -> Unit,
+        itemContent: @Composable ColumnScope.(index: Int, item: ComponentStyle) -> Unit,
     ) {
-        hasAnyItemsWithFillWidth = items.any { it.size.width == Fill }
-        rowContent = {
+        hasAnyItemsWithFillHeight = items.any { it.size.height == Fill }
+        columnContent = {
             items.forEachIndexed { index, item ->
                 val isLast = index == items.size - 1
                 itemContent(index, item)
 
                 if (distribution.usesAllAvailableSpace && !isLast) {
-                    Spacer(modifier = Modifier.widthIn(min = spacing))
+                    Spacer(modifier = Modifier.heightIn(min = spacing))
                     if (shouldApplyFillSpacers) {
                         fillSpaceSpacer(if (distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
                     }
