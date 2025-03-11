@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,7 +62,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
@@ -510,64 +508,22 @@ private fun MainStackComponent(
             )
         } else {
             when (val dimension = stackState.dimension) {
-                is Dimension.Horizontal -> Row(
+                is Dimension.Horizontal -> HorizontalStack(
+                    size = stackState.size,
+                    dimension = dimension,
+                    spacing = stackState.spacing,
+                    topSystemBarsPadding = topSystemBarsPadding,
+                    children = stackState.children,
+                    state = state,
+                    clickHandler = clickHandler,
+                    contentAlpha = contentAlpha,
                     modifier = modifier
                         .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
                         }
                         .then(rootModifier),
-                    verticalAlignment = dimension.alignment.toAlignment(),
-                    horizontalArrangement = dimension.distribution.toHorizontalArrangement(
-                        spacing = stackState.spacing,
-                    ),
-                ) {
-                    val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
-                    val shouldApplyFillSpacers = stackState.size.width != Fit && !hasChildrenWithFillWidth
-                    val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
-                        Spacer(modifier = Modifier.weight(weight))
-                    }
-                    val edgeSpacerIfNeeded = @Composable {
-                        if (shouldApplyFillSpacers &&
-                            (
-                                dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                                    dimension.distribution == FlexDistribution.SPACE_EVENLY
-                                )
-                        ) {
-                            fillSpaceSpacer(1f)
-                        }
-                    }
-
-                    edgeSpacerIfNeeded()
-
-                    stackState.children.forEachIndexed { index, child ->
-                        val isLast = index == stackState.children.size - 1
-                        val childPadding = if (child.ignoreTopWindowInsets) {
-                            PaddingValues(all = 0.dp)
-                        } else {
-                            topSystemBarsPadding
-                        }
-
-                        ComponentView(
-                            style = child,
-                            state = state,
-                            onClick = clickHandler,
-                            modifier = Modifier
-                                .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .padding(childPadding)
-                                .alpha(contentAlpha),
-                        )
-
-                        if (dimension.distribution.usesAllAvailableSpace && !isLast) {
-                            Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
-                            if (shouldApplyFillSpacers) {
-                                fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
-                            }
-                        }
-                    }
-
-                    edgeSpacerIfNeeded()
-                }
+                )
 
                 is Dimension.Vertical -> Column(
                     modifier = modifier
@@ -787,7 +743,7 @@ private fun CornerSize.makeAbsolute(placeable: Placeable, density: Density) =
 private fun CornerSize.makeAbsolute(shapeSize: ComposeSize, density: Density) =
     CornerSize(size = toPx(shapeSize, density))
 
-private val FlexDistribution.usesAllAvailableSpace: Boolean
+internal val FlexDistribution.usesAllAvailableSpace: Boolean
     get() = when (this) {
         FlexDistribution.SPACE_AROUND,
         FlexDistribution.SPACE_BETWEEN,
@@ -800,7 +756,7 @@ private val FlexDistribution.usesAllAvailableSpace: Boolean
         -> false
     }
 
-private val ComponentStyle.ignoreTopWindowInsets: Boolean
+internal val ComponentStyle.ignoreTopWindowInsets: Boolean
     get() = this is ImageComponentStyle && ignoreTopWindowInsets
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
