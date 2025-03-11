@@ -512,10 +512,8 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    hasAnyChildrenWithFillWidth = stackState.children.any { it.size.width == Fill },
                     content = {
-                        items(stackState.children.size) { index ->
-                            val child = stackState.children[index]
+                        items(stackState.children) { index, child ->
                             val childPadding = if (child.ignoreTopWindowInsets) {
                                 PaddingValues(all = 0.dp)
                             } else {
