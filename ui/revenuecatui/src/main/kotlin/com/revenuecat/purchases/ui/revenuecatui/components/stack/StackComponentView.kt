@@ -514,19 +514,13 @@ private fun MainStackComponent(
                     spacing = stackState.spacing,
                     content = {
                         items(stackState.children) { child ->
-                            val childPadding = if (child.ignoreTopWindowInsets) {
-                                PaddingValues(all = 0.dp)
-                            } else {
-                                topSystemBarsPadding
-                            }
-
                             ComponentView(
                                 style = child,
                                 state = state,
                                 onClick = clickHandler,
                                 modifier = Modifier
                                     .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                    .padding(childPadding)
+                                    .padding(child.horizontalStackChildPadding(topSystemBarsPadding))
                                     .alpha(contentAlpha),
                             )
                         }
@@ -770,8 +764,15 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
         -> false
     }
 
-internal val ComponentStyle.ignoreTopWindowInsets: Boolean
+private val ComponentStyle.ignoreTopWindowInsets: Boolean
     get() = this is ImageComponentStyle && ignoreTopWindowInsets
+
+private fun ComponentStyle.horizontalStackChildPadding(topSystemBarsPadding: PaddingValues): PaddingValues =
+    if (ignoreTopWindowInsets) {
+        PaddingValues(all = 0.dp)
+    } else {
+        topSystemBarsPadding
+    }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
