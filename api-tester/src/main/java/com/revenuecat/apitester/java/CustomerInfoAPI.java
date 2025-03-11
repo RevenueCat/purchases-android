@@ -15,7 +15,6 @@ import java.util.Set;
 
 @SuppressWarnings({"unused", "SpellCheckingInspection"})
 final class CustomerInfoAPI {
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     static void check(final CustomerInfo customerInfo) {
         final EntitlementInfos entitlementInfo = customerInfo.getEntitlements();
         final Set<String> asubs = customerInfo.getActiveSubscriptions();
@@ -38,7 +37,10 @@ final class CustomerInfoAPI {
         final Date pde = customerInfo.getPurchaseDateForEntitlement("");
         final Map<String, Date> allExpirationDatesByProduct = customerInfo.getAllExpirationDatesByProduct();
         final Map<String, Date> allPurchaseDatesByProduct = customerInfo.getAllPurchaseDatesByProduct();
+    }
 
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    static void checkExperimental(final CustomerInfo customerInfo) {
         final Map<String, VirtualCurrencyInfo> vcs = customerInfo.getVirtualCurrencies();
     }
 }

@@ -10,7 +10,6 @@ import java.util.Date
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class CustomerInfoAPI {
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun check(customerInfo: CustomerInfo) {
         with(customerInfo) {
             val entitlementInfo: EntitlementInfos = entitlements
@@ -32,7 +31,13 @@ private class CustomerInfoAPI {
             val pde: Date? = getPurchaseDateForEntitlement("")
             val allExpirationDatesByProduct: Map<String, Date?> = allExpirationDatesByProduct
             val allPurchaseDatesByProduct: Map<String, Date?> = allPurchaseDatesByProduct
-            val virtualCurrencies: Map<String, VirtualCurrencyInfo> = virtualCurrencies
         }
     }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    fun checkExperimental(customerInfo: CustomerInfo) {
+            with(customerInfo) {
+                val virtualCurrencies: Map<String, VirtualCurrencyInfo> = virtualCurrencies
+            }
+        }
 }

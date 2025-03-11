@@ -41,7 +41,6 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 data class CustomerInfo(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
@@ -52,13 +51,15 @@ data class CustomerInfo(
     val originalAppUserId: String,
     val managementURL: Uri?,
     val originalPurchaseDate: Date?,
-
-    @ExperimentalPreviewRevenueCatPurchasesAPI
-    val virtualCurrencies: Map<String, VirtualCurrencyInfo>,
     private val jsonObject: JSONObject,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
-    @Deprecated("Use constructor with virtualCurrencies parameter")
+    @IgnoredOnParcel
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    var virtualCurrencies: Map<String, VirtualCurrencyInfo> = emptyMap()
+        private set
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     constructor(
         entitlements: EntitlementInfos,
         allExpirationDatesByProduct: Map<String, Date?>,
@@ -69,6 +70,7 @@ data class CustomerInfo(
         originalAppUserId: String,
         managementURL: Uri?,
         originalPurchaseDate: Date?,
+        virtualCurrencies: Map<String, VirtualCurrencyInfo>,
         jsonObject: JSONObject,
     ) : this(
         entitlements = entitlements,
@@ -80,9 +82,10 @@ data class CustomerInfo(
         originalAppUserId = originalAppUserId,
         managementURL = managementURL,
         originalPurchaseDate = originalPurchaseDate,
-        virtualCurrencies = emptyMap(),
-        jsonObject = jsonObject,
-    )
+        jsonObject = jsonObject
+    ) {
+        this.virtualCurrencies = virtualCurrencies
+    }
 
     /**
      * @return Set of active subscription productIds
