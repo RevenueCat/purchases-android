@@ -6,8 +6,15 @@ pluginManagement {
     }
 }
 
+def isJitpack = System.getenv('JITPACK') == 'true'
+
+if (!isJitpack) {
+    include ':integration-tests'
+} else {
+    println "Building on JitPack - excluding integration-tests module"
+}
+
 include ':feature:amazon'
-include ':integration-tests'
 include ':purchases'
 include 'examples:purchase-tester'
 include ':api-tester'
