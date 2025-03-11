@@ -619,6 +619,7 @@ jobs:
               --repo-name "RevenueCat/purchases-android" \
               --debug \
               --client-library paparazzi \
+              --pr-number 2232 \
               --project-root .
       - android/save-build-cache
 
