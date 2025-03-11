@@ -37,7 +37,6 @@ import java.util.Date
  * If there are multiple for different platforms, it will point to the Play Store
  * @property originalPurchaseDate the purchase date for the version of the application when the user bought the app.
  * Use this for grandfathering users when migrating to subscriptions. This can be null, see -Purchases.restorePurchases
- * @property virtualCurrencies information of the virtual currencies that the customer owns.
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
