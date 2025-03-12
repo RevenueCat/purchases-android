@@ -523,7 +523,7 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .padding(child.horizontalStackChildPadding(topSystemBarsPadding))
+                                .padding(child.stackChildPadding(topSystemBarsPadding))
                                 .alpha(contentAlpha),
                         )
                     }
@@ -569,18 +569,12 @@ private fun MainStackComponent(
                     contentAlignment = dimension.alignment.toAlignment(),
                 ) {
                     stackState.children.forEach { child ->
-                        val childPadding = if (child.ignoreTopWindowInsets) {
-                            PaddingValues(all = 0.dp)
-                        } else {
-                            topSystemBarsPadding
-                        }
-
                         ComponentView(
                             style = child,
                             state = state,
                             onClick = clickHandler,
                             modifier = Modifier
-                                .padding(childPadding)
+                                .padding(child.stackChildPadding(topSystemBarsPadding))
                                 .alpha(contentAlpha),
                         )
                     }
@@ -728,13 +722,21 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
 private val ComponentStyle.ignoreTopWindowInsets: Boolean
     get() = this is ImageComponentStyle && ignoreTopWindowInsets
 
-private fun ComponentStyle.horizontalStackChildPadding(topSystemBarsPadding: PaddingValues): PaddingValues =
+/**
+ * Provides the padding to be used for this child of a stack. This should only be used for horizontal and z-layer
+ * stacks. Vertical stacks should use [verticalStackChildPadding].
+ */
+private fun ComponentStyle.stackChildPadding(topSystemBarsPadding: PaddingValues): PaddingValues =
     if (ignoreTopWindowInsets) {
         PaddingValues(all = 0.dp)
     } else {
         topSystemBarsPadding
     }
 
+/**
+ * Provides the padding to be used for this child of a stack. This should only be used for vertical stacks. Horizontal
+ * and z-layer stacks should use [stackChildPadding].
+ */
 private fun ComponentStyle.verticalStackChildPadding(
     isFirst: Boolean,
     topSystemBarsPadding: PaddingValues,
