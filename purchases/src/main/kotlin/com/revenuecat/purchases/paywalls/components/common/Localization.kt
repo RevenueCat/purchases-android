@@ -16,6 +16,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import java.util.Locale as JavaLocale
 
 /**
  * @property value The language tag of this locale, with an underscore separating the language from the region.
@@ -25,16 +26,43 @@ import kotlinx.serialization.encoding.Encoder
 @JvmInline
 value class LocaleId(@get:JvmSynthetic val value: String) {
 
+    companion object {
+        private val scriptByRegion = mapOf(
+            "CN" to "Hans",
+            "SG" to "Hans",
+            "MY" to "Hans",
+            "TW" to "Hant",
+            "HK" to "Hant",
+            "MO" to "Hant",
+        )
+    }
+
+    private val javaLocale: JavaLocale
+        get() = JavaLocale.forLanguageTag(value.replace('_', '-'))
+
     val language: String
-        get() = value.split('-', '_').getOrNull(0).orEmpty()
+        get() = javaLocale.language
+
+    val script: String
+        get() = javaLocale.script.takeUnless { it.isBlank() }
+            ?: scriptByRegion[region]
+            ?: ""
 
     val region: String
-        get() = value.split('-', '_').getOrNull(1).orEmpty()
+        get() = javaLocale.country
 }
 
 @InternalRevenueCatAPI
 fun LocaleId.languageOnly(): LocaleId =
     LocaleId(language)
+
+@InternalRevenueCatAPI
+fun LocaleId.languageAndScriptOnly(): LocaleId =
+    if (script.isNotBlank()) LocaleId("${language}_$script") else languageOnly()
+
+@InternalRevenueCatAPI
+fun LocaleId.withScript(): LocaleId =
+    if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else languageOnly()
 
 @InternalRevenueCatAPI
 @Serializable

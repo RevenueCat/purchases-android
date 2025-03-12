@@ -13,6 +13,7 @@ internal class LocaleIdTests(
 
     data class Args(
         val expectedLanguage: String,
+        val expectedScript: String = "",
         val expectedRegion: String,
     )
 
@@ -47,7 +48,88 @@ internal class LocaleIdTests(
                 "",
                 Args(
                     expectedLanguage = "",
+                    expectedScript = "",
                     expectedRegion = "",
+                ),
+            ),
+            arrayOf(
+                "zh-Hans",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hans",
+                    expectedRegion = "",
+                ),
+            ),
+            arrayOf(
+                "zh-Hant",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hant",
+                    expectedRegion = "",
+                ),
+            ),
+            arrayOf(
+                "zh_Hans",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hans",
+                    expectedRegion = "",
+                ),
+            ),
+            arrayOf(
+                "zh_Hant",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hant",
+                    expectedRegion = "",
+                ),
+            ),
+            arrayOf(
+                "zh-CN",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hans",
+                    expectedRegion = "CN",
+                ),
+            ),
+            arrayOf(
+                "zh-Hans-CN",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hans",
+                    expectedRegion = "CN",
+                ),
+            ),
+            arrayOf(
+                "zh_Hans_CN",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hans",
+                    expectedRegion = "CN",
+                ),
+            ),
+            arrayOf(
+                "zh-Hant-TW",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hant",
+                    expectedRegion = "TW",
+                ),
+            ),
+            arrayOf(
+                "zh_Hant_TW",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hant",
+                    expectedRegion = "TW",
+                ),
+            ),
+            arrayOf(
+                "zh-TW",
+                Args(
+                    expectedLanguage = "zh",
+                    expectedScript = "Hant",
+                    expectedRegion = "TW",
                 ),
             ),
         )
