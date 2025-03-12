@@ -38,7 +38,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.MainActivity
-import com.revenuecat.paywallstester.MainApplication
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -93,7 +92,7 @@ private fun LoadingOfferingsScreen() {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun OfferingsListScreen(
     offeringsState: OfferingsState.Loaded,

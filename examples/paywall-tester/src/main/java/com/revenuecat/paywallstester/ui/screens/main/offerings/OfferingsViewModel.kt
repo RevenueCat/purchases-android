@@ -3,11 +3,8 @@ package com.revenuecat.paywallstester.ui.screens.main.offerings
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.revenuecat.paywallstester.MainApplication
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
-import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.getOfferingsWith
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
