@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.common.LocaleId.Companion.scriptByRegion
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.utils.mapNotNullKeys
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -25,9 +26,9 @@ import java.util.Locale as JavaLocale
 @Serializable
 @JvmInline
 value class LocaleId(@get:JvmSynthetic val value: String) {
-
     companion object {
-        private val scriptByRegion = mapOf(
+        @get:JvmSynthetic
+        internal val scriptByRegion = mapOf(
             "CN" to "Hans",
             "SG" to "Hans",
             "MY" to "Hans",
@@ -36,44 +37,46 @@ value class LocaleId(@get:JvmSynthetic val value: String) {
             "MO" to "Hant",
         )
     }
-
-    private val javaLocale: JavaLocale
-        get() = JavaLocale.forLanguageTag(value.replace('_', '-'))
-
-    val language: String
-        get() = javaLocale.language
-
-    val script: String
-        get() = javaLocale.script.takeUnless { it.isBlank() }
-            ?: scriptByRegion[region]
-            ?: ""
-
-    val region: String
-        get() = javaLocale.country
 }
-
-@OptIn(InternalRevenueCatAPI::class)
-private fun LocaleId.languageOnly(): LocaleId =
-    LocaleId(language)
-
-@OptIn(InternalRevenueCatAPI::class)
-private fun LocaleId.languageAndScriptOnly(): LocaleId =
-    if (script.isNotBlank()) LocaleId("${language}_$script") else languageOnly()
-
-@OptIn(InternalRevenueCatAPI::class)
-private fun LocaleId.withScript(): LocaleId =
-    if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else languageOnly()
 
 @InternalRevenueCatAPI
 fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
     keys.getBestMatch(localeId)?.let { bestMatch -> get(bestMatch) }
 
+/**
+ * Scripts inferred from the region.
+ */
+private val scriptByRegion = mapOf(
+    "CN" to "Hans",
+    "SG" to "Hans",
+    "MY" to "Hans",
+    "TW" to "Hant",
+    "HK" to "Hant",
+    "MO" to "Hant",
+)
+
+/**
+ * Returns the best match to [localeId] in this set, or null if no match is found.
+ */
 @InternalRevenueCatAPI
-fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? =
-    localeId.takeIf { contains(it) }
-        ?: localeId.withScript().takeIf { contains(it) }
-        ?: localeId.languageAndScriptOnly().takeIf { contains(it) }
-        ?: localeId.languageOnly().takeIf { contains(it) }
+fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
+    val javaLocale = JavaLocale.forLanguageTag(localeId.value.replace('_', '-'))
+    val language: String = javaLocale.language
+    val region: String = javaLocale.country
+    val script: String = javaLocale.script.takeUnless { it.isBlank() }
+        ?: scriptByRegion[region]
+        ?: ""
+
+    // Various permutations of the provided [localeId], from least to most specific.
+    val languageId = LocaleId(language)
+    val languageScriptId = if (script.isNotBlank()) LocaleId("${language}_$script") else languageId
+    val languageScriptRegionId = if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else languageId
+
+    return localeId.takeIf { contains(it) }
+        ?: languageScriptRegionId.takeIf { contains(it) }
+        ?: languageScriptId.takeIf { contains(it) }
+        ?: languageId.takeIf { contains(it) }
+}
 
 @InternalRevenueCatAPI
 @Serializable
