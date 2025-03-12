@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import androidx.compose.foundation.layout.Row
