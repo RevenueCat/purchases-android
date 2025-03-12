@@ -1,3 +1,14 @@
+## 8.14.2-vc-beta.1
+## RevenueCat SDK
+
+### Virtual Currency
+
+#### ✨ New Features
+
+Warning: These features are currently in beta and are subject to change in the future without notice.
+
+- Virtual Currency Balances (#2210) via Will Taylor (@fire-at-will)
+
 ## 8.14.1
 ## RevenueCat SDK
 ### 🐞 Bugfixes
