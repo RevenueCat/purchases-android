@@ -89,7 +89,31 @@ internal class StyleFactory(
         var rcPackage: Package? = null,
         var tabControl: TabControlStyle? = null,
         var tabIndex: Int? = null,
-    )
+    ) {
+
+        /**
+         * Temporarily changes the provided properties for the duration of [block].
+         */
+        fun <T> withScope(
+            rcPackage: Package?,
+            tabControl: TabControlStyle?,
+            tabIndex: Int?,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val currentScope = copy()
+            this.rcPackage = rcPackage
+            this.tabControl = tabControl
+            this.tabIndex = tabIndex
+
+            val result = block()
+
+            this.rcPackage = currentScope.rcPackage
+            this.tabControl = currentScope.tabControl
+            this.tabIndex = currentScope.tabIndex
+
+            return result
+        }
+    }
 
     fun create(component: PaywallComponent): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         StyleFactoryScope().createInternal(component)
@@ -117,22 +141,14 @@ internal class StyleFactory(
 
     private fun StyleFactoryScope.createStickyFooterComponentStyle(
         component: StickyFooterComponent,
-    ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> {
-        val currentScope = copy()
-        rcPackage = null
+    ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
         // tabIndex is null because a sticky footer cannot be _inside_ a tab control, which means we'll never have to
         // update the sticky footer based on the tab control being selected.
-        tabIndex = null
-
-        val result = createStackComponentStyle(component.stack).map {
-            StickyFooterComponentStyle(stackComponentStyle = it)
+        withScope(rcPackage = null, tabControl = tabControl, tabIndex = null) {
+            createStackComponentStyle(component.stack).map {
+                StickyFooterComponentStyle(stackComponentStyle = it)
+            }
         }
-
-        rcPackage = currentScope.rcPackage
-        tabIndex = currentScope.tabIndex
-
-        return result
-    }
 
     private fun StyleFactoryScope.createButtonComponentStyle(
         component: ButtonComponent,
@@ -159,26 +175,19 @@ internal class StyleFactory(
                     ),
                 ),
             ).flatMap { rcPackage ->
-                val currentScope = copy()
-                this.rcPackage = rcPackage
                 // If a tab control contains a package, which is already an edge case, the package should not
                 // visually become "selected" if its tab control parent is.
-                this.tabIndex = null
-
-                val result = createStackComponentStyle(
-                    component = component.stack,
-                ).map { stack ->
-                    PackageComponentStyle(
-                        stackComponentStyle = stack,
-                        rcPackage = rcPackage,
-                        isSelectedByDefault = component.isSelectedByDefault,
-                    )
+                withScope(rcPackage = rcPackage, tabControl = tabControl, tabIndex = null) {
+                    createStackComponentStyle(
+                        component = component.stack,
+                    ).map { stack ->
+                        PackageComponentStyle(
+                            stackComponentStyle = stack,
+                            rcPackage = rcPackage,
+                            isSelectedByDefault = component.isSelectedByDefault,
+                        )
+                    }
                 }
-
-                this.rcPackage = currentScope.rcPackage
-                this.tabIndex = currentScope.tabIndex
-
-                result
             }
 
     private fun StyleFactoryScope.createPurchaseButtonComponentStyle(
@@ -477,21 +486,11 @@ internal class StyleFactory(
 
     private fun StyleFactoryScope.createTabControlButtonComponentStyle(
         component: TabControlButtonComponent,
-    ): Result<TabControlButtonComponentStyle, NonEmptyList<PaywallValidationError>> {
-        val currentScope = copy()
-        rcPackage = null
-        tabControl = null
-        tabIndex = component.tabIndex
-
-        val result = createStackComponentStyle(component.stack)
-            .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
-
-        rcPackage = currentScope.rcPackage
-        tabControl = currentScope.tabControl
-        tabIndex = currentScope.tabIndex
-
-        return result
-    }
+    ): Result<TabControlButtonComponentStyle, NonEmptyList<PaywallValidationError>> =
+        withScope(rcPackage = null, tabControl = null, tabIndex = component.tabIndex) {
+            createStackComponentStyle(component.stack)
+                .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
+        }
 
     private fun createTabControlToggleComponentStyle(
         component: TabControlToggleComponent,
@@ -542,29 +541,19 @@ internal class StyleFactory(
 
     private fun StyleFactoryScope.createTabsComponentStyleTabControl(
         componentControl: TabsComponent.TabControl,
-    ): Result<TabControlStyle, NonEmptyList<PaywallValidationError>> {
-        val currentScope = copy()
-        rcPackage = null
-        tabControl = null
-        tabIndex = null
-
-        val result = when (componentControl) {
-            // This stack will contain a TabControlButtonComponent component.
-            is TabsComponent.TabControl.Buttons -> createStackComponentStyle(
-                component = componentControl.stack,
-            ).map { TabControlStyle.Buttons(it) }
-            // This stack will contain a TabControlToggleComponent component.
-            is TabsComponent.TabControl.Toggle -> createStackComponentStyle(
-                component = componentControl.stack,
-            ).map { TabControlStyle.Toggle(it) }
+    ): Result<TabControlStyle, NonEmptyList<PaywallValidationError>> =
+        withScope(rcPackage = null, tabControl = null, tabIndex = null) {
+            when (componentControl) {
+                // This stack will contain a TabControlButtonComponent component.
+                is TabsComponent.TabControl.Buttons -> createStackComponentStyle(
+                    component = componentControl.stack,
+                ).map { TabControlStyle.Buttons(it) }
+                // This stack will contain a TabControlToggleComponent component.
+                is TabsComponent.TabControl.Toggle -> createStackComponentStyle(
+                    component = componentControl.stack,
+                ).map { TabControlStyle.Toggle(it) }
+            }
         }
-
-        rcPackage = currentScope.rcPackage
-        tabControl = currentScope.tabControl
-        tabIndex = currentScope.tabIndex
-
-        return result
-    }
 
     private fun StyleFactoryScope.createTabsComponentStyleTabs(
         componentTabs: List<TabsComponent.Tab>,
@@ -578,23 +567,13 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createTabsComponentStyleTab(
         componentTag: TabsComponent.Tab,
         control: TabControlStyle,
-    ): Result<TabsComponentStyle.Tab, NonEmptyList<PaywallValidationError>> {
-        val currentScope = copy()
-        rcPackage = null
-        tabControl = control
+    ): Result<TabsComponentStyle.Tab, NonEmptyList<PaywallValidationError>> =
         // We should only set the tabIndex for children of tab control components, not for children of tab components
         // like this one.
-        tabIndex = null
-
-        val result = createStackComponentStyle(componentTag.stack)
-            .map { stack -> TabsComponentStyle.Tab(stack) }
-
-        rcPackage = currentScope.rcPackage
-        tabControl = currentScope.tabControl
-        tabIndex = currentScope.tabIndex
-
-        return result
-    }
+        withScope(rcPackage = null, tabControl = control, tabIndex = null) {
+            createStackComponentStyle(componentTag.stack)
+                .map { stack -> TabsComponentStyle.Tab(stack) }
+        }
 
     private fun createBackgroundStyles(
         background: Background?,
