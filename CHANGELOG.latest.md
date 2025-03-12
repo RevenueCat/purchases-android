@@ -1,7 +1,9 @@
-## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* [Paywalls V2] Considers script when matching locales (#2245) via JayShortway (@JayShortway)
+## RevenueCat SDK
 
-### 🔄 Other Changes
-* [Paywalls V2] Reorganizes stack arrangement logic (#2238) via JayShortway (@JayShortway)
+### Virtual Currency
+
+#### ✨ New Features
+
+Warning: the virtual currency features are currently in beta and may change without notice.
+
+- Virtual Currency Balances (#2210) via Will Taylor (@fire-at-will)
