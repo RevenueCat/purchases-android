@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.paywalls.components.common.LocaleId.Companion.scriptByRegion
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.utils.mapNotNullKeys
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -25,19 +24,7 @@ import java.util.Locale as JavaLocale
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class LocaleId(@get:JvmSynthetic val value: String) {
-    companion object {
-        @get:JvmSynthetic
-        internal val scriptByRegion = mapOf(
-            "CN" to "Hans",
-            "SG" to "Hans",
-            "MY" to "Hans",
-            "TW" to "Hant",
-            "HK" to "Hant",
-            "MO" to "Hant",
-        )
-    }
-}
+value class LocaleId(@get:JvmSynthetic val value: String)
 
 @InternalRevenueCatAPI
 fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
