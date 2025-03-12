@@ -52,17 +52,28 @@ value class LocaleId(@get:JvmSynthetic val value: String) {
         get() = javaLocale.country
 }
 
-@InternalRevenueCatAPI
-fun LocaleId.languageOnly(): LocaleId =
+@OptIn(InternalRevenueCatAPI::class)
+private fun LocaleId.languageOnly(): LocaleId =
     LocaleId(language)
 
-@InternalRevenueCatAPI
-fun LocaleId.languageAndScriptOnly(): LocaleId =
+@OptIn(InternalRevenueCatAPI::class)
+private fun LocaleId.languageAndScriptOnly(): LocaleId =
     if (script.isNotBlank()) LocaleId("${language}_$script") else languageOnly()
 
-@InternalRevenueCatAPI
-fun LocaleId.withScript(): LocaleId =
+@OptIn(InternalRevenueCatAPI::class)
+private fun LocaleId.withScript(): LocaleId =
     if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else languageOnly()
+
+@InternalRevenueCatAPI
+fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
+    keys.getBestMatch(localeId)?.let { bestMatch -> get(bestMatch) }
+
+@InternalRevenueCatAPI
+fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? =
+    localeId.takeIf { contains(it) }
+        ?: localeId.withScript().takeIf { contains(it) }
+        ?: localeId.languageAndScriptOnly().takeIf { contains(it) }
+        ?: localeId.languageOnly().takeIf { contains(it) }
 
 @InternalRevenueCatAPI
 @Serializable

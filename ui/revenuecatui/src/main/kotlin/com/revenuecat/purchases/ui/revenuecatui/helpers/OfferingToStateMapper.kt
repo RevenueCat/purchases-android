@@ -10,7 +10,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
-import com.revenuecat.purchases.paywalls.components.common.languageOnly
+import com.revenuecat.purchases.paywalls.components.common.getBestMatch
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -407,12 +407,10 @@ private fun PaywallData.validateTemplate(): PaywallTemplate? {
 }
 
 private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, LocalizationData>?
-    get() = componentsLocalizations[defaultLocaleIdentifier]
-        ?: componentsLocalizations[defaultLocaleIdentifier.languageOnly()]
+    get() = componentsLocalizations.getBestMatch(defaultLocaleIdentifier)
 
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
-    get() = uiConfig.localizations[data.defaultLocaleIdentifier]
-        ?: uiConfig.localizations[data.defaultLocaleIdentifier.languageOnly()]
+    get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)
 
 private val TabsComponentStyle.defaultTabIndex: Int
     get() = when (control) {
