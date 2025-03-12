@@ -47,10 +47,13 @@ private val scriptByRegion = mapOf(
  */
 @InternalRevenueCatAPI
 fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
+    // Exact match:
+    if (contains(localeId)) return localeId
+
     val javaLocale = JavaLocale.forLanguageTag(localeId.value.replace('_', '-'))
-    val language: String = javaLocale.language
-    val region: String = javaLocale.country
-    val script: String = javaLocale.script.takeUnless { it.isBlank() }
+    val language = javaLocale.language
+    val region = javaLocale.country
+    val script = javaLocale.script.takeUnless { it.isBlank() }
         ?: scriptByRegion[region]
         ?: ""
 
@@ -59,8 +62,8 @@ fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
     val languageScriptId = if (script.isNotBlank()) LocaleId("${language}_$script") else languageId
     val languageScriptRegionId = if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else languageId
 
-    return localeId.takeIf { contains(it) }
-        ?: languageScriptRegionId.takeIf { contains(it) }
+    // Best non-exact match:
+    return languageScriptRegionId.takeIf { contains(it) }
         ?: languageScriptId.takeIf { contains(it) }
         ?: languageId.takeIf { contains(it) }
 }
