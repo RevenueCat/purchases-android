@@ -88,3 +88,45 @@ internal fun ComposeLocale.toLocaleId(): LocaleId =
 @JvmSynthetic
 internal fun ComposeLocale.toJavaLocale(): JavaLocale =
     JavaLocale.forLanguageTag(toLanguageTag())
+
+@JvmSynthetic
+internal fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
+    keys.getBestMatch(localeId)?.let { bestMatch -> get(bestMatch) }
+
+/**
+ * Returns the best match to [localeId] in this set, or null if no match is found.
+ */
+@JvmSynthetic
+internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
+    // Exact match:
+    if (contains(localeId)) return localeId
+
+    val javaLocale = JavaLocale.forLanguageTag(localeId.value.replace('_', '-'))
+    val language = javaLocale.language
+    val region = javaLocale.country
+    val script = javaLocale.script.takeUnless { it.isBlank() }
+        ?: scriptByRegion[region]
+        ?: ""
+
+    // Various permutations of the provided [localeId], from least to most specific.
+    val languageId = LocaleId(language)
+    val languageScriptId = if (script.isNotBlank()) LocaleId("${language}_$script") else languageId
+    val languageScriptRegionId = if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else languageId
+
+    // Best non-exact match:
+    return languageScriptRegionId.takeIf { contains(it) }
+        ?: languageScriptId.takeIf { contains(it) }
+        ?: languageId.takeIf { contains(it) }
+}
+
+/**
+ * Scripts inferred from the region.
+ */
+private val scriptByRegion = mapOf(
+    "CN" to "Hans",
+    "SG" to "Hans",
+    "MY" to "Hans",
+    "TW" to "Hant",
+    "HK" to "Hant",
+    "MO" to "Hant",
+)
