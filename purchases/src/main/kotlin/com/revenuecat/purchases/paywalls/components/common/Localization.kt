@@ -16,7 +16,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import java.util.Locale as JavaLocale
 
 /**
  * @property value The language tag of this locale, with an underscore separating the language from the region.
@@ -25,48 +24,6 @@ import java.util.Locale as JavaLocale
 @Serializable
 @JvmInline
 value class LocaleId(@get:JvmSynthetic val value: String)
-
-@InternalRevenueCatAPI
-fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
-    keys.getBestMatch(localeId)?.let { bestMatch -> get(bestMatch) }
-
-/**
- * Scripts inferred from the region.
- */
-private val scriptByRegion = mapOf(
-    "CN" to "Hans",
-    "SG" to "Hans",
-    "MY" to "Hans",
-    "TW" to "Hant",
-    "HK" to "Hant",
-    "MO" to "Hant",
-)
-
-/**
- * Returns the best match to [localeId] in this set, or null if no match is found.
- */
-@InternalRevenueCatAPI
-fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
-    // Exact match:
-    if (contains(localeId)) return localeId
-
-    val javaLocale = JavaLocale.forLanguageTag(localeId.value.replace('_', '-'))
-    val language = javaLocale.language
-    val region = javaLocale.country
-    val script = javaLocale.script.takeUnless { it.isBlank() }
-        ?: scriptByRegion[region]
-        ?: ""
-
-    // Various permutations of the provided [localeId], from least to most specific.
-    val languageId = LocaleId(language)
-    val languageScriptId = if (script.isNotBlank()) LocaleId("${language}_$script") else languageId
-    val languageScriptRegionId = if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else languageId
-
-    // Best non-exact match:
-    return languageScriptRegionId.takeIf { contains(it) }
-        ?: languageScriptId.takeIf { contains(it) }
-        ?: languageId.takeIf { contains(it) }
-}
 
 @InternalRevenueCatAPI
 @Serializable
