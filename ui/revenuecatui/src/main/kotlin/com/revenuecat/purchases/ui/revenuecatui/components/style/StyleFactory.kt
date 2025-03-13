@@ -576,14 +576,14 @@ internal class StyleFactory(
             .flatMap { tabs -> tabs.map { tab -> createTabsComponentStyleTab(tab, control) }.flatten() }
 
     private fun StyleFactoryScope.createTabsComponentStyleTab(
-        componentTag: TabsComponent.Tab,
+        componentTab: TabsComponent.Tab,
         control: TabControlStyle,
     ): Result<TabsComponentStyle.Tab, NonEmptyList<PaywallValidationError>> =
         // We should only set the tabControlIndex for children of tab control components, not for all children of tab
         // components like this one.
         withSelectedScope(rcPackage = null, tabControlIndex = null) {
             withTabControl(control) {
-                createStackComponentStyle(componentTag.stack)
+                createStackComponentStyle(componentTab.stack)
                     .map { stack -> TabsComponentStyle.Tab(stack) }
             }
         }
