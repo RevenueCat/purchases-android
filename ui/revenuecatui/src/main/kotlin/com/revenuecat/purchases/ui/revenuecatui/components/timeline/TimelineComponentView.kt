@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,10 +74,11 @@ internal fun TimelineComponentView(
     ) {
         val itemBarriers = mutableListOf<HorizontalAnchor>()
         val iconRefs = mutableListOf<ConstrainedLayoutReference>()
-        val biggestIconWidth: Dp? = remember(timelineState.items) {
-            timelineState.items
-                .maxByOrNull { it.icon.size.width.dpOrNull() ?: 0.dp }
-                ?.icon?.size?.width?.dpOrNull()
+        val biggestIconWidth: Dp? by remember {
+            derivedStateOf {
+                timelineState.items
+                    .maxOfOrNull { it.icon.size.width.dpOrNull() ?: 0.dp }
+            }
         }
         for (item in timelineState.items) {
             val (iconRef, titleRef, descriptionRef, itemSpacingRef) = createRefs()
@@ -183,6 +186,8 @@ internal fun TimelineComponentView(
                             if (isLastItem) {
                                 bottom.linkTo(parent.bottom, margin = offsets.second)
                             } else {
+                                // Here we know that nextIconRef won't be null because it should only be null on the
+                                // last item, and in that case, we don't enter the else here.
                                 bottom.linkTo(nextIconRef!!.bottom, margin = nextItemIconHalfSize + offsets.second)
                             }
                             height = Dimension.fillToConstraints
