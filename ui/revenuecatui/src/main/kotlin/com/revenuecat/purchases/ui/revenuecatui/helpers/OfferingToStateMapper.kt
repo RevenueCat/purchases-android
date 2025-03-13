@@ -178,7 +178,9 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         first = styleFactory.create(config.stack),
         second = config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
         third = config.background.toBackgroundStyles(aliases = colorAliases),
-    ) { backendRootComponent, stickyFooter, background ->
+    ) { backendRootComponentResult, stickyFooterResult, background ->
+        val backendRootComponent = backendRootComponentResult.componentStyle
+        val stickyFooter = stickyFooterResult?.componentStyle
         // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
         // definite solution for positioning the root component.
         val rootComponent = (backendRootComponent as? StackComponentStyle)

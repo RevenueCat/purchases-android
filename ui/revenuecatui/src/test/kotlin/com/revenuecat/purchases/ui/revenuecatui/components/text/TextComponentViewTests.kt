@@ -179,7 +179,7 @@ class TextComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as TextComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
             },
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
@@ -224,7 +224,7 @@ class TextComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as TextComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
             },
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
@@ -263,8 +263,10 @@ class TextComponentViewTests {
             smallTextComponent
         )
         setContent {
-            val largeTextStyle = styleFactory.create(largeTextComponent).getOrThrow() as TextComponentStyle
-            val smallTextStyle = styleFactory.create(smallTextComponent).getOrThrow() as TextComponentStyle
+            val largeTextStyle =
+                styleFactory.create(largeTextComponent).getOrThrow().componentStyle as TextComponentStyle
+            val smallTextStyle =
+                styleFactory.create(smallTextComponent).getOrThrow().componentStyle as TextComponentStyle
 
             // Act
             MaterialTheme {
@@ -357,7 +359,7 @@ class TextComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as PackageComponentStyle
 
         // Act
         setContent {
@@ -420,7 +422,7 @@ class TextComponentViewTests {
             components = listOf(component),
             packages = listOf(packageWithoutIntroOffer, packageWithSingleIntroOffer, packageWithMultipleIntroOffers)
         )
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
 
         // Act
         setContent { TextComponentView(style = style, state = state) }
@@ -531,11 +533,11 @@ class TextComponentViewTests {
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
-            styleFactory.create(noIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(noIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
         val singleIntroOfferPackageComponentStyle =
-            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
         val multipleIntroOffersPackageComponentStyle =
-            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
 
         // Act
         setContent {
@@ -606,7 +608,7 @@ class TextComponentViewTests {
             )
         )
         val styleFactory = StyleFactory(localizations)
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
@@ -650,7 +652,7 @@ class TextComponentViewTests {
             )
         )
         val styleFactory = StyleFactory(localizations)
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
@@ -718,7 +720,7 @@ class TextComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val styleSelected = styleFactory.create(selectedComponent).getOrThrow() as TextComponentStyle
+        val styleSelected = styleFactory.create(selectedComponent).getOrThrow().componentStyle as TextComponentStyle
 
         // Act
         setContent {
@@ -809,7 +811,7 @@ class TextComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val styleSelected = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val styleSelected = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
 
         // Act
         setContent {

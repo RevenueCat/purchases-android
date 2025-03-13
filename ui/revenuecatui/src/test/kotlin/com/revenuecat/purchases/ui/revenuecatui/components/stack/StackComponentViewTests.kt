@@ -99,7 +99,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
             },
             act = {
                 StackComponentView(
@@ -148,7 +148,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
             },
             act = {
                 StackComponentView(
@@ -207,7 +207,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
             },
             act = {
                 // An outer box, because a shadow draws outside the Composable's bounds.
@@ -328,7 +328,7 @@ class StackComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as PackageComponentStyle
 
 
         // Act
@@ -459,7 +459,7 @@ class StackComponentViewTests {
                 packageWithMultipleIntroOffers
             )
         )
-        val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
 
         // Act
         setContent {
@@ -660,11 +660,11 @@ class StackComponentViewTests {
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
-            styleFactory.create(noIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(noIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
         val singleIntroOfferPackageComponentStyle =
-            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
         val multipleIntroOffersPackageComponentStyle =
-            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
 
         // Act
         setContent {

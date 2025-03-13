@@ -95,7 +95,7 @@ class StyleFactoryTests {
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
-        val style = (result as Result.Success).value as TextComponentStyle
+        val style = (result as Result.Success).value.componentStyle as TextComponentStyle
         assertThat(style.texts[localeId])
             .isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
         val colorStyle = style.color.light as ColorStyle.Solid
@@ -124,7 +124,7 @@ class StyleFactoryTests {
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
-        val style = (result as Result.Success).value as StackComponentStyle
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
         assertThat(style.spacing).isEqualTo(8.dp)
         assertThat(style.children).hasSize(2)
         with(style.children[0] as TextComponentStyle) {
@@ -149,7 +149,7 @@ class StyleFactoryTests {
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
-        val style = (result as Result.Success).value as StackComponentStyle
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
         with(style.background as BackgroundStyles.Color) {
             val colorStyle = color.light as ColorStyle.Solid
             assertThat(colorStyle.color).isEqualTo(Color.Red)
@@ -171,7 +171,7 @@ class StyleFactoryTests {
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
-        val style = (result as Result.Success).value as StackComponentStyle
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
         with(style.background as BackgroundStyles.Color) {
             val colorStyle = color.light as ColorStyle.Solid
             assertThat(colorStyle.color).isEqualTo(Color.Blue)
@@ -295,7 +295,7 @@ class StyleFactoryTests {
 
         // Assert
         assertThat(result.isSuccess).isTrue()
-        val textComponentStyle = result.getOrThrow() as TextComponentStyle
+        val textComponentStyle = result.getOrThrow().componentStyle as TextComponentStyle
         val actualBaseFontSpec = textComponentStyle.fontSpec
         val actualOverrideFontSpec = textComponentStyle.overrides.firstOrNull()?.properties?.fontSpec
 
@@ -469,7 +469,7 @@ class StyleFactoryTests {
             offering = offering,
         )
 
-        val imageComponentStyle = styleFactory.create(component).getOrThrow() as ImageComponentStyle
+        val imageComponentStyle = styleFactory.create(component).getOrThrow().componentStyle as ImageComponentStyle
         with(imageComponentStyle) {
             assertThat(sources.size).isEqualTo(1)
             assertThat(sources.getValue(defaultLocale)).isEqualTo(expectedBaseSource)
@@ -543,7 +543,7 @@ class StyleFactoryTests {
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
-        val style = (result as Result.Success).value as TabsComponentStyle
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
         assertThat(style.tabs.size).isEqualTo(2)
         assertThat(style.control).isInstanceOf(TabControlStyle.Buttons::class.java)
         repeat(2) { index ->
@@ -600,7 +600,7 @@ class StyleFactoryTests {
 
         // Assert
         assertThat(result).isInstanceOf(Result.Success::class.java)
-        val style = (result as Result.Success).value as TabsComponentStyle
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
         assertThat(style.tabs.size).isEqualTo(2)
         assertThat(style.control).isInstanceOf(TabControlStyle.Toggle::class.java)
         repeat(2) { index ->

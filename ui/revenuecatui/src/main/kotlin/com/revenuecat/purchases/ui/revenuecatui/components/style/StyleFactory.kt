@@ -169,8 +169,20 @@ internal class StyleFactory(
         }
     }
 
-    fun create(component: PaywallComponent): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
-        StyleFactoryScope().createInternal(component)
+    class StyleResult(
+        val componentStyle: ComponentStyle,
+        val availablePackages: AvailablePackages,
+    )
+
+    fun create(component: PaywallComponent): Result<StyleResult, NonEmptyList<PaywallValidationError>> {
+        val scope = StyleFactoryScope()
+        return scope.createInternal(component).map { componentStyle ->
+            StyleResult(
+                componentStyle = componentStyle,
+                availablePackages = scope.packages,
+            )
+        }
+    }
 
     @Suppress("CyclomaticComplexMethod")
     private fun StyleFactoryScope.createInternal(
