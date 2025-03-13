@@ -52,6 +52,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderSt
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
@@ -86,27 +87,29 @@ internal class StyleFactory(
     }
 
     private data class StyleFactoryScope(
-        var rcPackage: Package? = null,
+        var packageInfo: AvailablePackages.Info? = null,
         var tabControl: TabControlStyle? = null,
         var tabControlIndex: Int? = null,
         var tabIndex: Int? = null,
     ) {
+        val rcPackage: Package?
+            get() = packageInfo?.pkg
 
         /**
          * Temporarily changes the properties that influence a component's selected state, for the duration of [block].
          */
         fun <T> withSelectedScope(
-            rcPackage: Package?,
+            packageInfo: AvailablePackages.Info?,
             tabControlIndex: Int?,
             block: StyleFactoryScope.() -> T,
         ): T {
             val currentScope = copy()
-            this.rcPackage = rcPackage
+            this.packageInfo = packageInfo
             this.tabControlIndex = tabControlIndex
 
             val result = block()
 
-            this.rcPackage = currentScope.rcPackage
+            this.packageInfo = currentScope.packageInfo
             this.tabControlIndex = currentScope.tabControlIndex
 
             return result
@@ -176,7 +179,7 @@ internal class StyleFactory(
     ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
         // tabControlIndex is null because a sticky footer cannot be _inside_ a tab control, which means we'll never
         // have to update the sticky footer based on the tab control being selected.
-        withSelectedScope(rcPackage = null, tabControlIndex = null) {
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
             createStackComponentStyle(component.stack).map {
                 StickyFooterComponentStyle(stackComponentStyle = it)
             }
@@ -207,9 +210,15 @@ internal class StyleFactory(
                     ),
                 ),
             ).flatMap { rcPackage ->
-                // If a tab control contains a package, which is already an edge case, the package should not
-                // visually become "selected" if its tab control parent is.
-                withSelectedScope(rcPackage = rcPackage, tabControlIndex = null) {
+                withSelectedScope(
+                    packageInfo = AvailablePackages.Info(
+                        pkg = rcPackage,
+                        isSelectedByDefault = component.isSelectedByDefault,
+                    ),
+                    // If a tab control contains a package, which is already an edge case, the package should not
+                    // visually become "selected" if its tab control parent is.
+                    tabControlIndex = null,
+                ) {
                     createStackComponentStyle(
                         component = component.stack,
                     ).map { stack ->
@@ -519,7 +528,7 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createTabControlButtonComponentStyle(
         component: TabControlButtonComponent,
     ): Result<TabControlButtonComponentStyle, NonEmptyList<PaywallValidationError>> =
-        withSelectedScope(rcPackage = null, tabControlIndex = component.tabIndex) {
+        withSelectedScope(packageInfo = null, tabControlIndex = component.tabIndex) {
             createStackComponentStyle(component.stack)
                 .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
         }
@@ -574,7 +583,7 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createTabsComponentStyleTabControl(
         componentControl: TabsComponent.TabControl,
     ): Result<TabControlStyle, NonEmptyList<PaywallValidationError>> =
-        withSelectedScope(rcPackage = null, tabControlIndex = null) {
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
             when (componentControl) {
                 // This stack will contain a TabControlButtonComponent component.
                 is TabsComponent.TabControl.Buttons -> createStackComponentStyle(
@@ -605,7 +614,7 @@ internal class StyleFactory(
     ): Result<TabsComponentStyle.Tab, NonEmptyList<PaywallValidationError>> =
         // We should only set the tabControlIndex for children of tab control components, not for all children of tab
         // components like this one.
-        withSelectedScope(rcPackage = null, tabControlIndex = null) {
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
             withTabIndex(tabIndex) {
                 withTabControl(control) {
                     createStackComponentStyle(componentTab.stack)
