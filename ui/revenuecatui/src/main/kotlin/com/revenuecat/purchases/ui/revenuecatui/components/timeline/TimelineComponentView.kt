@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstrainedLayoutReference
@@ -72,7 +72,12 @@ internal fun TimelineComponentView(
     ) {
         val itemBarriers = mutableListOf<HorizontalAnchor>()
         val iconRefs = mutableListOf<ConstrainedLayoutReference>()
-        for ((index, item) in timelineState.items.withIndex()) {
+        val biggestIconWidth: Dp? = remember(timelineState.items) {
+            timelineState.items
+                .maxByOrNull { it.icon.size.width.dpOrNull() ?: 0.dp }
+                ?.icon?.size?.width?.dpOrNull()
+        }
+        for (item in timelineState.items) {
             val (iconRef, titleRef, descriptionRef, itemSpacingRef) = createRefs()
 
             val bottomContentBarrier = createBottomBarrier(iconRef, titleRef, descriptionRef)
@@ -90,9 +95,7 @@ internal fun TimelineComponentView(
                     },
             )
 
-            IconComponentView(
-                style = item.icon,
-                state = state,
+            Box(
                 modifier = Modifier.constrainAs(iconRef) {
                     when (timelineState.iconAlignment) {
                         TimelineComponent.IconAlignment.Title -> {
@@ -105,8 +108,15 @@ internal fun TimelineComponentView(
                             start.linkTo(parent.start)
                         }
                     }
+                    width = biggestIconWidth?.let { Dimension.value(it) } ?: Dimension.wrapContent
                 },
-            )
+            ) {
+                IconComponentView(
+                    style = item.icon,
+                    state = state,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            }
 
             TextComponentView(
                 style = item.title,
@@ -148,12 +158,11 @@ internal fun TimelineComponentView(
             item.connector?.let { connector ->
                 val connectorRef = createRef()
                 val offsets = remember(item.icon.size, connectorRef) {
-                    val itemIconWidth = item.icon.size.width as? SizeConstraint.Fixed
                     val itemIconHeight = item.icon.size.height as? SizeConstraint.Fixed
                     val connectorVerticalOffset = itemIconHeight?.let {
                         it.value.toInt().dp / 2
                     } ?: 0.dp
-                    val connectorStartOffset = itemIconWidth?.let {
+                    val connectorStartOffset = biggestIconWidth?.let {
                         (it.value.toInt() - (item.connector?.width ?: 0)).dp / 2
                     } ?: 0.dp
                     (connectorStartOffset to connectorVerticalOffset)
@@ -174,7 +183,7 @@ internal fun TimelineComponentView(
                             if (isLastItem) {
                                 bottom.linkTo(parent.bottom, margin = offsets.second)
                             } else {
-                                bottom.linkTo(nextIconRef!!.bottom, margin = nextItemIconHalfSize)
+                                bottom.linkTo(nextIconRef!!.bottom, margin = nextItemIconHalfSize + offsets.second)
                             }
                             height = Dimension.fillToConstraints
                         }
@@ -294,7 +303,7 @@ private fun previewItems(
                 horizontalAlignment = HorizontalAlignment.LEADING,
                 textAlign = HorizontalAlignment.LEADING,
             ),
-            icon = previewIcon(),
+            icon = previewIcon(size = Size(width = SizeConstraint.Fixed(30u), height = SizeConstraint.Fixed(30u))),
             connector = previewConnectorStyle(margin = connectorMargins),
             rcPackage = null,
             tabIndex = null,
@@ -334,9 +343,10 @@ private fun previewItems(
 private fun previewIcon(
     color: Color = Color.White,
     backgroundColor: Color = Color(color = 0xFF576CDB),
+    size: Size = Size(width = SizeConstraint.Fixed(20u), height = SizeConstraint.Fixed(20u)),
 ): IconComponentStyle {
     return previewIconComponentStyle(
-        size = Size(width = SizeConstraint.Fixed(20u), height = SizeConstraint.Fixed(20u)),
+        size = size,
         color = ColorStyles(
             light = ColorStyle.Solid(color),
         ),
