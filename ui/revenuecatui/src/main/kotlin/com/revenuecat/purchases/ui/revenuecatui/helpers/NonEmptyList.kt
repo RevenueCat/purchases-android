@@ -35,6 +35,10 @@ internal class NonEmptyList<out A> private constructor(
     @JvmSynthetic
     fun <B> map(transform: (A) -> B): NonEmptyList<B> =
         NonEmptyList(all.map(transform))
+
+    @JvmSynthetic
+    fun <B> mapIndexed(transform: (index: Int, A) -> B): NonEmptyList<B> =
+        NonEmptyList(all.mapIndexed(transform))
 }
 
 /**

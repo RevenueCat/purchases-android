@@ -89,6 +89,7 @@ internal class StyleFactory(
         var rcPackage: Package? = null,
         var tabControl: TabControlStyle? = null,
         var tabControlIndex: Int? = null,
+        var tabIndex: Int? = null,
     ) {
 
         /**
@@ -112,10 +113,10 @@ internal class StyleFactory(
         }
 
         /**
-         * Provides the provided [tabControl] to this branch of the tree.
+         * Provides the [tabControl] to this branch of the tree.
          */
         fun <T> withTabControl(
-            tabControl: TabControlStyle?,
+            tabControl: TabControlStyle,
             block: StyleFactoryScope.() -> T,
         ): T {
             val currentScope = copy()
@@ -124,6 +125,23 @@ internal class StyleFactory(
             val result = block()
 
             this.tabControl = currentScope.tabControl
+
+            return result
+        }
+
+        /**
+         * Records that this branch of the tree is in a tab with the provided [tabIndex].
+         */
+        fun <T> withTabIndex(
+            tabIndex: Int,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val currentScope = copy()
+            this.tabIndex = tabIndex
+
+            val result = block()
+
+            this.tabIndex = currentScope.tabIndex
 
             return result
         }
@@ -576,18 +594,23 @@ internal class StyleFactory(
         componentTabs
             .toNonEmptyListOrNull()
             .errorIfNull(nonEmptyListOf(PaywallValidationError.TabsComponentWithoutTabs))
-            .flatMap { tabs -> tabs.map { tab -> createTabsComponentStyleTab(tab, control) }.flatten() }
+            .flatMap { tabs ->
+                tabs.mapIndexed { index, tab -> createTabsComponentStyleTab(tab, control, index) }.flatten()
+            }
 
     private fun StyleFactoryScope.createTabsComponentStyleTab(
         componentTab: TabsComponent.Tab,
         control: TabControlStyle,
+        tabIndex: Int,
     ): Result<TabsComponentStyle.Tab, NonEmptyList<PaywallValidationError>> =
         // We should only set the tabControlIndex for children of tab control components, not for all children of tab
         // components like this one.
         withSelectedScope(rcPackage = null, tabControlIndex = null) {
-            withTabControl(control) {
-                createStackComponentStyle(componentTab.stack)
-                    .map { stack -> TabsComponentStyle.Tab(stack) }
+            withTabIndex(tabIndex) {
+                withTabControl(control) {
+                    createStackComponentStyle(componentTab.stack)
+                        .map { stack -> TabsComponentStyle.Tab(stack) }
+                }
             }
         }
 
