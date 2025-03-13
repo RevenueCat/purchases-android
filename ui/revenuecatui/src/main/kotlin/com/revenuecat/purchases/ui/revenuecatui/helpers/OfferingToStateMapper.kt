@@ -35,7 +35,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -188,13 +187,9 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
             ?: backendRootComponent
 
-        val packagesOutsideTabs = rootComponent.findPackagesOutsideTabs() + stickyFooter?.findPackagesOutsideTabs().orEmpty()
         val tabsComponent = rootComponent.findTabsComponentStyle() ?: stickyFooter?.findTabsComponentStyle()
 
-        val packages = AvailablePackages(
-            packagesOutsideTabs = packagesOutsideTabs,
-            packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
-        )
+        val packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages)
 
         val stackWithAppliedWindowInsets = rootComponent.applyTopWindowInsetsIfNecessary().run {
             if (stickyFooter == null) applyBottomWindowInsetsIfNecessary() else this
@@ -430,28 +425,6 @@ private val TabsComponentStyle.defaultTabIndex: Int
 private fun ComponentStyle.findTabsComponentStyle(): TabsComponentStyle? =
     firstOrNull { it is TabsComponentStyle } as TabsComponentStyle?
 
-private fun ComponentStyle.findPackagesOutsideTabs(): List<AvailablePackages.Info> =
-    filter(
-        predicate = { it is PackageComponentStyle },
-        skip = { it is TabsComponentStyle },
-    ).map { (it as PackageComponentStyle).toAvailablePackageInfo() }
-
-private val TabsComponentStyle.packagesByTab: Map<Int, List<AvailablePackages.Info>>
-    get() = buildMap(tabs.size) {
-        tabs.forEachIndexed { index, tab ->
-            val packages = tab.stack
-                .filterIsInstance<PackageComponentStyle>()
-                .map { it.toAvailablePackageInfo() }
-            put(index, packages)
-        }
-    }
-
-private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.Info =
-    AvailablePackages.Info(
-        pkg = rcPackage,
-        isSelectedByDefault = isSelectedByDefault,
-    )
-
 /**
  * This checks if the first non-container component is a full-width image, and if so, marks that image with
  * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`. If such an image is not found, it marks the
@@ -528,47 +501,6 @@ private fun ComponentStyle.firstOrNull(predicate: (ComponentStyle) -> Boolean): 
     }
 
     return null
-}
-
-private inline fun <reified R : ComponentStyle> ComponentStyle.filterIsInstance(): List<R> {
-    val matches = mutableListOf<R>()
-    val queue = ArrayDeque<ComponentStyle>()
-    queue.add(this)
-
-    while (queue.isNotEmpty()) {
-        val current = queue.removeFirst()
-        if (current is R) matches.add(current)
-        queue.addChildrenOf(current)
-    }
-
-    return matches
-}
-
-/**
- * Returns all ComponentStyles that satisfy the predicate, skipping any nodes (and their children) that satisfy the
- * skip predicate.
- *
- * Implemented as breadth-first search.
- */
-@Suppress("CyclomaticComplexMethod")
-private fun ComponentStyle.filter(
-    predicate: (ComponentStyle) -> Boolean,
-    skip: (ComponentStyle) -> Boolean,
-): List<ComponentStyle> {
-    val matches = mutableListOf<ComponentStyle>()
-    val queue = ArrayDeque<ComponentStyle>()
-    queue.add(this)
-
-    while (queue.isNotEmpty()) {
-        val current = queue.removeFirst()
-
-        if (skip(current)) continue
-        if (predicate(current)) matches.add(current)
-
-        queue.addChildrenOf(current)
-    }
-
-    return matches
 }
 
 private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
