@@ -111,6 +111,9 @@ internal class StyleFactory(
             return result
         }
 
+        /**
+         * Provides the provided [tabControl] to this branch of the tree.
+         */
         fun <T> withTabControl(
             tabControl: TabControlStyle?,
             block: StyleFactoryScope.() -> T,
