@@ -187,10 +187,6 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
             ?: backendRootComponent
 
-        val tabsComponent = rootComponent.findTabsComponentStyle() ?: stickyFooter?.findTabsComponentStyle()
-
-        val packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages)
-
         val stackWithAppliedWindowInsets = rootComponent.applyTopWindowInsetsIfNecessary().run {
             if (stickyFooter == null) applyBottomWindowInsetsIfNecessary() else this
         }
@@ -202,8 +198,8 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
             variableConfig = paywallComponents.uiConfig.variableConfig,
-            packages = packages,
-            initialSelectedTabIndex = tabsComponent?.defaultTabIndex,
+            packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
+            initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
         )
     }
 }
@@ -409,22 +405,6 @@ private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, Loca
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
     get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)
 
-private val TabsComponentStyle.defaultTabIndex: Int
-    get() = when (control) {
-        // Button control doesn't have a default tab.
-        is TabControlStyle.Buttons -> 0
-        is TabControlStyle.Toggle -> {
-            control.stack
-                .firstOrNull { it is TabControlToggleComponentStyle }
-                .let { it as TabControlToggleComponentStyle? }
-                ?.defaultValue
-                .let { if (it == true) 1 else 0 }
-        }
-    }
-
-private fun ComponentStyle.findTabsComponentStyle(): TabsComponentStyle? =
-    firstOrNull { it is TabsComponentStyle } as TabsComponentStyle?
-
 /**
  * This checks if the first non-container component is a full-width image, and if so, marks that image with
  * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`. If such an image is not found, it marks the
@@ -484,48 +464,6 @@ private fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(): T =
         )
         else -> this
     } as T
-
-/**
- * Returns the first ComponentStyle that satisfies the predicate, or null if none is found.
- *
- * Implemented as breadth-first search.
- */
-private fun ComponentStyle.firstOrNull(predicate: (ComponentStyle) -> Boolean): ComponentStyle? {
-    val queue = ArrayDeque<ComponentStyle>()
-    queue.add(this)
-
-    while (queue.isNotEmpty()) {
-        val current = queue.removeFirst()
-        if (predicate(current)) return current
-        queue.addChildrenOf(current)
-    }
-
-    return null
-}
-
-private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
-    when (parent) {
-        is StackComponentStyle -> addAll(parent.children)
-        is ButtonComponentStyle -> add(parent.stackComponentStyle)
-        is PackageComponentStyle -> add(parent.stackComponentStyle)
-        is StickyFooterComponentStyle -> add(parent.stackComponentStyle)
-        is CarouselComponentStyle -> addAll(parent.pages)
-        is TabControlButtonComponentStyle -> add(parent.stack)
-        is TabControlStyle.Buttons -> add(parent.stack)
-        is TabControlStyle.Toggle -> add(parent.stack)
-        is TabsComponentStyle -> addAll(parent.tabs.map { it.stack })
-        is TimelineComponentStyle ->
-            addAll(parent.items.flatMap { item -> listOfNotNull(item.title, item.description, item.icon) })
-
-        is TabControlToggleComponentStyle,
-        is ImageComponentStyle,
-        is IconComponentStyle,
-        is TextComponentStyle,
-        -> {
-            // These don't have child components.
-        }
-    }
-}
 
 @Suppress("UNCHECKED_CAST")
 private fun <T : ComponentStyle> T.recursiveMap(

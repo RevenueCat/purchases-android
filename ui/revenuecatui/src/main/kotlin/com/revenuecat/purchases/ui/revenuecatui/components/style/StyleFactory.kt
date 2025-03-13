@@ -92,6 +92,7 @@ internal class StyleFactory(
         var tabControlIndex: Int? = null,
         var tabIndex: Int? = null,
     ) {
+        var defaultTabIndex: Int? = null
         val rcPackage: Package?
             get() = packageInfo?.pkg
 
@@ -172,6 +173,7 @@ internal class StyleFactory(
     class StyleResult(
         val componentStyle: ComponentStyle,
         val availablePackages: AvailablePackages,
+        val defaultTabIndex: Int?,
     )
 
     fun create(component: PaywallComponent): Result<StyleResult, NonEmptyList<PaywallValidationError>> {
@@ -180,6 +182,7 @@ internal class StyleFactory(
             StyleResult(
                 componentStyle = componentStyle,
                 availablePackages = scope.packages,
+                defaultTabIndex = scope.defaultTabIndex,
             )
         }
     }
@@ -560,11 +563,13 @@ internal class StyleFactory(
         component: TabControlButtonComponent,
     ): Result<TabControlButtonComponentStyle, NonEmptyList<PaywallValidationError>> =
         withSelectedScope(packageInfo = null, tabControlIndex = component.tabIndex) {
+            // Button control doesn't have a default tab.
+            defaultTabIndex = 0
             createStackComponentStyle(component.stack)
                 .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
         }
 
-    private fun createTabControlToggleComponentStyle(
+    private fun StyleFactoryScope.createTabControlToggleComponentStyle(
         component: TabControlToggleComponent,
     ): Result<TabControlToggleComponentStyle, NonEmptyList<PaywallValidationError>> =
         zipOrAccumulate(
@@ -573,6 +578,7 @@ internal class StyleFactory(
             third = component.trackColorOn.toColorStyles(aliases = colorAliases),
             fourth = component.trackColorOff.toColorStyles(aliases = colorAliases),
         ) { thumbColorOn, thumbColorOff, trackColorOn, trackColorOff ->
+            defaultTabIndex = if (component.defaultValue) 1 else 0
             TabControlToggleComponentStyle(
                 defaultValue = component.defaultValue,
                 thumbColorOn = thumbColorOn,
