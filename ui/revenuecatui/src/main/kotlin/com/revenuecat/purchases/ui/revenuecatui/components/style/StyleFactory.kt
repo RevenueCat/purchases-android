@@ -95,6 +95,14 @@ internal class StyleFactory(
         val rcPackage: Package?
             get() = packageInfo?.pkg
 
+        private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
+        private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
+        val packages: AvailablePackages
+            get() = AvailablePackages(
+                packagesOutsideTabs = packagesOutsideTabs,
+                packagesByTab = packagesByTab,
+            )
+
         /**
          * Temporarily changes the properties that influence a component's selected state, for the duration of [block].
          */
@@ -103,6 +111,8 @@ internal class StyleFactory(
             tabControlIndex: Int?,
             block: StyleFactoryScope.() -> T,
         ): T {
+            if (packageInfo != null) recordPackage(packageInfo)
+
             val currentScope = copy()
             this.packageInfo = packageInfo
             this.tabControlIndex = tabControlIndex
@@ -147,6 +157,15 @@ internal class StyleFactory(
             this.tabIndex = currentScope.tabIndex
 
             return result
+        }
+
+        private fun recordPackage(pkg: AvailablePackages.Info) {
+            val currentTabIndex = tabIndex
+            if (currentTabIndex == null) {
+                packagesOutsideTabs.add(pkg)
+            } else {
+                packagesByTab.getOrPut(currentTabIndex) { mutableListOf() }.add(pkg)
+            }
         }
     }
 
