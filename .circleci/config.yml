@@ -613,13 +613,26 @@ jobs:
       - run:
           name: Upload snapshots to Emerge
           command: |
+            # Take the last path segment of the CIRCLE_PULL_REQUEST url if it exists.
+            PR_NUM=""
+            if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ "$CIRCLE_PULL_REQUEST" == */* ]]; then
+              PR_NUM=$(echo "$CIRCLE_PULL_REQUEST" | rev | cut -d'/' -f1 | rev)
+            fi
+            # Set base-sha to empty string if no PR number is found.
+            PR_ARG=""
+            if [ -n "$PR_NUM" ]; then
+              PR_ARG="--pr-number $PR_NUM"
+            else
+              PR_ARG="--base-sha \"\""
+            fi
+
             emerge upload snapshots \
               --name "TestPurchasesUIAndroidCompatibility Paparazzi" \
               --id "com.revenuecat.testpurchasesuiandroidcompatibility.paparazzi" \
               --repo-name "RevenueCat/purchases-android" \
               --debug \
               --client-library paparazzi \
-              --pr-number 2232 \
+              $PR_ARG \
               --project-root .
       - android/save-build-cache
 
