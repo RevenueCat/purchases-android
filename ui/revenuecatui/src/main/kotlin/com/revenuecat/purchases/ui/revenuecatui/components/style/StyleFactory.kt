@@ -134,7 +134,7 @@ internal class StyleFactory(
             /**
              * We're only interested in the first non-container component. After that, we can stop looking.
              */
-            var stillLookingForHeroImage = true
+            private var stillLookingForHeroImage = true
 
             /**
              * This will be called for every component in the tree, and will determine whether we have a hero image
@@ -177,11 +177,6 @@ internal class StyleFactory(
         }
 
         val windowInsetsState = WindowInsetsState()
-
-        /**
-         * Whether we have applied the top window insets to any component.
-         */
-        val topWindowInsetsApplied by windowInsetsState::topWindowInsetsApplied
 
         /**
          * Whether the current component should apply the top window insets.
@@ -261,9 +256,22 @@ internal class StyleFactory(
             return result
         }
 
+        /**
+         * Tells the StyleFactory about a component. This should be called for every component in the tree.
+         */
         fun recordComponent(component: PaywallComponent) {
             windowInsetsState.handleHeroImageWindowInsets(component)
         }
+
+        /**
+         * Applies the top window insets to the provided ComponentStyle if they haven't been applied to any other
+         * component yet.
+         */
+        fun applyTopWindowInsetsIfNotYetApplied(to: ComponentStyle): ComponentStyle =
+            when (to) {
+                is StackComponentStyle -> to.copy(applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied)
+                else -> to
+            }
 
         private fun recordPackage(pkg: AvailablePackages.Info) {
             val currentTabIndex = tabIndex
@@ -284,7 +292,7 @@ internal class StyleFactory(
     fun create(component: PaywallComponent): Result<StyleResult, NonEmptyList<PaywallValidationError>> {
         val scope = StyleFactoryScope()
         return scope.createInternal(component)
-            .map { componentStyle -> componentStyle.applyTopWindowInsets(!scope.topWindowInsetsApplied) }
+            .map { componentStyle -> scope.applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
             .map { componentStyle ->
                 StyleResult(
                     componentStyle = componentStyle,
@@ -293,12 +301,6 @@ internal class StyleFactory(
                 )
             }
     }
-
-    private fun ComponentStyle.applyTopWindowInsets(value: Boolean): ComponentStyle =
-        when (this) {
-            is StackComponentStyle -> copy(applyTopWindowInsets = value)
-            else -> this
-        }
 
     @Suppress("CyclomaticComplexMethod")
     private fun StyleFactoryScope.createInternal(
