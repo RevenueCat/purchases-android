@@ -79,6 +79,166 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                     expected = "ja",
                 ),
             ),
+            arrayOf(
+                "simplified Chinese zh-Hans -> zh-Hans",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans"),
+                    deviceLocales = nonEmptyListOf("zh-Hans"),
+                    expected = "zh-Hans",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-CN -> zh-Hans",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans"),
+                    deviceLocales = nonEmptyListOf("zh-CN"),
+                    expected = "zh-Hans",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-SG -> zh-Hans",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans"),
+                    deviceLocales = nonEmptyListOf("zh-SG"),
+                    expected = "zh-Hans",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-MY -> zh-Hans",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans"),
+                    deviceLocales = nonEmptyListOf("zh-MY"),
+                    expected = "zh-Hans",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-CN -> zh-Hans-CN",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans", "zh_Hans_CN"),
+                    deviceLocales = nonEmptyListOf("zh-CN"),
+                    expected = "zh-Hans-CN",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-SG -> zh-Hans-SG",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans", "zh_Hans_SG"),
+                    deviceLocales = nonEmptyListOf("zh-SG"),
+                    expected = "zh-Hans-SG",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-MY -> zh-Hans-MY",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans", "zh_Hans_MY"),
+                    deviceLocales = nonEmptyListOf("zh-MY"),
+                    expected = "zh-Hans-MY",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-Hans-CN -> zh-Hans",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans"),
+                    deviceLocales = nonEmptyListOf("zh-Hans-CN"),
+                    expected = "zh-Hans",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-Hans-SG -> zh-Hans",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans"),
+                    deviceLocales = nonEmptyListOf("zh-Hans-SG"),
+                    expected = "zh-Hans",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-Hans-MY -> zh-Hans",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hans"),
+                    deviceLocales = nonEmptyListOf("zh-Hans-MY"),
+                    expected = "zh-Hans",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-Hant -> zh-Hant",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
+                    deviceLocales = nonEmptyListOf("zh-Hant"),
+                    expected = "zh-Hant",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-TW -> zh-Hant",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
+                    deviceLocales = nonEmptyListOf("zh-TW"),
+                    expected = "zh-Hant",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-HK -> zh-Hant",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
+                    deviceLocales = nonEmptyListOf("zh-HK"),
+                    expected = "zh-Hant",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-MO -> zh-Hant",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
+                    deviceLocales = nonEmptyListOf("zh-MO"),
+                    expected = "zh-Hant",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-TW -> zh-Hant-TW",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant", "zh_Hant_TW"),
+                    deviceLocales = nonEmptyListOf("zh-TW"),
+                    expected = "zh-Hant-TW",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-HK -> zh-Hant-HK",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant", "zh_Hant_HK"),
+                    deviceLocales = nonEmptyListOf("zh-HK"),
+                    expected = "zh-Hant-HK",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-MO -> zh-Hant-MO",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant", "zh_Hant_MO"),
+                    deviceLocales = nonEmptyListOf("zh-MO"),
+                    expected = "zh-Hant-MO",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-Hant-TW -> zh-Hant",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
+                    deviceLocales = nonEmptyListOf("zh-Hant-TW"),
+                    expected = "zh-Hant",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-Hant-HK -> zh-Hant",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
+                    deviceLocales = nonEmptyListOf("zh-Hant-HK"),
+                    expected = "zh-Hant",
+                ),
+            ),
+            arrayOf(
+                "traditional Chinese zh-Hant-MO -> zh-Hant",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
+                    deviceLocales = nonEmptyListOf("zh-Hant-MO"),
+                    expected = "zh-Hant",
+                ),
+            ),
         )
     }
 
