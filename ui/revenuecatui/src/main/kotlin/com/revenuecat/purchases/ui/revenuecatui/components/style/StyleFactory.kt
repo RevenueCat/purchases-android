@@ -89,7 +89,16 @@ internal class StyleFactory(
     private data class StyleFactoryScope(
         var packageInfo: AvailablePackages.Info? = null,
         var tabControl: TabControlStyle? = null,
+        /**
+         * If this is non-null, it means the branch currently being built is inside a tab control component. Every tab
+         * in a tabs component will contain a tab control component. A tab control component is often implemented as a
+         * segmented button, with each segment of the button switching to the tab indicated by that segment's tab
+         * control index.
+         */
         var tabControlIndex: Int? = null,
+        /**
+         * If this is non-null, it means the branch currently being built is inside a tab component.
+         */
         var tabIndex: Int? = null,
     ) {
         var defaultTabIndex: Int? = null
