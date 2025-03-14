@@ -7,6 +7,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.Background
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 
 internal sealed interface PaywallValidationResult {
@@ -41,6 +42,7 @@ internal sealed interface PaywallValidationResult {
          */
         val zeroDecimalPlaceCountries: Set<String>,
         val variableConfig: UiConfig.VariableConfig,
+        val variableDataProvider: VariableDataProvider,
         val packages: AvailablePackages,
         val initialSelectedTabIndex: Int?,
     ) : PaywallValidationResult {
