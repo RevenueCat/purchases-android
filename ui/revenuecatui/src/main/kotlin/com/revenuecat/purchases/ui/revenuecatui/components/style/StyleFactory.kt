@@ -273,6 +273,20 @@ internal class StyleFactory(
                 else -> to
             }
 
+        @Suppress("UNCHECKED_CAST")
+        fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(shouldApply: Boolean): T =
+            if (shouldApply) {
+                when (this) {
+                    is StackComponentStyle -> copy(applyBottomWindowInsets = true)
+                    is StickyFooterComponentStyle -> copy(
+                        stackComponentStyle = stackComponentStyle.copy(applyBottomWindowInsets = true),
+                    )
+                    else -> this
+                } as T
+            } else {
+                this
+            }
+
         private fun recordPackage(pkg: AvailablePackages.Info) {
             val currentTabIndex = tabIndex
             if (currentTabIndex == null) {
@@ -289,18 +303,26 @@ internal class StyleFactory(
         val defaultTabIndex: Int?,
     )
 
-    fun create(component: PaywallComponent): Result<StyleResult, NonEmptyList<PaywallValidationError>> {
-        val scope = StyleFactoryScope()
-        return scope.createInternal(component)
-            .map { componentStyle -> scope.applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
-            .map { componentStyle ->
-                StyleResult(
-                    componentStyle = componentStyle,
-                    availablePackages = scope.packages,
-                    defaultTabIndex = scope.defaultTabIndex,
-                )
-            }
-    }
+    /**
+     * @param applyBottomWindowInsets Whether to apply bottom window insets to the root of this tree (i.e. the
+     * passed-in [component]).
+     */
+    fun create(
+        component: PaywallComponent,
+        applyBottomWindowInsets: Boolean = false,
+    ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
+        with(StyleFactoryScope()) {
+            createInternal(component)
+                .map { componentStyle -> applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
+                .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
+                .map { componentStyle ->
+                    StyleResult(
+                        componentStyle = componentStyle,
+                        availablePackages = packages,
+                        defaultTabIndex = defaultTabIndex,
+                    )
+                }
+        }
 
     @Suppress("CyclomaticComplexMethod")
     private fun StyleFactoryScope.createInternal(
