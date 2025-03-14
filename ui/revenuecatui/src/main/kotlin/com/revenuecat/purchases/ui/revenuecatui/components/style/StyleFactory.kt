@@ -257,7 +257,7 @@ internal class StyleFactory(
         }
 
         /**
-         * Tells the StyleFactory about a component. This should be called for every component in the tree.
+         * Tells the StyleFactoryScope about a component. This should be called for every component in the tree.
          */
         fun recordComponent(component: PaywallComponent) {
             windowInsetsState.handleHeroImageWindowInsets(component)
