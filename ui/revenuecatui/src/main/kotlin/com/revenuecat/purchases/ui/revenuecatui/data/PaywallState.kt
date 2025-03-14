@@ -99,6 +99,17 @@ internal sealed interface PaywallState {
                     val pkg: Package,
                     val isSelectedByDefault: Boolean,
                 )
+
+                /**
+                 * Merges this [AvailablePackages] with another one. Note that this concatenates [packagesOutsideTabs],
+                 * but replaces [packagesByTab] with the other one if this one is empty. This is because we expect
+                 * only 1 tabs component in a single paywall.
+                 */
+                fun merge(with: AvailablePackages?): AvailablePackages =
+                    AvailablePackages(
+                        packagesOutsideTabs = packagesOutsideTabs + with?.packagesOutsideTabs.orEmpty(),
+                        packagesByTab = packagesByTab.ifEmpty { with?.packagesByTab.orEmpty() },
+                    )
             }
 
             data class SelectedPackageInfo(
