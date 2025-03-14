@@ -35,7 +35,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -178,21 +177,15 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         first = styleFactory.create(config.stack),
         second = config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
         third = config.background.toBackgroundStyles(aliases = colorAliases),
-    ) { backendRootComponent, stickyFooter, background ->
+    ) { backendRootComponentResult, stickyFooterResult, background ->
+        val backendRootComponent = backendRootComponentResult.componentStyle
+        val stickyFooter = stickyFooterResult?.componentStyle
         // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
         // definite solution for positioning the root component.
         val rootComponent = (backendRootComponent as? StackComponentStyle)
             ?.takeIf { it.size.height == SizeConstraint.Fit }
             ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
             ?: backendRootComponent
-
-        val packagesOutsideTabs = rootComponent.findPackagesOutsideTabs() + stickyFooter?.findPackagesOutsideTabs().orEmpty()
-        val tabsComponent = rootComponent.findTabsComponentStyle() ?: stickyFooter?.findTabsComponentStyle()
-
-        val packages = AvailablePackages(
-            packagesOutsideTabs = packagesOutsideTabs,
-            packagesByTab = tabsComponent?.packagesByTab.orEmpty(),
-        )
 
         val stackWithAppliedWindowInsets = rootComponent.applyTopWindowInsetsIfNecessary().run {
             if (stickyFooter == null) applyBottomWindowInsetsIfNecessary() else this
@@ -205,8 +198,8 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
             variableConfig = paywallComponents.uiConfig.variableConfig,
-            packages = packages,
-            initialSelectedTabIndex = tabsComponent?.defaultTabIndex,
+            packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
+            initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
         )
     }
 }
@@ -412,44 +405,6 @@ private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, Loca
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
     get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)
 
-private val TabsComponentStyle.defaultTabIndex: Int
-    get() = when (control) {
-        // Button control doesn't have a default tab.
-        is TabControlStyle.Buttons -> 0
-        is TabControlStyle.Toggle -> {
-            control.stack
-                .firstOrNull { it is TabControlToggleComponentStyle }
-                .let { it as TabControlToggleComponentStyle? }
-                ?.defaultValue
-                .let { if (it == true) 1 else 0 }
-        }
-    }
-
-private fun ComponentStyle.findTabsComponentStyle(): TabsComponentStyle? =
-    firstOrNull { it is TabsComponentStyle } as TabsComponentStyle?
-
-private fun ComponentStyle.findPackagesOutsideTabs(): List<AvailablePackages.Info> =
-    filter(
-        predicate = { it is PackageComponentStyle },
-        skip = { it is TabsComponentStyle },
-    ).map { (it as PackageComponentStyle).toAvailablePackageInfo() }
-
-private val TabsComponentStyle.packagesByTab: Map<Int, List<AvailablePackages.Info>>
-    get() = buildMap(tabs.size) {
-        tabs.forEachIndexed { index, tab ->
-            val packages = tab.stack
-                .filterIsInstance<PackageComponentStyle>()
-                .map { it.toAvailablePackageInfo() }
-            put(index, packages)
-        }
-    }
-
-private fun PackageComponentStyle.toAvailablePackageInfo(): AvailablePackages.Info =
-    AvailablePackages.Info(
-        pkg = rcPackage,
-        isSelectedByDefault = isSelectedByDefault,
-    )
-
 /**
  * This checks if the first non-container component is a full-width image, and if so, marks that image with
  * `ignoreTopWindowInsets`, and its parent with `applyTopWindowInsets`. If such an image is not found, it marks the
@@ -509,89 +464,6 @@ private fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(): T =
         )
         else -> this
     } as T
-
-/**
- * Returns the first ComponentStyle that satisfies the predicate, or null if none is found.
- *
- * Implemented as breadth-first search.
- */
-private fun ComponentStyle.firstOrNull(predicate: (ComponentStyle) -> Boolean): ComponentStyle? {
-    val queue = ArrayDeque<ComponentStyle>()
-    queue.add(this)
-
-    while (queue.isNotEmpty()) {
-        val current = queue.removeFirst()
-        if (predicate(current)) return current
-        queue.addChildrenOf(current)
-    }
-
-    return null
-}
-
-private inline fun <reified R : ComponentStyle> ComponentStyle.filterIsInstance(): List<R> {
-    val matches = mutableListOf<R>()
-    val queue = ArrayDeque<ComponentStyle>()
-    queue.add(this)
-
-    while (queue.isNotEmpty()) {
-        val current = queue.removeFirst()
-        if (current is R) matches.add(current)
-        queue.addChildrenOf(current)
-    }
-
-    return matches
-}
-
-/**
- * Returns all ComponentStyles that satisfy the predicate, skipping any nodes (and their children) that satisfy the
- * skip predicate.
- *
- * Implemented as breadth-first search.
- */
-@Suppress("CyclomaticComplexMethod")
-private fun ComponentStyle.filter(
-    predicate: (ComponentStyle) -> Boolean,
-    skip: (ComponentStyle) -> Boolean,
-): List<ComponentStyle> {
-    val matches = mutableListOf<ComponentStyle>()
-    val queue = ArrayDeque<ComponentStyle>()
-    queue.add(this)
-
-    while (queue.isNotEmpty()) {
-        val current = queue.removeFirst()
-
-        if (skip(current)) continue
-        if (predicate(current)) matches.add(current)
-
-        queue.addChildrenOf(current)
-    }
-
-    return matches
-}
-
-private fun ArrayDeque<ComponentStyle>.addChildrenOf(parent: ComponentStyle) {
-    when (parent) {
-        is StackComponentStyle -> addAll(parent.children)
-        is ButtonComponentStyle -> add(parent.stackComponentStyle)
-        is PackageComponentStyle -> add(parent.stackComponentStyle)
-        is StickyFooterComponentStyle -> add(parent.stackComponentStyle)
-        is CarouselComponentStyle -> addAll(parent.pages)
-        is TabControlButtonComponentStyle -> add(parent.stack)
-        is TabControlStyle.Buttons -> add(parent.stack)
-        is TabControlStyle.Toggle -> add(parent.stack)
-        is TabsComponentStyle -> addAll(parent.tabs.map { it.stack })
-        is TimelineComponentStyle ->
-            addAll(parent.items.flatMap { item -> listOfNotNull(item.title, item.description, item.icon) })
-
-        is TabControlToggleComponentStyle,
-        is ImageComponentStyle,
-        is IconComponentStyle,
-        is TextComponentStyle,
-        -> {
-            // These don't have child components.
-        }
-    }
-}
 
 @Suppress("UNCHECKED_CAST")
 private fun <T : ComponentStyle> T.recursiveMap(

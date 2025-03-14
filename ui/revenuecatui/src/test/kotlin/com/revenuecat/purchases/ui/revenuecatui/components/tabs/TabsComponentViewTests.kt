@@ -161,7 +161,7 @@ class TabsComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow() as TabsComponentStyle
+        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
 
         // Act
         setContent { TabsComponentView(style = tabsComponentStyle, state = state, clickHandler = { }) }
@@ -334,7 +334,7 @@ class TabsComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow() as TabsComponentStyle
+        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
 
         // Act
         setContent { TabsComponentView(style = tabsComponentStyle, state = state, clickHandler = { }) }
@@ -416,7 +416,7 @@ class TabsComponentViewTests {
             packages = packages,
         )
         val styleFactory = StyleFactory(offering)
-        val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+        val rootStackStyle = styleFactory.create(rootStack).getOrThrow().componentStyle as StackComponentStyle
         val state = paywallComponentsState(offering)
 
         // Act
@@ -488,7 +488,7 @@ class TabsComponentViewTests {
                 packages = packages,
             )
             val styleFactory = StyleFactory(offering)
-            val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+            val rootStackStyle = styleFactory.create(rootStack).getOrThrow().componentStyle as StackComponentStyle
             val state = paywallComponentsState(offering)
 
             // Act
@@ -571,7 +571,7 @@ class TabsComponentViewTests {
             packages = packages,
         )
         val styleFactory = StyleFactory(offering)
-        val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+        val rootStackStyle = styleFactory.create(rootStack).getOrThrow().componentStyle as StackComponentStyle
         val state = paywallComponentsState(offering)
 
         // Act
@@ -663,7 +663,7 @@ class TabsComponentViewTests {
                 packages = packages,
             )
             val styleFactory = StyleFactory(offering)
-            val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+            val rootStackStyle = styleFactory.create(rootStack).getOrThrow().componentStyle as StackComponentStyle
             val state = paywallComponentsState(offering)
 
             // Act
@@ -793,7 +793,7 @@ class TabsComponentViewTests {
                 ),
             )
             val styleFactory = StyleFactory(offering)
-            val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+            val rootStackStyle = styleFactory.create(rootStack).getOrThrow().componentStyle as StackComponentStyle
             val state = paywallComponentsState(offering)
 
             // Act
@@ -890,7 +890,7 @@ class TabsComponentViewTests {
             ),
         )
         val styleFactory = StyleFactory(offering)
-        val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+        val rootStackStyle = styleFactory.create(rootStack).getOrThrow().componentStyle as StackComponentStyle
         val state = paywallComponentsState(offering)
 
         // Act
@@ -998,7 +998,7 @@ class TabsComponentViewTests {
             ),
         )
         val styleFactory = StyleFactory(offering)
-        val rootStackStyle = styleFactory.create(rootStack).getOrThrow() as StackComponentStyle
+        val rootStackStyle = styleFactory.create(rootStack).getOrThrow().componentStyle as StackComponentStyle
         val state = paywallComponentsState(offering)
 
         // Act
