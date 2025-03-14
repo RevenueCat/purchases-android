@@ -273,6 +273,10 @@ internal class StyleFactory(
                 else -> to
             }
 
+        /**
+         * Applies the bottom window insets to this ComponentStyle if [shouldApply] is true and this is a stack or
+         * sticky footer.
+         */
         @Suppress("UNCHECKED_CAST")
         fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(shouldApply: Boolean): T =
             if (shouldApply) {
