@@ -12,6 +12,8 @@ final class PurchasesAPI {
     static void checkConfiguration(final Context context,
                                    final ExecutorService executorService) {
         Purchases.configureInCustomEntitlementsComputationMode(context, "", "");
+        Purchases.configureInCustomEntitlementsComputationMode(context, "", "", false);
+        Purchases.configureInCustomEntitlementsComputationMode(context, "", "", false, false);
     }
 
     static void check(final Purchases purchases) {

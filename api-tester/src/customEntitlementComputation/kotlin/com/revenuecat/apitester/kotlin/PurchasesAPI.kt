@@ -11,6 +11,25 @@ private class PurchasesAPI {
         val configured: Boolean = Purchases.isConfigured
 
         Purchases.configureInCustomEntitlementsComputationMode(context, apiKey = "", appUserID = "")
+        Purchases.configureInCustomEntitlementsComputationMode(
+            context,
+            apiKey = "",
+            appUserID = "",
+            showInAppMessagesAutomatically = false,
+        )
+        Purchases.configureInCustomEntitlementsComputationMode(
+            context,
+            apiKey = "",
+            appUserID = "",
+            pendingTransactionsForPrepaidPlansEnabled = false,
+        )
+        Purchases.configureInCustomEntitlementsComputationMode(
+            context,
+            apiKey = "",
+            appUserID = "",
+            showInAppMessagesAutomatically = false,
+            pendingTransactionsForPrepaidPlansEnabled = false,
+        )
     }
 
     fun check(purchases: Purchases) {
