@@ -44,7 +44,6 @@ orbs:
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@3.0.0
   codecov: codecov/codecov@3.2.4
-  ruby: circleci/ruby@2.5.0
 
 parameters:
   action:
@@ -155,6 +154,28 @@ commands:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
       - android/save-gradle-cache
       - android/save-build-cache
+
+  install-ruby:
+    description: "Installs the provided version of Ruby using RVM."
+    parameters:
+      version:
+        type: string
+    steps:
+      - run:
+          name: Install RVM and Ruby << parameters.version >>
+          command: |
+            # Import GPG keys first
+            command curl -sSL https://rvm.io/mpapis.asc | gpg --import -
+            command curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
+            # Install RVM and Ruby
+            \curl -sSL https://get.rvm.io | bash -s stable
+            source ~/.rvm/scripts/rvm
+            rvm install << parameters.version >>
+            rvm use << parameters.version >>
+            echo 'source ~/.rvm/scripts/rvm' >> $BASH_ENV
+            echo 'rvm use << parameters.version >>' >> $BASH_ENV
+            source $BASH_ENV
+            ruby -v
 
 jobs:
 
@@ -574,8 +595,8 @@ jobs:
       - checkout
       - install-sdkman
       # Required by Emerge CLI
-      - ruby/install:
-          version: '3.2.0'
+      - install-ruby:
+          version: 3.2.0
       - run:
           name: Install Emerge CLI
           command: gem install emerge
