@@ -278,37 +278,53 @@ class Purchases internal constructor(
          * @param context: the Application context object of your Application.
          * @param apiKey: the API Key for your app. Obtained from the RevenueCat dashboard.
          * @param appUserID: a unique id for identifying the user.
-         * @param showInAppMessagesAutomatically Enable this setting to show in-app messages from Google Play
-         * automatically. Default is enabled. For more info: [rev.cat](https://rev.cat/googleplayinappmessaging). If
-         * this setting is disabled, you can show the snackbar by calling [Purchases.showInAppMessagesIfNeeded].
-         * @param pendingTransactionsForPrepaidPlansEnabled Enable this setting if you want to allow pending purchases
-         * for prepaid subscriptions (only supported in Google Play). Note that entitlements are not granted until
-         * payment is done. Default is enabled.
-         *
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
-        @JvmOverloads
         @JvmStatic
         fun configureInCustomEntitlementsComputationMode(
             context: Context,
             apiKey: String,
             appUserID: String,
-            showInAppMessagesAutomatically: Boolean = true,
-            pendingTransactionsForPrepaidPlansEnabled: Boolean = true,
+        ): Purchases =
+            configureInCustomEntitlementsComputationMode(
+                configuration = PurchasesConfigurationForCustomEntitlementsComputationMode
+                    .Builder(
+                        context = context,
+                        apiKey = apiKey,
+                        appUserID = appUserID,
+                    )
+                    .showInAppMessagesAutomatically(true)
+                    .pendingTransactionsForPrepaidPlansEnabled(true)
+                    .build(),
+            )
+
+        /**
+         * Configures an instance of the Purchases SDK with a specified API key. The instance will
+         * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
+         * @param configuration The [PurchasesConfigurationForCustomEntitlementsComputationMode] object you wish to use
+         * to configure [Purchases].
+         *
+         * @return An instantiated `[Purchases] object that has been set as a singleton.
+         */
+        @JvmStatic
+        fun configureInCustomEntitlementsComputationMode(
+            configuration: PurchasesConfigurationForCustomEntitlementsComputationMode,
         ): Purchases {
             if (isConfigured) {
                 infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
             }
-            val configuration = PurchasesConfiguration.Builder(context, apiKey)
-                .appUserID(appUserID)
-                .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
-                .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
-                .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
-                .build()
+            val purchasesConfiguration = with(configuration) {
+                PurchasesConfiguration.Builder(context, apiKey)
+                    .appUserID(appUserID)
+                    .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+                    .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
+                    .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
+                    .build()
+            }
             return PurchasesFactory(
-                isDebugBuild = DefaultIsDebugBuildProvider(context),
+                isDebugBuild = DefaultIsDebugBuildProvider(configuration.context),
             ).createPurchases(
-                configuration,
+                purchasesConfiguration,
                 platformInfo,
                 proxyURL,
             ).also {

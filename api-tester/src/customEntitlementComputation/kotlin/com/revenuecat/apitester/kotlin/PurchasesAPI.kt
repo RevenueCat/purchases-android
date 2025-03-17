@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import android.content.Context
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
 private class PurchasesAPI {
@@ -12,23 +13,15 @@ private class PurchasesAPI {
 
         Purchases.configureInCustomEntitlementsComputationMode(context, apiKey = "", appUserID = "")
         Purchases.configureInCustomEntitlementsComputationMode(
-            context,
-            apiKey = "",
-            appUserID = "",
-            showInAppMessagesAutomatically = false,
-        )
-        Purchases.configureInCustomEntitlementsComputationMode(
-            context,
-            apiKey = "",
-            appUserID = "",
-            pendingTransactionsForPrepaidPlansEnabled = false,
-        )
-        Purchases.configureInCustomEntitlementsComputationMode(
-            context,
-            apiKey = "",
-            appUserID = "",
-            showInAppMessagesAutomatically = false,
-            pendingTransactionsForPrepaidPlansEnabled = false,
+            PurchasesConfigurationForCustomEntitlementsComputationMode
+                .Builder(
+                    context = context,
+                    apiKey = "",
+                    appUserID = "",
+                )
+                .showInAppMessagesAutomatically(false)
+                .pendingTransactionsForPrepaidPlansEnabled(false)
+                .build(),
         )
     }
 
