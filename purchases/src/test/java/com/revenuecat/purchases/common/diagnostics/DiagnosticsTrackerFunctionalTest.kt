@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
@@ -38,6 +39,7 @@ class DiagnosticsTrackerFunctionalTest {
         val appConfig = mockk<AppConfig>().apply {
             every { playStoreVersionName } returns "test-store-version-name"
             every { playServicesVersionName } returns "test-services-version-name"
+            every { store } returns Store.PLAY_STORE
         }
         every { applicationContext.filesDir } returns tempTestFolder
 
