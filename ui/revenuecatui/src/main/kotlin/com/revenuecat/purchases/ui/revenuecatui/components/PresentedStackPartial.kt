@@ -41,7 +41,7 @@ internal class PresentedStackPartial(
         operator fun invoke(
             from: PartialStackComponent,
             aliases: Map<ColorAlias, ColorScheme>,
-            createStackComponentStyle: (
+            createBadgeStackComponentStyle: (
                 StackComponent,
             ) -> Result<StackComponentStyle, NonEmptyList<PaywallValidationError>>,
         ): Result<PresentedStackPartial, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
@@ -58,7 +58,7 @@ internal class PresentedStackPartial(
                 ?.toShadowStyles(aliases = aliases)
                 .orSuccessfullyNull(),
             fifth = from.badge
-                ?.toBadgeStyle(createStackComponentStyle)
+                ?.toBadgeStyle(createBadgeStackComponentStyle)
                 .orSuccessfullyNull(),
         ) { backgroundStyles, backgroundColorStyles, borderStyles, shadowStyles, badgeStyle ->
             PresentedStackPartial(

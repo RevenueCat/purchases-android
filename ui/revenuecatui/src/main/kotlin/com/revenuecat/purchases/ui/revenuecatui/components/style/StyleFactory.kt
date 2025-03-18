@@ -326,7 +326,7 @@ internal class StyleFactory(
                 PresentedStackPartial(
                     from = partial,
                     aliases = colorAliases,
-                    createStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) },
+                    createBadgeStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) },
                 )
             }
             .mapError { nonEmptyListOf(it) },

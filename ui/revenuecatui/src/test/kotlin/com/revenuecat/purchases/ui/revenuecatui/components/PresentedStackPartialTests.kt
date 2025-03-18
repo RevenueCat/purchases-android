@@ -99,7 +99,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -132,7 +132,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -165,7 +165,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow()
                     )
                 ),
@@ -189,7 +189,7 @@ internal class PresentedStackPartialTests {
                                 overflow = null,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -208,7 +208,7 @@ internal class PresentedStackPartialTests {
                                 overflow = null,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -227,7 +227,7 @@ internal class PresentedStackPartialTests {
                                 overflow = null,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                     )
                 ),
@@ -263,7 +263,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         override = null,
                         expected = PresentedStackPartial(
@@ -295,7 +295,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.SCROLL
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                     )
                 ),
@@ -331,7 +331,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -350,7 +350,7 @@ internal class PresentedStackPartialTests {
                                 overflow = null,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -381,7 +381,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                     )
                 ),
@@ -417,7 +417,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -436,7 +436,7 @@ internal class PresentedStackPartialTests {
                                 overflow = null,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -467,7 +467,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                     )
                 ),
@@ -503,7 +503,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.SCROLL,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -534,7 +534,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -565,7 +565,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                     )
                 ),
@@ -589,7 +589,7 @@ internal class PresentedStackPartialTests {
                                 overflow = null,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         override = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -620,7 +620,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                         expected = PresentedStackPartial(
                             from = PartialStackComponent(
@@ -651,7 +651,7 @@ internal class PresentedStackPartialTests {
                                 overflow = StackComponent.Overflow.NONE,
                             ),
                             aliases = emptyMap(),
-                            createStackComponentStyle = ::createStackComponentStyle,
+                            createBadgeStackComponentStyle = ::createStackComponentStyle,
                         ).getOrThrow(),
                     )
                 ),
@@ -703,7 +703,7 @@ internal class PresentedStackPartialTests {
                     ColorAlias("existing-border-key") to ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
                     ColorAlias("existing-shadow-key") to ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
                 ),
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -749,7 +749,7 @@ internal class PresentedStackPartialTests {
                     firstBorderKey to ColorScheme(light = ColorInfo.Alias(secondBorderKey)),
                     firstShadowKey to ColorScheme(light = ColorInfo.Alias(secondShadowKey)),
                 ),
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -784,7 +784,7 @@ internal class PresentedStackPartialTests {
                     existingBorderKey to ColorScheme(light = ColorInfo.Hex(expectedBorderColor.toArgb())),
                     existingShadowKey to ColorScheme(light = ColorInfo.Hex(expectedShadowColor.toArgb())),
                 ),
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -821,7 +821,7 @@ internal class PresentedStackPartialTests {
                 aliases = mapOf(
                     ColorAlias("existing-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
                 ),
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -841,7 +841,7 @@ internal class PresentedStackPartialTests {
                 aliases = mapOf(
                     existingBackgroundColorKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
                 ),
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -870,7 +870,7 @@ internal class PresentedStackPartialTests {
                     existingBackgroundColorKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
                     existingBackgroundKey to ColorScheme(light = ColorInfo.Hex(expectedBackground.toArgb())),
                 ),
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -898,7 +898,7 @@ internal class PresentedStackPartialTests {
                     ),
                 ),
                 aliases = emptyMap(),
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -1001,7 +1001,7 @@ internal class PresentedStackPartialTests {
             val actualResult = PresentedStackPartial(
                 from = partial,
                 aliases = colorAliases,
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -1100,7 +1100,7 @@ internal class PresentedStackPartialTests {
             val actualResult = PresentedStackPartial(
                 from = partial,
                 aliases = colorAliases,
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -1190,7 +1190,7 @@ internal class PresentedStackPartialTests {
             val actualResult = PresentedStackPartial(
                 from = partial,
                 aliases = colorAliases,
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
@@ -1274,7 +1274,7 @@ internal class PresentedStackPartialTests {
             val actualResult = PresentedStackPartial(
                 from = partial,
                 aliases = colorAliases,
-                createStackComponentStyle = ::createStackComponentStyle,
+                createBadgeStackComponentStyle = ::createStackComponentStyle,
             )
 
             // Assert
