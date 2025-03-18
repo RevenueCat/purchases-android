@@ -41,7 +41,6 @@ internal class PresentedStackPartial(
         operator fun invoke(
             from: PartialStackComponent,
             aliases: Map<ColorAlias, ColorScheme>,
-            @Suppress("MaxLineLength")
             createStackComponentStyle: (
                 StackComponent,
             ) -> Result<StackComponentStyle, NonEmptyList<PaywallValidationError>>,
