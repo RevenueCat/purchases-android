@@ -24,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
-import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -145,13 +144,7 @@ internal class StackComponentState(
 
     @get:JvmSynthetic
     val badge by derivedStateOf {
-        style.badge?.let { badgeStyle ->
-            BadgeStyle(
-                stackStyle = badgeStyle.stackStyle,
-                style = presentedPartial?.partial?.badge?.style ?: badgeStyle.style,
-                alignment = presentedPartial?.partial?.badge?.alignment ?: badgeStyle.alignment,
-            )
-        }
+        presentedPartial?.badgeStyle ?: style.badge
     }
 
     @get:JvmSynthetic
