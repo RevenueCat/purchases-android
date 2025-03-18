@@ -261,10 +261,12 @@ internal class TabsComponentTests {
                             "radius": 20.1,
                             "x": 23.6,
                             "y": 45.2
-                          }
+                          },
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = TabsComponent(
+                            visible = false,
                             control = TabsComponent.TabControl.Buttons(
                                 stack = StackComponent(
                                     components = listOf(

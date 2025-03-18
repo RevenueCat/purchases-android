@@ -36,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -50,6 +51,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.net.URL
 
@@ -167,6 +169,80 @@ class PaywallComponentDataValidationTests {
         assertNotNull(validated.errors)
         assertEquals(validated.errors?.size, 1)
         assertEquals(validated.errors?.first(), AllLocalizationsMissing(defaultLocale))
+    }
+
+    @Test
+    fun `Should use language-only localizations if available`() {
+        // Arrange
+        data class Args(
+            val defaultLocale: String,
+            val localizationsLocale: String,
+            val variableLocalizationsLocale: String,
+        )
+
+        listOf(
+            Args(
+                defaultLocale = "en_US",
+                localizationsLocale = "en",
+                variableLocalizationsLocale = "en",
+            ),
+            Args(
+                defaultLocale = "zh_Hans",
+                localizationsLocale = "zh_Hans",
+                variableLocalizationsLocale = "zh_Hans",
+            ),
+            Args(
+                defaultLocale = "zh_Hans_CN",
+                localizationsLocale = "zh_Hans",
+                variableLocalizationsLocale = "zh_Hans",
+            ),
+            Args(
+                defaultLocale = "zh_CN",
+                localizationsLocale = "zh_Hans_CN",
+                variableLocalizationsLocale = "zh_Hans_CN",
+            ),
+        ).forEach { args ->
+            val defaultLocale = LocaleId(args.defaultLocale)
+            val localizations = mapOf(
+                LocaleId(args.localizationsLocale) to mapOf(LocalizationKey("key") to LocalizationData.Text("value"))
+            )
+            val variableLocalizations = mapOf(
+                LocaleId(args.variableLocalizationsLocale) to variableLocalizationKeysForEnUs()
+            )
+            val data = PaywallComponentsData(
+                templateName = "template",
+                assetBaseURL = URL("https://assets.pawwalls.com"),
+                componentsConfig = ComponentsConfig(
+                    base = PaywallComponentsConfig(
+                        stack = StackComponent(components = emptyList()),
+                        background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                        stickyFooter = null,
+                    ),
+                ),
+                componentsLocalizations = localizations,
+                defaultLocaleIdentifier = defaultLocale,
+            )
+            val offering = Offering(
+                identifier = "identifier",
+                serverDescription = "serverDescription",
+                metadata = emptyMap(),
+                availablePackages = emptyList(),
+                paywallComponents = Offering.PaywallComponents(UiConfig(localizations = variableLocalizations), data),
+            )
+
+            // Act
+            val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+            // Assert
+            when(validated) {
+                is PaywallValidationResult.Legacy ->
+                    fail("Failed to validate $args, errors: " + validated.errors?.joinToString())
+                is PaywallValidationResult.Components -> {
+                    assertNull(validated.errors)
+                    assertEquals(defaultLocale, validated.locales.head)
+                }
+            }
+        }
     }
 
     @Test

@@ -12,15 +12,12 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +27,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -62,10 +60,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.scrollable
@@ -100,6 +96,7 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    contentAlpha: Float = 1f,
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -121,6 +118,7 @@ internal fun StackComponentView(
                     badge.stackStyle,
                     badge.alignment,
                     clickHandler,
+                    contentAlpha,
                     modifier,
                 )
             }
@@ -135,6 +133,7 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment.isTop,
                         clickHandler,
+                        contentAlpha,
                         modifier,
                     )
 
@@ -145,16 +144,17 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment,
                         clickHandler,
+                        contentAlpha,
                         modifier,
                     )
                 }
             }
 
             Badge.Style.Nested ->
-                MainStackComponent(stackState, state, clickHandler, modifier, badge)
+                MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier, badge)
         }
     } else {
-        MainStackComponent(stackState, state, clickHandler, modifier)
+        MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier)
     }
 }
 
@@ -166,10 +166,11 @@ private fun StackWithOverlaidBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        MainStackComponent(stackState, state, clickHandler)
+        MainStackComponent(stackState, state, clickHandler, contentAlpha)
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
         }
@@ -194,6 +195,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     topBadge: Boolean,
     clickHandler: suspend (PaywallAction) -> Unit,
+    contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
@@ -209,6 +211,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 stackState,
                 state,
                 clickHandler,
+                contentAlpha,
                 shouldApplyShadow = false,
             )
         }.first()
@@ -356,6 +359,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
     val adjustedCornerRadiuses: CornerRadiuses = when (val badgeRectangleCorners = badgeStack.shape.cornerRadiuses) {
@@ -427,7 +431,7 @@ private fun StackWithShortEdgeToEdgeBadge(
             }
         }
     }
-    MainStackComponent(stackState, state, clickHandler, modifier) {
+    MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
             state,
@@ -469,6 +473,7 @@ private fun MainStackComponent(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
+    contentAlpha: Float,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
@@ -500,122 +505,54 @@ private fun MainStackComponent(
             )
         } else {
             when (val dimension = stackState.dimension) {
-                is Dimension.Horizontal -> Row(
+                is Dimension.Horizontal -> HorizontalStack(
+                    size = stackState.size,
+                    dimension = dimension,
+                    spacing = stackState.spacing,
                     modifier = modifier
                         .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
                         }
                         .then(rootModifier),
-                    verticalAlignment = dimension.alignment.toAlignment(),
-                    horizontalArrangement = dimension.distribution.toHorizontalArrangement(
-                        spacing = stackState.spacing,
-                    ),
                 ) {
-                    val hasChildrenWithFillWidth = stackState.children.any { it.size.width == Fill }
-                    val shouldApplyFillSpacers = stackState.size.width != Fit && !hasChildrenWithFillWidth
-                    val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
-                        Spacer(modifier = Modifier.weight(weight))
-                    }
-                    val edgeSpacerIfNeeded = @Composable {
-                        if (shouldApplyFillSpacers &&
-                            (
-                                dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                                    dimension.distribution == FlexDistribution.SPACE_EVENLY
-                                )
-                        ) {
-                            fillSpaceSpacer(1f)
-                        }
-                    }
-
-                    edgeSpacerIfNeeded()
-
-                    stackState.children.forEachIndexed { index, child ->
-                        val isLast = index == stackState.children.size - 1
-                        val childPadding = if (child.ignoreTopWindowInsets) {
-                            PaddingValues(all = 0.dp)
-                        } else {
-                            topSystemBarsPadding
-                        }
-
+                    items(stackState.children) { _, child ->
                         ComponentView(
                             style = child,
                             state = state,
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .padding(childPadding),
+                                .padding(child.stackChildPadding(topSystemBarsPadding))
+                                .alpha(contentAlpha),
                         )
-
-                        if (dimension.distribution.usesAllAvailableSpace && !isLast) {
-                            Spacer(modifier = Modifier.widthIn(min = stackState.spacing))
-                            if (shouldApplyFillSpacers) {
-                                fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
-                            }
-                        }
                     }
-
-                    edgeSpacerIfNeeded()
                 }
 
-                is Dimension.Vertical -> Column(
+                is Dimension.Vertical -> VerticalStack(
+                    size = stackState.size,
+                    dimension = dimension,
+                    spacing = stackState.spacing,
                     modifier = modifier
                         .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
                         }
                         .then(rootModifier),
-                    verticalArrangement = dimension.distribution.toVerticalArrangement(
-                        spacing = stackState.spacing,
-                    ),
-                    horizontalAlignment = dimension.alignment.toAlignment(),
                 ) {
-                    val hasChildrenWithFillHeight = stackState.children.any { it.size.height == Fill }
-                    val shouldApplyFillSpacers = stackState.size.height != Fit && !hasChildrenWithFillHeight
-                    val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
-                        Spacer(modifier = Modifier.weight(weight))
-                    }
-                    val edgeSpacerIfNeeded = @Composable {
-                        if (shouldApplyFillSpacers &&
-                            (
-                                dimension.distribution == FlexDistribution.SPACE_AROUND ||
-                                    dimension.distribution == FlexDistribution.SPACE_EVENLY
-                                )
-                        ) {
-                            fillSpaceSpacer(1f)
-                        }
-                    }
-
-                    edgeSpacerIfNeeded()
-
-                    stackState.children.forEachIndexed { index, child ->
-                        val isLast = index == stackState.children.size - 1
-                        // In a Vertical container, we only want to apply topSystemBarsPadding to the first child,
-                        // except when that child has `ignoreTopWindowInsets` set to true.
-                        val childPadding = if (index != 0 || child.ignoreTopWindowInsets) {
-                            PaddingValues(all = 0.dp)
-                        } else {
-                            topSystemBarsPadding
-                        }
-
+                    items(stackState.children) { index, child ->
                         ComponentView(
                             style = child,
                             state = state,
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                                .padding(childPadding),
+                                .padding(
+                                    child.verticalStackChildPadding(isFirst = index == 0, topSystemBarsPadding),
+                                )
+                                .alpha(contentAlpha),
                         )
-
-                        if (dimension.distribution.usesAllAvailableSpace && !isLast) {
-                            Spacer(modifier = Modifier.heightIn(min = stackState.spacing))
-                            if (shouldApplyFillSpacers) {
-                                fillSpaceSpacer(if (dimension.distribution == FlexDistribution.SPACE_AROUND) 2f else 1f)
-                            }
-                        }
                     }
-
-                    edgeSpacerIfNeeded()
                 }
 
                 is Dimension.ZLayer -> Box(
@@ -632,17 +569,13 @@ private fun MainStackComponent(
                     contentAlignment = dimension.alignment.toAlignment(),
                 ) {
                     stackState.children.forEach { child ->
-                        val childPadding = if (child.ignoreTopWindowInsets) {
-                            PaddingValues(all = 0.dp)
-                        } else {
-                            topSystemBarsPadding
-                        }
-
                         ComponentView(
                             style = child,
                             state = state,
                             onClick = clickHandler,
-                            modifier = Modifier.padding(childPadding),
+                            modifier = Modifier
+                                .padding(child.stackChildPadding(topSystemBarsPadding))
+                                .alpha(contentAlpha),
                         )
                     }
                 }
@@ -773,7 +706,7 @@ private fun CornerSize.makeAbsolute(placeable: Placeable, density: Density) =
 private fun CornerSize.makeAbsolute(shapeSize: ComposeSize, density: Density) =
     CornerSize(size = toPx(shapeSize, density))
 
-private val FlexDistribution.usesAllAvailableSpace: Boolean
+internal val FlexDistribution.usesAllAvailableSpace: Boolean
     get() = when (this) {
         FlexDistribution.SPACE_AROUND,
         FlexDistribution.SPACE_BETWEEN,
@@ -789,6 +722,33 @@ private val FlexDistribution.usesAllAvailableSpace: Boolean
 private val ComponentStyle.ignoreTopWindowInsets: Boolean
     get() = this is ImageComponentStyle && ignoreTopWindowInsets
 
+/**
+ * Provides the padding to be used for this child of a stack. This should only be used for horizontal and z-layer
+ * stacks. Vertical stacks should use [verticalStackChildPadding].
+ */
+private fun ComponentStyle.stackChildPadding(topSystemBarsPadding: PaddingValues): PaddingValues =
+    if (ignoreTopWindowInsets) {
+        PaddingValues(all = 0.dp)
+    } else {
+        topSystemBarsPadding
+    }
+
+/**
+ * Provides the padding to be used for this child of a stack. This should only be used for vertical stacks. Horizontal
+ * and z-layer stacks should use [stackChildPadding].
+ */
+private fun ComponentStyle.verticalStackChildPadding(
+    isFirst: Boolean,
+    topSystemBarsPadding: PaddingValues,
+): PaddingValues =
+    // In a Vertical container, we only want to apply topSystemBarsPadding to the first child,
+    // except when that child has `ignoreTopWindowInsets` set to true.
+    if (!isFirst || ignoreTopWindowInsets) {
+        PaddingValues(all = 0.dp)
+    } else {
+        topSystemBarsPadding
+    }
+
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
@@ -803,6 +763,7 @@ private fun StackComponentView_Preview_Vertical() {
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -843,6 +804,7 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
             backgroundColor = ColorStyles(
                 light = ColorStyle.Solid(Color.Blue),
             ),
+            visible = true,
             size = Size(width = Fit, height = Fit),
             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
         )
@@ -857,6 +819,7 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -921,6 +884,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -998,6 +962,7 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1050,6 +1015,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                     alignment = HorizontalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fixed(200u), height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1093,6 +1059,7 @@ private fun StackComponentView_Preview_Horizontal() {
                     alignment = VerticalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1127,7 +1094,9 @@ private fun StackComponentView_Preview_Horizontal() {
 @Composable
 private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
     Box(
-        modifier = Modifier.padding(all = 32.dp).background(Color.Gray),
+        modifier = Modifier
+            .padding(all = 32.dp)
+            .background(Color.Gray),
     ) {
         StackComponentView(
             style = StackComponentStyle(
@@ -1151,6 +1120,7 @@ private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
                     alignment = VerticalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1186,6 +1156,7 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
             backgroundColor = ColorStyles(
                 light = ColorStyle.Solid(Color.Blue),
             ),
+            visible = true,
             size = Size(width = Fit, height = Fit),
             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
         )
@@ -1200,6 +1171,7 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
                     alignment = VerticalAlignment.CENTER,
                     distribution = FlexDistribution.START,
                 ),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1261,6 +1233,7 @@ private fun StackComponentView_Preview_ZLayer() {
                     ),
                 ),
                 dimension = Dimension.ZLayer(alignment = TwoDimensionalAlignment.BOTTOM_TRAILING),
+                visible = true,
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
@@ -1312,6 +1285,7 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
                 alignment = VerticalAlignment.CENTER,
                 distribution = FlexDistribution.START,
             ),
+            visible = true,
             size = Size(width = Fixed(200u), height = Fit),
             spacing = 16.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
@@ -1352,6 +1326,7 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
                 alignment = HorizontalAlignment.CENTER,
                 distribution = FlexDistribution.START,
             ),
+            visible = true,
             size = Size(width = Fit, height = Fixed(200u)),
             spacing = 16.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
@@ -1413,6 +1388,7 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing_Fit_Size(
                 ),
             ),
             dimension = dimension,
+            visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fit, height = Fit),
             spacing = 0.dp,
@@ -1463,6 +1439,7 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing(
                 ),
             ),
             dimension = dimension,
+            visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fixed(300u), height = Fixed(300u)),
             spacing = 0.dp,
@@ -1509,6 +1486,7 @@ private fun StackComponentView_Preview_Distribution_SpaceAround_With_Fill_Childr
                 alignment = VerticalAlignment.CENTER,
                 distribution = FlexDistribution.SPACE_AROUND,
             ),
+            visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fixed(300u), height = Fixed(300u)),
             spacing = 8.dp,
@@ -1559,6 +1537,7 @@ private fun StackComponentView_Preview_Distribution_With_Spacing(
                 ),
             ),
             dimension = dimension,
+            visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
             size = Size(width = Fixed(300u), height = Fixed(300u)),
             spacing = 16.dp,
@@ -1589,6 +1568,7 @@ private fun StackComponentView_Preview_HorizontalDivider() {
         StackComponentView(
             style = previewStackComponentStyle(
                 children = emptyList(),
+                visible = true,
                 size = Size(width = Fill, height = Fixed(1u)),
                 dimension = Dimension.Vertical(alignment = HorizontalAlignment.LEADING, FlexDistribution.SPACE_BETWEEN),
                 spacing = 0.dp,
@@ -1620,6 +1600,7 @@ private fun StackComponentView_Preview_VerticalDivider() {
         StackComponentView(
             style = previewStackComponentStyle(
                 children = emptyList(),
+                visible = true,
                 size = Size(width = Fixed(1u), height = Fill),
                 dimension = Dimension.Horizontal(alignment = VerticalAlignment.TOP, FlexDistribution.SPACE_BETWEEN),
                 spacing = 0.dp,
@@ -1638,6 +1619,19 @@ private fun StackComponentView_Preview_VerticalDivider() {
             modifier = Modifier.weight(1f),
         )
     }
+}
+
+@Preview
+@Composable
+private fun StackComponentView_Preview_ContentAlpha() {
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = previewChildren(),
+        ),
+        state = previewEmptyState(),
+        clickHandler = {},
+        contentAlpha = 0.6f,
+    )
 }
 
 @Composable
@@ -1686,6 +1680,7 @@ private fun previewBadge(
                 alignment = HorizontalAlignment.CENTER,
                 distribution = FlexDistribution.CENTER,
             ),
+            visible = true,
             size = Size(width = Fit, height = Fit),
             spacing = 0.dp,
             background = BackgroundStyles.Color(

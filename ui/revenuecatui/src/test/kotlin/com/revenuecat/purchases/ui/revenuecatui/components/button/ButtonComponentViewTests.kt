@@ -81,6 +81,7 @@ class ButtonComponentViewTests {
                             backgroundColor = ColorStyles(
                                 light = ColorStyle.Solid(Color.Yellow),
                             ),
+                            visible = true,
                             size = Size(width = Fill, height = Fill),
                             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
                             margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
@@ -94,6 +95,7 @@ class ButtonComponentViewTests {
                         ),
                     ),
                     dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
+                    visible = true,
                     size = Size(width = Fill, height = Fill),
                     spacing = 16.dp,
                     background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Red))),
@@ -174,7 +176,7 @@ class ButtonComponentViewTests {
             )
         )
         val styleFactory = StyleFactory(localizations = localizations)
-        val style = styleFactory.create(component).getOrThrow() as ButtonComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as ButtonComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,

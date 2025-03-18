@@ -166,6 +166,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Test
     fun addsDefaultHeadersToRequest() {
+        client = createClient(
+            localeProvider = FakeLocaleProvider("en-US", "ja-JP"),
+        )
+        val expectedPreferredLocales = "en_US, ja_JP"
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
@@ -185,12 +189,14 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
         assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
         assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
+        assertThat(request.getHeader("X-Preferred-Locales")).isEqualTo(expectedPreferredLocales)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo("en-US")
         assertThat(request.getHeader("X-Client-Version")).isEqualTo("")
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
         assertThat(request.getHeader("X-Storefront")).isEqualTo("JP")
         assertThat(request.getHeader("X-Is-Debug-Build")).isEqualTo("false")
+        assertThat(request.getHeader("X-Kotlin-Version")).isEqualTo(KotlinVersion.CURRENT.toString())
     }
 
     @Test

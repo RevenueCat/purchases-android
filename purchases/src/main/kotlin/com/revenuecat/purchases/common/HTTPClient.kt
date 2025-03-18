@@ -270,7 +270,7 @@ internal class HTTPClient(
             "X-Platform-Device" to Build.MODEL,
             "X-Platform-Brand" to Build.BRAND,
             "X-Version" to Config.frameworkVersion,
-            "X-Preferred-Locales" to localeProvider.currentLocalesLanguageTags,
+            "X-Preferred-Locales" to localeProvider.currentLocalesLanguageTags.replace(oldChar = '-', newChar = '_'),
             "X-Client-Locale" to appConfig.languageTag,
             "X-Client-Version" to appConfig.versionName,
             "X-Client-Bundle-ID" to appConfig.packageName,
@@ -280,6 +280,7 @@ internal class HTTPClient(
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
             "X-Storefront" to storefrontProvider.getStorefront(),
             "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
+            "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))

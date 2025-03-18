@@ -29,6 +29,8 @@ class StackComponent(
     @get:JvmSynthetic
     val components: List<PaywallComponent>,
     @get:JvmSynthetic
+    val visible: Boolean? = null,
+    @get:JvmSynthetic
     val dimension: Dimension = Vertical(CENTER, START),
     @get:JvmSynthetic
     val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),

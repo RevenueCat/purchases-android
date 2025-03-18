@@ -7,7 +7,10 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import coil.ImageLoader
+import coil.disk.DiskCache
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
@@ -36,6 +39,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
@@ -112,6 +116,7 @@ internal class PurchasesOrchestrator(
             offlineEntitlementsManager,
             customerInfoUpdateHandler,
         ),
+    val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -144,6 +149,9 @@ internal class PurchasesOrchestrator(
         @Synchronized set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
+
+    @get:Synchronized @set:Synchronized
+    var customerCenterListener: CustomerCenterListener? = null
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
@@ -194,7 +202,7 @@ internal class PurchasesOrchestrator(
         dispatch {
             // This needs to happen after the billing client listeners have been set. This is because
             // we perform operations with the billing client in the lifecycle observer methods.
-            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
+            processLifecycleOwnerProvider().lifecycle.addObserver(lifecycleHandler)
             application.registerActivityLifecycleCallbacks(this)
         }
 
@@ -533,7 +541,7 @@ internal class PurchasesOrchestrator(
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
 
         dispatch {
-            ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleHandler)
+            processLifecycleOwnerProvider().lifecycle.removeObserver(lifecycleHandler)
         }
     }
 
@@ -1284,9 +1292,33 @@ internal class PurchasesOrchestrator(
                 currentLogHandler = value
             }
 
+        private var cachedImageLoader: ImageLoader? = null
+
         const val frameworkVersion = Config.frameworkVersion
 
         var proxyURL: URL? = null
+
+        @Suppress("MagicNumber")
+        @Synchronized
+        fun getImageLoader(context: Context): ImageLoader {
+            val currentImageLoader = cachedImageLoader
+            return if (currentImageLoader == null) {
+                val maxCacheSizeBytes = 25 * 1024 * 1024L // 25 MB
+                val cacheFolder = "revenuecatui_cache"
+                val imageLoader = ImageLoader.Builder(context)
+                    .diskCache {
+                        DiskCache.Builder()
+                            .directory(context.cacheDir.resolve(cacheFolder))
+                            .maxSizeBytes(maxCacheSizeBytes)
+                            .build()
+                    }
+                    .build()
+                cachedImageLoader = imageLoader
+                imageLoader
+            } else {
+                currentImageLoader
+            }
+        }
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.

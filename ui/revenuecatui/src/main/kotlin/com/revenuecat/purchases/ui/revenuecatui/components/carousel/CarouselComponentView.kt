@@ -58,6 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
 
@@ -96,22 +97,7 @@ internal fun CarouselComponentView(
     }
 
     carouselState.autoAdvance?.let { autoAdvance ->
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(autoAdvance.msTimePerPage.toLong())
-                val nextPage = if (carouselState.loop) {
-                    pagerState.currentPage + 1
-                } else {
-                    (pagerState.currentPage + 1) % pageCount
-                }
-                pagerState.animateScrollToPage(
-                    page = nextPage,
-                    animationSpec = tween(
-                        autoAdvance.msTransitionTime,
-                    ),
-                )
-            }
-        }
+        EnableAutoAdvance(autoAdvance, pagerState, carouselState.loop, pageCount)
     }
 
     Column(
@@ -142,12 +128,11 @@ internal fun CarouselComponentView(
 
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = carouselState.pagePeek),
+            contentPadding = PaddingValues(horizontal = carouselState.pagePeek + carouselState.pageSpacing),
             // This will load all the pages at once, which allows the pager to always have the correct size
             beyondViewportPageCount = pageCount,
             pageSpacing = carouselState.pageSpacing,
             verticalAlignment = carouselState.pageAlignment,
-            userScrollEnabled = style.autoAdvance == null,
         ) { page ->
             StackComponentView(
                 style = carouselState.pages[page % pageCount],
@@ -267,6 +252,36 @@ private fun Indicator(
     )
 }
 
+@Composable
+private fun EnableAutoAdvance(
+    autoAdvance: CarouselComponent.AutoAdvancePages,
+    pagerState: PagerState,
+    shouldLoop: Boolean,
+    pageCount: Int,
+) {
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(autoAdvance.msTimePerPage.toLong())
+            if (pagerState.isScrollInProgress) continue
+            val nextPage = if (shouldLoop) {
+                pagerState.currentPage + 1
+            } else {
+                (pagerState.currentPage + 1) % pageCount
+            }
+            try {
+                pagerState.animateScrollToPage(
+                    page = nextPage,
+                    animationSpec = tween(
+                        autoAdvance.msTransitionTime,
+                    ),
+                )
+            } catch (_: CancellationException) {
+                // Do nothing, so we continue scrolling on the next loop
+            }
+        }
+    }
+}
+
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
     // When looping, we use a very large number of pages to allow for "infinite" scrolling
     // We need to calculate the initial page index in the middle of that large number of pages to make the carousel
@@ -329,6 +344,7 @@ private fun previewCarouselComponentStyle(
     pages: List<StackComponentStyle> = previewPages(),
     initialPageIndex: Int = 0,
     alignment: Alignment.Vertical = Alignment.CenterVertically,
+    visible: Boolean = true,
     size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     sidePagePeek: Dp = 20.dp,
     spacing: Dp = 8.dp,
@@ -351,6 +367,7 @@ private fun previewCarouselComponentStyle(
         pages = pages,
         initialPageIndex = initialPageIndex,
         pageAlignment = alignment,
+        visible = visible,
         size = size,
         pagePeek = sidePagePeek,
         pageSpacing = spacing,
@@ -432,6 +449,7 @@ private fun previewPage(
             alignment = HorizontalAlignment.CENTER,
             distribution = FlexDistribution.CENTER,
         ),
+        visible = true,
         size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fixed(height)),
         spacing = 8.dp,
         background = BackgroundStyles.Color(

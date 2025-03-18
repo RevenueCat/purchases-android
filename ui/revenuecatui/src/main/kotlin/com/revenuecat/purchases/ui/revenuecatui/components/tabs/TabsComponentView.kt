@@ -177,6 +177,7 @@ private fun TabsComponentView_Preview() {
 
     TabsComponentView(
         style = TabsComponentStyle(
+            visible = true,
             size = Size(width = Fill, height = Fill),
             padding = PaddingValues(all = 16.dp),
             margin = PaddingValues(all = 16.dp),
@@ -259,6 +260,7 @@ private fun TabsComponentView_Preview() {
 private fun previewStackComponentStyle(
     children: List<ComponentStyle>,
     dimension: Dimension = Vertical(alignment = HorizontalAlignment.CENTER, distribution = FlexDistribution.CENTER),
+    visible: Boolean = true,
     size: Size = Size(width = Fill, height = Fill),
     spacing: Dp = 0.dp,
     background: BackgroundStyles = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Transparent))),
@@ -272,6 +274,7 @@ private fun previewStackComponentStyle(
     StackComponentStyle(
         children = children,
         dimension = dimension,
+        visible = visible,
         size = size,
         spacing = spacing,
         background = background,

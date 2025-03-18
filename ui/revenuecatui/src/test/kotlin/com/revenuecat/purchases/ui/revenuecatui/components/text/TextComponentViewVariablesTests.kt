@@ -1288,7 +1288,7 @@ internal class TextComponentViewVariablesTests(
             localizations = localizations,
             offering = offering,
         )
-        val style = styleFactory.create(textComponent).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(textComponent).getOrThrow().componentStyle as TextComponentStyle
 
         // Act
         setContent { TextComponentView(style = style, state = state, modifier = Modifier.testTag("text")) }

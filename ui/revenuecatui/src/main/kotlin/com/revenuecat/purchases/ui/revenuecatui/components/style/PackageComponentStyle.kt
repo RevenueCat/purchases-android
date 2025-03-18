@@ -13,5 +13,6 @@ internal data class PackageComponentStyle(
     @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
 ) : ComponentStyle {
+    override val visible: Boolean = stackComponentStyle.visible
     override val size: Size = stackComponentStyle.size
 }

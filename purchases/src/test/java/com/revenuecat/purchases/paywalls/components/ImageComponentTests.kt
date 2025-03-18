@@ -88,7 +88,8 @@ internal class ImageComponentTests {
                             }
                           },
                           "override_source_lid": "abc123",
-                          "type": "image"
+                          "type": "image",
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = ImageComponent(
@@ -101,6 +102,7 @@ internal class ImageComponentTests {
                                     width = 400.toUInt(),
                                 )
                             ),
+                            visible = false,
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             overrideSourceLid = LocalizationKey("abc123"),
                             maskShape = MaskShape.Rectangle(

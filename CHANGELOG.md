@@ -1,3 +1,116 @@
+## 8.14.3
+### 🔄 Other Changes
+* Allows configuring `showInAppMessagesAutomatically` and `pendingTransactionsForPrepaidPlansEnabled` in customEntitlementComputation mode (#2260) via JayShortway (@JayShortway)
+* [Paywalls V2] Tweaks the `MissingPackage` error message. (#2256) via JayShortway (@JayShortway)
+* [Paywalls V2] Avoids re-parsing the component tree to find packages and tabs (#2252) via JayShortway (@JayShortway)
+* [EXTERNAL] Set metaspace size to avoid "Daemon disappeared" failures (#2237) contributed by @runningcode (#2255) via Toni Rico (@tonidero)
+* [Paywalls V2] Timeline component fixes (#2253) via Toni Rico (@tonidero)
+* Updates Gemfile.lock (#2254) via RevenueCat Git Bot (@RCGitBot)
+* Update fastlane plugin (#2251) via Toni Rico (@tonidero)
+* [Paywalls V2] Refactors `StyleFactory` (#2247) via JayShortway (@JayShortway)
+* Add refresh button to PaywallTester app (#2244) via Toni Rico (@tonidero)
+
+## 8.14.2
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls V2] Considers script when matching locales (#2245) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* [Paywalls V2] Reorganizes stack arrangement logic (#2238) via JayShortway (@JayShortway)
+
+## 8.14.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: Remove API dependency with Coil (#2229) via Toni Rico (@tonidero)
+* Set default interfaces compiler flag to `all-compatibility` (#2227) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Prevent Paywalls V1 Template 7 from defaulting empty badge to showing percent off (#2222) via Josh Holtz (@joshdholtz)
+* Fixes inconsistent package ordering on tiered paywalls (template 7) (#2221) via JayShortway (@JayShortway)
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix background painting outside composable (#2236) via Toni Rico (@tonidero)
+* [Paywalls V2] Avoids the theme from influencing the text color (#2235) via JayShortway (@JayShortway)
+* [Paywalls V2] Handles potential locale id inconsistency between strings and variables (#2234) via JayShortway (@JayShortway)
+* [Paywalls V2] Disable all buttons when any action is in progress (#2219) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes locales without region and `X-Preferred-Locales` (#2230) via JayShortway (@JayShortway)
+* [Paywalls V2] Fix CarouselComponent peek (#2228) via Toni Rico (@tonidero)
+### Customer Center
+#### 🐞 Bugfixes
+* Fix `CustomerCenterActivity` colors on dark mode (#2225) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2233) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2226) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.14.0
+## RevenueCat SDK
+### ✨ New Features
+* Add `hasPaywall` property to `Offering` (#2212) via Antonio Pallares (@ajpallares)
+### 🐞 Bugfixes
+* Fix empty options in NoActive subscriptions screen (#2168) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Create `CustomerCenterListener` (#2199) via Cesar de la Vega (@vegaro)
+#### 🐞 Bugfixes
+* Reload Customer Center after a successful restore (#2203) via Cesar de la Vega (@vegaro)
+* Fixes CustomerCenter state not refreshing when reopening (#2202) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Improves PaywallsTester multi-API-key support (#2218) via JayShortway (@JayShortway)
+* [EXTERNAL] Bump Emerge Gradle Plugin and Snaphsots version (#2211) via @runningcode (#2217) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2207) via RevenueCat Git Bot (@RCGitBot)
+* [Paywalls V2] Enables template previews again (#2215) via JayShortway (@JayShortway)
+* Adds support for switching between 2 API keys to PaywallsTester (#2213) via JayShortway (@JayShortway)
+* Adds a `LocalPreviewImageLoader` `CompositionLocal`. (#2201) via JayShortway (@JayShortway)
+* Logs from RevenueCatUI are now tagged with `[Purchases]` too. (#2206) via JayShortway (@JayShortway)
+* [Paywalls V2] Ignores template previews for now. (#2209) via JayShortway (@JayShortway)
+* [Paywalls V2] Some more template previews optimizations (#2208) via JayShortway (@JayShortway)
+* chore: Delete key from customer center survey event (#2204) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Extract ImageLoader to use a single one (#2146) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds progress indicator to buttons (#2198) via JayShortway (@JayShortway)
+* Avoids triggering "unscheduled" workflows when triggering workflows via the CircleCI API (#2200) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds a note on publishing to the missing paywall error. (#2193) via JayShortway (@JayShortway)
+* Adds X-Kotlin-Version header. (#2197) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds docs on ignored arguments for Paywalls V2 in more places. (#2195) via JayShortway (@JayShortway)
+* chore: Add backend integration test for events (#2189) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Adds CI job to update template previews (#2192) via JayShortway (@JayShortway)
+
+## 8.13.0
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Creates a `ShowCustomerCenter ` contract for displaying as an Activity (#2181) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Paywalls V2] Adds template previews (#2184) via JayShortway (@JayShortway)
+* Removes Intent.FLAG_ACTIVITY_NEW_TASK when starting CustomerCenterActivity (#2190) via Cesar de la Vega (@vegaro)
+* chore: Introduce preview for no active subscriptions (#2188) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Allow manual scrolling if auto-advance is enabled (#2182) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds `visible` property to all components (#2172) via JayShortway (@JayShortway)
+
+## 8.12.2
+## RevenueCatUI SDK
+#### 🐞 Bugfixes
+* Fix issue with release minification with Emerge's annotation  (#2176) via Toni Rico (@tonidero)
+### Customer Center
+#### 🐞 Bugfixes
+* fix: Track customer center events (#2178) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Enable paywall tester minification (#2177) via Toni Rico (@tonidero)
+
+## 8.12.1
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Fix promotional offer not being displayed (#2173) via Cesar de la Vega (@vegaro)
+* Fix back button dismissing the Customer Center (#2171) via Cesar de la Vega (@vegaro)
+
 ## 8.12.0
 ## RevenueCat SDK
 ### 🐞 Bugfixes

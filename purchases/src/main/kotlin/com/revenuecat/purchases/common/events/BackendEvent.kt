@@ -53,8 +53,6 @@ internal sealed class BackendEvent : Event {
         val url: String?,
         @SerialName("survey_option_id")
         val surveyOptionID: String?,
-        @SerialName("survey_option_title_key")
-        val surveyOptionTitleKey: String?,
     ) : BackendEvent()
 
     /**

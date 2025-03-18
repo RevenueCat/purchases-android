@@ -37,16 +37,13 @@ internal sealed class BackendStoredEvent : Event {
  * Converts a `BackendStoredEvent` into a `BackendEvent`.
  *
  * @receiver The stored backend event to be converted.
- * @return A `BackendEvent` instance or `null` if conversion is not possible.
+ * @return A `BackendEvent` instance.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-internal fun BackendStoredEvent.toBackendEvent(): BackendEvent? {
+internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
     return when (this) {
         is BackendStoredEvent.Paywalls -> { this.event }
-        is BackendStoredEvent.CustomerCenter -> {
-            // For now, returning null:
-            null
-        }
+        is BackendStoredEvent.CustomerCenter -> { this.event }
     }
 }
 
@@ -106,7 +103,6 @@ internal fun CustomerCenterImpressionEvent.toBackendStoredEvent(
             path = null,
             url = null,
             surveyOptionID = null,
-            surveyOptionTitleKey = null,
         ),
     )
 }
@@ -138,7 +134,6 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
             path = data.path,
             url = data.url,
             surveyOptionID = data.surveyOptionID,
-            surveyOptionTitleKey = data.surveyOptionTitleKey,
         ),
     )
 }

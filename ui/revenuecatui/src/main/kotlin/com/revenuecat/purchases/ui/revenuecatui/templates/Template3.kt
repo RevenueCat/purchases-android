@@ -114,6 +114,8 @@ private fun ColumnScope.LandscapeContent(state: PaywallState.Loaded.Legacy, view
             .padding(horizontal = UIConstant.defaultHorizontalPadding),
     ) {
         Column(
+            modifier = Modifier
+                .weight(UIConstant.halfWeight),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
@@ -125,7 +127,10 @@ private fun ColumnScope.LandscapeContent(state: PaywallState.Loaded.Legacy, view
             Spacer(modifier = Modifier.weight(UIConstant.halfWeight))
         }
 
-        Column {
+        Column(
+            modifier = Modifier
+                .weight(UIConstant.halfWeight),
+        ) {
             Features(state, spacing = Template3UIConstants.featureSpacingLandscape)
 
             OfferDetails(state = state, color = state.templateConfiguration.getCurrentColors().text2)

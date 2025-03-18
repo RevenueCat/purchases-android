@@ -99,7 +99,7 @@ internal class IconComponentState(
     }
 
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
+    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
     @get:JvmSynthetic
     val url: String by derivedStateOf {
