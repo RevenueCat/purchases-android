@@ -50,4 +50,13 @@ interface CustomerCenterListener {
     fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
         // Default empty implementation
     }
+
+    /**
+     * Called when a customer center management option is selected.
+     *
+     * @param action The selected management action
+     */
+    fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
+        // Default empty implementation
+    }
 }

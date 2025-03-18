@@ -25,6 +25,7 @@ import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -148,6 +149,7 @@ internal class CustomerCenterViewModelImpl(
         path: CustomerCenterConfigData.HelpPath,
         product: StoreProduct?,
     ) {
+        notifyListenersForManagementOptionSelected(path)
         path.feedbackSurvey?.let { feedbackSurvey ->
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 goBackToMain()
@@ -682,5 +684,26 @@ internal class CustomerCenterViewModelImpl(
     private fun notifyListenersForFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
         listener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
         purchases.customerCenterListener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
+    }
+
+    private fun notifyListenersForManagementOptionSelected(path: CustomerCenterConfigData.HelpPath) {
+        val action = when (path.type) {
+            CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE ->
+                CustomerCenterManagementOption.MissingPurchase
+
+            CustomerCenterConfigData.HelpPath.PathType.CANCEL ->
+                CustomerCenterManagementOption.Cancel
+
+            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL ->
+                path.url?.let {
+                    CustomerCenterManagementOption.CustomUrl(Uri.parse(it))
+                }
+
+            else -> null
+        }
+        action?.let {
+            listener?.onManagementOptionSelected(it)
+            purchases.customerCenterListener?.onManagementOptionSelected(it)
+        }
     }
 }
