@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
@@ -10,6 +11,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgrou
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.toBadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -22,6 +26,7 @@ internal class PresentedStackPartial(
     @get:JvmSynthetic val backgroundStyles: BackgroundStyles?,
     @get:JvmSynthetic val borderStyles: BorderStyles?,
     @get:JvmSynthetic val shadowStyles: ShadowStyles?,
+    @get:JvmSynthetic val badgeStyle: BadgeStyle?,
     @get:JvmSynthetic val partial: PartialStackComponent,
 ) : PresentedPartial<PresentedStackPartial> {
 
@@ -36,6 +41,10 @@ internal class PresentedStackPartial(
         operator fun invoke(
             from: PartialStackComponent,
             aliases: Map<ColorAlias, ColorScheme>,
+            @Suppress("MaxLineLength")
+            createStackComponentStyle: (
+                StackComponent,
+            ) -> Result<StackComponentStyle, NonEmptyList<PaywallValidationError>>,
         ): Result<PresentedStackPartial, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
             first = from.background
                 ?.toBackgroundStyles(aliases = aliases)
@@ -49,11 +58,15 @@ internal class PresentedStackPartial(
             fourth = from.shadow
                 ?.toShadowStyles(aliases = aliases)
                 .orSuccessfullyNull(),
-        ) { backgroundStyles, backgroundColorStyles, borderStyles, shadowStyles ->
+            fifth = from.badge
+                ?.toBadgeStyle(createStackComponentStyle)
+                .orSuccessfullyNull(),
+        ) { backgroundStyles, backgroundColorStyles, borderStyles, shadowStyles, badgeStyle ->
             PresentedStackPartial(
                 backgroundStyles = backgroundStyles ?: backgroundColorStyles?.let { BackgroundStyles.Color(it) },
                 borderStyles = borderStyles,
                 shadowStyles = shadowStyles,
+                badgeStyle = badgeStyle,
                 partial = from,
             )
         }
@@ -67,6 +80,7 @@ internal class PresentedStackPartial(
             backgroundStyles = with?.backgroundStyles ?: backgroundStyles,
             borderStyles = with?.borderStyles ?: borderStyles,
             shadowStyles = with?.shadowStyles ?: shadowStyles,
+            badgeStyle = with?.badgeStyle ?: badgeStyle,
             partial = PartialStackComponent(
                 visible = otherPartial?.visible ?: partial.visible,
                 dimension = otherPartial?.dimension ?: partial.dimension,

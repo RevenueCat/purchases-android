@@ -322,22 +322,21 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            .toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = colorAliases) }
+            .toPresentedOverrides { partial ->
+                PresentedStackPartial(
+                    from = partial,
+                    aliases = colorAliases,
+                    createStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) },
+                )
+            }
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
         second = component.components
             .map { createInternal(it) }
             .mapOrAccumulate { it },
-        third = component.badge?.let { badge ->
-            createStackComponentStyle(badge.stack)
-                .map {
-                    BadgeStyle(
-                        stackStyle = it,
-                        style = badge.style,
-                        alignment = badge.alignment,
-                    )
-                }
-        }.orSuccessfullyNull(),
+        third = component.badge
+            ?.toBadgeStyle(createStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) })
+            .orSuccessfullyNull(),
         fourth = createBackgroundStyles(component.background, component.backgroundColor),
         fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
