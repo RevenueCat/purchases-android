@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
@@ -42,6 +44,15 @@ internal class DiagnosticsTracker(
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
         const val BILLING_RESPONSE_CODE = "billing_response_code"
         const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
+    }
+
+    private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
+        mapOf(
+            "play_store_version" to appConfig.playStoreVersionName,
+            "play_services_version" to appConfig.playServicesVersionName,
+        ).filterNotNullValues()
+    } else {
+        null
     }
 
     @Suppress("LongParameterList")
@@ -157,7 +168,7 @@ internal class DiagnosticsTracker(
     fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry(
             name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
-            properties = mapOf(),
+            properties = commonProperties ?: emptyMap(),
             appSessionID = appSessionID,
         )
         if (useCurrentThread) {
@@ -243,12 +254,13 @@ internal class DiagnosticsTracker(
         trackEvent(
             DiagnosticsEntry(
                 name = eventName,
-                properties = properties,
+                properties = (commonProperties ?: emptyMap()) + properties,
                 appSessionID = appSessionID,
             ),
         )
     }
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
         checkAndClearDiagnosticsFileIfTooBig {
             trackEventInCurrentThread(diagnosticsEntry)

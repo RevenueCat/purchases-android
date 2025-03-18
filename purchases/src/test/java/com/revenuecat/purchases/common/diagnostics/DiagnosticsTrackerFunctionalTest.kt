@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
 import io.mockk.every
@@ -34,12 +35,16 @@ class DiagnosticsTrackerFunctionalTest {
         tempTestFolder.mkdirs()
 
         applicationContext = mockk()
+        val appConfig = mockk<AppConfig>().apply {
+            every { playStoreVersionName } returns "test-store-version-name"
+            every { playServicesVersionName } returns "test-services-version-name"
+        }
         every { applicationContext.filesDir } returns tempTestFolder
 
         val diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(applicationContext))
 
         diagnosticsTracker = DiagnosticsTracker(
-            appConfig = mockk(),
+            appConfig = appConfig,
             diagnosticsFileHelper = diagnosticsFileHelper,
             diagnosticsHelper = DiagnosticsHelper(applicationContext, diagnosticsFileHelper, lazy { mockk(relaxed = true) }),
             diagnosticsDispatcher = SyncDispatcher(),
