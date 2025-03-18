@@ -39,6 +39,7 @@ internal class DiagnosticsTracker(
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
         const val BILLING_RESPONSE_CODE = "billing_response_code"
         const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
+        const val PENDING_REQUEST_COUNT = "pending_request_count"
     }
 
     @Suppress("LongParameterList")
@@ -123,6 +124,28 @@ internal class DiagnosticsTracker(
                     BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
+            ),
+        )
+    }
+
+    fun trackGoogleServiceConnected(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
+        trackEvent(
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_SERVICE_CONNECTED,
+                properties = mapOf(
+                    BILLING_RESPONSE_CODE to responseCode,
+                    BILLING_DEBUG_MESSAGE to debugMessage,
+                    PENDING_REQUEST_COUNT to pendingRequestCount,
+                ),
+            ),
+        )
+    }
+
+    fun trackGoogleServiceDisconnected() {
+        trackEvent(
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_SERVICE_DISCONNECTED,
+                properties = emptyMap(),
             ),
         )
     }

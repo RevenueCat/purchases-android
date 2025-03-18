@@ -1426,6 +1426,40 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
+    fun `onBillingSetupFinished tracks diagnostics call with correct parameters`() {
+        // Arrange
+        every { mockDiagnosticsTracker.trackGoogleServiceConnected(any(), any(), any()) } just runs
+        val expected = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.OK)
+            .setDebugMessage("test-debug-message")
+            .build()
+
+        // Act
+        wrapper.onBillingSetupFinished(expected)
+
+        // Assert
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleServiceConnected(
+                responseCode = expected.responseCode,
+                debugMessage = expected.debugMessage,
+                pendingRequestCount = 0,
+            )
+        }
+    }
+
+    @Test
+    fun `onBillingServiceDisconnected tracks diagnostics call with correct parameters`() {
+        // Arrange
+        every { mockDiagnosticsTracker.trackGoogleServiceDisconnected() } just runs
+
+        // Act
+        wrapper.onBillingServiceDisconnected()
+
+        // Assert
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleServiceDisconnected() }
+    }
+
     // endregion diagnostics tracking
 
     // region inapp messages
