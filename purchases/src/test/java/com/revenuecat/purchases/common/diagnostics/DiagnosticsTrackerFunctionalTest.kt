@@ -13,6 +13,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.util.UUID
 import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
@@ -72,14 +73,15 @@ class DiagnosticsTrackerFunctionalTest {
 
     private fun createDiagnosticsEntry(): DiagnosticsEntry {
         return DiagnosticsEntry(
-            DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
-            mapOf(
+            name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
+            properties = mapOf(
                 "test_key_1" to "test_value_1",
                 "test_key_2" to Random.nextBoolean(),
                 "test_key_3" to Random.nextInt(),
                 "test_key_4" to "test_value_${Random.nextInt()}",
                 "test_key_5" to "test_value_5",
-            )
+            ),
+            appSessionID = UUID.randomUUID(),
         )
     }
 

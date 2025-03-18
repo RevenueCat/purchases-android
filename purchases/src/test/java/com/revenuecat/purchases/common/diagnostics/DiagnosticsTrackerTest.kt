@@ -33,6 +33,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
@@ -41,7 +42,8 @@ class DiagnosticsTrackerTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(
         name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
-        properties = mapOf("test-key-1" to "test-value-1")
+        properties = mapOf("test-key-1" to "test-value-1"),
+        appSessionID = UUID.randomUUID(),
     )
 
     private lateinit var diagnosticsFileHelper: DiagnosticsFileHelper
