@@ -1,7 +1,10 @@
-## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* [Paywalls V2] Considers script when matching locales (#2245) via JayShortway (@JayShortway)
-
 ### 🔄 Other Changes
-* [Paywalls V2] Reorganizes stack arrangement logic (#2238) via JayShortway (@JayShortway)
+* Allows configuring `showInAppMessagesAutomatically` and `pendingTransactionsForPrepaidPlansEnabled` in customEntitlementComputation mode (#2260) via JayShortway (@JayShortway)
+* [Paywalls V2] Tweaks the `MissingPackage` error message. (#2256) via JayShortway (@JayShortway)
+* [Paywalls V2] Avoids re-parsing the component tree to find packages and tabs (#2252) via JayShortway (@JayShortway)
+* [EXTERNAL] Set metaspace size to avoid "Daemon disappeared" failures (#2237) contributed by @runningcode (#2255) via Toni Rico (@tonidero)
+* [Paywalls V2] Timeline component fixes (#2253) via Toni Rico (@tonidero)
+* Updates Gemfile.lock (#2254) via RevenueCat Git Bot (@RCGitBot)
+* Update fastlane plugin (#2251) via Toni Rico (@tonidero)
+* [Paywalls V2] Refactors `StyleFactory` (#2247) via JayShortway (@JayShortway)
+* Add refresh button to PaywallTester app (#2244) via Toni Rico (@tonidero)

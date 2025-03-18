@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@2.5.0
-  gcp-cli: circleci/gcp-cli@2.1.0
+  gcp-cli: circleci/gcp-cli@3.3.1
   revenuecat: revenuecat/sdks-common-config@3.0.0
   codecov: codecov/codecov@3.2.4
 
@@ -105,10 +105,10 @@ commands:
       test_apk_path:
         type: string
     steps:
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
       - run:
           name: Test with Firebase Test Lab
           command: >
@@ -264,7 +264,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.15.0-SNAPSHOT s3://purchases-docs/android/8.15.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/8.14.3 s3://purchases-docs/android/8.14.3 --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -478,10 +478,10 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - gcp-cli/install
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
       - android/restore-build-cache
       - run:
           name: Build and run load shedder integration tests
@@ -502,10 +502,10 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - gcp-cli/install
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
       - android/restore-build-cache
       - run:
           name: Build and run custom entitlement computation integration tests
