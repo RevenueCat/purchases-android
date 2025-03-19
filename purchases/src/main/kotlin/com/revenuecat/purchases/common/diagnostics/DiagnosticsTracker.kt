@@ -1,13 +1,16 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
@@ -15,6 +18,7 @@ import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
+import java.util.UUID
 import kotlin.time.Duration
 
 /**
@@ -27,6 +31,7 @@ internal class DiagnosticsTracker(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsDispatcher: Dispatcher,
+    private val appSessionID: UUID = EventsManager.appSessionID,
 ) {
     private companion object {
         const val ENDPOINT_NAME_KEY = "endpoint_name"
@@ -41,6 +46,15 @@ internal class DiagnosticsTracker(
         const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
     }
 
+    private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
+        mapOf(
+            "play_store_version" to appConfig.playStoreVersionName,
+            "play_services_version" to appConfig.playServicesVersionName,
+        ).filterNotNullValues()
+    } else {
+        emptyMap()
+    }
+
     @Suppress("LongParameterList")
     fun trackHttpRequestPerformed(
         endpoint: Endpoint,
@@ -53,18 +67,16 @@ internal class DiagnosticsTracker(
     ) {
         val eTagHit = resultOrigin == HTTPResult.Origin.CACHE
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
-                properties = mapOf(
-                    ENDPOINT_NAME_KEY to endpoint.name,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-                    SUCCESSFUL_KEY to wasSuccessful,
-                    RESPONSE_CODE_KEY to responseCode,
-                    BACKEND_ERROR_CODE_KEY to backendErrorCode,
-                    ETAG_HIT_KEY to eTagHit,
-                    VERIFICATION_RESULT_KEY to verificationResult.name,
-                ).filterNotNullValues(),
-            ),
+            eventName = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
+            properties = mapOf(
+                ENDPOINT_NAME_KEY to endpoint.name,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                SUCCESSFUL_KEY to wasSuccessful,
+                RESPONSE_CODE_KEY to responseCode,
+                BACKEND_ERROR_CODE_KEY to backendErrorCode,
+                ETAG_HIT_KEY to eTagHit,
+                VERIFICATION_RESULT_KEY to verificationResult.name,
+            ).filterNotNullValues(),
         )
     }
 
@@ -77,14 +89,12 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
-                properties = mapOf(
-                    PRODUCT_TYPE_QUERIED_KEY to productType,
-                    BILLING_RESPONSE_CODE to billingResponseCode,
-                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-                ),
+            eventName = DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
+            properties = mapOf(
+                PRODUCT_TYPE_QUERIED_KEY to productType,
+                BILLING_RESPONSE_CODE to billingResponseCode,
+                BILLING_DEBUG_MESSAGE to billingDebugMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
         )
     }
@@ -96,14 +106,12 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
-                properties = mapOf(
-                    PRODUCT_TYPE_QUERIED_KEY to productType,
-                    BILLING_RESPONSE_CODE to billingResponseCode,
-                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-                ),
+            eventName = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
+            properties = mapOf(
+                PRODUCT_TYPE_QUERIED_KEY to productType,
+                BILLING_RESPONSE_CODE to billingResponseCode,
+                BILLING_DEBUG_MESSAGE to billingDebugMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
         )
     }
@@ -115,14 +123,12 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
-                properties = mapOf(
-                    PRODUCT_TYPE_QUERIED_KEY to productType,
-                    BILLING_RESPONSE_CODE to billingResponseCode,
-                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-                ),
+            eventName = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
+            properties = mapOf(
+                PRODUCT_TYPE_QUERIED_KEY to productType,
+                BILLING_RESPONSE_CODE to billingResponseCode,
+                BILLING_DEBUG_MESSAGE to billingDebugMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
         )
     }
@@ -136,12 +142,10 @@ internal class DiagnosticsTracker(
         wasSuccessful: Boolean,
     ) {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
-                properties = mapOf(
-                    SUCCESSFUL_KEY to wasSuccessful,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-                ),
+            eventName = DiagnosticsEntryName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
+            properties = mapOf(
+                SUCCESSFUL_KEY to wasSuccessful,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
         )
     }
@@ -151,12 +155,10 @@ internal class DiagnosticsTracker(
         wasSuccessful: Boolean,
     ) {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.AMAZON_QUERY_PURCHASES_REQUEST,
-                properties = mapOf(
-                    SUCCESSFUL_KEY to wasSuccessful,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-                ),
+            eventName = DiagnosticsEntryName.AMAZON_QUERY_PURCHASES_REQUEST,
+            properties = mapOf(
+                SUCCESSFUL_KEY to wasSuccessful,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
         )
     }
@@ -166,7 +168,8 @@ internal class DiagnosticsTracker(
     fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry(
             name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
-            properties = mapOf(),
+            properties = commonProperties,
+            appSessionID = appSessionID,
         )
         if (useCurrentThread) {
             trackEventInCurrentThread(event)
@@ -177,19 +180,15 @@ internal class DiagnosticsTracker(
 
     fun trackMaxDiagnosticsSyncRetriesReached() {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.MAX_DIAGNOSTICS_SYNC_RETRIES_REACHED,
-                properties = mapOf(),
-            ),
+            eventName = DiagnosticsEntryName.MAX_DIAGNOSTICS_SYNC_RETRIES_REACHED,
+            properties = emptyMap(),
         )
     }
 
     fun trackClearingDiagnosticsAfterFailedSync() {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.CLEARING_DIAGNOSTICS_AFTER_FAILED_SYNC,
-                properties = mapOf(),
-            ),
+            eventName = DiagnosticsEntryName.CLEARING_DIAGNOSTICS_AFTER_FAILED_SYNC,
+            properties = emptyMap(),
         )
     }
 
@@ -197,8 +196,8 @@ internal class DiagnosticsTracker(
         billingResponseCode: Int,
         billingDebugMessage: String,
     ) {
-        val event = DiagnosticsEntry(
-            name = DiagnosticsEntryName.PRODUCT_DETAILS_NOT_SUPPORTED,
+        trackEvent(
+            eventName = DiagnosticsEntryName.PRODUCT_DETAILS_NOT_SUPPORTED,
             properties = mapOf(
                 "play_store_version" to (appConfig.playStoreVersionName ?: ""),
                 "play_services_version" to (appConfig.playServicesVersionName ?: ""),
@@ -206,7 +205,6 @@ internal class DiagnosticsTracker(
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
             ),
         )
-        trackEvent(event)
     }
 
     fun trackCustomerInfoVerificationResultIfNeeded(
@@ -216,23 +214,21 @@ internal class DiagnosticsTracker(
         if (verificationResult == VerificationResult.NOT_REQUESTED) {
             return
         }
-        val event = DiagnosticsEntry(
-            name = DiagnosticsEntryName.CUSTOMER_INFO_VERIFICATION_RESULT,
+        trackEvent(
+            eventName = DiagnosticsEntryName.CUSTOMER_INFO_VERIFICATION_RESULT,
             properties = mapOf(
                 VERIFICATION_RESULT_KEY to verificationResult.name,
             ),
         )
-        trackEvent(event)
     }
 
     // region Offline Entitlements
 
     fun trackEnteredOfflineEntitlementsMode() {
-        val event = DiagnosticsEntry(
-            name = DiagnosticsEntryName.ENTERED_OFFLINE_ENTITLEMENTS_MODE,
+        trackEvent(
+            eventName = DiagnosticsEntryName.ENTERED_OFFLINE_ENTITLEMENTS_MODE,
             properties = mapOf(),
         )
-        trackEvent(event)
     }
 
     fun trackErrorEnteringOfflineEntitlementsMode(error: PurchasesError) {
@@ -243,18 +239,28 @@ internal class DiagnosticsTracker(
         } else {
             "unknown"
         }
-        val event = DiagnosticsEntry(
-            name = DiagnosticsEntryName.ERROR_ENTERING_OFFLINE_ENTITLEMENTS_MODE,
+        trackEvent(
+            eventName = DiagnosticsEntryName.ERROR_ENTERING_OFFLINE_ENTITLEMENTS_MODE,
             properties = mapOf(
                 "offline_entitlement_error_reason" to reason,
                 "error_message" to "${error.message} Underlying error: ${error.underlyingErrorMessage}",
             ),
         )
-        trackEvent(event)
     }
 
     // endregion
 
+    private fun trackEvent(eventName: DiagnosticsEntryName, properties: Map<String, Any>) {
+        trackEvent(
+            DiagnosticsEntry(
+                name = eventName,
+                properties = commonProperties + properties,
+                appSessionID = appSessionID,
+            ),
+        )
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
         checkAndClearDiagnosticsFileIfTooBig {
             trackEventInCurrentThread(diagnosticsEntry)
