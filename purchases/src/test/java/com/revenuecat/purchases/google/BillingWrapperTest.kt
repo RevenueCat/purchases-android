@@ -1430,20 +1430,35 @@ class BillingWrapperTest {
     fun `onBillingSetupFinished tracks diagnostics call with correct parameters`() {
         // Arrange
         every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
-        val expected = BillingResult.newBuilder()
+        every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
+        // BillingClient is not connected, to check pendingRequestCount.
+        every { mockClient.isReady } returns false
+        val billingResult = BillingResult.newBuilder()
             .setResponseCode(BillingClient.BillingResponseCode.OK)
             .setDebugMessage("test-debug-message")
             .build()
+        val expectedResponseCode = billingResult.responseCode
+        val expectedDebugMessage = billingResult.debugMessage
+        // We expect this to be capped at 100, even though we have 200 pending requests.
+        val expectedPendingRequestCount = 100
 
         // Act
-        wrapper.onBillingSetupFinished(expected)
+        repeat(200) {
+            wrapper.queryProductDetailsAsync(
+                productType = ProductType.SUBS,
+                productIds = setOf("product_a"),
+                onReceive = { },
+                onError = { fail("shouldn't be an error") }
+            )
+        }
+        wrapper.onBillingSetupFinished(billingResult)
 
         // Assert
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleBillingSetupFinished(
-                responseCode = expected.responseCode,
-                debugMessage = expected.debugMessage,
-                pendingRequestCount = 0,
+                responseCode = expectedResponseCode,
+                debugMessage = expectedDebugMessage,
+                pendingRequestCount = expectedPendingRequestCount,
             )
         }
     }

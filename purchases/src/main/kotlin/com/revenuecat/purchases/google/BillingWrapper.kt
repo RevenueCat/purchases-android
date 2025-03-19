@@ -87,6 +87,13 @@ internal class BillingWrapper(
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
+    private companion object {
+        /**
+         * The maximum number of pending requests we report to diagnostics.
+         */
+        private const val MAX_PENDING_REQUEST_COUNT_REPORTED = 100
+    }
+
     @get:Synchronized
     @set:Synchronized
     @Volatile
@@ -602,7 +609,8 @@ internal class BillingWrapper(
         diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
             responseCode = billingResult.responseCode,
             debugMessage = billingResult.debugMessage,
-            pendingRequestCount = serviceRequests.size,
+            // serviceRequests.size is O(n), so cap our count to MAX_PENDING_REQUEST_COUNT_REPORTED items.
+            pendingRequestCount = serviceRequests.asSequence().take(MAX_PENDING_REQUEST_COUNT_REPORTED).count(),
         )
         mainHandler.post {
             when (billingResult.responseCode) {
