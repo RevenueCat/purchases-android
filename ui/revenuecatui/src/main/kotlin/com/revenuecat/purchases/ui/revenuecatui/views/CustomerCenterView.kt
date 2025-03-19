@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 
