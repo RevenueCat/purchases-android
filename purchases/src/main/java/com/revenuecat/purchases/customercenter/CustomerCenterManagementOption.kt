@@ -3,9 +3,9 @@ package com.revenuecat.purchases.customercenter
 import android.net.Uri
 
 /**
- * Sealed interface representing different customer center management options.
+ * Interface representing different customer center management options.
  */
-sealed interface CustomerCenterManagementOption {
+interface CustomerCenterManagementOption {
     /**
      * Action to cancel the current operation
      */

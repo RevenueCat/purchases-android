@@ -701,9 +701,9 @@ internal class CustomerCenterViewModelImpl(
 
             else -> null
         }
-        action?.let {
-            listener?.onManagementOptionSelected(it)
-            purchases.customerCenterListener?.onManagementOptionSelected(it)
+        if (action != null) {
+            listener?.onManagementOptionSelected(action)
+            purchases.customerCenterListener?.onManagementOptionSelected(action)
         }
     }
 }
