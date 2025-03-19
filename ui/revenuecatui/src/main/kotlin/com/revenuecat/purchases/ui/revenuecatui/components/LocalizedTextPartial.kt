@@ -10,6 +10,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocal
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.recoverFromBlankFontAlias
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -51,6 +52,7 @@ internal class LocalizedTextPartial private constructor(
                 third = from.backgroundColor?.toColorStyles(aliases).orSuccessfullyNull(),
                 fourth = from.fontName
                     ?.let { fontAliases.getFontSpec(it) }
+                    ?.recoverFromBlankFontAlias()
                     .orSuccessfullyNull()
                     .mapError { nonEmptyListOf(it) },
             ) { texts, color, backgroundColor, fontSpec ->
