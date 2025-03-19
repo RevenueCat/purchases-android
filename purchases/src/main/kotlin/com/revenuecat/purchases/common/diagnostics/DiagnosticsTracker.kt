@@ -52,7 +52,7 @@ internal class DiagnosticsTracker(
             "play_services_version" to appConfig.playServicesVersionName,
         ).filterNotNullValues()
     } else {
-        null
+        emptyMap()
     }
 
     @Suppress("LongParameterList")
@@ -168,7 +168,7 @@ internal class DiagnosticsTracker(
     fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry(
             name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
-            properties = commonProperties ?: emptyMap(),
+            properties = commonProperties,
             appSessionID = appSessionID,
         )
         if (useCurrentThread) {
@@ -254,7 +254,7 @@ internal class DiagnosticsTracker(
         trackEvent(
             DiagnosticsEntry(
                 name = eventName,
-                properties = (commonProperties ?: emptyMap()) + properties,
+                properties = commonProperties + properties,
                 appSessionID = appSessionID,
             ),
         )
