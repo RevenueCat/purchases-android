@@ -258,6 +258,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         verifySequence {
+            mockDiagnosticsTracker.trackGoogleBillingStartConnection()
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.OK,
