@@ -1427,6 +1427,13 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `startConnectionOnMainThread tracks diagnostics call with correct parameters`() {
+        // Arrange, Act, Assert
+        // Our test setup() method calls startConnectionOnMainThread().
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingStartConnection() }
+    }
+
+    @Test
     fun `onBillingSetupFinished tracks diagnostics call with correct parameters`() {
         // Arrange
         every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
@@ -1684,6 +1691,7 @@ class BillingWrapperTest {
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
+        every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
     }

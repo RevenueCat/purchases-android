@@ -128,6 +128,15 @@ internal class DiagnosticsTracker(
         )
     }
 
+    fun trackGoogleBillingStartConnection() {
+        trackEvent(
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_BILLING_START_CONNECTION,
+                properties = emptyMap(),
+            ),
+        )
+    }
+
     fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
         trackEvent(
             DiagnosticsEntry(

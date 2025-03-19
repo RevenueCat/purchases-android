@@ -165,6 +165,7 @@ internal class BillingWrapper(
             billingClient?.let {
                 if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
+                    diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
                     try {
                         it.startConnection(this)
                     } catch (e: IllegalStateException) {
