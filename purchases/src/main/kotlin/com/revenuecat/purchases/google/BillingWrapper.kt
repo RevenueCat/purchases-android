@@ -599,7 +599,7 @@ internal class BillingWrapper(
 
     @Suppress("LongMethod")
     override fun onBillingSetupFinished(billingResult: BillingResult) {
-        diagnosticsTrackerIfEnabled?.trackGoogleServiceConnected(
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
             responseCode = billingResult.responseCode,
             debugMessage = billingResult.debugMessage,
             pendingRequestCount = serviceRequests.size,
@@ -685,7 +685,7 @@ internal class BillingWrapper(
 
     override fun onBillingServiceDisconnected() {
         log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED_INSTANCE.format(billingClient?.toString()))
-        diagnosticsTrackerIfEnabled?.trackGoogleServiceDisconnected()
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingServiceDisconnected()
     }
 
     /**

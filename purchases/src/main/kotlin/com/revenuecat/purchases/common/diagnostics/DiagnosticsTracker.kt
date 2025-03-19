@@ -128,10 +128,10 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleServiceConnected(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
+    fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
         trackEvent(
             DiagnosticsEntry(
-                name = DiagnosticsEntryName.GOOGLE_SERVICE_CONNECTED,
+                name = DiagnosticsEntryName.GOOGLE_BILLING_SETUP_FINISHED,
                 properties = mapOf(
                     BILLING_RESPONSE_CODE to responseCode,
                     BILLING_DEBUG_MESSAGE to debugMessage,
@@ -141,10 +141,10 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleServiceDisconnected() {
+    fun trackGoogleBillingServiceDisconnected() {
         trackEvent(
             DiagnosticsEntry(
-                name = DiagnosticsEntryName.GOOGLE_SERVICE_DISCONNECTED,
+                name = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
                 properties = emptyMap(),
             ),
         )
