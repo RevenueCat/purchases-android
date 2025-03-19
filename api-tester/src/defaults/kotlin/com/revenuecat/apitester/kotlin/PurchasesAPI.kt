@@ -266,7 +266,7 @@ private class PurchasesAPI {
                     CustomerCenterManagementOption.Cancel -> {
                     }
                     is CustomerCenterManagementOption.CustomUrl -> {
-                        action.uri
+                        val uri: Uri = action.uri
                     }
                 }
             }
