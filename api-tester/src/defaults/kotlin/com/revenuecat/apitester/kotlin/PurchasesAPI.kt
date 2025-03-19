@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
