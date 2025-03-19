@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -25,6 +26,7 @@ import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
@@ -256,6 +258,18 @@ private class PurchasesAPI {
             }
 
             override fun onRestoreStarted() {
+            }
+
+            override fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
+                when (action) {
+                    CustomerCenterManagementOption.MissingPurchase -> {
+                    }
+                    CustomerCenterManagementOption.Cancel -> {
+                    }
+                    is CustomerCenterManagementOption.CustomUrl -> {
+                        val uri: Uri = action.uri
+                    }
+                }
             }
         }
         sharedInstance.customerCenterListener = object : CustomerCenterListener {}
