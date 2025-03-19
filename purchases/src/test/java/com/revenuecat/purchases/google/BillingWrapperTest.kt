@@ -1429,7 +1429,6 @@ class BillingWrapperTest {
     @Test
     fun `onBillingSetupFinished tracks diagnostics call with correct parameters`() {
         // Arrange
-        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
         // BillingClient is not connected, to check pendingRequestCount.
         every { mockClient.isReady } returns false
@@ -1685,5 +1684,7 @@ class BillingWrapperTest {
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
+        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
     }
 }
