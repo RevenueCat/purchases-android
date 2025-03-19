@@ -1471,10 +1471,7 @@ class BillingWrapperTest {
 
     @Test
     fun `onBillingServiceDisconnected tracks diagnostics call with correct parameters`() {
-        // Arrange
-        every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
-
-        // Act
+        // Arrange, Act
         wrapper.onBillingServiceDisconnected()
 
         // Assert
