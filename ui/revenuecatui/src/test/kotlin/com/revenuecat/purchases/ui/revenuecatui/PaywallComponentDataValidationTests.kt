@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig.AppConfig
@@ -53,8 +54,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.net.URL
 
+@RunWith(AndroidJUnit4::class)
 class PaywallComponentDataValidationTests {
 
     private companion object {
@@ -511,6 +514,74 @@ class PaywallComponentDataValidationTests {
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias1)))
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias2)))
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias3)))
+    }
+
+    @Test
+    fun `Should not fail on a missing blank FontAlias`() {
+        // Arrange
+        val missingBlankFontAliasBase = FontAlias(" ")
+        val missingBlankFontAliasOverride = FontAlias(" ")
+        val uiConfig = UiConfig(
+            app = AppConfig(
+                // Our 2 font aliases are missing from the AppConfig.
+                fonts = emptyMap(),
+            ),
+        )
+        val resourceProvider = MockResourceProvider()
+        val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LocalizationKey("key1"),
+                                color = textColor,
+                                fontName = missingBlankFontAliasBase,
+                                overrides = listOf(
+                                    ComponentOverride(
+                                        conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                        properties = PartialTextComponent(fontName = missingBlankFontAliasOverride),
+                                    )
+                                )
+                            ),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                    LocalizationKey("key2") to LocalizationData.Text("value2"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(uiConfig, data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, resourceProvider)
+
+        // Assert
+        assertNull(validated.errors)
+        val validatedComponents = validated as PaywallValidationResult.Components
+        val rootStack = validatedComponents.stack as StackComponentStyle
+        val text = rootStack.children[0] as TextComponentStyle
+        // We expect the font to be ignored if it was blank.
+        assertNull(text.fontSpec)
+        assertNotNull(text.overrides[0])
+        assertNull(text.overrides[0].properties.fontSpec)
     }
 
     // This tests a temporal hack to make the root component fill the screen. This will be removed once we have a

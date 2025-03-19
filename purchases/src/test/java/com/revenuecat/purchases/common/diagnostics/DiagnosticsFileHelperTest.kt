@@ -14,6 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -21,7 +22,8 @@ class DiagnosticsFileHelperTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(
         name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
-        properties = emptyMap()
+        properties = emptyMap(),
+        appSessionID = UUID.randomUUID(),
     )
     private val diagnosticsFilePath = DiagnosticsFileHelper.DIAGNOSTICS_FILE_PATH
 

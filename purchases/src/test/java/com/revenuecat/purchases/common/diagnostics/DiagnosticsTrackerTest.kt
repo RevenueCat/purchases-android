@@ -33,6 +33,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
@@ -41,7 +42,8 @@ class DiagnosticsTrackerTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(
         name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
-        properties = mapOf("test-key-1" to "test-value-1")
+        properties = mapOf("test-key-1" to "test-value-1"),
+        appSessionID = UUID.randomUUID(),
     )
 
     private lateinit var diagnosticsFileHelper: DiagnosticsFileHelper
@@ -52,7 +54,6 @@ class DiagnosticsTrackerTest {
     private lateinit var diagnosticsTracker: DiagnosticsTracker
 
     private lateinit var context: Context
-    private lateinit var appConfig: AppConfig
 
     @Before
     fun setup() {
@@ -61,15 +62,6 @@ class DiagnosticsTrackerTest {
             every { playStoreVersionName } returns "123"
             every { playServicesVersionName } returns "456"
         }
-        appConfig = AppConfig(
-            context = context,
-            purchasesAreCompletedBy = MY_APP,
-            showInAppMessagesAutomatically = false,
-            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null,
-            store = Store.PLAY_STORE,
-            isDebugBuild = false,
-        )
         diagnosticsFileHelper = mockk<DiagnosticsFileHelper>().apply {
             every { isDiagnosticsFileTooBig() } returns false
         }
@@ -77,12 +69,7 @@ class DiagnosticsTrackerTest {
 
         mockSharedPreferences()
 
-        diagnosticsTracker = DiagnosticsTracker(
-            appConfig,
-            diagnosticsFileHelper,
-            DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
-            dispatcher
-        )
+        diagnosticsTracker = createDiagnosticsTracker()
     }
 
     @After
@@ -135,6 +122,8 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackHttpRequestPerformed tracks correct event when coming from cache`() {
         val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
             "endpoint_name" to "post_receipt",
             "response_time_millis" to 1234L,
             "successful" to true,
@@ -162,6 +151,8 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackHttpRequestPerformed tracks correct event when coming from backend`() {
         val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
             "endpoint_name" to "get_offerings",
             "response_time_millis" to 1234L,
             "successful" to true,
@@ -194,7 +185,10 @@ class DiagnosticsTrackerTest {
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
                 event.name == DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED &&
-                    event.properties == emptyMap<String, Any>()
+                    event.properties == mapOf(
+                    "play_store_version" to "123",
+                    "play_services_version" to "456",
+                )
             })
         }
     }
@@ -204,6 +198,8 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackGoogleQueryProductDetailsRequest tracks correct event`() {
         val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
             "product_type_queried" to "subs",
             "billing_response_code" to 12,
             "billing_debug_message" to "test-debug-message",
@@ -227,6 +223,8 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackGoogleQueryPurchasesRequest tracks correct event`() {
         val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
             "product_type_queried" to "subs",
             "billing_response_code" to 12,
             "billing_debug_message" to "test-debug-message",
@@ -250,6 +248,8 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackGoogleQueryPurchaseHistoryRequest tracks correct event`() {
         val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
             "product_type_queried" to "inapp",
             "billing_response_code" to 12,
             "billing_debug_message" to "test-debug-message",
@@ -276,6 +276,7 @@ class DiagnosticsTrackerTest {
 
     @Test
     fun `trackAmazonQueryProductDetailsRequest tracks correct event`() {
+        val diagnosticsTracker = createDiagnosticsTracker(Store.AMAZON)
         val expectedTags = mapOf(
             "successful" to true,
             "response_time_millis" to 1234L,
@@ -295,6 +296,7 @@ class DiagnosticsTrackerTest {
 
     @Test
     fun `trackAmazonQueryPurchasesRequest tracks correct event`() {
+        val diagnosticsTracker = createDiagnosticsTracker(Store.AMAZON)
         val expectedTags = mapOf(
             "successful" to true,
             "response_time_millis" to 1234L,
@@ -353,6 +355,8 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackCustomerInfoVerificationResultIfNeeded tracks when verification is failed`() {
         val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
             "verification_result" to "FAILED",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
@@ -376,7 +380,10 @@ class DiagnosticsTrackerTest {
 
     @Test
     fun `trackEnteredOfflineEntitlementsMode tracks correct data`() {
-        val expectedProperties = mapOf<String, Any>()
+        val expectedProperties = mapOf<String, Any>(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+        )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackEnteredOfflineEntitlementsMode()
         verify(exactly = 1) {
@@ -390,6 +397,8 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackErrorEnteringOfflineEntitlementsMode tracks correct data for unknown error`() {
         val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
             "offline_entitlement_error_reason" to "unknown",
             "error_message" to "Unknown error. Underlying error: test error message",
         )
@@ -411,6 +420,8 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackErrorEnteringOfflineEntitlementsMode tracks correct data for one time purchase error`() {
         val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
             "offline_entitlement_error_reason" to "one_time_purchase_found",
             "error_message" to "There was a problem with the operation. Looks like we don't support that yet. Check the underlying error for more details. Underlying error: Offline entitlements are not supported for one time purchases. Found one time purchases. See for more info: https://rev.cat/offline-entitlements",
         )
@@ -445,5 +456,26 @@ class DiagnosticsTrackerTest {
         every {
             sharedPreferences.getInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns 0
+    }
+
+    private fun createAppConfig(store: Store = Store.PLAY_STORE): AppConfig {
+        return AppConfig(
+            context = context,
+            purchasesAreCompletedBy = MY_APP,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = store,
+            isDebugBuild = false,
+        )
+    }
+
+    private fun createDiagnosticsTracker(store: Store = Store.PLAY_STORE): DiagnosticsTracker {
+        return DiagnosticsTracker(
+            createAppConfig(store),
+            diagnosticsFileHelper,
+            DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
+            dispatcher
+        )
     }
 }
