@@ -10,7 +10,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 /**
  * View that wraps the [CustomerCenter] Composable to display the Customer Center through the View system.
  */
-
 public class CustomerCenterView : AbstractComposeView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
