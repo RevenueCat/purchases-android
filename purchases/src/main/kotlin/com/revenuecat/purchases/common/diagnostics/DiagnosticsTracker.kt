@@ -136,32 +136,26 @@ internal class DiagnosticsTracker(
 
     fun trackGoogleBillingStartConnection() {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.GOOGLE_BILLING_START_CONNECTION,
-                properties = emptyMap(),
-            ),
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_START_CONNECTION,
+            properties = emptyMap(),
         )
     }
 
     fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.GOOGLE_BILLING_SETUP_FINISHED,
-                properties = mapOf(
-                    BILLING_RESPONSE_CODE to responseCode,
-                    BILLING_DEBUG_MESSAGE to debugMessage,
-                    PENDING_REQUEST_COUNT to pendingRequestCount,
-                ),
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_SETUP_FINISHED,
+            properties = mapOf(
+                BILLING_RESPONSE_CODE to responseCode,
+                BILLING_DEBUG_MESSAGE to debugMessage,
+                PENDING_REQUEST_COUNT to pendingRequestCount,
             ),
         )
     }
 
     fun trackGoogleBillingServiceDisconnected() {
         trackEvent(
-            DiagnosticsEntry(
-                name = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
-                properties = emptyMap(),
-            ),
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
+            properties = emptyMap(),
         )
     }
 
