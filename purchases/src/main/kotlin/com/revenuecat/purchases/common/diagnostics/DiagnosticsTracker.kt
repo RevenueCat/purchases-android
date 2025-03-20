@@ -44,6 +44,7 @@ internal class DiagnosticsTracker(
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
         const val BILLING_RESPONSE_CODE = "billing_response_code"
         const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
+        const val PENDING_REQUEST_COUNT = "pending_request_count"
     }
 
     private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
@@ -130,6 +131,31 @@ internal class DiagnosticsTracker(
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
+        )
+    }
+
+    fun trackGoogleBillingStartConnection() {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_START_CONNECTION,
+            properties = emptyMap(),
+        )
+    }
+
+    fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_SETUP_FINISHED,
+            properties = mapOf(
+                BILLING_RESPONSE_CODE to responseCode,
+                BILLING_DEBUG_MESSAGE to debugMessage,
+                PENDING_REQUEST_COUNT to pendingRequestCount,
+            ),
+        )
+    }
+
+    fun trackGoogleBillingServiceDisconnected() {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
+            properties = emptyMap(),
         )
     }
 
@@ -232,10 +258,16 @@ internal class DiagnosticsTracker(
     }
 
     fun trackErrorEnteringOfflineEntitlementsMode(error: PurchasesError) {
-        val isOneTimePurchaseFoundError = error.code == PurchasesErrorCode.UnsupportedError &&
+        val reason = if (
+            error.code == PurchasesErrorCode.UnsupportedError &&
             error.underlyingErrorMessage == OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES
-        val reason = if (isOneTimePurchaseFoundError) {
+        ) {
             "one_time_purchase_found"
+        } else if (
+            error.code == PurchasesErrorCode.CustomerInfoError &&
+            error.underlyingErrorMessage == OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED
+        ) {
+            "no_entitlement_mapping_available"
         } else {
             "unknown"
         }
