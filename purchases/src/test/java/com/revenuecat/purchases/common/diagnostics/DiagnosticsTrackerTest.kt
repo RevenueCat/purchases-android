@@ -476,6 +476,29 @@ class DiagnosticsTrackerTest {
         }
     }
 
+    @Test
+    fun `trackErrorEnteringOfflineEntitlementsMode tracks correct data for entitlement mapping error`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "offline_entitlement_error_reason" to "no_entitlement_mapping_available",
+            "error_message" to "There was a problem related to the customer info. Underlying error: Product entitlement mapping is required for offline entitlements. Skipping offline customer info calculation.",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(
+            PurchasesError(
+                PurchasesErrorCode.CustomerInfoError,
+                underlyingErrorMessage = OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED,
+            )
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.ERROR_ENTERING_OFFLINE_ENTITLEMENTS_MODE &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
     // endregion
 
     private fun mockSharedPreferences() {
