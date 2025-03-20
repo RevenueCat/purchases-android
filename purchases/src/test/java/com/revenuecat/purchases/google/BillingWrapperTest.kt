@@ -1426,6 +1426,58 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
+    fun `startConnectionOnMainThread tracks diagnostics call with correct parameters`() {
+        // Arrange, Act, Assert
+        // Our test setup() method calls startConnectionOnMainThread().
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingStartConnection() }
+    }
+
+    @Test
+    fun `onBillingSetupFinished tracks diagnostics call with correct parameters`() {
+        // Arrange
+        every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
+        // BillingClient is not connected, to check pendingRequestCount.
+        every { mockClient.isReady } returns false
+        val billingResult = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.OK)
+            .setDebugMessage("test-debug-message")
+            .build()
+        val expectedResponseCode = billingResult.responseCode
+        val expectedDebugMessage = billingResult.debugMessage
+        // We expect this to be capped at 100, even though we have 200 pending requests.
+        val expectedPendingRequestCount = 100
+
+        // Act
+        repeat(200) {
+            wrapper.queryProductDetailsAsync(
+                productType = ProductType.SUBS,
+                productIds = setOf("product_a"),
+                onReceive = { },
+                onError = { fail("shouldn't be an error") }
+            )
+        }
+        wrapper.onBillingSetupFinished(billingResult)
+
+        // Assert
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(
+                responseCode = expectedResponseCode,
+                debugMessage = expectedDebugMessage,
+                pendingRequestCount = expectedPendingRequestCount,
+            )
+        }
+    }
+
+    @Test
+    fun `onBillingServiceDisconnected tracks diagnostics call with correct parameters`() {
+        // Arrange, Act
+        wrapper.onBillingServiceDisconnected()
+
+        // Assert
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() }
+    }
+
     // endregion diagnostics tracking
 
     // region inapp messages
@@ -1636,5 +1688,8 @@ class BillingWrapperTest {
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
+        every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
     }
 }

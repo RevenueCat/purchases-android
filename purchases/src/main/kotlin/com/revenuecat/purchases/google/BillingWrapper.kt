@@ -87,6 +87,13 @@ internal class BillingWrapper(
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
+    private companion object {
+        /**
+         * The maximum number of pending requests we report to diagnostics.
+         */
+        private const val MAX_PENDING_REQUEST_COUNT_REPORTED = 100
+    }
+
     @get:Synchronized
     @set:Synchronized
     @Volatile
@@ -158,6 +165,7 @@ internal class BillingWrapper(
             billingClient?.let {
                 if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
+                    diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
                     try {
                         it.startConnection(this)
                     } catch (e: IllegalStateException) {
@@ -599,6 +607,12 @@ internal class BillingWrapper(
 
     @Suppress("LongMethod")
     override fun onBillingSetupFinished(billingResult: BillingResult) {
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
+            responseCode = billingResult.responseCode,
+            debugMessage = billingResult.debugMessage,
+            // serviceRequests.size is O(n), so cap our count to MAX_PENDING_REQUEST_COUNT_REPORTED items.
+            pendingRequestCount = serviceRequests.asSequence().take(MAX_PENDING_REQUEST_COUNT_REPORTED).count(),
+        )
         mainHandler.post {
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
@@ -680,6 +694,7 @@ internal class BillingWrapper(
 
     override fun onBillingServiceDisconnected() {
         log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED_INSTANCE.format(billingClient?.toString()))
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingServiceDisconnected()
     }
 
     /**
