@@ -129,7 +129,8 @@ class DiagnosticsTrackerTest {
             "successful" to true,
             "response_code" to 200,
             "etag_hit" to true,
-            "verification_result" to "NOT_REQUESTED"
+            "verification_result" to "NOT_REQUESTED",
+            "is_retry" to false
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
@@ -139,7 +140,8 @@ class DiagnosticsTrackerTest {
             200,
             null,
             HTTPResult.Origin.CACHE,
-            VerificationResult.NOT_REQUESTED
+            VerificationResult.NOT_REQUESTED,
+            false
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
@@ -159,7 +161,8 @@ class DiagnosticsTrackerTest {
             "response_code" to 200,
             "backend_error_code" to 1234,
             "etag_hit" to false,
-            "verification_result" to "NOT_REQUESTED"
+            "verification_result" to "NOT_REQUESTED",
+            "is_retry" to false
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
@@ -169,7 +172,40 @@ class DiagnosticsTrackerTest {
             200,
             1234,
             HTTPResult.Origin.BACKEND,
-            VerificationResult.NOT_REQUESTED
+            VerificationResult.NOT_REQUESTED,
+            false
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks correct event when is retry`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "endpoint_name" to "get_offerings",
+            "response_time_millis" to 1234L,
+            "successful" to true,
+            "response_code" to 200,
+            "backend_error_code" to 1234,
+            "etag_hit" to false,
+            "verification_result" to "NOT_REQUESTED",
+            "is_retry" to true
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackHttpRequestPerformed(
+            Endpoint.GetOfferings("test id"),
+            1234L.milliseconds,
+            true,
+            200,
+            1234,
+            HTTPResult.Origin.BACKEND,
+            VerificationResult.NOT_REQUESTED,
+            true
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
