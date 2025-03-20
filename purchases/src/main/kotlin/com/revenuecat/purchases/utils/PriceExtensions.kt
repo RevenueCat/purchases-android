@@ -29,6 +29,24 @@ internal fun Price.pricePerYear(billingPeriod: Period, locale: Locale): Price {
     return pricePerPeriod(billingPeriod.valueInYears, locale)
 }
 
+internal val Price.numDecimals: Int
+    get() {
+        println("TESTING micros: $amountMicros")
+        println("TESTING formatted: $formatted")
+
+        val fractionMicros = amountMicros % 1_000_000
+        println("TESTING fractionMicros: $fractionMicros")
+
+        val regex = Regex("([.,])(\\d+)$")
+        val match = regex.find(formatted) ?: return 0
+
+        val candidateSep = match.groupValues[1] // The separator character from the match.
+        val candidateFraction = match.groupValues[2] // The digits following the separator.
+        val candidateFractionLength = candidateFraction.length
+
+        return candidateFractionLength
+    }
+
 private fun Price.pricePerPeriod(units: Double, locale: Locale): Price {
     val numberFormat = NumberFormat.getCurrencyInstance(locale)
     numberFormat.currency = Currency.getInstance(currencyCode)
