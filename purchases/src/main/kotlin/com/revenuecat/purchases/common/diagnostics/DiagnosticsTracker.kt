@@ -258,10 +258,16 @@ internal class DiagnosticsTracker(
     }
 
     fun trackErrorEnteringOfflineEntitlementsMode(error: PurchasesError) {
-        val isOneTimePurchaseFoundError = error.code == PurchasesErrorCode.UnsupportedError &&
+        val reason = if (
+            error.code == PurchasesErrorCode.UnsupportedError &&
             error.underlyingErrorMessage == OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES
-        val reason = if (isOneTimePurchaseFoundError) {
+        ) {
             "one_time_purchase_found"
+        } else if (
+            error.code == PurchasesErrorCode.CustomerInfoError &&
+            error.underlyingErrorMessage == OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED
+        ) {
+            "no_entitlement_mapping_available"
         } else {
             "unknown"
         }
