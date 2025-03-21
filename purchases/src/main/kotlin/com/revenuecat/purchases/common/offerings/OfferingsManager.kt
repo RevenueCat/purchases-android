@@ -47,7 +47,7 @@ internal class OfferingsManager(
             { result, cacheStatus ->
                 trackGetOfferingsResultIfNeeded(
                     startTime,
-                    DiagnosticsTracker.CacheStatus.NOT_CHECKED,
+                    cacheStatus,
                     null,
                     result.requestedProductIds,
                     result.notFoundProductIds,
