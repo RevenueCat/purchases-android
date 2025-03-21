@@ -18,6 +18,7 @@ import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -34,6 +35,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -1478,6 +1480,62 @@ class BillingWrapperTest {
         verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() }
     }
 
+    @Test
+    fun `make a purchase tracks start purchase event`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+
+        val storeProduct = createStoreProductWithoutOffers()
+        val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
+        val replaceSkuInfo = mockReplaceSkuInfo()
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            replaceSkuInfo,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted(
+                productId = purchasingData.productId,
+                oldProductId = replaceSkuInfo.oldPurchase.productIds.first(),
+                hasIntroTrial = false,
+                hasIntroPrice = false,
+            )
+        }
+    }
+
+    @Test
+    fun `tracks purchase update received event`() {
+        val purchases = listOf(stubGooglePurchase())
+        every {
+            mockPurchasesListener.onPurchasesUpdated(any())
+        } just Runs
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList()
+        )
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(
+                productIds = listOf(purchases.first().firstProductId),
+                purchaseStatuses = listOf("PURCHASED"),
+                billingResponseCode = BillingClient.BillingResponseCode.OK,
+                billingDebugMessage = "",
+            )
+        }
+
+    }
+
     // endregion diagnostics tracking
 
     // region inapp messages
@@ -1691,5 +1749,7 @@ class BillingWrapperTest {
         every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
+        every { mockDiagnosticsTracker.trackGooglePurchaseStarted(any(), any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(any(), any(), any(), any()) } just runs
     }
 }
