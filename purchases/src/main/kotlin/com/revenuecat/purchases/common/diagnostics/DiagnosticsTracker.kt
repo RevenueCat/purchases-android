@@ -51,6 +51,11 @@ internal class DiagnosticsTracker(
         const val BILLING_RESPONSE_CODE = "billing_response_code"
         const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
         const val PENDING_REQUEST_COUNT = "pending_request_count"
+        const val REQUESTED_PRODUCT_IDS_KEY = "requested_product_ids"
+        const val NOT_FOUND_PRODUCT_IDS_KEY = "not_found_product_ids"
+        const val ERROR_MESSAGE_KEY = "error_message"
+        const val ERROR_CODE_KEY = "error_code"
+        const val CACHE_STATUS_KEY = "cache_status"
         const val IS_RETRY = "is_retry"
     }
 
@@ -320,6 +325,48 @@ internal class DiagnosticsTracker(
                 "offline_entitlement_error_reason" to reason,
                 "error_message" to "${error.message} Underlying error: ${error.underlyingErrorMessage}",
             ),
+        )
+    }
+
+    // endregion
+
+    // region Get Offerings
+
+    fun trackGetOfferingsStarted() {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GET_OFFERINGS_STARTED,
+            properties = emptyMap(),
+        )
+    }
+
+    enum class CacheStatus {
+        NOT_CHECKED,
+        NOT_FOUND,
+        STALE,
+        VALID,
+    }
+
+    @Suppress("LongParameterList")
+    fun trackGetOfferingsResult(
+        requestedProductIds: Set<String>?,
+        notFoundProductIds: Set<String>?,
+        errorMessage: String?,
+        errorCode: Int?,
+        verificationResult: String?,
+        cacheStatus: CacheStatus,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GET_OFFERINGS_RESULT,
+            properties = mapOf(
+                REQUESTED_PRODUCT_IDS_KEY to requestedProductIds,
+                NOT_FOUND_PRODUCT_IDS_KEY to notFoundProductIds,
+                ERROR_MESSAGE_KEY to errorMessage,
+                ERROR_CODE_KEY to errorCode,
+                VERIFICATION_RESULT_KEY to verificationResult,
+                CACHE_STATUS_KEY to cacheStatus.name,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ).filterNotNullValues(),
         )
     }
 
