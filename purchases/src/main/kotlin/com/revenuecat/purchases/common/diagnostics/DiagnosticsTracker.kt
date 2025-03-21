@@ -313,7 +313,7 @@ internal class DiagnosticsTracker(
         errorCode: Int?,
         verificationResult: String?,
         cacheStatus: CacheStatus,
-        responseTimeMillis: Long,
+        responseTime: Duration,
     ) {
         trackEvent(
             eventName = DiagnosticsEntryName.GET_OFFERINGS_RESULT,
@@ -324,7 +324,7 @@ internal class DiagnosticsTracker(
                 ERROR_CODE_KEY to errorCode,
                 VERIFICATION_RESULT_KEY to verificationResult,
                 CACHE_STATUS_KEY to cacheStatus,
-                RESPONSE_TIME_MILLIS_KEY to responseTimeMillis,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ).filterNotNullValues(),
         )
     }

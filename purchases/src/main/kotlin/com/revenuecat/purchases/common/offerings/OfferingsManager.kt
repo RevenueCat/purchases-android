@@ -230,7 +230,7 @@ internal class OfferingsManager(
             // WIP Add verification result property once we expose verification result in Offerings object
             verificationResult = null,
             cacheStatus = cacheStatus,
-            responseTimeMillis = responseTime.inWholeMilliseconds,
+            responseTime = responseTime,
         )
     }
 }
