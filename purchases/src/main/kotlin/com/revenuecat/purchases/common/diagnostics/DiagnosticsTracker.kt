@@ -372,6 +372,38 @@ internal class DiagnosticsTracker(
 
     // endregion
 
+    // region Get Products
+
+    fun trackGetProductsStarted(requestedProductIds: Set<String>) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GET_PRODUCTS_STARTED,
+            properties = mapOf(
+                REQUESTED_PRODUCT_IDS_KEY to requestedProductIds
+            )
+        )
+    }
+
+    fun trackGetProductsResult(
+        requestedProductIds: Set<String>,
+        notFoundProductIds: Set<String>,
+        errorMessage: String?,
+        errorCode: Int?,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GET_PRODUCTS_RESULT,
+            properties = mapOf(
+                REQUESTED_PRODUCT_IDS_KEY to requestedProductIds,
+                NOT_FOUND_PRODUCT_IDS_KEY to notFoundProductIds,
+                ERROR_MESSAGE_KEY to errorMessage,
+                ERROR_CODE_KEY to errorCode,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ).filterNotNullValues(),
+        )
+    }
+
+    // endregion
+
     private fun trackEvent(eventName: DiagnosticsEntryName, properties: Map<String, Any>) {
         trackEvent(
             DiagnosticsEntry(
