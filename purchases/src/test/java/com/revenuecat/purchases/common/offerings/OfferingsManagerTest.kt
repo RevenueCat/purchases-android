@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
@@ -14,6 +15,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -36,6 +38,7 @@ class OfferingsManagerTest {
     private lateinit var backend: Backend
     private lateinit var offeringsFactory: OfferingsFactory
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
+    private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -47,14 +50,17 @@ class OfferingsManagerTest {
         offeringImagePreDownloader = mockk<OfferingImagePreDownloader>().apply {
             every { preDownloadOfferingImages(any()) } just Runs
         }
+        mockDiagnosticsTracker = mockk()
 
         mockBackendResponseSuccess()
+        mockDiagnosticsTracker()
 
         offeringsManager = OfferingsManager(
             cache,
             backend,
             offeringsFactory,
             offeringImagePreDownloader,
+            mockDiagnosticsTracker,
         )
     }
 
@@ -490,6 +496,8 @@ class OfferingsManagerTest {
 
     private fun mockOfferingsFactory(
         offerings: Offerings = testOfferings,
+        requestedProductIds: Set<String> = setOf(productId),
+        notFoundProductIds: Set<String> = emptySet(),
         error: PurchasesError? = null
     ) {
         if (error == null) {
@@ -500,7 +508,7 @@ class OfferingsManagerTest {
                     onSuccess = captureLambda()
                 )
             } answers {
-                lambda<(Offerings) -> Unit>().captured.invoke(offerings)
+                lambda<(OfferingsResultData) -> Unit>().captured.invoke(OfferingsResultData(offerings, requestedProductIds, notFoundProductIds))
             }
         } else {
             every {
@@ -552,4 +560,9 @@ class OfferingsManagerTest {
     }
 
     // endregion helpers
+
+    private fun mockDiagnosticsTracker() {
+        every { mockDiagnosticsTracker.trackGetOfferingsStarted() } just runs
+        every { mockDiagnosticsTracker.trackGetOfferingsResult(any(), any(), any(), any(), any(), any(), any()) } just runs
+    }
 }
