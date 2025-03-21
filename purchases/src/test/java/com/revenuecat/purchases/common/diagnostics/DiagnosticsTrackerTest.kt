@@ -306,6 +306,56 @@ class DiagnosticsTrackerTest {
         }
     }
 
+    @Test
+    fun `trackGooglePurchaseStarted tracks correct event`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "product_id" to "test-product-id",
+            "old_product_id" to "test-old-product-id",
+            "has_intro_trial" to true,
+            "has_intro_price" to false,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGooglePurchaseStarted(
+            productId = "test-product-id",
+            oldProductId = "test-old-product-id",
+            hasIntroTrial = true,
+            hasIntroPrice = false,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GOOGLE_PURCHASE_STARTED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackGooglePurchaseUpdateReceived tracks correct event`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "product_ids" to listOf("test-product-id", "test-product-id-2"),
+            "purchase_statuses" to listOf("PURCHASED", "PENDING"),
+            "billing_response_code" to 12,
+            "billing_debug_message" to "test-debug-message",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGooglePurchaseUpdateReceived(
+            productIds = listOf("test-product-id", "test-product-id-2"),
+            purchaseStatuses = listOf("PURCHASED", "PENDING"),
+            billingResponseCode = 12,
+            billingDebugMessage = "test-debug-message",
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GOOGLE_PURCHASES_UPDATE_RECEIVED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
     // endregion
 
     // region Amazon Billing
