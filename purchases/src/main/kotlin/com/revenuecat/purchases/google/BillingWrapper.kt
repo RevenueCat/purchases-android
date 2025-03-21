@@ -302,7 +302,7 @@ internal class BillingWrapper(
                 is Result.Success -> {
                     trackPurchaseStartIfNeeded(
                         googlePurchasingData,
-                        replaceProductInfo?.oldPurchase?.productIds?.first(),
+                        replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
                     )
                     launchBillingFlow(activity, result.value)
                 }

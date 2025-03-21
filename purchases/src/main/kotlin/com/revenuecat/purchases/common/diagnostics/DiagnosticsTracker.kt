@@ -44,8 +44,8 @@ internal class DiagnosticsTracker(
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
         const val PRODUCT_ID_KEY = "product_id"
         const val OLD_PRODUCT_ID_KEY = "old_product_id"
-        const val HAS_INTRO_TRIAL = "has_intro_trial"
-        const val HAS_INTRO_PRICE = "has_intro_price"
+        const val HAS_INTRO_TRIAL_KEY = "has_intro_trial"
+        const val HAS_INTRO_PRICE_KEY = "has_intro_price"
         const val PRODUCT_IDS_KEY = "product_ids"
         const val PURCHASE_STATUSES_KEY = "purchase_statuses"
         const val BILLING_RESPONSE_CODE = "billing_response_code"
@@ -179,8 +179,8 @@ internal class DiagnosticsTracker(
             properties = mapOf(
                 PRODUCT_ID_KEY to productId,
                 OLD_PRODUCT_ID_KEY to oldProductId,
-                HAS_INTRO_TRIAL to hasIntroTrial,
-                HAS_INTRO_PRICE to hasIntroPrice,
+                HAS_INTRO_TRIAL_KEY to hasIntroTrial,
+                HAS_INTRO_PRICE_KEY to hasIntroPrice,
             ).filterNotNullValues(),
         )
     }
