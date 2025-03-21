@@ -501,6 +501,56 @@ class DiagnosticsTrackerTest {
 
     // endregion
 
+    // region Get Offerings
+
+    @Test
+    fun `trackGetOfferingsStarted tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGetOfferingsStarted()
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GET_OFFERINGS_STARTED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackGetOfferingsResult tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "requested_product_ids" to setOf("product1", "product2"),
+            "not_found_product_ids" to setOf("product3", "product4"),
+            "error_message" to "test error message",
+            "error_code" to 100,
+            "cache_status" to "NOT_CHECKED",
+            "response_time_millis" to 1234L,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGetOfferingsResult(
+            requestedProductIds = setOf("product1", "product2"),
+            notFoundProductIds = setOf("product3", "product4"),
+            errorMessage = "test error message",
+            errorCode = 100,
+            cacheStatus = DiagnosticsTracker.CacheStatus.NOT_CHECKED,
+            verificationResult = null,
+            responseTime = 1234L.milliseconds,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GET_OFFERINGS_RESULT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    // endregion
+
     private fun mockSharedPreferences() {
         sharedPreferences = mockk()
         sharedPreferencesEditor = mockk()
