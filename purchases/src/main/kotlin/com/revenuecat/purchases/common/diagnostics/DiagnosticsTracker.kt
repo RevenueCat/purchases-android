@@ -50,6 +50,7 @@ internal class DiagnosticsTracker(
         const val ERROR_MESSAGE_KEY = "error_message"
         const val ERROR_CODE_KEY = "error_code"
         const val CACHE_STATUS_KEY = "cache_status"
+        const val IS_RETRY = "is_retry"
     }
 
     private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
@@ -70,6 +71,7 @@ internal class DiagnosticsTracker(
         backendErrorCode: Int?,
         resultOrigin: HTTPResult.Origin?,
         verificationResult: VerificationResult,
+        isRetry: Boolean,
     ) {
         val eTagHit = resultOrigin == HTTPResult.Origin.CACHE
         trackEvent(
@@ -82,6 +84,7 @@ internal class DiagnosticsTracker(
                 BACKEND_ERROR_CODE_KEY to backendErrorCode,
                 ETAG_HIT_KEY to eTagHit,
                 VERIFICATION_RESULT_KEY to verificationResult.name,
+                IS_RETRY to isRetry,
             ).filterNotNullValues(),
         )
     }
