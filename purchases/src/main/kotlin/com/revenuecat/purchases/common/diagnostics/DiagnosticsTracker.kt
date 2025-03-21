@@ -343,9 +343,10 @@ internal class DiagnosticsTracker(
         NOT_CHECKED,
         NOT_FOUND,
         STALE,
-        VALID
+        VALID,
     }
 
+    @Suppress("LongParameterList")
     fun trackGetOfferingsResult(
         requestedProductIds: Set<String>?,
         notFoundProductIds: Set<String>?,

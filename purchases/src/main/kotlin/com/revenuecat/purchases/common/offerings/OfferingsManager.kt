@@ -19,6 +19,7 @@ import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
 
+@Suppress("LongParameterList")
 internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,
     private val backend: Backend,
@@ -36,9 +37,23 @@ internal class OfferingsManager(
         onSuccess: ((Offerings) -> Unit)? = null,
         fetchCurrent: Boolean = false,
     ) {
-
         trackGetOfferingsStartedIfNeeded()
         val startTime = dateProvider.now
+        val onErrorWithTracking: (PurchasesError, DiagnosticsTracker.CacheStatus) -> Unit = { error, cacheStatus ->
+            trackGetOfferingsResultIfNeeded(startTime, cacheStatus, error, null, null)
+            onError?.invoke(error)
+        }
+        val onSuccessWithTracking: (OfferingsResultData, DiagnosticsTracker.CacheStatus) -> Unit =
+            { result, cacheStatus ->
+                trackGetOfferingsResultIfNeeded(
+                    startTime,
+                    DiagnosticsTracker.CacheStatus.NOT_CHECKED,
+                    null,
+                    result.requestedProductIds,
+                    result.notFoundProductIds,
+                )
+                onSuccess?.invoke(result.offerings)
+            }
 
         val cachedOfferings = offeringsCache.cachedOfferings
         if (fetchCurrent) {
@@ -46,52 +61,16 @@ internal class OfferingsManager(
             fetchAndCacheOfferings(
                 appUserID,
                 appInBackground,
-                {
-                    trackGetOfferingsResultIfNeeded(
-                        startTime,
-                        DiagnosticsTracker.CacheStatus.NOT_CHECKED,
-                        it,
-                        null,
-                        null,
-                    )
-                    onError?.invoke(it)
-                },
-                {
-                    trackGetOfferingsResultIfNeeded(
-                        startTime,
-                        DiagnosticsTracker.CacheStatus.NOT_CHECKED,
-                        null,
-                        it.requestedProductIds,
-                        it.notFoundProductIds,
-                    )
-                    onSuccess?.invoke(it.offerings)
-                }
+                { onErrorWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_CHECKED) },
+                { onSuccessWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_CHECKED) },
             )
         } else if (cachedOfferings == null) {
             log(LogIntent.DEBUG, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
             fetchAndCacheOfferings(
                 appUserID,
                 appInBackground,
-                {
-                    trackGetOfferingsResultIfNeeded(
-                        startTime,
-                        DiagnosticsTracker.CacheStatus.NOT_FOUND,
-                        it,
-                        null,
-                        null
-                    )
-                    onError?.invoke(it)
-                },
-                {
-                    trackGetOfferingsResultIfNeeded(
-                        startTime,
-                        DiagnosticsTracker.CacheStatus.NOT_FOUND,
-                        null,
-                        it.requestedProductIds,
-                        it.notFoundProductIds,
-                    )
-                    onSuccess?.invoke(it.offerings)
-                }
+                { onErrorWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_FOUND) },
+                { onSuccessWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_FOUND) },
             )
         } else {
             log(LogIntent.DEBUG, OfferingStrings.VENDING_OFFERINGS_CACHE)
@@ -104,9 +83,7 @@ internal class OfferingsManager(
                 null,
                 null,
             )
-            dispatch {
-                onSuccess?.invoke(cachedOfferings)
-            }
+            dispatch { onSuccess?.invoke(cachedOfferings) }
             if (isCacheStale) {
                 log(
                     LogIntent.DEBUG,

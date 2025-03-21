@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.offerings
 
-import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -65,7 +64,9 @@ internal class OfferingsFactory(
                                 )
                             } else {
                                 verboseLog(OfferingStrings.CREATED_OFFERINGS.format(offerings))
-                                onSuccess(OfferingsResultData(offerings, allRequestedProductIdentifiers, notFoundProductIds))
+                                onSuccess(
+                                    OfferingsResultData(offerings, allRequestedProductIdentifiers, notFoundProductIds),
+                                )
                             }
                         } catch (error: Exception) {
                             when (error) {
