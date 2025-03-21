@@ -323,7 +323,7 @@ internal class DiagnosticsTracker(
                 ERROR_MESSAGE_KEY to errorMessage,
                 ERROR_CODE_KEY to errorCode,
                 VERIFICATION_RESULT_KEY to verificationResult,
-                CACHE_STATUS_KEY to cacheStatus,
+                CACHE_STATUS_KEY to cacheStatus.name,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ).filterNotNullValues(),
         )
