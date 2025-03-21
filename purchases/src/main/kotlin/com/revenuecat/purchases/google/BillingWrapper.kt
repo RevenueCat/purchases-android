@@ -232,6 +232,7 @@ internal class BillingWrapper(
         useCase.run()
     }
 
+    @Suppress("LongMethod")
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -298,7 +299,13 @@ internal class BillingWrapper(
                 isPersonalizedPrice,
             )
             when (result) {
-                is Result.Success -> launchBillingFlow(activity, result.value)
+                is Result.Success -> {
+                    trackPurchaseStartIfNeeded(
+                        googlePurchasingData,
+                        replaceProductInfo?.oldPurchase?.productIds?.first(),
+                    )
+                    launchBillingFlow(activity, result.value)
+                }
                 is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
             }
         }
@@ -562,6 +569,7 @@ internal class BillingWrapper(
         billingResult: BillingResult,
         purchases: List<Purchase>?,
     ) {
+        trackPurchaseUpdateReceivedIfNeeded(billingResult, purchases)
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
             val storeTransactions = mutableListOf<StoreTransaction>()
@@ -831,6 +839,42 @@ internal class BillingWrapper(
                 billingResult.debugMessage,
             )
         }
+    }
+
+    private fun trackPurchaseStartIfNeeded(
+        googlePurchasingData: GooglePurchasingData,
+        oldProductId: String?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val subscriptionPurchasingData = googlePurchasingData as? GooglePurchasingData.Subscription
+        val subscriptionOfferChosenPricingPhaseList = subscriptionPurchasingData
+            ?.productDetails
+            ?.subscriptionOfferDetails
+            ?.first {
+                it.offerToken == subscriptionPurchasingData.token
+            }
+            ?.pricingPhases
+            ?.pricingPhaseList
+        val hasIntroTrial = subscriptionOfferChosenPricingPhaseList?.any { it.priceAmountMicros == 0L }
+        val hasIntroPrice = subscriptionOfferChosenPricingPhaseList
+            ?.dropLast(1) // drop the last pricing phase, which is the base price
+            ?.any { it.priceAmountMicros > 0L }
+        diagnosticsTrackerIfEnabled.trackGooglePurchaseStarted(
+            productId = googlePurchasingData.productId,
+            oldProductId = oldProductId,
+            hasIntroTrial = hasIntroTrial,
+            hasIntroPrice = hasIntroPrice,
+        )
+    }
+
+    private fun trackPurchaseUpdateReceivedIfNeeded(billingResult: BillingResult, purchases: List<Purchase>?) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        diagnosticsTrackerIfEnabled.trackGooglePurchaseUpdateReceived(
+            productIds = purchases?.flatMap { it.products },
+            purchaseStatuses = purchases?.map { it.purchaseState.toRevenueCatPurchaseState().name },
+            billingResponseCode = billingResult.responseCode,
+            billingDebugMessage = billingResult.debugMessage,
+        )
     }
 
     private fun buildPurchaseParams(

@@ -42,6 +42,12 @@ internal class DiagnosticsTracker(
         const val VERIFICATION_RESULT_KEY = "verification_result"
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
+        const val PRODUCT_ID_KEY = "product_id"
+        const val OLD_PRODUCT_ID_KEY = "old_product_id"
+        const val HAS_INTRO_TRIAL = "has_intro_trial"
+        const val HAS_INTRO_PRICE = "has_intro_price"
+        const val PRODUCT_IDS_KEY = "product_ids"
+        const val PURCHASE_STATUSES_KEY = "purchase_statuses"
         const val BILLING_RESPONSE_CODE = "billing_response_code"
         const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
         const val PENDING_REQUEST_COUNT = "pending_request_count"
@@ -159,6 +165,40 @@ internal class DiagnosticsTracker(
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
             properties = emptyMap(),
+        )
+    }
+
+    fun trackGooglePurchaseStarted(
+        productId: String,
+        oldProductId: String?,
+        hasIntroTrial: Boolean?,
+        hasIntroPrice: Boolean?,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_PURCHASE_STARTED,
+            properties = mapOf(
+                PRODUCT_ID_KEY to productId,
+                OLD_PRODUCT_ID_KEY to oldProductId,
+                HAS_INTRO_TRIAL to hasIntroTrial,
+                HAS_INTRO_PRICE to hasIntroPrice,
+            ).filterNotNullValues(),
+        )
+    }
+
+    fun trackGooglePurchaseUpdateReceived(
+        productIds: List<String>?,
+        purchaseStatuses: List<String>?,
+        billingResponseCode: Int,
+        billingDebugMessage: String,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_PURCHASES_UPDATE_RECEIVED,
+            properties = mapOf(
+                PRODUCT_IDS_KEY to productIds,
+                PURCHASE_STATUSES_KEY to purchaseStatuses,
+                BILLING_RESPONSE_CODE to billingResponseCode,
+                BILLING_DEBUG_MESSAGE to billingDebugMessage,
+            ).filterNotNullValues(),
         )
     }
 
