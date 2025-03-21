@@ -260,6 +260,7 @@ internal class PurchasesFactory(
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
+                diagnosticsTracker,
             )
 
             log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
