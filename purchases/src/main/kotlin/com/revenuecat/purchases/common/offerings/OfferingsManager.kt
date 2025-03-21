@@ -38,7 +38,7 @@ internal class OfferingsManager(
     ) {
 
         trackGetOfferingsStartedIfNeeded()
-        var startTime = dateProvider.now
+        val startTime = dateProvider.now
 
         val cachedOfferings = offeringsCache.cachedOfferings
         if (fetchCurrent) {
