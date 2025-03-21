@@ -35,6 +35,14 @@ internal class SubscriptionInfoResponse(
     val refundedAt: Date?,
     @SerialName("store_transaction_id")
     val storeTransactionId: String?,
+    @SerialName("auto_resume_date") @Serializable(with = ISO8601DateSerializer::class)
+    val autoResumeDate: Date?,
+    @SerialName("display_name")
+    val displayName: String?,
+    @SerialName("price")
+    val price: PriceResponse?,
+    @SerialName("product_plan_identifier")
+    val productPlanIdentifier: String?,
 ) {
 
     override fun toString(): String {
@@ -52,6 +60,10 @@ internal class SubscriptionInfoResponse(
                 periodType: $periodType,
                 refundedAt: $refundedAt,
                 storeTransactionId: $storeTransactionId,
+                autoResumeDate: $autoResumeDate,
+                displayName: $displayName,
+                price: $price,
+                productPlanIdentifier: $productPlanIdentifier
             }
         """.trimIndent()
     }
