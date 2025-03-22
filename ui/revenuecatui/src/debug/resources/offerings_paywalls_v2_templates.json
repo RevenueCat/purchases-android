@@ -38711,13 +38711,6 @@
       "paywall_components": null
     },
     {
-      "description": "barbara_debug_019_02",
-      "identifier": "barbara_debug_019_02",
-      "metadata": null,
-      "packages": [],
-      "paywall_components": null
-    },
-    {
       "description": "Template 021",
       "identifier": "template_021",
       "metadata": null,
@@ -40695,17 +40688,17 @@
               },
               "id": "025HBxUv0x",
               "margin": {
-                "bottom": 24,
-                "leading": 24,
-                "top": 24,
-                "trailing": 24
-              },
-              "name": "Content",
-              "padding": {
                 "bottom": 0,
                 "leading": 0,
                 "top": 0,
                 "trailing": 0
+              },
+              "name": "Content",
+              "padding": {
+                "bottom": 24,
+                "leading": 24,
+                "top": 24,
+                "trailing": 24
               },
               "shadow": null,
               "shape": {
@@ -41184,7 +41177,7 @@
           }
         },
         "default_locale": "en_US",
-        "revision": 53,
+        "revision": 54,
         "template_name": "components",
         "zero_decimal_place_countries": {
           "apple": [
@@ -45408,6 +45401,13 @@
     {
       "description": "template_025_debug",
       "identifier": "template_025_debug",
+      "metadata": null,
+      "packages": [],
+      "paywall_components": null
+    },
+    {
+      "description": "Test",
+      "identifier": "SKEUOMORPHIC TEST",
       "metadata": null,
       "packages": [],
       "paywall_components": null
