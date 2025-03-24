@@ -54,7 +54,8 @@ class EntitlementInfoHelperTest {
             mockOfflineEntitlementsManager,
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
-            mockHandler
+            null,
+            handler = mockHandler,
         )
     }
 
@@ -775,8 +776,11 @@ class EntitlementInfoHelperTest {
         every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) } just runs
     }
 
-    private fun setupPostPendingTransactionsHelperSuccess(customerInfo: CustomerInfo? = null) {
-        val slotList = mutableListOf<((CustomerInfo?) -> Unit)?>()
+    private fun setupPostPendingTransactionsHelperSuccess(
+        customerInfo: CustomerInfo? = null,
+        hadUnsyncedPurchases: Boolean? = null
+    ) {
+        val slotList = mutableListOf<((CustomerInfo?, Boolean?) -> Unit)?>()
         every {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = any(),
@@ -784,7 +788,7 @@ class EntitlementInfoHelperTest {
                 onSuccess = captureNullable(slotList),
             )
         } answers {
-            slotList.firstOrNull()?.invoke(customerInfo)
+            slotList.firstOrNull()?.invoke(customerInfo, hadUnsyncedPurchases)
         }
     }
 

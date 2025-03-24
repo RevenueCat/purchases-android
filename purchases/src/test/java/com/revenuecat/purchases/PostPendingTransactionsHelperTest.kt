@@ -398,9 +398,9 @@ class PostPendingTransactionsHelperTest {
         var successCallCount = 0
         postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
-            onError = { fail("Should be success") },
-            onSuccess = {
-                assertThat(it).isEqualTo(resultCustomerInfo)
+            onError = { _, _ -> fail("Should be success") },
+            onSuccess = { customerInfo, _ ->
+                assertThat(customerInfo).isEqualTo(resultCustomerInfo)
                 successCallCount++
             }
         )
@@ -411,8 +411,8 @@ class PostPendingTransactionsHelperTest {
         var receivedError: PurchasesError? = null
         postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
-            onError = { receivedError = it },
-            onSuccess = { fail("Should be error") },
+            onError = { error, _ -> receivedError = error },
+            onSuccess = { _, _ -> fail("Should be error") },
         )
         assertThat(receivedError?.code).isEqualTo(purchasesError.code)
         assertThat(receivedError?.underlyingErrorMessage).isEqualTo(purchasesError.underlyingErrorMessage)
