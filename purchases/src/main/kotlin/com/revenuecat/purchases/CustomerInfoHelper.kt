@@ -60,30 +60,34 @@ internal class CustomerInfoHelper(
         trackGetCustomerInfoStartedIfNeeded(trackDiagnostics)
         val startTime = dateProvider.now
 
-        val callbackWithDiagnostics = ReceiveCustomerInfoFullCallback(
-            onCustomerInfoReceived = { customerInfo, hadUnsyncedPurchases ->
-                trackGetCustomerInfoResultIfNeeded(
-                    trackDiagnostics,
-                    startTime,
-                    customerInfo.entitlements.verification,
-                    fetchPolicy,
-                    hadUnsyncedPurchases,
-                    null,
-                )
-                callback?.onReceived(customerInfo)
-            },
-            onError = { error, hadUnsyncedPurchases ->
-                trackGetCustomerInfoResultIfNeeded(
-                    trackDiagnostics,
-                    startTime,
-                    null,
-                    fetchPolicy,
-                    hadUnsyncedPurchases,
-                    error,
-                )
-                callback?.onError(error)
-            },
-        )
+        val callbackWithDiagnostics: ReceiveCustomerInfoFullCallback? = if (callback != null || trackDiagnostics) {
+            ReceiveCustomerInfoFullCallback(
+                onCustomerInfoReceived = { customerInfo, hadUnsyncedPurchases ->
+                    trackGetCustomerInfoResultIfNeeded(
+                        trackDiagnostics,
+                        startTime,
+                        customerInfo.entitlements.verification,
+                        fetchPolicy,
+                        hadUnsyncedPurchases,
+                        null,
+                    )
+                    callback?.onReceived(customerInfo)
+                },
+                onError = { error, hadUnsyncedPurchases ->
+                    trackGetCustomerInfoResultIfNeeded(
+                        trackDiagnostics,
+                        startTime,
+                        null,
+                        fetchPolicy,
+                        hadUnsyncedPurchases,
+                        error,
+                    )
+                    callback?.onError(error)
+                },
+            )
+        } else {
+            null
+        }
 
         when (fetchPolicy) {
             CacheFetchPolicy.CACHE_ONLY -> getCustomerInfoCacheOnly(appUserID, callbackWithDiagnostics)
@@ -110,8 +114,9 @@ internal class CustomerInfoHelper(
 
     private fun getCustomerInfoCacheOnly(
         appUserID: String,
-        callback: ReceiveCustomerInfoCallback,
+        callback: ReceiveCustomerInfoCallback?,
     ) {
+        if (callback == null) return
         val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
         if (cachedCustomerInfo != null) {
             log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)

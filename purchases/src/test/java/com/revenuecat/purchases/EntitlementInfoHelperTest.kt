@@ -77,6 +77,18 @@ class EntitlementInfoHelperTest {
     // region CACHE_ONLY fetch policy
 
     @Test
+    fun `retrieving customer info from CACHE_ONLY does nothing if callback is null and trackDiagnostics is false`() {
+        customerInfoHelper.retrieveCustomerInfo(
+            appUserId,
+            CacheFetchPolicy.CACHE_ONLY,
+            appInBackground,
+            allowSharingPlayStoreAccount,
+            trackDiagnostics = false,
+        )
+        verify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
+    }
+
+    @Test
     fun `retrieving customer info from CACHE_ONLY gets info from cache`() {
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
