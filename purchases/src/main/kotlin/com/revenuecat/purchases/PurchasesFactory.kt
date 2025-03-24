@@ -229,6 +229,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,
+                diagnosticsTracker,
             )
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 

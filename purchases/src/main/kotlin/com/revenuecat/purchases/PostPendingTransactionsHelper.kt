@@ -23,12 +23,12 @@ internal class PostPendingTransactionsHelper(
 
     fun syncPendingPurchaseQueue(
         allowSharingPlayStoreAccount: Boolean,
-        onError: ((PurchasesError) -> Unit)? = null,
-        onSuccess: ((CustomerInfo?) -> Unit)? = null,
+        onError: ((PurchasesError, Boolean?) -> Unit)? = null,
+        onSuccess: ((CustomerInfo?, Boolean?) -> Unit)? = null,
     ) {
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.DEBUG, PurchaseStrings.SKIPPING_AUTOMATIC_SYNC)
-            onSuccess?.invoke(null)
+            onSuccess?.invoke(null, null)
             return
         }
         log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
@@ -45,17 +45,18 @@ internal class PostPendingTransactionsHelper(
                     }
                     deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
                     val transactionsToSync = deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
+                    val hadUnsyncedPurchases = transactionsToSync.isNotEmpty()
                     postTransactionsWithCompletion(
                         transactionsToSync,
                         allowSharingPlayStoreAccount,
                         appUserID,
-                        onError,
-                        onSuccess,
+                        { error -> onError?.invoke(error, hadUnsyncedPurchases) },
+                        { customerInfo -> onSuccess?.invoke(customerInfo, hadUnsyncedPurchases) },
                     )
                 },
                 onError = { error ->
                     log(LogIntent.GOOGLE_ERROR, error.toString())
-                    onError?.invoke(error)
+                    onError?.invoke(error, null)
                 },
             )
         })

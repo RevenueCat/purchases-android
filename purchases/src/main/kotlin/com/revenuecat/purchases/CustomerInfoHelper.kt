@@ -3,14 +3,38 @@ package com.revenuecat.purchases
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.strings.CustomerInfoStrings
+import java.util.Date
+import kotlin.time.Duration
+
+/**
+ * Wrapper for [ReceiveCustomerInfoCallback] to hold extra information for diagnostics.
+ */
+internal class ReceiveCustomerInfoFullCallback(
+    private val onCustomerInfoReceived: (CustomerInfo, Boolean?) -> Unit,
+    private val onError: (PurchasesError, Boolean?) -> Unit,
+) : ReceiveCustomerInfoCallback {
+    var hadUnsyncedPurchases: Boolean? = null
+
+    override fun onReceived(customerInfo: CustomerInfo) {
+        onCustomerInfoReceived(customerInfo, hadUnsyncedPurchases)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error, hadUnsyncedPurchases)
+    }
+}
 
 internal class CustomerInfoHelper(
     private val deviceCache: DeviceCache,
@@ -18,6 +42,8 @@ internal class CustomerInfoHelper(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
@@ -29,25 +55,51 @@ internal class CustomerInfoHelper(
         callback: ReceiveCustomerInfoCallback? = null,
     ) {
         debugLog(CustomerInfoStrings.RETRIEVING_CUSTOMER_INFO.format(fetchPolicy))
+        trackGetCustomerInfoStartedIfNeeded()
+        val startTime = dateProvider.now
+
+        val callbackWithDiagnostics = ReceiveCustomerInfoFullCallback(
+            onCustomerInfoReceived = { customerInfo, hadUnsyncedPurchases ->
+                trackGetCustomerInfoResultIfNeeded(
+                    startTime,
+                    customerInfo.entitlements.verification,
+                    fetchPolicy,
+                    hadUnsyncedPurchases,
+                    null,
+                )
+                callback?.onReceived(customerInfo)
+            },
+            onError = { error, hadUnsyncedPurchases ->
+                trackGetCustomerInfoResultIfNeeded(
+                    startTime,
+                    null,
+                    fetchPolicy,
+                    hadUnsyncedPurchases,
+                    error,
+                )
+                callback?.onError(error)
+            }
+        )
+
         when (fetchPolicy) {
             CacheFetchPolicy.CACHE_ONLY -> getCustomerInfoCacheOnly(appUserID, callback)
             CacheFetchPolicy.FETCH_CURRENT -> postPendingPurchasesAndFetchCustomerInfo(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
-                callback,
+                callbackWithDiagnostics,
             )
             CacheFetchPolicy.CACHED_OR_FETCHED -> getCustomerInfoCachedOrFetched(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
-                callback,
+                callbackWithDiagnostics,
             )
             CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT -> getCustomerInfoNotStaledCachedOrFetched(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
-                callback,
+                callbackWithDiagnostics,
             )
         }
     }
@@ -75,12 +127,16 @@ internal class CustomerInfoHelper(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,
-        callback: ReceiveCustomerInfoCallback? = null,
+        callback: ReceiveCustomerInfoFullCallback? = null,
     ) {
         postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
-            onError = { getCustomerInfoFetchOnly(appUserID, appInBackground, callback) },
-            onSuccess = { customerInfo ->
+            onError = { _, hadUnsyncedPurchases ->
+                callback?.hadUnsyncedPurchases = hadUnsyncedPurchases
+                getCustomerInfoFetchOnly(appUserID, appInBackground, callback)
+            },
+            onSuccess = { customerInfo, hadUnsyncedPurchases ->
+                callback?.hadUnsyncedPurchases = hadUnsyncedPurchases
                 if (customerInfo == null) {
                     getCustomerInfoFetchOnly(appUserID, appInBackground, callback)
                 } else {
@@ -135,7 +191,7 @@ internal class CustomerInfoHelper(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,
-        callback: ReceiveCustomerInfoCallback? = null,
+        callback: ReceiveCustomerInfoFullCallback? = null,
     ) {
         val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
         if (cachedCustomerInfo != null) {
@@ -157,7 +213,7 @@ internal class CustomerInfoHelper(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,
-        callback: ReceiveCustomerInfoCallback? = null,
+        callback: ReceiveCustomerInfoFullCallback? = null,
     ) {
         if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
             postPendingPurchasesAndFetchCustomerInfo(
@@ -192,6 +248,29 @@ internal class CustomerInfoHelper(
             )
             postPendingPurchasesAndFetchCustomerInfo(appUserID, appInBackground, allowSharingPlayStoreAccount)
         }
+    }
+
+    private fun trackGetCustomerInfoStartedIfNeeded() {
+        diagnosticsTrackerIfEnabled?.trackGetCustomerInfoStarted()
+    }
+
+    private fun trackGetCustomerInfoResultIfNeeded(
+        startTime: Date,
+        verificationResult: VerificationResult?,
+        cacheFetchPolicy: CacheFetchPolicy,
+        hadUnsyncedPurchasesBefore: Boolean?,
+        error: PurchasesError?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val responseTime = Duration.between(startTime, dateProvider.now)
+        diagnosticsTrackerIfEnabled.trackGetCustomerInfoResult(
+            cacheFetchPolicy,
+            verificationResult,
+            hadUnsyncedPurchasesBefore,
+            errorMessage = error?.message,
+            errorCode = error?.code?.code,
+            responseTime = responseTime,
+        )
     }
 
     private fun dispatch(action: () -> Unit) {
