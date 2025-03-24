@@ -424,6 +424,32 @@ internal class DiagnosticsTracker(
 
     // endregion
 
+    // region Sync purchases
+
+    fun trackSyncPurchasesStarted() {
+        trackEvent(
+            eventName = DiagnosticsEntryName.SYNC_PURCHASES_STARTED,
+            properties = emptyMap(),
+        )
+    }
+
+    fun trackSyncPurchasesResult(
+        errorCode: Int?,
+        errorMessage: String?,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.SYNC_PURCHASES_RESULT,
+            properties = mapOf(
+                ERROR_CODE_KEY to errorCode,
+                ERROR_MESSAGE_KEY to errorMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ).filterNotNullValues(),
+        )
+    }
+
+    // endregion Sync purchases
+
     private fun trackEvent(eventName: DiagnosticsEntryName, properties: Map<String, Any>) {
         trackEvent(
             DiagnosticsEntry(

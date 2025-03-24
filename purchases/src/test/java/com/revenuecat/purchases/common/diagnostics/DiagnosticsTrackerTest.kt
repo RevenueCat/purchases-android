@@ -675,6 +675,49 @@ class DiagnosticsTrackerTest {
 
     // endregion
 
+    // region Sync Purchases
+
+    @Test
+    fun `trackSyncPurchasesStarted tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackSyncPurchasesStarted()
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.SYNC_PURCHASES_STARTED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackSyncPurchasesResult tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "response_time_millis" to 1234L,
+            "error_message" to "test error message",
+            "error_code" to 100,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackSyncPurchasesResult(
+            errorCode = 100,
+            errorMessage = "test error message",
+            responseTime = 1234L.milliseconds,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.SYNC_PURCHASES_RESULT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    // endregion Sync Purchases
+
     private fun mockSharedPreferences() {
         sharedPreferences = mockk()
         sharedPreferencesEditor = mockk()
