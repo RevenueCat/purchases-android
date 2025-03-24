@@ -118,7 +118,7 @@ internal class PurchaseHandler(
 
             val purchaseRequest = synchronized(this) { purchaseCallbacks.remove(requestId) }
 
-            purchaseRequest?.let { (storeProduct, startTime, onSuccess, onError) ->
+            purchaseRequest?.also { (storeProduct, startTime, onSuccess, onError) ->
                 val error: PurchasesError? = when (response.requestStatus) {
                     PurchaseResponse.RequestStatus.SUCCESSFUL -> null
                     PurchaseResponse.RequestStatus.FAILED -> {
