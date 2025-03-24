@@ -71,7 +71,7 @@ internal class AmazonBilling(
     private val productDataHandler: ProductDataResponseListener =
         ProductDataHandler(purchasingServiceProvider, mainHandler),
     private val purchaseHandler: PurchaseResponseListener =
-        PurchaseHandler(purchasingServiceProvider, applicationContext),
+        PurchaseHandler(purchasingServiceProvider, applicationContext, diagnosticsTrackerIfEnabled),
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
         purchasingServiceProvider,
     ),
