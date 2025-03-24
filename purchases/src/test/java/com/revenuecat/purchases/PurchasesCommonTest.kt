@@ -37,12 +37,18 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.not
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Collections.emptyList
+import java.util.Date
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -1319,6 +1325,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    // endregion
+
+    // region Diagnostics sync
+
     @Test
     fun `diagnostics is synced on app foregrounded`() {
         verify(exactly = 0) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
@@ -1337,6 +1347,141 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
     }
+
+    // endregion Diagnostics sync
+
+    // region Diagnostics event - Get Purchases
+
+    @Test
+    fun `getProducts tracks diagnostics on start`() {
+        val productIds = listOf("onemonth_freetrial")
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        purchases.getProducts(
+            productIds,
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {}
+                override fun onError(error: PurchasesError) {}
+            }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsStarted(productIds.toSet())
+        }
+    }
+
+    @Test
+    fun `getProducts tracks diagnostics on success`() {
+        val productIds = listOf("onemonth_freetrial")
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(0),
+            Date(123) // End time
+        )
+
+        purchases.getProducts(
+            productIds,
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {}
+                override fun onError(error: PurchasesError) {}
+            }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = productIds.toSet(),
+                notFoundProductIds = emptySet(),
+                errorMessage = null,
+                errorCode = null,
+                responseTime = 123.milliseconds
+            )
+        }
+    }
+
+    @Test
+    fun `getProducts tracks diagnostics on error`() {
+        val productIds = setOf("product_1", "product_2")
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Test error")
+
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(0),  // Start time
+            Date(123) // End time
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                productType = ProductType.SUBS,
+                productIds = productIds,
+                onReceive = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+        }
+
+        purchases.getProducts(
+            productIds.toList(),
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {}
+                override fun onError(error: PurchasesError) {}
+            }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = productIds,
+                notFoundProductIds = productIds,
+                errorMessage = error.message,
+                errorCode = error.code.code,
+                responseTime = 123.milliseconds
+            )
+        }
+    }
+
+    @Test
+    fun `getProducts tracks diagnostics with not found products`() {
+        val foundProductIds = setOf("product_1")
+        val notFoundProductIds = setOf("product_2")
+        val requestedProductIds = foundProductIds + notFoundProductIds
+
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(0),  // Start time
+            Date(123) // End time
+        )
+
+        mockStoreProduct(
+            requestedProductIds.toList(),
+            foundProductIds.toList(),
+            ProductType.SUBS
+        )
+
+        purchases.getProducts(
+            requestedProductIds.toList(),
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {}
+                override fun onError(error: PurchasesError) {}
+            }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = requestedProductIds,
+                notFoundProductIds = notFoundProductIds,
+                errorMessage = null,
+                errorCode = null,
+                responseTime = 123.milliseconds
+            )
+        }
+    }
+
+    // endregion Diagnostics event - Get Purchases
 
     @Test
     fun `paywall events synced on app foregrounded`() {
