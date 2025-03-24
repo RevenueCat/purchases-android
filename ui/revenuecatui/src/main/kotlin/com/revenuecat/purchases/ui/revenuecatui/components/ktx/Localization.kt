@@ -100,7 +100,7 @@ internal fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
 @JvmSynthetic
 internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
     // Exact match:
-    if (contains(localeId)) return localeId
+    if (this.contains(localeId)) return localeId
 
     val javaLocale = JavaLocale.forLanguageTag(localeId.value.replace('_', '-'))
     val language = javaLocale.language
@@ -118,11 +118,11 @@ internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
         if (languageScriptRegionId != null) add(languageScriptRegionId)
         if (languageScriptId != null) add(languageScriptId)
         add(languageId)
-    }.firstOrNull { idToCheck -> contains(idToCheck) }
+    }.firstOrNull { id -> this.contains(id) }
         ?.also { return it }
 
     // If not, try a fuzzy match by dropping the region:
-    val javaLocales = map { it.toJavaLocale() }
+    val javaLocales = this.map { it.toJavaLocale() }
     return languageScriptId?.takeIf { javaLocales.any { it.language == language && it.script == script } }
         ?: languageId.takeIf { javaLocales.any { it.language == language } }
 }
