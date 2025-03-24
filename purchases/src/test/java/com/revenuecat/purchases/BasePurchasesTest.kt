@@ -16,9 +16,11 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -49,6 +51,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import org.junit.After
 import org.junit.Before
+import java.util.Date
 
 internal open class BasePurchasesTest {
     protected val mockBillingAbstract: BillingAbstract = mockk()
@@ -68,6 +71,8 @@ internal open class BasePurchasesTest {
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
     internal val mockCustomerInfoUpdateHandler = mockk<CustomerInfoUpdateHandler>()
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
+    protected val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxUnitFun = true)
+    protected val mockDateProvider = mockk<DateProvider>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
     internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
@@ -132,6 +137,8 @@ internal open class BasePurchasesTest {
 
         every { mockLifecycle.addObserver(any()) } just Runs
         every { mockLifecycle.removeObserver(any()) } just Runs
+
+        every { mockDateProvider.now } returns Date()
 
         if (shouldConfigureOnSetUp) {
             anonymousSetup(false)
@@ -415,6 +422,8 @@ internal open class BasePurchasesTest {
             customerInfoHelper = mockCustomerInfoHelper,
             customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            dateProvider = mockDateProvider,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
             postTransactionWithProductDetailsHelper = postTransactionsHelper,
