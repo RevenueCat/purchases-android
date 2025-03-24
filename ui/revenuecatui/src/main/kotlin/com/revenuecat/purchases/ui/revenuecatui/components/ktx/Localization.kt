@@ -117,6 +117,8 @@ internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
     return languageScriptRegionId.takeIf { contains(it) }
         ?: languageScriptId.takeIf { contains(it) }
         ?: languageId.takeIf { contains(it) }
+        // Match language only, ignore region and script:
+        ?: languageId.takeIf { any { it.toJavaLocale().language == language } }
 }
 
 /**

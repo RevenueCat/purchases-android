@@ -80,6 +80,16 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
+                "device locale only matches language, not region",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "es_ES"),
+                    deviceLocales = nonEmptyListOf("en-IE", "es-ES"),
+                    // Even though there's an exact language and region match for Spanish, we pick English as that has
+                    // higher priority.
+                    expected = "en",
+                ),
+            ),
+            arrayOf(
                 "simplified Chinese zh-Hans -> zh-Hans",
                 Args(
                     paywallLocales = nonEmptyListOf("en_US", "zh_Hans"),
