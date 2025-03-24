@@ -57,6 +57,7 @@ internal class DiagnosticsTracker(
         const val ERROR_CODE_KEY = "error_code"
         const val CACHE_STATUS_KEY = "cache_status"
         const val IS_RETRY = "is_retry"
+        const val REQUEST_STATUS_KEY = "request_status"
     }
 
     private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
@@ -234,6 +235,25 @@ internal class DiagnosticsTracker(
                 SUCCESSFUL_KEY to wasSuccessful,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
+        )
+    }
+
+    fun trackAmazonPurchaseAttempt(
+        productId: String,
+        requestStatus: String?,
+        errorCode: Int?,
+        errorMessage: String?,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.AMAZON_PURCHASE_ATTEMPT,
+            properties = mapOf(
+                PRODUCT_ID_KEY to productId,
+                REQUEST_STATUS_KEY to requestStatus,
+                ERROR_CODE_KEY to errorCode,
+                ERROR_MESSAGE_KEY to errorMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ).filterNotNullValues(),
         )
     }
 

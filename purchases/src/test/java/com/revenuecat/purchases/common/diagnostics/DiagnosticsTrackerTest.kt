@@ -400,6 +400,32 @@ class DiagnosticsTrackerTest {
         }
     }
 
+    @Test
+    fun `trackAmazonPurchaseAttempt tracks correct event`() {
+        val diagnosticsTracker = createDiagnosticsTracker(Store.AMAZON)
+        val expectedTags = mapOf(
+            "product_id" to "test-product-id",
+            "request_status" to "ERROR",
+            "error_code" to 100,
+            "error_message" to "test error message",
+            "response_time_millis" to 1234L,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackAmazonPurchaseAttempt(
+            productId = "test-product-id",
+            requestStatus = "ERROR",
+            errorCode = 100,
+            errorMessage = "test error message",
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.AMAZON_PURCHASE_ATTEMPT &&
+                    event.properties == expectedTags
+            })
+        }
+    }
+
     // endregion
 
     @Test

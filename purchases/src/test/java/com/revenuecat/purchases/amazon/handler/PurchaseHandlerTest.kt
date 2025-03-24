@@ -24,6 +24,7 @@ import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.toStoreProduct
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.models.StoreProduct
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -31,6 +32,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -71,6 +73,7 @@ class PurchaseHandlerTest {
     private var mockApplicationContext = mockk<Context>()
     private var mockHandler = mockk<Handler>()
     private var mockActivity = mockk<Activity>()
+    private var mockDiagnosticsTracker = mockk<DiagnosticsTracker>()
     private var broadcastIntentSlot = slot<Intent>()
     private var activityIntentSlot = slot<Intent>()
     private val packageName = UUID.randomUUID().toString()
@@ -78,7 +81,7 @@ class PurchaseHandlerTest {
     @Before
     fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()
-        underTest = PurchaseHandler(purchasingServiceProvider, mockApplicationContext)
+        underTest = PurchaseHandler(purchasingServiceProvider, mockApplicationContext, mockDiagnosticsTracker)
 
         every {
             mockApplicationContext.packageName
@@ -93,6 +96,9 @@ class PurchaseHandlerTest {
         every {
             mockActivity.packageName
         } returns packageName
+        every {
+            mockDiagnosticsTracker.trackAmazonPurchaseAttempt(any(), any(), any(), any(), any())
+        } just runs
     }
 
     @After
@@ -343,6 +349,67 @@ class PurchaseHandlerTest {
         assertThat(captured.`package`).isEqualTo(packageName)
         assertThat(captured.action).isEqualTo(ProxyAmazonBillingActivityBroadcastReceiver.PURCHASE_FINISHED_ACTION)
     }
+
+    @Test
+    fun `making a successful purchase tracks event correctly`() {
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
+
+        underTest.purchase(
+            mockHandler,
+            mockActivity,
+            appUserID = "app_user_id",
+            storeProduct = dummyStoreProduct(),
+            expectedOnSuccess,
+            unexpectedOnError
+        )
+
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
+
+        val response = getDummyPurchaseResponse(dummyRequestId)
+        underTest.onPurchaseResponse(response)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonPurchaseAttempt(
+                productId = "premium",
+                requestStatus = "SUCCESSFUL",
+                errorCode = null,
+                errorMessage = null,
+                responseTime = any()
+            )
+        }
+    }
+
+    @Test
+    fun `making a purchase with errors tracks event correctly`() {
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
+
+        underTest.purchase(
+            mockHandler,
+            mockActivity,
+            appUserID = "app_user_id",
+            storeProduct = dummyStoreProduct(),
+            unexpectedOnSuccess,
+            expectedOnError
+        )
+
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
+
+        val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.NOT_SUPPORTED)
+        underTest.onPurchaseResponse(response)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonPurchaseAttempt(
+                productId = "premium",
+                requestStatus = "NOT_SUPPORTED",
+                errorCode = PurchasesErrorCode.StoreProblemError.code,
+                errorMessage = "There was a problem with the store.",
+                responseTime = any()
+            )
+        }
+    }
+
 
     private fun dummyStoreProduct(): StoreProduct {
         return dummyAmazonProduct().toStoreProduct("US")!!
