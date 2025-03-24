@@ -142,6 +142,7 @@ internal class PurchasesOrchestrator(
 
     var finishTransactions: Boolean
         @Synchronized get() = appConfig.finishTransactions
+
         @Synchronized set(value) {
             appConfig.finishTransactions = value
         }
@@ -151,6 +152,7 @@ internal class PurchasesOrchestrator(
 
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
         @Synchronized get() = customerInfoUpdateHandler.updatedCustomerInfoListener
+
         @Synchronized set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
@@ -172,6 +174,7 @@ internal class PurchasesOrchestrator(
     var allowSharingPlayStoreAccount: Boolean
         @Synchronized get() =
             state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
+
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
@@ -1117,7 +1120,7 @@ internal class PurchasesOrchestrator(
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
-                ),
+            ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
@@ -1188,7 +1191,7 @@ internal class PurchasesOrchestrator(
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
-                ),
+            ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
@@ -1328,6 +1331,7 @@ internal class PurchasesOrchestrator(
 
         var logHandler: LogHandler
             @Synchronized get() = currentLogHandler
+
             @Synchronized set(value) {
                 currentLogHandler = value
             }
