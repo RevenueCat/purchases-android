@@ -595,7 +595,7 @@ internal class PurchasesOrchestrator(
             productIds = productIds,
             types = validTypes,
             collectedStoreProducts = emptyList(),
-            callback = callback
+            callback = callback,
         )
     }
 

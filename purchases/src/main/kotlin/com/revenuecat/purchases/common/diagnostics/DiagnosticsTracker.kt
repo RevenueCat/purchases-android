@@ -378,8 +378,8 @@ internal class DiagnosticsTracker(
         trackEvent(
             eventName = DiagnosticsEntryName.GET_PRODUCTS_STARTED,
             properties = mapOf(
-                REQUESTED_PRODUCT_IDS_KEY to requestedProductIds
-            )
+                REQUESTED_PRODUCT_IDS_KEY to requestedProductIds,
+            ),
         )
     }
 
