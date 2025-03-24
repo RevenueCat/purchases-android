@@ -170,6 +170,16 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
+                "simplified Chinese zh-Hans-MY -> zh-Hans",
+                Args(
+                    paywallLocales = nonEmptyListOf("zh_Hant_TW", "zh_Hans_CN"),
+                    deviceLocales = nonEmptyListOf("zh-Hans-MY", "zh-Hant-TW"),
+                    // Even though there's an exact language and region match for traditional Chinese, we pick
+                    // simplified Chinese as that has higher device priority.
+                    expected = "zh-Hans",
+                ),
+            ),
+            arrayOf(
                 "traditional Chinese zh-Hant -> zh-Hant",
                 Args(
                     paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
@@ -246,6 +256,16 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 Args(
                     paywallLocales = nonEmptyListOf("en_US", "zh_Hant"),
                     deviceLocales = nonEmptyListOf("zh-Hant-MO"),
+                    expected = "zh-Hant",
+                ),
+            ),
+            arrayOf(
+                "simplified Chinese zh-Hant-TW -> zh-Hant",
+                Args(
+                    paywallLocales = nonEmptyListOf("zh_Hans_MY", "zh_Hant_HK"),
+                    deviceLocales = nonEmptyListOf("zh-Hant-TW", "zh-Hans-MY"),
+                    // Even though there's an exact language and region match for simplified Chinese, we pick
+                    // traditional Chinese as that has higher device priority.
                     expected = "zh-Hant",
                 ),
             ),

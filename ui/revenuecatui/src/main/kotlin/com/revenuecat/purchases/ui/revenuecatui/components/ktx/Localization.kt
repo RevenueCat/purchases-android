@@ -96,6 +96,7 @@ internal fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
 /**
  * Returns the best match to [localeId] in this set, or null if no match is found.
  */
+@Suppress("ReturnCount")
 @JvmSynthetic
 internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
     // Exact match:
@@ -110,15 +111,21 @@ internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
 
     // Various permutations of the provided [localeId], from least to most specific.
     val languageId = LocaleId(language)
-    val languageScriptId = if (script.isNotBlank()) LocaleId("${language}_$script") else languageId
-    val languageScriptRegionId = if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else languageId
+    val languageScriptId = if (script.isNotBlank()) LocaleId("${language}_$script") else null
+    val languageScriptRegionId = if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else null
 
-    // Best non-exact match:
-    return languageScriptRegionId.takeIf { contains(it) }
-        ?: languageScriptId.takeIf { contains(it) }
-        ?: languageId.takeIf { contains(it) }
-        // Match language only, ignore region and script:
-        ?: languageId.takeIf { any { it.toJavaLocale().language == language } }
+    // First see if we can find an exact match of one of our permutations:
+    buildList {
+        if (languageScriptRegionId != null) add(languageScriptRegionId)
+        if (languageScriptId != null) add(languageScriptId)
+        add(languageId)
+    }.firstOrNull { idToCheck -> contains(idToCheck) }
+        ?.also { return it }
+
+    // If not, try a fuzzy match by dropping the region:
+    val javaLocales = map { it.toJavaLocale() }
+    return languageScriptId?.takeIf { javaLocales.any { it.language == language && it.script == script } }
+        ?: languageId.takeIf { javaLocales.any { it.language == language } }
 }
 
 /**
