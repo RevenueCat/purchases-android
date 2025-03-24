@@ -254,6 +254,7 @@ internal class PurchasesFactory(
                 identityManager,
                 customerInfoHelper,
                 postReceiptHelper,
+                diagnosticsTracker,
             )
 
             val offeringsManager = OfferingsManager(

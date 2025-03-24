@@ -60,6 +60,7 @@ internal class DiagnosticsTracker(
         const val FETCH_POLICY_KEY = "fetch_policy"
         const val HAD_UNSYNCED_PURCHASES_BEFORE_KEY = "had_unsynced_purchases_before"
         const val IS_RETRY = "is_retry"
+        const val REQUEST_STATUS_KEY = "request_status"
     }
 
     private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
@@ -240,6 +241,25 @@ internal class DiagnosticsTracker(
         )
     }
 
+    fun trackAmazonPurchaseAttempt(
+        productId: String,
+        requestStatus: String?,
+        errorCode: Int?,
+        errorMessage: String?,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.AMAZON_PURCHASE_ATTEMPT,
+            properties = mapOf(
+                PRODUCT_ID_KEY to productId,
+                REQUEST_STATUS_KEY to requestStatus,
+                ERROR_CODE_KEY to errorCode,
+                ERROR_MESSAGE_KEY to errorMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ).filterNotNullValues(),
+        )
+    }
+
     // endregion
 
     fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
@@ -407,6 +427,32 @@ internal class DiagnosticsTracker(
 
     // endregion
 
+    // region Sync purchases
+
+    fun trackSyncPurchasesStarted() {
+        trackEvent(
+            eventName = DiagnosticsEntryName.SYNC_PURCHASES_STARTED,
+            properties = emptyMap(),
+        )
+    }
+
+    fun trackSyncPurchasesResult(
+        errorCode: Int?,
+        errorMessage: String?,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.SYNC_PURCHASES_RESULT,
+            properties = mapOf(
+                ERROR_CODE_KEY to errorCode,
+                ERROR_MESSAGE_KEY to errorMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ).filterNotNullValues(),
+        )
+    }
+
+    // endregion Sync purchases
+
     // region Get Customer Info
 
     fun trackGetCustomerInfoStarted() {
@@ -438,7 +484,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    // endregion
+    // endregion Get Customer Info
 
     private fun trackEvent(eventName: DiagnosticsEntryName, properties: Map<String, Any>) {
         trackEvent(

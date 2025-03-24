@@ -1348,7 +1348,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
     }
 
-    // endregion
+    // endregion Diagnostics sync
 
     // region Diagnostics event - Get Purchases
 
@@ -1481,7 +1481,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
-    // endregion
+    // endregion Diagnostics event - Get Purchases
 
     @Test
     fun `paywall events synced on app foregrounded`() {

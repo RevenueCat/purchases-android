@@ -401,6 +401,32 @@ class DiagnosticsTrackerTest {
         }
     }
 
+    @Test
+    fun `trackAmazonPurchaseAttempt tracks correct event`() {
+        val diagnosticsTracker = createDiagnosticsTracker(Store.AMAZON)
+        val expectedTags = mapOf(
+            "product_id" to "test-product-id",
+            "request_status" to "ERROR",
+            "error_code" to 100,
+            "error_message" to "test error message",
+            "response_time_millis" to 1234L,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackAmazonPurchaseAttempt(
+            productId = "test-product-id",
+            requestStatus = "ERROR",
+            errorCode = 100,
+            errorMessage = "test error message",
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.AMAZON_PURCHASE_ATTEMPT &&
+                    event.properties == expectedTags
+            })
+        }
+    }
+
     // endregion
 
     @Test
@@ -650,6 +676,49 @@ class DiagnosticsTrackerTest {
 
     // endregion
 
+    // region Sync Purchases
+
+    @Test
+    fun `trackSyncPurchasesStarted tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackSyncPurchasesStarted()
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.SYNC_PURCHASES_STARTED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackSyncPurchasesResult tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "response_time_millis" to 1234L,
+            "error_message" to "test error message",
+            "error_code" to 100,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackSyncPurchasesResult(
+            errorCode = 100,
+            errorMessage = "test error message",
+            responseTime = 1234L.milliseconds,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.SYNC_PURCHASES_RESULT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    // endregion Sync Purchases
+
     // region Get Customer Info
 
     @Test
@@ -697,7 +766,7 @@ class DiagnosticsTrackerTest {
         }
     }
 
-    // endregion
+    // endregion Get Customer Info
 
     private fun mockSharedPreferences() {
         sharedPreferences = mockk()
