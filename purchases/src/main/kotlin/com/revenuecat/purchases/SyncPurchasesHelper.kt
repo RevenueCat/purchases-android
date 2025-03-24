@@ -1,21 +1,29 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReceiptInfo
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
+import java.util.Date
+import kotlin.time.Duration
 
 internal class SyncPurchasesHelper(
     private val billing: BillingAbstract,
     private val identityManager: IdentityManager,
     private val customerInfoHelper: CustomerInfoHelper,
     private val postReceiptHelper: PostReceiptHelper,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
     fun syncPurchases(
         isRestore: Boolean,
@@ -25,7 +33,20 @@ internal class SyncPurchasesHelper(
     ) {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
 
+        val startTime = dateProvider.now
+        diagnosticsTrackerIfEnabled?.trackSyncPurchasesStarted()
+
         val appUserID = identityManager.currentAppUserID
+
+        val handleSuccess: (CustomerInfo) -> Unit = {
+            trackSyncPurchasesResultIfNeeded(null, startTime)
+            onSuccess(it)
+        }
+
+        val handleError: (PurchasesError) -> Unit = {
+            trackSyncPurchasesResultIfNeeded(it, startTime)
+            onError(it)
+        }
 
         billing.queryAllPurchases(
             appUserID,
@@ -37,10 +58,10 @@ internal class SyncPurchasesHelper(
                         if (currentPurchase == lastPurchase) {
                             if (errors.isEmpty()) {
                                 debugLog(PurchaseStrings.SYNCED_PURCHASES_SUCCESSFULLY)
-                                retrieveCustomerInfo(appUserID, appInBackground, isRestore, onSuccess, onError)
+                                retrieveCustomerInfo(appUserID, appInBackground, isRestore, handleSuccess, handleError)
                             } else {
                                 errorLog(PurchaseStrings.SYNCING_PURCHASES_ERROR.format(errors))
-                                onError(errors.first())
+                                handleError(errors.first())
                             }
                         }
                     }
@@ -70,12 +91,12 @@ internal class SyncPurchasesHelper(
                         )
                     }
                 } else {
-                    retrieveCustomerInfo(appUserID, appInBackground, isRestore, onSuccess, onError)
+                    retrieveCustomerInfo(appUserID, appInBackground, isRestore, handleSuccess, handleError)
                 }
             },
             onReceivePurchaseHistoryError = {
                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
-                onError(it)
+                handleError(it)
             },
         )
     }
@@ -101,6 +122,17 @@ internal class SyncPurchasesHelper(
                     onError(error)
                 }
             },
+        )
+    }
+
+    private fun trackSyncPurchasesResultIfNeeded(
+        error: PurchasesError?,
+        startTime: Date,
+    ) {
+        diagnosticsTrackerIfEnabled?.trackSyncPurchasesResult(
+            error?.code?.code,
+            error?.message,
+            Duration.between(startTime, dateProvider.now),
         )
     }
 }
