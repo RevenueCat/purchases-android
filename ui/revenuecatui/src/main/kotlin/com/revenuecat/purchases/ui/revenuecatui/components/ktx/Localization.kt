@@ -107,12 +107,11 @@ internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
     val region = javaLocale.country
     val script = javaLocale.script.takeUnless { it.isBlank() }
         ?: scriptByRegion[region]
-        ?: ""
 
     // Various permutations of the provided [localeId], from least to most specific.
     val languageId = LocaleId(language)
-    val languageScriptId = if (script.isNotBlank()) LocaleId("${language}_$script") else null
-    val languageScriptRegionId = if (script.isNotBlank()) LocaleId("${language}_${script}_$region") else null
+    val languageScriptId = script?.let { LocaleId("${language}_$script") }
+    val languageScriptRegionId = script?.let { LocaleId("${language}_${script}_$region") }
 
     // First see if we can find an exact match of one of our permutations:
     buildList {
