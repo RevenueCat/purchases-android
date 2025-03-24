@@ -300,7 +300,7 @@ internal open class BasePurchasesTest {
                     any(),
                     appInBackground = false,
                     allowSharingPlayStoreAccount = false,
-                    captureNullable(slotList),
+                    callback = captureNullable(slotList),
                 )
             } answers {
                 if (errorGettingCustomerInfo == null) {

@@ -361,7 +361,7 @@ class SyncPurchasesHelperTest {
                 CacheFetchPolicy.CACHED_OR_FETCHED,
                 appInBackground,
                 isRestore,
-                capture(callbackSlot)
+                callback = capture(callbackSlot)
             )
         } answers {
             callbackSlot.captured.onReceived(customerInfo)
@@ -378,7 +378,7 @@ class SyncPurchasesHelperTest {
                 CacheFetchPolicy.CACHED_OR_FETCHED,
                 appInBackground,
                 isRestore,
-                capture(callbackSlot)
+                callback = capture(callbackSlot)
             )
         } answers {
             callbackSlot.captured.onError(error)

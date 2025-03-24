@@ -567,7 +567,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
                 allowSharingPlayStoreAccount = false,
-                null,
+                callback = null,
             )
         }
     }
