@@ -19,17 +19,21 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Constants
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.events.FeatureEvent
@@ -79,7 +83,9 @@ import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.Collections
+import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
@@ -95,6 +101,8 @@ internal class PurchasesOrchestrator(
     private val customerInfoHelper: CustomerInfoHelper,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
@@ -121,7 +129,6 @@ internal class PurchasesOrchestrator(
 
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
-
         set(value) {
             purchasesStateCache.purchasesState = value
         }
@@ -135,7 +142,6 @@ internal class PurchasesOrchestrator(
 
     var finishTransactions: Boolean
         @Synchronized get() = appConfig.finishTransactions
-
         @Synchronized set(value) {
             appConfig.finishTransactions = value
         }
@@ -145,12 +151,12 @@ internal class PurchasesOrchestrator(
 
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
         @Synchronized get() = customerInfoUpdateHandler.updatedCustomerInfoListener
-
         @Synchronized set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
 
-    @get:Synchronized @set:Synchronized
+    @get:Synchronized
+    @set:Synchronized
     var customerCenterListener: CustomerCenterListener? = null
 
     val isAnonymous: Boolean
@@ -166,7 +172,6 @@ internal class PurchasesOrchestrator(
     var allowSharingPlayStoreAccount: Boolean
         @Synchronized get() =
             state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
-
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
@@ -586,7 +591,12 @@ internal class PurchasesOrchestrator(
         callback: GetStoreProductsCallback,
     ) {
         val validTypes = types.filter { it != ProductType.UNKNOWN }.toSet()
-        getProductsOfTypes(productIds, validTypes, emptyList(), callback)
+        getProductsOfTypes(
+            productIds = productIds,
+            types = validTypes,
+            collectedStoreProducts = emptyList(),
+            callback = callback
+        )
     }
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -868,8 +878,14 @@ internal class PurchasesOrchestrator(
         productIds: Set<String>,
         types: Set<ProductType>,
         collectedStoreProducts: List<StoreProduct>,
+        startTime: Date? = null,
         callback: GetStoreProductsCallback,
     ) {
+        val nonNullStartTime = startTime ?: run {
+            trackGetProductsStarted(productIds)
+            dateProvider.now
+        }
+
         val typesRemaining = types.toMutableSet()
         val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
 
@@ -883,17 +899,21 @@ internal class PurchasesOrchestrator(
                             productIds,
                             typesRemaining,
                             collectedStoreProducts + storeProducts,
+                            nonNullStartTime,
                             callback,
                         )
                     }
                 },
                 onError = {
                     dispatch {
+                        trackGetProductsResult(nonNullStartTime, productIds, productIds, it)
                         callback.onError(it)
                     }
                 },
             )
         } ?: run {
+            val notFoundProductIds = productIds - collectedStoreProducts.map { it.id }.toSet()
+            trackGetProductsResult(nonNullStartTime, productIds, notFoundProductIds, null)
             callback.onReceived(collectedStoreProducts)
         }
     }
@@ -1097,7 +1117,7 @@ internal class PurchasesOrchestrator(
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
-            ),
+                ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
@@ -1168,7 +1188,7 @@ internal class PurchasesOrchestrator(
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
-            ),
+                ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
@@ -1262,6 +1282,27 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    private fun trackGetProductsStarted(requestedProductIds: Set<String>) {
+        diagnosticsTrackerIfEnabled?.trackGetProductsStarted(requestedProductIds)
+    }
+
+    private fun trackGetProductsResult(
+        startTime: Date,
+        requestedProductIds: Set<String>,
+        notFoundProductIds: Set<String>,
+        error: PurchasesError?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val responseTime = Duration.between(startTime, dateProvider.now)
+        diagnosticsTrackerIfEnabled.trackGetProductsResult(
+            requestedProductIds = requestedProductIds,
+            notFoundProductIds = notFoundProductIds,
+            errorMessage = error?.message,
+            errorCode = error?.code?.code,
+            responseTime = responseTime,
+        )
+    }
+
     // endregion
 
     // region Static
@@ -1287,7 +1328,6 @@ internal class PurchasesOrchestrator(
 
         var logHandler: LogHandler
             @Synchronized get() = currentLogHandler
-
             @Synchronized set(value) {
                 currentLogHandler = value
             }
