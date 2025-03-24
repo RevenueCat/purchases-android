@@ -36,6 +36,7 @@ internal class ReceiveCustomerInfoFullCallback(
     }
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class CustomerInfoHelper(
     private val deviceCache: DeviceCache,
     private val backend: Backend,
@@ -81,7 +82,7 @@ internal class CustomerInfoHelper(
                     error,
                 )
                 callback?.onError(error)
-            }
+            },
         )
 
         when (fetchPolicy) {
