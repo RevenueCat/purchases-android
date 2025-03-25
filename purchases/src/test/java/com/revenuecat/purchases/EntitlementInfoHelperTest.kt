@@ -50,7 +50,7 @@ class EntitlementInfoHelperTest {
         setupCacheMock()
         setupHandlerMock()
         setupCustomerInfoUpdateHandlerMock()
-        setupPostPendingTransactionsHelperSuccess()
+        setupPostPendingTransactionsHelperNoPendingPurchases()
 
         every { mockOfflineEntitlementsManager.offlineCustomerInfo } returns null
         every { mockDateProvider.now } returns Date()
@@ -830,7 +830,7 @@ class EntitlementInfoHelperTest {
         setupBackendMock()
         setupMockInfo(VerificationResult.VERIFIED)
 
-        setupPostPendingTransactionsHelperSuccess()
+        setupPostPendingTransactionsHelperSuccess(mockInfo)
 
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
@@ -958,7 +958,11 @@ class EntitlementInfoHelperTest {
         every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) } just runs
     }
 
-    private fun setupPostPendingTransactionsHelperSuccess(customerInfo: CustomerInfo = mockInfo) {
+    private fun setupPostPendingTransactionsHelperNoPendingPurchases() {
+        setupPostPendingTransactionsHelper(result = SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+    }
+
+    private fun setupPostPendingTransactionsHelperSuccess(customerInfo: CustomerInfo) {
         setupPostPendingTransactionsHelper(result = SyncPendingPurchaseResult.Success(customerInfo))
     }
 

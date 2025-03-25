@@ -129,19 +129,22 @@ internal class CustomerInfoHelper(
                             LogIntent.RC_SUCCESS,
                             CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_SYNCING_PENDING_PURCHASES,
                         )
-                        callback?.invoke(
-                            CustomerInfoDataResult(
-                                Result.Success(syncResult.customerInfo),
-                                hadUnsyncedPurchasesBefore = true,
-                            ),
-                        )
+                        dispatch {
+                            callback?.invoke(
+                                CustomerInfoDataResult(
+                                    Result.Success(syncResult.customerInfo),
+                                    hadUnsyncedPurchasesBefore = true,
+                                ),
+                            )
+                        }
                     }
                     is SyncPendingPurchaseResult.Error -> {
-                        callback?.invoke(
-                            CustomerInfoDataResult(
-                                Result.Error(syncResult.error),
-                                hadUnsyncedPurchasesBefore = true,
-                            ),
+                        getCustomerInfoFetchOnly(
+                            appUserID,
+                            appInBackground,
+                            { result ->
+                                callback?.invoke(CustomerInfoDataResult(result, hadUnsyncedPurchasesBefore = true))
+                            },
                         )
                     }
                     is SyncPendingPurchaseResult.AutoSyncDisabled -> {
@@ -158,12 +161,7 @@ internal class CustomerInfoHelper(
                             appUserID,
                             appInBackground,
                             { result ->
-                                callback?.invoke(
-                                    CustomerInfoDataResult(
-                                        result,
-                                        hadUnsyncedPurchasesBefore = false,
-                                    ),
-                                )
+                                callback?.invoke(CustomerInfoDataResult(result, hadUnsyncedPurchasesBefore = false))
                             },
                         )
                     }
