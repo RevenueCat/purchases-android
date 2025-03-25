@@ -463,13 +463,14 @@ internal class DiagnosticsTracker(
         )
     }
 
+    @Suppress("LongParameterList")
     fun trackPurchaseResult(
         productId: String,
         productType: String,
         errorCode: Int?,
         errorMessage: String?,
         responseTime: Duration,
-        verificationResult: VerificationResult,
+        verificationResult: VerificationResult?,
     ) {
         trackEvent(
             eventName = DiagnosticsEntryName.PURCHASE_RESULT,
@@ -479,7 +480,7 @@ internal class DiagnosticsTracker(
                 ERROR_CODE_KEY to errorCode,
                 ERROR_MESSAGE_KEY to errorMessage,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-                VERIFICATION_RESULT_KEY to verificationResult.name,
+                VERIFICATION_RESULT_KEY to verificationResult?.name,
             ).filterNotNullValues(),
         )
     }
