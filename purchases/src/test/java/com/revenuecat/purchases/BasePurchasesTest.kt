@@ -470,7 +470,7 @@ internal open class BasePurchasesTest {
 
     protected fun mockPostPendingTransactionsHelper() {
         every {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
         } just Runs
     }
 

@@ -444,8 +444,7 @@ class EntitlementInfoHelperTest {
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                onError = any(),
-                onSuccess = any()
+                callback = any(),
             )
         }
         verify(exactly = 1) { callbackMock.onReceived(syncPendingPurchasesCustomerInfo) }
@@ -469,8 +468,7 @@ class EntitlementInfoHelperTest {
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                onError = any(),
-                onSuccess = any()
+                callback = any(),
             )
         }
         verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, appInBackground, any(), any()) }
@@ -495,8 +493,7 @@ class EntitlementInfoHelperTest {
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                onError = any(),
-                onSuccess = any()
+                callback = any(),
             )
         }
         verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, appInBackground, any(), any()) }
@@ -833,7 +830,7 @@ class EntitlementInfoHelperTest {
         setupBackendMock()
         setupMockInfo(VerificationResult.VERIFIED)
 
-        setupPostPendingTransactionsHelperSuccess(mockInfo, hadUnsyncedPurchases = true)
+        setupPostPendingTransactionsHelperSuccess()
 
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
@@ -867,7 +864,7 @@ class EntitlementInfoHelperTest {
         setupBackendMock(error)
         setupMockInfo(VerificationResult.VERIFIED)
 
-        setupPostPendingTransactionsHelperError(hadUnsyncedPurchases = false)
+        setupPostPendingTransactionsHelperError()
 
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
@@ -883,7 +880,7 @@ class EntitlementInfoHelperTest {
             mockDiagnosticsTracker.trackGetCustomerInfoResult(
                 cacheFetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                 verificationResult = null,
-                hadUnsyncedPurchasesBefore = false,
+                hadUnsyncedPurchasesBefore = true,
                 errorMessage = "There was a problem with the store.",
                 errorCode = PurchasesErrorCode.StoreProblemError.code,
                 responseTime = any(),
@@ -961,31 +958,22 @@ class EntitlementInfoHelperTest {
         every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) } just runs
     }
 
-    private fun setupPostPendingTransactionsHelperSuccess(
-        customerInfo: CustomerInfo? = null,
-        hadUnsyncedPurchases: Boolean? = null
-    ) {
-        val slotList = mutableListOf<((CustomerInfo?, Boolean?) -> Unit)?>()
-        every {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
-                allowSharingPlayStoreAccount = any(),
-                onError = any(),
-                onSuccess = captureNullable(slotList),
-            )
-        } answers {
-            slotList.firstOrNull()?.invoke(customerInfo, hadUnsyncedPurchases)
-        }
+    private fun setupPostPendingTransactionsHelperSuccess(customerInfo: CustomerInfo = mockInfo) {
+        setupPostPendingTransactionsHelper(result = SyncPendingPurchaseResult.Success(customerInfo))
     }
 
-    private fun setupPostPendingTransactionsHelperError(hadUnsyncedPurchases: Boolean? = false) {
+    private fun setupPostPendingTransactionsHelperError() {
+        setupPostPendingTransactionsHelper(result = SyncPendingPurchaseResult.Error(mockk()))
+    }
+
+    private fun setupPostPendingTransactionsHelper(result: SyncPendingPurchaseResult) {
         every {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = any(),
-                onError = captureLambda(),
-                onSuccess = any(),
+                callback = captureLambda(),
             )
         } answers {
-            lambda<(PurchasesError, Boolean?) -> Unit>().captured.invoke(mockk(), hadUnsyncedPurchases)
+            lambda<(SyncPendingPurchaseResult) -> Unit>().captured.invoke(result)
         }
     }
 

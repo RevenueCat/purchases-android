@@ -12,6 +12,13 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
 
+internal sealed class SyncPendingPurchaseResult {
+    data class Success(val customerInfo: CustomerInfo) : SyncPendingPurchaseResult()
+    data class Error(val error: PurchasesError) : SyncPendingPurchaseResult()
+    object AutoSyncDisabled : SyncPendingPurchaseResult()
+    object NoPendingPurchasesToSync : SyncPendingPurchaseResult()
+}
+
 internal class PostPendingTransactionsHelper(
     private val appConfig: AppConfig,
     private val deviceCache: DeviceCache,
@@ -23,12 +30,11 @@ internal class PostPendingTransactionsHelper(
 
     fun syncPendingPurchaseQueue(
         allowSharingPlayStoreAccount: Boolean,
-        onError: ((PurchasesError, Boolean?) -> Unit)? = null,
-        onSuccess: ((CustomerInfo?, Boolean?) -> Unit)? = null,
+        callback: ((SyncPendingPurchaseResult) -> Unit)? = null,
     ) {
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.DEBUG, PurchaseStrings.SKIPPING_AUTOMATIC_SYNC)
-            onSuccess?.invoke(null, null)
+            callback?.invoke(SyncPendingPurchaseResult.AutoSyncDisabled)
             return
         }
         log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
@@ -45,18 +51,24 @@ internal class PostPendingTransactionsHelper(
                     }
                     deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
                     val transactionsToSync = deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
-                    val hadUnsyncedPurchases = transactionsToSync.isNotEmpty()
                     postTransactionsWithCompletion(
                         transactionsToSync,
                         allowSharingPlayStoreAccount,
                         appUserID,
-                        { error -> onError?.invoke(error, hadUnsyncedPurchases) },
-                        { customerInfo -> onSuccess?.invoke(customerInfo, hadUnsyncedPurchases) },
+                        onNoTransactionsToSync = {
+                            callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+                        },
+                        onError = { error ->
+                            callback?.invoke(SyncPendingPurchaseResult.Error(error))
+                        },
+                        onSuccess = { customerInfo ->
+                            callback?.invoke(SyncPendingPurchaseResult.Success(customerInfo))
+                        },
                     )
                 },
                 onError = { error ->
                     log(LogIntent.GOOGLE_ERROR, error.toString())
-                    onError?.invoke(error, null)
+                    callback?.invoke(SyncPendingPurchaseResult.Error(error))
                 },
             )
         })
@@ -67,12 +79,13 @@ internal class PostPendingTransactionsHelper(
         transactionsToSync: List<StoreTransaction>,
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
-        onError: ((PurchasesError) -> Unit)? = null,
-        onSuccess: ((CustomerInfo?) -> Unit)? = null,
+        onNoTransactionsToSync: (() -> Unit),
+        onError: ((PurchasesError) -> Unit),
+        onSuccess: ((CustomerInfo) -> Unit),
     ) {
         if (transactionsToSync.isEmpty()) {
             log(LogIntent.DEBUG, PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC)
-            onSuccess?.invoke(null)
+            onNoTransactionsToSync()
         } else {
             val results: MutableList<Result<CustomerInfo, PurchasesError>> = mutableListOf()
             postTransactionWithProductDetailsHelper.postTransactions(
@@ -96,7 +109,7 @@ internal class PostPendingTransactionsHelper(
         transactionsToSync: List<StoreTransaction>,
         results: List<Result<CustomerInfo, PurchasesError>>,
         onError: ((PurchasesError) -> Unit)? = null,
-        onSuccess: ((CustomerInfo?) -> Unit)? = null,
+        onSuccess: ((CustomerInfo) -> Unit)? = null,
     ) {
         if (transactionsToSync.size == results.size) {
             results.forEachIndexed { index, result ->
