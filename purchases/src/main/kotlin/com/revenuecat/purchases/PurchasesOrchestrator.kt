@@ -448,13 +448,40 @@ internal class PurchasesOrchestrator(
             log(LogIntent.WARNING, RestoreStrings.SHARING_ACC_RESTORE_FALSE)
         }
 
+        val startTime = dateProvider.now
+        diagnosticsTrackerIfEnabled?.trackRestorePurchasesStarted()
+
         val appUserID = identityManager.currentAppUserID
+
+        val callbackWithTracking = if (diagnosticsTrackerIfEnabled == null) {
+            callback
+        } else {
+            object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    diagnosticsTrackerIfEnabled.trackRestorePurchasesResult(
+                        null,
+                        null,
+                        Duration.between(startTime, dateProvider.now),
+                    )
+                    callback.onReceived(customerInfo)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    diagnosticsTrackerIfEnabled.trackRestorePurchasesResult(
+                        error.code.code,
+                        error.message,
+                        Duration.between(startTime, dateProvider.now),
+                    )
+                    callback.onError(error)
+                }
+            }
+        }
 
         billing.queryAllPurchases(
             appUserID,
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isEmpty()) {
-                    getCustomerInfo(callback)
+                    getCustomerInfo(callbackWithTracking)
                 } else {
                     allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                         sortedByTime.forEach { purchase ->
@@ -467,7 +494,7 @@ internal class PurchasesOrchestrator(
                                 onSuccess = { _, info ->
                                     log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                     if (sortedByTime.last() == purchase) {
-                                        dispatch { callback.onReceived(info) }
+                                        dispatch { callbackWithTracking.onReceived(info) }
                                     }
                                 },
                                 onError = { _, error ->
@@ -477,7 +504,7 @@ internal class PurchasesOrchestrator(
                                             .format(purchase, error),
                                     )
                                     if (sortedByTime.last() == purchase) {
-                                        dispatch { callback.onError(error) }
+                                        dispatch { callbackWithTracking.onError(error) }
                                     }
                                 },
                             )
@@ -486,7 +513,7 @@ internal class PurchasesOrchestrator(
                 }
             },
             onReceivePurchaseHistoryError = { error ->
-                dispatch { callback.onError(error) }
+                dispatch { callbackWithTracking.onError(error) }
             },
         )
     }

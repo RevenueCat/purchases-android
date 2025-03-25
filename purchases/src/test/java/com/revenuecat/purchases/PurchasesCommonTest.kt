@@ -8,12 +8,14 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -1482,6 +1484,78 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     // endregion Diagnostics event - Get Purchases
+
+    // region Diagnostics event - Restore purchases
+
+    @Test
+    fun `restore purchases tracks restore purchases started event`() {
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any(),
+            )
+        } answers {
+            lambda<(List<Purchase>) -> Unit>().captured.invoke(kotlin.collections.emptyList())
+        }
+
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        purchases.restorePurchases(mockCompletion)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackRestorePurchasesStarted()
+        }
+    }
+
+    @Test
+    fun `restore purchases tracks restore purchases result event on success`() {
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any(),
+            )
+        } answers {
+            lambda<(List<Purchase>) -> Unit>().captured.invoke(kotlin.collections.emptyList())
+        }
+
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        purchases.restorePurchases(mockCompletion)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackRestorePurchasesResult(
+                errorCode = null,
+                errorMessage = null,
+                responseTime = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `restore purchases tracks restore purchases result event on error`() {
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                onReceivePurchaseHistory = any(),
+                onReceivePurchaseHistoryError = captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        purchases.restorePurchases(mockCompletion)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackRestorePurchasesResult(
+                errorCode = PurchasesErrorCode.StoreProblemError.code,
+                errorMessage = "There was a problem with the store.",
+                responseTime = any(),
+            )
+        }
+    }
+
+    // endregion Diagnostics event - Restore purchases
 
     @Test
     fun `paywall events synced on app foregrounded`() {
