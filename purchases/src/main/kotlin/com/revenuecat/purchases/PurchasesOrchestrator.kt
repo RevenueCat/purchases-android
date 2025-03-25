@@ -580,10 +580,10 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun getCustomerInfo(
+    private fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback,
     ) {
-        getCustomerInfo(CacheFetchPolicy.default(), false, callback)
+        getCustomerInfo(CacheFetchPolicy.default(), trackDiagnostics = false, callback)
     }
 
     fun getCustomerInfo(
