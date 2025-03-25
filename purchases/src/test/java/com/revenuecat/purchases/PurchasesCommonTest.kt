@@ -1555,8 +1555,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
-
-
     // endregion Diagnostics event - Restore purchases
 
     @Test
