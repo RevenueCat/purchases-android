@@ -43,6 +43,7 @@ internal class DiagnosticsTracker(
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
         const val PRODUCT_ID_KEY = "product_id"
+        const val PRODUCT_TYPE_KEY = "product_type"
         const val OLD_PRODUCT_ID_KEY = "old_product_id"
         const val HAS_INTRO_TRIAL_KEY = "has_intro_trial"
         const val HAS_INTRO_PRICE_KEY = "has_intro_price"
@@ -449,6 +450,41 @@ internal class DiagnosticsTracker(
     }
 
     // endregion Sync purchases
+
+    // region Purchase
+
+    fun trackPurchaseStarted(productId: String, productType: String) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.PURCHASE_STARTED,
+            properties = mapOf(
+                PRODUCT_ID_KEY to productId,
+                PRODUCT_TYPE_KEY to productType,
+            ),
+        )
+    }
+
+    fun trackPurchaseResult(
+        productId: String,
+        productType: String,
+        errorCode: Int?,
+        errorMessage: String?,
+        responseTime: Duration,
+        verificationResult: VerificationResult,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.PURCHASE_RESULT,
+            properties = mapOf(
+                PRODUCT_ID_KEY to productId,
+                PRODUCT_TYPE_KEY to productType,
+                ERROR_CODE_KEY to errorCode,
+                ERROR_MESSAGE_KEY to errorMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                VERIFICATION_RESULT_KEY to verificationResult.name,
+            ).filterNotNullValues(),
+        )
+    }
+
+    // endregion Purchase
 
     private fun trackEvent(eventName: DiagnosticsEntryName, properties: Map<String, Any>) {
         trackEvent(

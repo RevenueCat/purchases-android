@@ -718,6 +718,57 @@ class DiagnosticsTrackerTest {
 
     // endregion Sync Purchases
 
+    // region Purchase
+
+    @Test
+    fun `trackPurchaseStarted tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "product_id" to "productId",
+            "product_type" to "NON_SUBSCRIPTION",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackPurchaseStarted("productId", "NON_SUBSCRIPTION")
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.PURCHASE_STARTED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackPurchaseResult tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "product_id" to "productId",
+            "product_type" to "AUTO_RENEWABLE_SUBSCRIPTION",
+            "error_code" to 100,
+            "error_message" to "test error message",
+            "response_time_millis" to 1234L,
+            "verification_result" to "VERIFIED",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackPurchaseResult(
+            "productId",
+            "AUTO_RENEWABLE_SUBSCRIPTION",
+            100,
+            "test error message",
+            1234L.milliseconds,
+            VerificationResult.VERIFIED,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.PURCHASE_RESULT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    // endregion Purchase
+
     private fun mockSharedPreferences() {
         sharedPreferences = mockk()
         sharedPreferencesEditor = mockk()
