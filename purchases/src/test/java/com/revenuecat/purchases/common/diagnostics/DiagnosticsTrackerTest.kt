@@ -718,6 +718,51 @@ class DiagnosticsTrackerTest {
 
     // endregion Sync Purchases
 
+    // region Restore Purchases
+
+    @Test
+    fun `trackRestorePurchasesStarted tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackRestorePurchasesStarted()
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.RESTORE_PURCHASES_STARTED &&
+
+
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackRestorePurchasesResult tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "response_time_millis" to 1234L,
+            "error_message" to "test error message",
+            "error_code" to 100,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackRestorePurchasesResult(
+            errorCode = 100,
+            errorMessage = "test error message",
+            responseTime = 1234L.milliseconds,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.RESTORE_PURCHASES_RESULT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    // endregion Restore Purchases
+
     // region Purchase
 
     @Test
