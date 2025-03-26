@@ -59,12 +59,14 @@ internal class CustomerInfoHelper(
                     customerInfoDataResult ->
                 trackGetCustomerInfoResultIfNeeded(trackDiagnostics, startTime, customerInfoDataResult, fetchPolicy)
 
-                when (customerInfoDataResult.result) {
-                    is Result.Success -> {
-                        callback?.onReceived(customerInfoDataResult.result.value)
-                    }
-                    is Result.Error -> {
-                        callback?.onError(customerInfoDataResult.result.value)
+                callback?.let {
+                    when (customerInfoDataResult.result) {
+                        is Result.Success -> {
+                            it.onReceived(customerInfoDataResult.result.value)
+                        }
+                        is Result.Error -> {
+                            it.onError(customerInfoDataResult.result.value)
+                        }
                     }
                 }
             }
