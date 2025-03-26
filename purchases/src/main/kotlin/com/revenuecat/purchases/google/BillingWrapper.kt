@@ -26,6 +26,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesRuntimeException
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
@@ -903,17 +904,26 @@ internal class BillingWrapper(
             setProductDetails(purchaseInfo.productDetails)
         }.build()
 
-        return Result.Success(
-            BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                .setObfuscatedAccountId(appUserID.sha256())
-                .apply {
-                    isPersonalizedPrice?.let {
-                        setIsOfferPersonalized(it)
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                    .setObfuscatedAccountId(appUserID.sha256())
+                    .apply {
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
                     }
-                }
-                .build(),
-        )
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            // TODO: Add link
+            throw PurchasesRuntimeException(
+                "Error building BillingFlowParams for one time purchase " +
+                    "due to issue in Google's Billing Client library. Please check TODO-LINK to fix this issue.",
+                e,
+            )
+        }
     }
 
     private fun buildSubscriptionPurchaseParams(
@@ -927,22 +937,31 @@ internal class BillingWrapper(
             setProductDetails(purchaseInfo.productDetails)
         }.build()
 
-        return Result.Success(
-            BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                .apply {
-                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                    // https://issuetracker.google.com/issues/155005449
-                    replaceProductInfo?.let {
-                        setUpgradeInfo(it)
-                    } ?: setObfuscatedAccountId(appUserID.sha256())
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                    .apply {
+                        // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                        // https://issuetracker.google.com/issues/155005449
+                        replaceProductInfo?.let {
+                            setUpgradeInfo(it)
+                        } ?: setObfuscatedAccountId(appUserID.sha256())
 
-                    isPersonalizedPrice?.let {
-                        setIsOfferPersonalized(it)
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
                     }
-                }
-                .build(),
-        )
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            // TODO: Add link
+            throw PurchasesRuntimeException(
+                "Error building BillingFlowParams for subscriptions " +
+                    "due to an issue in Google's Billing Client library. Please check TODO-LINK to fix this issue.",
+                e,
+            )
+        }
     }
 
     @Synchronized
