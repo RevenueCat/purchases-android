@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.diagnostics
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ProductType
@@ -767,6 +768,55 @@ class DiagnosticsTrackerTest {
     }
 
     // endregion Restore Purchases
+
+    // region Get Customer Info
+
+    @Test
+    fun `trackGetCustomerInfoStarted tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGetCustomerInfoStarted()
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GET_CUSTOMER_INFO_STARTED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackGetCustomerInfoResult tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "verification_result" to "VERIFIED_ON_DEVICE",
+            "had_unsynced_purchases_before" to true,
+            "fetch_policy" to "NOT_STALE_CACHED_OR_CURRENT",
+            "error_message" to "test error message",
+            "error_code" to 100,
+            "response_time_millis" to 1234L,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGetCustomerInfoResult(
+            CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT,
+            VerificationResult.VERIFIED_ON_DEVICE,
+            true,
+            errorMessage = "test error message",
+            errorCode = 100,
+            responseTime = 1234L.milliseconds,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GET_CUSTOMER_INFO_RESULT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    // endregion Get Customer Info
 
     // region Purchase
 

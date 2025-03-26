@@ -431,7 +431,7 @@ class Purchases internal constructor(
     fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback,
     ) {
-        purchasesOrchestrator.getCustomerInfo(CacheFetchPolicy.default(), callback)
+        purchasesOrchestrator.getCustomerInfo(CacheFetchPolicy.default(), true, callback)
     }
 
     /**
@@ -444,7 +444,7 @@ class Purchases internal constructor(
         fetchPolicy: CacheFetchPolicy,
         callback: ReceiveCustomerInfoCallback,
     ) {
-        purchasesOrchestrator.getCustomerInfo(fetchPolicy, callback)
+        purchasesOrchestrator.getCustomerInfo(fetchPolicy, true, callback)
     }
 
     /**

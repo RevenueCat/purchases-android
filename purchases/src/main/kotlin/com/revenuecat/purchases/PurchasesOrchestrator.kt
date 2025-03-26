@@ -542,7 +542,7 @@ internal class PurchasesOrchestrator(
                 CacheFetchPolicy.default(),
                 state.appInBackground,
                 allowSharingPlayStoreAccount,
-                receiveCustomerInfoCallback(
+                callback = receiveCustomerInfoCallback(
                     onSuccess = { customerInfo ->
                         dispatch { callback?.onReceived(customerInfo, false) }
                     },
@@ -580,14 +580,15 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun getCustomerInfo(
+    private fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback,
     ) {
-        getCustomerInfo(CacheFetchPolicy.default(), callback)
+        getCustomerInfo(CacheFetchPolicy.default(), trackDiagnostics = false, callback)
     }
 
     fun getCustomerInfo(
         fetchPolicy: CacheFetchPolicy,
+        trackDiagnostics: Boolean,
         callback: ReceiveCustomerInfoCallback,
     ) {
         customerInfoHelper.retrieveCustomerInfo(
@@ -595,6 +596,7 @@ internal class PurchasesOrchestrator(
             fetchPolicy,
             state.appInBackground,
             allowSharingPlayStoreAccount,
+            trackDiagnostics,
             callback,
         )
     }
@@ -958,7 +960,7 @@ internal class PurchasesOrchestrator(
                 CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground,
                 allowSharingPlayStoreAccount,
-                completion,
+                callback = completion,
             )
             offeringsManager.fetchAndCacheOfferings(appUserID, appInBackground)
         }
