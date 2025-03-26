@@ -1180,6 +1180,7 @@ class AmazonBillingTest {
             mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(
                 responseTime = 123.milliseconds,
                 wasSuccessful = true,
+                foundProductIds = listOf(dummyReceipt.sku),
             )
         }
     }
@@ -1220,6 +1221,7 @@ class AmazonBillingTest {
             mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(
                 responseTime = 123.milliseconds,
                 wasSuccessful = true,
+                requestedProductIds = productIds,
             )
         }
     }
@@ -1335,10 +1337,10 @@ class AmazonBillingTest {
 
     private fun mockDiagnosticsTracker() {
         every {
-            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(any(), any())
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(any(), any(), any())
         } just Runs
         every {
-            mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(any(), any())
+            mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(any(), any(), any())
         } just Runs
     }
 }
