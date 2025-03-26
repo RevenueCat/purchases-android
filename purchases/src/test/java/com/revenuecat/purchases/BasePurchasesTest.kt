@@ -300,7 +300,8 @@ internal open class BasePurchasesTest {
                     any(),
                     appInBackground = false,
                     allowSharingPlayStoreAccount = false,
-                    captureNullable(slotList),
+                    any(),
+                    callback = captureNullable(slotList),
                 )
             } answers {
                 if (errorGettingCustomerInfo == null) {
@@ -469,7 +470,7 @@ internal open class BasePurchasesTest {
 
     protected fun mockPostPendingTransactionsHelper() {
         every {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
         } just Runs
     }
 

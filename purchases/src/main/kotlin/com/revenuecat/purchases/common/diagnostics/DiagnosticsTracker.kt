@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -57,6 +58,8 @@ internal class DiagnosticsTracker(
         const val ERROR_MESSAGE_KEY = "error_message"
         const val ERROR_CODE_KEY = "error_code"
         const val CACHE_STATUS_KEY = "cache_status"
+        const val FETCH_POLICY_KEY = "fetch_policy"
+        const val HAD_UNSYNCED_PURCHASES_BEFORE_KEY = "had_unsynced_purchases_before"
         const val IS_RETRY = "is_retry"
         const val REQUEST_STATUS_KEY = "request_status"
     }
@@ -480,6 +483,39 @@ internal class DiagnosticsTracker(
     }
 
     // endregion Restore purchases
+
+    // region Get Customer Info
+
+    fun trackGetCustomerInfoStarted() {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GET_CUSTOMER_INFO_STARTED,
+            properties = emptyMap(),
+        )
+    }
+
+    @Suppress("LongParameterList")
+    fun trackGetCustomerInfoResult(
+        cacheFetchPolicy: CacheFetchPolicy,
+        verificationResult: VerificationResult?,
+        hadUnsyncedPurchasesBefore: Boolean?,
+        errorMessage: String?,
+        errorCode: Int?,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GET_CUSTOMER_INFO_RESULT,
+            properties = mapOf(
+                FETCH_POLICY_KEY to cacheFetchPolicy.name,
+                VERIFICATION_RESULT_KEY to verificationResult?.name,
+                HAD_UNSYNCED_PURCHASES_BEFORE_KEY to hadUnsyncedPurchasesBefore,
+                ERROR_MESSAGE_KEY to errorMessage,
+                ERROR_CODE_KEY to errorCode,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ).filterNotNullValues(),
+        )
+    }
+
+    // endregion Get Customer Info
 
     private fun trackEvent(eventName: DiagnosticsEntryName, properties: Map<String, Any>) {
         trackEvent(
