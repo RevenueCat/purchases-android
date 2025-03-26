@@ -1652,6 +1652,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `purchase product change tracks purchaseResult diagnostics event on success`() {
+        mockCustomerInfo(VerificationResult.VERIFIED_ON_DEVICE)
+
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
@@ -1676,7 +1678,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 errorCode = null,
                 errorMessage = null,
                 responseTime = any(),
-                verificationResult = VerificationResult.VERIFIED,
+                verificationResult = VerificationResult.VERIFIED_ON_DEVICE,
             )
         }
     }
