@@ -1097,27 +1097,7 @@ internal class PurchasesOrchestrator(
         trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
         val startTime = dateProvider.now
 
-        val listenerWithDiagnostics = if (diagnosticsTrackerIfEnabled == null) listener else object : PurchaseCallback {
-            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
-                trackPurchaseResultIfNeeded(
-                    purchasingData,
-                    error = null,
-                    startTime,
-                    customerInfo.entitlements.verification,
-                )
-                listener.onCompleted(storeTransaction, customerInfo)
-            }
-
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                trackPurchaseResultIfNeeded(
-                    purchasingData,
-                    error,
-                    startTime,
-                    verificationResult = null,
-                )
-                listener.onError(error, userCancelled)
-            }
-        }
+        val listenerWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(listener, purchasingData, startTime)
 
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
@@ -1161,27 +1141,7 @@ internal class PurchasesOrchestrator(
         trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
         val startTime = dateProvider.now
 
-        val callbackWithDiagnostics = if (diagnosticsTrackerIfEnabled == null) purchaseCallback else object : PurchaseCallback {
-            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
-                trackPurchaseResultIfNeeded(
-                    purchasingData,
-                    error = null,
-                    startTime,
-                    customerInfo.entitlements.verification,
-                )
-                purchaseCallback.onCompleted(storeTransaction, customerInfo)
-            }
-
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                trackPurchaseResultIfNeeded(
-                    purchasingData,
-                    error,
-                    startTime,
-                    verificationResult = null,
-                )
-                purchaseCallback.onError(error, userCancelled)
-            }
-        }
+        val callbackWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(purchaseCallback, purchasingData, startTime)
 
         if (purchasingData.productType != ProductType.SUBS) {
             PurchasesError(
@@ -1360,6 +1320,34 @@ internal class PurchasesOrchestrator(
     private fun flushPaywallEvents() {
         if (isAndroidNOrNewer()) {
             eventsManager?.flushEvents()
+        }
+    }
+
+    private fun createCallbackWithDiagnosticsIfNeeded(
+        originalCallback: PurchaseCallback,
+        purchasingData: PurchasingData,
+        startTime: Date,
+    ): PurchaseCallback {
+        return if (diagnosticsTrackerIfEnabled == null) originalCallback else object : PurchaseCallback {
+            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                trackPurchaseResultIfNeeded(
+                    purchasingData,
+                    error = null,
+                    startTime,
+                    customerInfo.entitlements.verification,
+                )
+                originalCallback.onCompleted(storeTransaction, customerInfo)
+            }
+
+            override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                trackPurchaseResultIfNeeded(
+                    purchasingData,
+                    error,
+                    startTime,
+                    verificationResult = null,
+                )
+                originalCallback.onError(error, userCancelled)
+            }
         }
     }
 
