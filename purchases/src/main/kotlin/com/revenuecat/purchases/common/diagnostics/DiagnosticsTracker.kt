@@ -123,6 +123,7 @@ internal class DiagnosticsTracker(
         billingResponseCode: Int,
         billingDebugMessage: String,
         responseTime: Duration,
+        foundProductIds: List<String>,
     ) {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
@@ -131,6 +132,7 @@ internal class DiagnosticsTracker(
                 BILLING_RESPONSE_CODE to billingResponseCode,
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                FOUND_PRODUCT_IDS_KEY to foundProductIds,
             ),
         )
     }

@@ -266,14 +266,16 @@ class DiagnosticsTrackerTest {
             "product_type_queried" to "subs",
             "billing_response_code" to 12,
             "billing_debug_message" to "test-debug-message",
-            "response_time_millis" to 1234L
+            "response_time_millis" to 1234L,
+            "found_product_ids" to listOf("test-product-id", "test-product-id-2"),
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackGoogleQueryPurchasesRequest(
             productType = "subs",
             billingResponseCode = 12,
             billingDebugMessage = "test-debug-message",
-            responseTime = 1234L.milliseconds
+            responseTime = 1234L.milliseconds,
+            foundProductIds = listOf("test-product-id", "test-product-id-2"),
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->

@@ -86,13 +86,15 @@ internal class QueryPurchasesByTypeUseCase(
                 )
                 return@queryPurchasesAsync
             }
-            trackGoogleQueryPurchasesRequestIfNeeded(productType, billingResult, requestStartTime)
+            val foundProductIds = purchases.flatMap { it.products }
+            trackGoogleQueryPurchasesRequestIfNeeded(productType, foundProductIds, billingResult, requestStartTime)
             listener.onQueryPurchasesResponse(billingResult, purchases)
         }
     }
 
     private fun trackGoogleQueryPurchasesRequestIfNeeded(
         @ProductType productType: String,
+        foundProductIds: List<String>,
         billingResult: BillingResult,
         requestStartTime: Date,
     ) {
@@ -101,6 +103,7 @@ internal class QueryPurchasesByTypeUseCase(
             billingResult.responseCode,
             billingResult.debugMessage,
             responseTime = Duration.between(requestStartTime, useCaseParams.dateProvider.now),
+            foundProductIds,
         )
     }
 
