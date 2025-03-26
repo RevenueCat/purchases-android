@@ -108,7 +108,7 @@ internal open class BaseBillingUseCaseTest {
 
     private fun mockDiagnosticsTracker() {
         every {
-            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any(), any())
         } just Runs
         every {
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any())

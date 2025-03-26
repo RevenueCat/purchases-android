@@ -1370,6 +1370,7 @@ class BillingWrapperTest {
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+                setOf("test-sku"),
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
@@ -1405,6 +1406,7 @@ class BillingWrapperTest {
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+                setOf("test-sku"),
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR,
                 billingDebugMessage = "test-debug-message",
@@ -1735,7 +1737,7 @@ class BillingWrapperTest {
 
     private fun mockDiagnosticsTracker() {
         every {
-            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any(), any())
         } just Runs
         every {
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any())

@@ -234,6 +234,7 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackGoogleQueryProductDetailsRequest tracks correct event`() {
         val expectedProperties = mapOf(
+            "requested_product_ids" to setOf("test-product-id", "test-product-id-2"),
             "play_store_version" to "123",
             "play_services_version" to "456",
             "product_type_queried" to "subs",
@@ -243,6 +244,7 @@ class DiagnosticsTrackerTest {
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+            requestedProductIds = setOf("test-product-id", "test-product-id-2"),
             productType = "subs",
             billingResponseCode = 12,
             billingDebugMessage = "test-debug-message",

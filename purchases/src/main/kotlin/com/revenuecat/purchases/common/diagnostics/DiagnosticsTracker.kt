@@ -100,6 +100,7 @@ internal class DiagnosticsTracker(
     // region Google
 
     fun trackGoogleQueryProductDetailsRequest(
+        requestedProductIds: Set<String>,
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
@@ -108,6 +109,7 @@ internal class DiagnosticsTracker(
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
             properties = mapOf(
+                REQUESTED_PRODUCT_IDS_KEY to requestedProductIds,
                 PRODUCT_TYPE_QUERIED_KEY to productType,
                 BILLING_RESPONSE_CODE to billingResponseCode,
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
