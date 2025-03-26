@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -736,6 +737,8 @@ class DiagnosticsTrackerTest {
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
                 event.name == DiagnosticsEntryName.RESTORE_PURCHASES_STARTED &&
+
+
                     event.properties == expectedProperties
             })
         }
@@ -814,6 +817,57 @@ class DiagnosticsTrackerTest {
     }
 
     // endregion Get Customer Info
+
+    // region Purchase
+
+    @Test
+    fun `trackPurchaseStarted tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "product_id" to "productId",
+            "product_type" to "NON_SUBSCRIPTION",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackPurchaseStarted("productId", ProductType.INAPP)
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.PURCHASE_STARTED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackPurchaseResult tracks correct data`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "product_id" to "productId",
+            "product_type" to "AUTO_RENEWABLE_SUBSCRIPTION",
+            "error_code" to 100,
+            "error_message" to "test error message",
+            "response_time_millis" to 1234L,
+            "verification_result" to "VERIFIED",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackPurchaseResult(
+            "productId",
+            ProductType.SUBS,
+            100,
+            "test error message",
+            1234L.milliseconds,
+            VerificationResult.VERIFIED,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.PURCHASE_RESULT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    // endregion Purchase
 
     private fun mockSharedPreferences() {
         sharedPreferences = mockk()

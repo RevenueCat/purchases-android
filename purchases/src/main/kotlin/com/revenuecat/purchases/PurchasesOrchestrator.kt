@@ -1095,13 +1095,19 @@ internal class PurchasesOrchestrator(
                 }",
             ),
         )
+
+        trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
+        val startTime = dateProvider.now
+
+        val listenerWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(listener, purchasingData, startTime)
+
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                val mapOfProductIdToListener = mapOf(purchasingData.productId to listener)
+                val mapOfProductIdToListener = mapOf(purchasingData.productId to listenerWithDiagnostics)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
@@ -1118,7 +1124,11 @@ internal class PurchasesOrchestrator(
                 presentedOfferingContext,
                 isPersonalizedPrice,
             )
-        } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
+        } ?: listenerWithDiagnostics.dispatch(
+            PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+                errorLog(it)
+            },
+        )
     }
 
     fun startProductChange(
@@ -1130,13 +1140,16 @@ internal class PurchasesOrchestrator(
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback,
     ) {
+        trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
+        val startTime = dateProvider.now
+
+        val callbackWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(purchaseCallback, purchasingData, startTime)
+
         if (purchasingData.productType != ProductType.SUBS) {
-            purchaseCallback.dispatch(
-                PurchasesError(
-                    PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE,
-                ).also { errorLog(it) },
-            )
+            PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE,
+            ).also { errorLog(it) }.also { callbackWithDiagnostics.dispatch(it) }
             return
         }
 
@@ -1148,7 +1161,6 @@ internal class PurchasesOrchestrator(
                         PurchaseStrings.OFFERING + "$it"
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
-
             ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
@@ -1160,13 +1172,12 @@ internal class PurchasesOrchestrator(
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
                 // switching from, because the transaction we receive on successful purchase is for the old product.
-                val productId =
-                    if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
-                        oldProductId
-                    } else {
-                        purchasingData.productId
-                    }
-                val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
+                val productId = if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
+                    oldProductId
+                } else {
+                    purchasingData.productId
+                }
+                val mapOfProductIdToListener = mapOf(productId to callbackWithDiagnostics)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
@@ -1182,7 +1193,7 @@ internal class PurchasesOrchestrator(
                 appUserID,
                 presentedOfferingContext,
                 isPersonalizedPrice,
-                purchaseCallback,
+                callbackWithDiagnostics,
             )
         } ?: run {
             val operationInProgressError = PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
@@ -1314,6 +1325,40 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    private fun createCallbackWithDiagnosticsIfNeeded(
+        originalCallback: PurchaseCallback,
+        purchasingData: PurchasingData,
+        startTime: Date,
+    ): PurchaseCallback {
+        return if (diagnosticsTrackerIfEnabled == null) {
+            originalCallback
+        } else {
+            object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                    trackPurchaseResultIfNeeded(
+                        purchasingData,
+                        error = null,
+                        startTime,
+                        customerInfo.entitlements.verification,
+                    )
+                    originalCallback.onCompleted(storeTransaction, customerInfo)
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    trackPurchaseResultIfNeeded(
+                        purchasingData,
+                        error,
+                        startTime,
+                        verificationResult = null,
+                    )
+                    originalCallback.onError(error, userCancelled)
+                }
+            }
+        }
+    }
+
+    // region Diagnostics
+
     private fun trackGetProductsStarted(requestedProductIds: Set<String>) {
         diagnosticsTrackerIfEnabled?.trackGetProductsStarted(requestedProductIds)
     }
@@ -1335,7 +1380,32 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    // endregion
+    private fun trackPurchaseStarted(productId: String, productType: ProductType) {
+        diagnosticsTrackerIfEnabled?.trackPurchaseStarted(productId, productType)
+    }
+
+    @Suppress("LongParameterList")
+    private fun trackPurchaseResultIfNeeded(
+        purchasingData: PurchasingData,
+        error: PurchasesError?,
+        startTime: Date,
+        verificationResult: VerificationResult?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val responseTime = Duration.between(startTime, dateProvider.now)
+        diagnosticsTrackerIfEnabled.trackPurchaseResult(
+            purchasingData.productId,
+            purchasingData.productType,
+            error?.code?.code,
+            error?.message,
+            responseTime,
+            verificationResult,
+        )
+    }
+
+    // endregion Diagnostics
+
+    // endregion Private Methods
 
     // region Static
 

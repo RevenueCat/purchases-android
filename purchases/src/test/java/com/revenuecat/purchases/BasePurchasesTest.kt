@@ -111,6 +111,7 @@ internal open class BasePurchasesTest {
         mockBackend()
         mockBillingWrapper()
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
+        mockCustomerInfo()
         mockCustomerInfoHelper()
         mockCustomerInfoUpdateHandler()
         mockPostPendingTransactionsHelper()
@@ -288,6 +289,13 @@ internal open class BasePurchasesTest {
     // endregion
 
     // region Protected methods
+
+    protected fun mockCustomerInfo(verificationResult: VerificationResult = VerificationResult.VERIFIED) {
+        val mockEntitlements = mockk<EntitlementInfos>()
+        every { mockEntitlements.verification } returns verificationResult
+        every { mockInfo.entitlements } returns mockEntitlements
+    }
+
     protected fun mockCustomerInfoHelper(
         errorGettingCustomerInfo: PurchasesError? = null,
         mockedCustomerInfo: CustomerInfo = mockInfo
