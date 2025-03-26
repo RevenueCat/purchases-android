@@ -1328,25 +1328,29 @@ internal class PurchasesOrchestrator(
         purchasingData: PurchasingData,
         startTime: Date,
     ): PurchaseCallback {
-        return if (diagnosticsTrackerIfEnabled == null) originalCallback else object : PurchaseCallback {
-            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
-                trackPurchaseResultIfNeeded(
-                    purchasingData,
-                    error = null,
-                    startTime,
-                    customerInfo.entitlements.verification,
-                )
-                originalCallback.onCompleted(storeTransaction, customerInfo)
-            }
+        return if (diagnosticsTrackerIfEnabled == null) {
+            originalCallback
+        } else {
+            object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                    trackPurchaseResultIfNeeded(
+                        purchasingData,
+                        error = null,
+                        startTime,
+                        customerInfo.entitlements.verification,
+                    )
+                    originalCallback.onCompleted(storeTransaction, customerInfo)
+                }
 
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                trackPurchaseResultIfNeeded(
-                    purchasingData,
-                    error,
-                    startTime,
-                    verificationResult = null,
-                )
-                originalCallback.onError(error, userCancelled)
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    trackPurchaseResultIfNeeded(
+                        purchasingData,
+                        error,
+                        startTime,
+                        verificationResult = null,
+                    )
+                    originalCallback.onError(error, userCancelled)
+                }
             }
         }
     }
