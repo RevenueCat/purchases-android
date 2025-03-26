@@ -4,7 +4,6 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
-import com.android.billingclient.api.QueryProductDetailsParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.DateProvider
