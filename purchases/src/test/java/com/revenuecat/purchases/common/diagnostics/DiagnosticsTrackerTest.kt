@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -774,7 +775,7 @@ class DiagnosticsTrackerTest {
             "product_type" to "NON_SUBSCRIPTION",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
-        diagnosticsTracker.trackPurchaseStarted("productId", "NON_SUBSCRIPTION")
+        diagnosticsTracker.trackPurchaseStarted("productId", ProductType.INAPP)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
                 event.name == DiagnosticsEntryName.PURCHASE_STARTED &&
@@ -798,7 +799,7 @@ class DiagnosticsTrackerTest {
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackPurchaseResult(
             "productId",
-            "AUTO_RENEWABLE_SUBSCRIPTION",
+            ProductType.SUBS,
             100,
             "test error message",
             1234L.milliseconds,

@@ -17,6 +17,7 @@ import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -1556,6 +1557,160 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     // endregion Diagnostics event - Restore purchases
+
+    // region Diagnostics event - Purchase
+
+    @Test
+    fun `purchase tracks purchaseStart diagnostics event`() {
+        val (_, offerings) = stubOfferings(subProductId)
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+        val purchasePackageParams = getPurchaseParams(packageToPurchase)
+        purchases.purchaseWith(
+            purchasePackageParams
+        ) { _, _ -> }
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseStarted(subProductId, ProductType.SUBS)
+        }
+    }
+
+    @Test
+    fun `purchase tracks purchaseResult diagnostics event on success`() {
+        mockQueryingProductDetails(inAppProductId, ProductType.INAPP, null)
+
+        val stubOtpProduct = stubINAPPStoreProduct(inAppProductId)
+        val purchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            stubOtpProduct
+        )
+
+        purchases.purchaseWith(
+            purchaseParams.build(),
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(inAppProductId, "crazy_purchase_token", ProductType.INAPP)
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseResult(
+                inAppProductId,
+                ProductType.INAPP,
+                errorCode = null,
+                errorMessage = null,
+                responseTime = any(),
+                verificationResult = VerificationResult.VERIFIED,
+            )
+        }
+    }
+
+    @Test
+    fun `purchase tracks purchaseResult diagnostics event on error`() {
+        val storeProduct = stubStoreProduct("productId")
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+
+        purchases.purchaseWith(
+            purchaseParams,
+            onSuccess = { _, _ -> fail("Expected error") }
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseResult(
+                "productId",
+                ProductType.SUBS,
+                errorCode = error.code.code,
+                errorMessage = error.message,
+                responseTime = any(),
+                verificationResult = null,
+            )
+        }
+    }
+
+    @Test
+    fun `purchase product change tracks purchaseStart diagnostics event`() {
+        val productId = "onemonth_freetrial"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val oldPurchase = mockPurchaseFound()
+        val productChangeParams = getPurchaseParams(
+            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            oldPurchase.productIds.first()
+        )
+
+        purchases.purchaseWith(
+            productChangeParams,
+            onSuccess = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseStarted(productId, ProductType.SUBS)
+        }
+    }
+
+    @Test
+    fun `purchase product change tracks purchaseResult diagnostics event on success`() {
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val oldPurchase = mockPurchaseFound()
+        val productChangeParams = getPurchaseParams(
+            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            oldPurchase.productIds.first()
+        )
+        purchases.purchaseWith(
+            productChangeParams,
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseResult(
+                productId,
+                ProductType.SUBS,
+                errorCode = null,
+                errorMessage = null,
+                responseTime = any(),
+                verificationResult = VerificationResult.VERIFIED,
+            )
+        }
+    }
+
+    @Test
+    fun `purchase product change tracks purchaseResult diagnostics event on error`() {
+        val productId = "onemonth_freetrial"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val oldPurchase = mockPurchaseFound()
+        val productChangeParams = getPurchaseParams(
+            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            oldPurchase.productIds.first()
+        )
+        purchases.purchaseWith(
+            productChangeParams,
+            onSuccess = { _, _ -> fail("Expected error") }
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseResult(
+                productId,
+                ProductType.SUBS,
+                errorCode = error.code.code,
+                errorMessage = error.message,
+                responseTime = any(),
+                verificationResult = null,
+            )
+        }
+    }
+
+    // endregion Diagnostics event - Purchase
 
     @Test
     fun `paywall events synced on app foregrounded`() {
