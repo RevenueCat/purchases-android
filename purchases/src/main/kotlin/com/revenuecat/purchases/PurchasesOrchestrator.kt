@@ -1097,9 +1097,9 @@ internal class PurchasesOrchestrator(
         trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
         val startTime = dateProvider.now
 
-        val listenerWithDiagnostics = object : PurchaseCallback {
+        val listenerWithDiagnostics = if (diagnosticsTrackerIfEnabled == null) listener else object : PurchaseCallback {
             override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
-                trackPurchaseResult(
+                trackPurchaseResultIfNeeded(
                     purchasingData,
                     error = null,
                     startTime,
@@ -1109,7 +1109,7 @@ internal class PurchasesOrchestrator(
             }
 
             override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                trackPurchaseResult(
+                trackPurchaseResultIfNeeded(
                     purchasingData,
                     error,
                     startTime,
@@ -1161,9 +1161,9 @@ internal class PurchasesOrchestrator(
         trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
         val startTime = dateProvider.now
 
-        val callbackWithDiagnostics = object : PurchaseCallback {
+        val callbackWithDiagnostics = if (diagnosticsTrackerIfEnabled == null) purchaseCallback else object : PurchaseCallback {
             override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
-                trackPurchaseResult(
+                trackPurchaseResultIfNeeded(
                     purchasingData,
                     error = null,
                     startTime,
@@ -1173,7 +1173,7 @@ internal class PurchasesOrchestrator(
             }
 
             override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                trackPurchaseResult(
+                trackPurchaseResultIfNeeded(
                     purchasingData,
                     error,
                     startTime,
@@ -1391,7 +1391,7 @@ internal class PurchasesOrchestrator(
     }
 
     @Suppress("LongParameterList")
-    private fun trackPurchaseResult(
+    private fun trackPurchaseResultIfNeeded(
         purchasingData: PurchasingData,
         error: PurchasesError?,
         startTime: Date,
