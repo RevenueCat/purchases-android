@@ -568,7 +568,7 @@ internal class DiagnosticsTracker(
     }
 }
 
-val ProductType.diagnosticsName: String
+private val ProductType.diagnosticsName: String
     get() = when (this) {
         ProductType.SUBS -> "AUTO_RENEWABLE_SUBSCRIPTION"
         ProductType.INAPP -> "NON_SUBSCRIPTION"
