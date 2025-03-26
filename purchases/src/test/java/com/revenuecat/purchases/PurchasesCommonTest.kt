@@ -253,7 +253,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 oldPurchase, any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
             )
         } answers {
-            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk())
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
         }
         val productChangeParams = getPurchaseParams(
             storeProduct.first().subscriptionOptions!!.first(),
