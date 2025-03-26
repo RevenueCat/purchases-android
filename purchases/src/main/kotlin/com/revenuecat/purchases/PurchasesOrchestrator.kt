@@ -1387,7 +1387,7 @@ internal class PurchasesOrchestrator(
     }
 
     private fun trackPurchaseStarted(productId: String, productType: ProductType) {
-        diagnosticsTrackerIfEnabled?.trackPurchaseStarted(productId, productType.name)
+        diagnosticsTrackerIfEnabled?.trackPurchaseStarted(productId, productType)
     }
 
     @Suppress("LongParameterList")
@@ -1401,7 +1401,7 @@ internal class PurchasesOrchestrator(
         val responseTime = Duration.between(startTime, dateProvider.now)
         diagnosticsTrackerIfEnabled.trackPurchaseResult(
             purchasingData.productId,
-            purchasingData.productType.name,
+            purchasingData.productType,
             error?.code?.code,
             error?.message,
             responseTime,

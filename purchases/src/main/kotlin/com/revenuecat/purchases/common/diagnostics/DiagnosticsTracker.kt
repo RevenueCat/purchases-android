@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.diagnostics
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
@@ -479,12 +480,12 @@ internal class DiagnosticsTracker(
 
     // region Purchase
 
-    fun trackPurchaseStarted(productId: String, productType: String) {
+    fun trackPurchaseStarted(productId: String, productType: ProductType) {
         trackEvent(
             eventName = DiagnosticsEntryName.PURCHASE_STARTED,
             properties = mapOf(
                 PRODUCT_ID_KEY to productId,
-                PRODUCT_TYPE_KEY to productType,
+                PRODUCT_TYPE_KEY to productType.diagnosticsName,
             ),
         )
     }
@@ -492,7 +493,7 @@ internal class DiagnosticsTracker(
     @Suppress("LongParameterList")
     fun trackPurchaseResult(
         productId: String,
-        productType: String,
+        productType: ProductType,
         errorCode: Int?,
         errorMessage: String?,
         responseTime: Duration,
@@ -502,7 +503,7 @@ internal class DiagnosticsTracker(
             eventName = DiagnosticsEntryName.PURCHASE_RESULT,
             properties = mapOf(
                 PRODUCT_ID_KEY to productId,
-                PRODUCT_TYPE_KEY to productType,
+                PRODUCT_TYPE_KEY to productType.diagnosticsName,
                 ERROR_CODE_KEY to errorCode,
                 ERROR_MESSAGE_KEY to errorMessage,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
@@ -561,3 +562,10 @@ internal class DiagnosticsTracker(
         diagnosticsDispatcher.enqueue(command = command)
     }
 }
+
+val ProductType.diagnosticsName: String
+    get() = when (this) {
+        ProductType.SUBS -> "AUTO_RENEWABLE_SUBSCRIPTION"
+        ProductType.INAPP -> "NON_SUBSCRIPTION"
+        ProductType.UNKNOWN -> "UNKNOWN"
+    }
