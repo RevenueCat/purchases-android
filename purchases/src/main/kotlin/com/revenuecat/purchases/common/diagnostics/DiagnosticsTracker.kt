@@ -54,6 +54,7 @@ internal class DiagnosticsTracker(
         const val PENDING_REQUEST_COUNT = "pending_request_count"
         const val REQUESTED_PRODUCT_IDS_KEY = "requested_product_ids"
         const val NOT_FOUND_PRODUCT_IDS_KEY = "not_found_product_ids"
+        const val FOUND_PRODUCT_IDS_KEY = "found_product_ids"
         const val ERROR_MESSAGE_KEY = "error_message"
         const val ERROR_CODE_KEY = "error_code"
         const val CACHE_STATUS_KEY = "cache_status"
@@ -218,12 +219,14 @@ internal class DiagnosticsTracker(
     fun trackAmazonQueryProductDetailsRequest(
         responseTime: Duration,
         wasSuccessful: Boolean,
+        requestedProductIds: Set<String>,
     ) {
         trackEvent(
             eventName = DiagnosticsEntryName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
             properties = mapOf(
                 SUCCESSFUL_KEY to wasSuccessful,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                REQUESTED_PRODUCT_IDS_KEY to requestedProductIds,
             ),
         )
     }
@@ -231,13 +234,15 @@ internal class DiagnosticsTracker(
     fun trackAmazonQueryPurchasesRequest(
         responseTime: Duration,
         wasSuccessful: Boolean,
+        foundProductIds: List<String>?,
     ) {
         trackEvent(
             eventName = DiagnosticsEntryName.AMAZON_QUERY_PURCHASES_REQUEST,
             properties = mapOf(
                 SUCCESSFUL_KEY to wasSuccessful,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-            ),
+                FOUND_PRODUCT_IDS_KEY to foundProductIds,
+            ).filterNotNullValues(),
         )
     }
 

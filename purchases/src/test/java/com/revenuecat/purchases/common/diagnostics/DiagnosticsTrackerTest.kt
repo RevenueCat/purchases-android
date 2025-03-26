@@ -367,11 +367,13 @@ class DiagnosticsTrackerTest {
         val expectedTags = mapOf(
             "successful" to true,
             "response_time_millis" to 1234L,
+            "requested_product_ids" to setOf("test-product-id")
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackAmazonQueryProductDetailsRequest(
             wasSuccessful = true,
-            responseTime = 1234L.milliseconds
+            responseTime = 1234L.milliseconds,
+            requestedProductIds = setOf("test-product-id")
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
@@ -387,11 +389,13 @@ class DiagnosticsTrackerTest {
         val expectedTags = mapOf(
             "successful" to true,
             "response_time_millis" to 1234L,
+            "found_product_ids" to listOf("test-product-id", "test-product-id-2")
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackAmazonQueryPurchasesRequest(
             wasSuccessful = true,
-            responseTime = 1234L.milliseconds
+            responseTime = 1234L.milliseconds,
+            foundProductIds = listOf("test-product-id", "test-product-id-2")
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
