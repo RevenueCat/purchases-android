@@ -105,6 +105,7 @@ internal class DiagnosticsTracker(
     // region Google
 
     fun trackGoogleQueryProductDetailsRequest(
+        requestedProductIds: Set<String>,
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
@@ -113,6 +114,7 @@ internal class DiagnosticsTracker(
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
             properties = mapOf(
+                REQUESTED_PRODUCT_IDS_KEY to requestedProductIds,
                 PRODUCT_TYPE_QUERIED_KEY to productType,
                 BILLING_RESPONSE_CODE to billingResponseCode,
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
@@ -126,6 +128,7 @@ internal class DiagnosticsTracker(
         billingResponseCode: Int,
         billingDebugMessage: String,
         responseTime: Duration,
+        foundProductIds: List<String>,
     ) {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
@@ -134,6 +137,7 @@ internal class DiagnosticsTracker(
                 BILLING_RESPONSE_CODE to billingResponseCode,
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                FOUND_PRODUCT_IDS_KEY to foundProductIds,
             ),
         )
     }

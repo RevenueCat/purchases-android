@@ -152,13 +152,15 @@ internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "",
-                responseTime = 123.milliseconds
+                responseTime = 123.milliseconds,
+                foundProductIds = listOf("com.revenuecat.lifetime"),
             )
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
                 BillingClient.ProductType.INAPP,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "",
-                responseTime = 400.milliseconds
+                responseTime = 400.milliseconds,
+                foundProductIds = listOf("com.revenuecat.lifetime"),
             )
         }
     }
@@ -181,7 +183,8 @@ internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "",
-                responseTime = 123.milliseconds
+                responseTime = 123.milliseconds,
+                foundProductIds = listOf("com.revenuecat.lifetime"),
             )
         }
     }
