@@ -363,7 +363,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         verify(exactly = 1) {
             mockCompletion.onReceived(any(), any())
-            mockCustomerInfoHelper.retrieveCustomerInfo(appUserID, any(), any(), any(), any())
+            mockCustomerInfoHelper.retrieveCustomerInfo(appUserID, any(), any(), any(), false, any())
         }
     }
 
@@ -530,6 +530,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground = false,
                 allowSharingPlayStoreAccount = false,
+                false,
                 any(),
             )
         }
@@ -567,7 +568,8 @@ internal class PurchasesTest : BasePurchasesTest() {
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
                 allowSharingPlayStoreAccount = false,
-                null,
+                false,
+                callback = null,
             )
         }
     }

@@ -2,7 +2,9 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
@@ -43,6 +45,7 @@ internal class DiagnosticsTracker(
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
         const val PRODUCT_ID_KEY = "product_id"
+        const val PRODUCT_TYPE_KEY = "product_type"
         const val OLD_PRODUCT_ID_KEY = "old_product_id"
         const val HAS_INTRO_TRIAL_KEY = "has_intro_trial"
         const val HAS_INTRO_PRICE_KEY = "has_intro_price"
@@ -57,6 +60,8 @@ internal class DiagnosticsTracker(
         const val ERROR_MESSAGE_KEY = "error_message"
         const val ERROR_CODE_KEY = "error_code"
         const val CACHE_STATUS_KEY = "cache_status"
+        const val FETCH_POLICY_KEY = "fetch_policy"
+        const val HAD_UNSYNCED_PURCHASES_BEFORE_KEY = "had_unsynced_purchases_before"
         const val IS_RETRY = "is_retry"
         const val REQUEST_STATUS_KEY = "request_status"
     }
@@ -485,6 +490,75 @@ internal class DiagnosticsTracker(
 
     // endregion Restore purchases
 
+    // region Get Customer Info
+
+    fun trackGetCustomerInfoStarted() {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GET_CUSTOMER_INFO_STARTED,
+            properties = emptyMap(),
+        )
+    }
+
+    @Suppress("LongParameterList")
+    fun trackGetCustomerInfoResult(
+        cacheFetchPolicy: CacheFetchPolicy,
+        verificationResult: VerificationResult?,
+        hadUnsyncedPurchasesBefore: Boolean?,
+        errorMessage: String?,
+        errorCode: Int?,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GET_CUSTOMER_INFO_RESULT,
+            properties = mapOf(
+                FETCH_POLICY_KEY to cacheFetchPolicy.name,
+                VERIFICATION_RESULT_KEY to verificationResult?.name,
+                HAD_UNSYNCED_PURCHASES_BEFORE_KEY to hadUnsyncedPurchasesBefore,
+                ERROR_MESSAGE_KEY to errorMessage,
+                ERROR_CODE_KEY to errorCode,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ).filterNotNullValues(),
+        )
+    }
+
+    // endregion Get Customer Info
+
+    // region Purchase
+
+    fun trackPurchaseStarted(productId: String, productType: ProductType) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.PURCHASE_STARTED,
+            properties = mapOf(
+                PRODUCT_ID_KEY to productId,
+                PRODUCT_TYPE_KEY to productType.diagnosticsName,
+            ),
+        )
+    }
+
+    @Suppress("LongParameterList")
+    fun trackPurchaseResult(
+        productId: String,
+        productType: ProductType,
+        errorCode: Int?,
+        errorMessage: String?,
+        responseTime: Duration,
+        verificationResult: VerificationResult?,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.PURCHASE_RESULT,
+            properties = mapOf(
+                PRODUCT_ID_KEY to productId,
+                PRODUCT_TYPE_KEY to productType.diagnosticsName,
+                ERROR_CODE_KEY to errorCode,
+                ERROR_MESSAGE_KEY to errorMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                VERIFICATION_RESULT_KEY to verificationResult?.name,
+            ).filterNotNullValues(),
+        )
+    }
+
+    // endregion Purchase
+
     private fun trackEvent(eventName: DiagnosticsEntryName, properties: Map<String, Any>) {
         trackEvent(
             DiagnosticsEntry(
@@ -533,3 +607,10 @@ internal class DiagnosticsTracker(
         diagnosticsDispatcher.enqueue(command = command)
     }
 }
+
+private val ProductType.diagnosticsName: String
+    get() = when (this) {
+        ProductType.SUBS -> "AUTO_RENEWABLE_SUBSCRIPTION"
+        ProductType.INAPP -> "NON_SUBSCRIPTION"
+        ProductType.UNKNOWN -> "UNKNOWN"
+    }
