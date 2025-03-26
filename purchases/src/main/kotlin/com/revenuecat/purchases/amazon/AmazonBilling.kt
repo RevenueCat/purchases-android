@@ -191,11 +191,19 @@ internal class AmazonBilling(
                             productIds,
                             userData.marketplace,
                             {
-                                trackAmazonQueryProductDetailsRequestIfNeeded(wasSuccessful = true, requestStartTime)
+                                trackAmazonQueryProductDetailsRequestIfNeeded(
+                                    wasSuccessful = true,
+                                    requestStartTime,
+                                    productIds,
+                                )
                                 onReceive(it)
                             },
                             {
-                                trackAmazonQueryProductDetailsRequestIfNeeded(wasSuccessful = false, requestStartTime)
+                                trackAmazonQueryProductDetailsRequestIfNeeded(
+                                    wasSuccessful = false,
+                                    requestStartTime,
+                                    productIds,
+                                )
                                 onError(it)
                             },
                         )
@@ -470,7 +478,7 @@ internal class AmazonBilling(
                 val requestStartTime = dateProvider.now
                 purchaseUpdatesHandler.queryPurchases(
                     onSuccess = onSuccess@{ receipts, userData ->
-                        trackAmazonQueryPurchasesRequestIfNeeded(wasSuccessful = true, requestStartTime)
+                        trackAmazonQueryPurchasesRequestIfNeeded(wasSuccessful = true, requestStartTime, receipts)
                         val filteredReceipts = if (filterOnlyActivePurchases) {
                             // This filters out expired receipts according to the current date.
                             // Note that this is not calculating the expiration date of the purchase,
@@ -506,7 +514,11 @@ internal class AmazonBilling(
                         }
                     },
                     onError = {
-                        trackAmazonQueryPurchasesRequestIfNeeded(wasSuccessful = false, requestStartTime)
+                        trackAmazonQueryPurchasesRequestIfNeeded(
+                            wasSuccessful = false,
+                            requestStartTime,
+                            receipts = null,
+                        )
                         onError(it)
                     },
                 )
@@ -660,20 +672,24 @@ internal class AmazonBilling(
     private fun trackAmazonQueryProductDetailsRequestIfNeeded(
         wasSuccessful: Boolean,
         requestStartTime: Date,
+        requestedProductIds: Set<String>,
     ) {
         diagnosticsTrackerIfEnabled?.trackAmazonQueryProductDetailsRequest(
             responseTime = Duration.between(requestStartTime, dateProvider.now),
             wasSuccessful,
+            requestedProductIds,
         )
     }
 
     private fun trackAmazonQueryPurchasesRequestIfNeeded(
         wasSuccessful: Boolean,
         requestStartTime: Date,
+        receipts: List<Receipt>?,
     ) {
         diagnosticsTrackerIfEnabled?.trackAmazonQueryPurchasesRequest(
             responseTime = Duration.between(requestStartTime, dateProvider.now),
             wasSuccessful,
+            receipts?.map { it.sku },
         )
     }
     // endregion
