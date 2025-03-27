@@ -1,5 +1,8 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.components.ktx
 
+import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -12,7 +15,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapValuesOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
+import com.revenuecat.purchases.utils.map
 import androidx.compose.ui.text.intl.Locale as ComposeLocale
+import androidx.compose.ui.text.intl.LocaleList as ComposeLocaleList
 import java.util.Locale as JavaLocale
 
 internal typealias LocalizationDictionary = NonEmptyMap<LocalizationKey, LocalizationData>
@@ -88,6 +93,14 @@ internal fun ComposeLocale.toLocaleId(): LocaleId =
 @JvmSynthetic
 internal fun ComposeLocale.toJavaLocale(): JavaLocale =
     JavaLocale.forLanguageTag(toLanguageTag())
+
+@JvmSynthetic
+internal fun JavaLocale.toComposeLocale(): ComposeLocale =
+    ComposeLocale(toLanguageTag())
+
+@JvmSynthetic
+internal fun LocaleListCompat.toComposeLocaleList(): ComposeLocaleList =
+    ComposeLocaleList(map { it.toComposeLocale() })
 
 @JvmSynthetic
 internal fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =

@@ -1,6 +1,9 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.utils
 
 import androidx.core.os.LocaleListCompat
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
 import java.util.Locale
 import java.util.MissingResourceException
@@ -36,6 +39,58 @@ internal fun Locale.sharedLanguageCodeWith(locale: Locale): Boolean {
  */
 fun getDefaultLocales(): List<Locale> {
     return LocaleListCompat.getDefault().toList()
+}
+
+@Suppress("SpreadOperator")
+@JvmSynthetic
+@InternalRevenueCatAPI
+operator fun LocaleListCompat.plus(elements: LocaleListCompat): LocaleListCompat {
+    val combined = elements.toTypedArray() + elements.toTypedArray()
+    return LocaleListCompat.create(*combined)
+}
+
+@Suppress("SpreadOperator")
+@JvmSynthetic
+@InternalRevenueCatAPI
+fun LocaleListCompat.distinct(): LocaleListCompat {
+    val distinct = toTypedArray().distinct().toTypedArray()
+    return LocaleListCompat.create(*distinct)
+}
+
+@JvmSynthetic
+@InternalRevenueCatAPI
+fun LocaleListCompat.toTypedArray(): Array<Locale> {
+    val array = arrayOfNulls<Locale>(size())
+    forEachIndexed { index, locale -> array[index] = locale }
+    @Suppress("UNCHECKED_CAST")
+    return array as Array<Locale>
+}
+
+@JvmSynthetic
+@InternalRevenueCatAPI
+fun <R> LocaleListCompat.map(transform: (Locale) -> R): List<R> =
+    mapIndexed { _, locale -> transform(locale) }
+
+@JvmSynthetic
+@InternalRevenueCatAPI
+fun <R> LocaleListCompat.mapIndexed(transform: (index: Int, Locale) -> R): List<R> {
+    val destination = ArrayList<R>(size())
+    forEachIndexed { index, locale -> destination.add(transform(index, locale)) }
+    return destination
+}
+
+@JvmSynthetic
+@InternalRevenueCatAPI
+fun LocaleListCompat.forEachIndexed(action: (index: Int, Locale) -> Unit) {
+    val size = size()
+    for (index in 0 until size) {
+        val element = get(index)
+        if (element != null) {
+            action(index, element)
+        } else {
+            break
+        }
+    }
 }
 
 private fun Locale.inferScript(): String {
