@@ -730,16 +730,30 @@ DESC
 
   private_lane :extract_icon_urls_from_offerings_json do |options|
     offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
-    # Find icon components and read their webp url.
-    stdout = sh("jq", "-r", 'recurse | select(type=="object" and .type=="icon") | "\(.base_url)/\(.formats.webp)"', offerings_json_path)
+    # Find icon components and read their default webp url as well as any overrides.
+    stdout = sh(
+      "jq", 
+      "-r", 
+      'recurse | select(type=="object" and .type=="icon") ' \
+      '| . as $icon ' \
+      '| "\($icon.base_url)/\($icon.formats.webp)" , (.overrides[]? | select(.properties.formats.webp) | "\($icon.base_url)/\(.properties.formats.webp)")', 
+      offerings_json_path
+    )
     # Return unique icon URLs as an array.
     stdout.split("\n").uniq
   end
 
   private_lane :extract_image_urls_from_offerings_json do |options|
     offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
-    # Find image components and read their light and dark webp urls, filtering out null values.
-    stdout = sh("jq", "-r", 'recurse | select(type=="object" and .type=="image") | (.source.light.webp, .source.dark.webp) | select(. != null)', offerings_json_path)
+    # Find image components and read their default light and dark webp urls as well as any overrides, filtering out null values.
+    stdout = sh(
+        "jq", 
+        "-r", 
+        'recurse | select(type=="object" and .type=="image") ' \
+        '| . as $img ' \
+        '| ("\($img.source.light.webp)", "\($img.source.dark.webp)", (.overrides[]? | select(.properties.source) | "\(.properties.source.light.webp)", "\(.properties.source.dark.webp)")) | select(. != "null")', 
+        offerings_json_path
+    )
     # Return unique image URLs as an array.
     stdout.split("\n").uniq
   end
