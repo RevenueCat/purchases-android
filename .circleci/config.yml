@@ -41,14 +41,14 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@2.5.0
-  gcp-cli: circleci/gcp-cli@2.1.0
+  gcp-cli: circleci/gcp-cli@3.3.1
   revenuecat: revenuecat/sdks-common-config@3.0.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots, deploy_snapshot_release, update_paywall_templates]
+    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates]
     default: default
 
 commands:
@@ -105,10 +105,10 @@ commands:
       test_apk_path:
         type: string
     steps:
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
       - run:
           name: Test with Firebase Test Lab
           command: >
@@ -154,6 +154,28 @@ commands:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
       - android/save-gradle-cache
       - android/save-build-cache
+
+  install-ruby:
+    description: "Installs the provided version of Ruby using RVM."
+    parameters:
+      version:
+        type: string
+    steps:
+      - run:
+          name: Install RVM and Ruby << parameters.version >>
+          command: |
+            # Import GPG keys first
+            command curl -sSL https://rvm.io/mpapis.asc | gpg --import -
+            command curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
+            # Install RVM and Ruby
+            \curl -sSL https://get.rvm.io | bash -s stable
+            source ~/.rvm/scripts/rvm
+            rvm install << parameters.version >>
+            rvm use << parameters.version >>
+            echo 'source ~/.rvm/scripts/rvm' >> $BASH_ENV
+            echo 'rvm use << parameters.version >>' >> $BASH_ENV
+            source $BASH_ENV
+            ruby -v
 
 jobs:
 
@@ -264,7 +286,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.14.2 s3://purchases-docs/android/8.14.2 --delete
+          command: aws s3 sync ~/project/docs/8.15.1 s3://purchases-docs/android/8.15.1 --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -478,10 +500,10 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - gcp-cli/install
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
       - android/restore-build-cache
       - run:
           name: Build and run load shedder integration tests
@@ -502,10 +524,10 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - gcp-cli/install
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
       - android/restore-build-cache
       - run:
           name: Build and run custom entitlement computation integration tests
@@ -516,21 +538,6 @@ jobs:
           path: ~/gsutil/
       - store_test_results:
           path: ~/gsutil/
-
-  verify_debug_view_snapshot_tests:
-    description: "Verify debug view snapshot tests"
-    <<: *android-executor
-    steps:
-      - checkout
-      - install-sdkman
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - android/restore-build-cache
-      - run:
-          name: Build and run debugview snapshot tests
-          command: |
-            bundle exec fastlane android verify_debug_view_snapshot_tests
-      - android/save-build-cache
 
   emerge_purchases_ui_snapshot_tests:
     description: "Emerge purchases ui snapshot tests"
@@ -581,38 +588,52 @@ jobs:
       - store_test_results:
           path: build/test-results
 
-  verify-revenuecatui-snapshots:
-    description: "Verify RevenueCatUI snapshots"
+  record-and-upload-paparazzi-revenuecatui-snapshots:
+    description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
     <<: *android-executor
     steps:
       - checkout
       - install-sdkman
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - android/restore-build-cache
+      # Required by Emerge CLI
+      - install-ruby:
+          version: 3.2.0
       - run:
-          name: Build and run RevenueCat UI snapshot tests
-          command: |
-            bundle exec fastlane android verify_revenuecatui_snapshots
-      - android/save-build-cache
-
-  record-revenuecatui-snapshots:
-    description: "Record new RevenueCatUI snapshots"
-    <<: *android-executor
-    steps:
-      - checkout
-      - install-sdkman
+          name: Install Emerge CLI
+          command: gem install emerge
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore-build-cache
       - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
-          command: |
-            bundle exec fastlane android record_revenuecatui_snapshots
+          command: ./gradlew ui:revenuecatui:recordPaparazziDebug
       - run:
+          name: Records new debug view snapshots to become the new golden
+          command: ./gradlew ui:debugview:recordPaparazziDebug
+      - run:
+          name: Upload snapshots to Emerge
           command: |
-            bundle exec fastlane android create_snapshots_repo_pr
+            # Take the last path segment of the CIRCLE_PULL_REQUEST url if it exists.
+            PR_NUM=""
+            if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ "$CIRCLE_PULL_REQUEST" == */* ]]; then
+              PR_NUM=$(echo "$CIRCLE_PULL_REQUEST" | rev | cut -d'/' -f1 | rev)
+            fi
+            # Set base-sha to empty string if no PR number is found.
+            PR_ARG=""
+            if [ -n "$PR_NUM" ]; then
+              PR_ARG="--pr-number $PR_NUM"
+            else
+              PR_ARG="--base-sha \"\""
+            fi
+
+            emerge upload snapshots \
+              --name "TestPurchasesUIAndroidCompatibility Paparazzi" \
+              --id "com.revenuecat.testpurchasesuiandroidcompatibility.paparazzi" \
+              --repo-name "RevenueCat/purchases-android" \
+              --debug \
+              --client-library paparazzi \
+              $PR_ARG \
+              --project-root .
       - android/save-build-cache
 
   run-revenuecatui-ui-tests:
@@ -689,10 +710,9 @@ workflows:
       - assemble-purchase-tester
       - assemble-paywall-tester-release
       - run-backend-integration-tests
-      - verify-revenuecatui-snapshots
+      - record-and-upload-paparazzi-revenuecatui-snapshots
       - run-revenuecatui-ui-tests
       - emerge_purchases_ui_snapshot_tests
-      - verify_debug_view_snapshot_tests: *release-branches
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
@@ -789,12 +809,6 @@ workflows:
     jobs:
         - publish-paywall-tester-release:
             track: "alpha"
-
-  record-revenuecatui-snapshots:
-    when:
-      equal: [ generate_revenuecatui_snapshots, << pipeline.parameters.action >> ]
-    jobs:
-      - record-revenuecatui-snapshots
 
   update-paywall-templates:
     when:

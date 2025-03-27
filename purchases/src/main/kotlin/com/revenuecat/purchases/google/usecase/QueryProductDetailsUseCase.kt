@@ -4,7 +4,6 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
-import com.android.billingclient.api.QueryProductDetailsParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.DateProvider
@@ -51,12 +50,11 @@ internal class QueryProductDetailsUseCase(
         }
         withConnectedClient {
             val googleType: String = useCaseParams.productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
-            val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
 
             queryProductDetailsAsyncEnsuringOneResponse(
                 this,
                 googleType,
-                params,
+                nonEmptyProductIds,
                 ::processResult,
             )
         }
@@ -83,9 +81,10 @@ internal class QueryProductDetailsUseCase(
     private fun queryProductDetailsAsyncEnsuringOneResponse(
         billingClient: BillingClient,
         @BillingClient.ProductType productType: String,
-        params: QueryProductDetailsParams,
+        productIds: Set<String>,
         listener: ProductDetailsResponseListener,
     ) {
+        val params = productType.buildQueryProductDetailsParams(productIds)
         val hasResponded = AtomicBoolean(false)
         val requestStartTime = useCaseParams.dateProvider.now
         billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
@@ -96,17 +95,19 @@ internal class QueryProductDetailsUseCase(
                 )
                 return@queryProductDetailsAsync
             }
-            trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
+            trackGoogleQueryProductDetailsRequestIfNeeded(productIds, productType, billingResult, requestStartTime)
             listener.onProductDetailsResponse(billingResult, productDetailsList)
         }
     }
 
     private fun trackGoogleQueryProductDetailsRequestIfNeeded(
+        requestedProductIds: Set<String>,
         @BillingClient.ProductType productType: String,
         billingResult: BillingResult,
         requestStartTime: Date,
     ) {
         useCaseParams.diagnosticsTrackerIfEnabled?.trackGoogleQueryProductDetailsRequest(
+            requestedProductIds,
             productType,
             billingResult.responseCode,
             billingResult.debugMessage,

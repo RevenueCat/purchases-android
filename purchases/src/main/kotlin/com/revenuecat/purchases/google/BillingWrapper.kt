@@ -87,6 +87,13 @@ internal class BillingWrapper(
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
+    private companion object {
+        /**
+         * The maximum number of pending requests we report to diagnostics.
+         */
+        private const val MAX_PENDING_REQUEST_COUNT_REPORTED = 100
+    }
+
     @get:Synchronized
     @set:Synchronized
     @Volatile
@@ -158,6 +165,7 @@ internal class BillingWrapper(
             billingClient?.let {
                 if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
+                    diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
                     try {
                         it.startConnection(this)
                     } catch (e: IllegalStateException) {
@@ -224,6 +232,7 @@ internal class BillingWrapper(
         useCase.run()
     }
 
+    @Suppress("LongMethod")
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -290,7 +299,13 @@ internal class BillingWrapper(
                 isPersonalizedPrice,
             )
             when (result) {
-                is Result.Success -> launchBillingFlow(activity, result.value)
+                is Result.Success -> {
+                    trackPurchaseStartIfNeeded(
+                        googlePurchasingData,
+                        replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
+                    )
+                    launchBillingFlow(activity, result.value)
+                }
                 is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
             }
         }
@@ -554,6 +569,7 @@ internal class BillingWrapper(
         billingResult: BillingResult,
         purchases: List<Purchase>?,
     ) {
+        trackPurchaseUpdateReceivedIfNeeded(billingResult, purchases)
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
             val storeTransactions = mutableListOf<StoreTransaction>()
@@ -599,6 +615,12 @@ internal class BillingWrapper(
 
     @Suppress("LongMethod")
     override fun onBillingSetupFinished(billingResult: BillingResult) {
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
+            responseCode = billingResult.responseCode,
+            debugMessage = billingResult.debugMessage,
+            // serviceRequests.size is O(n), so cap our count to MAX_PENDING_REQUEST_COUNT_REPORTED items.
+            pendingRequestCount = serviceRequests.asSequence().take(MAX_PENDING_REQUEST_COUNT_REPORTED).count(),
+        )
         mainHandler.post {
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
@@ -680,6 +702,7 @@ internal class BillingWrapper(
 
     override fun onBillingServiceDisconnected() {
         log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED_INSTANCE.format(billingClient?.toString()))
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingServiceDisconnected()
     }
 
     /**
@@ -816,6 +839,42 @@ internal class BillingWrapper(
                 billingResult.debugMessage,
             )
         }
+    }
+
+    private fun trackPurchaseStartIfNeeded(
+        googlePurchasingData: GooglePurchasingData,
+        oldProductId: String?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val subscriptionPurchasingData = googlePurchasingData as? GooglePurchasingData.Subscription
+        val subscriptionOfferChosenPricingPhaseList = subscriptionPurchasingData
+            ?.productDetails
+            ?.subscriptionOfferDetails
+            ?.first {
+                it.offerToken == subscriptionPurchasingData.token
+            }
+            ?.pricingPhases
+            ?.pricingPhaseList
+        val hasIntroTrial = subscriptionOfferChosenPricingPhaseList?.any { it.priceAmountMicros == 0L }
+        val hasIntroPrice = subscriptionOfferChosenPricingPhaseList
+            ?.dropLast(1) // drop the last pricing phase, which is the base price
+            ?.any { it.priceAmountMicros > 0L }
+        diagnosticsTrackerIfEnabled.trackGooglePurchaseStarted(
+            productId = googlePurchasingData.productId,
+            oldProductId = oldProductId,
+            hasIntroTrial = hasIntroTrial,
+            hasIntroPrice = hasIntroPrice,
+        )
+    }
+
+    private fun trackPurchaseUpdateReceivedIfNeeded(billingResult: BillingResult, purchases: List<Purchase>?) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        diagnosticsTrackerIfEnabled.trackGooglePurchaseUpdateReceived(
+            productIds = purchases?.flatMap { it.products },
+            purchaseStatuses = purchases?.map { it.purchaseState.toRevenueCatPurchaseState().name },
+            billingResponseCode = billingResult.responseCode,
+            billingDebugMessage = billingResult.debugMessage,
+        )
     }
 
     private fun buildPurchaseParams(

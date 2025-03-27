@@ -2,6 +2,7 @@ package com.revenuecat.apitester.java;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 
 import androidx.annotation.NonNull;
 
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.WebPurchaseRedemption;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
@@ -192,6 +194,17 @@ final class PurchasesAPI {
 
             @Override
             public void onRestoreStarted() {
+            }
+            @Override
+            public void onManagementOptionSelected(@NonNull CustomerCenterManagementOption action) {
+                //noinspection StatementWithEmptyBody
+                if (action instanceof CustomerCenterManagementOption.MissingPurchase) {
+                } else //noinspection StatementWithEmptyBody
+                    if (action instanceof CustomerCenterManagementOption.Cancel) {
+                } else if (action instanceof CustomerCenterManagementOption.CustomUrl) {
+                    CustomerCenterManagementOption.CustomUrl customUrl = (CustomerCenterManagementOption.CustomUrl) action;
+                    Uri uri = customUrl.getUri();
+                }
             }
         };
         Purchases.getSharedInstance().setCustomerCenterListener(new CustomerCenterListener() {});

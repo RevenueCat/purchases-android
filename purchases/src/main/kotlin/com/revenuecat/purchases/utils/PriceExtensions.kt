@@ -30,8 +30,14 @@ internal fun Price.pricePerYear(billingPeriod: Period, locale: Locale): Price {
 }
 
 private fun Price.pricePerPeriod(units: Double, locale: Locale): Price {
-    val numberFormat = NumberFormat.getCurrencyInstance(locale)
-    numberFormat.currency = Currency.getInstance(currencyCode)
+    val currency = Currency.getInstance(currencyCode)
+    val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
+        this.currency = currency
+        // Making sure we do not add spurious digits:
+        val digits = currency.defaultFractionDigits.coerceAtLeast(0)
+        maximumFractionDigits = digits
+        minimumFractionDigits = digits
+    }
 
     val value = amountMicros / units
     val formatted = numberFormat.format(value / MICRO_MULTIPLIER)

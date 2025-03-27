@@ -69,7 +69,7 @@ class PostPendingTransactionsHelperTest {
     @Test
     fun `skip posting pending purchases if autosync is off`() {
         changeAutoSyncEnabled(false)
-        syncAndAssertSuccessful(null)
+        syncAndAssertResult(SyncPendingPurchaseResult.AutoSyncDisabled)
         verify(exactly = 0) {
             billing.queryPurchases(
                 appUserID = any(),
@@ -90,9 +90,9 @@ class PostPendingTransactionsHelperTest {
     }
 
     @Test
-    fun `if autosync is disabled, and sync is called, success callback with null value is called`() {
+    fun `if autosync is disabled, and sync is called, success callback with null values is called`() {
         changeAutoSyncEnabled(false)
-        syncAndAssertSuccessful(null)
+        syncAndAssertResult(SyncPendingPurchaseResult.AutoSyncDisabled)
     }
 
     @Test
@@ -101,7 +101,7 @@ class PostPendingTransactionsHelperTest {
             purchasesByHashedToken = emptyMap(),
             notInCache = emptyList()
         )
-        syncAndAssertSuccessful(null)
+        syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
         verify(exactly = 1) {
             billing.queryPurchases(
                 appUserID = appUserId,
@@ -117,7 +117,7 @@ class PostPendingTransactionsHelperTest {
             purchasesByHashedToken = emptyMap(),
             notInCache = emptyList()
         )
-        syncAndAssertSuccessful(null)
+        syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
     }
 
     @Test
@@ -155,7 +155,7 @@ class PostPendingTransactionsHelperTest {
         val customerInfoMock = mockk<CustomerInfo>()
         mockPostTransactionsSuccessful(customerInfoMock)
 
-        syncAndAssertSuccessful(customerInfoMock)
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
     }
 
     @Test
@@ -169,7 +169,7 @@ class PostPendingTransactionsHelperTest {
         val customerInfoMock = mockk<CustomerInfo>()
         mockPostTransactionsSuccessful(customerInfoMock)
 
-        syncAndAssertSuccessful(customerInfoMock)
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
 
         verify { deviceCache.cleanPreviouslySentTokens(setOf(purchase.purchaseToken.sha1())) }
     }
@@ -192,7 +192,7 @@ class PostPendingTransactionsHelperTest {
 
         mockPostTransactionsSuccessful(mockk())
 
-        syncAndAssertSuccessful(null)
+        syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
 
         verify(exactly = 0) {
             postTransactionWithProductDetailsHelper.postTransactions(any(), any(), any(), any(), any(), any())
@@ -212,7 +212,7 @@ class PostPendingTransactionsHelperTest {
             lambda<(PurchasesError) -> Unit>().captured(error)
         }
 
-        syncAndAssertError(error)
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(error))
 
         verify(exactly = 0) { deviceCache.cleanPreviouslySentTokens(any()) }
         verify(exactly = 0) {
@@ -256,7 +256,7 @@ class PostPendingTransactionsHelperTest {
         val customerInfoMock = mockk<CustomerInfo>()
         mockPostTransactionsSuccessful(customerInfoMock, allPurchases)
 
-        syncAndAssertSuccessful(customerInfoMock)
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
 
         verify(exactly = 1) {
             postTransactionWithProductDetailsHelper.postTransactions(
@@ -323,7 +323,7 @@ class PostPendingTransactionsHelperTest {
             successSlot.captured.invoke(activePendingPurchase, customerInfoMock)
         }
 
-        syncAndAssertError(error)
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(error))
     }
 
     // endregion
@@ -394,27 +394,15 @@ class PostPendingTransactionsHelperTest {
         every { billing.isConnected() } returns isConnected
     }
 
-    private fun syncAndAssertSuccessful(resultCustomerInfo: CustomerInfo?) {
+    private fun syncAndAssertResult(expectedSyncResult: SyncPendingPurchaseResult) {
         var successCallCount = 0
         postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
-            onError = { fail("Should be success") },
-            onSuccess = {
-                assertThat(it).isEqualTo(resultCustomerInfo)
+            callback = { syncResult ->
+                assertThat(syncResult).isEqualTo(expectedSyncResult)
                 successCallCount++
-            }
+            },
         )
         assertThat(successCallCount).isEqualTo(1)
-    }
-
-    private fun syncAndAssertError(purchasesError: PurchasesError) {
-        var receivedError: PurchasesError? = null
-        postPendingTransactionsHelper.syncPendingPurchaseQueue(
-            allowSharingPlayStoreAccount,
-            onError = { receivedError = it },
-            onSuccess = { fail("Should be error") },
-        )
-        assertThat(receivedError?.code).isEqualTo(purchasesError.code)
-        assertThat(receivedError?.underlyingErrorMessage).isEqualTo(purchasesError.underlyingErrorMessage)
     }
 }

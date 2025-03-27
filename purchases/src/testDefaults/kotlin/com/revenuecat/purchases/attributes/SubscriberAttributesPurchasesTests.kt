@@ -100,6 +100,7 @@ class SubscriberAttributesPurchasesTests {
             customerInfoHelper = customerInfoHelperMock,
             customerInfoUpdateHandler = customerInfoUpdateHandlerMock,
             diagnosticsSynchronizer = null,
+            diagnosticsTrackerIfEnabled = null,
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
             postTransactionWithProductDetailsHelper = postTransactionHelper,

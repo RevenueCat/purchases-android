@@ -229,6 +229,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,
+                diagnosticsTracker,
             )
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
@@ -253,6 +254,7 @@ internal class PurchasesFactory(
                 identityManager,
                 customerInfoHelper,
                 postReceiptHelper,
+                diagnosticsTracker,
             )
 
             val offeringsManager = OfferingsManager(
@@ -260,6 +262,7 @@ internal class PurchasesFactory(
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
+                diagnosticsTracker,
             )
 
             log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
@@ -283,15 +286,16 @@ internal class PurchasesFactory(
                 customerInfoHelper,
                 customerInfoUpdateHandler,
                 diagnosticsSynchronizer,
-                offlineEntitlementsManager,
-                postReceiptHelper,
-                postTransactionWithProductDetailsHelper,
-                postPendingTransactionsHelper,
-                syncPurchasesHelper,
-                offeringsManager,
-                createEventsManager(application, identityManager, eventsDispatcher, backend),
-                paywallPresentedCache,
-                purchasesStateProvider,
+                diagnosticsTracker,
+                offlineEntitlementsManager = offlineEntitlementsManager,
+                postReceiptHelper = postReceiptHelper,
+                postTransactionWithProductDetailsHelper = postTransactionWithProductDetailsHelper,
+                postPendingTransactionsHelper = postPendingTransactionsHelper,
+                syncPurchasesHelper = syncPurchasesHelper,
+                offeringsManager = offeringsManager,
+                eventsManager = createEventsManager(application, identityManager, eventsDispatcher, backend),
+                paywallPresentedCache = paywallPresentedCache,
+                purchasesStateCache = purchasesStateProvider,
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
             )

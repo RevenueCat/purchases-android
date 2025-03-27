@@ -18,6 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMapError
 
 @get:JvmSynthetic
 private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
@@ -61,6 +62,10 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
 }
 
+/**
+ * Retrieves a [FontSpec] from this map, and returns a [PaywallValidationError.MissingFontAlias] if it doesn't exist.
+ * If you want to treat blank [FontAlias]es as a null [FontSpec], chain it with [recoverFromBlankFontAlias].
+ */
 @JvmSynthetic
 internal fun Map<FontAlias, FontSpec>.getFontSpec(
     alias: FontAlias,
@@ -69,6 +74,22 @@ internal fun Map<FontAlias, FontSpec>.getFontSpec(
         ?.let { spec ->
             Result.Success(spec)
         } ?: Result.Error(PaywallValidationError.MissingFontAlias(alias))
+
+/**
+ * Returns a successful Result containing `null` if this is an error Result caused by a blank [FontAlias]. This
+ * scenario should not happen, as our dashboard should not allow devs to publish a paywall containing a blank Font
+ * Family field, but this is defensive in case it does happen.
+ */
+@Suppress("MaxLineLength")
+@JvmSynthetic
+internal fun Result<FontSpec, PaywallValidationError>.recoverFromBlankFontAlias(): Result<FontSpec?, PaywallValidationError> =
+    flatMapError { error ->
+        if (error is PaywallValidationError.MissingFontAlias && error.alias.value.isBlank()) {
+            Result.Success(null)
+        } else {
+            Result.Error(error)
+        }
+    }
 
 @JvmSynthetic
 internal fun FontSpec.resolve(

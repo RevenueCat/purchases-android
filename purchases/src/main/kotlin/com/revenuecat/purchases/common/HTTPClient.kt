@@ -126,7 +126,13 @@ internal class HTTPClient(
             callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
             callSuccessful = true
         } finally {
-            trackHttpRequestPerformedIfNeeded(endpoint, requestStartTime, callSuccessful, callResult)
+            trackHttpRequestPerformedIfNeeded(
+                endpoint,
+                requestStartTime,
+                callSuccessful,
+                callResult,
+                isRetry = refreshETag,
+            )
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
@@ -223,6 +229,7 @@ internal class HTTPClient(
         requestStartTime: Date,
         callSuccessful: Boolean,
         callResult: HTTPResult?,
+        isRetry: Boolean,
     ) {
         diagnosticsTrackerIfEnabled?.let { tracker ->
             val responseTime = Duration.between(requestStartTime, dateProvider.now)
@@ -244,6 +251,7 @@ internal class HTTPClient(
                 callResult?.backendErrorCode,
                 origin,
                 verificationResult,
+                isRetry,
             )
         }
     }

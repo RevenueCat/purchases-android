@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.offerings
 
-import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -26,7 +25,7 @@ internal class OfferingsFactory(
     fun createOfferings(
         offeringsJSON: JSONObject,
         onError: (PurchasesError) -> Unit,
-        onSuccess: (Offerings) -> Unit,
+        onSuccess: (OfferingsResultData) -> Unit,
     ) {
         try {
             val allRequestedProductIdentifiers = extractProductIdentifiers(offeringsJSON)
@@ -42,7 +41,18 @@ internal class OfferingsFactory(
                     productIds = allRequestedProductIdentifiers,
                     onCompleted = { productsById ->
                         try {
-                            logMissingProducts(allRequestedProductIdentifiers, productsById)
+                            val notFoundProductIds = allRequestedProductIdentifiers
+                                .filterNot { productsById.containsKey(it) }
+                                .toSet()
+                            notFoundProductIds
+                                .takeIf { it.isNotEmpty() }
+                                ?.let { missingProducts ->
+                                    log(
+                                        LogIntent.GOOGLE_WARNING,
+                                        OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
+                                            .format(missingProducts.joinToString(", ")),
+                                    )
+                                }
 
                             val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
                             if (offerings.all.isEmpty()) {
@@ -54,7 +64,9 @@ internal class OfferingsFactory(
                                 )
                             } else {
                                 verboseLog(OfferingStrings.CREATED_OFFERINGS.format(offerings))
-                                onSuccess(offerings)
+                                onSuccess(
+                                    OfferingsResultData(offerings, allRequestedProductIdentifiers, notFoundProductIds),
+                                )
                             }
                         } catch (error: Exception) {
                             when (error) {
@@ -147,18 +159,4 @@ internal class OfferingsFactory(
             },
         )
     }
-
-    private fun logMissingProducts(
-        allProductIdsInOfferings: Set<String>,
-        storeProductByID: Map<String, List<StoreProduct>>,
-    ) = allProductIdsInOfferings
-        .filterNot { storeProductByID.containsKey(it) }
-        .takeIf { it.isNotEmpty() }
-        ?.let { missingProducts ->
-            log(
-                LogIntent.GOOGLE_WARNING,
-                OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
-                    .format(missingProducts.joinToString(", ")),
-            )
-        }
 }
