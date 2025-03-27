@@ -694,7 +694,10 @@ DESC
     image_urls = extract_image_urls_from_offerings_json(
       offerings_json_path: offerings_json_path,
     )
-    all_urls = (icon_urls + image_urls).uniq
+    background_urls = extract_background_image_urls_from_offerings_json(  
+      offerings_json_path: offerings_json_path,
+    )
+    all_urls = (icon_urls + image_urls + background_urls).uniq
     
     all_urls.each do |url|
       download_paywall_asset(
@@ -753,6 +756,19 @@ DESC
         '| . as $img ' \
         '| ("\($img.source.light.webp)", "\($img.source.dark.webp)", (.overrides[]? | select(.properties.source) | "\(.properties.source.light.webp)", "\(.properties.source.dark.webp)")) | select(. != "null")', 
         offerings_json_path
+    )
+    # Return unique image URLs as an array.
+    stdout.split("\n").uniq
+  end
+
+  private_lane :extract_background_image_urls_from_offerings_json do |options|
+    offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
+    # Find image backgrounds and read their light and dark webp urls, filtering out null values.
+    stdout = sh(
+      "jq", 
+      "-r", 
+      'recurse | select(.background? and .background.type=="image") | .background.value | (.light.webp, .dark.webp) | select(. != null)', 
+      offerings_json_path
     )
     # Return unique image URLs as an array.
     stdout.split("\n").uniq
