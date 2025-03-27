@@ -132,23 +132,20 @@ internal class QueryProductDetailsUseCase(
             if (hasLoggedBillingFlowParamsError.getAndSet(true)) {
                 return
             }
-            val productDetailsParams = try {
+             try {
                 val offerToken = it.subscriptionOfferDetails?.firstOrNull()?.offerToken
-                ProductDetailsParams.newBuilder()
+                 val productDetailsParams = ProductDetailsParams.newBuilder()
                     .setProductDetails(it)
                     .apply { if (offerToken != null) setOfferToken(offerToken) }
                     .build()
+
+                 try {
+                     BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(productDetailsParams)).build()
+                 } catch (e: NoClassDefFoundError) {
+                     errorLog(NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE, e)
+                 }
             } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-                errorLog("Error building ProductDetailsParams during safety check.", e)
-                null
-            }
-
-            if (productDetailsParams == null) return
-
-            try {
-                BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(productDetailsParams)).build()
-            } catch (e: NoClassDefFoundError) {
-                errorLog(NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE, e)
+                errorLog("Error building Params during safety check.", e)
             }
         }
     }
