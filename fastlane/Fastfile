@@ -585,7 +585,8 @@ DESC
   desc "Updates offerings_paywalls_v2_templates.json file and creates/updates PR"
   lane :update_paywall_templates do |options|
     branch_name = "pw2-update-templates-json"
-    templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
+    resources_dir = "../ui/revenuecatui/src/debug/resources"
+    templates_file = File.join(resources_dir, "offerings_paywalls_v2_templates.json")
     api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"] || UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable")
 
     # Ensure we're starting from an up-to-date main.
@@ -600,6 +601,15 @@ DESC
     )
     File.write(templates_file, offerings_response)
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
+
+    # Extract icon URLs from offerings JSON and save to file.
+    icon_urls = extract_icon_urls_from_offerings_json(
+      offerings_json_path: templates_file,
+    )
+
+    image_urls = extract_image_urls_from_offerings_json(
+      offerings_json_path: templates_file,
+    )
 
     has_changes = !sh("git", "status", "--porcelain").empty?
 
@@ -688,6 +698,22 @@ DESC
         sh("git", "push", "-u", "origin", branch_name)
       end
     end
+  end
+
+  private_lane :extract_icon_urls_from_offerings_json do |options|
+    offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
+    # Find icon components and read their webp url.
+    stdout = sh("jq", "-r", 'recurse | select(type=="object" and .type=="icon") | "\(.base_url)/\(.formats.webp)"', offerings_json_path)
+    # Return unique icon URLs as an array.
+    stdout.split("\n").uniq
+  end
+
+  private_lane :extract_image_urls_from_offerings_json do |options|
+    offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
+    # Find image components and read their light and dark webp urls, filtering out null values.
+    stdout = sh("jq", "-r", 'recurse | select(type=="object" and .type=="image") | (.source.light.webp, .source.dark.webp) | select(. != null)', offerings_json_path)
+    # Return unique image URLs as an array.
+    stdout.split("\n").uniq
   end
 
   private_lane :create_pr_if_necessary do |options|
