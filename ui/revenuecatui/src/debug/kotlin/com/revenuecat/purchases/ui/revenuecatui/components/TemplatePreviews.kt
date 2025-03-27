@@ -20,12 +20,13 @@ import java.util.Date
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
  */
 private class OfferingProvider : PreviewParameterProvider<Offering> {
-    private val offeringsJsonFileName = "offerings_paywalls_v2_templates.json"
-    private val packagesJsonFileName = "packages.json"
+    private val templatesDir = "paywall-templates"
+    private val offeringsJsonFilePath = "$templatesDir/offerings_paywalls_v2_templates.json"
+    private val packagesJsonFilePath = "packages.json"
 
-    private val packagesJsonArray = JSONObject(getResourceStream(packagesJsonFileName).readBytes().decodeToString())
+    private val packagesJsonArray = JSONObject(getResourceStream(packagesJsonFilePath).readBytes().decodeToString())
         .getJSONArray("packages")
-    private val uiConfigJsonObject = JSONObject(getResourceStream(offeringsJsonFileName).readUiConfig())
+    private val uiConfigJsonObject = JSONObject(getResourceStream(offeringsJsonFilePath).readUiConfig())
 
     private val offeringParser = Class.forName("com.revenuecat.purchases.utils.PreviewOfferingParser")
         .getDeclaredConstructor()
@@ -35,7 +36,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
         .getMethod("createOfferings", JSONObject::class.java, Map::class.java)
 
     // Find all start (inclusive) and end (exclusive) indices of each offering in the JSON.
-    private val offeringIndices = getResourceStream(offeringsJsonFileName).indexOfferings()
+    private val offeringIndices = getResourceStream(offeringsJsonFilePath).indexOfferings()
 
     override val values = offeringIndices
         .asSequence()
@@ -43,7 +44,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
             // Re-open the stream and read only the current offering. While we could keep the stream open for the
             // entirety of the sequence and yield offerings as we encounter them, we found that Emerge Snapshots closes
             // the stream prematurely in this case. To avoid that, we reopen the stream for each offering.
-            val offeringJsonString = getResourceStream(offeringsJsonFileName).readOfferingAt(start, end)
+            val offeringJsonString = getResourceStream(offeringsJsonFilePath).readOfferingAt(start, end)
             val offeringJsonObject = JSONObject(offeringJsonString)
             val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
             if (!hasPaywall) return@mapNotNull null
@@ -160,10 +161,12 @@ private fun PaywallComponentsTemplate_Preview(
  *  a Context to read them, which we don't have access to in a PreviewParameterProvider. It's beneficial to read the
  *  offerings JSON file directly in the PreviewParameterProvider, so we can parse the offering IDs and avoid hardcoding
  *  them.
+ *
+ *  @param filePath A relative filepath to the file in the `resources` directory.
  */
-private fun getResourceStream(fileName: String): InputStream =
-    object {}.javaClass.getResource("/$fileName")?.openStream()
-        ?: File(BuildConfig.PROJECT_DIR).resolve("src/debug/resources/$fileName").inputStream()
+private fun getResourceStream(filePath: String): InputStream =
+    object {}.javaClass.getResource("/$filePath")?.openStream()
+        ?: File(BuildConfig.PROJECT_DIR).resolve("src/debug/resources/$filePath").inputStream()
 
 /**
  * Reads the ui_config from this stream without reading the entire file into memory.

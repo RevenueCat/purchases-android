@@ -585,9 +585,13 @@ DESC
   desc "Updates offerings_paywalls_v2_templates.json file and creates/updates PR"
   lane :update_paywall_templates do |options|
     branch_name = "pw2-update-templates-json"
-    resources_dir = "../ui/revenuecatui/src/debug/resources"
-    templates_file = File.join(resources_dir, "offerings_paywalls_v2_templates.json")
+    templates_dir = "../ui/revenuecatui/src/debug/resources/paywall-templates"
+    templates_file = File.join(templates_dir, "offerings_paywalls_v2_templates.json")
     api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"] || UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable")
+
+    # Recreate our output directory so we start fresh.
+    sh("rm -rf #{templates_dir}")
+    sh("mkdir -p #{templates_dir}")
 
     # Ensure we're starting from an up-to-date main.
     sh("git", "fetch", "origin")
@@ -602,7 +606,6 @@ DESC
     File.write(templates_file, offerings_response)
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
-    # Extract icon URLs from offerings JSON and save to file.
     icon_urls = extract_icon_urls_from_offerings_json(
       offerings_json_path: templates_file,
     )
