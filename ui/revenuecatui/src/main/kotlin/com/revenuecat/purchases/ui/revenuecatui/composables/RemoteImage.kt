@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -11,13 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.withSave
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.ImageLoader
@@ -25,19 +18,15 @@ import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
-import coil.request.ErrorResult
 import coil.request.ImageRequest
-import coil.request.SuccessResult
 import coil.transform.Transformation
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getImageLoaderTyped
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getPreviewPlaceholderBlocking
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
-import kotlinx.coroutines.runBlocking
-import kotlin.math.roundToInt
 
 @SuppressWarnings("LongParameterList")
 @Composable
@@ -185,14 +174,14 @@ private fun AsyncImage(
         placeholder = placeholderSource?.let {
             rememberAsyncImagePainter(
                 model = it.data,
-                placeholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholder(imageRequest) else null,
+                placeholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null,
                 imageLoader = imageLoader,
                 contentScale = contentScale,
                 onError = { errorState ->
                     Logger.e("Error loading placeholder image", errorState.result.throwable)
                 },
             )
-        } ?: if (isInPreviewMode()) imageLoader.getPreviewPlaceholder(imageRequest) else null,
+        } ?: if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null,
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
@@ -215,47 +204,4 @@ private fun ImageForPreviews(modifier: Modifier) {
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.primary),
     )
-}
-
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-private fun ImageLoader.getPreviewPlaceholder(imageRequest: ImageRequest): Painter =
-    when (val result = runBlocking { execute(imageRequest) }) {
-        is SuccessResult -> DrawablePainter(result.drawable)
-        is ErrorResult -> throw result.throwable
-    }
-
-/**
- * This is loosely based on [Accompanist's Drawable Painter](https://google.github.io/accompanist/drawablepainter/).
- * This is not production-quality code and should only be used for Previews. If we ever have a need for this, it's
- * better to use the Accompanist Drawable Painter library directly.
- *
- * It's annotated with [ExperimentalPreviewRevenueCatUIPurchasesAPI] to discourage usage in production and as a nudge
- * to read this documentation.
- */
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
-private class DrawablePainter(
-    private val drawable: Drawable,
-) : Painter() {
-
-    override fun DrawScope.onDraw() {
-        drawIntoCanvas { canvas ->
-            // Update the Drawable's bounds
-            drawable.setBounds(0, 0, size.width.roundToInt(), size.height.roundToInt())
-
-            canvas.withSave {
-                drawable.draw(canvas.nativeCanvas)
-            }
-        }
-    }
-
-    override val intrinsicSize: Size = drawable.intrinsicSize
-
-    private val Drawable.intrinsicSize: Size
-        get() = when {
-            // Only return a finite size if the drawable has an intrinsic size
-            intrinsicWidth >= 0 && intrinsicHeight >= 0 -> {
-                Size(width = intrinsicWidth.toFloat(), height = intrinsicHeight.toFloat())
-            }
-            else -> Size.Unspecified
-        }
 }
