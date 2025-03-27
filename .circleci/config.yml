@@ -215,6 +215,7 @@ jobs:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
+      - run: which -a git-lfs
       - checkout
       - install-sdkman
       - android/accept-licenses
@@ -640,6 +641,7 @@ jobs:
     description: "Run RevenueCatUI UI tests for Android in CircleCI"
     <<: *android-machine-emulator
     steps:
+      - run: which -a git-lfs
       - checkout
       - install-sdkman
       - android/create-avd:
@@ -657,13 +659,14 @@ jobs:
     docker:
       - image: cimg/ruby:3.2.0
     steps:
+      - run: which -a git-lfs
       - checkout
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - revenuecat/setup-git-credentials
-      - run:
-          name: Update paywall templates
-          command: bundle exec fastlane android update_paywall_templates
+#      - run:
+#          name: Update paywall templates
+#          command: bundle exec fastlane android update_paywall_templates
 
 workflows:
   version: 2
