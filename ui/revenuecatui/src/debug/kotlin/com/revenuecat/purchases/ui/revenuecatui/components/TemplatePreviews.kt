@@ -143,6 +143,15 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     }
 }
 
+/**
+ * If you're not seeing images in these previews and you want to, do the following.
+ * 1. Install [git-lfs](https://git-lfs.com/) using `brew install git-lfs` or
+ * `port install git-lfs`.
+ * 2. Run `git lfs install`.
+ * 3. Run `git lfs pull`.
+ *
+ * You'll only need to perform these steps once.
+ */
 @Preview
 @Composable
 private fun PaywallComponentsTemplate_Preview(
