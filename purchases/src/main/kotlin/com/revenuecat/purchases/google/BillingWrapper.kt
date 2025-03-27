@@ -26,7 +26,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.PurchasesRuntimeException
+import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
@@ -917,12 +917,7 @@ internal class BillingWrapper(
                     .build(),
             )
         } catch (e: NoClassDefFoundError) {
-            // TODO: Add link
-            throw PurchasesRuntimeException(
-                "Error building BillingFlowParams for one time purchase " +
-                    "due to issue in Google's Billing Client library. Please check TODO-LINK to fix this issue.",
-                e,
-            )
+            throw NoCoreLibraryDesugaringException(e)
         }
     }
 
@@ -955,12 +950,7 @@ internal class BillingWrapper(
                     .build(),
             )
         } catch (e: NoClassDefFoundError) {
-            // TODO: Add link
-            throw PurchasesRuntimeException(
-                "Error building BillingFlowParams for subscriptions " +
-                    "due to an issue in Google's Billing Client library. Please check TODO-LINK to fix this issue.",
-                e,
-            )
+            throw NoCoreLibraryDesugaringException(e)
         }
     }
 
