@@ -606,12 +606,10 @@ DESC
     File.write(templates_file, offerings_response)
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
 
-    icon_urls = extract_icon_urls_from_offerings_json(
+    # Download all paywall images and icons.
+    download_paywall_assets(
       offerings_json_path: templates_file,
-    )
-
-    image_urls = extract_image_urls_from_offerings_json(
-      offerings_json_path: templates_file,
+      directory: templates_dir
     )
 
     has_changes = !sh("git", "status", "--porcelain").empty?
@@ -686,19 +684,46 @@ DESC
     end
   end
 
-  private_lane :commit_and_push do |options|
-    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
-    commit_message = options[:commit_message] || UI.user_error!("No commit_message provided")
+  private_lane :download_paywall_assets do |options|
+    offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
+    directory = options[:directory] || UI.user_error!("No directory provided")
 
-    # Check if there are any changes to commit
-    if sh("git", "status", "--porcelain").empty?
-      UI.message("No changes to commit")
-    else
-      # Commit changes
-      Dir.chdir("..") do
-        sh("git", "add", ".")
-        sh("git", "commit", "-m", commit_message)
-        sh("git", "push", "-u", "origin", branch_name)
+    icon_urls = extract_icon_urls_from_offerings_json(
+      offerings_json_path: offerings_json_path,
+    )
+    image_urls = extract_image_urls_from_offerings_json(
+      offerings_json_path: offerings_json_path,
+    )
+    all_urls = (icon_urls + image_urls).uniq
+    
+    all_urls.each do |url|
+      download_paywall_asset(
+        url: url,
+        directory: directory
+      )
+    end
+  end
+
+  private_lane :download_paywall_asset do |options|
+    url = options[:url] || UI.user_error!("No url provided")
+    directory = options[:directory] || UI.user_error!("No directory provided")
+    
+    require 'uri'
+    require 'fileutils'
+
+    uri = URI.parse(url)
+    # Splits the host into parts, drops the last element (TLD), and reverses the remaining parts.
+    reversed_host_parts = uri.host.split('.')[0...-1].reverse
+    # Removes the leading slash from the URI path.
+    relative_path = uri.path.sub(%r{^/}, '')
+    file_path = File.join(directory,*reversed_host_parts, relative_path)
+    # Creates the directory structure if it doesn't exist.
+    FileUtils.mkdir_p(File.dirname(file_path))
+
+    # Download the file and save it.
+    URI.open(url) do |remote_file|
+      File.open(file_path, 'wb') do |local_file|
+        local_file.write(remote_file.read)
       end
     end
   end
@@ -717,6 +742,23 @@ DESC
     stdout = sh("jq", "-r", 'recurse | select(type=="object" and .type=="image") | (.source.light.webp, .source.dark.webp) | select(. != null)', offerings_json_path)
     # Return unique image URLs as an array.
     stdout.split("\n").uniq
+  end
+
+  private_lane :commit_and_push do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
+    commit_message = options[:commit_message] || UI.user_error!("No commit_message provided")
+
+    # Check if there are any changes to commit
+    if sh("git", "status", "--porcelain").empty?
+      UI.message("No changes to commit")
+    else
+      # Commit changes
+      Dir.chdir("..") do
+        sh("git", "add", ".")
+        sh("git", "commit", "-m", commit_message)
+        sh("git", "push", "-u", "origin", branch_name)
+      end
+    end
   end
 
   private_lane :create_pr_if_necessary do |options|
