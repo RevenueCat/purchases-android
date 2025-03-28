@@ -23,6 +23,10 @@ import java.io.IOException
 import java.util.UUID
 import kotlin.time.Duration
 
+internal fun interface DiagnosticsEventTrackerListener {
+    fun onEventTracked()
+}
+
 /**
  * This class is the entry point for all diagnostics tracking. It contains all information for all events
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
@@ -74,6 +78,8 @@ internal class DiagnosticsTracker(
     } else {
         emptyMap()
     }
+
+    var listener: DiagnosticsEventTrackerListener? = null
 
     @Suppress("LongParameterList")
     fun trackHttpRequestPerformed(
@@ -581,6 +587,7 @@ internal class DiagnosticsTracker(
             verboseLog("Tracking diagnostics entry: $diagnosticsEntry")
             try {
                 diagnosticsFileHelper.appendEvent(diagnosticsEntry)
+                listener?.onEventTracked()
             } catch (e: IOException) {
                 verboseLog("Error tracking diagnostics entry: $e")
             }
