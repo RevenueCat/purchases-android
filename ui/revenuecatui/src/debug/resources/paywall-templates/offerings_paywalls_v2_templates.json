@@ -25113,7 +25113,8 @@
       "description": "Template 013",
       "identifier": "template_013",
       "metadata": null,
-      "packages": []
+      "packages": [],
+      "paywall_components": null
     },
     {
       "description": "Template 014",
