@@ -90,6 +90,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
     implementation libs.kotlin.stdlib
+    implementation libs.androidx.appcompat
     implementation libs.androidx.core
     implementation libs.androidx.annotation
     implementation libs.androidx.lifecycle.runtime
@@ -114,7 +115,6 @@ dependencies {
     testImplementation libs.playServices.ads.identifier
     testImplementation libs.testJUnitParams
 
-    androidTestImplementation libs.androidx.appcompat
     androidTestImplementation libs.androidx.lifecycle.runtime.ktx
     androidTestImplementation libs.androidx.test.espresso.core
     androidTestImplementation libs.androidx.test.runner

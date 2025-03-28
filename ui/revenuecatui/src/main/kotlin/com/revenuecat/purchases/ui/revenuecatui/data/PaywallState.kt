@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocaleList
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
@@ -87,7 +89,9 @@ internal sealed interface PaywallState {
             private val purchasedNonSubscriptionProductIds: Set<String>,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
-            initialLocaleList: LocaleList = LocaleList.current,
+            initialLocaleList: LocaleList = LocaleList(
+                (AppCompatDelegate.getApplicationLocales().toComposeLocaleList() + LocaleList.current).distinct(),
+            ),
             initialSelectedTabIndex: Int? = null,
         ) : Loaded {
 
