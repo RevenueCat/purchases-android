@@ -250,8 +250,8 @@ data class CustomerCenterConfigData(
                     YOU_HAVE_PROMO -> "You've been granted a subscription that doesn’t renew"
                     YOU_HAVE_LIFETIME -> "Your active lifetime subscription"
                     WEB_SUBSCRIPTION_MANAGE ->
-                        "You have an active subscription that was created on the web. " +
-                            "You can manage your subscription by visiting your account."
+                        "You have an active subscription that was purchased on the web. " +
+                            "You can manage your subscription using the button below."
                     FREE -> "Free"
                     NEVER -> "Never"
                     FREE_TRIAL_THEN_PRICE -> "First {{ sub_offer_duration }} free, then {{ price }}"
