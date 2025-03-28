@@ -29,6 +29,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifySequence
+import org.assertj.core.api.Assertions
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -52,6 +53,8 @@ class DiagnosticsTrackerTest {
     private lateinit var dispatcher: Dispatcher
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var sharedPreferencesEditor: SharedPreferences.Editor
+    private lateinit var diagnosticsTrackerListener: DiagnosticsEventTrackerListener
+    private var diagnosticsTrackListenerCallCount = 0
 
     private lateinit var diagnosticsTracker: DiagnosticsTracker
 
@@ -68,10 +71,15 @@ class DiagnosticsTrackerTest {
             every { isDiagnosticsFileTooBig() } returns false
         }
         dispatcher = SyncDispatcher()
+        diagnosticsTrackerListener = DiagnosticsEventTrackerListener {
+            diagnosticsTrackListenerCallCount++
+        }
+        diagnosticsTrackListenerCallCount = 0
 
         mockSharedPreferences()
 
         diagnosticsTracker = createDiagnosticsTracker()
+        diagnosticsTracker.listener = diagnosticsTrackerListener
     }
 
     @After
@@ -88,6 +96,16 @@ class DiagnosticsTrackerTest {
         verify(exactly = 0) { diagnosticsFileHelper.appendEvent(match {
             it.name == DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED
         })}
+    }
+
+    @Test
+    fun `trackEvent calls listener`() {
+        every { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) } just Runs
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        Assertions.assertThat(diagnosticsTrackListenerCallCount).isEqualTo(1)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        Assertions.assertThat(diagnosticsTrackListenerCallCount).isEqualTo(3)
     }
 
     @Test
