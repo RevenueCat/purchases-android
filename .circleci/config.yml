@@ -176,6 +176,26 @@ commands:
             echo 'rvm use << parameters.version >>' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
+  
+  checkout-efficient:
+    parameters:
+      pull-lfs:
+        type: boolean
+        default: false
+    steps:
+      - run:
+          name: Avoid downloading LFS files ## FIXME TEST THIS FIRST< ALSO IS THIS THE RIGHT WAY TO DO THIS?
+          command: |
+            echo "export GIT_LFS_SKIP_SMUDGE=1" >> $BASH_ENV
+            source $BASH_ENV
+      - run: 
+          name: Print GIT_LFS_SKIP_SMUDGE
+          command: |
+            echo "GIT_LFS_SKIP_SMUDGE: $GIT_LFS_SKIP_SMUDGE"
+      # - checkout
+      ## FIXME CHECK IF LFS IS EVEN INSTALLED BEFORE CONTINUING
+      ## FIXME IF IT IS ANND PULL-LFS IS TRUE, THEN CONTINUE
+      ## https://www.develer.com/en/blog/avoiding-git-lfs-bandwidth-waste-with-github-and-circleci/
 
 jobs:
 
@@ -215,7 +235,6 @@ jobs:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
-      - run: which -a git-lfs
       - checkout
       - install-sdkman
       - android/accept-licenses
@@ -641,7 +660,6 @@ jobs:
     description: "Run RevenueCatUI UI tests for Android in CircleCI"
     <<: *android-machine-emulator
     steps:
-      - run: which -a git-lfs
       - checkout
       - install-sdkman
       - android/create-avd:
@@ -659,7 +677,7 @@ jobs:
     docker:
       - image: cimg/ruby:3.2.0
     steps:
-      - run: which -a git-lfs
+      - checkout-efficient
       - checkout
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
