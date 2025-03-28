@@ -589,14 +589,14 @@ DESC
     templates_file = File.join(templates_dir, "offerings_paywalls_v2_templates.json")
     api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"] || UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable")
 
-    # Recreate our output directory so we start fresh.
-    sh("rm -rf #{templates_dir}")
-    sh("mkdir -p #{templates_dir}")
-
     # Ensure we're starting from an up-to-date main.
     sh("git", "fetch", "origin")
 
     create_or_checkout_branch(branch_name: branch_name)
+
+    # Recreate our output directory so we start fresh.
+    sh("rm -rf #{templates_dir}")
+    sh("mkdir -p #{templates_dir}")
 
     # Get offerings and save to file.
     offerings_response = get_offerings(
