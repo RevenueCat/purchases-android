@@ -247,6 +247,7 @@ internal class PurchasesFactory(
                     backend,
                     eventsDispatcher,
                 )
+                diagnosticsTracker.listener = diagnosticsSynchronizer
             }
 
             val syncPurchasesHelper = SyncPurchasesHelper(
