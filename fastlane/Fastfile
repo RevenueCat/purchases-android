@@ -585,8 +585,13 @@ DESC
   desc "Updates offerings_paywalls_v2_templates.json file and creates/updates PR"
   lane :update_paywall_templates do |options|
     branch_name = "pw2-update-templates-json"
-    templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
+    templates_dir = "../ui/revenuecatui/src/debug/resources/paywall-templates"
+    templates_file = File.join(templates_dir, "offerings_paywalls_v2_templates.json")
     api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"] || UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable")
+
+    # Recreate our output directory so we start fresh.
+    sh("rm -rf #{templates_dir}")
+    sh("mkdir -p #{templates_dir}")
 
     # Ensure we're starting from an up-to-date main.
     sh("git", "fetch", "origin")
@@ -600,6 +605,12 @@ DESC
     )
     File.write(templates_file, offerings_response)
     UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
+
+    # Download all paywall images and icons.
+    download_paywall_assets(
+      offerings_json_path: templates_file,
+      directory: templates_dir
+    )
 
     has_changes = !sh("git", "status", "--porcelain").empty?
 
@@ -671,6 +682,96 @@ DESC
       UI.error("Error: #{e.message}")
       raise
     end
+  end
+
+  private_lane :download_paywall_assets do |options|
+    offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
+    directory = options[:directory] || UI.user_error!("No directory provided")
+
+    icon_urls = extract_icon_urls_from_offerings_json(
+      offerings_json_path: offerings_json_path,
+    )
+    image_urls = extract_image_urls_from_offerings_json(
+      offerings_json_path: offerings_json_path,
+    )
+    background_urls = extract_background_image_urls_from_offerings_json(  
+      offerings_json_path: offerings_json_path,
+    )
+    all_urls = (icon_urls + image_urls + background_urls).uniq
+    
+    all_urls.each do |url|
+      download_paywall_asset(
+        url: url,
+        directory: directory
+      )
+    end
+  end
+
+  private_lane :download_paywall_asset do |options|
+    url = options[:url] || UI.user_error!("No url provided")
+    directory = options[:directory] || UI.user_error!("No directory provided")
+    
+    require 'uri'
+    require 'fileutils'
+
+    uri = URI.parse(url)
+    # Splits the host into parts, drops the last element (TLD), and reverses the remaining parts.
+    reversed_host_parts = uri.host.split('.')[0...-1].reverse
+    # Removes the leading slash from the URI path.
+    relative_path = uri.path.sub(%r{^/}, '')
+    file_path = File.join(directory,*reversed_host_parts, relative_path)
+    # Creates the directory structure if it doesn't exist.
+    FileUtils.mkdir_p(File.dirname(file_path))
+
+    # Download the file and save it.
+    URI.open(url) do |remote_file|
+      File.open(file_path, 'wb') do |local_file|
+        local_file.write(remote_file.read)
+      end
+    end
+  end
+
+  private_lane :extract_icon_urls_from_offerings_json do |options|
+    offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
+    # Find icon components and read their default webp url as well as any overrides.
+    stdout = sh(
+      "jq", 
+      "-r", 
+      'recurse | select(type=="object" and .type=="icon") ' \
+      '| . as $icon ' \
+      '| "\($icon.base_url)/\($icon.formats.webp)" , (.overrides[]? | select(.properties.formats.webp) | "\($icon.base_url)/\(.properties.formats.webp)")', 
+      offerings_json_path
+    )
+    # Return unique icon URLs as an array.
+    stdout.split("\n").uniq
+  end
+
+  private_lane :extract_image_urls_from_offerings_json do |options|
+    offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
+    # Find image components and read their default light and dark webp urls as well as any overrides, filtering out null values.
+    stdout = sh(
+        "jq", 
+        "-r", 
+        'recurse | select(type=="object" and .type=="image") ' \
+        '| . as $img ' \
+        '| ("\($img.source.light.webp)", "\($img.source.dark.webp)", (.overrides[]? | select(.properties.source) | "\(.properties.source.light.webp)", "\(.properties.source.dark.webp)")) | select(. != "null")', 
+        offerings_json_path
+    )
+    # Return unique image URLs as an array.
+    stdout.split("\n").uniq
+  end
+
+  private_lane :extract_background_image_urls_from_offerings_json do |options|
+    offerings_json_path = options[:offerings_json_path] || UI.user_error!("No offerings_json_path provided")
+    # Find image backgrounds and read their light and dark webp urls, filtering out null values.
+    stdout = sh(
+      "jq", 
+      "-r", 
+      'recurse | select(.background? and .background.type=="image") | .background.value | (.light.webp, .dark.webp) | select(. != null)', 
+      offerings_json_path
+    )
+    # Return unique image URLs as an array.
+    stdout.split("\n").uniq
   end
 
   private_lane :commit_and_push do |options|

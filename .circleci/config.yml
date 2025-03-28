@@ -176,6 +176,37 @@ commands:
             echo 'rvm use << parameters.version >>' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
+  
+  checkout-with-lfs:
+    description: "Efficiently checks out the repo, including any LFS files."
+    steps:
+      - run: 
+          name: Assert GIT_LFS_SKIP_SMUDGE is set to 1
+          command: |
+            if [ "$GIT_LFS_SKIP_SMUDGE" != "1" ]; then
+              echo "Error: GIT_LFS_SKIP_SMUDGE is not set to 1, but it's set to '$GIT_LFS_SKIP_SMUDGE'"
+              echo "If GIT_LFS_SKIP_SMUDGE is not set to 1, a regular checkout will download all LFS files anyway, and using checkout-with-lfs is pointless."
+              echo "A good place to do this is in the CircleCI Environment Variables settings."
+              echo "https://app.circleci.com/settings/project/github/RevenueCat/purchases-android/environment-variables"
+              exit 1
+            fi
+      # This will checkout the repo without any LFS files, because GIT_LFS_SKIP_SMUDGE is set to 1.
+      - checkout
+      # Only pull LFS files if we haven't cached them yet.
+      # Inspired by https://www.develer.com/en/blog/avoiding-git-lfs-bandwidth-waste-with-github-and-circleci/
+      - run:
+          name: Read LFS object IDs
+          command: git lfs ls-files -l | cut -d' ' -f1 | sort > .git-lfs-object-ids
+      - restore_cache:
+          key: v1-git-lfs-cache-key-{{ checksum ".git-lfs-object-ids" }}
+      # If our restore_cache step restored the LFS files, this won't do anything.
+      - run:
+          name: Pull LFS files if needed
+          command: git lfs pull
+      - save_cache:
+          key: v1-git-lfs-cache-key-{{ checksum ".git-lfs-object-ids" }}
+          paths:
+            - .git/lfs
 
 jobs:
 
@@ -543,7 +574,7 @@ jobs:
     description: "Emerge purchases ui snapshot tests"
     <<: *android-executor
     steps:
-      - checkout
+      - checkout-with-lfs
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
