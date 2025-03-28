@@ -11,6 +11,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.Responses
 import org.assertj.core.api.Assertions.assertThat
@@ -367,6 +368,10 @@ class CustomerInfoTest {
         assertThat(proSubscription.periodType).isEqualTo(PeriodType.NORMAL)
         assertThat(proSubscription.refundedAt).isNull()
         assertThat(proSubscription.storeTransactionId).isEqualTo("GPA.3394-7009-4518-41945..6")
+        assertThat(proSubscription.autoResumeDate).isNull()
+        assertThat(proSubscription.displayName).isEqualTo("Pro Monthly")
+        assertThat(proSubscription.price).isEqualTo(Price("$4.99", 4_990_000, "USD"))
+        assertThat(proSubscription.productPlanIdentifier).isEqualTo("monthly")
         assertThat(proSubscription.isActive).isTrue()
         assertThat(proSubscription.willRenew).isTrue()
 
@@ -385,6 +390,10 @@ class CustomerInfoTest {
         assertThat(basicSubscription.periodType).isEqualTo(PeriodType.NORMAL)
         assertThat(basicSubscription.refundedAt).isNull()
         assertThat(basicSubscription.storeTransactionId).isEqualTo("GPA.3394-7009-4518-41945..8")
+        assertThat(basicSubscription.autoResumeDate).isNull()
+        assertThat(basicSubscription.displayName).isEqualTo("Basic Monthly")
+        assertThat(basicSubscription.price).isEqualTo(Price("$5.99", 5_990_000, "USD"))
+        assertThat(basicSubscription.productPlanIdentifier).isEqualTo("monthly")
         assertThat(basicSubscription.isActive).isFalse()
         assertThat(basicSubscription.willRenew).isFalse()
     }
@@ -400,6 +409,7 @@ class CustomerInfoTest {
         proSubscriptionJSON.put("billing_issues_detected_at", "2019-07-26T23:45:40Z")
         proSubscriptionJSON.put("grace_period_expires_date", "2019-07-25T23:45:40Z")
         proSubscriptionJSON.put("refunded_at", "2019-07-24T23:45:40Z")
+        proSubscriptionJSON.put("auto_resume_date", "2019-07-24T23:45:40Z")
 
         subscriptions.put("pro", proSubscriptionJSON)
         subscriber.put("subscriptions", subscriptions)
@@ -420,5 +430,6 @@ class CustomerInfoTest {
         assertThat(proSubscription.billingIssuesDetectedAt).isEqualTo(Iso8601Utils.parse("2019-07-26T23:45:40Z"))
         assertThat(proSubscription.gracePeriodExpiresDate).isEqualTo(Iso8601Utils.parse("2019-07-25T23:45:40Z"))
         assertThat(proSubscription.refundedAt).isEqualTo(Iso8601Utils.parse("2019-07-24T23:45:40Z"))
+        assertThat(proSubscription.autoResumeDate).isEqualTo(Iso8601Utils.parse("2019-07-24T23:45:40Z"))
     }
 }
