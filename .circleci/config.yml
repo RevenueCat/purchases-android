@@ -183,19 +183,31 @@ commands:
         type: boolean
         default: false
     steps:
-      - run:
-          name: Avoid downloading LFS files ## FIXME TEST THIS FIRST< ALSO IS THIS THE RIGHT WAY TO DO THIS?
-          command: |
-            echo "export GIT_LFS_SKIP_SMUDGE=1" >> $BASH_ENV
-            source $BASH_ENV
-      - run: 
-          name: Print GIT_LFS_SKIP_SMUDGE
-          command: |
-            echo "GIT_LFS_SKIP_SMUDGE: $GIT_LFS_SKIP_SMUDGE"
-      # - checkout
-      ## FIXME CHECK IF LFS IS EVEN INSTALLED BEFORE CONTINUING
-      ## FIXME IF IT IS ANND PULL-LFS IS TRUE, THEN CONTINUE
-      ## https://www.develer.com/en/blog/avoiding-git-lfs-bandwidth-waste-with-github-and-circleci/
+      # - run:
+      #     name: Avoid downloading LFS files
+      #     command: |
+      #       echo "export GIT_LFS_SKIP_SMUDGE=1" >> $BASH_ENV
+      #       source $BASH_ENV
+      # This will checkout the repo without any LFS files, because of the GIT_LFS_SKIP_SMUDGE environment variable.
+      - checkout
+      - when:
+          condition: << parameters.pull-lfs >>
+          steps:
+            # Only pull LFS files if we haven't cached them yet.
+            # Inspired by https://www.develer.com/en/blog/avoiding-git-lfs-bandwidth-waste-with-github-and-circleci/
+            - run:
+                name: Read LFS object IDs
+                command: git lfs ls-files -l | cut -d' ' -f1 | sort > .git-lfs-object-ids
+            - restore_cache:
+                key: v1-git-lfs-cache-key-{{ checksum ".git-lfs-object-ids" }}
+            # If our restore_cache step restored the LFS files, this won't do anything.
+            - run:
+                name: Pull LFS files if needed
+                command: git lfs pull
+            - save_cache:
+                key: v1-git-lfs-cache-key-{{ checksum ".git-lfs-object-ids" }}
+                paths:
+                  - .git/lfs
 
 jobs:
 
@@ -678,7 +690,7 @@ jobs:
       - image: cimg/ruby:3.2.0
     steps:
       - checkout-efficient
-      - checkout
+      # - checkout
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - revenuecat/setup-git-credentials
