@@ -189,6 +189,8 @@ commands:
       #       echo "export GIT_LFS_SKIP_SMUDGE=1" >> $BASH_ENV
       #       source $BASH_ENV
       # This will checkout the repo without any LFS files, because of the GIT_LFS_SKIP_SMUDGE environment variable.
+      - run: |
+          echo "GIT_LFS_SKIP_SMUDGE=$GIT_LFS_SKIP_SMUDGE"
       - checkout
       - when:
           condition: << parameters.pull-lfs >>
