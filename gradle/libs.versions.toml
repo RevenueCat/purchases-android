@@ -143,6 +143,7 @@ compose-constraintlayout = { module = "androidx.constraintlayout:constraintlayou
 window = { module = "androidx.window:window", version.ref = "window" }
 window-core = { module = "androidx.window:window-core", version.ref = "window" }
 
+coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
 coil-test = { module = "io.coil-kt:coil-test", version.ref = "coil" }
