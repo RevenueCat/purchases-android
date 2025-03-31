@@ -598,6 +598,10 @@ DESC
 
     create_or_checkout_branch(branch_name: branch_name)
 
+    # Recreate our output directory so we start fresh.
+    sh("rm -rf #{templates_dir}")
+    sh("mkdir -p #{templates_dir}")
+
     # Get offerings and save to file.
     offerings_response = get_offerings(
       app_user_id: "purchases-android-ci",
