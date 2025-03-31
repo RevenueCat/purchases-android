@@ -89,7 +89,6 @@ def obtainTestBuildType() {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation libs.kotlin.stdlib
     implementation libs.androidx.core
     implementation libs.androidx.annotation
     implementation libs.androidx.lifecycle.runtime
