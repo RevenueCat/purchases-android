@@ -653,7 +653,7 @@ jobs:
             if [ -z "$PR_NUM" ]; then
               branch=$(git rev-parse --abbrev-ref HEAD)
               # The branch name must follow this format:
-              #   gh-readonly-queue/<base-branch>/pr-<number>-<commit-hash>
+              #   gh-readonly-queue/<base-branch>/pr-<number>-<base-commit>
               PR_NUM=$(echo "$branch" | sed -En 's/^gh-readonly-queue\/[^/]+\/pr-([0-9]+)-[0-9a-f]+$/\1/p')
             fi
             # Set base-sha to empty string if no PR number is found.
