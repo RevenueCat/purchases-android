@@ -649,6 +649,13 @@ jobs:
             if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ "$CIRCLE_PULL_REQUEST" == */* ]]; then
               PR_NUM=$(echo "$CIRCLE_PULL_REQUEST" | rev | cut -d'/' -f1 | rev)
             fi
+            # If PR_NUM is still empty, try to parse it from the branch name.
+            if [ -z "$PR_NUM" ]; then
+              branch=$(git rev-parse --abbrev-ref HEAD)
+              # The branch name must follow this format:
+              #   gh-readonly-queue/<base-branch>/pr-<number>-<base-commit>
+              PR_NUM=$(echo "$branch" | sed -En 's/^gh-readonly-queue\/[^/]+\/pr-([0-9]+)-[0-9a-f]+$/\1/p')
+            fi
             # Set base-sha to empty string if no PR number is found.
             PR_ARG=""
             if [ -n "$PR_NUM" ]; then
