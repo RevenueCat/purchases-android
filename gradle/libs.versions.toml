@@ -104,7 +104,6 @@ detekt-compose = { module = "io.nlopez.compose.rules:detekt", version.ref = "det
 emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref = "emergeSnapshots" }
 emerge-snapshots-annotations = { module = "com.emergetools.snapshots:snapshots-annotations", version.ref = "emergeSnapshots" }
 
-kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON"}
 
 material = { module = "com.google.android.material:material", version.ref = "material" }
@@ -143,6 +142,7 @@ compose-constraintlayout = { module = "androidx.constraintlayout:constraintlayou
 window = { module = "androidx.window:window", version.ref = "window" }
 window-core = { module = "androidx.window:window-core", version.ref = "window" }
 
+coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
 coil-test = { module = "io.coil-kt:coil-test", version.ref = "coil" }

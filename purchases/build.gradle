@@ -89,7 +89,6 @@ def obtainTestBuildType() {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation libs.kotlin.stdlib
     implementation libs.androidx.core
     implementation libs.androidx.annotation
     implementation libs.androidx.lifecycle.runtime
@@ -101,11 +100,11 @@ dependencies {
     implementation libs.playServices.ads.identifier
 
     compileOnly libs.amazon.appstore.sdk
-    compileOnly libs.coil.compose
+    compileOnly libs.coil.base
 
     dokkaPlugin(project(":dokka-hide-internal"))
 
-    testImplementation libs.coil.compose
+    testImplementation libs.coil.base
     testImplementation libs.bundles.test
     testImplementation libs.billing
     testImplementation libs.coroutines.test
