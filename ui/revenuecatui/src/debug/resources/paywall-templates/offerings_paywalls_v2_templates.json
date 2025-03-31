@@ -43522,8 +43522,8 @@
                                       },
                                       "size": {
                                         "height": {
-                                          "type": "fit",
-                                          "value": null
+                                          "type": "fixed",
+                                          "value": 40
                                         },
                                         "width": {
                                           "type": "fit",
@@ -44042,8 +44042,8 @@
                                       },
                                       "size": {
                                         "height": {
-                                          "type": "fit",
-                                          "value": null
+                                          "type": "fixed",
+                                          "value": 40
                                         },
                                         "width": {
                                           "type": "fit",
@@ -44566,11 +44566,11 @@
                                       "size": {
                                         "height": {
                                           "type": "fixed",
-                                          "value": 37
+                                          "value": 40
                                         },
                                         "width": {
                                           "type": "fixed",
-                                          "value": 36
+                                          "value": 40
                                         }
                                       },
                                       "type": "icon"
@@ -45601,7 +45601,7 @@
           }
         },
         "default_locale": "en_US",
-        "revision": 8,
+        "revision": 9,
         "template_name": "components",
         "zero_decimal_place_countries": {
           "apple": [
