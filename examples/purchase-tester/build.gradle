@@ -62,7 +62,6 @@ dependencies {
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')
 
-    implementation libs.kotlin.stdlib
     implementation libs.androidx.appcompat
     implementation libs.androidx.constraintlayout
     implementation libs.androidx.recyclerview
