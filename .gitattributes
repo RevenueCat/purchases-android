@@ -1,1 +1,0 @@
-ui/revenuecatui/src/debug/resources/paywall-templates/**/*.webp filter=lfs diff=lfs merge=lfs -text
