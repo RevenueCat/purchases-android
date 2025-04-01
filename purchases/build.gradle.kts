@@ -64,12 +64,18 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
 }
 
 fun obtainTestApplicationId(): String =
-    if (project.hasProperty("testApplicationId")) project.properties["testApplicationId"] as String
-    else "com.revenuecat.purchases.integrationTest"
+    if (project.hasProperty("testApplicationId")) {
+        project.properties["testApplicationId"] as String
+    } else {
+        "com.revenuecat.purchases.integrationTest"
+    }
 
 fun obtainTestBuildType(): String =
-    if (project.hasProperty("testBuildType")) project.properties["testBuildType"] as String
-    else "debug"
+    if (project.hasProperty("testBuildType")) {
+        project.properties["testBuildType"] as String
+    } else {
+        "debug"
+    }
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
