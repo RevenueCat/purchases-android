@@ -144,13 +144,11 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
 }
 
 /**
- * If you're not seeing images in these previews and you want to, do the following.
- * 1. Install [git-lfs](https://git-lfs.com/) using `brew install git-lfs` or
- * `port install git-lfs`.
- * 2. Run `git lfs install`.
- * 3. Run `git lfs pull`.
+ * To render this preview, make sure the paywall-preview-resources submodule is properly initialized.
+ * 1. `git submodule init upstream/paywall-preview-resources`
+ * 2. `git submodule update upstream/paywall-preview-resources`
  *
- * You'll only need to perform these steps once.
+ * You'll need to run step 2 every time paywall-preview-resources is updated.
  */
 @Preview
 @Composable
@@ -211,7 +209,9 @@ private fun PaywallTemplateImageLoader(
  */
 private fun getResourceStream(filePath: String): InputStream =
     object {}.javaClass.getResource("/$filePath")?.openStream()
-        ?: File(BuildConfig.PROJECT_DIR).resolve("src/debug/resources/$filePath").inputStream()
+        ?: File(BuildConfig.PROJECT_DIR)
+            .resolve("../../upstream/paywall-preview-resources/resources/$filePath")
+            .inputStream()
 
 /**
  * Reads the ui_config from this stream without reading the entire file into memory.
