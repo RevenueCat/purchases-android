@@ -34,6 +34,16 @@ android {
         }
     }
 
+    sourceSets {
+        debug {
+            resources {
+                srcDirs += [
+                        "../../upstream/paywall-preview-resources/resources"
+                ]
+            }
+        }
+    }
+
     defaultConfig {
         minSdkVersion 24 // MeasureFormat requires API 24
         vectorDrawables {

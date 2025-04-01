@@ -166,7 +166,9 @@ private fun PaywallComponentsTemplate_Preview(
  */
 private fun getResourceStream(filePath: String): InputStream =
     object {}.javaClass.getResource("/$filePath")?.openStream()
-        ?: File(BuildConfig.PROJECT_DIR).resolve("src/debug/resources/$filePath").inputStream()
+        ?: File(BuildConfig.PROJECT_DIR)
+            .resolve("../../upstream/paywall-preview-resources/resources/$filePath")
+            .inputStream()
 
 /**
  * Reads the ui_config from this stream without reading the entire file into memory.
