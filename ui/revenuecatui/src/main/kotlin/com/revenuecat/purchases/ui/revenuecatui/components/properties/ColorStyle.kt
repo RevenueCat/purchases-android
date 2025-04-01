@@ -254,9 +254,6 @@ private class RadialGradient(
 
     override val colors: List<Color> = colorStops.map { it.second }
 
-    override val intrinsicSize: Size
-        get() = Size.Unspecified
-
     override fun createShader(size: Size): Shader {
         // Use the larger dimension to ensure the gradient covers the entire shape
         val effectiveRadius = if (radius == Float.POSITIVE_INFINITY) {
