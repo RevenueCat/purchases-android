@@ -182,6 +182,7 @@ commands:
     parameters:
       path:
         type: string
+        default: ""
     steps:
       - run: 
           name: Check out submodule << parameters.path >>
