@@ -19,17 +19,21 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Constants
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.events.FeatureEvent
@@ -79,7 +83,9 @@ import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.Collections
+import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
@@ -95,6 +101,8 @@ internal class PurchasesOrchestrator(
     private val customerInfoHelper: CustomerInfoHelper,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
@@ -121,7 +129,6 @@ internal class PurchasesOrchestrator(
 
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
-
         set(value) {
             purchasesStateCache.purchasesState = value
         }
@@ -150,7 +157,8 @@ internal class PurchasesOrchestrator(
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
 
-    @get:Synchronized @set:Synchronized
+    @get:Synchronized
+    @set:Synchronized
     var customerCenterListener: CustomerCenterListener? = null
 
     val isAnonymous: Boolean
@@ -440,13 +448,40 @@ internal class PurchasesOrchestrator(
             log(LogIntent.WARNING, RestoreStrings.SHARING_ACC_RESTORE_FALSE)
         }
 
+        val startTime = dateProvider.now
+        diagnosticsTrackerIfEnabled?.trackRestorePurchasesStarted()
+
         val appUserID = identityManager.currentAppUserID
+
+        val callbackWithTracking = if (diagnosticsTrackerIfEnabled == null) {
+            callback
+        } else {
+            object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    diagnosticsTrackerIfEnabled.trackRestorePurchasesResult(
+                        null,
+                        null,
+                        Duration.between(startTime, dateProvider.now),
+                    )
+                    callback.onReceived(customerInfo)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    diagnosticsTrackerIfEnabled.trackRestorePurchasesResult(
+                        error.code.code,
+                        error.message,
+                        Duration.between(startTime, dateProvider.now),
+                    )
+                    callback.onError(error)
+                }
+            }
+        }
 
         billing.queryAllPurchases(
             appUserID,
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isEmpty()) {
-                    getCustomerInfo(callback)
+                    getCustomerInfo(callbackWithTracking)
                 } else {
                     allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                         sortedByTime.forEach { purchase ->
@@ -459,7 +494,7 @@ internal class PurchasesOrchestrator(
                                 onSuccess = { _, info ->
                                     log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                     if (sortedByTime.last() == purchase) {
-                                        dispatch { callback.onReceived(info) }
+                                        dispatch { callbackWithTracking.onReceived(info) }
                                     }
                                 },
                                 onError = { _, error ->
@@ -469,7 +504,7 @@ internal class PurchasesOrchestrator(
                                             .format(purchase, error),
                                     )
                                     if (sortedByTime.last() == purchase) {
-                                        dispatch { callback.onError(error) }
+                                        dispatch { callbackWithTracking.onError(error) }
                                     }
                                 },
                             )
@@ -478,7 +513,7 @@ internal class PurchasesOrchestrator(
                 }
             },
             onReceivePurchaseHistoryError = { error ->
-                dispatch { callback.onError(error) }
+                dispatch { callbackWithTracking.onError(error) }
             },
         )
     }
@@ -507,7 +542,7 @@ internal class PurchasesOrchestrator(
                 CacheFetchPolicy.default(),
                 state.appInBackground,
                 allowSharingPlayStoreAccount,
-                receiveCustomerInfoCallback(
+                callback = receiveCustomerInfoCallback(
                     onSuccess = { customerInfo ->
                         dispatch { callback?.onReceived(customerInfo, false) }
                     },
@@ -545,14 +580,15 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun getCustomerInfo(
+    private fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback,
     ) {
-        getCustomerInfo(CacheFetchPolicy.default(), callback)
+        getCustomerInfo(CacheFetchPolicy.default(), trackDiagnostics = false, callback)
     }
 
     fun getCustomerInfo(
         fetchPolicy: CacheFetchPolicy,
+        trackDiagnostics: Boolean,
         callback: ReceiveCustomerInfoCallback,
     ) {
         customerInfoHelper.retrieveCustomerInfo(
@@ -560,6 +596,7 @@ internal class PurchasesOrchestrator(
             fetchPolicy,
             state.appInBackground,
             allowSharingPlayStoreAccount,
+            trackDiagnostics,
             callback,
         )
     }
@@ -586,7 +623,12 @@ internal class PurchasesOrchestrator(
         callback: GetStoreProductsCallback,
     ) {
         val validTypes = types.filter { it != ProductType.UNKNOWN }.toSet()
-        getProductsOfTypes(productIds, validTypes, emptyList(), callback)
+        getProductsOfTypes(
+            productIds = productIds,
+            types = validTypes,
+            collectedStoreProducts = emptyList(),
+            callback = callback,
+        )
     }
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -868,8 +910,14 @@ internal class PurchasesOrchestrator(
         productIds: Set<String>,
         types: Set<ProductType>,
         collectedStoreProducts: List<StoreProduct>,
+        startTime: Date? = null,
         callback: GetStoreProductsCallback,
     ) {
+        val nonNullStartTime = startTime ?: run {
+            trackGetProductsStarted(productIds)
+            dateProvider.now
+        }
+
         val typesRemaining = types.toMutableSet()
         val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
 
@@ -883,17 +931,21 @@ internal class PurchasesOrchestrator(
                             productIds,
                             typesRemaining,
                             collectedStoreProducts + storeProducts,
+                            nonNullStartTime,
                             callback,
                         )
                     }
                 },
                 onError = {
                     dispatch {
+                        trackGetProductsResult(nonNullStartTime, productIds, productIds, it)
                         callback.onError(it)
                     }
                 },
             )
         } ?: run {
+            val notFoundProductIds = productIds - collectedStoreProducts.map { it.id }.toSet()
+            trackGetProductsResult(nonNullStartTime, productIds, notFoundProductIds, null)
             callback.onReceived(collectedStoreProducts)
         }
     }
@@ -908,7 +960,7 @@ internal class PurchasesOrchestrator(
                 CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground,
                 allowSharingPlayStoreAccount,
-                completion,
+                callback = completion,
             )
             offeringsManager.fetchAndCacheOfferings(appUserID, appInBackground)
         }
@@ -1043,13 +1095,19 @@ internal class PurchasesOrchestrator(
                 }",
             ),
         )
+
+        trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
+        val startTime = dateProvider.now
+
+        val listenerWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(listener, purchasingData, startTime)
+
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                val mapOfProductIdToListener = mapOf(purchasingData.productId to listener)
+                val mapOfProductIdToListener = mapOf(purchasingData.productId to listenerWithDiagnostics)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
@@ -1066,7 +1124,11 @@ internal class PurchasesOrchestrator(
                 presentedOfferingContext,
                 isPersonalizedPrice,
             )
-        } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
+        } ?: listenerWithDiagnostics.dispatch(
+            PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+                errorLog(it)
+            },
+        )
     }
 
     fun startProductChange(
@@ -1078,13 +1140,16 @@ internal class PurchasesOrchestrator(
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback,
     ) {
+        trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
+        val startTime = dateProvider.now
+
+        val callbackWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(purchaseCallback, purchasingData, startTime)
+
         if (purchasingData.productType != ProductType.SUBS) {
-            purchaseCallback.dispatch(
-                PurchasesError(
-                    PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE,
-                ).also { errorLog(it) },
-            )
+            PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE,
+            ).also { errorLog(it) }.also { callbackWithDiagnostics.dispatch(it) }
             return
         }
 
@@ -1096,7 +1161,6 @@ internal class PurchasesOrchestrator(
                         PurchaseStrings.OFFERING + "$it"
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
-
             ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
@@ -1108,13 +1172,12 @@ internal class PurchasesOrchestrator(
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
                 // switching from, because the transaction we receive on successful purchase is for the old product.
-                val productId =
-                    if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
-                        oldProductId
-                    } else {
-                        purchasingData.productId
-                    }
-                val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
+                val productId = if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
+                    oldProductId
+                } else {
+                    purchasingData.productId
+                }
+                val mapOfProductIdToListener = mapOf(productId to callbackWithDiagnostics)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
@@ -1130,7 +1193,7 @@ internal class PurchasesOrchestrator(
                 appUserID,
                 presentedOfferingContext,
                 isPersonalizedPrice,
-                purchaseCallback,
+                callbackWithDiagnostics,
             )
         } ?: run {
             val operationInProgressError = PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
@@ -1262,7 +1325,87 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    // endregion
+    private fun createCallbackWithDiagnosticsIfNeeded(
+        originalCallback: PurchaseCallback,
+        purchasingData: PurchasingData,
+        startTime: Date,
+    ): PurchaseCallback {
+        return if (diagnosticsTrackerIfEnabled == null) {
+            originalCallback
+        } else {
+            object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                    trackPurchaseResultIfNeeded(
+                        purchasingData,
+                        error = null,
+                        startTime,
+                        customerInfo.entitlements.verification,
+                    )
+                    originalCallback.onCompleted(storeTransaction, customerInfo)
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    trackPurchaseResultIfNeeded(
+                        purchasingData,
+                        error,
+                        startTime,
+                        verificationResult = null,
+                    )
+                    originalCallback.onError(error, userCancelled)
+                }
+            }
+        }
+    }
+
+    // region Diagnostics
+
+    private fun trackGetProductsStarted(requestedProductIds: Set<String>) {
+        diagnosticsTrackerIfEnabled?.trackGetProductsStarted(requestedProductIds)
+    }
+
+    private fun trackGetProductsResult(
+        startTime: Date,
+        requestedProductIds: Set<String>,
+        notFoundProductIds: Set<String>,
+        error: PurchasesError?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val responseTime = Duration.between(startTime, dateProvider.now)
+        diagnosticsTrackerIfEnabled.trackGetProductsResult(
+            requestedProductIds = requestedProductIds,
+            notFoundProductIds = notFoundProductIds,
+            errorMessage = error?.message,
+            errorCode = error?.code?.code,
+            responseTime = responseTime,
+        )
+    }
+
+    private fun trackPurchaseStarted(productId: String, productType: ProductType) {
+        diagnosticsTrackerIfEnabled?.trackPurchaseStarted(productId, productType)
+    }
+
+    @Suppress("LongParameterList")
+    private fun trackPurchaseResultIfNeeded(
+        purchasingData: PurchasingData,
+        error: PurchasesError?,
+        startTime: Date,
+        verificationResult: VerificationResult?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val responseTime = Duration.between(startTime, dateProvider.now)
+        diagnosticsTrackerIfEnabled.trackPurchaseResult(
+            purchasingData.productId,
+            purchasingData.productType,
+            error?.code?.code,
+            error?.message,
+            responseTime,
+            verificationResult,
+        )
+    }
+
+    // endregion Diagnostics
+
+    // endregion Private Methods
 
     // region Static
 

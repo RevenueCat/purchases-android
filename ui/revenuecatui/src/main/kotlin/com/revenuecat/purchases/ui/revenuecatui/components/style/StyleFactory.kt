@@ -49,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.recoverFromBlankFontAlias
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
@@ -456,22 +457,21 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            .toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = colorAliases) }
+            .toPresentedOverrides { partial ->
+                PresentedStackPartial(
+                    from = partial,
+                    aliases = colorAliases,
+                    createBadgeStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) },
+                )
+            }
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
         second = component.components
             .map { createInternal(it) }
             .mapOrAccumulate { it },
-        third = component.badge?.let { badge ->
-            createStackComponentStyle(badge.stack)
-                .map {
-                    BadgeStyle(
-                        stackStyle = it,
-                        style = badge.style,
-                        alignment = badge.alignment,
-                    )
-                }
-        }.orSuccessfullyNull(),
+        third = component.badge
+            ?.toBadgeStyle(createStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) })
+            .orSuccessfullyNull(),
         fourth = createBackgroundStyles(component.background, component.backgroundColor),
         fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
@@ -517,6 +517,7 @@ internal class StyleFactory(
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
         fifth = component.fontName
             ?.let { fontAlias -> fontAliases.getFontSpec(fontAlias) }
+            ?.recoverFromBlankFontAlias()
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
     ) { texts, presentedOverrides, color, backgroundColor, fontSpec ->
