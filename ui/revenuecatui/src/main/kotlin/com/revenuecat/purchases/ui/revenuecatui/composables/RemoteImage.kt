@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.ImageLoader
@@ -123,14 +124,25 @@ private fun Image(
         .memoryCachePolicy(cachePolicy)
         .build()
 
+    val previewPlaceholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null
+    val placeholder = placeholderSource?.let {
+        rememberAsyncImagePainter(
+            model = it.data,
+            placeholder = previewPlaceholder,
+            imageLoader = imageLoader,
+            contentScale = contentScale,
+            onError = { errorState -> Logger.e("Error loading placeholder image", errorState.result.throwable) },
+        )
+    } ?: previewPlaceholder
+
     if (cachePolicy == CachePolicy.ENABLED) {
         AsyncImage(
             source = source,
-            placeholderSource = placeholderSource,
             imageRequest = imageRequest,
             contentDescription = contentDescription,
             imageLoader = imageLoader,
             modifier = modifier,
+            placeholder = placeholder,
             contentScale = contentScale,
             alpha = alpha,
             colorFilter = colorFilter,
@@ -142,11 +154,11 @@ private fun Image(
     } else {
         AsyncImage(
             source = source,
-            placeholderSource = placeholderSource,
             imageRequest = imageRequest,
             contentDescription = contentDescription,
             imageLoader = imageLoader,
             modifier = modifier,
+            placeholder = placeholder,
             contentScale = contentScale,
             alpha = alpha,
             colorFilter = colorFilter,
@@ -158,10 +170,10 @@ private fun Image(
 @Composable
 private fun AsyncImage(
     source: ImageSource,
-    placeholderSource: ImageSource?,
     imageRequest: ImageRequest,
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
+    placeholder: Painter? = null,
     contentScale: ContentScale,
     contentDescription: String?,
     alpha: Float,
@@ -171,17 +183,7 @@ private fun AsyncImage(
     AsyncImage(
         model = imageRequest,
         contentDescription = contentDescription,
-        placeholder = placeholderSource?.let {
-            rememberAsyncImagePainter(
-                model = it.data,
-                placeholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null,
-                imageLoader = imageLoader,
-                contentScale = contentScale,
-                onError = { errorState ->
-                    Logger.e("Error loading placeholder image", errorState.result.throwable)
-                },
-            )
-        } ?: if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null,
+        placeholder = placeholder,
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
