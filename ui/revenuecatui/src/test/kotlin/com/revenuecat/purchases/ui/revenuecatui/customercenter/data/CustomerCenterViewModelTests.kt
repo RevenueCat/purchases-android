@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.app.Activity
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PeriodType
+import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -19,6 +21,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -698,6 +701,44 @@ class CustomerCenterViewModelTests {
         verify(exactly = 3) { purchasesListener.onManagementOptionSelected(any()) }
     }
 
+    @Test
+    fun `loadCustomerCenter is called after successful promotional offer purchase`() = runTest {
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Create a mock subscription option
+        val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        // Wait for initial load to complete
+        val initialLoadCompleted = CompletableDeferred<Boolean>()
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success && !initialLoadCompleted.isCompleted) {
+                    initialLoadCompleted.complete(true)
+                }
+            }
+        }
+
+        // Wait for initial load
+        initialLoadCompleted.await()
+
+        // Perform promotional offer purchase
+        model.onAcceptedPromotionalOffer(subscriptionOption, activity)
+
+        // Verify the purchase was attempted and loadCustomerCenter was called
+        coVerify(exactly = 1) { purchases.awaitPurchase(any()) }
+        coVerify(exactly = 2) { purchases.awaitCustomerCenterConfigData() } // Once for initial load, once for reload
+
+        job.cancel()
+    }
+
     // Helper method to setup common mocks
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
@@ -705,6 +746,7 @@ class CustomerCenterViewModelTests {
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
         coEvery { purchases.awaitRestore() } returns customerInfo
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(mockk(), customerInfo)
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
