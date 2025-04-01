@@ -691,7 +691,7 @@ jobs:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
-  update-paywall-templates:
+  update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.2.0
     steps:
@@ -701,7 +701,7 @@ jobs:
       - revenuecat/setup-git-credentials
       - run:
           name: Update paywall templates
-          command: bundle exec fastlane android update_paywall_templates
+          command: bundle exec fastlane android update_paywall_preview_resources_submodule
 
 workflows:
   version: 2
@@ -852,4 +852,4 @@ workflows:
     when:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
-      - update-paywall-templates
+      - update-paywall-preview-resources-submodule
