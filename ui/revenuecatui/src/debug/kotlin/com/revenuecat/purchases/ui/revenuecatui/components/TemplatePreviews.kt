@@ -1,27 +1,37 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import android.content.Context
+import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.core.graphics.drawable.toDrawable
+import coil.ImageLoader
+import coil.decode.DataSource
+import coil.request.SuccessResult
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.InputStream
+import java.net.URI
 import java.util.Date
+
+private const val DIR_TEMPLATES = "paywall-templates"
 
 /**
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
  */
 private class OfferingProvider : PreviewParameterProvider<Offering> {
-    private val templatesDir = "paywall-templates"
-    private val offeringsJsonFilePath = "$templatesDir/offerings_paywalls_v2_templates.json"
+    private val offeringsJsonFilePath = "$DIR_TEMPLATES/offerings_paywalls_v2_templates.json"
     private val packagesJsonFilePath = "packages.json"
 
     private val packagesJsonArray = JSONObject(getResourceStream(packagesJsonFilePath).readBytes().decodeToString())
@@ -154,10 +164,36 @@ private fun PaywallComponentsTemplate_Preview(
         dateProvider = { Date() },
     )
 
-    LoadedPaywallComponents(
-        state = state,
-        clickHandler = { },
-    )
+    ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current)) {
+        LoadedPaywallComponents(
+            state = state,
+            clickHandler = { },
+        )
+    }
+}
+
+@Suppress("FunctionName")
+private fun PaywallTemplateImageLoader(
+    context: Context,
+): ImageLoader {
+    return ImageLoader.Builder(context)
+        .components {
+            add { chain ->
+                val url = URI(chain.request.data as String)
+                // Create the resourcePath by dropping the TLD, reversing the host, and appending the path.
+                val resourcePath = DIR_TEMPLATES + "/" +
+                    url.host.split('.').dropLast(1).reversed().joinToString("/") +
+                    url.path
+                val bitmap = BitmapFactory.decodeStream(getResourceStream(resourcePath))
+
+                SuccessResult(
+                    drawable = bitmap.toDrawable(context.resources),
+                    request = chain.request,
+                    dataSource = DataSource.DISK,
+                )
+            }
+        }
+        .build()
 }
 
 /**
