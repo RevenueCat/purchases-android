@@ -36,7 +36,7 @@ android {
         testBuildType = obtainTestBuildType()
 
         packagingOptions.resources.excludes.addAll(
-            listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md")
+            listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )
     }
 
@@ -126,16 +126,26 @@ tasks.dokkaHtmlPartial.configure {
             includeNonPublic.set(false)
             skipDeprecated.set(true)
             externalDocumentationLink {
-                url.set(uri("https://developer.android.com/reference/package-list").toURL())
+                url.set(
+                    uri("https://developer.android.com/reference/package-list").toURL(),
+                )
             }
             sourceLink {
-                localDirectory.set(file("src/main/kotlin"))
-                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL())
+                localDirectory.set(
+                    file("src/main/kotlin"),
+                )
+                remoteUrl.set(
+                    uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL(),
+                )
                 remoteLineSuffix.set("#L")
             }
             sourceLink {
-                localDirectory.set(file("src/main/java"))
-                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL())
+                localDirectory.set(
+                    file("src/main/java"),
+                )
+                remoteUrl.set(
+                    uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL(),
+                )
                 remoteLineSuffix.set("#L")
             }
         }
@@ -152,16 +162,26 @@ tasks.dokkaHtmlPartial.configure {
                 suppress.set(true)
             }
             externalDocumentationLink {
-                url.set(uri("https://developer.android.com/reference/package-list").toURL())
+                url.set(
+                    uri("https://developer.android.com/reference/package-list").toURL(),
+                )
             }
             sourceLink {
-                localDirectory.set(file("src/main/kotlin"))
-                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL())
+                localDirectory.set(
+                    file("src/main/kotlin"),
+                )
+                remoteUrl.set(
+                    uri(
+                        "https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin",
+                    ).toURL(),
+                )
                 remoteLineSuffix.set("#L")
             }
             sourceLink {
                 localDirectory.set(file("src/main/java"))
-                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL())
+                remoteUrl.set(
+                    uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL(),
+                )
                 remoteLineSuffix.set("#L")
             }
         }
