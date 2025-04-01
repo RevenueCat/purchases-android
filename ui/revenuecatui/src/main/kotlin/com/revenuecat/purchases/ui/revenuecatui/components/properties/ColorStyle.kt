@@ -19,6 +19,7 @@ import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.LinearGradientShader
+import androidx.compose.ui.graphics.RadialGradientShader
 import androidx.compose.ui.graphics.Shader
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
@@ -245,29 +246,53 @@ private fun radialGradient(
  */
 private class RadialGradient(
     vararg colorStops: Pair<Float, Color>,
-    center: Offset = Offset.Unspecified,
-    radius: Float = Float.POSITIVE_INFINITY,
-    tileMode: TileMode = TileMode.Clamp,
+    private val center: Offset = Offset.Unspecified,
+    private val radius: Float = Float.POSITIVE_INFINITY,
+    private val tileMode: TileMode = TileMode.Clamp,
 ) : GradientBrush() {
-    private val brush: ShaderBrush = radialGradient(
-        colorStops = colorStops,
-        center = center,
-        radius = radius,
-        tileMode = tileMode,
-    ) as ShaderBrush
+    private val colorStopsArray = colorStops
 
     override val colors: List<Color> = colorStops.map { it.second }
 
-    override val intrinsicSize: Size
-        get() = brush.intrinsicSize
+    override fun createShader(size: Size): Shader {
+        // Use the larger dimension to ensure the gradient covers the entire shape
+        val effectiveRadius = if (radius == Float.POSITIVE_INFINITY) {
+            val maxDimension = maxOf(size.width, size.height)
+            // Using 0.5 * maxDimension to calculate bigger dimension radius
+            maxDimension / 2f
+        } else {
+            radius
+        }
 
-    override fun createShader(size: Size): Shader = brush.createShader(size)
+        val effectiveCenter = if (center == Offset.Unspecified) {
+            size.center
+        } else {
+            center
+        }
 
-    override fun equals(other: Any?): Boolean = brush == other
+        return RadialGradientShader(
+            colors = colorStopsArray.map { it.second },
+            colorStops = colorStopsArray.map { it.first },
+            center = effectiveCenter,
+            radius = effectiveRadius,
+            tileMode = tileMode,
+        )
+    }
 
-    override fun hashCode(): Int = brush.hashCode()
+    override fun equals(other: Any?): Boolean =
+        other is RadialGradient &&
+            other.colorStopsArray.contentEquals(colorStopsArray) &&
+            other.center == center &&
+            other.radius == radius &&
+            other.tileMode == tileMode
 
-    override fun toString(): String = brush.toString()
+    override fun hashCode(): Int =
+        colorStopsArray.contentHashCode() * 31 +
+            center.hashCode() * 31 +
+            radius.hashCode() * 31 +
+            tileMode.hashCode()
+
+    override fun toString(): String = "RadialGradient(colorStops=${colorStopsArray.contentToString()})"
 }
 
 @Suppress("MagicNumber")
@@ -430,5 +455,24 @@ private fun LinearGradient_Preview_SquaresDegrees(
         Text(
             text = "${degrees}deg",
         )
+    }
+}
+
+@Preview
+@Composable
+private fun RadialGradient_Preview() {
+    Box(
+        modifier = Modifier
+            .requiredSize(width = 300.dp, height = 100.dp)
+            .background(
+                radialGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Red,
+                        1f to Color.White,
+                    ),
+                ),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
     }
 }
