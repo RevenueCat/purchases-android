@@ -133,6 +133,13 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     }
 }
 
+/**
+ * To render this preview, make sure the paywall-preview-resources submodule is properly initialized.
+ * 1. `git submodule init upstream/paywall-preview-resources`
+ * 2. `git submodule update upstream/paywall-preview-resources`
+ *
+ * You'll need to run step 2 every time paywall-preview-resources is updated.
+ */
 @Preview
 @Composable
 private fun PaywallComponentsTemplate_Preview(
