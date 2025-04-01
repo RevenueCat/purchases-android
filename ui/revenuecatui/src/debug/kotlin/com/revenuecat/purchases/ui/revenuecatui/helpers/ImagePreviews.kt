@@ -19,6 +19,9 @@ import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIP
 import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
 
+// The release source set contains no-op implementations of this code as a precaution. We should not be calling any of
+// this code in release builds, but if we do, nothing (bad) will happen.
+
 @JvmSynthetic
 internal val LocalPreviewImageLoader: ProvidableCompositionLocal<ImageLoader?> = staticCompositionLocalOf { null }
 
@@ -30,9 +33,12 @@ internal fun ProvidePreviewImageLoader(imageLoader: ImageLoader, content: @Compo
         content,
     )
 
+/**
+ * This is nullable, so the implementation in the release source set can return null.
+ */
 @JvmSynthetic
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-internal fun ImageLoader.getPreviewPlaceholderBlocking(imageRequest: ImageRequest): Painter =
+internal fun ImageLoader.getPreviewPlaceholderBlocking(imageRequest: ImageRequest): Painter? =
     when (val result = runBlocking { execute(imageRequest) }) {
         is SuccessResult -> DrawablePainter(result.drawable)
         is ErrorResult -> throw result.throwable
