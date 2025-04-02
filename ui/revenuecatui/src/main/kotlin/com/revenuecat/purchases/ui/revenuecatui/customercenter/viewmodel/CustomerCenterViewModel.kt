@@ -480,7 +480,10 @@ internal class CustomerCenterViewModelImpl(
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
             purchases.awaitPurchase(purchaseParams)
-            goBackToMain()
+
+            // Reload customer center data to refresh the UI with the latest subscription information
+            // It will also go back to main screen
+            loadCustomerCenter()
         } catch (e: PurchasesException) {
             if (e.code != PurchasesErrorCode.PurchaseCancelledError) {
                 _actionError.value = e.error
