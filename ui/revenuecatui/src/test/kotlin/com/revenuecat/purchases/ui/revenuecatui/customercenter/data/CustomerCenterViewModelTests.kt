@@ -38,6 +38,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -717,17 +718,7 @@ class CustomerCenterViewModelTests {
         val activity = mockk<Activity>(relaxed = true)
 
         // Wait for initial load to complete
-        val initialLoadCompleted = CompletableDeferred<Boolean>()
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success && !initialLoadCompleted.isCompleted) {
-                    initialLoadCompleted.complete(true)
-                }
-            }
-        }
-
-        // Wait for initial load
-        initialLoadCompleted.await()
+        model.state.first { it is CustomerCenterState.Success }
 
         // Perform promotional offer purchase
         model.onAcceptedPromotionalOffer(subscriptionOption, activity)
@@ -735,8 +726,6 @@ class CustomerCenterViewModelTests {
         // Verify the purchase was attempted and loadCustomerCenter was called
         coVerify(exactly = 1) { purchases.awaitPurchase(any()) }
         coVerify(exactly = 2) { purchases.awaitCustomerCenterConfigData() } // Once for initial load, once for reload
-
-        job.cancel()
     }
 
     // Helper method to setup common mocks
