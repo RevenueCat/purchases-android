@@ -10,10 +10,15 @@ import java.util.Locale
  * Abstraction around [Context]
  */
 internal interface ResourceProvider {
+    companion object {
+        const val ASSETS_FONTS_DIR = "fonts"
+    }
+
     fun getApplicationName(): String
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
     fun getResourceIdentifier(name: String, type: String): Int
+    fun getAssetFontPath(name: String): String?
 }
 
 internal class PaywallResourceProvider(
@@ -44,6 +49,14 @@ internal class PaywallResourceProvider(
     @SuppressLint("DiscouragedApi")
     override fun getResourceIdentifier(name: String, type: String): Int =
         resources.getIdentifier(name, type, packageName)
+
+    override fun getAssetFontPath(name: String): String? {
+        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+
+        return resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
+            ?.find { it == nameWithExtension }
+            ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+    }
 }
 
 internal fun Context.toResourceProvider(): ResourceProvider {
