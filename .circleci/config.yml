@@ -176,6 +176,19 @@ commands:
             echo 'rvm use << parameters.version >>' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
+  
+  checkout-submodule:
+    description: "Checks out a git submodule."
+    parameters:
+      path:
+        type: string
+        default: ""
+    steps:
+      - run: 
+          name: Check out submodule << parameters.path >>
+          command: |
+            git submodule init << parameters.path >>
+            git submodule update << parameters.path >>
 
 jobs:
 
@@ -286,7 +299,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.15.0-SNAPSHOT s3://purchases-docs/android/8.15.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/8.16.0-SNAPSHOT s3://purchases-docs/android/8.16.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -544,6 +557,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -618,6 +633,13 @@ jobs:
             if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ "$CIRCLE_PULL_REQUEST" == */* ]]; then
               PR_NUM=$(echo "$CIRCLE_PULL_REQUEST" | rev | cut -d'/' -f1 | rev)
             fi
+            # If PR_NUM is still empty, try to parse it from the branch name.
+            if [ -z "$PR_NUM" ]; then
+              branch=$(git rev-parse --abbrev-ref HEAD)
+              # The branch name must follow this format:
+              #   gh-readonly-queue/<base-branch>/pr-<number>-<base-commit>
+              PR_NUM=$(echo "$branch" | sed -En 's/^gh-readonly-queue\/[^/]+\/pr-([0-9]+)-[0-9a-f]+$/\1/p')
+            fi
             # Set base-sha to empty string if no PR number is found.
             PR_ARG=""
             if [ -n "$PR_NUM" ]; then
@@ -653,7 +675,7 @@ jobs:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
-  update-paywall-templates:
+  update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.2.0
     steps:
@@ -663,7 +685,7 @@ jobs:
       - revenuecat/setup-git-credentials
       - run:
           name: Update paywall templates
-          command: bundle exec fastlane android update_paywall_templates
+          command: bundle exec fastlane android update_paywall_preview_resources_submodule
 
 workflows:
   version: 2
@@ -814,4 +836,4 @@ workflows:
     when:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
-      - update-paywall-templates
+      - update-paywall-preview-resources-submodule

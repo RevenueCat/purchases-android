@@ -77,6 +77,13 @@ internal inline fun <A, B, R> Result<A, B>.mapError(transform: (value: B) -> R):
     }
 
 @JvmSynthetic
+internal inline fun <A, B, R> Result<A, B>.flatMapError(transform: (value: B) -> Result<A, R>): Result<A, R> =
+    when (this) {
+        is Result.Success -> this
+        is Result.Error -> transform(value)
+    }
+
+@JvmSynthetic
 internal inline fun <A : R, B, R> Result<A, B>.getOrElse(onFailure: (error: B) -> R): R =
     when (this) {
         is Result.Success -> value

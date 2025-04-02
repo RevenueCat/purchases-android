@@ -240,7 +240,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
             onError = { fail("Expected success. Got error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -258,7 +258,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingInAppProductResponse,
             onError = { fail("Expected success. Got error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -276,7 +276,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPaywall,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -294,7 +294,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithInvalidPaywallResponse,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -312,7 +312,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacement,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -335,7 +335,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacementWithNullFallback,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -358,7 +358,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithTargeting,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull

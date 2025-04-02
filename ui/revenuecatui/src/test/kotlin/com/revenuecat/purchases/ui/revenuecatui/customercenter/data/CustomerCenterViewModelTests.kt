@@ -17,6 +17,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
@@ -620,6 +621,81 @@ class CustomerCenterViewModelTests {
         // Verify both listeners were called with the correct ID
         verify(exactly = 1) { directListener.onFeedbackSurveyCompleted(feedbackSurveyOptionId) }
         verify(exactly = 1) { purchasesListener.onFeedbackSurveyCompleted(feedbackSurveyOptionId) }
+    }
+
+    @Test
+    fun `notifyListenersForManagementOptionSelected converts paths to actions and notifies listeners`() = runTest {
+        setupPurchasesMock()
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.example.app"
+        every { context.startActivity(any()) } just Runs
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        // Test MISSING_PURCHASE path
+        val missingPurchasePath = HelpPath(
+            id = "missing_purchase_id",
+            title = "Missing Purchase",
+            type = HelpPath.PathType.MISSING_PURCHASE
+        )
+        model.pathButtonPressed(mockk(), missingPurchasePath, null)
+        verify(exactly = 1) { directListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase) }
+        verify(exactly = 1) { purchasesListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase) }
+
+        // Test CANCEL path
+        val cancelPath = HelpPath(
+            id = "cancel_id",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL
+        )
+        model.pathButtonPressed(mockk(), cancelPath, null)
+        verify(exactly = 1) { directListener.onManagementOptionSelected(CustomerCenterManagementOption.Cancel) }
+        verify(exactly = 1) { purchasesListener.onManagementOptionSelected(CustomerCenterManagementOption.Cancel) }
+
+        // Test CUSTOM_URL path
+        val customUrl = "https://example.com"
+        val customUrlPath = HelpPath(
+            id = "custom_url_id",
+            title = "Custom URL",
+            type = HelpPath.PathType.CUSTOM_URL,
+            url = customUrl
+        )
+
+        model.pathButtonPressed(context, customUrlPath, null)
+        verify(exactly = 1) { 
+            directListener.onManagementOptionSelected(match { 
+                it is CustomerCenterManagementOption.CustomUrl && 
+                it.uri.toString() == customUrl 
+            })
+        }
+        verify(exactly = 1) { 
+            purchasesListener.onManagementOptionSelected(match { 
+                it is CustomerCenterManagementOption.CustomUrl && 
+                it.uri.toString() == customUrl 
+            })
+        }
+
+        // Test unsupported path type
+        val unsupportedPath = HelpPath(
+            id = "unsupported_id",
+            title = "Unsupported",
+            type = HelpPath.PathType.REFUND_REQUEST
+        )
+        model.pathButtonPressed(context, unsupportedPath, null)
+        verify(exactly = 3) { directListener.onManagementOptionSelected(any()) }
+        verify(exactly = 3) { purchasesListener.onManagementOptionSelected(any()) }
     }
 
     // Helper method to setup common mocks

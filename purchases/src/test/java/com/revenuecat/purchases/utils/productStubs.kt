@@ -23,10 +23,8 @@ import java.util.Locale
 @SuppressWarnings("MatchingDeclarationName")
 private data class StubPurchasingData(
     override val productId: String,
-) : PurchasingData {
-    override val productType: ProductType
-        get() = ProductType.SUBS
-}
+    override val productType: ProductType = ProductType.SUBS
+) : PurchasingData
 
 const val STUB_OFFERING_IDENTIFIER = "offering_a"
 const val STUB_PRODUCT_IDENTIFIER = "monthly_freetrial"
@@ -168,7 +166,7 @@ fun stubINAPPStoreProduct(
         get() = null
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(
-            productId = productId,
+            productId = productId, productType = ProductType.INAPP
         )
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier

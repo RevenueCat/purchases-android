@@ -258,17 +258,20 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         verifySequence {
+            mockDiagnosticsTracker.trackGoogleBillingStartConnection()
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
-                responseTime = 123.milliseconds
+                responseTime = 123.milliseconds,
+                foundProductIds = emptyList(),
             )
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
                 BillingClient.ProductType.INAPP,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
-                responseTime = 400.milliseconds
+                responseTime = 400.milliseconds,
+                foundProductIds = emptyList(),
             )
         }
     }
@@ -302,7 +305,8 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 billingDebugMessage = "test-debug-message",
-                responseTime = 123.milliseconds
+                responseTime = 123.milliseconds,
+                foundProductIds = emptyList(),
             )
         }
     }
