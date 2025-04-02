@@ -64,7 +64,7 @@ class PaywallViewModel : ViewModel() {
                     purchaseListener?.onPurchaseErrored(error)
                 }
             },
-            onSuccess = { _, customerInfo ->customerInfo
+            onSuccess = { _, customerInfo ->
                 Toast.makeText(
                     activity,
                     "Purchase succeeded. Current entitlements: ${customerInfo.entitlements.getActiveEntitlements()}",
