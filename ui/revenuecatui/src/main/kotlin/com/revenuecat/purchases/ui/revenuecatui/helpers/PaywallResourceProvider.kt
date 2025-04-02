@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.AssetManager
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import java.util.Locale
@@ -11,7 +12,7 @@ import java.util.Locale
  */
 internal interface ResourceProvider {
     companion object {
-        const val ASSETS_FONTS_DIR = "fonts"
+        const val DEFAULT_ASSETS_FONTS_DIR = "fonts"
     }
 
     fun getApplicationName(): String
@@ -52,10 +53,35 @@ internal class PaywallResourceProvider(
 
     override fun getAssetFontPath(name: String): String? {
         val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
-
-        return resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
+        // We'll first check the default "assets/fonts" folder, and fall back to traversing all of "assets/".
+        return resources.assets.list(ResourceProvider.DEFAULT_ASSETS_FONTS_DIR)
             ?.find { it == nameWithExtension }
-            ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+            ?.let { "${ResourceProvider.DEFAULT_ASSETS_FONTS_DIR}/$it" }
+            ?: resources.assets.firstOrNull { it == nameWithExtension }
+    }
+
+    /**
+     * Returns the first asset path that satisfies [predicate].
+     */
+    private inline fun AssetManager.firstOrNull(predicate: (path: String) -> Boolean): String? {
+        asSequence().forEach { element -> if (predicate(element)) return element }
+        return null
+    }
+
+    /**
+     * Traverses all assets and yields each one to the returned Sequence.
+     */
+    private fun AssetManager.asSequence(path: String = ""): Sequence<String> = sequence {
+        val children = list(path) ?: emptyArray()
+        if (children.isEmpty()) {
+            // This is a leaf node.
+            if (path.isNotEmpty()) yield(path)
+        } else {
+            for (child in children) {
+                val fullPath = if (path.isEmpty()) child else "$path/$child"
+                yieldAll(asSequence(fullPath))
+            }
+        }
     }
 }
 

@@ -49,6 +49,7 @@ class SamplePaywallsLoader {
     private val primaryLocalFont = FontAlias("primary")
     private val secondaryGoogleFont = FontAlias("secondary")
     private val tertiaryLocalFont = FontAlias("tertiary")
+    private val quaternaryLocalFont = FontAlias("quaternary")
 
     fun offeringForTemplate(template: SamplePaywalls.SampleTemplate): Offering {
         val paywall = paywallForTemplate(template)
@@ -71,6 +72,9 @@ class SamplePaywallsLoader {
                                 primaryLocalFont to FontsConfig(android = FontInfo.Name("lobster_two")),
                                 secondaryGoogleFont to FontsConfig(android = FontInfo.GoogleFonts("Barrio")),
                                 tertiaryLocalFont to FontsConfig(android = FontInfo.Name("Bytesized-Regular")),
+                                quaternaryLocalFont to FontsConfig(
+                                    android = FontInfo.Name("some/deep/custom/folder/GravitasOne-Regular"),
+                                ),
                             ),
                         ),
                         localizations = mapOf(localeId to variableLocalizationKeysForEnUs()),
@@ -81,6 +85,7 @@ class SamplePaywallsLoader {
         )
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun paywallForTemplate(template: SamplePaywalls.SampleTemplate): SampleData {
         return when (template) {
             SamplePaywalls.SampleTemplate.TEMPLATE_1 -> SamplePaywalls.template1()
@@ -91,7 +96,10 @@ class SamplePaywallsLoader {
             SamplePaywalls.SampleTemplate.TEMPLATE_7 -> SamplePaywalls.template7()
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS -> SamplePaywalls.bless()
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_RES_FONT -> SamplePaywalls.bless(font = primaryLocalFont)
-            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_ASSETS_FONT -> SamplePaywalls.bless(font = tertiaryLocalFont)
+            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_ASSETS_FONT_DEFAULT ->
+                SamplePaywalls.bless(font = tertiaryLocalFont)
+            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_ASSETS_FONT_CUSTOM ->
+                SamplePaywalls.bless(font = quaternaryLocalFont)
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_GOOGLE_FONT ->
                 SamplePaywalls.bless(font = secondaryGoogleFont)
 
@@ -120,10 +128,11 @@ object SamplePaywalls {
         TEMPLATE_7("#7: Multi-tier"),
         COMPONENTS_BLESS("#8: Components - bless."),
         COMPONENTS_BLESS_RES_FONT("#9: Components - bless. - res font"),
-        COMPONENTS_BLESS_ASSETS_FONT("#10: Components - bless. - assets font"),
-        COMPONENTS_BLESS_GOOGLE_FONT("#11: Components - bless. - Google font"),
-        TABS_BUTTONS("#12: Tabs - buttons"),
-        TABS_TOGGLE("#13 Tabs - toggle"),
+        COMPONENTS_BLESS_ASSETS_FONT_DEFAULT("#10: Components - bless. - assets font (default folder)"),
+        COMPONENTS_BLESS_ASSETS_FONT_CUSTOM("#11: Components - bless. - assets font (custom folder)"),
+        COMPONENTS_BLESS_GOOGLE_FONT("#12: Components - bless. - Google font"),
+        TABS_BUTTONS("#13: Tabs - buttons"),
+        TABS_TOGGLE("#14 Tabs - toggle"),
         UNRECOGNIZED_TEMPLATE("Default template"),
     }
 
