@@ -177,36 +177,18 @@ commands:
             source $BASH_ENV
             ruby -v
   
-  checkout-with-lfs:
-    description: "Efficiently checks out the repo, including any LFS files."
+  checkout-submodule:
+    description: "Checks out a git submodule."
+    parameters:
+      path:
+        type: string
+        default: ""
     steps:
       - run: 
-          name: Assert GIT_LFS_SKIP_SMUDGE is set to 1
+          name: Check out submodule << parameters.path >>
           command: |
-            if [ "$GIT_LFS_SKIP_SMUDGE" != "1" ]; then
-              echo "Error: GIT_LFS_SKIP_SMUDGE is not set to 1, but it's set to '$GIT_LFS_SKIP_SMUDGE'"
-              echo "If GIT_LFS_SKIP_SMUDGE is not set to 1, a regular checkout will download all LFS files anyway, and using checkout-with-lfs is pointless."
-              echo "A good place to do this is in the CircleCI Environment Variables settings."
-              echo "https://app.circleci.com/settings/project/github/RevenueCat/purchases-android/environment-variables"
-              exit 1
-            fi
-      # This will checkout the repo without any LFS files, because GIT_LFS_SKIP_SMUDGE is set to 1.
-      - checkout
-      # Only pull LFS files if we haven't cached them yet.
-      # Inspired by https://www.develer.com/en/blog/avoiding-git-lfs-bandwidth-waste-with-github-and-circleci/
-      - run:
-          name: Read LFS object IDs
-          command: git lfs ls-files -l | cut -d' ' -f1 | sort > .git-lfs-object-ids
-      - restore_cache:
-          key: v1-git-lfs-cache-key-{{ checksum ".git-lfs-object-ids" }}
-      # If our restore_cache step restored the LFS files, this won't do anything.
-      - run:
-          name: Pull LFS files if needed
-          command: git lfs pull
-      - save_cache:
-          key: v1-git-lfs-cache-key-{{ checksum ".git-lfs-object-ids" }}
-          paths:
-            - .git/lfs
+            git submodule init << parameters.path >>
+            git submodule update << parameters.path >>
 
 jobs:
 
@@ -574,7 +556,9 @@ jobs:
     description: "Emerge purchases ui snapshot tests"
     <<: *android-executor
     steps:
-      - checkout-with-lfs
+      - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -691,7 +675,7 @@ jobs:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
-  update-paywall-templates:
+  update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.2.0
     steps:
@@ -701,7 +685,7 @@ jobs:
       - revenuecat/setup-git-credentials
       - run:
           name: Update paywall templates
-          command: bundle exec fastlane android update_paywall_templates
+          command: bundle exec fastlane android update_paywall_preview_resources_submodule
 
 workflows:
   version: 2
@@ -852,4 +836,4 @@ workflows:
     when:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
-      - update-paywall-templates
+      - update-paywall-preview-resources-submodule

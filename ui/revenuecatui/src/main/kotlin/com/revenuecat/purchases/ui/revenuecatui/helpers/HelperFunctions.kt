@@ -2,14 +2,11 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import android.app.Activity
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalInspectionMode
-import coil.ImageLoader
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
@@ -22,15 +19,6 @@ import kotlin.coroutines.suspendCoroutine
  * Needs to be provided, it's null by default.
  */
 internal val LocalActivity: ProvidableCompositionLocal<Activity?> = compositionLocalOf { null }
-
-internal val LocalPreviewImageLoader: ProvidableCompositionLocal<ImageLoader?> = staticCompositionLocalOf { null }
-
-@Composable
-internal fun ProvidePreviewImageLoader(imageLoader: ImageLoader, content: @Composable () -> Unit): Unit =
-    CompositionLocalProvider(
-        LocalPreviewImageLoader provides imageLoader,
-        content,
-    )
 
 @Composable
 @ReadOnlyComposable
