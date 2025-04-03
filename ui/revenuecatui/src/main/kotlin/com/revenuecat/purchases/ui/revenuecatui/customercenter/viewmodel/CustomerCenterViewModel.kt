@@ -203,7 +203,7 @@ internal class CustomerCenterViewModelImpl(
                 _state.update { currentState ->
                     when (currentState) {
                         is CustomerCenterState.Success -> {
-                            currentState.copy(showRestoreDialog = true)
+                            currentState.copy(restorePurchasesState = RestorePurchasesState.RESTORING)
                         }
 
                         else -> currentState
@@ -646,7 +646,7 @@ internal class CustomerCenterViewModelImpl(
         copy(
             feedbackSurveyData = null,
             promotionalOfferData = null,
-            showRestoreDialog = false,
+            restorePurchasesState = null,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
         )

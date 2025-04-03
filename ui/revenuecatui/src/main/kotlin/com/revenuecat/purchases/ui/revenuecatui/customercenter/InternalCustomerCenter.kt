@@ -270,7 +270,7 @@ private fun CustomerCenterLoaded(
                 onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
             },
         )
-    } else if (state.showRestoreDialog) {
+    } else if (state.restorePurchasesState != null) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
             localization = state.customerCenterConfigData.localization,
