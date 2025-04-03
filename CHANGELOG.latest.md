@@ -7,12 +7,11 @@
 #### ✨ New Features
 * [Paywalls v2] Supports custom fonts in `assets/fonts` (#2320) via JayShortway (@JayShortway)
 ### Customer Center
-#### ✨ New Features
-* feat: Change default copy for web_subscription_manage #4921 (#2298) via Facundo Menzella (@facumenzella)
 #### 🐞 Bugfixes
 * Reload customer center after successful promo (#2317) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
+* feat: Change default copy for web_subscription_manage #4921 (#2298) via Facundo Menzella (@facumenzella)
 * Improve Korean translation (#2319) via Jaewoong Eum (@skydoves)
 * [Paywalls V2] Renders images in template previews (#2311) via JayShortway (@JayShortway)
 * [Paywalls V2] Removes Git LFS and adds submodule for paywall preview resources (#2315) via JayShortway (@JayShortway)
