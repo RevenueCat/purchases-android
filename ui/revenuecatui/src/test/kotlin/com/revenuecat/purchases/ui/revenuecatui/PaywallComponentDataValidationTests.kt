@@ -366,23 +366,25 @@ class PaywallComponentDataValidationTests {
         val secondaryFontAlias = FontAlias("secondary")
         val robotoFont = FontSpec.Resource(1)
         val robotoFontResourceName = FontInfo.Name("roboto")
-        val openSansFont = FontSpec.Resource(2)
-        val openSansFontResourceName = FontInfo.Name("open_sans")
+        val openSansFont = FontSpec.Asset("fonts/open_sans.ttf")
+        val openSansFontAssetName = FontInfo.Name("open_sans")
         val uiConfig = UiConfig(
             app = AppConfig(
                 fonts = mapOf(
                     primaryFontAlias to FontsConfig(robotoFontResourceName),
-                    secondaryFontAlias to FontsConfig(openSansFontResourceName),
+                    secondaryFontAlias to FontsConfig(openSansFontAssetName),
                 ),
             ),
         )
         val resourceProvider = MockResourceProvider(
-            mapOf(
+            resourceIds = mapOf(
                 "font" to mapOf(
                     robotoFontResourceName.value to robotoFont.id,
-                    openSansFontResourceName.value to openSansFont.id,
                 ),
             ),
+            assetPaths = listOf(
+                openSansFont.path
+            )
         )
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")

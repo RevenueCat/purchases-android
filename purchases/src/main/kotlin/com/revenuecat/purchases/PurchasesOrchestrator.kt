@@ -225,6 +225,7 @@ internal class PurchasesOrchestrator(
             state = state.copy(appInBackground = true)
         }
         log(LogIntent.DEBUG, ConfigureStrings.APP_BACKGROUNDED)
+        appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
         flushPaywallEvents()
     }
@@ -237,6 +238,8 @@ internal class PurchasesOrchestrator(
             state = state.copy(appInBackground = false, firstTimeInForeground = false)
         }
         log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
+        appConfig.isAppBackgrounded = false
+
         enqueue {
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
