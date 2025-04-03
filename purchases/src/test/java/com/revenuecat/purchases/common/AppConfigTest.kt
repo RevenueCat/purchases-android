@@ -15,6 +15,7 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 class AppConfigTest {
@@ -235,6 +236,36 @@ class AppConfigTest {
             isDebugBuild = false,
         )
         assertThat(appConfig.forceSigningErrors).isFalse
+    }
+
+    @Test
+    fun `default isAppBackgrounded is correct`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+        )
+        assertThat(appConfig.isAppBackgrounded).isTrue
+    }
+
+    @Test
+    fun `isAppBackgrounded can be modified correctly`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+        )
+        assertThat(appConfig.isAppBackgrounded).isTrue
+        appConfig.isAppBackgrounded = false
+        assertThat(appConfig.isAppBackgrounded).isFalse
     }
 
     @Test
