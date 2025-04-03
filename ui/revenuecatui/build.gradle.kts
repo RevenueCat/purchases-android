@@ -62,7 +62,7 @@ android {
             excludes += setOf(
                 "/META-INF/{AL2.0,LGPL2.1}",
                 "META-INF/LICENSE.md",
-                "META-INF/LICENSE-notice.md"
+                "META-INF/LICENSE-notice.md",
             )
         }
     }
@@ -131,15 +131,15 @@ tasks.dokkaHtmlPartial.configure {
 
         externalDocumentationLink {
             url.set(
-                uri("https://developer.android.com/reference/package-list").toURL()
+                uri("https://developer.android.com/reference/package-list").toURL(),
             )
         }
         sourceLink {
             localDirectory.set(
-                file("src/main/kotlin")
+                file("src/main/kotlin"),
             )
             remoteUrl.set(
-                uri("https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin").toURL()
+                uri("https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin").toURL(),
             )
             remoteLineSuffix.set("#L")
         }
