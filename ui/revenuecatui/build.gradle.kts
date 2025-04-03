@@ -139,7 +139,9 @@ tasks.dokkaHtmlPartial.configure {
                 file("src/main/kotlin"),
             )
             remoteUrl.set(
-                uri("https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin").toURL(),
+                uri(
+                    "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
+                ).toURL(),
             )
             remoteLineSuffix.set("#L")
         }
