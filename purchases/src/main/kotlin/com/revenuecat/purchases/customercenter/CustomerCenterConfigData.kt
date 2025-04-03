@@ -156,9 +156,6 @@ data class CustomerCenterConfigData(
             @SerialName("purchases_not_recovered")
             PURCHASES_NOT_RECOVERED,
 
-            @SerialName("purchases_not_recovered_support")
-            PURCHASES_NOT_RECOVERED_SUPPORT,
-
             @SerialName("purchases_not_found")
             PURCHASES_NOT_FOUND,
 
@@ -248,7 +245,6 @@ data class CustomerCenterConfigData(
                     PURCHASES_NOT_RECOVERED ->
                         "We could not find any purchases with your account. " +
                             "If you think this is an error, please contact support."
-                    PURCHASES_NOT_RECOVERED_SUPPORT -> "Contact Support..."
                     PURCHASES_NOT_FOUND -> "No past purchases"
                     PURCHASES_RESTORING -> "Restoring..."
                     MANAGE_SUBSCRIPTION -> "Manage your subscription"

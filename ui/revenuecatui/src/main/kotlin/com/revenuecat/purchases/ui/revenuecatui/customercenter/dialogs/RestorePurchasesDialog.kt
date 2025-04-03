@@ -141,7 +141,7 @@ private fun PurchasesNotFoundDialog(
                 TextButton(onClick = onContactSupport) {
                     Text(
                         localization.commonLocalizedString(
-                            key = Localization.CommonLocalizedString.PURCHASES_NOT_RECOVERED_SUPPORT,
+                            key = Localization.CommonLocalizedString.CONTACT_SUPPORT,
                         ),
                     )
                 }
