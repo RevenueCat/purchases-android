@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
+import android.content.res.AssetManager
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -10,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
@@ -51,6 +53,7 @@ internal fun rememberUpdatedTextComponentState(
     selectedTabIndexProvider: () -> Int,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val context = LocalContext.current
 
     return remember(style) {
         TextComponentState(
@@ -59,6 +62,7 @@ internal fun rememberUpdatedTextComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            assets = context.resources.assets,
         )
     }.apply {
         update(
@@ -74,6 +78,7 @@ internal class TextComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val assets: AssetManager,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
@@ -131,7 +136,7 @@ internal class TextComponentState(
 
     @get:JvmSynthetic
     val fontFamily by derivedStateOf {
-        fontSpec?.resolve(weight = fontWeight ?: FontWeight.Normal, style = FontStyle.Normal)
+        fontSpec?.resolve(assets = assets, weight = fontWeight ?: FontWeight.Normal, style = FontStyle.Normal)
     }
 
     @get:JvmSynthetic

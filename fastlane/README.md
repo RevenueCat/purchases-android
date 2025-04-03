@@ -231,13 +231,13 @@ Builds a Purchase Tester APK and prompts for:
 
 
 
-### android update_paywall_templates
+### android update_paywall_preview_resources_submodule
 
 ```sh
-[bundle exec] fastlane android update_paywall_templates
+[bundle exec] fastlane android update_paywall_preview_resources_submodule
 ```
 
-Updates offerings_paywalls_v2_templates.json file and creates/updates PR
+Updates paywall-preview-resources submodule and creates/updates PR
 
 ### android trigger_bump
 
