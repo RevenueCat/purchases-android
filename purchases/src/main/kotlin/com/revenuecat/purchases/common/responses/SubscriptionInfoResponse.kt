@@ -3,8 +3,8 @@ package com.revenuecat.purchases.common.responses
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.Constants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.utils.MICRO_MULTIPLIER
 import com.revenuecat.purchases.utils.serializers.ISO8601DateSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
