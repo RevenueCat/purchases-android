@@ -687,24 +687,26 @@ jobs:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
 
-  maestro:
-    steps:
-      - checkout
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - revenuecat/setup-git-credentials
-      - run:
-          name: Build PaywallsTester
-          command: bundle exec fastlane build_paywalls_tester_for_maestro
-      - run:
-          name: Install Maestro CLI
-          command: |
-            curl -Ls "https://get.maestro.mobile.dev" | bash
-      - run:
-          name: Run Maestro Tests
-          command: |
-            maestro test maestro/
-      - slack-notify-on-fail
+maestro:
+  <<: *android-machine-emulator
+  steps:
+    - checkout
+    - revenuecat/install-gem-unix-dependencies:
+        cache-version: v1
+    - revenuecat/setup-git-credentials
+    - run:
+        name: Build PaywallsTester
+        command: bundle exec fastlane build_paywalls_tester_for_maestro
+    - run:
+        name: Install Maestro CLI
+        command: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+    - run:
+        name: Run Maestro Tests
+        command: |
+          maestro test maestro/
+    - slack-notify-on-fail
+
 workflows:
   version: 2
   danger:
