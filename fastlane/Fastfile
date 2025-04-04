@@ -278,11 +278,12 @@ platform :android do
       device_id = sh("adb devices | grep -w 'device' | awk '{print $1}' | head -n1").strip
     end
 
-    # Step 4: Install the APK
-    sh("adb -s #{device_id} install -r '#{apk_path}'")
+    # Start adb server explicitly, ignore error if already running
+    sh("adb start-server || true")
+    sh("adb devices") # ensure adb is initialized
 
-    # Step 5: Optionally launch the app (update with real package name)
-    sh("adb -s #{device_id} shell monkey -p com.revenuecat.paywall_tester -c android.intent.category.LAUNCHER 1")
+    # Now install the APK
+    sh("adb -s #{device_id} install -r '#{apk_path}'", log: true)
 
     # Step 6: Save path for Maestro or further usage
     File.write("maestro_app_path_android.txt", apk_path)
