@@ -8,7 +8,7 @@ private class VirtualCurrencyInfoAPI {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun check(virtualCurrencyInfo: VirtualCurrencyInfo) {
         with(virtualCurrencyInfo) {
-            val balance: Long = virtualCurrencyInfo.balance
+            val balance: Int = virtualCurrencyInfo.balance
         }
     }
 }
