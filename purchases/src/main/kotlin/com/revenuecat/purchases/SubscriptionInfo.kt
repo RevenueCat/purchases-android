@@ -115,6 +115,48 @@ class SubscriptionInfo(
         periodType,
     )
 
+    @Deprecated(
+        message = "Use the constructor with all fields instead",
+        replaceWith = ReplaceWith(
+            "SubscriptionInfo(productIdentifier, purchaseDate, originalPurchaseDate, expiresDate, store, isSandbox, unsubscribeDetectedAt, billingIssuesDetectedAt, gracePeriodExpiresDate, ownershipType, periodType, refundedAt, storeTransactionId, autoResumeDate, displayName, price, productPlanIdentifier, requestDate)",
+        ),
+    )
+    constructor(
+        productIdentifier: String,
+        purchaseDate: Date,
+        originalPurchaseDate: Date?,
+        expiresDate: Date?,
+        store: Store,
+        isSandbox: Boolean,
+        unsubscribeDetectedAt: Date?,
+        billingIssuesDetectedAt: Date?,
+        gracePeriodExpiresDate: Date?,
+        ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+        periodType: PeriodType,
+        refundedAt: Date?,
+        storeTransactionId: String?,
+        requestDate: Date,
+    ) : this(
+        productIdentifier = productIdentifier,
+        purchaseDate = purchaseDate,
+        originalPurchaseDate = originalPurchaseDate,
+        expiresDate = expiresDate,
+        store = store,
+        isSandbox = isSandbox,
+        unsubscribeDetectedAt = unsubscribeDetectedAt,
+        billingIssuesDetectedAt = billingIssuesDetectedAt,
+        gracePeriodExpiresDate = gracePeriodExpiresDate,
+        ownershipType = ownershipType,
+        periodType = periodType,
+        refundedAt = refundedAt,
+        storeTransactionId = storeTransactionId,
+        autoResumeDate = null,
+        displayName = null,
+        price = null,
+        productPlanIdentifier = null,
+        requestDate = requestDate,
+    )
+
     override fun toString(): String {
         return """
             SubscriptionInfo {
