@@ -268,6 +268,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             every { finishTransactions } returns true
             every { customEntitlementComputation } returns false
             every { isDebugBuild } returns true
+            every { isAppBackgrounded } returns false
         }
         return HTTPClient(
             appConfig = appConfig,

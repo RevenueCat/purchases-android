@@ -38,6 +38,22 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `appConfig isAppBackgrounded is updated when app foregrounded`() {
+        mockOfferingsManagerAppForeground()
+        assertThat(appConfig.isAppBackgrounded).isTrue
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        assertThat(appConfig.isAppBackgrounded).isFalse
+    }
+
+    @Test
+    fun `appConfig isAppBackgrounded is updated when app backgrounded`() {
+        appConfig.isAppBackgrounded = false
+        assertThat(appConfig.isAppBackgrounded).isFalse
+        Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
+        assertThat(appConfig.isAppBackgrounded).isTrue
+    }
+
+    @Test
     fun `force update of caches when app foregrounded for the first time`() {
         mockOfferingsManagerAppForeground()
         purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = true)

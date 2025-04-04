@@ -84,6 +84,8 @@ internal open class BasePurchasesTest {
     internal val mockLifecycle = mockk<Lifecycle>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
+    protected lateinit var appConfig: AppConfig
+
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
     private val capturedConsumePurchaseWrapper = slot<StoreTransaction>()
@@ -405,7 +407,7 @@ internal open class BasePurchasesTest {
         customEntitlementComputation: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
     ) {
-        val appConfig = AppConfig(
+        appConfig = AppConfig(
             context = mockContext,
             purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,

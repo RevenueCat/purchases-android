@@ -13,11 +13,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -479,17 +481,7 @@ private fun MainStackComponent(
     shouldApplyShadow: Boolean = true,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val density = LocalDensity.current
-    val topSystemBarsPadding = if (stackState.applyTopWindowInsets) {
-        PaddingValues(top = with(density) { WindowInsets.systemBars.getTop(density).toDp() })
-    } else {
-        PaddingValues(all = 0.dp)
-    }
-    val bottomSystemBarsPadding = if (stackState.applyBottomWindowInsets) {
-        PaddingValues(bottom = with(density) { WindowInsets.systemBars.getBottom(density).toDp() })
-    } else {
-        PaddingValues(all = 0.dp)
-    }
+    val systemBarInsets = WindowInsets.systemBars
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
@@ -523,7 +515,9 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .padding(child.stackChildPadding(topSystemBarsPadding))
+                                .conditional(stackState.applyTopWindowInsets && !child.ignoreTopWindowInsets) {
+                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                }
                                 .alpha(contentAlpha),
                         )
                     }
@@ -547,9 +541,15 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                                .padding(
-                                    child.verticalStackChildPadding(isFirst = index == 0, topSystemBarsPadding),
-                                )
+                                .conditional(
+                                    // In a Vertical container, we only want to apply topSystemBarsPadding to the first
+                                    // child, except when that child has `ignoreTopWindowInsets` set to true.
+                                    stackState.applyTopWindowInsets &&
+                                        index == 0 &&
+                                        !child.ignoreTopWindowInsets,
+                                ) {
+                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                }
                                 .alpha(contentAlpha),
                         )
                     }
@@ -574,7 +574,9 @@ private fun MainStackComponent(
                             state = state,
                             onClick = clickHandler,
                             modifier = Modifier
-                                .padding(child.stackChildPadding(topSystemBarsPadding))
+                                .conditional(stackState.applyTopWindowInsets && !child.ignoreTopWindowInsets) {
+                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                }
                                 .alpha(contentAlpha),
                         )
                     }
@@ -617,9 +619,9 @@ private fun MainStackComponent(
             outerShapeModifier
                 .then(borderModifier)
                 .then(innerShapeModifier)
-                .padding(bottomSystemBarsPadding)
-                .consumeWindowInsets(bottomSystemBarsPadding)
-                .consumeWindowInsets(topSystemBarsPadding),
+                .conditional(stackState.applyBottomWindowInsets) {
+                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                },
         )
     } else if (nestedBadge != null) {
         Box(
@@ -721,33 +723,6 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
 
 private val ComponentStyle.ignoreTopWindowInsets: Boolean
     get() = this is ImageComponentStyle && ignoreTopWindowInsets
-
-/**
- * Provides the padding to be used for this child of a stack. This should only be used for horizontal and z-layer
- * stacks. Vertical stacks should use [verticalStackChildPadding].
- */
-private fun ComponentStyle.stackChildPadding(topSystemBarsPadding: PaddingValues): PaddingValues =
-    if (ignoreTopWindowInsets) {
-        PaddingValues(all = 0.dp)
-    } else {
-        topSystemBarsPadding
-    }
-
-/**
- * Provides the padding to be used for this child of a stack. This should only be used for vertical stacks. Horizontal
- * and z-layer stacks should use [stackChildPadding].
- */
-private fun ComponentStyle.verticalStackChildPadding(
-    isFirst: Boolean,
-    topSystemBarsPadding: PaddingValues,
-): PaddingValues =
-    // In a Vertical container, we only want to apply topSystemBarsPadding to the first child,
-    // except when that child has `ignoreTopWindowInsets` set to true.
-    if (!isFirst || ignoreTopWindowInsets) {
-        PaddingValues(all = 0.dp)
-    } else {
-        topSystemBarsPadding
-    }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
