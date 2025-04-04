@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -74,7 +74,7 @@ internal class ComponentsConfigTests {
             )
 
             // Act
-            val actual = OfferingParser.json.decodeFromString<ComponentsConfig>(json)
+            val actual = JsonTools.json.decodeFromString<ComponentsConfig>(json)
 
             // Assert
             assert(actual == expected)
@@ -290,7 +290,7 @@ internal class ComponentsConfigTests {
         @Test
         fun `Should properly deserialize PaywallComponentsConfig`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponentsConfig>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponentsConfig>(args.json)
 
             // Assert
             assert(actual == args.expected)

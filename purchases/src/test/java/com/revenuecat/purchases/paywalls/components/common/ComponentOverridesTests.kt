@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.FontAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import org.intellij.lang.annotations.Language
@@ -156,7 +156,7 @@ internal class ComponentOverridesTests {
         @Test
         fun `Should properly deserialize ComponentOverrides containing PartialTextComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<List<ComponentOverride<PartialTextComponent>>>(args.json)
+            val actual = JsonTools.json.decodeFromString<List<ComponentOverride<PartialTextComponent>>>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -257,7 +257,7 @@ internal class ComponentOverridesTests {
         @Test
         fun `Should properly deserialize ComponentOverrides containing PartialImageComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<List<ComponentOverride<PartialImageComponent>>>(args.json)
+            val actual = JsonTools.json.decodeFromString<List<ComponentOverride<PartialImageComponent>>>(args.json)
 
             // Assert
             assert(actual == args.expected)
