@@ -742,10 +742,11 @@ workflows:
       - run-firebase-tests-purchases-integration-test:
           requires:
             - purchases-integration-tests-build
-      - run-firebase-tests-purchases-load-shedder-integration-test:
-          <<: *release-branches
-          context:
-            - slack-secrets
+      # TODO: Enable this once the load shedder integration tests are fixed on the backend
+      # - run-firebase-tests-purchases-load-shedder-integration-test:
+      #     <<: *release-branches
+      #     context:
+      #       - slack-secrets
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -759,7 +760,8 @@ workflows:
             - run-revenuecatui-ui-tests
             - run-firebase-tests
             - run-firebase-tests-purchases-integration-test
-            - run-firebase-tests-purchases-load-shedder-integration-test
+            # TODO: Enable this once the load shedder integration tests are fixed on the backend
+            # - run-firebase-tests-purchases-load-shedder-integration-test
             - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
           <<: *release-branches
       - revenuecat/tag-current-branch:
