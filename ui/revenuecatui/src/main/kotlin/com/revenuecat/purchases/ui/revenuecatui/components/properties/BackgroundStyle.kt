@@ -32,9 +32,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentThe
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getImageLoaderTyped
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getPreviewPlaceholderBlocking
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 
@@ -117,19 +120,28 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
 private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter {
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val context = LocalContext.current
-    val imageLoader = remember(context) {
+    val previewImageLoader = LocalPreviewImageLoader.current
+    val isInPreviewMode = isInPreviewMode()
+    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(context) {
         Purchases.getImageLoaderTyped(context.applicationContext)
     }
+    val imageRequest = remember(context, imageUrls.webp, cachePolicy) {
+        getImageRequest(context, imageUrls.webp.toString(), cachePolicy)
+    }
     return rememberAsyncImagePainter(
-        model = getImageRequest(context, imageUrls.webp.toString(), cachePolicy),
+        model = imageRequest,
         imageLoader = imageLoader,
-        placeholder = rememberAsyncImagePainter(
-            model = getImageRequest(context, imageUrls.webpLowRes.toString(), cachePolicy),
-            imageLoader = imageLoader,
-            error = null,
-            fallback = null,
-            contentScale = contentScale,
-        ),
+        placeholder = if (isInPreviewMode) {
+            imageLoader.getPreviewPlaceholderBlocking(imageRequest)
+        } else {
+            rememberAsyncImagePainter(
+                model = getImageRequest(context, imageUrls.webpLowRes.toString(), cachePolicy),
+                imageLoader = imageLoader,
+                error = null,
+                fallback = null,
+                contentScale = contentScale,
+            )
+        },
         error = null,
         fallback = null,
         onError = {

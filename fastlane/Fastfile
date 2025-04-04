@@ -582,42 +582,39 @@ DESC
     )
   end
 
-  desc "Updates offerings_paywalls_v2_templates.json file and creates/updates PR"
-  lane :update_paywall_templates do |options|
-    branch_name = "pw2-update-templates-json"
-    templates_file = "../ui/revenuecatui/src/debug/resources/offerings_paywalls_v2_templates.json"
-    api_key = ENV["PAYWALLS_V2_TEMPLATE_REPO_API_KEY"] || UI.user_error!("Missing PAYWALLS_V2_TEMPLATE_REPO_API_KEY environment variable")
+  desc "Updates paywall-preview-resources submodule and creates/updates PR"
+  lane :update_paywall_preview_resources_submodule do |options|
+    branch_name = "pw2-update-paywall-preview-resources-submodule"
+    submodule_dir = "../upstream/paywall-preview-resources"
 
     # Ensure we're starting from an up-to-date main.
     sh("git", "fetch", "origin")
 
     create_or_checkout_branch(branch_name: branch_name)
 
-    # Get offerings and save to file.
-    offerings_response = get_offerings(
-      app_user_id: "purchases-android-ci",
-      api_key: api_key
-    )
-    File.write(templates_file, offerings_response)
-    UI.success("Successfully updated offerings_paywalls_v2_templates.json file")
+    Dir.chdir(submodule_dir) do
+      sh("git", "fetch")
+      sh("git", "checkout", "main")
+      sh("git", "pull")
+    end
 
     has_changes = !sh("git", "status", "--porcelain").empty?
 
     if has_changes
       commit_and_push(
         branch_name: branch_name,
-        commit_message: "[Automated] Updates offerings_paywalls_v2_templates.json."
+        commit_message: "[Automated] Updates paywall-preview-resources submodule."
       )
 
       create_pr_if_necessary(
         branch_name: branch_name,
-        title: "[AUTOMATIC][Paywalls V2] Updates Compose previews of all templates",
-        body: "This is an automatic update of the Compose previews of all templates.",
+        title: "[AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule",
+        body: "This is an automatic update of the paywall-preview-resources submodule.",
         labels: ["pr:other"],
         team_reviewers: ["coresdk", "monetization"]
       )
     else
-      UI.message("No changes detected in templates file, skipping PR creation")
+      UI.message("No changes detected in paywall-preview-resources submodule, skipping PR creation")
     end
   end
 
@@ -642,34 +639,6 @@ DESC
     else
       UI.message("Creating new branch #{branch_name}")
       sh("git", "checkout", "-b", branch_name)
-    end
-  end
-
-  private_lane :get_offerings do |options|
-    app_user_id = options[:app_user_id] || UI.user_error!("No app_user_id provided")
-    api_key = options[:api_key] || UI.user_error!("No api_key provided")
-
-    require 'rest-client'
-    require 'json'
-
-    begin
-      response = RestClient.get(
-        "https://api.revenuecat.com/v1/subscribers/#{app_user_id}/offerings",
-        {
-          'Content-Type' => 'application/json',
-          'X-Platform' => 'Android',
-          'Authorization' => "Bearer #{api_key}"
-        }
-      )
-
-      # Parse and return the response
-      JSON.pretty_generate(JSON.parse(response.body))
-    rescue RestClient::Exception => e
-      UI.error("API request failed: #{e.response}")
-      raise
-    rescue => e
-      UI.error("Error: #{e.message}")
-      raise
     end
   end
 

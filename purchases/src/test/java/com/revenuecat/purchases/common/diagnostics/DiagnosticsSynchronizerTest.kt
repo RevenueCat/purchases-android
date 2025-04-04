@@ -71,6 +71,32 @@ class DiagnosticsSynchronizerTest {
     }
 
     @Test
+    fun `syncDiagnosticsFileIfNeeded does not do anything if diagnostics file is already syncing`() {
+        val successCallbackSlot = slot<(JSONObject) -> Unit>()
+        val errorCallbackSlot = slot<(PurchasesError, Boolean) -> Unit>()
+
+        every { backend.postDiagnostics(
+            testDiagnosticsEntryJSONs,
+            capture(successCallbackSlot),
+            capture(errorCallbackSlot)
+        ) } just Runs
+
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+
+        verify(exactly = 1) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 1) { backend.postDiagnostics(any(), any(), any()) }
+
+        successCallbackSlot.captured(JSONObject())
+
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+
+        verify(exactly = 2) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 2) { backend.postDiagnostics(any(), any(), any()) }
+    }
+
+    @Test
     fun `syncDiagnosticsFileIfNeeded calls backend with correct parameters if file has contents`() {
         mockBackendResponse(testDiagnosticsEntryJSONs)
 
@@ -223,6 +249,27 @@ class DiagnosticsSynchronizerTest {
         every { diagnosticsFileHelper.readFileAsJson(any()) } throws IOException()
         every { diagnosticsFileHelper.deleteFile() } throws IOException()
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+    }
+
+    @Test
+    fun `onEventTracked syncs diagnostics file if file is big enough to sync`() {
+        every { diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync() } returns true
+        mockBackendResponse(testDiagnosticsEntryJSONs)
+
+        diagnosticsSynchronizer.onEventTracked()
+
+        verify(exactly = 1) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 1) { backend.postDiagnostics(any(), any(), any()) }
+    }
+
+    @Test
+    fun `onEventTracked does not sync diagnostics file if file is not big enough to sync`() {
+        every { diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync() } returns false
+
+        diagnosticsSynchronizer.onEventTracked()
+
+        verify(exactly = 0) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
     }
 
     // endregion

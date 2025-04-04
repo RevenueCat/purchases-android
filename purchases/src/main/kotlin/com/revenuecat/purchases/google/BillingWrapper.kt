@@ -20,6 +20,7 @@ import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -903,17 +904,21 @@ internal class BillingWrapper(
             setProductDetails(purchaseInfo.productDetails)
         }.build()
 
-        return Result.Success(
-            BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                .setObfuscatedAccountId(appUserID.sha256())
-                .apply {
-                    isPersonalizedPrice?.let {
-                        setIsOfferPersonalized(it)
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                    .setObfuscatedAccountId(appUserID.sha256())
+                    .apply {
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
                     }
-                }
-                .build(),
-        )
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            throw NoCoreLibraryDesugaringException(e)
+        }
     }
 
     private fun buildSubscriptionPurchaseParams(
@@ -927,22 +932,26 @@ internal class BillingWrapper(
             setProductDetails(purchaseInfo.productDetails)
         }.build()
 
-        return Result.Success(
-            BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                .apply {
-                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                    // https://issuetracker.google.com/issues/155005449
-                    replaceProductInfo?.let {
-                        setUpgradeInfo(it)
-                    } ?: setObfuscatedAccountId(appUserID.sha256())
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                    .apply {
+                        // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                        // https://issuetracker.google.com/issues/155005449
+                        replaceProductInfo?.let {
+                            setUpgradeInfo(it)
+                        } ?: setObfuscatedAccountId(appUserID.sha256())
 
-                    isPersonalizedPrice?.let {
-                        setIsOfferPersonalized(it)
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
                     }
-                }
-                .build(),
-        )
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            throw NoCoreLibraryDesugaringException(e)
+        }
     }
 
     @Synchronized

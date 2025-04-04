@@ -7,6 +7,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.finishTransactions
 import com.revenuecat.purchases.strings.ConfigureStrings
 import java.net.URL
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("LongParameterList")
 internal class AppConfig(
@@ -33,6 +34,13 @@ internal class AppConfig(
         get() = runningTests && field
     var forceSigningErrors: Boolean = forceSigningErrors
         get() = runningTests && field
+
+    private val _isAppBackgrounded: AtomicBoolean = AtomicBoolean(true)
+    var isAppBackgrounded: Boolean
+        get() = _isAppBackgrounded.get()
+        set(value) {
+            _isAppBackgrounded.set(value)
+        }
 
     val enableOfflineEntitlements = true
     val languageTag: String = context.getLocale()?.toLanguageTag() ?: ""
@@ -67,6 +75,7 @@ internal class AppConfig(
         if (forceSigningErrors != other.forceSigningErrors) return false
         if (baseURL != other.baseURL) return false
         if (showInAppMessagesAutomatically != other.showInAppMessagesAutomatically) return false
+        if (isAppBackgrounded != other.isAppBackgrounded) return false
 
         return true
     }
@@ -84,6 +93,7 @@ internal class AppConfig(
         result = 31 * result + forceSigningErrors.hashCode()
         result = 31 * result + baseURL.hashCode()
         result = 31 * result + showInAppMessagesAutomatically.hashCode()
+        result = 31 * result + isAppBackgrounded.hashCode()
         return result
     }
 

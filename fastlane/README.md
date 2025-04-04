@@ -31,22 +31,6 @@ Runs all the tests
 
 Setup development environment
 
-### android verify_debug_view_snapshot_tests
-
-```sh
-[bundle exec] fastlane android verify_debug_view_snapshot_tests
-```
-
-Verify snapshot tests for the debug view library
-
-### android record_debug_view_snapshot_tests
-
-```sh
-[bundle exec] fastlane android record_debug_view_snapshot_tests
-```
-
-Record/Update snapshots for tests in the debug view library
-
 ### android emerge_purchases_ui_snapshot_tests
 
 ```sh
@@ -247,61 +231,13 @@ Builds a Purchase Tester APK and prompts for:
 
 
 
-### android update_paywall_templates
+### android update_paywall_preview_resources_submodule
 
 ```sh
-[bundle exec] fastlane android update_paywall_templates
+[bundle exec] fastlane android update_paywall_preview_resources_submodule
 ```
 
-Updates offerings_paywalls_v2_templates.json file and creates/updates PR
-
-### android fetch_snapshots
-
-```sh
-[bundle exec] fastlane android fetch_snapshots
-```
-
-Clones or updates snapshots repo
-
-### android verify_revenuecatui_snapshots
-
-```sh
-[bundle exec] fastlane android verify_revenuecatui_snapshots
-```
-
-Verify RevenueCat UI snapshots
-
-### android record_revenuecatui_snapshots
-
-```sh
-[bundle exec] fastlane android record_revenuecatui_snapshots
-```
-
-Record RevenueCat UI snapshots
-
-### android create_snapshots_repo_pr
-
-```sh
-[bundle exec] fastlane android create_snapshots_repo_pr
-```
-
-Creates a new PR on purchases-ios-snapshots after new snapshot files were generated
-
-### android generate_snapshots_RCUI
-
-```sh
-[bundle exec] fastlane android generate_snapshots_RCUI
-```
-
-Trigger CircleCI job to generate snapshots for RevenueCatUI
-
-### android update_snapshots_repo
-
-```sh
-[bundle exec] fastlane android update_snapshots_repo
-```
-
-Updates purchases-android-snapshots-commit to point to latest commit on main
+Updates paywall-preview-resources submodule and creates/updates PR
 
 ### android trigger_bump
 
