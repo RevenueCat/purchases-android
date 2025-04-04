@@ -230,7 +230,7 @@ platform :android do
   end
 
   desc "Build and install Paywall Tester for Maestro"
-  lane :build_and_install_paywall_tester_for_maestro do
+  lane :build_paywalls_tester_for_maestro do
     # Step 1: Build the debug APK
     gradle(
       task: "examples:paywall-tester:assembleDebug"
