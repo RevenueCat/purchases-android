@@ -705,7 +705,6 @@ jobs:
           name: Run Maestro Tests
           command: |
             maestro test maestro/
-      - slack-notify-on-fail
 
 workflows:
   version: 2
