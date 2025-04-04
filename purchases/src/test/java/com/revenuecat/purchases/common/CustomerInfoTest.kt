@@ -130,12 +130,13 @@ class CustomerInfoTest {
         val info = fullCustomerInfo
         val purchasedSkus = info.allPurchasedProductIds
 
-        assertThat(purchasedSkus.size).isEqualTo(5)
+        assertThat(purchasedSkus.size).isEqualTo(6)
         assertThat(purchasedSkus).contains("pro:monthly")
         assertThat(purchasedSkus).contains("100_coins_pack")
         assertThat(purchasedSkus).contains("basic:monthly")
         assertThat(purchasedSkus).contains("7_extra_lives")
         assertThat(purchasedSkus).contains("lifetime_access")
+        assertThat(purchasedSkus).contains("paused:monthly")
     }
 
     @Test
@@ -330,28 +331,30 @@ class CustomerInfoTest {
     @Test
     fun `Test allExpirationDatesByProduct`() {
         assertThat(fullCustomerInfo.allExpirationDatesByProduct).isNotEmpty
-        assertThat(fullCustomerInfo.allExpirationDatesByProduct.size).isEqualTo(2)
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct.size).isEqualTo(3)
 
         assertThat(fullCustomerInfo.allExpirationDatesByProduct["pro:monthly"]).isNotNull
         assertThat(fullCustomerInfo.allExpirationDatesByProduct["basic:monthly"]).isNotNull
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct["paused:monthly"]).isNotNull
     }
 
     @Test
     fun `Test allPurchaseDatesByProduct`() {
         assertThat(fullCustomerInfo.allPurchaseDatesByProduct).isNotEmpty
-        assertThat(fullCustomerInfo.allPurchaseDatesByProduct.size).isEqualTo(5)
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct.size).isEqualTo(6)
 
         assertThat(fullCustomerInfo.allPurchaseDatesByProduct["pro:monthly"]).isNotNull
         assertThat(fullCustomerInfo.allPurchaseDatesByProduct["basic:monthly"]).isNotNull
         assertThat(fullCustomerInfo.allPurchaseDatesByProduct["100_coins_pack"]).isNotNull
         assertThat(fullCustomerInfo.allPurchaseDatesByProduct["7_extra_lives"]).isNotNull
         assertThat(fullCustomerInfo.allPurchaseDatesByProduct["lifetime_access"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["paused:monthly"]).isNotNull
     }
 
     @Test
     fun `Test subscriptionsByProductIdentifier`() {
         assertThat(fullCustomerInfo.subscriptionsByProductIdentifier).isNotEmpty
-        assertThat(fullCustomerInfo.subscriptionsByProductIdentifier.size).isEqualTo(2)
+        assertThat(fullCustomerInfo.subscriptionsByProductIdentifier.size).isEqualTo(3)
 
         val proSubscription = fullCustomerInfo.subscriptionsByProductIdentifier["pro"]
         assertThat(proSubscription).isNotNull
@@ -396,6 +399,28 @@ class CustomerInfoTest {
         assertThat(basicSubscription.productPlanIdentifier).isEqualTo("monthly")
         assertThat(basicSubscription.isActive).isFalse()
         assertThat(basicSubscription.willRenew).isFalse()
+
+        val pausedSubscription = fullCustomerInfo.subscriptionsByProductIdentifier["paused"]
+        assertThat(pausedSubscription).isNotNull
+        assertThat(pausedSubscription!!.productIdentifier).isEqualTo("paused")
+        assertThat(pausedSubscription.purchaseDate).isEqualTo(Iso8601Utils.parse("2022-04-04T13:41:06Z"))
+        assertThat(pausedSubscription.originalPurchaseDate).isEqualTo(Iso8601Utils.parse("2022-04-04T13:41:06Z"))
+        assertThat(pausedSubscription.expiresDate).isEqualTo(Iso8601Utils.parse("2023-04-04T13:46:05Z"))
+        assertThat(pausedSubscription.store).isEqualTo(Store.PLAY_STORE)
+        assertThat(pausedSubscription.unsubscribeDetectedAt).isNull()
+        assertThat(pausedSubscription.isSandbox).isTrue()
+        assertThat(pausedSubscription.billingIssuesDetectedAt).isNull()
+        assertThat(pausedSubscription.gracePeriodExpiresDate).isNull()
+        assertThat(pausedSubscription.ownershipType).isEqualTo(OwnershipType.UNKNOWN)
+        assertThat(pausedSubscription.periodType).isEqualTo(PeriodType.NORMAL)
+        assertThat(pausedSubscription.refundedAt).isNull()
+        assertThat(pausedSubscription.storeTransactionId).isEqualTo("GPA.3304-5067-2770-55157")
+        assertThat(pausedSubscription.autoResumeDate).isEqualTo(Iso8601Utils.parse("2100-04-06T20:54:45.975000Z"))
+        assertThat(pausedSubscription.displayName).isNull()
+        assertThat(pausedSubscription.price).isEqualTo(Price("$9.99", 9_990_000, "USD"))
+        assertThat(pausedSubscription.productPlanIdentifier).isEqualTo("monthly")
+        assertThat(pausedSubscription.isActive).isFalse()
+        assertThat(pausedSubscription.willRenew).isTrue()
     }
 
     @Test
@@ -418,7 +443,7 @@ class CustomerInfoTest {
         val customerInfo = createCustomerInfo(jsonObject)
 
         assertThat(customerInfo.subscriptionsByProductIdentifier).isNotEmpty
-        assertThat(customerInfo.subscriptionsByProductIdentifier.size).isEqualTo(2)
+        assertThat(customerInfo.subscriptionsByProductIdentifier.size).isEqualTo(3)
 
         val proSubscription = customerInfo.subscriptionsByProductIdentifier["pro"]
         assertThat(proSubscription).isNotNull

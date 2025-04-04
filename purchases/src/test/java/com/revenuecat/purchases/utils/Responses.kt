@@ -142,6 +142,23 @@ object Responses {
                           "currency": "USD",
                           "amount": "5.99"
                         }
+                      },
+                      "paused": {
+                        "auto_resume_date": "2100-04-06T20:54:45.975000Z",
+                        "billing_issues_detected_at": null,
+                        "display_name": null,
+                        "expires_date": "2023-04-04T13:46:05Z",
+                        "grace_period_expires_date": null,
+                        "is_sandbox": true,
+                        "original_purchase_date": "2022-04-04T13:41:06Z",
+                        "period_type": "normal",
+                        "price": { "amount": 9.99, "currency": "USD" },
+                        "product_plan_identifier": "monthly",
+                        "purchase_date": "2022-04-04T13:41:06Z",
+                        "refunded_at": null,
+                        "store": "play_store",
+                        "store_transaction_id": "GPA.3304-5067-2770-55157",
+                        "unsubscribe_detected_at": null
                       }
                     },
                     "entitlements": {
