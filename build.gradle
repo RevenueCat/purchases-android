@@ -26,13 +26,6 @@ dependencies {
     detektPlugins libs.detekt.compose
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
-        google()
-    }
-}
-
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
