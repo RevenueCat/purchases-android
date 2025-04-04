@@ -23,7 +23,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -42,6 +46,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 private const val TAG = "CustomerCenterTest"
 
+@OptIn(ExperimentalComposeUiApi::class)
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
@@ -91,9 +96,14 @@ fun AppInfoScreen(
         Button(onClick = { isDebugBottomSheetVisible = true }) {
             Text(text = "Show debug view")
         }
-        Button(onClick = {
-            isCustomerCenterVisible = true
-        }) {
+        Button(
+            onClick = {
+                isCustomerCenterVisible = true
+            },
+            modifier = Modifier
+                .semantics { testTagsAsResourceId = true }
+                .testTag("customer-center"),
+        ) {
             Text(text = "Show customer center")
         }
     }

@@ -229,6 +229,67 @@ platform :android do
     )
   end
 
+  desc "Build and install Paywall Tester for Maestro"
+  lane :build_and_install_paywall_tester_for_maestro do
+    # Step 1: Build the debug APK
+    gradle(
+      task: "examples:paywall-tester:assembleDebug"
+    )
+
+    # Step 2: Find the debug APK
+    apk_path = Dir["../examples/paywall-tester/build/outputs/apk/debug/*-debug.apk"].first
+    UI.user_error!("❌ Could not find debug APK") unless apk_path
+
+    # Step 3: Check for a connected emulator/device
+    device_id = sh("adb devices | grep -w 'device' | awk '{print $1}' | head -n1").strip
+
+    if device_id.empty?
+      UI.message("🕹️ No running emulator found — launching one...")
+
+      # Pick first available AVD
+      avd_name = sh("emulator -list-avds | head -n1").strip
+      UI.user_error!("❌ No AVDs available") if avd_name.empty?
+
+      # Start emulator
+      emulator_path = `which emulator`.strip
+      UI.user_error!("❌ 'emulator' not found in PATH") if emulator_path.empty?
+
+      pid = spawn("#{emulator_path} -avd #{avd_name}", [:out, :err] => "/dev/null")
+      Process.detach(pid)
+
+      UI.message("🕒 Waiting for device connection...")
+      sh("adb wait-for-device")
+
+      # Wait until the emulator is fully booted
+      UI.message("⌛ Waiting for system boot...")
+      booted = false
+      30.times do
+        output = sh("adb shell getprop sys.boot_completed", log: false).strip
+        if output == "1"
+          booted = true
+          break
+        else
+          sleep(2)
+        end
+      end
+      UI.user_error!("❌ Emulator failed to fully boot") unless booted
+
+      # Refresh device_id after boot
+      device_id = sh("adb devices | grep -w 'device' | awk '{print $1}' | head -n1").strip
+    end
+
+    # Step 4: Install the APK
+    sh("adb -s #{device_id} install -r '#{apk_path}'")
+
+    # Step 5: Optionally launch the app (update with real package name)
+    sh("adb -s #{device_id} shell monkey -p com.revenuecat.paywall_tester -c android.intent.category.LAUNCHER 1")
+
+    # Step 6: Save path for Maestro or further usage
+    File.write("maestro_app_path_android.txt", apk_path)
+
+    UI.success("✅ Paywall Tester APK installed and launched on #{device_id}")
+  end
+
   desc "Build purchases module integration tests pointing to production"
   lane :build_default_purchases_integration_tests do |options|
     build_purchases_integration_tests(

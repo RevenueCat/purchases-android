@@ -1,0 +1,7 @@
+appId: com.revenuecat.paywall_tester
+---
+- launchApp
+- tapOn:
+    id: "bottom_nav_app-info"
+- tapOn:
+    id: "customer-center"

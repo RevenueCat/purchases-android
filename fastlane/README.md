@@ -119,6 +119,14 @@ Build purchase tester app bundle
 
 Build paywall tester app bundle
 
+### android build_and_install_paywall_tester_for_maestro
+
+```sh
+[bundle exec] fastlane android build_and_install_paywall_tester_for_maestro
+```
+
+Build and install Paywall Tester for Maestro
+
 ### android build_default_purchases_integration_tests
 
 ```sh
