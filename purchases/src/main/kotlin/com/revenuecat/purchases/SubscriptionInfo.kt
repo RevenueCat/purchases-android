@@ -116,9 +116,15 @@ class SubscriptionInfo(
     )
 
     @Deprecated(
-        message = "Use the constructor with all fields instead",
+        message = """
+            Use the constructor with all fields instead. This constructor is missing the new fields: 
+            autoResumeDate, displayName, price, and productPlanIdentifier
+            """,
         replaceWith = ReplaceWith(
-            "SubscriptionInfo(productIdentifier, purchaseDate, originalPurchaseDate, expiresDate, store, isSandbox, unsubscribeDetectedAt, billingIssuesDetectedAt, gracePeriodExpiresDate, ownershipType, periodType, refundedAt, storeTransactionId, autoResumeDate, displayName, price, productPlanIdentifier, requestDate)",
+            "SubscriptionInfo(productIdentifier, purchaseDate, originalPurchaseDate, expiresDate, store, " +
+                "isSandbox, unsubscribeDetectedAt, billingIssuesDetectedAt, gracePeriodExpiresDate, ownershipType, " +
+                "periodType, refundedAt, storeTransactionId, autoResumeDate, displayName, price, " +
+                "productPlanIdentifier, requestDate)",
         ),
     )
     constructor(

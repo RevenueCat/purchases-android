@@ -35,6 +35,38 @@ data class Transaction(
     val price: Price?,
 ) : Parcelable {
 
+    @Deprecated(
+        message = """
+            Use the constructor with all fields instead. This constructor is missing the new fields: displayName, 
+            isSandbox, originalPurchaseDate, and price
+            """,
+        replaceWith = ReplaceWith(
+            "Transaction(transactionIdentifier, revenuecatId, productIdentifier, productId, purchaseDate, " +
+                "storeTransactionId, store, displayName, isSandbox, originalPurchaseDate, price)",
+        ),
+    )
+    constructor(
+        transactionIdentifier: String,
+        revenuecatId: String,
+        productIdentifier: String,
+        productId: String,
+        purchaseDate: Date,
+        storeTransactionId: String?,
+        store: Store,
+    ) : this(
+        transactionIdentifier = transactionIdentifier,
+        revenuecatId = revenuecatId,
+        productIdentifier = productIdentifier,
+        productId = productId,
+        purchaseDate = purchaseDate,
+        storeTransactionId = storeTransactionId,
+        store = store,
+        displayName = null,
+        isSandbox = false,
+        originalPurchaseDate = null,
+        price = null,
+    )
+
     internal companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal val json = Json {
