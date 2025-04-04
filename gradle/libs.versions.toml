@@ -34,7 +34,7 @@ kotlin = "1.8.22"
 kotlinBom = "1.8.0"
 # Can't update until we use more recent kotlin. 1.6.0 uses Kotlin 1.9.0
 kotlinxSerializationJSON = "1.5.1"
-kover = "0.7.0"
+kover = "0.7.2"
 legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
 material = "1.6.0"
