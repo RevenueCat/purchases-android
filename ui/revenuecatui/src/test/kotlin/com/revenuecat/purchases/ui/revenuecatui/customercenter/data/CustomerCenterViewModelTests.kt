@@ -22,6 +22,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -91,6 +92,49 @@ class CustomerCenterViewModelTests {
     @After
     internal fun tearDown() {
         clearAllMocks()
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer returns false when offer is not eligible`() = runTest {
+        val viewModel = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+
+        // Mock the product
+        val product = mockk<StoreProduct>(relaxed = true)
+        every { product.id } returns "product_id"
+
+        // Mock empty SubscriptionOptions
+        val emptySubscriptionOptions = mockk<SubscriptionOptions>()
+        every { emptySubscriptionOptions.iterator() } returns emptyList<SubscriptionOption>().iterator()
+        every { product.subscriptionOptions } returns emptySubscriptionOptions
+
+        val ineligibleOffer = HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = "test_offer_id",
+            eligible = false,
+            title = "Ineligible Offer",
+            subtitle = "Should not be shown",
+            productMapping = mapOf("product_id" to "test_offer_id")
+        )
+
+        val originalPath = HelpPath(
+            id = "path_id",
+            title = "Some Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        val result = viewModel.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = ineligibleOffer,
+            originalPath = originalPath
+        )
+
+        assertThat(result).isFalse()
     }
 
     @Test

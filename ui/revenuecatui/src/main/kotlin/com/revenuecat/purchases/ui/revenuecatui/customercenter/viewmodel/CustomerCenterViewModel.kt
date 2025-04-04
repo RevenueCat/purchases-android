@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -435,6 +436,16 @@ internal class CustomerCenterViewModelImpl(
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
     ): Boolean {
+        if (!promotionalOffer.eligible) {
+            Log.d(
+                "CustomerCenter",
+                "User not eligible for promo with id '${promotionalOffer.androidOfferId}'. " +
+                    "Check eligibility configuration in the dashboard, and make sure the user has " +
+                    "an active/expired subscription for the product with id '${product.id}'.",
+            )
+            return false
+        }
+
         val offerIdentifier = promotionalOffer.productMapping[product.id]
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
             when (option) {
