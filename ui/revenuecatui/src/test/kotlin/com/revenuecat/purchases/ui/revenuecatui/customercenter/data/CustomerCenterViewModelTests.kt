@@ -377,7 +377,7 @@ class CustomerCenterViewModelTests {
                     }
 
                     // Track when dialog is shown
-                    if (state.showRestoreDialog && !dialogShownCompleted.isCompleted) {
+                    if (state.restorePurchasesState != null && !dialogShownCompleted.isCompleted) {
                         dialogShownCompleted.complete(true)
                     }
 
@@ -387,7 +387,7 @@ class CustomerCenterViewModelTests {
                     }
 
                     // Track when restore completes successfully
-                    if (state.showRestoreDialog &&
+                    if (state.restorePurchasesState != null &&
                         state.restorePurchasesState == RestorePurchasesState.PURCHASES_RECOVERED &&
                         !restoreCompletedWithSuccess.isCompleted) {
                         restoreCompletedWithSuccess.complete(true)
