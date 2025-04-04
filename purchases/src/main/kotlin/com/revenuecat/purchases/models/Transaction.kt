@@ -3,7 +3,7 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.common.responses.PriceResponse
+import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import kotlinx.parcelize.Parcelize
@@ -96,7 +96,7 @@ data class Transaction(
         // Using the PriceResponse class to parse the price JSON object to make it easier to migrate
         // to Kotlin serialization in the future
         price = jsonObject.optJSONObject("price")?.toString()?.let {
-            json.decodeFromString<PriceResponse>(it).toPrice(locale)
+            json.decodeFromString<SubscriptionInfoResponse.PriceResponse>(it).toPrice(locale)
         },
     )
 }

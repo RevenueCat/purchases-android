@@ -3,14 +3,19 @@ package com.revenuecat.purchases.common.responses
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.utils.MICRO_MULTIPLIER
 import com.revenuecat.purchases.utils.serializers.ISO8601DateSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.text.NumberFormat
+import java.util.Currency
 import java.util.Date
+import java.util.Locale
 
 @Serializable
 @SuppressWarnings("LongParameterList")
-internal class SubscriptionInfoResponse(
+internal data class SubscriptionInfoResponse(
     @SerialName("purchase_date") @Serializable(with = ISO8601DateSerializer::class)
     val purchaseDate: Date,
     @SerialName("original_purchase_date") @Serializable(with = ISO8601DateSerializer::class)
@@ -45,26 +50,22 @@ internal class SubscriptionInfoResponse(
     val productPlanIdentifier: String?,
 ) {
 
-    override fun toString(): String {
-        return """
-            SubscriptionInfo {
-                purchaseDate: $purchaseDate,
-                originalPurchaseDate: $originalPurchaseDate,
-                expiresDate: $expiresDate,
-                store: $store,
-                isSandbox: $isSandbox,
-                unsubscribeDetectedAt: $unsubscribeDetectedAt,
-                billingIssuesDetectedAt: $billingIssuesDetectedAt,
-                gracePeriodExpiresDate: $gracePeriodExpiresDate,
-                ownershipType: $ownershipType,
-                periodType: $periodType,
-                refundedAt: $refundedAt,
-                storeTransactionId: $storeTransactionId,
-                autoResumeDate: $autoResumeDate,
-                displayName: $displayName,
-                price: $price,
-                productPlanIdentifier: $productPlanIdentifier
-            }
-        """.trimIndent()
+    @Serializable
+    internal data class PriceResponse(
+        @SerialName("amount")
+        val amount: Double,
+        @SerialName("currency")
+        val currencyCode: String,
+    ) {
+
+        @JvmSynthetic
+        fun toPrice(locale: Locale): Price {
+            val numberFormat = NumberFormat.getCurrencyInstance(locale)
+            numberFormat.currency = Currency.getInstance(currencyCode)
+
+            val formatted = numberFormat.format(amount)
+
+            return Price(formatted, (amount * MICRO_MULTIPLIER).toLong(), currencyCode)
+        }
     }
 }
