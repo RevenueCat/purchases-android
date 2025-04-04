@@ -239,57 +239,36 @@ platform :android do
     # Step 2: Find the debug APK
     apk_path = Dir["../examples/paywall-tester/build/outputs/apk/debug/*-debug.apk"].first
     UI.user_error!("❌ Could not find debug APK") unless apk_path
-    apk_path = File.expand_path(apk_path)
   
-    # Step 3: Ensure ADB is ready
-    sh("adb start-server || true")
-    sh("adb devices")
+    # Step 3: Wait for device to be available
+    UI.message("🕒 Waiting for emulator to connect...")
+    sh("adb wait-for-device")
   
-    # Step 4: Check for an emulator/device
-    device_id = sh("adb devices | grep -w 'device' | awk '{print $1}' | head -n1", log: false).strip
-  
-    if device_id.empty?
-      UI.message("🕹️ No running emulator found — launching one...")
-  
-      avd_name = sh("emulator -list-avds | head -n1").strip
-      UI.user_error!("❌ No AVDs available") if avd_name.empty?
-  
-      emulator_path = `which emulator`.strip
-      UI.user_error!("❌ 'emulator' not found in PATH") if emulator_path.empty?
-  
-      pid = spawn("#{emulator_path} -avd #{avd_name}", [:out, :err] => "/dev/null")
-      Process.detach(pid)
-  
-      UI.message("🕒 Waiting for emulator to connect...")
-      sh("adb wait-for-device")
-  
-      # Wait for sys.boot_completed
-      UI.message("⌛ Waiting for full system boot...")
-      booted = false
-      30.times do
-        output = sh("adb shell getprop sys.boot_completed", log: false).strip
-        if output == "1"
-          booted = true
-          break
-        else
-          sleep(2)
-        end
+    # Step 4: Check if the emulator is fully booted
+    UI.message("⌛ Waiting for full system boot...")
+    booted = false
+    30.times do
+      output = sh("adb shell getprop sys.boot_completed", log: false).strip
+      if output == "1"
+        booted = true
+        break
+      else
+        sleep(2)
       end
-      UI.user_error!("❌ Emulator failed to fully boot") unless booted
-  
-      # Refresh device ID now that emulator is ready
-      device_id = sh("adb devices | grep -w 'device' | awk '{print $1}' | head -n1", log: false).strip
     end
+    UI.user_error!("❌ Emulator failed to fully boot") unless booted
   
-    UI.user_error!("❌ No connected emulator found to install APK") if device_id.empty?
+    # Step 5: Get emulator ID
+    device_id = sh("adb devices | grep -w 'device' | awk '{print $1}' | head -n1").strip
+    UI.user_error!("❌ No connected device found") if device_id.empty?
   
-    # Step 5: Install the APK
+    # Step 6: Install the APK
     sh("adb -s #{device_id} install -r '#{apk_path}'", log: true)
   
-    # Step 6: Save path for Maestro
+    # Step 7: Save path for Maestro or further usage
     File.write("maestro_app_path_android.txt", apk_path)
   
-    UI.success("✅ Paywall Tester APK installed and launched on #{device_id}")
+    UI.success("✅ Paywall Tester APK installed and ready on #{device_id}")
   end
 
   desc "Build purchases module integration tests pointing to production"
