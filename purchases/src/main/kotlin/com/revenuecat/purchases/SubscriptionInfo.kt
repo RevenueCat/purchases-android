@@ -77,11 +77,12 @@ class SubscriptionInfo(
      */
     val storeTransactionId: String?,
     /**
-     * Date when the subscription will auto-resume.
+     * Date when the subscription will auto-resume. This property is only applicable for Google Play subscriptions
+     * and will only have a value when the subscription is currently paused.
      */
     val autoResumeDate: Date?,
     /**
-     * The display name of the subscription.
+     * The display name of the subscription as configured in the RevenueCat dashboard.
      */
     val displayName: String?,
     /**
