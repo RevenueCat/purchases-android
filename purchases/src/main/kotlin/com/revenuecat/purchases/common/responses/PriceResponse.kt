@@ -11,22 +11,12 @@ import java.util.Currency
 import java.util.Locale
 
 @Serializable
-internal class PriceResponse(
+internal data class PriceResponse(
     @SerialName("amount")
     val amount: Double,
     @SerialName("currency")
     val currencyCode: String,
 ) {
-
-    @JvmSynthetic
-    override fun toString(): String {
-        return """
-            PriceResponse {
-                amount: $amount,
-                currencyCode: $currencyCode
-            }
-        """.trimIndent()
-    }
 
     @JvmSynthetic
     fun toPrice(locale: Locale): Price {
