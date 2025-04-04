@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.SubscriptionInfo
