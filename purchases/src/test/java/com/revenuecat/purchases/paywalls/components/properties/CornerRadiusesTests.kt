@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -65,7 +65,7 @@ internal class CornerRadiusesTests(@Suppress("UNUSED_PARAMETER") name: String, p
     @Test
     fun `Should properly deserialize CornerRadiuses`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<CornerRadiuses.Dp>(args.json)
+        val actual = JsonTools.json.decodeFromString<CornerRadiuses.Dp>(args.json)
 
         // Assert
         assert(actual == args.expected)

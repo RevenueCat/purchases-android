@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -248,7 +248,7 @@ internal class PaywallComponentsDataTests(
     @Test
     fun `Should properly deserialize PaywallComponentsData`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<PaywallComponentsData>(args.json)
+        val actual = JsonTools.json.decodeFromString<PaywallComponentsData>(args.json)
 
         // Assert
         assert(actual == args.expected)

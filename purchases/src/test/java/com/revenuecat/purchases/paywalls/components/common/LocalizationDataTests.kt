@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import org.intellij.lang.annotations.Language
@@ -84,7 +84,7 @@ internal class LocalizationDataTests(@Suppress("UNUSED_PARAMETER") name: String,
     @Test
     fun `Should properly deserialize LocalizationData`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<LocalizationData>(args.serialized)
+        val actual = JsonTools.json.decodeFromString<LocalizationData>(args.serialized)
 
         // Assert
         assert(actual == args.deserialized)

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -186,7 +185,7 @@ internal class UiConfigTests {
         )
 
         // Act
-        val actual = OfferingParser.json.decodeFromString<UiConfig>(serialized)
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -222,7 +221,7 @@ internal class UiConfigTests {
         )
 
         // Act
-        val actual = OfferingParser.json.decodeFromString<UiConfig>(serialized)
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -295,7 +294,7 @@ internal class UiConfigTests {
         )
 
         // Act
-        val actual = OfferingParser.json.decodeFromString<UiConfig>(serialized)
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
 
         // Assert
         assertThat(actual).isEqualTo(expected)

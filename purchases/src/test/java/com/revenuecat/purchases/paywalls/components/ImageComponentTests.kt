@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -160,7 +160,7 @@ internal class ImageComponentTests {
         @Test
         fun `Should properly deserialize ImageComponent as ImageComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ImageComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<ImageComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -169,7 +169,7 @@ internal class ImageComponentTests {
         @Test
         fun `Should properly deserialize ImageComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -281,7 +281,7 @@ internal class ImageComponentTests {
         @Test
         fun `Should properly deserialize PartialImageComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialImageComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialImageComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)

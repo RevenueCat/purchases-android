@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -198,7 +198,7 @@ internal class IconComponentTests {
         @Test
         fun `Should properly deserialize IconComponent as IconComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<IconComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<IconComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -207,7 +207,7 @@ internal class IconComponentTests {
         @Test
         fun `Should properly deserialize IconComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -382,7 +382,7 @@ internal class IconComponentTests {
         @Test
         fun `Should properly deserialize PartialIconComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialIconComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialIconComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)

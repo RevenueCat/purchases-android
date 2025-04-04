@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -324,7 +324,7 @@ internal class CarouselComponentTests {
         @Test
         fun `Should properly deserialize CarouselComponent as CarouselComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<CarouselComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<CarouselComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -333,7 +333,7 @@ internal class CarouselComponentTests {
         @Test
         fun `Should properly deserialize CarouselComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<CarouselComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<CarouselComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -618,7 +618,7 @@ internal class CarouselComponentTests {
         @Test
         fun `Should properly deserialize PartialCarouselComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialCarouselComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialCarouselComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)

@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -71,7 +71,7 @@ internal class VariableLocalizationKeyTests(
     @Test
     fun `Should properly deserialize VariableLocalizationKey`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<VariableLocalizationKey>(serialized)
+        val actual = JsonTools.json.decodeFromString<VariableLocalizationKey>(serialized)
 
         // Assert
         assert(actual == expected)

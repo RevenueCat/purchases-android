@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -68,7 +68,7 @@ internal class BorderTests(@Suppress("UNUSED_PARAMETER") name: String, private v
     @Test
     fun `Should properly deserialize Border`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<Border>(args.json)
+        val actual = JsonTools.json.decodeFromString<Border>(args.json)
 
         // Assert
         assert(actual == args.expected)

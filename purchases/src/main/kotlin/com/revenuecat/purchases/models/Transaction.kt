@@ -1,13 +1,12 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.JsonTools.json
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import kotlinx.parcelize.Parcelize
-import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import java.util.Date
 import java.util.Locale
@@ -66,13 +65,6 @@ data class Transaction(
         originalPurchaseDate = null,
         price = null,
     )
-
-    internal companion object {
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal val json = Json {
-            ignoreUnknownKeys = true
-        }
-    }
 
     internal constructor(
         productId: String,
