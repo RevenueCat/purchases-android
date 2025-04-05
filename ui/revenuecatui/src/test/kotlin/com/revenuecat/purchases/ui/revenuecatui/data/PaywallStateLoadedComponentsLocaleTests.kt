@@ -269,6 +269,55 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                     expected = "zh-Hant",
                 ),
             ),
+            arrayOf(
+                "no-NO -> no-NO",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no_NO"),
+                    deviceLocales = nonEmptyListOf("no-NO", "en-US"),
+                    expected = "no-NO",
+                ),
+            ),
+            arrayOf(
+                "no-NO -> no",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no"),
+                    deviceLocales = nonEmptyListOf("no-NO", "en-US"),
+                    expected = "no",
+                ),
+            ),
+            // Norwegian macro language
+            arrayOf(
+                "nb-NO -> no-NO",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no_NO"),
+                    deviceLocales = nonEmptyListOf("nb-NO", "en-US"),
+                    expected = "no-NO",
+                ),
+            ),
+            arrayOf(
+                "nb-NO -> no",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no"),
+                    deviceLocales = nonEmptyListOf("nb-NO", "en-US"),
+                    expected = "no",
+                ),
+            ),
+            arrayOf(
+                "nn-NO -> no-NO",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no_NO"),
+                    deviceLocales = nonEmptyListOf("nn-NO", "en-US"),
+                    expected = "no-NO",
+                ),
+            ),
+            arrayOf(
+                "nn-NO -> no",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no"),
+                    deviceLocales = nonEmptyListOf("nn-NO", "en-US"),
+                    expected = "no",
+                ),
+            ),
         )
     }
 
