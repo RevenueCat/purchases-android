@@ -1,25 +1,36 @@
+## RevenueCat SDK
+### 📦 Dependency Updates
+* Remove redundant kotlin stdlib dependencies (#2310) via Jaewoong Eum (@skydoves)
+### Customer Center
+#### 🐞 Bugfixes
+* fix: Check eligible for promo offers (#2325) via Facundo Menzella (@facumenzella)
+
 ## RevenueCatUI SDK
 ### Paywallv2
+#### ✨ New Features
+* [Paywalls v2] Supports custom fonts in `assets/fonts` (#2320) via JayShortway (@JayShortway)
 #### 🐞 Bugfixes
-* [Paywalls V2] Fuzzy-matches language without region (#2287) via JayShortway (@JayShortway)
-* [Paywalls V2] Avoids adding spurious digits to per-period prices (#2277) via JayShortway (@JayShortway)
+* [Paywalls v2] Ignores already-consumed window insets. (#2326) via JayShortway (@JayShortway)
+### Customer Center
+#### 🐞 Bugfixes
+* Reload customer center after successful promo (#2317) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* [Diagnostics] Add Google event missing properties (#2294) via Antonio Pallares (@ajpallares)
-* [Diagnostics] add `PURCHASE_STARTED` and `PURCHASE_RESULT` events (#2291) via Antonio Pallares (@ajpallares)
-* [Diagnostics] add GET_CUSTOMER_INFO_STARTED and GET_CUSTOMER_INFO_RESULT events (#2289) via Antonio Pallares (@ajpallares)
-* Bump fastlane-plugin-revenuecat_internal from `05ef095` to `9a29f63` (#2281) via dependabot[bot] (@dependabot[bot])
-* [Diagnostics] Add amazon event missing properties (#2290) via Toni Rico (@tonidero)
-* Bump fastlane from 2.226.0 to 2.227.0 (#2257) via dependabot[bot] (@dependabot[bot])
-* [Diagnostics] Add restore purchases events (#2288) via Toni Rico (@tonidero)
-* [Diagnostics] Add sync purchases started and result events (#2286) via Toni Rico (@tonidero)
-* [Diagnostics] Add `amazon_purchase_attempt` event (#2285) via Toni Rico (@tonidero)
-* [Diagnostics] add GET_PRODUCTS_STARTED and GET_PRODUCTS_RESULT events (#2283) via Antonio Pallares (@ajpallares)
-* Bump nokogiri from 1.17.2 to 1.18.4 (#2284) via dependabot[bot] (@dependabot[bot])
-* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2282) via RevenueCat Git Bot (@RCGitBot)
-* [Diagnostics] add `GET_OFFERINGS_STARTED` and `GET_OFFERINGS_RESULT` events (#2280) via Antonio Pallares (@ajpallares)
-* [Diagnostics] Add google purchase started and update received events (#2279) via Toni Rico (@tonidero)
-* Downgrades Emerge Snapshots SDK to 1.3.0. (#2278) via JayShortway (@JayShortway)
-* [Diagnostics] add `is_retry` to `http_request_performed` event (#2276) via Antonio Pallares (@ajpallares)
-* [Diagnostics] Tracks BillingClient connected/disconnected events. (#2267) via JayShortway (@JayShortway)
-* [Diagnostics] add `no_entitlement_mapping_available` reason to error_entering_offline_entitlements_mode` event (#2274) via Antonio Pallares (@ajpallares)
+* Fix PurchasesIntegrationTest  (#2330) via Cesar de la Vega (@vegaro)
+* Migrate Groovy to KTS for purchases-ui module (#2323) via Jaewoong Eum (@skydoves)
+* Add `X-Is-Backgrounded` header to all requests (#2321) via Toni Rico (@tonidero)
+* Clean up libs.versions.toml (#2318) via Jaewoong Eum (@skydoves)
+* feat: Change default copy for web_subscription_manage #4921 (#2298) via Facundo Menzella (@facumenzella)
+* Improve Korean translation (#2319) via Jaewoong Eum (@skydoves)
+* [Paywalls V2] Renders images in template previews (#2311) via JayShortway (@JayShortway)
+* [Paywalls V2] Removes Git LFS and adds submodule for paywall preview resources (#2315) via JayShortway (@JayShortway)
+* [Paywalls V2] Make `radialGradient` use bigger size for radius calculation (#2314) via Toni Rico (@tonidero)
+* Migrate purchases Gradle module to KTS (#2313) via Jaewoong Eum (@skydoves)
+* Attempts to have Emerge Snapshots handle merge queue branches. (#2309) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2306) via RevenueCat Git Bot (@RCGitBot)
+* Use coil-base instead of coil-compose for purchases package (#2307) via Jaewoong Eum (@skydoves)
+* Fix load shedder backend integration tests (#2308) via Toni Rico (@tonidero)
+* [Paywalls V2] Fixes the update-paywall-templates job (#2305) via JayShortway (@JayShortway)
+* [Paywalls V2] Adjusts CI to support images in template previews (#2302) via JayShortway (@JayShortway)
+* [Diagnostics] Sync diagnostics if file reaches lower limit (#2304) via Toni Rico (@tonidero)
+* Wrap Billing client crash with ours with more information (#2296) via Toni Rico (@tonidero)
