@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -85,7 +85,7 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
     @Test
     fun `Should properly deserialize Shape`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<Shape>(args.json)
+        val actual = JsonTools.json.decodeFromString<Shape>(args.json)
 
         // Assert
         assert(actual == args.expected)

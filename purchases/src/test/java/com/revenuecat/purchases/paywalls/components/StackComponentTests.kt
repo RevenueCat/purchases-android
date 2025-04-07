@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
@@ -249,7 +249,7 @@ internal class StackComponentTests {
         @Test
         fun `Should properly deserialize StackComponent as StackComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<StackComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<StackComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -258,7 +258,7 @@ internal class StackComponentTests {
         @Test
         fun `Should properly deserialize StackComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -417,7 +417,7 @@ internal class StackComponentTests {
         @Test
         fun `Should properly deserialize PartialStackComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialStackComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialStackComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
