@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -28,7 +28,7 @@ internal class FlexDistributionTests(private val serialized: String, private val
     @Test
     fun `Should properly deserialize FlexDistribution`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<FlexDistribution>(serialized)
+        val actual = JsonTools.json.decodeFromString<FlexDistribution>(serialized)
 
         // Assert
         assert(actual == expected)

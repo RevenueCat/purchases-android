@@ -54,10 +54,6 @@ def obtainTestBuildType() {
     result
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')

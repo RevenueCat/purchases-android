@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -24,7 +24,7 @@ internal class FitModeTests(private val serialized: String, private val expected
     @Test
     fun `Should properly deserialize FitMode`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<FitMode>(serialized)
+        val actual = JsonTools.json.decodeFromString<FitMode>(serialized)
 
         // Assert
         assert(actual == expected)

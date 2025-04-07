@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.colorInt
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -245,7 +245,7 @@ internal class TimelineComponentTests {
         @Test
         fun `Should properly deserialize TimelineComponent as TimelineComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<TimelineComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<TimelineComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -254,7 +254,7 @@ internal class TimelineComponentTests {
         @Test
         fun `Should properly deserialize TimelineComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -348,7 +348,7 @@ internal class TimelineComponentTests {
         @Test
         fun `Should properly deserialize PartialTimelineComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialTimelineComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialTimelineComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -421,7 +421,7 @@ internal class TimelineComponentTests {
         @Test
         fun `Should properly deserialize PartialTimelineComponentItem`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialTimelineComponentItem>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialTimelineComponentItem>(args.json)
 
             // Assert
             assert(actual == args.expected)

@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -321,7 +321,7 @@ internal class ButtonComponentTests {
         @Test
         fun `Should properly deserialize ButtonComponent as ButtonComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ButtonComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<ButtonComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -330,7 +330,7 @@ internal class ButtonComponentTests {
         @Test
         fun `Should properly deserialize ButtonComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -360,7 +360,7 @@ internal class ButtonComponentTests {
         @Test
         fun `Should properly deserialize UrlMethod`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ButtonComponent.UrlMethod>(serialized)
+            val actual = JsonTools.json.decodeFromString<ButtonComponent.UrlMethod>(serialized)
 
             // Assert
             assert(actual == expected)
@@ -487,7 +487,7 @@ internal class ButtonComponentTests {
         @Test
         fun `Should properly deserialize Action`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ButtonComponent.Action>(args.serialized)
+            val actual = JsonTools.json.decodeFromString<ButtonComponent.Action>(args.serialized)
 
             // Assert
             assert(actual == args.deserialized)
@@ -498,7 +498,7 @@ internal class ButtonComponentTests {
         @Test
         fun `Should properly serialize Action`() {
             // Arrange, Act
-            val actual = OfferingParser.json.encodeToString(args.deserialized)
+            val actual = JsonTools.json.encodeToString(args.deserialized)
             // Serialization removes all white space.
             val expected = args.serialized.filterNot { it.isWhitespace() }
 

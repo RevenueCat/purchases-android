@@ -194,6 +194,9 @@ data class CustomerCenterConfigData(
 
             @SerialName("free_trial_discounted_then_price")
             FREE_TRIAL_DISCOUNTED_THEN_PRICE,
+
+            @SerialName("done")
+            DONE,
             ;
 
             val defaultValue: String
@@ -234,20 +237,18 @@ data class CustomerCenterConfigData(
                         "You have an active subscription from the Amazon Appstore. " +
                             "You can manage your subscription in the Amazon Appstore app."
                     GOING_TO_CHECK_PURCHASES ->
-                        "Let’s take a look! We’re going to check your account for missing purchases."
+                        "Let's take a look! We're going to check your account for missing purchases."
                     CHECK_PAST_PURCHASES -> "Check past purchases"
-                    PURCHASES_RECOVERED -> "Purchases recovered!"
+                    PURCHASES_RECOVERED -> "Purchases restored"
                     PURCHASES_RECOVERED_EXPLANATION ->
-                        "We applied the previously purchased items to your account. Sorry for the inconvenience."
+                        "We restored your past purchases and applied them to your account."
                     PURCHASES_NOT_RECOVERED ->
-                        "We couldn't find any additional purchases under this account. " +
-                            "Contact support for assistance if you think this is an error."
-                    PURCHASES_NOT_FOUND ->
-                        "Purchases not found"
-                    PURCHASES_RESTORING ->
-                        "Restoring purchases..."
+                        "We could not find any purchases with your account. " +
+                            "If you think this is an error, please contact support."
+                    PURCHASES_NOT_FOUND -> "No past purchases"
+                    PURCHASES_RESTORING -> "Restoring..."
                     MANAGE_SUBSCRIPTION -> "Manage your subscription"
-                    YOU_HAVE_PROMO -> "You've been granted a subscription that doesn’t renew"
+                    YOU_HAVE_PROMO -> "You've been granted a subscription that doesn't renew"
                     YOU_HAVE_LIFETIME -> "Your active lifetime subscription"
                     WEB_SUBSCRIPTION_MANAGE ->
                         "You have an active subscription that was purchased on the web. " +
@@ -264,6 +265,7 @@ data class CustomerCenterConfigData(
                     FREE_TRIAL_DISCOUNTED_THEN_PRICE ->
                         "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} " +
                             "during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
+                    DONE -> "Done"
                 }
         }
 

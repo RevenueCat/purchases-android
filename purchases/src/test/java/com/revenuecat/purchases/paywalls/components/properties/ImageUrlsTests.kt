@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -37,7 +37,7 @@ internal class ImageUrlsTests {
             )
             
             // Act
-            val actual = OfferingParser.json.decodeFromString<ImageUrls>(json)
+            val actual = JsonTools.json.decodeFromString<ImageUrls>(json)
 
             // Assert
             assert(actual == expected)
@@ -135,7 +135,7 @@ internal class ImageUrlsTests {
         @Test
         fun `Should properly deserialize ThemeImageUrls`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ThemeImageUrls>(args.json)
+            val actual = JsonTools.json.decodeFromString<ThemeImageUrls>(args.json)
 
             // Assert
             assert(actual == args.expected)

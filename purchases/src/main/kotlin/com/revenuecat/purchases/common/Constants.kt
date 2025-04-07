@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 internal object Constants {
     const val GOOGLE_PLAY_MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
     const val SUBS_ID_BASE_PLAN_ID_SEPARATOR = ":"
+    const val MICRO_MULTIPLIER = 1_000_000.0
 }
 
 @InternalRevenueCatAPI
