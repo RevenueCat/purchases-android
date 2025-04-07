@@ -5,6 +5,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -26,6 +27,9 @@ class ButtonComponent(
     @Serializable(with = ActionSerializer::class)
     sealed interface Action {
         // SerialNames are handled by the ActionSerializer.
+
+        @Serializable
+        object Unknown : Action
 
         @Serializable
         object RestorePurchases : Action
@@ -112,11 +116,13 @@ private class ActionSurrogate(
 ) {
     constructor(action: Action) : this(
         type = when (action) {
+            is Action.Unknown -> ActionTypeSurrogate.unknown
             is Action.NavigateBack -> ActionTypeSurrogate.navigate_back
             is Action.NavigateTo -> ActionTypeSurrogate.navigate_to
             is Action.RestorePurchases -> ActionTypeSurrogate.restore_purchases
         },
         destination = when (action) {
+            is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
             -> null
@@ -129,6 +135,7 @@ private class ActionSurrogate(
             }
         },
         url = when (action) {
+            is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
             -> null
@@ -155,6 +162,7 @@ private class ActionSurrogate(
 
     fun toAction(): Action =
         when (type) {
+            ActionTypeSurrogate.unknown -> Action.Unknown
             ActionTypeSurrogate.restore_purchases -> Action.RestorePurchases
             ActionTypeSurrogate.navigate_back -> Action.NavigateBack
             ActionTypeSurrogate.navigate_to -> Action.NavigateTo(
@@ -191,11 +199,12 @@ private class ActionSurrogate(
 }
 
 @Suppress("EnumNaming", "EnumEntryName", "EnumEntryNameCase")
-@Serializable
+@Serializable(with = ActionTypeSurrogateDeserializer::class)
 private enum class ActionTypeSurrogate {
     restore_purchases,
     navigate_back,
     navigate_to,
+    unknown,
 }
 
 @Suppress("EnumNaming", "EnumEntryName", "EnumEntryNameCase")
@@ -211,3 +220,7 @@ private enum class DestinationSurrogate {
 @Suppress("ConstructorParameterNaming", "PropertyName")
 @Serializable
 private class UrlSurrogate(val url_lid: LocalizationKey, val method: UrlMethod)
+
+private object ActionTypeSurrogateDeserializer : EnumDeserializerWithDefault<ActionTypeSurrogate> (
+    defaultValue = ActionTypeSurrogate.unknown,
+)
