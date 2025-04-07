@@ -32,7 +32,7 @@ sealed interface Background {
 }
 
 @InternalRevenueCatAPI
-private object BackgroundSerializer : SealedDeserializerWithDefault<Background>(
+internal object BackgroundSerializer : SealedDeserializerWithDefault<Background>(
     serialName = "Background",
     serializerByType = mapOf(
         "color" to { Background.Color.serializer() },
