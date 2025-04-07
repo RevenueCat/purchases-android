@@ -596,6 +596,7 @@ DESC
       sh("git", "fetch")
       sh("git", "checkout", "main")
       sh("git", "pull")
+      sh("git", "status", "--porcelain")
     end
 
     has_changes = !sh("git", "status", "--porcelain").empty?

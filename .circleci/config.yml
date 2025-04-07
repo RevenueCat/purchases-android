@@ -680,6 +680,8 @@ jobs:
       - image: cimg/ruby:3.2.0
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - revenuecat/setup-git-credentials
