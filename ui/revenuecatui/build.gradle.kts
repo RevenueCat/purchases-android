@@ -75,7 +75,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":purchases"))
+    api(project(":purchases"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
