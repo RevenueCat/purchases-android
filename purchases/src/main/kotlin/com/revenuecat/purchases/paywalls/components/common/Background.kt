@@ -4,12 +4,16 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = BackgroundSerializer::class)
 sealed interface Background {
+    @Serializable
+    object Unknown : Background
+
     @Serializable
     @SerialName("color")
     data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
@@ -26,3 +30,13 @@ sealed interface Background {
         val colorOverlay: ColorScheme? = null,
     ) : Background
 }
+
+@InternalRevenueCatAPI
+private object BackgroundSerializer : SealedDeserializerWithDefault<Background>(
+    serialName = "Background",
+    serializerByType = mapOf(
+        "color" to { Background.Color.serializer() },
+        "image" to { Background.Image.serializer() },
+    ),
+    defaultSerializer = { Background.Unknown.serializer() },
+)
