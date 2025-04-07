@@ -180,8 +180,6 @@ open class PurchasesConfiguration(builder: Builder) {
          * Examples of this information include response times, cache hits or error codes.
          * No personal identifiable information will be collected.
          * The default value is false.
-         *
-         * Diagnostics is only available in Android API 24+
          */
         fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
             this.diagnosticsEnabled = diagnosticsEnabled
