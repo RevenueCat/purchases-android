@@ -14,6 +14,15 @@ internal abstract class EnumDeserializerWithDefault<T : Enum<T>>(
     private val valuesByType: Map<String, T>,
     private val defaultValue: T,
 ) : KSerializer<T> {
+
+    constructor(
+        defaultValue: T,
+        typeForValue: (T) -> String = { value -> value.name.lowercase() },
+    ) : this(
+        valuesByType = defaultValue::class.java.enumConstants.associateBy(typeForValue),
+        defaultValue = defaultValue,
+    )
+
     private val enumName = defaultValue.javaClass.simpleName
 
     override val descriptor: SerialDescriptor =

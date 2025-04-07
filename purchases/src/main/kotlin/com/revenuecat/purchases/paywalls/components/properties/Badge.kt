@@ -32,10 +32,12 @@ class Badge(
 
 @InternalRevenueCatAPI
 private object BadgeStyleSerializer : EnumDeserializerWithDefault<Badge.Style>(
-    valuesByType = mapOf(
-        "overlay" to Badge.Style.Overlay,
-        "edge_to_edge" to Badge.Style.EdgeToEdge,
-        "nested" to Badge.Style.Nested,
-    ),
     defaultValue = Badge.Style.Overlay,
+    typeForValue = { style ->
+        when (style) {
+            Badge.Style.Overlay -> "overlay"
+            Badge.Style.EdgeToEdge -> "edge_to_edge"
+            Badge.Style.Nested -> "nested"
+        }
+    },
 )
