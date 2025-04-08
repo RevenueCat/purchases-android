@@ -17,10 +17,9 @@ import kotlinx.serialization.json.jsonPrimitive
 internal abstract class SealedDeserializerWithDefault<T : Any>(
     private val serialName: String,
     private val serializerByType: Map<String, () -> KSerializer<out T>>,
-    private val defaultSerializer: () -> KSerializer<out T>,
+    private val default: () -> T,
     private val typeDiscriminator: String = "type",
 ) : KSerializer<T> {
-
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor(serialName) {
         element(typeDiscriminator, String.serializer().descriptor)
     }
@@ -30,8 +29,9 @@ internal abstract class SealedDeserializerWithDefault<T : Any>(
             ?: throw SerializationException("Can only deserialize $serialName from JSON, got: ${decoder::class}")
         val jsonObject = jsonDecoder.decodeJsonElement().jsonObject
         val type = jsonObject[typeDiscriminator]?.jsonPrimitive?.content
-        val serializer = serializerByType[type] ?: defaultSerializer
-        return jsonDecoder.json.decodeFromJsonElement(serializer(), jsonObject)
+        return serializerByType[type]?.let { serializer ->
+            jsonDecoder.json.decodeFromJsonElement(serializer(), jsonObject)
+        } ?: default()
     }
 
     override fun serialize(encoder: Encoder, value: T) {

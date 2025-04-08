@@ -48,6 +48,6 @@ class ComponentOverride<T : PartialComponent>(
             "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
             "selected" to { Condition.Selected.serializer() },
         ),
-        defaultSerializer = { Condition.Unsupported.serializer() },
+        default = { Condition.Unsupported },
     )
 }
