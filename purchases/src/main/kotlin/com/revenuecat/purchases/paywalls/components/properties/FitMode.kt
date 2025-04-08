@@ -1,15 +1,19 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import kotlinx.serialization.SerialName
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = FitModeDeserializer::class)
 enum class FitMode {
-    @SerialName("fit")
-    FIT,
+    // SerialNames are handled by the FitModeDeserializer.
 
-    @SerialName("fill")
+    FIT,
     FILL,
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+private object FitModeDeserializer : EnumDeserializerWithDefault<FitMode>(
+    defaultValue = FitMode.FIT,
+)
