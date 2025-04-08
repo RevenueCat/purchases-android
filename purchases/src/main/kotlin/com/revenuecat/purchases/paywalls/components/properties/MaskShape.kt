@@ -1,12 +1,13 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = MaskShapeDeserializer::class)
 sealed interface MaskShape {
 
     @Poko
@@ -29,3 +30,15 @@ sealed interface MaskShape {
     @SerialName("circle")
     object Circle : MaskShape
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+private object MaskShapeDeserializer : SealedDeserializerWithDefault<MaskShape>(
+    serialName = "MaskShape",
+    serializerByType = mapOf(
+        "rectangle" to { MaskShape.Rectangle.serializer() },
+        "concave" to { MaskShape.Concave.serializer() },
+        "convex" to { MaskShape.Convex.serializer() },
+        "circle" to { MaskShape.Circle.serializer() },
+    ),
+    defaultValue = { MaskShape.Rectangle() },
+)
