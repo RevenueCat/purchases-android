@@ -38,7 +38,7 @@ internal object DimensionDeserializer : SealedDeserializerWithDefault<Dimension>
         "horizontal" to Dimension.Horizontal::serializer,
         "zlayer" to Dimension.ZLayer::serializer,
     ),
-    default = {
+    defaultValue = {
         Dimension.Vertical(
             alignment = HorizontalAlignment.LEADING,
             distribution = FlexDistribution.START,

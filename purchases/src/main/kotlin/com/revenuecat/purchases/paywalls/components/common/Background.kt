@@ -38,5 +38,5 @@ internal object BackgroundSerializer : SealedDeserializerWithDefault<Background>
         "color" to { Background.Color.serializer() },
         "image" to { Background.Image.serializer() },
     ),
-    default = { Background.Unknown },
+    defaultValue = { Background.Unknown },
 )
