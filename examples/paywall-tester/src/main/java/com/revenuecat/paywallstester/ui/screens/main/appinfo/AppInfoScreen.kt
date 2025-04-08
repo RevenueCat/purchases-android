@@ -33,6 +33,7 @@ import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewMo
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
@@ -164,13 +165,13 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
         Surface(shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(all = 16.dp)) {
                 ApiKeyButton(
-                    label = "API Key A",
+                    label = Constants.GOOGLE_API_KEY_A_LABEL,
                     apiKey = Constants.GOOGLE_API_KEY_A,
                     onClick = onApiKeyClick,
                 )
 
                 ApiKeyButton(
-                    label = "API Key B",
+                    label = Constants.GOOGLE_API_KEY_B_LABEL,
                     apiKey = Constants.GOOGLE_API_KEY_B,
                     onClick = onApiKeyClick,
                 )
@@ -231,6 +232,10 @@ private fun ApiKeyDialog_Preview() {
 
 private fun createCustomerCenterListener(): CustomerCenterListener {
     return object : CustomerCenterListener {
+        override fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
+            Log.d(TAG, "Local listener: onManagementOptionSelected called with action: $action")
+        }
+
         override fun onRestoreStarted() {
             Log.d(TAG, "Local listener: onRestoreStarted called")
         }

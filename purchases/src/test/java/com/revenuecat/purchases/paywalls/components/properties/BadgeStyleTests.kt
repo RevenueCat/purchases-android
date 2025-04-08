@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -25,7 +25,7 @@ class BadgeStyleTests(private val serialized: String, private val expected: Badg
     @Test
     fun `Should properly deserialize BadgeStyle`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<Badge.Style>(serialized)
+        val actual = JsonTools.json.decodeFromString<Badge.Style>(serialized)
 
         // Assert
         assert(actual == expected)

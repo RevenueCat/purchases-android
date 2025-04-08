@@ -2,6 +2,7 @@ package com.revenuecat.paywallstester
 
 import android.app.Application
 import android.util.Log
+import com.revenuecat.paywallstester.data.ApiKeyStore
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
@@ -17,8 +18,9 @@ class MainApplication : Application() {
 
         Purchases.logLevel = LogLevel.VERBOSE
 
+        val apiKey = ApiKeyStore(this).getLastUsedApiKey()
         val configurePurchases = ConfigurePurchasesUseCase(this)
-        configurePurchases(Constants.GOOGLE_API_KEY_A)
+        configurePurchases(apiKey)
         Purchases.sharedInstance.customerCenterListener =
             object : CustomerCenterListener {
                 override fun onRestoreStarted() {

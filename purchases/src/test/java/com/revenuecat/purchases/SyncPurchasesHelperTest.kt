@@ -2,10 +2,14 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
@@ -30,6 +34,7 @@ class SyncPurchasesHelperTest {
     private lateinit var identityManager: IdentityManager
     private lateinit var customerInfoHelper: CustomerInfoHelper
     private lateinit var postReceiptHelper: PostReceiptHelper
+    private lateinit var diagnosticsTracker: DiagnosticsTracker
 
     private lateinit var syncPurchasesHelper: SyncPurchasesHelper
 
@@ -39,8 +44,11 @@ class SyncPurchasesHelperTest {
         identityManager = mockk()
         customerInfoHelper = mockk()
         postReceiptHelper = mockk()
+        diagnosticsTracker = mockk()
 
         every { identityManager.currentAppUserID } returns appUserID
+        every { diagnosticsTracker.trackSyncPurchasesStarted() } just Runs
+        every { diagnosticsTracker.trackSyncPurchasesResult(any(), any(), any()) } just Runs
 
         mockRetrieveCustomerInfoSuccess()
 
@@ -48,7 +56,8 @@ class SyncPurchasesHelperTest {
             billing,
             identityManager,
             customerInfoHelper,
-            postReceiptHelper
+            postReceiptHelper,
+            diagnosticsTracker,
         )
     }
 
@@ -258,6 +267,62 @@ class SyncPurchasesHelperTest {
         assertThat(successCallCount).isEqualTo(1)
     }
 
+    // region diagnostics tracking
+
+    @Test
+    fun `calls tracks sync purchases started event`() {
+        mockBillingQueryAllPurchasesSuccess(emptyList())
+
+        syncPurchasesHelper.syncPurchases(
+            isRestore = isRestore,
+            appInBackground = appInBackground,
+            onSuccess = { },
+            onError = { }
+        )
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackSyncPurchasesStarted()
+        }
+    }
+
+    @Test
+    fun `calls tracks sync purchases result event when no purchases`() {
+        mockBillingQueryAllPurchasesSuccess(emptyList())
+
+        syncPurchasesHelper.syncPurchases(
+            isRestore = isRestore,
+            appInBackground = appInBackground,
+            onSuccess = { },
+            onError = { }
+        )
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackSyncPurchasesResult(errorCode = null, errorMessage = null, any())
+        }
+    }
+
+    @Test
+    fun `calls tracks sync purchases result event when error getting purchases`() {
+        mockBillingQueryAllPurchasesError()
+
+        syncPurchasesHelper.syncPurchases(
+            isRestore = isRestore,
+            appInBackground = appInBackground,
+            onSuccess = { },
+            onError = { }
+        )
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackSyncPurchasesResult(
+                errorCode = PurchasesErrorCode.UnknownError.code,
+                errorMessage = "Unknown error.",
+                any(),
+            )
+        }
+    }
+
+    // endregion diagnostics tracking
+
     // region helpers
 
     private fun mockBillingQueryAllPurchasesSuccess(purchases: List<StoreTransaction>) {
@@ -296,7 +361,7 @@ class SyncPurchasesHelperTest {
                 CacheFetchPolicy.CACHED_OR_FETCHED,
                 appInBackground,
                 isRestore,
-                capture(callbackSlot)
+                callback = capture(callbackSlot)
             )
         } answers {
             callbackSlot.captured.onReceived(customerInfo)
@@ -313,7 +378,7 @@ class SyncPurchasesHelperTest {
                 CacheFetchPolicy.CACHED_OR_FETCHED,
                 appInBackground,
                 isRestore,
-                capture(callbackSlot)
+                callback = capture(callbackSlot)
             )
         } answers {
             callbackSlot.captured.onError(error)

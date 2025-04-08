@@ -86,7 +86,7 @@ internal sealed class PaywallValidationError : Throwable() {
     ) : PaywallValidationError() {
         override val message: String =
             PaywallValidationErrorStrings.MISSING_PACKAGE
-                .format(offeringId, missingPackageId, allPackageIds.joinToString())
+                .format(missingPackageId, offeringId, allPackageIds.joinToString())
     }
     data class MissingColorAlias(
         val alias: ColorAlias,

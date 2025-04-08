@@ -154,28 +154,21 @@ internal class MultiTierTemplateConfigurationFactoryTest {
             tierId = "premium"
         )
 
-        TemplateConfiguration.PackageConfiguration.MultiPackage(
-            first = annualPackage,
-            default = monthlyPackage,
-            all = listOf(
-                annualPackage,
-                monthlyPackage,
-            ),
-        )
-
         val basicTier = TemplateConfiguration.TierInfo(
             name = "Basic",
             id = "basic",
             defaultPackage = annualPackage,
+            // This order should match the basic tier in TestData.template7.
             packages = listOf(
-                monthlyPackage,
                 annualPackage,
+                monthlyPackage,
             )
         )
         val standardTier = TemplateConfiguration.TierInfo(
             name = "Standard",
             id = "standard",
             defaultPackage = semesterPackage,
+            // This order should match the standard tier in TestData.template7.
             packages = listOf(
                 bimonthlyPackage,
                 semesterPackage,
@@ -185,6 +178,7 @@ internal class MultiTierTemplateConfigurationFactoryTest {
             name = "Premium",
             id = "premium",
             defaultPackage = quarterlyPackage,
+            // This order should match the premium tier in TestData.template7.
             packages = listOf(
                 quarterlyPackage,
                 lifetime,
@@ -196,6 +190,12 @@ internal class MultiTierTemplateConfigurationFactoryTest {
             allTiers = listOf(basicTier, standardTier, premiumTier)
         )
 
+        assertThat(packageConfiguration.defaultTier.packages.size).isEqualTo(2)
+        packageConfiguration.defaultTier.packages.forEachIndexed { index, packageInfo ->
+            assertThat(packageInfo)
+                .describedAs("Failed to assert defaultTier package $index")
+                .isEqualTo(expectedConfiguration.defaultTier.packages[index])
+        }
         assertThat(packageConfiguration.defaultTier).isEqualTo(expectedConfiguration.defaultTier)
         assertThat(packageConfiguration.default).isEqualTo(expectedConfiguration.default)
         assertThat(packageConfiguration.all).containsExactly(*expectedConfiguration.all.toTypedArray())

@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -25,6 +26,7 @@ import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -148,6 +150,7 @@ internal class CustomerCenterViewModelImpl(
         path: CustomerCenterConfigData.HelpPath,
         product: StoreProduct?,
     ) {
+        notifyListenersForManagementOptionSelected(path)
         path.feedbackSurvey?.let { feedbackSurvey ->
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 goBackToMain()
@@ -201,7 +204,7 @@ internal class CustomerCenterViewModelImpl(
                 _state.update { currentState ->
                     when (currentState) {
                         is CustomerCenterState.Success -> {
-                            currentState.copy(showRestoreDialog = true)
+                            currentState.copy(restorePurchasesState = RestorePurchasesState.RESTORING)
                         }
 
                         else -> currentState
@@ -433,6 +436,16 @@ internal class CustomerCenterViewModelImpl(
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
     ): Boolean {
+        if (!promotionalOffer.eligible) {
+            Log.d(
+                "CustomerCenter",
+                "User not eligible for promo with id '${promotionalOffer.androidOfferId}'. " +
+                    "Check eligibility configuration in the dashboard, and make sure the user has " +
+                    "an active/expired subscription for the product with id '${product.id}'.",
+            )
+            return false
+        }
+
         val offerIdentifier = promotionalOffer.productMapping[product.id]
         val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
             when (option) {
@@ -478,7 +491,10 @@ internal class CustomerCenterViewModelImpl(
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
             purchases.awaitPurchase(purchaseParams)
-            goBackToMain()
+
+            // Reload customer center data to refresh the UI with the latest subscription information
+            // It will also go back to main screen
+            loadCustomerCenter()
         } catch (e: PurchasesException) {
             if (e.code != PurchasesErrorCode.PurchaseCancelledError) {
                 _actionError.value = e.error
@@ -644,7 +660,7 @@ internal class CustomerCenterViewModelImpl(
         copy(
             feedbackSurveyData = null,
             promotionalOfferData = null,
-            showRestoreDialog = false,
+            restorePurchasesState = null,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
         )
@@ -682,5 +698,26 @@ internal class CustomerCenterViewModelImpl(
     private fun notifyListenersForFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
         listener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
         purchases.customerCenterListener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
+    }
+
+    private fun notifyListenersForManagementOptionSelected(path: CustomerCenterConfigData.HelpPath) {
+        val action = when (path.type) {
+            CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE ->
+                CustomerCenterManagementOption.MissingPurchase
+
+            CustomerCenterConfigData.HelpPath.PathType.CANCEL ->
+                CustomerCenterManagementOption.Cancel
+
+            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL ->
+                path.url?.let {
+                    CustomerCenterManagementOption.CustomUrl(Uri.parse(it))
+                }
+
+            else -> null
+        }
+        if (action != null) {
+            listener?.onManagementOptionSelected(action)
+            purchases.customerCenterListener?.onManagementOptionSelected(action)
+        }
     }
 }

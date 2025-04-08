@@ -176,7 +176,7 @@ class ButtonComponentViewTests {
             )
         )
         val styleFactory = StyleFactory(localizations = localizations)
-        val style = styleFactory.create(component).getOrThrow() as ButtonComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as ButtonComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,

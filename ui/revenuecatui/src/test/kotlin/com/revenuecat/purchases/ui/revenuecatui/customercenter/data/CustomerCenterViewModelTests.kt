@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import android.app.Activity
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PeriodType
+import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -17,7 +19,10 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -34,6 +39,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -86,6 +92,49 @@ class CustomerCenterViewModelTests {
     @After
     internal fun tearDown() {
         clearAllMocks()
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer returns false when offer is not eligible`() = runTest {
+        val viewModel = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+
+        // Mock the product
+        val product = mockk<StoreProduct>(relaxed = true)
+        every { product.id } returns "product_id"
+
+        // Mock empty SubscriptionOptions
+        val emptySubscriptionOptions = mockk<SubscriptionOptions>()
+        every { emptySubscriptionOptions.iterator() } returns emptyList<SubscriptionOption>().iterator()
+        every { product.subscriptionOptions } returns emptySubscriptionOptions
+
+        val ineligibleOffer = HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = "test_offer_id",
+            eligible = false,
+            title = "Ineligible Offer",
+            subtitle = "Should not be shown",
+            productMapping = mapOf("product_id" to "test_offer_id")
+        )
+
+        val originalPath = HelpPath(
+            id = "path_id",
+            title = "Some Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        val result = viewModel.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = ineligibleOffer,
+            originalPath = originalPath
+        )
+
+        assertThat(result).isFalse()
     }
 
     @Test
@@ -328,7 +377,7 @@ class CustomerCenterViewModelTests {
                     }
 
                     // Track when dialog is shown
-                    if (state.showRestoreDialog && !dialogShownCompleted.isCompleted) {
+                    if (state.restorePurchasesState != null && !dialogShownCompleted.isCompleted) {
                         dialogShownCompleted.complete(true)
                     }
 
@@ -338,7 +387,7 @@ class CustomerCenterViewModelTests {
                     }
 
                     // Track when restore completes successfully
-                    if (state.showRestoreDialog &&
+                    if (state.restorePurchasesState != null &&
                         state.restorePurchasesState == RestorePurchasesState.PURCHASES_RECOVERED &&
                         !restoreCompletedWithSuccess.isCompleted) {
                         restoreCompletedWithSuccess.complete(true)
@@ -622,6 +671,107 @@ class CustomerCenterViewModelTests {
         verify(exactly = 1) { purchasesListener.onFeedbackSurveyCompleted(feedbackSurveyOptionId) }
     }
 
+    @Test
+    fun `notifyListenersForManagementOptionSelected converts paths to actions and notifies listeners`() = runTest {
+        setupPurchasesMock()
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.example.app"
+        every { context.startActivity(any()) } just Runs
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        // Test MISSING_PURCHASE path
+        val missingPurchasePath = HelpPath(
+            id = "missing_purchase_id",
+            title = "Missing Purchase",
+            type = HelpPath.PathType.MISSING_PURCHASE
+        )
+        model.pathButtonPressed(mockk(), missingPurchasePath, null)
+        verify(exactly = 1) { directListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase) }
+        verify(exactly = 1) { purchasesListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase) }
+
+        // Test CANCEL path
+        val cancelPath = HelpPath(
+            id = "cancel_id",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL
+        )
+        model.pathButtonPressed(mockk(), cancelPath, null)
+        verify(exactly = 1) { directListener.onManagementOptionSelected(CustomerCenterManagementOption.Cancel) }
+        verify(exactly = 1) { purchasesListener.onManagementOptionSelected(CustomerCenterManagementOption.Cancel) }
+
+        // Test CUSTOM_URL path
+        val customUrl = "https://example.com"
+        val customUrlPath = HelpPath(
+            id = "custom_url_id",
+            title = "Custom URL",
+            type = HelpPath.PathType.CUSTOM_URL,
+            url = customUrl
+        )
+
+        model.pathButtonPressed(context, customUrlPath, null)
+        verify(exactly = 1) { 
+            directListener.onManagementOptionSelected(match { 
+                it is CustomerCenterManagementOption.CustomUrl && 
+                it.uri.toString() == customUrl 
+            })
+        }
+        verify(exactly = 1) { 
+            purchasesListener.onManagementOptionSelected(match { 
+                it is CustomerCenterManagementOption.CustomUrl && 
+                it.uri.toString() == customUrl 
+            })
+        }
+
+        // Test unsupported path type
+        val unsupportedPath = HelpPath(
+            id = "unsupported_id",
+            title = "Unsupported",
+            type = HelpPath.PathType.REFUND_REQUEST
+        )
+        model.pathButtonPressed(context, unsupportedPath, null)
+        verify(exactly = 3) { directListener.onManagementOptionSelected(any()) }
+        verify(exactly = 3) { purchasesListener.onManagementOptionSelected(any()) }
+    }
+
+    @Test
+    fun `loadCustomerCenter is called after successful promotional offer purchase`() = runTest {
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Create a mock subscription option
+        val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        // Wait for initial load to complete
+        model.state.first { it is CustomerCenterState.Success }
+
+        // Perform promotional offer purchase
+        model.onAcceptedPromotionalOffer(subscriptionOption, activity)
+
+        // Verify the purchase was attempted and loadCustomerCenter was called
+        coVerify(exactly = 1) { purchases.awaitPurchase(any()) }
+        coVerify(exactly = 2) { purchases.awaitCustomerCenterConfigData() } // Once for initial load, once for reload
+    }
+
     // Helper method to setup common mocks
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
@@ -629,6 +779,7 @@ class CustomerCenterViewModelTests {
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         coEvery { purchases.awaitCustomerCenterConfigData() } returns configData
         coEvery { purchases.awaitRestore() } returns customerInfo
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(mockk(), customerInfo)
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs

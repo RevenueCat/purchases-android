@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
@@ -29,7 +29,7 @@ internal class AlignmentTests {
         @Test
         fun `Should properly deserialize HorizontalAlignment`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<HorizontalAlignment>(serialized)
+            val actual = JsonTools.json.decodeFromString<HorizontalAlignment>(serialized)
 
             // Assert
             assert(actual == expected)
@@ -56,7 +56,7 @@ internal class AlignmentTests {
         @Test
         fun `Should properly deserialize VerticalAlignment`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<VerticalAlignment>(serialized)
+            val actual = JsonTools.json.decodeFromString<VerticalAlignment>(serialized)
 
             // Assert
             assert(actual == expected)
@@ -89,7 +89,7 @@ internal class AlignmentTests {
         @Test
         fun `Should properly deserialize TwoDimensionalAlignment`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<TwoDimensionalAlignment>(serialized)
+            val actual = JsonTools.json.decodeFromString<TwoDimensionalAlignment>(serialized)
 
             // Assert
             assert(actual == expected)

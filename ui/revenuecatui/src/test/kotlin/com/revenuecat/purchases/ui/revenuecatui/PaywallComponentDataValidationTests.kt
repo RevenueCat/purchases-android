@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig.AppConfig
@@ -36,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -50,9 +52,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.net.URL
 
+@RunWith(AndroidJUnit4::class)
 class PaywallComponentDataValidationTests {
 
     private companion object {
@@ -167,6 +172,80 @@ class PaywallComponentDataValidationTests {
         assertNotNull(validated.errors)
         assertEquals(validated.errors?.size, 1)
         assertEquals(validated.errors?.first(), AllLocalizationsMissing(defaultLocale))
+    }
+
+    @Test
+    fun `Should use language-only localizations if available`() {
+        // Arrange
+        data class Args(
+            val defaultLocale: String,
+            val localizationsLocale: String,
+            val variableLocalizationsLocale: String,
+        )
+
+        listOf(
+            Args(
+                defaultLocale = "en_US",
+                localizationsLocale = "en",
+                variableLocalizationsLocale = "en",
+            ),
+            Args(
+                defaultLocale = "zh_Hans",
+                localizationsLocale = "zh_Hans",
+                variableLocalizationsLocale = "zh_Hans",
+            ),
+            Args(
+                defaultLocale = "zh_Hans_CN",
+                localizationsLocale = "zh_Hans",
+                variableLocalizationsLocale = "zh_Hans",
+            ),
+            Args(
+                defaultLocale = "zh_CN",
+                localizationsLocale = "zh_Hans_CN",
+                variableLocalizationsLocale = "zh_Hans_CN",
+            ),
+        ).forEach { args ->
+            val defaultLocale = LocaleId(args.defaultLocale)
+            val localizations = mapOf(
+                LocaleId(args.localizationsLocale) to mapOf(LocalizationKey("key") to LocalizationData.Text("value"))
+            )
+            val variableLocalizations = mapOf(
+                LocaleId(args.variableLocalizationsLocale) to variableLocalizationKeysForEnUs()
+            )
+            val data = PaywallComponentsData(
+                templateName = "template",
+                assetBaseURL = URL("https://assets.pawwalls.com"),
+                componentsConfig = ComponentsConfig(
+                    base = PaywallComponentsConfig(
+                        stack = StackComponent(components = emptyList()),
+                        background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                        stickyFooter = null,
+                    ),
+                ),
+                componentsLocalizations = localizations,
+                defaultLocaleIdentifier = defaultLocale,
+            )
+            val offering = Offering(
+                identifier = "identifier",
+                serverDescription = "serverDescription",
+                metadata = emptyMap(),
+                availablePackages = emptyList(),
+                paywallComponents = Offering.PaywallComponents(UiConfig(localizations = variableLocalizations), data),
+            )
+
+            // Act
+            val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+            // Assert
+            when(validated) {
+                is PaywallValidationResult.Legacy ->
+                    fail("Failed to validate $args, errors: " + validated.errors?.joinToString())
+                is PaywallValidationResult.Components -> {
+                    assertNull(validated.errors)
+                    assertEquals(defaultLocale, validated.locales.head)
+                }
+            }
+        }
     }
 
     @Test
@@ -287,23 +366,25 @@ class PaywallComponentDataValidationTests {
         val secondaryFontAlias = FontAlias("secondary")
         val robotoFont = FontSpec.Resource(1)
         val robotoFontResourceName = FontInfo.Name("roboto")
-        val openSansFont = FontSpec.Resource(2)
-        val openSansFontResourceName = FontInfo.Name("open_sans")
+        val openSansFont = FontSpec.Asset("fonts/open_sans.ttf")
+        val openSansFontAssetName = FontInfo.Name("open_sans")
         val uiConfig = UiConfig(
             app = AppConfig(
                 fonts = mapOf(
                     primaryFontAlias to FontsConfig(robotoFontResourceName),
-                    secondaryFontAlias to FontsConfig(openSansFontResourceName),
+                    secondaryFontAlias to FontsConfig(openSansFontAssetName),
                 ),
             ),
         )
         val resourceProvider = MockResourceProvider(
-            mapOf(
+            resourceIds = mapOf(
                 "font" to mapOf(
                     robotoFontResourceName.value to robotoFont.id,
-                    openSansFontResourceName.value to openSansFont.id,
                 ),
             ),
+            assetPaths = listOf(
+                openSansFont.path
+            )
         )
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
@@ -435,6 +516,74 @@ class PaywallComponentDataValidationTests {
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias1)))
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias2)))
         assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias3)))
+    }
+
+    @Test
+    fun `Should not fail on a missing blank FontAlias`() {
+        // Arrange
+        val missingBlankFontAliasBase = FontAlias(" ")
+        val missingBlankFontAliasOverride = FontAlias(" ")
+        val uiConfig = UiConfig(
+            app = AppConfig(
+                // Our 2 font aliases are missing from the AppConfig.
+                fonts = emptyMap(),
+            ),
+        )
+        val resourceProvider = MockResourceProvider()
+        val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LocalizationKey("key1"),
+                                color = textColor,
+                                fontName = missingBlankFontAliasBase,
+                                overrides = listOf(
+                                    ComponentOverride(
+                                        conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                        properties = PartialTextComponent(fontName = missingBlankFontAliasOverride),
+                                    )
+                                )
+                            ),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                    LocalizationKey("key2") to LocalizationData.Text("value2"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(uiConfig, data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, resourceProvider)
+
+        // Assert
+        assertNull(validated.errors)
+        val validatedComponents = validated as PaywallValidationResult.Components
+        val rootStack = validatedComponents.stack as StackComponentStyle
+        val text = rootStack.children[0] as TextComponentStyle
+        // We expect the font to be ignored if it was blank.
+        assertNull(text.fontSpec)
+        assertNotNull(text.overrides[0])
+        assertNull(text.overrides[0].properties.fontSpec)
     }
 
     // This tests a temporal hack to make the root component fill the screen. This will be removed once we have a

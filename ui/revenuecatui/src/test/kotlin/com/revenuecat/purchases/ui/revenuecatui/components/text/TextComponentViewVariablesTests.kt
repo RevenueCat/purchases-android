@@ -125,6 +125,19 @@ internal class TextComponentViewVariablesTests(
             period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
             freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
         )
+        private val productYearlyJpyOneOffer = TestStoreProduct(
+            id = "com.revenuecat.annual_product",
+            name = "Annual",
+            title = "Annual (App name)",
+            price = Price(
+                amountMicros = 20000_000_000,
+                currencyCode = "JPY",
+                formatted = "¥20,000",
+            ),
+            description = "Annual",
+            period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+            freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+        )
         private val productLifetimeUsd = TestStoreProduct(
             id = "com.revenuecat.lifetime_product",
             name = "Lifetime",
@@ -182,6 +195,14 @@ internal class TextComponentViewVariablesTests(
             identifier = "package_yearly",
             offering = OFFERING_ID,
             product = productYearlyMxnOneOffer,
+        )
+
+        @Suppress("DEPRECATION")
+        private val packageYearlyJpyOneOffer = Package(
+            packageType = PackageType.ANNUAL,
+            identifier = "package_yearly",
+            offering = OFFERING_ID,
+            product = productYearlyJpyOneOffer,
         )
 
         @Suppress("DEPRECATION")
@@ -953,6 +974,70 @@ internal class TextComponentViewVariablesTests(
                 ),
                 "US\$"
             ),
+            // Spurious digits:
+            // JPY is not part of STORE_COUNTRY_WITHOUT_DECIMALS, because the stores already correctly format JPY prices
+            // without decimals. However, when we perform calculations on such a price, we should be careful not to add
+            // spurious decimals.
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlyJpyOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "JP",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "¥55"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlyJpyOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "JP",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "¥384"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlyJpyOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "JP",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "¥1,667"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlyJpyOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "JP",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "¥20,000"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlyJpyOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "JP",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "¥20,000/year"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlyJpyOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "JP",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "¥20,000/yr"
+            ),
             // Functions:
             arrayOf(
                 "{{ product.store_product_name | lowercase }}",
@@ -1288,7 +1373,7 @@ internal class TextComponentViewVariablesTests(
             localizations = localizations,
             offering = offering,
         )
-        val style = styleFactory.create(textComponent).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(textComponent).getOrThrow().componentStyle as TextComponentStyle
 
         // Act
         setContent { TextComponentView(style = style, state = state, modifier = Modifier.testTag("text")) }

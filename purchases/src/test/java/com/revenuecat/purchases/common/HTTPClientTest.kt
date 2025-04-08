@@ -166,6 +166,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Test
     fun addsDefaultHeadersToRequest() {
+        client = createClient(
+            localeProvider = FakeLocaleProvider("en-US", "ja-JP"),
+        )
+        val expectedPreferredLocales = "en_US, ja_JP"
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
@@ -185,6 +189,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
         assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
         assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
+        assertThat(request.getHeader("X-Preferred-Locales")).isEqualTo(expectedPreferredLocales)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo("en-US")
         assertThat(request.getHeader("X-Client-Version")).isEqualTo("")
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
@@ -192,6 +197,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Storefront")).isEqualTo("JP")
         assertThat(request.getHeader("X-Is-Debug-Build")).isEqualTo("false")
         assertThat(request.getHeader("X-Kotlin-Version")).isEqualTo(KotlinVersion.CURRENT.toString())
+        assertThat(request.getHeader("X-Is-Backgrounded")).isEqualTo("true")
     }
 
     @Test
@@ -518,7 +524,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request successful`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -539,7 +545,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, true, responseCode, null, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
+            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, true, responseCode, null, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
         }
     }
 
@@ -547,7 +553,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request fails`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -569,7 +575,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, false, responseCode, backendErrorCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
+            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, false, responseCode, backendErrorCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
         }
     }
 
@@ -577,7 +583,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -602,11 +608,77 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
-                diagnosticsTracker.trackHttpRequestPerformed(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, null, VerificationResult.NOT_REQUESTED)
+                diagnosticsTracker.trackHttpRequestPerformed(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, null, VerificationResult.NOT_REQUESTED, false)
             }
             return
         }
         error("Expected exception")
+    }
+
+    @Test
+    fun `if there's an error getting ETag, retry call passes track diagnostics parameter isRetry to true`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+
+        val response =
+            MockResponse()
+                .setHeader(HTTPResult.ETAG_HEADER_NAME, "anetag")
+                .setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED)
+
+        val expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse)
+        val secondResponse =
+            MockResponse()
+                .setHeader(HTTPResult.ETAG_HEADER_NAME, "anotheretag")
+                .setResponseCode(expectedResult.responseCode)
+                .setBody(expectedResult.payload)
+
+        server.enqueue(response)
+        server.enqueue(secondResponse)
+
+        val endpoint = Endpoint.LogIn
+        val urlPathWithVersion = "/v1/subscribers/identify"
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.NOT_MODIFIED,
+                payload = "",
+                eTagHeader = any(),
+                urlPathWithVersion,
+                refreshETag = false,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns null
+
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                expectedResult.responseCode,
+                payload = expectedResult.payload,
+                eTagHeader = any(),
+                urlPathWithVersion,
+                refreshETag = true,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns expectedResult
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        server.takeRequest()
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                endpoint,
+                any(),
+                true,
+                RCHTTPStatusCodes.SUCCESS,
+                null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = true
+            )
+        }
     }
 
     // endregion

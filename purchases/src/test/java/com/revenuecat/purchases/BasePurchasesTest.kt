@@ -16,9 +16,11 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -49,6 +51,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import org.junit.After
 import org.junit.Before
+import java.util.Date
 
 internal open class BasePurchasesTest {
     protected val mockBillingAbstract: BillingAbstract = mockk()
@@ -68,6 +71,8 @@ internal open class BasePurchasesTest {
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
     internal val mockCustomerInfoUpdateHandler = mockk<CustomerInfoUpdateHandler>()
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
+    protected val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxUnitFun = true)
+    protected val mockDateProvider = mockk<DateProvider>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
     internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
@@ -78,6 +83,8 @@ internal open class BasePurchasesTest {
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
+
+    protected lateinit var appConfig: AppConfig
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -106,6 +113,7 @@ internal open class BasePurchasesTest {
         mockBackend()
         mockBillingWrapper()
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
+        mockCustomerInfo()
         mockCustomerInfoHelper()
         mockCustomerInfoUpdateHandler()
         mockPostPendingTransactionsHelper()
@@ -132,6 +140,8 @@ internal open class BasePurchasesTest {
 
         every { mockLifecycle.addObserver(any()) } just Runs
         every { mockLifecycle.removeObserver(any()) } just Runs
+
+        every { mockDateProvider.now } returns Date()
 
         if (shouldConfigureOnSetUp) {
             anonymousSetup(false)
@@ -281,6 +291,13 @@ internal open class BasePurchasesTest {
     // endregion
 
     // region Protected methods
+
+    protected fun mockCustomerInfo(verificationResult: VerificationResult = VerificationResult.VERIFIED) {
+        val mockEntitlements = mockk<EntitlementInfos>()
+        every { mockEntitlements.verification } returns verificationResult
+        every { mockInfo.entitlements } returns mockEntitlements
+    }
+
     protected fun mockCustomerInfoHelper(
         errorGettingCustomerInfo: PurchasesError? = null,
         mockedCustomerInfo: CustomerInfo = mockInfo
@@ -293,7 +310,8 @@ internal open class BasePurchasesTest {
                     any(),
                     appInBackground = false,
                     allowSharingPlayStoreAccount = false,
-                    captureNullable(slotList),
+                    any(),
+                    callback = captureNullable(slotList),
                 )
             } answers {
                 if (errorGettingCustomerInfo == null) {
@@ -389,7 +407,7 @@ internal open class BasePurchasesTest {
         customEntitlementComputation: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
     ) {
-        val appConfig = AppConfig(
+        appConfig = AppConfig(
             context = mockContext,
             purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
@@ -415,6 +433,8 @@ internal open class BasePurchasesTest {
             customerInfoHelper = mockCustomerInfoHelper,
             customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            dateProvider = mockDateProvider,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
             postTransactionWithProductDetailsHelper = postTransactionsHelper,
@@ -460,7 +480,7 @@ internal open class BasePurchasesTest {
 
     protected fun mockPostPendingTransactionsHelper() {
         every {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
         } just Runs
     }
 

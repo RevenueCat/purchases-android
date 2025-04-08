@@ -47,11 +47,13 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.recoverFromBlankFontAlias
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
@@ -85,47 +87,152 @@ internal class StyleFactory(
         internal val DEFAULT_SHAPE = Shape.Rectangle()
     }
 
+    private data class StyleFactoryScope(
+        var packageInfo: AvailablePackages.Info? = null,
+        var tabControl: TabControlStyle? = null,
+        /**
+         * If this is non-null, it means the branch currently being built is inside a tab control component. Every tab
+         * in a tabs component will contain a tab control component. A tab control component is often implemented as a
+         * segmented button, with each segment of the button switching to the tab indicated by that segment's tab
+         * control index.
+         */
+        var tabControlIndex: Int? = null,
+        /**
+         * If this is non-null, it means the branch currently being built is inside a tab component.
+         */
+        var tabIndex: Int? = null,
+    ) {
+        var defaultTabIndex: Int? = null
+        val rcPackage: Package?
+            get() = packageInfo?.pkg
+
+        private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
+        private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
+        val packages: AvailablePackages
+            get() = AvailablePackages(
+                packagesOutsideTabs = packagesOutsideTabs,
+                packagesByTab = packagesByTab,
+            )
+
+        /**
+         * Temporarily changes the properties that influence a component's selected state, for the duration of [block].
+         */
+        fun <T> withSelectedScope(
+            packageInfo: AvailablePackages.Info?,
+            tabControlIndex: Int?,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            if (packageInfo != null) recordPackage(packageInfo)
+
+            val currentScope = copy()
+            this.packageInfo = packageInfo
+            this.tabControlIndex = tabControlIndex
+
+            val result = block()
+
+            this.packageInfo = currentScope.packageInfo
+            this.tabControlIndex = currentScope.tabControlIndex
+
+            return result
+        }
+
+        /**
+         * Provides the [tabControl] to this branch of the tree.
+         */
+        fun <T> withTabControl(
+            tabControl: TabControlStyle,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val currentScope = copy()
+            this.tabControl = tabControl
+
+            val result = block()
+
+            this.tabControl = currentScope.tabControl
+
+            return result
+        }
+
+        /**
+         * Records that this branch of the tree is in a tab with the provided [tabIndex].
+         */
+        fun <T> withTabIndex(
+            tabIndex: Int,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val currentScope = copy()
+            this.tabIndex = tabIndex
+
+            val result = block()
+
+            this.tabIndex = currentScope.tabIndex
+
+            return result
+        }
+
+        private fun recordPackage(pkg: AvailablePackages.Info) {
+            val currentTabIndex = tabIndex
+            if (currentTabIndex == null) {
+                packagesOutsideTabs.add(pkg)
+            } else {
+                packagesByTab.getOrPut(currentTabIndex) { mutableListOf() }.add(pkg)
+            }
+        }
+    }
+
+    class StyleResult(
+        val componentStyle: ComponentStyle,
+        val availablePackages: AvailablePackages,
+        val defaultTabIndex: Int?,
+    )
+
+    fun create(component: PaywallComponent): Result<StyleResult, NonEmptyList<PaywallValidationError>> {
+        val scope = StyleFactoryScope()
+        return scope.createInternal(component).map { componentStyle ->
+            StyleResult(
+                componentStyle = componentStyle,
+                availablePackages = scope.packages,
+                defaultTabIndex = scope.defaultTabIndex,
+            )
+        }
+    }
+
     @Suppress("CyclomaticComplexMethod")
-    fun create(
+    private fun StyleFactoryScope.createInternal(
         component: PaywallComponent,
-        rcPackage: Package? = null,
-        tabControl: TabControlStyle? = null,
-        tabIndex: Int? = null,
     ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
-            is ButtonComponent -> createButtonComponentStyle(component, rcPackage, tabControl, tabIndex)
-            is ImageComponent -> createImageComponentStyle(component, rcPackage, tabIndex)
-            is PackageComponent -> createPackageComponentStyle(component, tabControl)
-            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component, rcPackage, tabControl, tabIndex)
-            is StackComponent -> createStackComponentStyle(component, rcPackage, tabControl, tabIndex)
-            is StickyFooterComponent -> createStickyFooterComponentStyle(component, tabControl)
-            is TextComponent -> createTextComponentStyle(component, rcPackage, tabIndex)
-            is IconComponent -> createIconComponentStyle(component, rcPackage, tabIndex)
-            is TimelineComponent -> createTimelineComponentStyle(component, rcPackage, tabIndex)
-            is CarouselComponent -> createCarouselComponentStyle(component, rcPackage, tabControl, tabIndex)
+            is ButtonComponent -> createButtonComponentStyle(component)
+            is ImageComponent -> createImageComponentStyle(component)
+            is PackageComponent -> createPackageComponentStyle(component)
+            is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
+            is StackComponent -> createStackComponentStyle(component)
+            is StickyFooterComponent -> createStickyFooterComponentStyle(component)
+            is TextComponent -> createTextComponentStyle(component)
+            is IconComponent -> createIconComponentStyle(component)
+            is TimelineComponent -> createTimelineComponentStyle(component)
+            is CarouselComponent -> createCarouselComponentStyle(component)
             is TabControlButtonComponent -> createTabControlButtonComponentStyle(component)
             is TabControlToggleComponent -> createTabControlToggleComponentStyle(component)
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
         }
 
-    private fun createStickyFooterComponentStyle(
+    private fun StyleFactoryScope.createStickyFooterComponentStyle(
         component: StickyFooterComponent,
-        tabControl: TabControlStyle?,
     ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
-        // tabIndex is null because a sticky footer cannot be _inside_ a tab control, which means we'll never have to
-        // update the sticky footer based on the tab control being selected.
-        createStackComponentStyle(component.stack, rcPackage = null, tabControl = tabControl, tabIndex = null).map {
-            StickyFooterComponentStyle(stackComponentStyle = it)
+        // tabControlIndex is null because a sticky footer cannot be _inside_ a tab control, which means we'll never
+        // have to update the sticky footer based on the tab control being selected.
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
+            createStackComponentStyle(component.stack).map {
+                StickyFooterComponentStyle(stackComponentStyle = it)
+            }
         }
 
-    private fun createButtonComponentStyle(
+    private fun StyleFactoryScope.createButtonComponentStyle(
         component: ButtonComponent,
-        rcPackage: Package?,
-        tabControl: TabControlStyle?,
-        tabIndex: Int?,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-        first = createStackComponentStyle(component.stack, rcPackage, tabControl, tabIndex),
+        first = createStackComponentStyle(component.stack),
         second = component.action.toButtonComponentStyleAction(),
     ) { stack, action ->
         ButtonComponentStyle(
@@ -134,9 +241,8 @@ internal class StyleFactory(
         )
     }
 
-    private fun createPackageComponentStyle(
+    private fun StyleFactoryScope.createPackageComponentStyle(
         component: PackageComponent,
-        tabControl: TabControlStyle?,
     ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> =
         offering.getPackageOrNull(component.packageId)
             .errorIfNull(
@@ -148,32 +254,31 @@ internal class StyleFactory(
                     ),
                 ),
             ).flatMap { rcPackage ->
-                createStackComponentStyle(
-                    component = component.stack,
-                    rcPackage = rcPackage,
-                    tabControl = tabControl,
+                withSelectedScope(
+                    packageInfo = AvailablePackages.Info(
+                        pkg = rcPackage,
+                        isSelectedByDefault = component.isSelectedByDefault,
+                    ),
                     // If a tab control contains a package, which is already an edge case, the package should not
                     // visually become "selected" if its tab control parent is.
-                    tabIndex = null,
-                ).map { stack ->
-                    PackageComponentStyle(
-                        stackComponentStyle = stack,
-                        rcPackage = rcPackage,
-                        isSelectedByDefault = component.isSelectedByDefault,
-                    )
+                    tabControlIndex = null,
+                ) {
+                    createStackComponentStyle(
+                        component = component.stack,
+                    ).map { stack ->
+                        PackageComponentStyle(
+                            stackComponentStyle = stack,
+                            rcPackage = rcPackage,
+                            isSelectedByDefault = component.isSelectedByDefault,
+                        )
+                    }
                 }
             }
 
-    private fun createPurchaseButtonComponentStyle(
+    private fun StyleFactoryScope.createPurchaseButtonComponentStyle(
         component: PurchaseButtonComponent,
-        rcPackage: Package?,
-        tabControl: TabControlStyle?,
-        tabIndex: Int?,
     ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
         component.stack,
-        rcPackage,
-        tabControl,
-        tabIndex,
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
@@ -213,30 +318,26 @@ internal class StyleFactory(
         }
 
     @Suppress("CyclomaticComplexMethod")
-    private fun createStackComponentStyle(
+    private fun StyleFactoryScope.createStackComponentStyle(
         component: StackComponent,
-        rcPackage: Package?,
-        tabControl: TabControlStyle?,
-        tabIndex: Int?,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            .toPresentedOverrides { partial -> PresentedStackPartial(from = partial, aliases = colorAliases) }
+            .toPresentedOverrides { partial ->
+                PresentedStackPartial(
+                    from = partial,
+                    aliases = colorAliases,
+                    createBadgeStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) },
+                )
+            }
             .mapError { nonEmptyListOf(it) },
         // Build all children styles.
         second = component.components
-            .map { create(it, rcPackage, tabControl, tabIndex) }
+            .map { createInternal(it) }
             .mapOrAccumulate { it },
-        third = component.badge?.let { badge ->
-            createStackComponentStyle(badge.stack, rcPackage, tabControl, tabIndex)
-                .map {
-                    BadgeStyle(
-                        stackStyle = it,
-                        style = badge.style,
-                        alignment = badge.alignment,
-                    )
-                }
-        }.orSuccessfullyNull(),
+        third = component.badge
+            ?.toBadgeStyle(createStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) })
+            .orSuccessfullyNull(),
         fourth = createBackgroundStyles(component.background, component.backgroundColor),
         fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
@@ -256,15 +357,13 @@ internal class StyleFactory(
             badge = badge,
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
-            tabIndex = tabIndex,
+            tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
     }
 
-    private fun createTextComponentStyle(
+    private fun StyleFactoryScope.createTextComponentStyle(
         component: TextComponent,
-        rcPackage: Package?,
-        tabIndex: Int?,
     ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Get our texts from the localization dictionary.
         first = localizations.stringForAllLocales(component.text),
@@ -283,6 +382,7 @@ internal class StyleFactory(
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
         fifth = component.fontName
             ?.let { fontAlias -> fontAliases.getFontSpec(fontAlias) }
+            ?.recoverFromBlankFontAlias()
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
     ) { texts, presentedOverrides, color, backgroundColor, fontSpec ->
@@ -301,16 +401,14 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
-            tabIndex = tabIndex,
+            tabIndex = tabControlIndex,
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
         )
     }
 
-    private fun createImageComponentStyle(
+    private fun StyleFactoryScope.createImageComponentStyle(
         component: ImageComponent,
-        rcPackage: Package?,
-        tabIndex: Int?,
     ): Result<ImageComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.source.withLocalizedOverrides(component.overrideSourceLid),
         second = component.overrides
@@ -339,15 +437,13 @@ internal class StyleFactory(
             overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
-            tabIndex = tabIndex,
+            tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
     }
 
-    private fun createIconComponentStyle(
+    private fun StyleFactoryScope.createIconComponentStyle(
         component: IconComponent,
-        rcPackage: Package?,
-        tabIndex: Int?,
     ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
         zipOrAccumulate(
             first = component.overrides
@@ -371,21 +467,19 @@ internal class StyleFactory(
                 margin = component.margin.toPaddingValues(),
                 iconBackground = background,
                 rcPackage = rcPackage,
-                tabIndex = tabIndex,
+                tabIndex = tabControlIndex,
                 overrides = presentedOverrides,
             )
         }
 
-    private fun createTimelineComponentStyle(
+    private fun StyleFactoryScope.createTimelineComponentStyle(
         component: TimelineComponent,
-        rcPackage: Package?,
-        tabIndex: Int?,
     ): Result<TimelineComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
             .toPresentedOverrides { partial -> Result.Success(PresentedTimelinePartial(partial)) }
             .mapError { nonEmptyListOf(it) },
         second = component.items
-            .map { createTimelineComponentItemStyle(it, rcPackage, tabIndex) }
+            .map { createTimelineComponentItemStyle(it) }
             .mapOrAccumulate { it },
     ) { presentedOverrides, items ->
         TimelineComponentStyle(
@@ -399,22 +493,20 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             items = items,
             rcPackage = rcPackage,
-            tabIndex = tabIndex,
+            tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
     }
 
-    private fun createTimelineComponentItemStyle(
+    private fun StyleFactoryScope.createTimelineComponentItemStyle(
         item: TimelineComponent.Item,
-        rcPackage: Package?,
-        tabIndex: Int?,
     ): Result<TimelineComponentStyle.ItemStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = item.overrides
             .toPresentedOverrides { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
-        second = createTextComponentStyle(item.title, rcPackage, tabIndex),
-        third = item.description?.let { createTextComponentStyle(it, rcPackage, tabIndex) }.orSuccessfullyNull(),
-        fourth = createIconComponentStyle(item.icon, rcPackage, tabIndex),
+        second = createTextComponentStyle(item.title),
+        third = item.description?.let { createTextComponentStyle(it) }.orSuccessfullyNull(),
+        fourth = createIconComponentStyle(item.icon),
         fifth = item.connector?.color?.toColorStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, title, description, icon, connectorColor ->
         val connectorStyle = item.connector?.let { connector ->
@@ -435,22 +527,19 @@ internal class StyleFactory(
             icon = icon,
             connector = connectorStyle,
             rcPackage = rcPackage,
-            tabIndex = tabIndex,
+            tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
     }
 
-    private fun createCarouselComponentStyle(
+    private fun StyleFactoryScope.createCarouselComponentStyle(
         component: CarouselComponent,
-        rcPackage: Package?,
-        tabControl: TabControlStyle?,
-        tabIndex: Int?,
     ): Result<CarouselComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
             .toPresentedOverrides { partial -> PresentedCarouselPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
         second = component.pages
-            .map { createStackComponentStyle(it, rcPackage, tabControl, tabIndex) }
+            .map { createStackComponentStyle(it) }
             .mapOrAccumulate { it },
         third = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         fourth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
@@ -475,18 +564,22 @@ internal class StyleFactory(
             loop = component.loop ?: false,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
-            tabIndex = tabIndex,
+            tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
     }
 
-    private fun createTabControlButtonComponentStyle(
+    private fun StyleFactoryScope.createTabControlButtonComponentStyle(
         component: TabControlButtonComponent,
     ): Result<TabControlButtonComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createStackComponentStyle(component.stack, rcPackage = null, tabControl = null, tabIndex = component.tabIndex)
-            .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
+        withSelectedScope(packageInfo = null, tabControlIndex = component.tabIndex) {
+            // Button control doesn't have a default tab.
+            defaultTabIndex = 0
+            createStackComponentStyle(component.stack)
+                .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
+        }
 
-    private fun createTabControlToggleComponentStyle(
+    private fun StyleFactoryScope.createTabControlToggleComponentStyle(
         component: TabControlToggleComponent,
     ): Result<TabControlToggleComponentStyle, NonEmptyList<PaywallValidationError>> =
         zipOrAccumulate(
@@ -495,6 +588,7 @@ internal class StyleFactory(
             third = component.trackColorOn.toColorStyles(aliases = colorAliases),
             fourth = component.trackColorOff.toColorStyles(aliases = colorAliases),
         ) { thumbColorOn, thumbColorOff, trackColorOn, trackColorOff ->
+            defaultTabIndex = if (component.defaultValue) 1 else 0
             TabControlToggleComponentStyle(
                 defaultValue = component.defaultValue,
                 thumbColorOn = thumbColorOn,
@@ -504,7 +598,7 @@ internal class StyleFactory(
             )
         }
 
-    private fun createTabsComponentStyle(
+    private fun StyleFactoryScope.createTabsComponentStyle(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
         createTabsComponentStyleTabControl(component.control).flatMap { control ->
@@ -533,43 +627,48 @@ internal class StyleFactory(
             }
         }
 
-    private fun createTabsComponentStyleTabControl(
+    private fun StyleFactoryScope.createTabsComponentStyleTabControl(
         componentControl: TabsComponent.TabControl,
     ): Result<TabControlStyle, NonEmptyList<PaywallValidationError>> =
-        when (componentControl) {
-            // This stack will contain a TabControlButtonComponent component.
-            is TabsComponent.TabControl.Buttons -> createStackComponentStyle(
-                component = componentControl.stack,
-                rcPackage = null,
-                tabControl = null,
-                tabIndex = null,
-            ).map { TabControlStyle.Buttons(it) }
-            // This stack will contain a TabControlToggleComponent component.
-            is TabsComponent.TabControl.Toggle -> createStackComponentStyle(
-                component = componentControl.stack,
-                rcPackage = null,
-                tabControl = null,
-                tabIndex = null,
-            ).map { TabControlStyle.Toggle(it) }
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
+            when (componentControl) {
+                // This stack will contain a TabControlButtonComponent component.
+                is TabsComponent.TabControl.Buttons -> createStackComponentStyle(
+                    component = componentControl.stack,
+                ).map { TabControlStyle.Buttons(it) }
+                // This stack will contain a TabControlToggleComponent component.
+                is TabsComponent.TabControl.Toggle -> createStackComponentStyle(
+                    component = componentControl.stack,
+                ).map { TabControlStyle.Toggle(it) }
+            }
         }
 
-    private fun createTabsComponentStyleTabs(
+    private fun StyleFactoryScope.createTabsComponentStyleTabs(
         componentTabs: List<TabsComponent.Tab>,
         control: TabControlStyle,
     ): Result<NonEmptyList<TabsComponentStyle.Tab>, NonEmptyList<PaywallValidationError>> =
         componentTabs
             .toNonEmptyListOrNull()
             .errorIfNull(nonEmptyListOf(PaywallValidationError.TabsComponentWithoutTabs))
-            .flatMap { tabs -> tabs.map { tab -> createTabsComponentStyleTab(tab, control) }.flatten() }
+            .flatMap { tabs ->
+                tabs.mapIndexed { index, tab -> createTabsComponentStyleTab(tab, control, index) }.flatten()
+            }
 
-    private fun createTabsComponentStyleTab(
-        componentTag: TabsComponent.Tab,
+    private fun StyleFactoryScope.createTabsComponentStyleTab(
+        componentTab: TabsComponent.Tab,
         control: TabControlStyle,
+        tabIndex: Int,
     ): Result<TabsComponentStyle.Tab, NonEmptyList<PaywallValidationError>> =
-        // We should only set the tabIndex for children of tab control components, not for children of tab components
-        // like this one.
-        createStackComponentStyle(componentTag.stack, rcPackage = null, tabControl = control, tabIndex = null)
-            .map { stack -> TabsComponentStyle.Tab(stack) }
+        // We should only set the tabControlIndex for children of tab control components, not for all children of tab
+        // components like this one.
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
+            withTabIndex(tabIndex) {
+                withTabControl(control) {
+                    createStackComponentStyle(componentTab.stack)
+                        .map { stack -> TabsComponentStyle.Tab(stack) }
+                }
+            }
+        }
 
     private fun createBackgroundStyles(
         background: Background?,

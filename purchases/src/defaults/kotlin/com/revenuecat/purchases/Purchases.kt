@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.VisibleForTesting
-import coil.ImageLoader
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -432,7 +431,7 @@ class Purchases internal constructor(
     fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback,
     ) {
-        purchasesOrchestrator.getCustomerInfo(CacheFetchPolicy.default(), callback)
+        purchasesOrchestrator.getCustomerInfo(CacheFetchPolicy.default(), true, callback)
     }
 
     /**
@@ -445,7 +444,7 @@ class Purchases internal constructor(
         fetchPolicy: CacheFetchPolicy,
         callback: ReceiveCustomerInfoCallback,
     ) {
-        purchasesOrchestrator.getCustomerInfo(fetchPolicy, callback)
+        purchasesOrchestrator.getCustomerInfo(fetchPolicy, true, callback)
     }
 
     /**
@@ -835,7 +834,7 @@ class Purchases internal constructor(
     companion object {
 
         @InternalRevenueCatAPI
-        fun getImageLoader(context: Context): ImageLoader {
+        fun getImageLoader(context: Context): Any {
             return PurchasesOrchestrator.getImageLoader(context)
         }
 

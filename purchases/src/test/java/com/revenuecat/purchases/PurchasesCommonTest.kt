@@ -8,13 +8,16 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -37,12 +40,18 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.not
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Collections.emptyList
+import java.util.Date
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -245,7 +254,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 oldPurchase, any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
             )
         } answers {
-            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk())
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
         }
         val productChangeParams = getPurchaseParams(
             storeProduct.first().subscriptionOptions!!.first(),
@@ -1319,6 +1328,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    // endregion
+
+    // region Diagnostics sync
+
     @Test
     fun `diagnostics is synced on app foregrounded`() {
         verify(exactly = 0) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
@@ -1337,6 +1350,369 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
     }
+
+    // endregion Diagnostics sync
+
+    // region Diagnostics event - Get Purchases
+
+    @Test
+    fun `getProducts tracks diagnostics on start`() {
+        val productIds = listOf("onemonth_freetrial")
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        purchases.getProducts(
+            productIds,
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {}
+                override fun onError(error: PurchasesError) {}
+            }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsStarted(productIds.toSet())
+        }
+    }
+
+    @Test
+    fun `getProducts tracks diagnostics on success`() {
+        val productIds = listOf("onemonth_freetrial")
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(0),
+            Date(123) // End time
+        )
+
+        purchases.getProducts(
+            productIds,
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {}
+                override fun onError(error: PurchasesError) {}
+            }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = productIds.toSet(),
+                notFoundProductIds = emptySet(),
+                errorMessage = null,
+                errorCode = null,
+                responseTime = 123.milliseconds
+            )
+        }
+    }
+
+    @Test
+    fun `getProducts tracks diagnostics on error`() {
+        val productIds = setOf("product_1", "product_2")
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Test error")
+
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(0),  // Start time
+            Date(123) // End time
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                productType = ProductType.SUBS,
+                productIds = productIds,
+                onReceive = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+        }
+
+        purchases.getProducts(
+            productIds.toList(),
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {}
+                override fun onError(error: PurchasesError) {}
+            }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = productIds,
+                notFoundProductIds = productIds,
+                errorMessage = error.message,
+                errorCode = error.code.code,
+                responseTime = 123.milliseconds
+            )
+        }
+    }
+
+    @Test
+    fun `getProducts tracks diagnostics with not found products`() {
+        val foundProductIds = setOf("product_1")
+        val notFoundProductIds = setOf("product_2")
+        val requestedProductIds = foundProductIds + notFoundProductIds
+
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(0),  // Start time
+            Date(123) // End time
+        )
+
+        mockStoreProduct(
+            requestedProductIds.toList(),
+            foundProductIds.toList(),
+            ProductType.SUBS
+        )
+
+        purchases.getProducts(
+            requestedProductIds.toList(),
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {}
+                override fun onError(error: PurchasesError) {}
+            }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = requestedProductIds,
+                notFoundProductIds = notFoundProductIds,
+                errorMessage = null,
+                errorCode = null,
+                responseTime = 123.milliseconds
+            )
+        }
+    }
+
+    // endregion Diagnostics event - Get Purchases
+
+    // region Diagnostics event - Restore purchases
+
+    @Test
+    fun `restore purchases tracks restore purchases started event`() {
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any(),
+            )
+        } answers {
+            lambda<(List<Purchase>) -> Unit>().captured.invoke(kotlin.collections.emptyList())
+        }
+
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        purchases.restorePurchases(mockCompletion)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackRestorePurchasesStarted()
+        }
+    }
+
+    @Test
+    fun `restore purchases tracks restore purchases result event on success`() {
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any(),
+            )
+        } answers {
+            lambda<(List<Purchase>) -> Unit>().captured.invoke(kotlin.collections.emptyList())
+        }
+
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        purchases.restorePurchases(mockCompletion)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackRestorePurchasesResult(
+                errorCode = null,
+                errorMessage = null,
+                responseTime = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `restore purchases tracks restore purchases result event on error`() {
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                onReceivePurchaseHistory = any(),
+                onReceivePurchaseHistoryError = captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        purchases.restorePurchases(mockCompletion)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackRestorePurchasesResult(
+                errorCode = PurchasesErrorCode.StoreProblemError.code,
+                errorMessage = "There was a problem with the store.",
+                responseTime = any(),
+            )
+        }
+    }
+
+    // endregion Diagnostics event - Restore purchases
+
+    // region Diagnostics event - Purchase
+
+    @Test
+    fun `purchase tracks purchaseStart diagnostics event`() {
+        val (_, offerings) = stubOfferings(subProductId)
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+        val purchasePackageParams = getPurchaseParams(packageToPurchase)
+        purchases.purchaseWith(
+            purchasePackageParams
+        ) { _, _ -> }
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseStarted(subProductId, ProductType.SUBS)
+        }
+    }
+
+    @Test
+    fun `purchase tracks purchaseResult diagnostics event on success`() {
+        mockQueryingProductDetails(inAppProductId, ProductType.INAPP, null)
+
+        val stubOtpProduct = stubINAPPStoreProduct(inAppProductId)
+        val purchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            stubOtpProduct
+        )
+
+        purchases.purchaseWith(
+            purchaseParams.build(),
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(inAppProductId, "crazy_purchase_token", ProductType.INAPP)
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseResult(
+                inAppProductId,
+                ProductType.INAPP,
+                errorCode = null,
+                errorMessage = null,
+                responseTime = any(),
+                verificationResult = VerificationResult.VERIFIED,
+            )
+        }
+    }
+
+    @Test
+    fun `purchase tracks purchaseResult diagnostics event on error`() {
+        val storeProduct = stubStoreProduct("productId")
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+
+        purchases.purchaseWith(
+            purchaseParams,
+            onSuccess = { _, _ -> fail("Expected error") }
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseResult(
+                "productId",
+                ProductType.SUBS,
+                errorCode = error.code.code,
+                errorMessage = error.message,
+                responseTime = any(),
+                verificationResult = null,
+            )
+        }
+    }
+
+    @Test
+    fun `purchase product change tracks purchaseStart diagnostics event`() {
+        val productId = "onemonth_freetrial"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val oldPurchase = mockPurchaseFound()
+        val productChangeParams = getPurchaseParams(
+            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            oldPurchase.productIds.first()
+        )
+
+        purchases.purchaseWith(
+            productChangeParams,
+            onSuccess = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseStarted(productId, ProductType.SUBS)
+        }
+    }
+
+    @Test
+    fun `purchase product change tracks purchaseResult diagnostics event on success`() {
+        mockCustomerInfo(VerificationResult.VERIFIED_ON_DEVICE)
+
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val oldPurchase = mockPurchaseFound()
+        val productChangeParams = getPurchaseParams(
+            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            oldPurchase.productIds.first()
+        )
+        purchases.purchaseWith(
+            productChangeParams,
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseResult(
+                productId,
+                ProductType.SUBS,
+                errorCode = null,
+                errorMessage = null,
+                responseTime = any(),
+                verificationResult = VerificationResult.VERIFIED_ON_DEVICE,
+            )
+        }
+    }
+
+    @Test
+    fun `purchase product change tracks purchaseResult diagnostics event on error`() {
+        val productId = "onemonth_freetrial"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val oldPurchase = mockPurchaseFound()
+        val productChangeParams = getPurchaseParams(
+            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            oldPurchase.productIds.first()
+        )
+        purchases.purchaseWith(
+            productChangeParams,
+            onSuccess = { _, _ -> fail("Expected error") }
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackPurchaseResult(
+                productId,
+                ProductType.SUBS,
+                errorCode = error.code.code,
+                errorMessage = error.message,
+                responseTime = any(),
+                verificationResult = null,
+            )
+        }
+    }
+
+    // endregion Diagnostics event - Purchase
 
     @Test
     fun `paywall events synced on app foregrounded`() {

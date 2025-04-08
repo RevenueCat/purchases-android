@@ -128,7 +128,7 @@ internal fun CarouselComponentView(
 
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = carouselState.pagePeek),
+            contentPadding = PaddingValues(horizontal = carouselState.pagePeek + carouselState.pageSpacing),
             // This will load all the pages at once, which allows the pager to always have the correct size
             beyondViewportPageCount = pageCount,
             pageSpacing = carouselState.pageSpacing,

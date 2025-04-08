@@ -24,6 +24,7 @@ import java.util.Date
  * @throws [JSONException] If the json is invalid.
  */
 internal object CustomerInfoFactory {
+
     @Throws(JSONException::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
