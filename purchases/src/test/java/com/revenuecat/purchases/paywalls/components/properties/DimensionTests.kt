@@ -66,6 +66,21 @@ internal class DimensionTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                     )
                 )
             ),
+            arrayOf(
+                "unknown",
+                Args(
+                    json = """
+                        {
+                          "unknown_property": "some_value",
+                          "type": "some_unknown_type"
+                        }      
+                        """.trimIndent(),
+                    expected = Dimension.Vertical(
+                        alignment = HorizontalAlignment.LEADING,
+                        distribution = FlexDistribution.START
+                    )
+                )
+            )
         )
     }
 

@@ -1,11 +1,12 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = DimensionDeserializer::class)
 sealed interface Dimension {
 
     @Serializable
@@ -28,3 +29,19 @@ sealed interface Dimension {
         @get:JvmSynthetic val alignment: TwoDimensionalAlignment,
     ) : Dimension
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object DimensionDeserializer : SealedDeserializerWithDefault<Dimension>(
+    serialName = "Dimension",
+    serializerByType = mapOf(
+        "vertical" to Dimension.Vertical::serializer,
+        "horizontal" to Dimension.Horizontal::serializer,
+        "zlayer" to Dimension.ZLayer::serializer,
+    ),
+    default = {
+        Dimension.Vertical(
+            alignment = HorizontalAlignment.LEADING,
+            distribution = FlexDistribution.START,
+        )
+    },
+)
