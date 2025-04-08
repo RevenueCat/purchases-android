@@ -61,16 +61,18 @@ enum class FontSize {
 
 @OptIn(InternalRevenueCatAPI::class)
 private object FontWeightDeserializer : EnumDeserializerWithDefault<FontWeight>(
-    valuesByType = mapOf(
-        "extra_light" to FontWeight.EXTRA_LIGHT,
-        "thin" to FontWeight.THIN,
-        "light" to FontWeight.LIGHT,
-        "regular" to FontWeight.REGULAR,
-        "medium" to FontWeight.MEDIUM,
-        "semibold" to FontWeight.SEMI_BOLD,
-        "bold" to FontWeight.BOLD,
-        "extra_bold" to FontWeight.EXTRA_BOLD,
-        "black" to FontWeight.BLACK,
-    ),
     defaultValue = FontWeight.REGULAR,
+    typeForValue = { value ->
+        when (value) {
+            FontWeight.EXTRA_LIGHT -> "extra_light"
+            FontWeight.THIN -> "thin"
+            FontWeight.LIGHT -> "light"
+            FontWeight.REGULAR -> "regular"
+            FontWeight.MEDIUM -> "medium"
+            FontWeight.SEMI_BOLD -> "semibold"
+            FontWeight.BOLD -> "bold"
+            FontWeight.EXTRA_BOLD -> "extra_bold"
+            FontWeight.BLACK -> "black"
+        }
+    },
 )
