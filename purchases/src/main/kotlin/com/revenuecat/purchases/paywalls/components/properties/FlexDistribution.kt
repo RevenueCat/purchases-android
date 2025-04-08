@@ -5,9 +5,9 @@ import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable(with = FlexDistributionSerializer::class)
+@Serializable(with = FlexDistributionDeserializer::class)
 enum class FlexDistribution {
-    // SerialNames are handled by the FlexDistributionSerializer.
+    // SerialNames are handled by the FlexDistributionDeserializer.
 
     START,
     END,
@@ -18,6 +18,6 @@ enum class FlexDistribution {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object FlexDistributionSerializer : EnumDeserializerWithDefault<FlexDistribution>(
+private object FlexDistributionDeserializer : EnumDeserializerWithDefault<FlexDistribution>(
     defaultValue = FlexDistribution.START,
 )
