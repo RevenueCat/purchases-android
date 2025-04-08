@@ -1,37 +1,23 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = FontWeightDeserializer::class)
 enum class FontWeight {
-    @SerialName("extra_light")
+    // SerialNames are handled by the FontWeightDeserializer.
+
     EXTRA_LIGHT,
-
-    @SerialName("thin")
     THIN,
-
-    @SerialName("light")
     LIGHT,
-
-    @SerialName("regular")
     REGULAR,
-
-    @SerialName("medium")
     MEDIUM,
-
-    @SerialName("semibold")
     SEMI_BOLD,
-
-    @SerialName("bold")
     BOLD,
-
-    @SerialName("extra_bold")
     EXTRA_BOLD,
-
-    @SerialName("black")
     BLACK,
 }
 
@@ -72,3 +58,19 @@ enum class FontSize {
     @SerialName("body_s")
     BODY_S,
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+private object FontWeightDeserializer : EnumDeserializerWithDefault<FontWeight>(
+    valuesByType = mapOf(
+        "extra_light" to FontWeight.EXTRA_LIGHT,
+        "thin" to FontWeight.THIN,
+        "light" to FontWeight.LIGHT,
+        "regular" to FontWeight.REGULAR,
+        "medium" to FontWeight.MEDIUM,
+        "semibold" to FontWeight.SEMI_BOLD,
+        "bold" to FontWeight.BOLD,
+        "extra_bold" to FontWeight.EXTRA_BOLD,
+        "black" to FontWeight.BLACK,
+    ),
+    defaultValue = FontWeight.REGULAR,
+)
