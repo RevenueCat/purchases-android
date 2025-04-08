@@ -33,7 +33,7 @@ sealed interface Shape {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object ShapeDeserializer : SealedDeserializerWithDefault<Shape>(
+internal object ShapeDeserializer : SealedDeserializerWithDefault<Shape>(
     serialName = "Shape",
     serializerByType = mapOf(
         "rectangle" to { Shape.Rectangle.serializer() },

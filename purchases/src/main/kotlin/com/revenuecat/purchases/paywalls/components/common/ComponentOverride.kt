@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.PartialComponent
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride.Condition
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.Serializable
@@ -37,17 +38,18 @@ class ComponentOverride<T : PartialComponent>(
         @Serializable
         object Unsupported : Condition
     }
-
-    private object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
-        serialName = "Condition",
-        serializerByType = mapOf(
-            "compact" to { Condition.Compact.serializer() },
-            "medium" to { Condition.Medium.serializer() },
-            "expanded" to { Condition.Expanded.serializer() },
-            "intro_offer" to { Condition.IntroOffer.serializer() },
-            "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
-            "selected" to { Condition.Selected.serializer() },
-        ),
-        defaultValue = { Condition.Unsupported },
-    )
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
+    serialName = "Condition",
+    serializerByType = mapOf(
+        "compact" to { Condition.Compact.serializer() },
+        "medium" to { Condition.Medium.serializer() },
+        "expanded" to { Condition.Expanded.serializer() },
+        "intro_offer" to { Condition.IntroOffer.serializer() },
+        "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
+        "selected" to { Condition.Selected.serializer() },
+    ),
+    defaultValue = { Condition.Unsupported },
+)

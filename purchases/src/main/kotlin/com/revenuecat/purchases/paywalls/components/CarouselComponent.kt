@@ -172,6 +172,6 @@ class PartialCarouselComponent(
 ) : PartialComponent
 
 @OptIn(InternalRevenueCatAPI::class)
-private object CarouselPageControlPositionDeserializer : EnumDeserializerWithDefault<PageControl.Position>(
+internal object CarouselPageControlPositionDeserializer : EnumDeserializerWithDefault<PageControl.Position>(
     defaultValue = PageControl.Position.BOTTOM,
 )

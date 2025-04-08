@@ -18,6 +18,6 @@ enum class FlexDistribution {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object FlexDistributionDeserializer : EnumDeserializerWithDefault<FlexDistribution>(
+internal object FlexDistributionDeserializer : EnumDeserializerWithDefault<FlexDistribution>(
     defaultValue = FlexDistribution.START,
 )

@@ -28,7 +28,7 @@ sealed interface MaskShape {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object MaskShapeDeserializer : SealedDeserializerWithDefault<MaskShape>(
+internal object MaskShapeDeserializer : SealedDeserializerWithDefault<MaskShape>(
     serialName = "MaskShape",
     serializerByType = mapOf(
         "rectangle" to { MaskShape.Rectangle.serializer() },

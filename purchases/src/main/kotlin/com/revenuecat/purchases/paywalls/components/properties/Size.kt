@@ -32,7 +32,7 @@ sealed interface SizeConstraint {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object SizeConstraintDeserializer : SealedDeserializerWithDefault<SizeConstraint>(
+internal object SizeConstraintDeserializer : SealedDeserializerWithDefault<SizeConstraint>(
     serialName = "SizeConstraint",
     serializerByType = mapOf(
         "fit" to { SizeConstraint.Fit.serializer() },

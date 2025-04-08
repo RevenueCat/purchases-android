@@ -104,6 +104,6 @@ class PartialStackComponent(
 ) : PartialComponent
 
 @OptIn(InternalRevenueCatAPI::class)
-private object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
+internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
     defaultValue = StackComponent.Overflow.NONE,
 )

@@ -14,6 +14,6 @@ enum class FitMode {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object FitModeDeserializer : EnumDeserializerWithDefault<FitMode>(
+internal object FitModeDeserializer : EnumDeserializerWithDefault<FitMode>(
     defaultValue = FitMode.FIT,
 )

@@ -30,8 +30,8 @@ class Badge(
     }
 }
 
-@InternalRevenueCatAPI
-private object BadgeStyleSerializer : EnumDeserializerWithDefault<Badge.Style>(
+@OptIn(InternalRevenueCatAPI::class)
+internal object BadgeStyleSerializer : EnumDeserializerWithDefault<Badge.Style>(
     defaultValue = Badge.Style.Overlay,
     typeForValue = { style ->
         when (style) {

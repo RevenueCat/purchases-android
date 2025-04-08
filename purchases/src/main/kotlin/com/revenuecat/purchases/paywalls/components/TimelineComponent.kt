@@ -120,7 +120,7 @@ class PartialTimelineComponentItem(
 ) : PartialComponent
 
 @OptIn(InternalRevenueCatAPI::class)
-private object TimelineIconAlignmentDeserializer : EnumDeserializerWithDefault<IconAlignment>(
+internal object TimelineIconAlignmentDeserializer : EnumDeserializerWithDefault<IconAlignment>(
     defaultValue = TimelineComponent.IconAlignment.Title,
     typeForValue = { value ->
         when (value) {

@@ -60,7 +60,7 @@ enum class FontSize {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object FontWeightDeserializer : EnumDeserializerWithDefault<FontWeight>(
+internal object FontWeightDeserializer : EnumDeserializerWithDefault<FontWeight>(
     defaultValue = FontWeight.REGULAR,
     typeForValue = { value ->
         when (value) {

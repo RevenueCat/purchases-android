@@ -41,16 +41,16 @@ enum class TwoDimensionalAlignment {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object HorizontalAlignmentDeserializer : EnumDeserializerWithDefault<HorizontalAlignment>(
+internal object HorizontalAlignmentDeserializer : EnumDeserializerWithDefault<HorizontalAlignment>(
     defaultValue = HorizontalAlignment.LEADING,
 )
 
 @OptIn(InternalRevenueCatAPI::class)
-private object VerticalAlignmentDeserializer : EnumDeserializerWithDefault<VerticalAlignment>(
+internal object VerticalAlignmentDeserializer : EnumDeserializerWithDefault<VerticalAlignment>(
     defaultValue = VerticalAlignment.TOP,
 )
 
 @OptIn(InternalRevenueCatAPI::class)
-private object TwoDimensionalAlignmentDeserializer : EnumDeserializerWithDefault<TwoDimensionalAlignment>(
+internal object TwoDimensionalAlignmentDeserializer : EnumDeserializerWithDefault<TwoDimensionalAlignment>(
     defaultValue = TwoDimensionalAlignment.TOP,
 )
