@@ -9,17 +9,17 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable(with = BackgroundSerializer::class)
+@Serializable(with = BackgroundDeserializer::class)
 sealed interface Background {
+    // SerialNames are handled by the BackgroundDeserializer
+
     @Serializable
     object Unknown : Background
 
     @Serializable
-    @SerialName("color")
     data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
 
     @Serializable
-    @SerialName("image")
     data class Image(
         @get:JvmSynthetic val value: ThemeImageUrls,
         @get:JvmSynthetic
@@ -32,7 +32,7 @@ sealed interface Background {
 }
 
 @InternalRevenueCatAPI
-internal object BackgroundSerializer : SealedDeserializerWithDefault<Background>(
+internal object BackgroundDeserializer : SealedDeserializerWithDefault<Background>(
     serialName = "Background",
     serializerByType = mapOf(
         "color" to { Background.Color.serializer() },
