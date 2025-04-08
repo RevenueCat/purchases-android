@@ -12,6 +12,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -115,12 +116,10 @@ class CarouselComponent(
             val color: ColorScheme,
         )
 
-        @Serializable
+        @Serializable(with = CarouselPageControlPositionDeserializer::class)
         enum class Position {
-            @SerialName("top")
+            // SerialNames are handled by the CarouselPageControlPositionDeserializer.
             TOP,
-
-            @SerialName("bottom")
             BOTTOM,
         }
     }
@@ -171,3 +170,8 @@ class PartialCarouselComponent(
     @SerialName("auto_advance")
     val autoAdvance: CarouselComponent.AutoAdvancePages? = null,
 ) : PartialComponent
+
+@OptIn(InternalRevenueCatAPI::class)
+private object CarouselPageControlPositionDeserializer : EnumDeserializerWithDefault<PageControl.Position>(
+    defaultValue = PageControl.Position.BOTTOM,
+)
