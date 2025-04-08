@@ -14,7 +14,7 @@ import org.json.JSONObject
 @Poko
 @Parcelize
 class VirtualCurrencyInfo internal constructor(
-    val balance: Long,
+    val balance: Int,
 ) : Parcelable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -30,7 +30,7 @@ class VirtualCurrencyInfo internal constructor(
 
     companion object {
         internal fun fromJson(json: JSONObject): VirtualCurrencyInfo {
-            val balance = json.getLong("balance")
+            val balance = json.getInt("balance")
             return VirtualCurrencyInfo(balance)
         }
     }
