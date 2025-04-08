@@ -1,27 +1,23 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import kotlinx.serialization.SerialName
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = FlexDistributionSerializer::class)
 enum class FlexDistribution {
-    @SerialName("start")
+    // SerialNames are handled by the FlexDistributionSerializer.
+
     START,
-
-    @SerialName("end")
     END,
-
-    @SerialName("center")
     CENTER,
-
-    @SerialName("space_between")
     SPACE_BETWEEN,
-
-    @SerialName("space_around")
     SPACE_AROUND,
-
-    @SerialName("space_evenly")
     SPACE_EVENLY,
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+private object FlexDistributionSerializer : EnumDeserializerWithDefault<FlexDistribution>(
+    defaultValue = FlexDistribution.START,
+)
