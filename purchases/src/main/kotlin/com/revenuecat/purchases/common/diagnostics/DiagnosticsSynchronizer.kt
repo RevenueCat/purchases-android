@@ -2,11 +2,9 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import org.json.JSONObject
 import java.io.IOException
@@ -108,14 +106,9 @@ internal class DiagnosticsSynchronizer(
 
     private fun syncDiagnosticsFileIfBigEnough() {
         enqueue {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                if (diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync()) {
-                    verboseLog("Diagnostics file is big enough to sync. Syncing it.")
-                    syncDiagnosticsFileIfNeeded()
-                }
-            } else {
-                // This should never happen since we create this class only if diagnostics is supported
-                errorLog("Diagnostics only supported in Android 24+")
+            if (diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync()) {
+                verboseLog("Diagnostics file is big enough to sync. Syncing it.")
+                syncDiagnosticsFileIfNeeded()
             }
         }
     }
