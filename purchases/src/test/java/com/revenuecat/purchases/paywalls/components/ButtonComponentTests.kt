@@ -499,7 +499,9 @@ internal class ButtonComponentTests {
                     ButtonComponent.UrlMethod.UNKNOWN -> "\"unknown\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_unknown_method\"", ButtonComponent.UrlMethod.UNKNOWN),
+            )
         }
 
         @Test
