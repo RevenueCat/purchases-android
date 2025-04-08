@@ -31,7 +31,7 @@ sealed interface Background {
     ) : Background
 }
 
-@InternalRevenueCatAPI
+@OptIn(InternalRevenueCatAPI::class)
 internal object BackgroundDeserializer : SealedDeserializerWithDefault<Background>(
     serialName = "Background",
     serializerByType = mapOf(
