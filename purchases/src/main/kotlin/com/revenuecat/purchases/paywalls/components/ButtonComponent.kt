@@ -47,6 +47,9 @@ class ButtonComponent(
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
+        object Unknown : Destination
+
+        @Serializable
         object CustomerCenter : Destination
 
         @Serializable
@@ -132,6 +135,7 @@ private class ActionSurrogate(
                 is Destination.PrivacyPolicy -> DestinationSurrogate.privacy_policy
                 is Destination.Terms -> DestinationSurrogate.terms
                 is Destination.Url -> DestinationSurrogate.url
+                is Destination.Unknown -> DestinationSurrogate.unknown
             }
         },
         url = when (action) {
@@ -141,7 +145,9 @@ private class ActionSurrogate(
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
-                is Destination.CustomerCenter -> null
+                is Destination.Unknown,
+                is Destination.CustomerCenter,
+                -> null
                 is Destination.PrivacyPolicy -> UrlSurrogate(
                     url_lid = action.destination.urlLid,
                     method = action.destination.method,
@@ -192,6 +198,8 @@ private class ActionSurrogate(
                         )
                     }
 
+                    DestinationSurrogate.unknown -> Destination.Unknown
+
                     null -> error("`destination` cannot be null when `action` is `navigate_to`.")
                 },
             )
@@ -208,12 +216,13 @@ private enum class ActionTypeSurrogate {
 }
 
 @Suppress("EnumNaming", "EnumEntryName", "EnumEntryNameCase")
-@Serializable
+@Serializable(with = DestinationSurrogateDeserializer::class)
 private enum class DestinationSurrogate {
     customer_center,
     privacy_policy,
     terms,
     url,
+    unknown,
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -223,4 +232,8 @@ private class UrlSurrogate(val url_lid: LocalizationKey, val method: UrlMethod)
 
 private object ActionTypeSurrogateDeserializer : EnumDeserializerWithDefault<ActionTypeSurrogate> (
     defaultValue = ActionTypeSurrogate.unknown,
+)
+
+private object DestinationSurrogateDeserializer : EnumDeserializerWithDefault<DestinationSurrogate> (
+    defaultValue = DestinationSurrogate.unknown,
 )

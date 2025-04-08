@@ -315,6 +315,55 @@ internal class ButtonComponentTests {
                     ),
                 ),
                 arrayOf(
+                    "navigate_to - unknown",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_to",
+                            "destination": "some_unknown_destination",
+                            "url": {
+                              "url_lid": "ef74",
+                              "method": "deep_link"
+                            }
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateTo(
+                                destination = ButtonComponent.Destination.Unknown
+                            ),
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
                     "unknown",
                     Args(
                         json = """
