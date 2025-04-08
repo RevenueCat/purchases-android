@@ -72,16 +72,14 @@ class ButtonComponent(
     }
 
     @InternalRevenueCatAPI
-    @Serializable
+    @Serializable(with = UrlMethodDeserializer::class)
     enum class UrlMethod {
-        @SerialName("in_app_browser")
+        // SerialNames are handled by the UrlMethodDeserializer.
+
         IN_APP_BROWSER,
-
-        @SerialName("external_browser")
         EXTERNAL_BROWSER,
-
-        @SerialName("deep_link")
         DEEP_LINK,
+        UNKNOWN,
     }
 }
 
@@ -236,4 +234,9 @@ private object ActionTypeSurrogateDeserializer : EnumDeserializerWithDefault<Act
 
 private object DestinationSurrogateDeserializer : EnumDeserializerWithDefault<DestinationSurrogate> (
     defaultValue = DestinationSurrogate.unknown,
+)
+
+@OptIn(InternalRevenueCatAPI::class)
+private object UrlMethodDeserializer : EnumDeserializerWithDefault<UrlMethod> (
+    defaultValue = UrlMethod.UNKNOWN,
 )

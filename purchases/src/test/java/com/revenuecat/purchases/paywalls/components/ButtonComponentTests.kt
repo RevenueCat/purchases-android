@@ -364,6 +364,58 @@ internal class ButtonComponentTests {
                     ),
                 ),
                 arrayOf(
+                    "navigate_to - url - unknown method",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_to",
+                            "destination": "url",
+                            "url": {
+                              "url_lid": "ef74",
+                              "method": "some_unknown_method"
+                            }
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateTo(
+                                destination = ButtonComponent.Destination.Url(
+                                    urlLid = LocalizationKey("ef74"),
+                                    method = ButtonComponent.UrlMethod.UNKNOWN
+                                )
+                            ),
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
                     "unknown",
                     Args(
                         json = """
@@ -443,6 +495,8 @@ internal class ButtonComponentTests {
                     ButtonComponent.UrlMethod.IN_APP_BROWSER -> "\"in_app_browser\""
                     ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> "\"external_browser\""
                     ButtonComponent.UrlMethod.DEEP_LINK -> "\"deep_link\""
+                    // Testing this doesn't make a ton of sense, but it allows us to keep the exhaustive `when`.
+                    ButtonComponent.UrlMethod.UNKNOWN -> "\"unknown\""
                 }
                 arrayOf(serialized, expected)
             }
