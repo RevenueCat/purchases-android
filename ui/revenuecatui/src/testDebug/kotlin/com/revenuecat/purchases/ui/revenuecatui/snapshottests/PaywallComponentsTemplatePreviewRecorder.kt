@@ -28,12 +28,12 @@ import org.junit.runners.Parameterized.Parameters
 @RunWith(Parameterized::class)
 class PaywallComponentsTemplatePreviewRecorder(
     @Suppress("UNUSED_PARAMETER") name: String,
-    private val offering: Offering
-): BasePaparazziTest(
+    private val offering: Offering,
+) : BasePaparazziTest(
     testConfig = TestConfig(
         name = "pixel6",
-        deviceConfig = DeviceConfig.PIXEL_6
-    )
+        deviceConfig = DeviceConfig.PIXEL_6,
+    ),
 ) {
 
     companion object {
@@ -62,7 +62,7 @@ class PaywallComponentsTemplatePreviewRecorder(
         Dispatchers.resetMain()
     }
 
-    @Suppress("TestFunctionName")
+    @Suppress("TestFunctionName", "FunctionNaming")
     @Test
     fun PaywallComponentsTemplate_Test() {
         screenshotTest {
@@ -70,7 +70,7 @@ class PaywallComponentsTemplatePreviewRecorder(
         }
     }
 
-    private object PrintLnLogHandler: LogHandler {
+    private object PrintLnLogHandler : LogHandler {
         override fun v(tag: String, msg: String) {
             println("V [$tag]: $msg")
         }
