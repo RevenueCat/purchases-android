@@ -608,6 +608,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
       # Required by Emerge CLI
       - install-ruby:
