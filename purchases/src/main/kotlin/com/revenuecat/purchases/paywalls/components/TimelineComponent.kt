@@ -8,6 +8,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion.zero
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -44,12 +45,11 @@ class TimelineComponent(
     val overrides: List<ComponentOverride<PartialTimelineComponent>> = emptyList(),
 ) : PaywallComponent {
 
-    @Serializable
+    @Serializable(with = TimelineIconAlignmentDeserializer::class)
     enum class IconAlignment {
-        @SerialName("title")
-        Title,
+        // SerialNames are handled by the TimelineIconAlignmentDeserializer.
 
-        @SerialName("title_and_description")
+        Title,
         TitleAndDescription,
     }
 
@@ -118,3 +118,14 @@ class PartialTimelineComponentItem(
     @get:JvmSynthetic
     val connector: TimelineComponent.Connector? = null,
 ) : PartialComponent
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object TimelineIconAlignmentDeserializer : EnumDeserializerWithDefault<IconAlignment>(
+    defaultValue = TimelineComponent.IconAlignment.Title,
+    typeForValue = { value ->
+        when (value) {
+            IconAlignment.Title -> "title"
+            IconAlignment.TitleAndDescription -> "title_and_description"
+        }
+    },
+)
