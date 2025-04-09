@@ -10,6 +10,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptySetOrNull
@@ -345,6 +347,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.White))),
         showPricesWithDecimals = true,
         variableConfig = UiConfig.VariableConfig(),
+        variableDataProvider = VariableDataProvider(MockResourceProvider()),
         offering = Offering(
             identifier = "id",
             serverDescription = "description",

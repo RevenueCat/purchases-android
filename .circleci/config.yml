@@ -229,6 +229,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
       - android/accept-licenses
       - android-dependencies
@@ -608,6 +610,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
       # Required by Emerge CLI
       - install-ruby:
