@@ -184,7 +184,7 @@ commands:
         type: string
         default: ""
     steps:
-      - run:
+      - run: 
           name: Check out submodule << parameters.path >>
           command: |
             git submodule init << parameters.path >>
