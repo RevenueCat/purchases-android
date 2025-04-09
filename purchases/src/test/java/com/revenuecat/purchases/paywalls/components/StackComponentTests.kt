@@ -423,4 +423,35 @@ internal class StackComponentTests {
             assert(actual == args.expected)
         }
     }
+
+    @RunWith(Parameterized::class)
+    internal class DeserializeStackOverflowTests(
+        private val serialized: String,
+        private val expected: StackComponent.Overflow,
+    ) {
+
+        companion object {
+            @Suppress("LongMethod")
+            @JvmStatic
+            @Parameterized.Parameters(name = "{0}")
+            fun parameters(): Collection<*> = StackComponent.Overflow.values().map { expected ->
+                val serialized = when (expected) {
+                    StackComponent.Overflow.NONE -> "\"none\""
+                    StackComponent.Overflow.SCROLL -> "\"scroll\""
+                }
+                arrayOf(serialized, expected)
+            } + listOf(
+                arrayOf("\"some_unknown_overflow\"", StackComponent.Overflow.NONE),
+            )
+        }
+
+        @Test
+        fun `Should properly deserialize Overflow`() {
+            // Arrange, Act
+            val actual = JsonTools.json.decodeFromString<StackComponent.Overflow>(serialized)
+
+            // Assert
+            assert(actual == expected)
+        }
+    }
 }
