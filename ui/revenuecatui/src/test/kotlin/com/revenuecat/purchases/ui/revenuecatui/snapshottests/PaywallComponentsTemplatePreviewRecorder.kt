@@ -6,20 +6,30 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.components.OfferingProvider
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallComponentsTemplate_Preview
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameters
 
 /**
- * This is used to record screenshots of our [PaywallComponentsTemplate_Preview]. They're then uploaded to Emerge and
- * verified there. The reason for this is that this specific preview often fails to render on Emerge, and crashes the
- * entire snapshots rendering run. Emerge and Google are working on a fix, but until that time we can use this
- * as a workaround.
- *
- * [issue tracker](https://issuetracker.google.com/issues/398784711)
+ * This is used to record screenshots of our [PaywallComponentsTemplate_Preview] with a fixed resolution and density.
+ * They're then uploaded to our paywall-rendering-validation repository to be able to validate rendering of all
+ * platforms.
  */
+@OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
 @RunWith(Parameterized::class)
-class TemplateV2SnapshotTest(private val offering: Offering): BasePaparazziTest(
+class PaywallComponentsTemplatePreviewRecorder(
+    @Suppress("UNUSED_PARAMETER") name: String,
+    private val offering: Offering
+): BasePaparazziTest(
     testConfig = TestConfig(
         name = "pixel6",
         deviceConfig = DeviceConfig.PIXEL_6
@@ -28,17 +38,28 @@ class TemplateV2SnapshotTest(private val offering: Offering): BasePaparazziTest(
 
     companion object {
         @JvmStatic
-        @Parameterized.Parameters
-        fun data(): List<Array<Offering>> {
+        // Placing the offering ID in double square brackets so we can easily parse it later.
+        @Parameters(name = "[[{0}]]")
+        fun data(): List<Array<Any>> {
             // The OfferingProvider uses an OfferingParser under the hood, which logs.
             // We have to replace the log handler, as the default one uses android.util.Log, which gives an
             // UnsatisfiedLinkError on Paparazzi.
             Purchases.logHandler = PrintLnLogHandler
             return OfferingProvider()
                 .values
-                .map { offering -> arrayOf(offering) }
+                .map { offering -> arrayOf(offering.identifier, offering) }
                 .toList()
         }
+    }
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(newSingleThreadContext("PaywallComponentsTemplatePreviewRecorder-main-dispatcher"))
+    }
+
+    @After
+    fun teardown() {
+        Dispatchers.resetMain()
     }
 
     @Suppress("TestFunctionName")
