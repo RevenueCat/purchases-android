@@ -31,4 +31,7 @@ internal object PaywallValidationErrorStrings {
         "Paywalls V2 does not support footer modes. Falling back to legacy fallback paywall."
     const val TABS_COMPONENT_WITHOUT_TABS = "Tabs component has no tabs configured."
     const val TAB_CONTROL_NOT_IN_TAB = "Encountered a Tab Control component that is not in any tab."
+    const val UNSUPPORTED_BACKGROUND_TYPE = "This is an unsupported background type."
+    const val ROOT_COMPONENT_UNSUPPORTED_PROPERTIES =
+        "This paywall's root component is hidden because it contains unsupported properties: %s"
 }
