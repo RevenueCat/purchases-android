@@ -18,7 +18,9 @@ internal class FitModeTests(private val serialized: String, private val expected
                 FitMode.FILL -> "\"fill\""
             }
             arrayOf(serialized, expected)
-        }
+        } + listOf(
+            arrayOf("\"some_future_unknown_fit_mode\"", FitMode.FIT)
+        )
     }
 
     @Test
