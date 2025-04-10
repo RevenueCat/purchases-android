@@ -25,7 +25,9 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shape
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
@@ -102,6 +104,91 @@ internal class StyleFactory(
          */
         var tabIndex: Int? = null,
     ) {
+        private class WindowInsetsState {
+            /**
+             * Whether the current component should apply the top window insets. This field is reset when it is read,
+             * as it should only be set on a single component.
+             */
+            var applyTopWindowInsets = false
+                get() {
+                    val value = field
+                    field = false
+                    return value
+                }
+
+            /**
+             * Whether the current component should ignore the top window insets. This field is reset when it is read,
+             * as it should only be set on a single component.
+             */
+            var ignoreTopWindowInsets = false
+                get() {
+                    val value = field
+                    field = false
+                    return value
+                }
+
+            /**
+             * Whether we have applied the top window insets to any component.
+             */
+            var topWindowInsetsApplied = false
+
+            /**
+             * We're only interested in the first non-container component. After that, we can stop looking.
+             */
+            private var stillLookingForHeroImage = true
+
+            /**
+             * This will be called for every component in the tree, and will determine whether we have a hero image
+             * that needs special top-window-insets treatment. A hero image is found if the first non-container
+             * component is an image component with a Fill width and a ZLayer parent stack.
+             */
+            fun handleHeroImageWindowInsets(component: PaywallComponent) {
+                when (component) {
+                    is StackComponent -> if (stillLookingForHeroImage) {
+                        applyTopWindowInsets = when (component.dimension) {
+                            is Dimension.ZLayer -> {
+                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeroImage == true
+                                topWindowInsetsApplied
+                            }
+                            is Dimension.Horizontal,
+                            is Dimension.Vertical,
+                            -> false
+                        }
+                    }
+
+                    is ImageComponent -> {
+                        if (stillLookingForHeroImage) {
+                            ignoreTopWindowInsets = component.isHeroImage
+                        }
+                        stillLookingForHeroImage = false
+                    }
+
+                    else -> stillLookingForHeroImage = false
+                }
+            }
+
+            private val PaywallComponent.isHeroImage: Boolean
+                get() = this is ImageComponent &&
+                    when (size.width) {
+                        is SizeConstraint.Fill -> true
+                        is SizeConstraint.Fit,
+                        is SizeConstraint.Fixed,
+                        -> false
+                    }
+        }
+
+        val windowInsetsState = WindowInsetsState()
+
+        /**
+         * Whether the current component should apply the top window insets.
+         */
+        val applyTopWindowInsets by windowInsetsState::applyTopWindowInsets
+
+        /**
+         * Whether the current component should ignore the top window insets.
+         */
+        val ignoreTopWindowInsets by windowInsetsState::ignoreTopWindowInsets
+
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
             get() = packageInfo?.pkg
@@ -170,6 +257,41 @@ internal class StyleFactory(
             return result
         }
 
+        /**
+         * Tells the StyleFactoryScope about a component. This should be called for every component in the tree.
+         */
+        fun recordComponent(component: PaywallComponent) {
+            windowInsetsState.handleHeroImageWindowInsets(component)
+        }
+
+        /**
+         * Applies the top window insets to the provided ComponentStyle if they haven't been applied to any other
+         * component yet.
+         */
+        fun applyTopWindowInsetsIfNotYetApplied(to: ComponentStyle): ComponentStyle =
+            when (to) {
+                is StackComponentStyle -> to.copy(applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied)
+                else -> to
+            }
+
+        /**
+         * Applies the bottom window insets to this ComponentStyle if [shouldApply] is true and this is a stack or
+         * sticky footer.
+         */
+        @Suppress("UNCHECKED_CAST")
+        fun <T : ComponentStyle> T.applyBottomWindowInsetsIfNecessary(shouldApply: Boolean): T =
+            if (shouldApply) {
+                when (this) {
+                    is StackComponentStyle -> copy(applyBottomWindowInsets = true)
+                    is StickyFooterComponentStyle -> copy(
+                        stackComponentStyle = stackComponentStyle.copy(applyBottomWindowInsets = true),
+                    )
+                    else -> this
+                } as T
+            } else {
+                this
+            }
+
         private fun recordPackage(pkg: AvailablePackages.Info) {
             val currentTabIndex = tabIndex
             if (currentTabIndex == null) {
@@ -186,22 +308,33 @@ internal class StyleFactory(
         val defaultTabIndex: Int?,
     )
 
-    fun create(component: PaywallComponent): Result<StyleResult, NonEmptyList<PaywallValidationError>> {
-        val scope = StyleFactoryScope()
-        return scope.createInternal(component).map { componentStyle ->
-            StyleResult(
-                componentStyle = componentStyle,
-                availablePackages = scope.packages,
-                defaultTabIndex = scope.defaultTabIndex,
-            )
+    /**
+     * @param applyBottomWindowInsets Whether to apply bottom window insets to the root of this tree (i.e. the
+     * passed-in [component]).
+     */
+    fun create(
+        component: PaywallComponent,
+        applyBottomWindowInsets: Boolean = false,
+    ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
+        with(StyleFactoryScope()) {
+            createInternal(component)
+                .map { componentStyle -> applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
+                .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
+                .map { componentStyle ->
+                    StyleResult(
+                        componentStyle = componentStyle,
+                        availablePackages = packages,
+                        defaultTabIndex = defaultTabIndex,
+                    )
+                }
         }
-    }
 
     @Suppress("CyclomaticComplexMethod")
     private fun StyleFactoryScope.createInternal(
         component: PaywallComponent,
-    ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
-        when (component) {
+    ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> {
+        recordComponent(component)
+        return when (component) {
             is ButtonComponent -> createButtonComponentStyle(component)
             is ImageComponent -> createImageComponentStyle(component)
             is PackageComponent -> createPackageComponentStyle(component)
@@ -217,6 +350,7 @@ internal class StyleFactory(
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
         }
+    }
 
     private fun StyleFactoryScope.createStickyFooterComponentStyle(
         component: StickyFooterComponent,
@@ -359,6 +493,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
+            applyTopWindowInsets = applyTopWindowInsets,
         )
     }
 
@@ -439,6 +574,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
+            ignoreTopWindowInsets = ignoreTopWindowInsets,
         )
     }
 
