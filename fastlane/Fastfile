@@ -623,6 +623,83 @@ DESC
     trigger_action_in_circle_ci(action: 'bump', repo_name: repo_name)
   end
 
+  desc "Records Paywall template screenshots and pushes them to the repository at target_repository_path"
+  lane :record_and_push_paywall_template_screenshots do |options|
+    target_repository_path = File.expand_path(options[:target_repository_path]) || UI.user_error!("Please provide the target_repository_path, and make sure it is cloned.")
+    target_repository_branch = "update-android-template-screenshots"
+    tmp_dir = ".tmp-paywall-template-screenshots"
+
+    # Update the target repository and create a new branch
+    Dir.chdir(target_repository_path) do
+      sh("git", "fetch")
+      sh("git", "checkout", "main")
+      sh("git", "pull")
+      create_or_checkout_branch(branch_name: target_repository_branch)
+    end
+
+    # Prepare the tmp directory
+    sh("rm -rf #{tmp_dir}")
+    sh("mkdir -p #{tmp_dir}")
+
+    begin
+      record_paparazzi_screenshots(gradle_module: ":ui:revenuecatui", tests: "PaywallComponentsTemplatePreviewRecorder", output_dir: tmp_dir)
+      # Loop over all PNG files in the tmp_dir, parse the offering ID from the file names, and move them into the target repository.
+      sh("find #{tmp_dir} -name '*.png'").split("\n").each do |file_path|
+        if file_path =~ /\>\>(.*?)\<\</
+          offering_id = $1
+          target_dir = "#{target_repository_path}/screenshots/templates/#{offering_id}"
+          sh("mkdir -p #{target_dir}")
+          sh("mv \"#{file_path}\" \"#{target_dir}/android.png\"")
+        else
+          UI.user_error!("No offering ID found in file: #{File.basename(file_path)}")
+        end
+      end
+    ensure
+      sh("rm -rf #{tmp_dir}")
+    end
+
+    # Commit, push, and create a PR in the target repository
+    Dir.chdir(target_repository_path) do
+      has_changes = !sh("git", "status", "--porcelain").empty?
+
+      if has_changes
+        commit_and_push(
+          branch_name: target_repository_branch,
+          commit_message: "[Automated] Updates Android template screenshots."
+        )
+
+        create_pr_if_necessary(
+          branch_name: target_repository_branch,
+          title: "[AUTOMATIC] Updates Android template screenshots",
+          body: "This is an automatic update of the Android template screenshots.",
+          team_reviewers: ["coresdk", "monetization"]
+        )
+      else
+        UI.message("No changes detected in Android template screenshots, skipping PR creation")
+      end
+    end
+  end
+
+  desc "Records Paparazzi screenshots for a given gradle_module"
+  lane :record_paparazzi_screenshots do |options|
+    gradle_module = options[:gradle_module] || UI.user_error!("No gradle_module provided")
+    paparazzi_output_dir = "../" + "#{gradle_module.start_with?(":") ? gradle_module[1..-1] : gradle_module}".gsub(":", "/") + "/src/test/snapshots/images"
+
+    sh("rm -rf #{paparazzi_output_dir}")
+    gradle_args = {
+      task: "#{gradle_module}:recordPaparazziDebug",
+    }
+    gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
+    # This is not yet supported in the Paparazzi version we're using.
+    # gradle_args[:system_properties] = { "paparazzi.snapshot.dir" => options[:output_dir] } if options[:output_dir]
+    gradle(gradle_args)
+
+    # Copy the output to the output_dir
+    if options[:output_dir] && options[:output_dir].length > 0
+      sh("cp -r #{paparazzi_output_dir}/ #{options[:output_dir]}")
+    end
+  end
+
   private_lane :create_or_checkout_branch do |options|
     branch_name = options[:branch_name] || UI.user_error!("No branch name provided")
 
