@@ -806,7 +806,7 @@ workflows:
               - docs-deploy
           <<: *release-tags
 
-  snapshot-bump:
+  on-main-branch:
     when:
       and:
         - not:
@@ -815,17 +815,9 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-next-version
-
-  publish-paywall-tester-to-internal-track:
-    when:
-      and:
-        - not:
-            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "main", << pipeline.git.branch >> ]
-        - equal: [ "default", << pipeline.parameters.action >> ]
-    jobs:
       - publish-paywall-tester-release:
           track: "internal"
+      - record-and-push-paywall-template-screenshots
 
   daily-load-shedder-integration-tests:
     when:
