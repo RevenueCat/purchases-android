@@ -92,7 +92,7 @@ internal fun Background.toBackgroundStyles(
                     )
                 }
         is Background.Unknown -> Result.Error(
-            nonEmptyListOf(PaywallValidationError.UnsupportedBackgroundType),
+            nonEmptyListOf(PaywallValidationError.UnsupportedBackgroundType(background = this)),
         )
     }
 
