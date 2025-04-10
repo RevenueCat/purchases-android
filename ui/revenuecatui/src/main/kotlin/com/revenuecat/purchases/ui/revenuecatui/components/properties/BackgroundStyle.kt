@@ -135,7 +135,7 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
     return rememberAsyncImagePainter(
         model = imageRequest,
         imageLoader = imageLoader,
-        placeholder = if (isInPreviewMode) {
+        placeholder = if (isInPreviewMode && previewImageLoader != null) {
             imageLoader.getPreviewPlaceholderBlocking(imageRequest)
         } else {
             rememberAsyncImagePainter(
