@@ -12,8 +12,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Before
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -50,16 +50,18 @@ class PaywallComponentsTemplatePreviewRecorder(
                 .map { offering -> arrayOf(offering.identifier, offering) }
                 .toList()
         }
-    }
 
-    @Before
-    fun setup() {
-        Dispatchers.setMain(newSingleThreadContext("PaywallComponentsTemplatePreviewRecorder-main-dispatcher"))
-    }
+        @JvmStatic
+        @BeforeClass
+        fun setup() {
+            Dispatchers.setMain(newSingleThreadContext("PaywallComponentsTemplatePreviewRecorder-main-dispatcher"))
+        }
 
-    @After
-    fun teardown() {
-        Dispatchers.resetMain()
+        @JvmStatic
+        @AfterClass
+        fun teardown() {
+            Dispatchers.resetMain()
+        }
     }
 
     @Suppress("TestFunctionName", "FunctionNaming")
