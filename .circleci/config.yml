@@ -855,3 +855,13 @@ workflows:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
       - update-paywall-preview-resources-submodule
+
+  # FIXME Remove this
+  debug-record-and-push-paywall-template-screenshots:
+    when:
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "pw2-collect-template-screenshots", << pipeline.git.branch >> ]
+    jobs:
+      - record-and-push-paywall-template-screenshots
