@@ -625,10 +625,10 @@ jobs:
       - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
-          command: ./gradlew ui:revenuecatui:recordPaparazziDebug
+          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui
       - run:
           name: Records new debug view snapshots to become the new golden
-          command: ./gradlew ui:debugview:recordPaparazziDebug
+          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:debugview
       - run:
           name: Upload snapshots to Emerge
           command: |
