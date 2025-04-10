@@ -615,15 +615,9 @@ DESC
 
   desc "Records Paywall template screenshots and pushes them to the repository at target_repository_path"
   lane :record_and_push_paywall_template_screenshots do |options|
-    if options[:target_repository_path].nil?
-      UI.user_error!("Please provide the target_repository_path, and make sure it is cloned.")
-    else
-      expanded_target_repository_path = File.expand_path(options[:target_repository_path])
-      if expanded_target_repository_path.start_with?("/")
-        target_repository_path = expanded_target_repository_path
-      else
-        target_repository_path = File.expand_path("../#{expanded_target_repository_path}")
-      end
+    UI.user_error!("Please provide the target_repository_path, and make sure it is cloned.") unless options[:target_repository_path]
+    target_repository_path = Dir.chdir("..") do
+      File.expand_path(options[:target_repository_path])
     end
     target_repository_branch = "update-android-template-screenshots"
     tmp_dir = ".tmp-paywall-template-screenshots"
