@@ -711,7 +711,13 @@ DESC
       UI.message("No changes to commit")
     else
       # Commit changes
-      Dir.chdir("..") do
+      if File.basename(Dir.pwd) == "fastlane"
+        Dir.chdir("..") do
+          sh("git", "add", ".")
+          sh("git", "commit", "-m", commit_message)
+          sh("git", "push", "-u", "origin", branch_name)
+        end
+      else
         sh("git", "add", ".")
         sh("git", "commit", "-m", commit_message)
         sh("git", "push", "-u", "origin", branch_name)
