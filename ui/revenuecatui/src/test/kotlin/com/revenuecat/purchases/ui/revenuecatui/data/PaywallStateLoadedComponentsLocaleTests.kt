@@ -82,13 +82,21 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
-                "device locale only matches language, not region",
+                "device locale only matches language, not region, en-IE -> en-US",
                 Args(
                     paywallLocales = nonEmptyListOf("en_US", "es_ES"),
                     deviceLocales = nonEmptyListOf("en-IE", "es-ES"),
                     // Even though there's an exact language and region match for Spanish, we pick English as that has
                     // higher priority.
-                    expected = "en",
+                    expected = "en-US",
+                ),
+            ),
+            arrayOf(
+                "device locale only matches language, not region, es-AR -> es-ES",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "es_ES"),
+                    deviceLocales = nonEmptyListOf("es-AR",),
+                    expected = "es-ES",
                 ),
             ),
             arrayOf(
@@ -172,13 +180,13 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
-                "simplified Chinese zh-Hans-MY -> zh-Hans",
+                "simplified Chinese zh-Hans-MY -> zh-Hans-CN",
                 Args(
                     paywallLocales = nonEmptyListOf("zh_Hant_TW", "zh_Hans_CN"),
                     deviceLocales = nonEmptyListOf("zh-Hans-MY", "zh-Hant-TW"),
                     // Even though there's an exact language and region match for traditional Chinese, we pick
                     // simplified Chinese as that has higher device priority.
-                    expected = "zh-Hans",
+                    expected = "zh-Hans-CN",
                 ),
             ),
             arrayOf(
@@ -262,13 +270,13 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
-                "simplified Chinese zh-Hant-TW -> zh-Hant",
+                "traditional Chinese zh-Hant-TW -> zh-Hant-HK",
                 Args(
                     paywallLocales = nonEmptyListOf("zh_Hans_MY", "zh_Hant_HK"),
                     deviceLocales = nonEmptyListOf("zh-Hant-TW", "zh-Hans-MY"),
                     // Even though there's an exact language and region match for simplified Chinese, we pick
                     // traditional Chinese as that has higher device priority.
-                    expected = "zh-Hant",
+                    expected = "zh-Hant-HK",
                 ),
             ),
             arrayOf(
