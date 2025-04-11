@@ -144,6 +144,7 @@ internal fun TimelineComponentView(
                     end.linkTo(parent.end)
                     width = Dimension.preferredWrapContent
                     height = Dimension.preferredWrapContent
+                    horizontalBias = 0f
                 },
             )
 
@@ -157,6 +158,7 @@ internal fun TimelineComponentView(
                         end.linkTo(parent.end)
                         width = Dimension.preferredWrapContent
                         height = Dimension.preferredWrapContent
+                        horizontalBias = 0f
                     },
                 )
             }
