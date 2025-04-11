@@ -275,6 +275,12 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
         ButtonComponent.UrlMethod.IN_APP_BROWSER -> URLOpeningMethod.IN_APP_BROWSER
         ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> URLOpeningMethod.EXTERNAL_BROWSER
         ButtonComponent.UrlMethod.DEEP_LINK -> URLOpeningMethod.DEEP_LINK
+        ButtonComponent.UrlMethod.UNKNOWN -> {
+            // Buttons like this should be hidden, so this log should never be shown.
+            Logger.e("Ignoring button click with unknown open method for URL: '$url'. This is a bug in the SDK.")
+            return
+        }
     }
+
     URLOpener.openURL(this, url, openingMethod)
 }
