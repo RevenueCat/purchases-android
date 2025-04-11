@@ -427,4 +427,35 @@ internal class TimelineComponentTests {
             assert(actual == args.expected)
         }
     }
+
+    @RunWith(Parameterized::class)
+    internal class DeserializeIconAlignmentTests(
+        private val serialized: String,
+        private val expected: TimelineComponent.IconAlignment,
+    ) {
+
+        companion object {
+            @Suppress("LongMethod")
+            @JvmStatic
+            @Parameterized.Parameters(name = "{0}")
+            fun parameters(): Collection<*> = TimelineComponent.IconAlignment.values().map { expected ->
+                val serialized = when (expected) {
+                    TimelineComponent.IconAlignment.Title -> "\"title\""
+                    TimelineComponent.IconAlignment.TitleAndDescription -> "\"title_and_description\""
+                }
+                arrayOf(serialized, expected)
+            } + listOf(
+                arrayOf("\"some_unknown_method\"", TimelineComponent.IconAlignment.Title),
+            )
+        }
+
+        @Test
+        fun `Should properly deserialize IconAlignment`() {
+            // Arrange, Act
+            val actual = JsonTools.json.decodeFromString<TimelineComponent.IconAlignment>(serialized)
+
+            // Assert
+            assert(actual == expected)
+        }
+    }
 }

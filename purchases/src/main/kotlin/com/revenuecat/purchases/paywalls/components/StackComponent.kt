@@ -16,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -59,12 +60,11 @@ class StackComponent(
     val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
 ) : PaywallComponent {
 
-    @Serializable
+    @Serializable(with = StackOverflowDeserializer::class)
     enum class Overflow {
-        @SerialName("none")
-        NONE,
+        // SerialNames are handled by the StackOverflowDeserializer
 
-        @SerialName("scroll")
+        NONE,
         SCROLL,
     }
 }
@@ -102,3 +102,8 @@ class PartialStackComponent(
     @get:JvmSynthetic
     val overflow: StackComponent.Overflow? = null,
 ) : PartialComponent
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
+    defaultValue = StackComponent.Overflow.NONE,
+)

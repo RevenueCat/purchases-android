@@ -19,7 +19,9 @@ class BadgeStyleTests(private val serialized: String, private val expected: Badg
                 Badge.Style.Nested -> "\"nested\""
             }
             arrayOf(serialized, expected)
-        }
+        } + listOf(
+            arrayOf("\"some_future_unknown_style\"", Badge.Style.Overlay)
+        )
     }
 
     @Test

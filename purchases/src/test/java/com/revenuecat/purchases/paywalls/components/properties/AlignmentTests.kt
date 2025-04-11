@@ -23,7 +23,9 @@ internal class AlignmentTests {
                     HorizontalAlignment.TRAILING -> "\"trailing\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_future_unknown_horizontal_alignment\"", HorizontalAlignment.LEADING)
+            )
         }
 
         @Test
@@ -50,7 +52,9 @@ internal class AlignmentTests {
                     VerticalAlignment.BOTTOM -> "\"bottom\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_future_unknown_vertical_alignment\"", VerticalAlignment.TOP)
+            )
         }
 
         @Test
@@ -83,7 +87,9 @@ internal class AlignmentTests {
                     TwoDimensionalAlignment.BOTTOM_TRAILING -> "\"bottom_trailing\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_future_unknown_two_dimensional_alignment\"", TwoDimensionalAlignment.TOP)
+            )
         }
 
         @Test

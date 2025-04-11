@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -16,7 +17,7 @@ class Badge(
 ) {
 
     @InternalRevenueCatAPI
-    @Serializable
+    @Serializable(with = BadgeStyleSerializer::class)
     enum class Style {
         @SerialName("overlay")
         Overlay,
@@ -28,3 +29,15 @@ class Badge(
         Nested,
     }
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object BadgeStyleSerializer : EnumDeserializerWithDefault<Badge.Style>(
+    defaultValue = Badge.Style.Overlay,
+    typeForValue = { style ->
+        when (style) {
+            Badge.Style.Overlay -> "overlay"
+            Badge.Style.EdgeToEdge -> "edge_to_edge"
+            Badge.Style.Nested -> "nested"
+        }
+    },
+)

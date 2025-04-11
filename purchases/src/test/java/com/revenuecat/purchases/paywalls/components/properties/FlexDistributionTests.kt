@@ -22,7 +22,9 @@ internal class FlexDistributionTests(private val serialized: String, private val
                 FlexDistribution.SPACE_EVENLY -> "\"space_evenly\""
             }
             arrayOf(serialized, expected)
-        }
+        } + listOf(
+            arrayOf("\"some_future_unknown_flex_distribution\"", FlexDistribution.START)
+        )
     }
 
     @Test
