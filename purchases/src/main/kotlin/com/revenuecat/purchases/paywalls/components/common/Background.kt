@@ -14,7 +14,7 @@ sealed interface Background {
     // SerialNames are handled by the BackgroundDeserializer
 
     @Serializable
-    object Unknown : Background
+    data class Unknown(@get:JvmSynthetic val type: String) : Background
 
     @Serializable
     data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
@@ -38,5 +38,5 @@ internal object BackgroundDeserializer : SealedDeserializerWithDefault<Backgroun
         "color" to { Background.Color.serializer() },
         "image" to { Background.Image.serializer() },
     ),
-    defaultValue = { Background.Unknown },
+    defaultValue = { type -> Background.Unknown(type) },
 )
