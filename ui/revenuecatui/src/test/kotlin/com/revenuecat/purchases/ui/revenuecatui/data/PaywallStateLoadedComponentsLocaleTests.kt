@@ -270,7 +270,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
-                "simplified Chinese zh-Hant-TW -> zh-Hant-HK",
+                "traditional Chinese zh-Hant-TW -> zh-Hant-HK",
                 Args(
                     paywallLocales = nonEmptyListOf("zh_Hans_MY", "zh_Hant_HK"),
                     deviceLocales = nonEmptyListOf("zh-Hant-TW", "zh-Hans-MY"),
