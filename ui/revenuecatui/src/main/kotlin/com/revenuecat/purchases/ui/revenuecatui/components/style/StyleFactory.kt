@@ -188,21 +188,28 @@ internal class StyleFactory(
 
     fun create(component: PaywallComponent): Result<StyleResult, NonEmptyList<PaywallValidationError>> {
         val scope = StyleFactoryScope()
-        return scope.createInternal(component).map { componentStyle ->
-            StyleResult(
-                componentStyle = componentStyle,
-                availablePackages = scope.packages,
-                defaultTabIndex = scope.defaultTabIndex,
-            )
-        }
+        return scope.createInternal(component)
+            .flatMap { componentStyle ->
+                componentStyle?.let { Result.Success(it) }
+                    ?: Result.Error(
+                        nonEmptyListOf(PaywallValidationError.RootComponentUnsupportedProperties(component)),
+                    )
+            }
+            .map { componentStyle ->
+                StyleResult(
+                    componentStyle = componentStyle,
+                    availablePackages = scope.packages,
+                    defaultTabIndex = scope.defaultTabIndex,
+                )
+            }
     }
 
     @Suppress("CyclomaticComplexMethod")
     private fun StyleFactoryScope.createInternal(
         component: PaywallComponent,
-    ): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
+    ): Result<ComponentStyle?, NonEmptyList<PaywallValidationError>> =
         when (component) {
-            is ButtonComponent -> createButtonComponentStyle(component)
+            is ButtonComponent -> createButtonComponentStyleOrNull(component)
             is ImageComponent -> createImageComponentStyle(component)
             is PackageComponent -> createPackageComponentStyle(component)
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
@@ -229,16 +236,18 @@ internal class StyleFactory(
             }
         }
 
-    private fun StyleFactoryScope.createButtonComponentStyle(
+    private fun StyleFactoryScope.createButtonComponentStyleOrNull(
         component: ButtonComponent,
-    ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+    ): Result<ButtonComponentStyle?, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = createStackComponentStyle(component.stack),
         second = component.action.toButtonComponentStyleAction(),
     ) { stack, action ->
-        ButtonComponentStyle(
-            stackComponentStyle = stack,
-            action = action,
-        )
+        action?.let {
+            ButtonComponentStyle(
+                stackComponentStyle = stack,
+                action = action,
+            )
+        }
     }
 
     private fun StyleFactoryScope.createPackageComponentStyle(
@@ -287,17 +296,19 @@ internal class StyleFactory(
     }
 
     @Suppress("MaxLineLength")
-    private fun ButtonComponent.Action.toButtonComponentStyleAction(): Result<ButtonComponentStyle.Action, NonEmptyList<PaywallValidationError>> {
+    private fun ButtonComponent.Action.toButtonComponentStyleAction(): Result<ButtonComponentStyle.Action?, NonEmptyList<PaywallValidationError>> {
         return when (this) {
-            ButtonComponent.Action.NavigateBack -> Result.Success(ButtonComponentStyle.Action.NavigateBack)
-            ButtonComponent.Action.RestorePurchases -> Result.Success(ButtonComponentStyle.Action.RestorePurchases)
+            is ButtonComponent.Action.NavigateBack -> Result.Success(ButtonComponentStyle.Action.NavigateBack)
+            is ButtonComponent.Action.RestorePurchases -> Result.Success(ButtonComponentStyle.Action.RestorePurchases)
             is ButtonComponent.Action.NavigateTo -> destination.toPaywallDestination()
-                .map { ButtonComponentStyle.Action.NavigateTo(it) }
+                .map { destination -> destination?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
+            // Returning null here, which will result in this button being hidden.
+            is ButtonComponent.Action.Unknown -> Result.Success(null)
         }
     }
 
     @Suppress("MaxLineLength")
-    private fun ButtonComponent.Destination.toPaywallDestination(): Result<ButtonComponentStyle.Action.NavigateTo.Destination, NonEmptyList<PaywallValidationError>> =
+    private fun ButtonComponent.Destination.toPaywallDestination(): Result<ButtonComponentStyle.Action.NavigateTo.Destination?, NonEmptyList<PaywallValidationError>> =
 
         when (this) {
             is ButtonComponent.Destination.CustomerCenter -> Result.Success(
@@ -307,6 +318,8 @@ internal class StyleFactory(
             is ButtonComponent.Destination.PrivacyPolicy -> buttonComponentStyleUrlDestination(urlLid, method)
             is ButtonComponent.Destination.Terms -> buttonComponentStyleUrlDestination(urlLid, method)
             is ButtonComponent.Destination.Url -> buttonComponentStyleUrlDestination(urlLid, method)
+            // Returning null here, which will result in this button being hidden.
+            is ButtonComponent.Destination.Unknown -> Result.Success(null)
         }
 
     private fun buttonComponentStyleUrlDestination(
@@ -315,6 +328,15 @@ internal class StyleFactory(
     ) =
         localizations.stringForAllLocales(urlLid).map { urls ->
             ButtonComponentStyle.Action.NavigateTo.Destination.Url(urls, method)
+        }.map { urlDestination ->
+            when (urlDestination.method) {
+                ButtonComponent.UrlMethod.IN_APP_BROWSER,
+                ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                ButtonComponent.UrlMethod.DEEP_LINK,
+                -> urlDestination
+                // Returning null here, which will result in this button being hidden.
+                ButtonComponent.UrlMethod.UNKNOWN -> null
+            }
         }
 
     @Suppress("CyclomaticComplexMethod")
@@ -334,7 +356,8 @@ internal class StyleFactory(
         // Build all children styles.
         second = component.components
             .map { createInternal(it) }
-            .mapOrAccumulate { it },
+            .mapOrAccumulate { it }
+            .map { it.filterNotNull() },
         third = component.badge
             ?.toBadgeStyle(createStackComponentStyle = { stackComponent -> createStackComponentStyle(stackComponent) })
             .orSuccessfullyNull(),

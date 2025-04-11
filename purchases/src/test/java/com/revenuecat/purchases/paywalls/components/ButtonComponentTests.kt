@@ -5,7 +5,6 @@ import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import kotlinx.serialization.encodeToString
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -315,6 +314,150 @@ internal class ButtonComponentTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "navigate_to - unknown",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_to",
+                            "destination": "some_unknown_destination",
+                            "url": {
+                              "url_lid": "ef74",
+                              "method": "deep_link"
+                            }
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateTo(
+                                destination = ButtonComponent.Destination.Unknown
+                            ),
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "navigate_to - url - unknown method",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_to",
+                            "destination": "url",
+                            "url": {
+                              "url_lid": "ef74",
+                              "method": "some_unknown_method"
+                            }
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateTo(
+                                destination = ButtonComponent.Destination.Url(
+                                    urlLid = LocalizationKey("ef74"),
+                                    method = ButtonComponent.UrlMethod.UNKNOWN
+                                )
+                            ),
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "unknown",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "unknown",
+                            "unknown_property": "some_value"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.Unknown,
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                ),
             )
         }
 
@@ -352,9 +495,13 @@ internal class ButtonComponentTests {
                     ButtonComponent.UrlMethod.IN_APP_BROWSER -> "\"in_app_browser\""
                     ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> "\"external_browser\""
                     ButtonComponent.UrlMethod.DEEP_LINK -> "\"deep_link\""
+                    // Testing this doesn't make a ton of sense, but it allows us to keep the exhaustive `when`.
+                    ButtonComponent.UrlMethod.UNKNOWN -> "\"unknown\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_unknown_method\"", ButtonComponent.UrlMethod.UNKNOWN),
+            )
         }
 
         @Test
@@ -481,6 +628,18 @@ internal class ButtonComponentTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "unknown",
+                    Args(
+                        serialized = """
+                        {
+                          "type": "some_unknown_type",
+                          "unknown_property": "some_value"
+                        }
+                        """.trimIndent(),
+                        deserialized = ButtonComponent.Action.Unknown,
+                    ),
+                ),
             )
         }
 
@@ -491,19 +650,6 @@ internal class ButtonComponentTests {
 
             // Assert
             assert(actual == args.deserialized)
-        }
-
-        // We don't actually need serialization for our functionality, but it helps when debugging the custom
-        // ActionSerializer.
-        @Test
-        fun `Should properly serialize Action`() {
-            // Arrange, Act
-            val actual = JsonTools.json.encodeToString(args.deserialized)
-            // Serialization removes all white space.
-            val expected = args.serialized.filterNot { it.isWhitespace() }
-
-            // Assert
-            assert(actual == expected)
         }
     }
 }
