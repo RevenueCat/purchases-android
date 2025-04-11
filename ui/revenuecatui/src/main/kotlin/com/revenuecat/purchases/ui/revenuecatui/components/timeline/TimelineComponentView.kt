@@ -313,7 +313,7 @@ private fun TimelineComponentView_TextSize_Preview(
                         previewItem(
                             icon = previewIcon(
                                 size = Size(width = SizeConstraint.Fixed(39u), height = SizeConstraint.Fixed(39u)),
-                                paddingValues = PaddingValues(all = 8.dp)
+                                paddingValues = PaddingValues(all = 8.dp),
                             ),
                             title = previewTextComponentStyle(
                                 text = "Today",
@@ -333,7 +333,7 @@ private fun TimelineComponentView_TextSize_Preview(
                         previewItem(
                             icon = previewIcon(
                                 size = Size(width = SizeConstraint.Fixed(39u), height = SizeConstraint.Fixed(39u)),
-                                paddingValues = PaddingValues(all = 8.dp)
+                                paddingValues = PaddingValues(all = 8.dp),
                             ),
                             title = previewTextComponentStyle(
                                 text = "Day X",
@@ -343,7 +343,7 @@ private fun TimelineComponentView_TextSize_Preview(
                                 size = Size(width = textWidth, height = SizeConstraint.Fit),
                             ),
                             description = previewTextComponentStyle(
-                                text =  "We'll remind you that your trial is ending soon",
+                                text = "We'll remind you that your trial is ending soon",
                                 horizontalAlignment = HorizontalAlignment.LEADING,
                                 textAlign = HorizontalAlignment.LEADING,
                                 size = Size(width = textWidth, height = SizeConstraint.Fit),
@@ -352,7 +352,7 @@ private fun TimelineComponentView_TextSize_Preview(
                         previewItem(
                             icon = previewIcon(
                                 size = Size(width = SizeConstraint.Fixed(39u), height = SizeConstraint.Fixed(39u)),
-                                paddingValues = PaddingValues(all = 8.dp)
+                                paddingValues = PaddingValues(all = 8.dp),
                             ),
                             title = previewTextComponentStyle(
                                 text = "Day Y",
@@ -429,7 +429,7 @@ private fun previewItems(
         previewItem(
             title = "Day X",
             description = "We'll remind you that your trial is ending soon",
-            icon = previewIcon(size = Size(width = SizeConstraint.Fixed(30u), height = SizeConstraint.Fixed(30u)))
+            icon = previewIcon(size = Size(width = SizeConstraint.Fixed(30u), height = SizeConstraint.Fixed(30u))),
         ),
         previewItem(
             title = "Day Y",
@@ -455,7 +455,7 @@ private fun previewItem(
     description: TextComponentStyle,
     icon: IconComponentStyle = previewIcon(),
     connector: TimelineComponentStyle.ConnectorStyle? = previewConnectorStyle(),
-)= TimelineComponentStyle.ItemStyle(
+) = TimelineComponentStyle.ItemStyle(
     title = title,
     visible = true,
     description = description,
@@ -497,7 +497,7 @@ private fun previewIcon(
     color: Color = Color.White,
     backgroundColor: Color = Color(color = 0xFF576CDB),
     size: Size = Size(width = SizeConstraint.Fixed(20u), height = SizeConstraint.Fixed(20u)),
-    paddingValues: PaddingValues = PaddingValues(all = 4.dp)
+    paddingValues: PaddingValues = PaddingValues(all = 4.dp),
 ): IconComponentStyle {
     return previewIconComponentStyle(
         size = size,
