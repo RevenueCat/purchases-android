@@ -322,7 +322,9 @@ internal class ComponentsConfigTests {
                                     )
                                 ),
                             ),
-                            background = Background.Unknown,
+                            background = Background.Unknown(
+                                type = "some_unknown_background_type_that_doesnt_exist_in_the_paywall_data_model_yet"
+                            ),
                         )
                     ),
                 ),
