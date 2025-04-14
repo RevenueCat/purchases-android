@@ -4,11 +4,11 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.TabControlNotInTab.message
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.TabsComponentWithoutTabs.message
-import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.UnsupportedBackgroundType.message
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 
 internal sealed class PaywallValidationError : Throwable() {
@@ -116,8 +116,11 @@ internal sealed class PaywallValidationError : Throwable() {
     object TabControlNotInTab : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.TAB_CONTROL_NOT_IN_TAB
     }
-    object UnsupportedBackgroundType : PaywallValidationError() {
+    data class UnsupportedBackgroundType(
+        val background: Background.Unknown,
+    ) : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.UNSUPPORTED_BACKGROUND_TYPE
+            .format(background.type)
     }
     data class RootComponentUnsupportedProperties(
         val component: PaywallComponent,
