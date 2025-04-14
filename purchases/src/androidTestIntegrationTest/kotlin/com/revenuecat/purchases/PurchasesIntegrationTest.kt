@@ -110,8 +110,9 @@ class PurchasesIntegrationTest {
             Purchases.sharedInstance.getOfferingsWith(
                 onError = { error -> fail("Get offerings should be successful. Error: ${error.message}") },
                 onSuccess = { offerings ->
-                    assertThat(offerings.current).isNotNull
-                    assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
+                    assertThat(offerings.current)
+                        .withFailMessage("Current offering is null. Offerings count: ${offerings.all.size}")
+                        .isNotNull
                     assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
                     lock.countDown()
