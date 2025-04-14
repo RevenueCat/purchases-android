@@ -111,7 +111,7 @@ class PurchasesIntegrationTest {
                 onError = { error -> fail("Get offerings should be successful. Error: ${error.message}") },
                 onSuccess = { offerings ->
                     assertThat(offerings.current)
-                        .withFailMessage("Current offering is null. Offerings count: ${offerings.all.size}")
+                        .withFailMessage("Current offering is null. Offering ids: ${offerings.all.keys}")
                         .isNotNull
                     assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
