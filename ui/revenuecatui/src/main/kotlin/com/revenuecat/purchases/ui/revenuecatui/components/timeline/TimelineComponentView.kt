@@ -425,11 +425,13 @@ private fun previewItems(
         previewItem(
             title = "Today",
             description = "Description of what you get today if you subscribe with multiple lines to check wrapping",
+            connector = previewConnectorStyle(margin = connectorMargins),
         ),
         previewItem(
             title = "Day X",
             description = "We'll remind you that your trial is ending soon",
             icon = previewIcon(size = Size(width = SizeConstraint.Fixed(30u), height = SizeConstraint.Fixed(30u))),
+            connector = previewConnectorStyle(margin = connectorMargins),
         ),
         previewItem(
             title = "Day Y",
