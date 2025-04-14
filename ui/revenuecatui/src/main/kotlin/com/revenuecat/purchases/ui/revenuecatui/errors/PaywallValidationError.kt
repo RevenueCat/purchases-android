@@ -3,6 +3,8 @@ package com.revenuecat.purchases.ui.revenuecatui.errors
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.PaywallComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.TabControlNotInTab.message
@@ -42,6 +44,8 @@ internal sealed class PaywallValidationError : Throwable() {
             is InvalidModeForComponentsPaywall -> PaywallValidationErrorStrings.INVALID_MODE_FOR_COMPONENTS_PAYWALL
             is TabsComponentWithoutTabs -> message
             is TabControlNotInTab -> message
+            is UnsupportedBackgroundType -> message
+            is RootComponentUnsupportedProperties -> message
         }
     }
 
@@ -111,5 +115,17 @@ internal sealed class PaywallValidationError : Throwable() {
     }
     object TabControlNotInTab : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.TAB_CONTROL_NOT_IN_TAB
+    }
+    data class UnsupportedBackgroundType(
+        val background: Background.Unknown,
+    ) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.UNSUPPORTED_BACKGROUND_TYPE
+            .format(background.type)
+    }
+    data class RootComponentUnsupportedProperties(
+        val component: PaywallComponent,
+    ) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.ROOT_COMPONENT_UNSUPPORTED_PROPERTIES
+            .format(component::class.java.simpleName)
     }
 }

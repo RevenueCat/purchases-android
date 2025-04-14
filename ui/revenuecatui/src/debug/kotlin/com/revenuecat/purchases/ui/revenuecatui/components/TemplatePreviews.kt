@@ -28,6 +28,7 @@ import java.net.URI
 import java.util.Date
 
 private const val DIR_TEMPLATES = "paywall-templates"
+private const val MILLIS_2025_04_23 = 1745366400000
 
 /**
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
@@ -163,7 +164,7 @@ internal fun PaywallComponentsTemplate_Preview(
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = "US",
-        dateProvider = { Date() },
+        dateProvider = { Date(MILLIS_2025_04_23) },
     )
 
     ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current)) {

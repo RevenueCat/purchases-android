@@ -263,4 +263,36 @@ internal class ComponentOverridesTests {
             assert(actual == args.expected)
         }
     }
+
+    @RunWith(Parameterized::class)
+    class DeserializeComponentOverrideConditionTests(
+        private val serialized: String,
+        private val expected: ComponentOverride.Condition,
+    ) {
+
+        companion object {
+            @Suppress("LongMethod")
+            @JvmStatic
+            @Parameterized.Parameters(name = "{0}")
+            fun parameters(): Collection<*> = listOf(
+                arrayOf("{ \"type\": \"compact\" }", ComponentOverride.Condition.Compact),
+                arrayOf("{ \"type\": \"medium\" }", ComponentOverride.Condition.Medium),
+                arrayOf("{ \"type\": \"expanded\" }", ComponentOverride.Condition.Expanded),
+                arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer),
+                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultipleIntroOffers),
+                arrayOf("{ \"type\": \"selected\" }", ComponentOverride.Condition.Selected),
+                arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
+                arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),
+            )
+        }
+
+        @Test
+        fun `Should properly deserialize Condition`() {
+            // Arrange, Act
+            val actual = JsonTools.json.decodeFromString<ComponentOverride.Condition>(serialized)
+
+            // Assert
+            assert(actual == expected)
+        }
+    }
 }

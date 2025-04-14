@@ -102,6 +102,20 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                     expected = MaskShape.Circle
                 )
             ),
+            arrayOf(
+                "unknown",
+                Args(
+                    json = """
+                        {
+                          "unknown_property": "some_value",
+                          "type": "some_unknown_type"
+                        }
+                        """.trimIndent(),
+                    expected = MaskShape.Rectangle(
+                        corners = null
+                    )
+                )
+            )
         )
     }
 

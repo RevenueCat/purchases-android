@@ -79,6 +79,18 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
                     expected = Shape.Pill
                 )
             ),
+            arrayOf(
+                "unknown",
+                Args(
+                    json = """
+                        {
+                          "unknown_property": "some_value",
+                          "type": "some_unknown_type"
+                        }
+                        """.trimIndent(),
+                    expected = Shape.Rectangle(corners = null)
+                )
+            ),
         )
     }
 

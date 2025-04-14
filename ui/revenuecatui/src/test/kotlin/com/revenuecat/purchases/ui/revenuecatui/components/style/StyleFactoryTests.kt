@@ -664,4 +664,68 @@ class StyleFactoryTests {
         assertThat(errors.size).isEqualTo(1)
         assertThat(errors[0]).isInstanceOf(PaywallValidationError.TabsComponentWithoutTabs::class.java)
     }
+
+    @Test
+    fun `Should remove ButtonComponents with unsupported properties`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                TextComponent(
+                    text = LOCALIZATION_KEY_TEXT_1,
+                    color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                ),
+                // Unsupported Action should be hidden.
+                ButtonComponent(
+                    action = ButtonComponent.Action.Unknown,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_2,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                            ),
+                        )
+                    )
+                ),
+                // Unsupported Destination should be hidden.
+                ButtonComponent(
+                    action = ButtonComponent.Action.NavigateTo(
+                        ButtonComponent.Destination.Unknown,
+                    ),
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_2,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                            ),
+                        )
+                    )
+                ),
+                // Unsupported UrlMethod should be hidden.
+                ButtonComponent(
+                    action = ButtonComponent.Action.NavigateTo(
+                        ButtonComponent.Destination.Url(LOCALIZATION_KEY_TEXT_1, ButtonComponent.UrlMethod.UNKNOWN),
+                    ),
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_2,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                            ),
+                        )
+                    )
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(1)
+        with(style.children[0] as TextComponentStyle) {
+            assertThat(texts[localeId]).isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
+        }
+    }
 }
