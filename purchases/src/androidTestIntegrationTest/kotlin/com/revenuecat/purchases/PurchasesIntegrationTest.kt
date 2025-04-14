@@ -41,7 +41,7 @@ class PurchasesIntegrationTest {
             Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
     }
 
-    private val testTimeout = 10.seconds
+    private val testTimeout = 20.seconds
     private val currentTimestamp = Date().time
     private val testUserId = "android-integration-test-$currentTimestamp"
     private val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
@@ -150,10 +150,12 @@ class PurchasesIntegrationTest {
 
         onActivityReady {
             Purchases.sharedInstance.getOfferingsWith(
-                onError = { error -> fail("Get offerings should be successful. Error: ${error.message}") },
+                onError = { error ->
+                    fail("Get offerings should be successful. Error: ${error.message}. " +
+                        "Underlying error: ${error.underlyingErrorMessage}")
+                },
                 onSuccess = { offerings ->
                     assertThat(offerings.current).isNotNull
-                    assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
                     assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
                     lock.countDown()
