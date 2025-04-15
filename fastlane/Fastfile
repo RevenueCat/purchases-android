@@ -740,7 +740,7 @@ DESC
     )
 
     if existing_pr[:json].length == 0
-      create_pull_request(
+      pr_url = create_pull_request(
         repo: repo,
         title: title,
         body: body,
@@ -750,6 +750,10 @@ DESC
         labels: labels,
         team_reviewers: team_reviewers
       )
+      
+      if pr_url.nil?
+        UI.user_error!("Failed to create pull request.")
+      end
     else
       UI.message("PR already exists.")
     end
