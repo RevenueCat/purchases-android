@@ -18,6 +18,7 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -148,6 +149,14 @@ class Purchases internal constructor(
     }
 
     // region Public Methods
+
+    /**
+     * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+     * If there is any error, it will return null and log said error.
+     */
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        purchasesOrchestrator.getStorefrontCountryCode(callback)
+    }
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation

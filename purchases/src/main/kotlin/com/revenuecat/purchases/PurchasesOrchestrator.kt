@@ -51,6 +51,7 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -275,6 +276,23 @@ internal class PurchasesOrchestrator(
     }
 
     // region Public Methods
+
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        storefrontCountryCode?.let {
+            callback.onReceived(it)
+        } ?: run {
+            billing.getStorefront(
+                onSuccess = { countryCode ->
+                    storefrontCountryCode = countryCode
+                    callback.onReceived(countryCode)
+                },
+                onError = { error ->
+                    errorLog(error)
+                    callback.onError(error)
+                },
+            )
+        }
+    }
 
     fun syncAttributesAndOfferingsIfNeeded(
         callback: SyncAttributesAndOfferingsCallback,

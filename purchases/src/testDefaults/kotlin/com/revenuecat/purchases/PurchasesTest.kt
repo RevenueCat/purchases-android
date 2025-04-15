@@ -117,6 +117,48 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(purchases.appUserID).isEqualTo(appUserId)
     }
 
+    // region storefrontCountryCode
+
+    @Test
+    fun `getting storefront country code calls billing store with correct parameters`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront")
+        }
+
+        var storefrontCountryCode: String? = null
+        purchases.getStorefrontCountryCodeWith { storefrontCountryCode = it }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `if already there, getting storefront country code does not calls billing store`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront-should-not-be-called")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    // endregion storefrontCountryCode
+
     // region purchasing
 
     @Test
