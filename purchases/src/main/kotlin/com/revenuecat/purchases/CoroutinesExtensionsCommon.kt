@@ -49,8 +49,8 @@ suspend fun Purchases.awaitOfferings(
     onError: suspend (PurchasesException) -> Unit,
 ) {
     try {
-        val offering = awaitOfferings()
-        onSuccess.invoke(offering)
+        val offerings = awaitOfferings()
+        onSuccess.invoke(offerings)
     } catch (e: PurchasesException) {
         onError.invoke(e)
     }
