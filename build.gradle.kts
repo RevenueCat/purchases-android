@@ -12,7 +12,6 @@ plugins {
     alias(libs.plugins.kover) apply false
     alias(libs.plugins.emerge) apply false
     alias(libs.plugins.poko) apply false
-    alias(libs.plugins.google.secrets) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.detekt)
     alias(libs.plugins.dependencyGraph)

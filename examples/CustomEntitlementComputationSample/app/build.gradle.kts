@@ -51,8 +51,6 @@ android {
     secrets {
         propertiesFileName = "secrets.properties"
         defaultPropertiesFileName = "secrets.defaults.properties"
-        ignoreList.add("keyToIgnore") // Ignore the key "keyToIgnore"
-        ignoreList.add("sdk.*") // Ignore all keys matching the regexp "sdk.*"
     }
 }
 
