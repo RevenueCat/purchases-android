@@ -9,31 +9,53 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
+import com.revenuecat.purchases.paywalls.components.TabControlComponent
+import com.revenuecat.purchases.paywalls.components.TabsComponent
+import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.Horizontal
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertical
+import com.revenuecat.purchases.paywalls.components.properties.Dimension.ZLayer
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.CENTER
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.END
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.LEADING
+import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
@@ -42,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.previewUiConfig
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -56,11 +79,15 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.validatePaywallComponentsDataOrNullForPreviews
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import java.net.URL
+import java.util.Date
 
 private const val DURATION_MS_CROSS_FADE = 220
 
@@ -253,6 +280,327 @@ private fun TabsComponentView_Preview() {
         ),
         state = previewEmptyState(),
         clickHandler = { },
+    )
+}
+
+@Preview
+@Composable
+private fun TabsComponentView_Buttons_Preview() {
+    val textColor = ColorScheme(
+        light = ColorInfo.Hex(Color.Black.toArgb()),
+        dark = ColorInfo.Hex(Color.White.toArgb()),
+    )
+    val backgroundColor = ColorScheme(
+        light = ColorInfo.Hex(Color.White.toArgb()),
+        dark = ColorInfo.Hex(Color.Black.toArgb()),
+    )
+
+    val boldWhenSelectedOverride = ComponentOverride(
+        conditions = listOf(ComponentOverride.Condition.Selected),
+        properties = PartialTextComponent(
+            fontWeight = FontWeight.EXTRA_BOLD,
+        ),
+    )
+
+    val cyanBackgroundWhenSelectedOverride = ComponentOverride(
+        conditions = listOf(ComponentOverride.Condition.Selected),
+        properties = PartialStackComponent(
+            backgroundColor = ColorScheme(
+                light = ColorInfo.Hex(Color.Cyan.toArgb()),
+            ),
+        ),
+    )
+
+    val data = PaywallComponentsData(
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = LocalizationKey("title"),
+                            color = textColor,
+                            fontWeight = FontWeight.BOLD,
+                            fontSize = 28,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit),
+                            margin = Padding(top = 32.0, bottom = 40.0, leading = 16.0, trailing = 16.0),
+                        ),
+                        // Tabs
+                        TabsComponent(
+                            control = TabsComponent.TabControl.Buttons(
+                                stack = StackComponent(
+                                    components = (0..2).map { index ->
+                                        TabControlButtonComponent(
+                                            tabIndex = index,
+                                            stack = StackComponent(
+                                                components = listOf(
+                                                    TextComponent(
+                                                        text = LocalizationKey("tab-$index"),
+                                                        color = textColor,
+                                                        size = Size(width = Fit, height = Fit),
+                                                        overrides = listOf(boldWhenSelectedOverride),
+                                                        padding = Padding(
+                                                            top = 8.0,
+                                                            bottom = 8.0,
+                                                            leading = 16.0,
+                                                            trailing = 16.0,
+                                                        ),
+                                                    ),
+                                                ),
+                                                size = Size(width = Fit, height = Fit),
+                                                overrides = listOf(cyanBackgroundWhenSelectedOverride),
+                                            ),
+                                        )
+                                    },
+                                    dimension = Horizontal(alignment = VerticalAlignment.CENTER, CENTER),
+                                    size = Size(width = Fit, height = Fit),
+                                    shape = Shape.Pill,
+                                    backgroundColor = ColorScheme(
+                                        light = ColorInfo.Hex(Color.LightGray.toArgb()),
+                                    ),
+                                ),
+                            ),
+                            tabs = listOf(
+                                TabsComponent.Tab(
+                                    stack = StackComponent(
+                                        components = listOf(
+                                            TabControlComponent,
+                                            StackComponent(
+                                                components = listOf(
+                                                    TextComponent(
+                                                        text = LocalizationKey("feature-1"),
+                                                        color = textColor,
+                                                        horizontalAlignment = LEADING,
+                                                        size = Size(width = Fill, height = Fit),
+                                                        margin = Padding(
+                                                            top = 8.0,
+                                                            bottom = 8.0,
+                                                            leading = 0.0,
+                                                            trailing = 0.0,
+                                                        ),
+                                                    ),
+                                                    TextComponent(
+                                                        text = LocalizationKey("feature-2"),
+                                                        color = textColor,
+                                                        horizontalAlignment = LEADING,
+                                                        size = Size(width = Fill, height = Fit),
+                                                        margin = Padding(
+                                                            top = 8.0,
+                                                            bottom = 8.0,
+                                                            leading = 0.0,
+                                                            trailing = 0.0,
+                                                        ),
+                                                    ),
+                                                ),
+                                                size = Size(width = Fill, height = Fill),
+                                                backgroundColor = ColorScheme(
+                                                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                                                ),
+                                                margin = Padding(top = 16.0, leading = 16.0, trailing = 16.0),
+                                                padding = Padding(
+                                                    top = 16.0,
+                                                    bottom = 16.0,
+                                                    leading = 16.0,
+                                                    trailing = 16.0,
+                                                ),
+                                                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 16.0)),
+                                            ),
+                                        ),
+                                        size = Size(width = Fill, height = Fill),
+                                    ),
+                                ),
+                                TabsComponent.Tab(
+                                    stack = StackComponent(
+                                        components = listOf(
+                                            TabControlComponent,
+                                            StackComponent(
+                                                components = listOf(
+                                                    TextComponent(
+                                                        text = LocalizationKey("feature-3"),
+                                                        color = textColor,
+                                                        horizontalAlignment = LEADING,
+                                                        size = Size(width = Fill, height = Fit),
+                                                        margin = Padding(
+                                                            top = 8.0,
+                                                            bottom = 8.0,
+                                                            leading = 0.0,
+                                                            trailing = 0.0,
+                                                        ),
+                                                    ),
+                                                    TextComponent(
+                                                        text = LocalizationKey("feature-4"),
+                                                        color = textColor,
+                                                        horizontalAlignment = LEADING,
+                                                        size = Size(width = Fill, height = Fit),
+                                                        margin = Padding(
+                                                            top = 8.0,
+                                                            bottom = 8.0,
+                                                            leading = 0.0,
+                                                            trailing = 0.0,
+                                                        ),
+                                                    ),
+                                                ),
+                                                size = Size(width = Fill, height = Fill),
+                                                backgroundColor = ColorScheme(
+                                                    light = ColorInfo.Hex(Color.Yellow.toArgb()),
+                                                ),
+                                                margin = Padding(top = 16.0, leading = 16.0, trailing = 16.0),
+                                                padding = Padding(
+                                                    top = 16.0,
+                                                    bottom = 16.0,
+                                                    leading = 16.0,
+                                                    trailing = 16.0,
+                                                ),
+                                                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 16.0)),
+                                            ),
+                                        ),
+                                        size = Size(width = Fill, height = Fill),
+                                    ),
+                                ),
+                                TabsComponent.Tab(
+                                    stack = StackComponent(
+                                        components = listOf(
+                                            TabControlComponent,
+                                            StackComponent(
+                                                components = listOf(
+                                                    TextComponent(
+                                                        text = LocalizationKey("feature-5"),
+                                                        color = textColor,
+                                                        horizontalAlignment = LEADING,
+                                                        size = Size(width = Fill, height = Fit),
+                                                        margin = Padding(
+                                                            top = 8.0,
+                                                            bottom = 8.0,
+                                                            leading = 0.0,
+                                                            trailing = 0.0,
+                                                        ),
+                                                    ),
+                                                    TextComponent(
+                                                        text = LocalizationKey("feature-6"),
+                                                        color = textColor,
+                                                        horizontalAlignment = LEADING,
+                                                        size = Size(width = Fill, height = Fit),
+                                                        margin = Padding(
+                                                            top = 8.0,
+                                                            bottom = 8.0,
+                                                            leading = 0.0,
+                                                            trailing = 0.0,
+                                                        ),
+                                                    ),
+                                                ),
+                                                size = Size(width = Fill, height = Fill),
+                                                backgroundColor = ColorScheme(
+                                                    light = ColorInfo.Hex(Color.Blue.toArgb()),
+                                                ),
+                                                margin = Padding(top = 16.0, leading = 16.0, trailing = 16.0),
+                                                padding = Padding(
+                                                    top = 16.0,
+                                                    bottom = 16.0,
+                                                    leading = 16.0,
+                                                    trailing = 16.0,
+                                                ),
+                                                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 16.0)),
+                                            ),
+                                        ),
+                                        size = Size(width = Fill, height = Fill),
+                                    ),
+                                ),
+                            ),
+                            size = Size(width = Fill, height = Fill),
+                        ),
+
+                        StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("offer"),
+                                    color = textColor,
+                                    horizontalAlignment = LEADING,
+                                    size = Size(width = Fill, height = Fit),
+                                    margin = Padding(top = 48.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                ),
+                                StackComponent(
+                                    components = listOf(
+                                        TextComponent(
+                                            text = LocalizationKey("cta"),
+                                            color = ColorScheme(
+                                                light = ColorInfo.Hex(Color.White.toArgb()),
+                                            ),
+                                            fontWeight = FontWeight.BOLD,
+                                        ),
+                                    ),
+                                    dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                                    size = Size(width = Fit, height = Fit),
+                                    backgroundColor = ColorScheme(
+                                        light = ColorInfo.Hex(Color(red = 5, green = 124, blue = 91).toArgb()),
+                                    ),
+                                    padding = Padding(top = 8.0, bottom = 8.0, leading = 32.0, trailing = 32.0),
+                                    margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                    shape = Shape.Pill,
+                                ),
+                                TextComponent(
+                                    text = LocalizationKey("terms"),
+                                    color = textColor,
+                                ),
+                            ),
+                            dimension = Vertical(alignment = LEADING, distribution = END),
+                            size = Size(width = Fill, height = Fit),
+                            padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                        ),
+                    ),
+                    dimension = Vertical(alignment = LEADING, distribution = CENTER),
+                    size = Size(width = Fill, height = Fill),
+                    backgroundColor = backgroundColor,
+                ),
+                background = Background.Color(backgroundColor),
+                stickyFooter = null,
+            ),
+        ),
+        componentsLocalizations = mapOf(
+            LocaleId("en_US") to mapOf(
+                LocalizationKey("title") to LocalizationData.Text("Unlock bless."),
+                LocalizationKey("tab-0") to LocalizationData.Text("Tab 1"),
+                LocalizationKey("tab-1") to LocalizationData.Text("Tab 2"),
+                LocalizationKey("tab-2") to LocalizationData.Text("Tab 3"),
+                LocalizationKey("feature-1") to LocalizationData.Text("✓ Enjoy a 7 day trial"),
+                LocalizationKey("feature-2") to LocalizationData.Text("✓ Change currencies"),
+                LocalizationKey("feature-3") to LocalizationData.Text("✓ Access more trend charts"),
+                LocalizationKey("feature-4") to LocalizationData.Text("✓ Create custom categories"),
+                LocalizationKey("feature-5") to LocalizationData.Text("✓ Get a special premium icon"),
+                LocalizationKey("feature-6") to LocalizationData.Text(
+                    "✓ Receive our love and gratitude for your support",
+                ),
+                LocalizationKey("offer") to LocalizationData.Text(
+                    "Try 7 days free, then $19.98/year. Cancel anytime.",
+                ),
+                LocalizationKey("cta") to LocalizationData.Text("Continue"),
+                LocalizationKey("terms") to LocalizationData.Text("Privacy & Terms"),
+            ),
+        ),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "id",
+        serverDescription = "description",
+        metadata = emptyMap(),
+        availablePackages = emptyList(),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
+    )
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+        dateProvider = { Date() },
+    )
+
+    LoadedPaywallComponents(
+        state = state,
+        clickHandler = { },
+        modifier = Modifier
+            .fillMaxSize(),
     )
 }
 
