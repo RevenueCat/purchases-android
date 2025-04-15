@@ -678,6 +678,11 @@ jobs:
       - android/restore-build-cache
       - revenuecat/setup-git-credentials
       - run:
+          name: Set GitHub token environment variable
+          command: |
+            echo "export GITHUB_TOKEN=$GH_TOKEN_PAYWALL_RENDERING_VALIDATION_PR_RW" >> $BASH_ENV
+            source $BASH_ENV
+      - run:
           name: Record and push new paywall template screenshots
           command: bundle exec fastlane android record_and_push_paywall_template_screenshots target_repository_path:../paywall-rendering-validation
       - android/save-build-cache
@@ -817,7 +822,9 @@ workflows:
       - prepare-next-version
       - publish-paywall-tester-release:
           track: "internal"
-      - record-and-push-paywall-template-screenshots
+      - record-and-push-paywall-template-screenshots:
+          context:
+            - paywall-rendering-validation-pr-rw
 
   daily-load-shedder-integration-tests:
     when:
@@ -864,4 +871,6 @@ workflows:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "pw2-collect-template-screenshots", << pipeline.git.branch >> ]
     jobs:
-      - record-and-push-paywall-template-screenshots
+      - record-and-push-paywall-template-screenshots:
+          context:
+            - paywall-rendering-validation-pr-rw
