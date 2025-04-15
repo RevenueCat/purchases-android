@@ -754,7 +754,7 @@ DESC
         title: title,
         body: body,
         base: base,
-        head: branch_name,
+        head: "RCGitBot:#{branch_name}",
         api_token: ENV["GITHUB_TOKEN"],
         labels: labels,
         team_reviewers: team_reviewers
