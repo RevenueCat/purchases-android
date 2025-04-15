@@ -740,6 +740,9 @@ DESC
     labels = options[:labels] || []
     team_reviewers = options[:team_reviewers] || []
 
+    UI.message("Checking for existing PR in #{repo_with_owner} for branch #{branch_name}")
+    UI.message("Path: /repos/#{repo_with_owner}/pulls?head=RevenueCat:#{branch_name}&state=open")
+
     existing_pr = github_api(
       api_token: ENV["GITHUB_TOKEN"],
       path: "/repos/#{repo_with_owner}/pulls?head=RevenueCat:#{branch_name}&state=open"
