@@ -599,6 +599,7 @@ DESC
     end
 
     commit_push_and_create_pr_if_necessary(
+      repo: repo_name,
       branch_name: branch_name,
       commit_message: "[Automated] Updates paywall-preview-resources submodule.",
       title: "[AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule",
@@ -620,6 +621,7 @@ DESC
       File.expand_path(options[:target_repository_path])
     end
     target_repository_branch = "update-android-template-screenshots"
+    target_repository_name = nil
     tmp_dir = ".tmp-paywall-template-screenshots"
 
     # Update the target repository and create a new branch
@@ -628,7 +630,9 @@ DESC
       sh("git", "checkout", "main")
       sh("git", "pull")
       create_or_checkout_branch(branch_name: target_repository_branch)
+      target_repository_name = sh("basename -s .git \"$(git config --get remote.origin.url)\"").strip
     end
+    UI.user_error!("Failed to determine target repository name") if target_repository_name.nil? || target_repository_name.empty?
 
     # Prepare the tmp directory
     sh("rm -rf #{tmp_dir}")
@@ -654,6 +658,7 @@ DESC
     # Commit, push, and create a PR in the target repository
     Dir.chdir(target_repository_path) do
       commit_push_and_create_pr_if_necessary(
+        repo: target_repository_name,
         branch_name: target_repository_branch,
         commit_message: "[Automated] Updates Android template screenshots.",
         title: "[AUTOMATIC] Updates Android template screenshots",
@@ -729,7 +734,8 @@ DESC
     branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
     title = options[:title] || UI.user_error!("No title provided")
     body = options[:body] || UI.user_error!("No body provided")
-    repo = options[:repo] || "RevenueCat/#{repo_name}"
+    repo = options[:repo] || repo_name
+    repo_with_owner = "RevenueCat/#{repo}"
     base = options[:base] || "main"
     labels = options[:labels] || []
     team_reviewers = options[:team_reviewers] || []
@@ -741,7 +747,7 @@ DESC
 
     if existing_pr[:json].length == 0
       pr_url = create_pull_request(
-        repo: repo,
+        repo: repo_with_owner,
         title: title,
         body: body,
         base: base,
@@ -765,6 +771,7 @@ DESC
     commit_message = options[:commit_message] || UI.user_error!("No commit_message provided")
     title = options[:title] || commit_message
     body = options[:body] || commit_message
+    repo = options[:repo] || repo_name
     labels = options[:labels] || []
     team_reviewers = options[:team_reviewers] || []
     
@@ -776,6 +783,7 @@ DESC
       )
 
       create_pr_if_necessary(
+        repo: repo,
         branch_name: branch_name,
         title: title,
         body: body,
