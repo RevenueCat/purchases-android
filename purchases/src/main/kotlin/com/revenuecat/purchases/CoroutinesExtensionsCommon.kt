@@ -45,8 +45,8 @@ suspend fun Purchases.awaitOfferings(): Offerings {
  */
 @JvmSynthetic
 suspend fun Purchases.awaitOfferings(
-    onSuccess: (Offerings) -> Unit,
-    onError: (PurchasesException) -> Unit,
+    onSuccess: suspend (Offerings) -> Unit,
+    onError: suspend (PurchasesException) -> Unit,
 ) {
     try {
         val offering = awaitOfferings()
@@ -109,8 +109,8 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseRes
 @JvmSynthetic
 suspend fun Purchases.awaitPurchase(
     purchaseParams: PurchaseParams,
-    onSuccess: (PurchaseResult) -> Unit,
-    onError: (PurchasesTransactionException) -> Unit,
+    onSuccess: suspend (PurchaseResult) -> Unit,
+    onError: suspend (PurchasesTransactionException) -> Unit,
 ) {
     try {
         val purchaseResult = awaitPurchase(purchaseParams)
@@ -166,8 +166,8 @@ suspend fun Purchases.awaitGetProducts(
 suspend fun Purchases.awaitGetProducts(
     productIds: List<String>,
     type: ProductType? = null,
-    onSuccess: (List<StoreProduct>) -> Unit,
-    onError: (PurchasesException) -> Unit,
+    onSuccess: suspend (List<StoreProduct>) -> Unit,
+    onError: suspend (PurchasesException) -> Unit,
 ) {
     try {
         val products = awaitGetProducts(productIds, type)
@@ -222,8 +222,8 @@ suspend fun Purchases.awaitRestore(): CustomerInfo {
  */
 @JvmSynthetic
 suspend fun Purchases.awaitRestore(
-    onSuccess: (CustomerInfo) -> Unit,
-    onError: (PurchasesException) -> Unit,
+    onSuccess: suspend (CustomerInfo) -> Unit,
+    onError: suspend (PurchasesException) -> Unit,
 ) {
     try {
         val customerInfo = awaitRestore()
