@@ -617,6 +617,7 @@ private fun MainStackComponent(
     if (nestedBadge == null && overlay == null) {
         stack(
             outerShapeModifier
+                .clip(composeShape)
                 .then(borderModifier)
                 .then(innerShapeModifier)
                 .conditional(stackState.applyBottomWindowInsets) {
