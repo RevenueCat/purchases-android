@@ -92,6 +92,11 @@ class Purchases internal constructor(
     val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
 
+    /**
+     * The storefront country code in ISO-3166-1 alpha2.
+     * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
+     * To get the country code asynchronously use [getStorefrontCountryCode] or [awaitStorefrontCountryCode].
+     */
     val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
 
