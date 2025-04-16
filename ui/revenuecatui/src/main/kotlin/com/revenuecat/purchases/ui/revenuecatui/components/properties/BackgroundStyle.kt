@@ -39,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getPreviewPlaceholderBlocking
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 
 /**
@@ -90,6 +91,9 @@ internal fun Background.toBackgroundStyles(
                         colorOverlay = colorOverlay,
                     )
                 }
+        is Background.Unknown -> Result.Error(
+            nonEmptyListOf(PaywallValidationError.UnsupportedBackgroundType(background = this)),
+        )
     }
 
 @Composable

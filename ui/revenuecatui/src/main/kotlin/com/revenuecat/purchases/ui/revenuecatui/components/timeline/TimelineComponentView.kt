@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.timeline
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -10,15 +11,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -44,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -135,7 +142,9 @@ internal fun TimelineComponentView(
                     }
                     start.linkTo(iconEndBarrier)
                     end.linkTo(parent.end)
-                    width = Dimension.fillToConstraints
+                    width = Dimension.preferredWrapContent
+                    height = Dimension.preferredWrapContent
+                    horizontalBias = 0f
                 },
             )
 
@@ -146,8 +155,10 @@ internal fun TimelineComponentView(
                     modifier = Modifier.constrainAs(descriptionRef) {
                         top.linkTo(titleRef.bottom, margin = timelineState.textSpacing.dp)
                         start.linkTo(titleRef.start)
-                        end.linkTo(titleRef.end)
-                        width = Dimension.fillToConstraints
+                        end.linkTo(parent.end)
+                        width = Dimension.preferredWrapContent
+                        height = Dimension.preferredWrapContent
+                        horizontalBias = 0f
                     },
                 )
             }
@@ -241,6 +252,141 @@ private fun TimelineComponentView_Connector_Margin_Preview() {
     }
 }
 
+private class SizeParameterProvider : PreviewParameterProvider<Size> {
+    private val allSizeConstraints = listOf(
+        SizeConstraint.Fit,
+        SizeConstraint.Fill,
+        SizeConstraint.Fixed(200u),
+    )
+    override val values: Sequence<Size> = allSizeConstraints
+        .flatMap { width -> allSizeConstraints.map { height -> width to height } }
+        .map { (width, height) -> Size(width = width, height = height) }
+        .asSequence()
+}
+
+@Preview
+@Composable
+private fun TimelineComponentView_Size_Preview(
+    @PreviewParameter(SizeParameterProvider::class) size: Size,
+) {
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        Box(modifier = Modifier.background(Color.White)) {
+            TimelineComponentView(
+                style = previewStyle(
+                    size = size,
+                ),
+                state = previewEmptyState(),
+            )
+
+            Text(
+                text = "timeline = w:${size.width::class.java.simpleName} x h:${size.height::class.java.simpleName}",
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(percent = 50))
+                    .background(Color.White, RoundedCornerShape(percent = 50))
+                    .border(width = 2.dp, Color.Black, RoundedCornerShape(percent = 50))
+                    .padding(all = 16.dp),
+            )
+        }
+    }
+}
+
+private class SizeConstraintParameterProvider : PreviewParameterProvider<SizeConstraint> {
+    override val values: Sequence<SizeConstraint> = sequenceOf(
+        SizeConstraint.Fit,
+        SizeConstraint.Fill,
+        SizeConstraint.Fixed(100u),
+    )
+}
+
+@Preview
+@Composable
+private fun TimelineComponentView_TextSize_Preview(
+    @PreviewParameter(SizeConstraintParameterProvider::class) textWidth: SizeConstraint,
+) {
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        Box(modifier = Modifier.background(Color.White)) {
+            TimelineComponentView(
+                style = previewStyle(
+                    size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
+                    items = listOf(
+                        previewItem(
+                            icon = previewIcon(
+                                size = Size(width = SizeConstraint.Fixed(39u), height = SizeConstraint.Fixed(39u)),
+                                paddingValues = PaddingValues(all = 8.dp),
+                            ),
+                            title = previewTextComponentStyle(
+                                text = "Today",
+                                fontWeight = FontWeight.MEDIUM,
+                                horizontalAlignment = HorizontalAlignment.LEADING,
+                                textAlign = HorizontalAlignment.LEADING,
+                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                            ),
+                            description = previewTextComponentStyle(
+                                text = "Description of what you get today if you subscribe with multiple lines " +
+                                    "to check wrapping",
+                                horizontalAlignment = HorizontalAlignment.LEADING,
+                                textAlign = HorizontalAlignment.LEADING,
+                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                            ),
+                        ),
+                        previewItem(
+                            icon = previewIcon(
+                                size = Size(width = SizeConstraint.Fixed(39u), height = SizeConstraint.Fixed(39u)),
+                                paddingValues = PaddingValues(all = 8.dp),
+                            ),
+                            title = previewTextComponentStyle(
+                                text = "Day X",
+                                fontWeight = FontWeight.MEDIUM,
+                                horizontalAlignment = HorizontalAlignment.LEADING,
+                                textAlign = HorizontalAlignment.LEADING,
+                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                            ),
+                            description = previewTextComponentStyle(
+                                text = "We'll remind you that your trial is ending soon",
+                                horizontalAlignment = HorizontalAlignment.LEADING,
+                                textAlign = HorizontalAlignment.LEADING,
+                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                            ),
+                        ),
+                        previewItem(
+                            icon = previewIcon(
+                                size = Size(width = SizeConstraint.Fixed(39u), height = SizeConstraint.Fixed(39u)),
+                                paddingValues = PaddingValues(all = 8.dp),
+                            ),
+                            title = previewTextComponentStyle(
+                                text = "Day Y",
+                                fontWeight = FontWeight.MEDIUM,
+                                horizontalAlignment = HorizontalAlignment.LEADING,
+                                textAlign = HorizontalAlignment.LEADING,
+                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                            ),
+                            description = previewTextComponentStyle(
+                                text = "You'll be charged. You can cancel anytime before.",
+                                horizontalAlignment = HorizontalAlignment.LEADING,
+                                textAlign = HorizontalAlignment.LEADING,
+                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                            ),
+                            connector = null,
+                        ),
+                    ),
+                ),
+                state = previewEmptyState(),
+            )
+
+            Text(
+                text = "text = w:${textWidth::class.java.simpleName} x h:Fit",
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(percent = 50))
+                    .background(Color.White, RoundedCornerShape(percent = 50))
+                    .border(width = 2.dp, Color.Black, RoundedCornerShape(percent = 50))
+                    .padding(all = 16.dp),
+            )
+        }
+    }
+}
+
 @Suppress("LongParameterList")
 @Composable
 private fun previewStyle(
@@ -276,56 +422,20 @@ private fun previewItems(
     connectorMargins: PaddingValues = PaddingValues(0.dp),
 ): List<TimelineComponentStyle.ItemStyle> {
     return listOf(
-        TimelineComponentStyle.ItemStyle(
-            title = previewTextComponentStyle(
-                text = "Today",
-                horizontalAlignment = HorizontalAlignment.LEADING,
-                textAlign = HorizontalAlignment.LEADING,
-                fontWeight = FontWeight.BOLD,
-            ),
-            visible = true,
-            description = previewTextComponentStyle(
-                text = "Description of what you get today if you subscribe with multiple lines to check wrapping",
-                horizontalAlignment = HorizontalAlignment.LEADING,
-                textAlign = HorizontalAlignment.LEADING,
-            ),
-            icon = previewIcon(),
+        previewItem(
+            title = "Today",
+            description = "Description of what you get today if you subscribe with multiple lines to check wrapping",
             connector = previewConnectorStyle(margin = connectorMargins),
-            rcPackage = null,
-            tabIndex = null,
-            overrides = emptyList(),
         ),
-        TimelineComponentStyle.ItemStyle(
-            title = previewTextComponentStyle(
-                text = "Day X",
-                horizontalAlignment = HorizontalAlignment.LEADING,
-                fontWeight = FontWeight.BOLD,
-                textAlign = HorizontalAlignment.LEADING,
-            ),
-            visible = true,
-            description = previewTextComponentStyle(
-                text = "We'll remind you that your trial is ending soon",
-                horizontalAlignment = HorizontalAlignment.LEADING,
-                textAlign = HorizontalAlignment.LEADING,
-            ),
+        previewItem(
+            title = "Day X",
+            description = "We'll remind you that your trial is ending soon",
             icon = previewIcon(size = Size(width = SizeConstraint.Fixed(30u), height = SizeConstraint.Fixed(30u))),
             connector = previewConnectorStyle(margin = connectorMargins),
-            rcPackage = null,
-            tabIndex = null,
-            overrides = emptyList(),
         ),
-        TimelineComponentStyle.ItemStyle(
-            title = previewTextComponentStyle(
-                text = "Day Y",
-                horizontalAlignment = HorizontalAlignment.LEADING,
-                fontWeight = FontWeight.BOLD,
-                textAlign = HorizontalAlignment.LEADING,
-            ),
-            visible = true,
-            description = previewTextComponentStyle(
-                text = "You'll be charged. You can cancel anytime before.",
-                horizontalAlignment = HorizontalAlignment.LEADING,
-            ),
+        previewItem(
+            title = "Day Y",
+            description = "You'll be charged. You can cancel anytime before.",
             icon = previewIcon(color = Color.Black, backgroundColor = Color(color = 0xFF0FD483)),
             connector = previewConnectorStyle(
                 margin = connectorMargins,
@@ -337,18 +447,59 @@ private fun previewItems(
                     ),
                 ).toColorStyle(),
             ),
-            rcPackage = null,
-            tabIndex = null,
-            overrides = emptyList(),
         ),
     )
 }
+
+@Composable
+private fun previewItem(
+    title: TextComponentStyle,
+    description: TextComponentStyle,
+    icon: IconComponentStyle = previewIcon(),
+    connector: TimelineComponentStyle.ConnectorStyle? = previewConnectorStyle(),
+) = TimelineComponentStyle.ItemStyle(
+    title = title,
+    visible = true,
+    description = description,
+    icon = icon,
+    connector = connector,
+    rcPackage = null,
+    tabIndex = null,
+    overrides = emptyList(),
+)
+
+@Composable
+private fun previewItem(
+    title: String,
+    description: String,
+    icon: IconComponentStyle = previewIcon(),
+    connector: TimelineComponentStyle.ConnectorStyle? = previewConnectorStyle(),
+) = TimelineComponentStyle.ItemStyle(
+    title = previewTextComponentStyle(
+        text = title,
+        horizontalAlignment = HorizontalAlignment.LEADING,
+        textAlign = HorizontalAlignment.LEADING,
+        fontWeight = FontWeight.BOLD,
+    ),
+    visible = true,
+    description = previewTextComponentStyle(
+        text = description,
+        horizontalAlignment = HorizontalAlignment.LEADING,
+        textAlign = HorizontalAlignment.LEADING,
+    ),
+    icon = icon,
+    connector = connector,
+    rcPackage = null,
+    tabIndex = null,
+    overrides = emptyList(),
+)
 
 @Composable
 private fun previewIcon(
     color: Color = Color.White,
     backgroundColor: Color = Color(color = 0xFF576CDB),
     size: Size = Size(width = SizeConstraint.Fixed(20u), height = SizeConstraint.Fixed(20u)),
+    paddingValues: PaddingValues = PaddingValues(all = 4.dp),
 ): IconComponentStyle {
     return previewIconComponentStyle(
         size = size,
@@ -358,7 +509,7 @@ private fun previewIcon(
         backgroundColor = ColorStyles(
             light = ColorStyle.Solid(backgroundColor),
         ),
-        paddingValues = PaddingValues(all = 4.dp),
+        paddingValues = paddingValues,
         marginValues = PaddingValues(0.dp),
         border = null,
         shadow = null,

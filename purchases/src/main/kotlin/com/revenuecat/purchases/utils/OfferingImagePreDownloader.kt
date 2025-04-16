@@ -123,8 +123,10 @@ internal class OfferingImagePreDownloader(
                 Uri.parse(value.light.webpLowRes.toString()),
                 value.dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
             )
-            is Background.Color -> emptySet()
-            null -> emptySet()
+            is Background.Color,
+            is Background.Unknown,
+            null,
+            -> emptySet()
         }
     }
 

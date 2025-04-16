@@ -2,14 +2,10 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.PartialComponent
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride.Condition
+import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.descriptors.element
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 @InternalRevenueCatAPI
 @Poko
@@ -21,45 +17,39 @@ class ComponentOverride<T : PartialComponent>(
 
     @Serializable(with = ConditionSerializer::class)
     sealed interface Condition {
+        @Serializable
         object Compact : Condition
+
+        @Serializable
         object Medium : Condition
+
+        @Serializable
         object Expanded : Condition
+
+        @Serializable
         object IntroOffer : Condition
+
+        @Serializable
         object MultipleIntroOffers : Condition
+
+        @Serializable
         object Selected : Condition
+
+        @Serializable
         object Unsupported : Condition
     }
-
-    private object ConditionSerializer : KSerializer<Condition> {
-        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ComponentOverride.Condition") {
-            element<String>("type")
-        }
-
-        override fun serialize(encoder: Encoder, value: Condition) {
-            // Serialization is not implemented as it is not needed.
-        }
-
-        override fun deserialize(decoder: Decoder): Condition {
-            val composite = decoder.beginStructure(descriptor)
-            var typeValue: String? = null
-
-            loop@ while (true) {
-                when (composite.decodeElementIndex(descriptor)) {
-                    0 -> typeValue = composite.decodeStringElement(descriptor, 0)
-                    else -> break@loop
-                }
-            }
-            composite.endStructure(descriptor)
-
-            return when (typeValue) {
-                "compact" -> Condition.Compact
-                "medium" -> Condition.Medium
-                "expanded" -> Condition.Expanded
-                "intro_offer" -> Condition.IntroOffer
-                "multiple_intro_offers" -> Condition.MultipleIntroOffers
-                "selected" -> Condition.Selected
-                else -> Condition.Unsupported
-            }
-        }
-    }
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
+    serialName = "Condition",
+    serializerByType = mapOf(
+        "compact" to { Condition.Compact.serializer() },
+        "medium" to { Condition.Medium.serializer() },
+        "expanded" to { Condition.Expanded.serializer() },
+        "intro_offer" to { Condition.IntroOffer.serializer() },
+        "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
+        "selected" to { Condition.Selected.serializer() },
+    ),
+    defaultValue = { Condition.Unsupported },
+)

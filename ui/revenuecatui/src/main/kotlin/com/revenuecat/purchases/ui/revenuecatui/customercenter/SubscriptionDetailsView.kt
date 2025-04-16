@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -130,7 +131,8 @@ internal fun SubscriptionDetailsRow(
             Text(
                 text = title,
                 style = titleTextStyle,
-                maxLines = 1,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.alpha(
                     if (prominentSubtitle) SettingsRowSupportingTextAlpha else SettingsRowMainTextAlpha,
                 ),
@@ -138,7 +140,6 @@ internal fun SubscriptionDetailsRow(
             Text(
                 text = subtitle,
                 style = subtitleTextStyle,
-                maxLines = 2,
                 modifier = Modifier.alpha(
                     if (prominentSubtitle) SettingsRowMainTextAlpha else SettingsRowSupportingTextAlpha,
                 ),
@@ -257,6 +258,29 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
         ),
         PurchaseInformation(
             title = "Basic",
+            durationTitle = "Weekly",
+            price = PriceDetails.Paid("$1.99"),
+            explanation = Explanation.EXPIRED,
+            expirationOrRenewal =
+            ExpirationOrRenewal(
+                ExpirationOrRenewal.Label.EXPIRED,
+                ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
+            ),
+            store = Store.PLAY_STORE,
+            managementURL = Uri.parse(MANAGEMENT_URL),
+            product = TestStoreProduct(
+                "basic_weekly",
+                "name",
+                "title",
+                "description",
+                Price("$0.99", 990_000, "US"),
+                Period(1, Period.Unit.WEEK, "P1W"),
+            ),
+            isLifetime = false,
+        ),
+
+        PurchaseInformation(
+            title = "Monthly long subscription name that overflows",
             durationTitle = "Weekly",
             price = PriceDetails.Paid("$1.99"),
             explanation = Explanation.EXPIRED,

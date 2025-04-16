@@ -29,7 +29,9 @@ internal class FontTests {
                     FontWeight.BLACK -> "\"black\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_future_unknown_font_weight\"", FontWeight.REGULAR)
+            )
         }
 
         @Test
