@@ -13,7 +13,7 @@ import com.revenuecat.purchases.PurchasesError
 interface GetStorefrontCallback {
     /**
      * Will be called after the call has completed.
-     * @param customerInfo [CustomerInfo] class sent back when the call has completed
+     * @param storefrontCountryCode [String] containing the Store country code in ISO-3166-1 alpha2
      */
     fun onReceived(storefrontCountryCode: String)
 
