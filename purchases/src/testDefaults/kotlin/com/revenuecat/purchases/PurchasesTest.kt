@@ -130,6 +130,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         var storefrontCountryCode: String? = null
         purchases.getStorefrontCountryCodeWith { storefrontCountryCode = it }
 
+        assertThat(storefrontCountryCode).isEqualTo("test-storefront")
         assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
         verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
     }
@@ -155,6 +156,21 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
         verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `if getting storefront fails, it propagates failure`() {
+        every { mockBillingAbstract.getStorefront(any(), captureLambda()) }.answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+
+        var error: PurchasesError? = null
+        purchases.getStorefrontCountryCodeWith(
+            onError = { error = it },
+            onSuccess = { fail("Should error") }
+        )
+
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     // endregion storefrontCountryCode
