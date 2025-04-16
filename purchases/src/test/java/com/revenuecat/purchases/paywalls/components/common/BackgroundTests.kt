@@ -138,7 +138,7 @@ internal class BackgroundTests(@Suppress("UNUSED_PARAMETER") name: String, priva
                           }
                         }
                         """.trimIndent(),
-                    expected = Background.Unknown,
+                    expected = Background.Unknown(type = "some_unknown_future_value"),
                 ),
             ),
         )

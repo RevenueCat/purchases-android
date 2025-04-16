@@ -84,6 +84,10 @@ internal fun LocaleId.toJavaLocale(): JavaLocale =
     JavaLocale.forLanguageTag(value.replace('_', '-'))
 
 @JvmSynthetic
+internal fun JavaLocale.toLocaleId(): LocaleId =
+    LocaleId(toLanguageTag().replace('-', '_'))
+
+@JvmSynthetic
 internal fun ComposeLocale.toLocaleId(): LocaleId =
     LocaleId(toLanguageTag().replace('-', '_'))
 
@@ -114,7 +118,7 @@ internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
         val languageId = LocaleId(language)
         val languageScriptId = script?.let { LocaleId("${language}_$script") }
         val languageScriptRegionId = script?.let { LocaleId("${language}_${script}_$region") }
-        val exactId = LocaleId(preferredLocale.toLanguageTag().replace('-', '_'))
+        val exactId = preferredLocale.toLocaleId()
 
         // First see if we can find an exact match of one of our permutations:
         buildList {
@@ -128,8 +132,8 @@ internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
         // If not, try a fuzzy match by dropping the region:
         val javaLocales = this.map { it.toJavaLocale() }
 
-        languageScriptId?.takeIf { javaLocales.any { it.language == language && it.script == script } }
-            ?: languageId.takeIf { javaLocales.any { it.language == language } }
+        javaLocales.firstOrNull { it.language == language && it.script == script }?.toLocaleId()
+            ?: javaLocales.firstOrNull { it.language == language }?.toLocaleId()
     }
 }
 

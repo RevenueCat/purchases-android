@@ -18,6 +18,7 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -91,6 +92,11 @@ class Purchases internal constructor(
     val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
 
+    /**
+     * The storefront country code in ISO-3166-1 alpha2.
+     * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
+     * To get the country code asynchronously use [getStorefrontCountryCode] or [awaitStorefrontCountryCode].
+     */
     val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
 
@@ -148,6 +154,14 @@ class Purchases internal constructor(
     }
 
     // region Public Methods
+
+    /**
+     * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+     * If there is any error, it will return null and log said error.
+     */
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        purchasesOrchestrator.getStorefrontCountryCode(callback)
+    }
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
