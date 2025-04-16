@@ -1,8 +1,13 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.google.secrets)
 }
+
+val localProperties = Properties()
+localProperties.load(FileInputStream(rootProject.file("local.properties")))
 
 android {
     namespace = "com.revenuecat.sample"
@@ -20,6 +25,18 @@ android {
             useSupportLibrary = true
         }
         missingDimensionStrategy("apis", "customEntitlementComputation")
+
+        // apiKey is overridden in targetConfigs.
+        buildConfigField(
+            type = "String",
+            name = "GOOGLE_API_KEY",
+            value = localProperties["GOOGLE_API_KEY"].toString(),
+        )
+        buildConfigField(
+            type = "String",
+            name = "DEFAULT_APP_USER_ID",
+            value = localProperties["DEFAULT_APP_USER_ID"].toString(),
+        )
     }
 
     buildTypes {
@@ -47,10 +64,6 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
-    }
-    secrets {
-        propertiesFileName = "secrets.properties"
-        defaultPropertiesFileName = "secrets.defaults.properties"
     }
 }
 

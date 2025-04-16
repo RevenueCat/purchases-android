@@ -23,8 +23,6 @@ class MainApplication : Application() {
         This can be found in via Project Settings > API keys > App specific keys in the RevenueCat dashboard.
         - An appUserID is required when doing a custom entitlement computation implementation.
         Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
-        - Copy-paste the `secrets.defaults.properties` on the root folder, and rename it to `secrets.properties`,
-        and replace the secret keys with your own values.
          */
         Purchases.configureInCustomEntitlementsComputationMode(
             this,

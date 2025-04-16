@@ -5,12 +5,10 @@ kotlin = "1.7.20"
 purchases = "8.17.0-SNAPSHOT"
 lifecycle = "2.5.0"
 androidxCore = "1.10.1"
-googleSecretPlugin = "2.0.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-google-secrets = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "googleSecretPlugin" }
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
