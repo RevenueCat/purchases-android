@@ -51,14 +51,6 @@ dependencyResolutionManagement {
 
         // fallback for the rest of the dependencies
         mavenCentral()
-
-        // Temporarily check snapshots for the latest Emerge Snapshots sdk
-        maven {
-            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots")
-            content {
-                includeGroup("com.emergetools.snapshots")
-            }
-        }
     }
 }
 
