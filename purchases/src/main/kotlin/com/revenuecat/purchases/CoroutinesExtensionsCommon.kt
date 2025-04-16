@@ -40,21 +40,16 @@ suspend fun Purchases.awaitOfferings(): Offerings {
  *
  * Coroutine friendly version of [Purchases.getOfferings].
  *
- * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the offerings.
- * @return The [Offerings] available to this user.
+ * @return The [Result] of [Offerings] available to this user.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitOfferings(
-    onSuccess: suspend (Offerings) -> Unit,
-    onError: suspend (PurchasesException) -> Unit,
-) {
-    try {
-        val offerings = awaitOfferings()
-        onSuccess.invoke(offerings)
-    } catch (e: PurchasesException) {
-        onError.invoke(e)
+suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
+    suspendCoroutine { continuation ->
+        getOfferingsWith(
+            onSuccess = { continuation.resume(Result.success(it)) },
+            onError = { continuation.resume(Result.failure(PurchasesException(it))) },
+        )
     }
-}
 
 /**
  * Initiate a purchase with the given [PurchaseParams].
@@ -102,21 +97,23 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseRes
  *   - Falls back to use base plan
  *
  * @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
- * @throws [PurchasesTransactionException] with a [PurchasesTransactionException] if there's an error when purchasing
- * and a userCancelled boolean that indicates if the user cancelled the purchase flow.
- * @return The [StoreTransaction] for this purchase and the updated [CustomerInfo] for this user.
+ * @return The [Result] of [PurchaseResult] contains [StoreTransaction] for this purchase and the updated,
+ * [CustomerInfo] for this user.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitPurchase(
-    purchaseParams: PurchaseParams,
-    onSuccess: suspend (PurchaseResult) -> Unit,
-    onError: suspend (PurchasesTransactionException) -> Unit,
-) {
-    try {
-        val purchaseResult = awaitPurchase(purchaseParams)
-        onSuccess.invoke(purchaseResult)
-    } catch (e: PurchasesTransactionException) {
-        onError.invoke(e)
+suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
+    return suspendCoroutine { continuation ->
+        purchase(
+            purchaseParams = purchaseParams,
+            callback = purchaseCompletedCallback(
+                onSuccess = { storeTransaction, customerInfo ->
+                    continuation.resume(Result.success(PurchaseResult(storeTransaction, customerInfo)))
+                },
+                onError = { purchasesError, userCancelled ->
+                    continuation.resume(Result.failure(PurchasesTransactionException(purchasesError, userCancelled)))
+                },
+            ),
+        )
     }
 }
 
@@ -158,22 +155,25 @@ suspend fun Purchases.awaitGetProducts(
  * @param [productIds] List of productIds
  * @param [type] A product type to filter by
  *
- * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the products.
- * @return A list of [StoreProduct] with the products that have been able to be fetched from the store successfully.
- * Not found products will be ignored.
+ * @return A [Result] of list of [StoreProduct] with the products that have been able to be fetched from the
+ * store successfully. Not found products will be ignored.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitGetProducts(
+suspend fun Purchases.awaitGetProductsResult(
     productIds: List<String>,
     type: ProductType? = null,
-    onSuccess: suspend (List<StoreProduct>) -> Unit,
-    onError: suspend (PurchasesException) -> Unit,
-) {
-    try {
-        val products = awaitGetProducts(productIds, type)
-        onSuccess.invoke(products)
-    } catch (e: PurchasesException) {
-        onError.invoke(e)
+): Result<List<StoreProduct>> {
+    return suspendCoroutine { continuation ->
+        getProductsWith(
+            productIds,
+            type,
+            onGetStoreProducts = { storeProducts ->
+                continuation.resume(Result.success(storeProducts))
+            },
+            onError = {
+                continuation.resume(Result.failure(PurchasesException(it)))
+            },
+        )
     }
 }
 
@@ -217,18 +217,18 @@ suspend fun Purchases.awaitRestore(): CustomerInfo {
  *
  * Coroutine friendly version of [Purchases.restorePurchases].
  *
- * @throws [PurchasesException] with a [PurchasesError] if there's an error login out the user.
- * @return The [CustomerInfo] with the restored purchases.
+ * @return The [Result] of [CustomerInfo] with the restored purchases.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitRestore(
-    onSuccess: suspend (CustomerInfo) -> Unit,
-    onError: suspend (PurchasesException) -> Unit,
-) {
-    try {
-        val customerInfo = awaitRestore()
-        onSuccess.invoke(customerInfo)
-    } catch (e: PurchasesException) {
-        onError.invoke(e)
+suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
+    return suspendCoroutine { continuation ->
+        restorePurchasesWith(
+            onSuccess = { customerInfo ->
+                continuation.resume(Result.success(customerInfo))
+            },
+            onError = {
+                continuation.resume(Result.failure(PurchasesException(it)))
+            },
+        )
     }
 }
