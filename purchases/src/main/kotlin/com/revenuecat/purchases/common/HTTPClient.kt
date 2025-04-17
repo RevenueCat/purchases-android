@@ -108,6 +108,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false,
+        fallbackURLIndex: Int = 0,
     ): HTTPResult {
         if (appConfig.forceServerErrors) {
             warnLog("Forcing server error for request to ${endpoint.getPath()}")
@@ -137,7 +138,27 @@ internal class HTTPClient(
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
             callResult = performRequest(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag = true)
-        }
+        } else if (
+            RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
+            endpoint.supportsFallbackBaseURLs &&
+            fallbackURLIndex in appConfig.fallbackBaseURLs.indices
+        ) {
+            // Handle server errors with fallback URLs
+            val fallbackBaseURL = appConfig.fallbackBaseURLs[fallbackURLIndex]
+            log(
+                LogIntent.DEBUG,
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
+            )
+            callResult = performRequest(
+                fallbackBaseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackURLIndex + 1
+            )
+        } 
         return callResult
     }
 
