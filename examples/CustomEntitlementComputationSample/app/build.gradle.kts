@@ -1,7 +1,13 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
+
+val localProperties = Properties()
+localProperties.load(FileInputStream(rootProject.file("local.properties")))
 
 android {
     namespace = "com.revenuecat.sample"
@@ -19,6 +25,17 @@ android {
             useSupportLibrary = true
         }
         missingDimensionStrategy("apis", "customEntitlementComputation")
+
+        buildConfigField(
+            type = "String",
+            name = "RC_API_KEY_ENTITLEMENT_SAMPLE",
+            value = localProperties["RC_API_KEY_ENTITLEMENT_SAMPLE"].toString(),
+        )
+        buildConfigField(
+            type = "String",
+            name = "DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE",
+            value = localProperties["DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE"].toString(),
+        )
     }
 
     buildTypes {
