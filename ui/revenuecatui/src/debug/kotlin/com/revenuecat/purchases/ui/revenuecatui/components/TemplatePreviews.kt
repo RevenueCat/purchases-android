@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.Context
@@ -26,11 +28,12 @@ import java.net.URI
 import java.util.Date
 
 private const val DIR_TEMPLATES = "paywall-templates"
+private const val MILLIS_2025_04_23 = 1745366400000
 
 /**
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
  */
-private class OfferingProvider : PreviewParameterProvider<Offering> {
+internal class OfferingProvider : PreviewParameterProvider<Offering> {
     private val offeringsJsonFilePath = "$DIR_TEMPLATES/offerings_paywalls_v2_templates.json"
     private val packagesJsonFilePath = "packages.json"
 
@@ -152,7 +155,7 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
  */
 @Preview
 @Composable
-private fun PaywallComponentsTemplate_Preview(
+internal fun PaywallComponentsTemplate_Preview(
     @PreviewParameter(OfferingProvider::class) offering: Offering,
 ) {
     val validationResult = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
@@ -161,7 +164,7 @@ private fun PaywallComponentsTemplate_Preview(
         activelySubscribedProductIds = emptySet(),
         purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = "US",
-        dateProvider = { Date() },
+        dateProvider = { Date(MILLIS_2025_04_23) },
     )
 
     ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current)) {

@@ -247,6 +247,22 @@ Updates paywall-preview-resources submodule and creates/updates PR
 
 Trigger bump
 
+### android record_and_push_paywall_template_screenshots
+
+```sh
+[bundle exec] fastlane android record_and_push_paywall_template_screenshots
+```
+
+Records Paywall template screenshots and pushes them to the repository at target_repository_path
+
+### android record_paparazzi_screenshots
+
+```sh
+[bundle exec] fastlane android record_paparazzi_screenshots
+```
+
+Records Paparazzi screenshots for a given gradle_module
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

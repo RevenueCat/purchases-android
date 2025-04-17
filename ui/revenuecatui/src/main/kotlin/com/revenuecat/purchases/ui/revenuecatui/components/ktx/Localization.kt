@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.components.ktx
 
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -82,6 +84,10 @@ internal fun LocaleId.toJavaLocale(): JavaLocale =
     JavaLocale.forLanguageTag(value.replace('_', '-'))
 
 @JvmSynthetic
+internal fun JavaLocale.toLocaleId(): LocaleId =
+    LocaleId(toLanguageTag().replace('-', '_'))
+
+@JvmSynthetic
 internal fun ComposeLocale.toLocaleId(): LocaleId =
     LocaleId(toLanguageTag().replace('-', '_'))
 
@@ -102,30 +108,58 @@ internal fun Set<LocaleId>.getBestMatch(localeId: LocaleId): LocaleId? {
     // Exact match:
     if (this.contains(localeId)) return localeId
 
-    val javaLocale = JavaLocale.forLanguageTag(localeId.value.replace('_', '-'))
-    val language = javaLocale.language
-    val region = javaLocale.country
-    val script = javaLocale.script.takeUnless { it.isBlank() }
-        ?: scriptByRegion[region]
+    return localeId.withFallbackLanguages().firstNotNullOfOrNull { preferredLocale ->
+        val language = preferredLocale.language
+        val region = preferredLocale.country
+        val script = preferredLocale.script.takeUnless { it.isBlank() }
+            ?: scriptByRegion[region]
 
-    // Various permutations of the provided [localeId], from least to most specific.
-    val languageId = LocaleId(language)
-    val languageScriptId = script?.let { LocaleId("${language}_$script") }
-    val languageScriptRegionId = script?.let { LocaleId("${language}_${script}_$region") }
+        // Various permutations of the provided [localeId], from least to most specific.
+        val languageId = LocaleId(language)
+        val languageScriptId = script?.let { LocaleId("${language}_$script") }
+        val languageScriptRegionId = script?.let { LocaleId("${language}_${script}_$region") }
+        val exactId = preferredLocale.toLocaleId()
 
-    // First see if we can find an exact match of one of our permutations:
-    buildList {
-        if (languageScriptRegionId != null) add(languageScriptRegionId)
-        if (languageScriptId != null) add(languageScriptId)
-        add(languageId)
-    }.firstOrNull { id -> this.contains(id) }
-        ?.also { return it }
+        // First see if we can find an exact match of one of our permutations:
+        buildList {
+            add(exactId)
+            if (languageScriptRegionId != null) add(languageScriptRegionId)
+            if (languageScriptId != null) add(languageScriptId)
+            add(languageId)
+        }.firstOrNull { id -> this.contains(id) }
+            ?.also { return@firstNotNullOfOrNull it }
 
-    // If not, try a fuzzy match by dropping the region:
-    val javaLocales = this.map { it.toJavaLocale() }
-    return languageScriptId?.takeIf { javaLocales.any { it.language == language && it.script == script } }
-        ?: languageId.takeIf { javaLocales.any { it.language == language } }
+        // If not, try a fuzzy match by dropping the region:
+        val javaLocales = this.map { it.toJavaLocale() }
+
+        javaLocales.firstOrNull { it.language == language && it.script == script }?.toLocaleId()
+            ?: javaLocales.firstOrNull { it.language == language }?.toLocaleId()
+    }
 }
+
+private fun LocaleId.withFallbackLanguages(): List<JavaLocale> {
+    val javaLocale = toJavaLocale()
+    val fallbackLanguages = javaLocale.fallbackLanguages
+    return if (fallbackLanguages.isNotEmpty()) {
+        buildList {
+            add(javaLocale)
+            addAll(fallbackLanguages)
+        }
+    } else {
+        listOf(javaLocale)
+    }
+}
+
+/**
+ * For some language codes it is expected to fall back to another language code if an exact match can't be found. This
+ * is the case for Norwegian Bokmål (`nb`) and Norwegian Nynorsk (`nn`), for instance.
+ */
+private val JavaLocale.fallbackLanguages: List<JavaLocale>
+    get() = when (language) {
+        "nb" -> listOf(JavaLocale("no", country, variant))
+        "nn" -> listOf(JavaLocale("no", country, variant))
+        else -> emptyList()
+    }
 
 /**
  * Scripts inferred from the region.

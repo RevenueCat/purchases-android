@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -74,7 +74,7 @@ internal class ComponentsConfigTests {
             )
 
             // Act
-            val actual = OfferingParser.json.decodeFromString<ComponentsConfig>(json)
+            val actual = JsonTools.json.decodeFromString<ComponentsConfig>(json)
 
             // Assert
             assert(actual == expected)
@@ -284,13 +284,57 @@ internal class ComponentsConfigTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "unknown background type",
+                    Args(
+                        json = """
+                        {
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          },
+                          "background": {
+                            "type": "some_unknown_background_type_that_doesnt_exist_in_the_paywall_data_model_yet",
+                            "unknown_property": "some_value"
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = PaywallComponentsConfig(
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            ),
+                            background = Background.Unknown(
+                                type = "some_unknown_background_type_that_doesnt_exist_in_the_paywall_data_model_yet"
+                            ),
+                        )
+                    ),
+                ),
             )
         }
 
         @Test
         fun `Should properly deserialize PaywallComponentsConfig`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponentsConfig>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponentsConfig>(args.json)
 
             // Assert
             assert(actual == args.expected)

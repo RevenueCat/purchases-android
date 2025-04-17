@@ -48,6 +48,7 @@ import java.net.URL
 class SamplePaywallsLoader {
     private val primaryLocalFont = FontAlias("primary")
     private val secondaryGoogleFont = FontAlias("secondary")
+    private val tertiaryLocalFont = FontAlias("tertiary")
 
     fun offeringForTemplate(template: SamplePaywalls.SampleTemplate): Offering {
         val paywall = paywallForTemplate(template)
@@ -69,6 +70,7 @@ class SamplePaywallsLoader {
                             fonts = mapOf(
                                 primaryLocalFont to FontsConfig(android = FontInfo.Name("lobster_two")),
                                 secondaryGoogleFont to FontsConfig(android = FontInfo.GoogleFonts("Barrio")),
+                                tertiaryLocalFont to FontsConfig(android = FontInfo.Name("Bytesized-Regular")),
                             ),
                         ),
                         localizations = mapOf(localeId to variableLocalizationKeysForEnUs()),
@@ -88,7 +90,8 @@ class SamplePaywallsLoader {
             SamplePaywalls.SampleTemplate.TEMPLATE_5 -> SamplePaywalls.template5()
             SamplePaywalls.SampleTemplate.TEMPLATE_7 -> SamplePaywalls.template7()
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS -> SamplePaywalls.bless()
-            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_LOCAL_FONT -> SamplePaywalls.bless(font = primaryLocalFont)
+            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_RES_FONT -> SamplePaywalls.bless(font = primaryLocalFont)
+            SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_ASSETS_FONT -> SamplePaywalls.bless(font = tertiaryLocalFont)
             SamplePaywalls.SampleTemplate.COMPONENTS_BLESS_GOOGLE_FONT ->
                 SamplePaywalls.bless(font = secondaryGoogleFont)
 
@@ -116,10 +119,11 @@ object SamplePaywalls {
         TEMPLATE_5("#5: Minimalist with small banner"),
         TEMPLATE_7("#7: Multi-tier"),
         COMPONENTS_BLESS("#8: Components - bless."),
-        COMPONENTS_BLESS_LOCAL_FONT("#9: Components - bless. - local font"),
-        COMPONENTS_BLESS_GOOGLE_FONT("#10: Components - bless. - Google font"),
-        TABS_BUTTONS("#11: Tabs - buttons"),
-        TABS_TOGGLE("#12 Tabs - toggle"),
+        COMPONENTS_BLESS_RES_FONT("#9: Components - bless. - res font"),
+        COMPONENTS_BLESS_ASSETS_FONT("#10: Components - bless. - assets font"),
+        COMPONENTS_BLESS_GOOGLE_FONT("#11: Components - bless. - Google font"),
+        TABS_BUTTONS("#12: Tabs - buttons"),
+        TABS_TOGGLE("#13 Tabs - toggle"),
         UNRECOGNIZED_TEMPLATE("Default template"),
     }
 

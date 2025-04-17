@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.FontAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import org.intellij.lang.annotations.Language
@@ -156,7 +156,7 @@ internal class ComponentOverridesTests {
         @Test
         fun `Should properly deserialize ComponentOverrides containing PartialTextComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<List<ComponentOverride<PartialTextComponent>>>(args.json)
+            val actual = JsonTools.json.decodeFromString<List<ComponentOverride<PartialTextComponent>>>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -257,10 +257,42 @@ internal class ComponentOverridesTests {
         @Test
         fun `Should properly deserialize ComponentOverrides containing PartialImageComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<List<ComponentOverride<PartialImageComponent>>>(args.json)
+            val actual = JsonTools.json.decodeFromString<List<ComponentOverride<PartialImageComponent>>>(args.json)
 
             // Assert
             assert(actual == args.expected)
+        }
+    }
+
+    @RunWith(Parameterized::class)
+    class DeserializeComponentOverrideConditionTests(
+        private val serialized: String,
+        private val expected: ComponentOverride.Condition,
+    ) {
+
+        companion object {
+            @Suppress("LongMethod")
+            @JvmStatic
+            @Parameterized.Parameters(name = "{0}")
+            fun parameters(): Collection<*> = listOf(
+                arrayOf("{ \"type\": \"compact\" }", ComponentOverride.Condition.Compact),
+                arrayOf("{ \"type\": \"medium\" }", ComponentOverride.Condition.Medium),
+                arrayOf("{ \"type\": \"expanded\" }", ComponentOverride.Condition.Expanded),
+                arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer),
+                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultipleIntroOffers),
+                arrayOf("{ \"type\": \"selected\" }", ComponentOverride.Condition.Selected),
+                arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
+                arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),
+            )
+        }
+
+        @Test
+        fun `Should properly deserialize Condition`() {
+            // Arrange, Act
+            val actual = JsonTools.json.decodeFromString<ComponentOverride.Condition>(serialized)
+
+            // Assert
+            assert(actual == expected)
         }
     }
 }

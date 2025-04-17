@@ -289,6 +289,7 @@ internal class HTTPClient(
             "X-Storefront" to storefrontProvider.getStorefront(),
             "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
             "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),
+            "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))

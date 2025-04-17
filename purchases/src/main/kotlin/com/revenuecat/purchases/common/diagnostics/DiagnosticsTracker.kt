@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.diagnostics
 
-import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -11,14 +10,12 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
-import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
 import java.util.UUID
 import kotlin.time.Duration
@@ -583,28 +580,21 @@ internal class DiagnosticsTracker(
     }
 
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
-        if (isAndroidNOrNewer()) {
-            verboseLog("Tracking diagnostics entry: $diagnosticsEntry")
-            try {
-                diagnosticsFileHelper.appendEvent(diagnosticsEntry)
-                listener?.onEventTracked()
-            } catch (e: IOException) {
-                verboseLog("Error tracking diagnostics entry: $e")
-            }
+        verboseLog("Tracking diagnostics entry: $diagnosticsEntry")
+        try {
+            diagnosticsFileHelper.appendEvent(diagnosticsEntry)
+            listener?.onEventTracked()
+        } catch (e: IOException) {
+            verboseLog("Error tracking diagnostics entry: $e")
         }
     }
 
     private fun checkAndClearDiagnosticsFileIfTooBig(completion: () -> Unit) {
         enqueue {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
-                    verboseLog("Diagnostics file is too big. Deleting it.")
-                    diagnosticsHelper.resetDiagnosticsStatus()
-                    trackMaxEventsStoredLimitReached()
-                }
-            } else {
-                // This should never happen since we create this class only if diagnostics is supported
-                errorLog("Diagnostics only supported in Android 24+")
+            if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+                verboseLog("Diagnostics file is too big. Deleting it.")
+                diagnosticsHelper.resetDiagnosticsStatus()
+                trackMaxEventsStoredLimitReached()
             }
             completion()
         }

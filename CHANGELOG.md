@@ -1,3 +1,84 @@
+## 8.17.0
+## RevenueCat SDK
+### ✨ New Features
+* Add async storefront country code apis (#2361) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Product name truncation issue in Customer Center on Android (#2364) via Cesar de la Vega (@vegaro)
+
+## 8.16.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Add missing response fields to `CustomerInfo`. Including transaction Prices (#2128) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls v2] Fixes timeline layout when width is Fit (#2354) via JayShortway (@JayShortway)
+* [Paywalls V2] Improves fuzzy matching locale when the region doesn't match (#2355) via JayShortway (@JayShortway)
+* [Paywalls V2] Norwegian Bokmål and Norwegian Nynorsk fall back to Norwegian. (#2329) via JayShortway (@JayShortway)
+### Customer Center
+#### 🐞 Bugfixes
+* Clean up on restoring functionality in customer center (#2316) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Paywalls v2] Adds the unsupported Background type to the error message (#2350) via JayShortway (@JayShortway)
+* [Paywalls v2] Uses a fixed date for template previews to avoid daily changes. (#2351) via JayShortway (@JayShortway)
+* [Paywalls v2] Adds a default case to `Background` and `ButtonComponent` (#2347) via JayShortway (@JayShortway)
+* [Paywalls v2] Improves `PaywallComponentsTemplatePreviewRecorder` stability (#2352) via JayShortway (@JayShortway)
+* [Paywalls v2] Adds a default case to most enums and sealed types (#2346) via JayShortway (@JayShortway)
+* Adds `EnumDeserializerWithDefault` and `SealedDeserializerWithDefault` (#2345) via JayShortway (@JayShortway)
+* [Paywalls V2] Renders template previews in a fixed resolution using Paparazzi (#2214) via JayShortway (@JayShortway)
+* Bump fastlane from 2.227.0 to 2.227.1 (#2344) via dependabot[bot] (@dependabot[bot])
+* Migrate root gradle file to KTS (#2343) via Jaewoong Eum (@skydoves)
+* Migrate tester modules to KTS format (#2340) via Jaewoong Eum (@skydoves)
+* Introduce purchases-bom package (#2339) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2338) via RevenueCat Git Bot (@RCGitBot)
+* [Diagnostics] Removes Android 7 requirement (#2335) via JayShortway (@JayShortway)
+* [Paywalls v2] Fixes `update-paywall-preview-resources-submodule` CI job (#2337) via JayShortway (@JayShortway)
+* Make purchases module to transitive dependency for the ui module (#2334) via Jaewoong Eum (@skydoves)
+* Migrate settings.gradle to KTS and add the dependency resolutions (#2328) via Jaewoong Eum (@skydoves)
+
+## 8.16.0
+## RevenueCat SDK
+### 📦 Dependency Updates
+* Remove redundant kotlin stdlib dependencies (#2310) via Jaewoong Eum (@skydoves)
+### Customer Center
+#### 🐞 Bugfixes
+* fix: Check eligible for promo offers (#2325) via Facundo Menzella (@facumenzella)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* [Paywalls v2] Supports custom fonts in `assets/fonts` (#2320) via JayShortway (@JayShortway)
+#### 🐞 Bugfixes
+* [Paywalls v2] Ignores already-consumed window insets. (#2326) via JayShortway (@JayShortway)
+### Customer Center
+#### 🐞 Bugfixes
+* Reload customer center after successful promo (#2317) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Fix PurchasesIntegrationTest  (#2330) via Cesar de la Vega (@vegaro)
+* Migrate Groovy to KTS for purchases-ui module (#2323) via Jaewoong Eum (@skydoves)
+* Add `X-Is-Backgrounded` header to all requests (#2321) via Toni Rico (@tonidero)
+* Clean up libs.versions.toml (#2318) via Jaewoong Eum (@skydoves)
+* feat: Change default copy for web_subscription_manage #4921 (#2298) via Facundo Menzella (@facumenzella)
+* Improve Korean translation (#2319) via Jaewoong Eum (@skydoves)
+* [Paywalls V2] Renders images in template previews (#2311) via JayShortway (@JayShortway)
+* [Paywalls V2] Removes Git LFS and adds submodule for paywall preview resources (#2315) via JayShortway (@JayShortway)
+* [Paywalls V2] Make `radialGradient` use bigger size for radius calculation (#2314) via Toni Rico (@tonidero)
+* Migrate purchases Gradle module to KTS (#2313) via Jaewoong Eum (@skydoves)
+* Attempts to have Emerge Snapshots handle merge queue branches. (#2309) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2306) via RevenueCat Git Bot (@RCGitBot)
+* Use coil-base instead of coil-compose for purchases package (#2307) via Jaewoong Eum (@skydoves)
+* Fix load shedder backend integration tests (#2308) via Toni Rico (@tonidero)
+* [Paywalls V2] Fixes the update-paywall-templates job (#2305) via JayShortway (@JayShortway)
+* [Paywalls V2] Adjusts CI to support images in template previews (#2302) via JayShortway (@JayShortway)
+* [Diagnostics] Sync diagnostics if file reaches lower limit (#2304) via Toni Rico (@tonidero)
+* Wrap Billing client crash with ours with more information (#2296) via Toni Rico (@tonidero)
+
 ## 8.15.1
 ## RevenueCatUI SDK
 ### Paywallv2

@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
@@ -125,13 +125,29 @@ internal class BackgroundTests(@Suppress("UNUSED_PARAMETER") name: String, priva
                     ),
                 ),
             ),
+            arrayOf(
+                "Some unknown future value",
+                Args(
+                    json = """
+                        {
+                          "type": "some_unknown_future_value",
+                          "value": {
+                            "unknown_object": {
+                              "unknown_property": "something"
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = Background.Unknown(type = "some_unknown_future_value"),
+                ),
+            ),
         )
     }
 
     @Test
     fun `Should properly deserialize Background`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<Background>(args.json)
+        val actual = JsonTools.json.decodeFromString<Background>(args.json)
 
         // Assert
         assert(actual == args.expected)

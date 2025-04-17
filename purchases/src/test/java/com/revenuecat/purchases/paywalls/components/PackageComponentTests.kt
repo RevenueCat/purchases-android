@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -96,7 +96,7 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
     @Test
     fun `Should properly deserialize PackageComponent as PackageComponent`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<PackageComponent>(args.json)
+        val actual = JsonTools.json.decodeFromString<PackageComponent>(args.json)
 
         // Assert
         assert(actual == args.expected)
@@ -105,7 +105,7 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
     @Test
     fun `Should properly deserialize PackageComponent as PaywallComponent`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
         // Assert
         assert(actual == args.expected)

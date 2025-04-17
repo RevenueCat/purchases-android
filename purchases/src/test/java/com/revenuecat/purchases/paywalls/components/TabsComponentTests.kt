@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
@@ -397,7 +397,7 @@ internal class TabsComponentTests {
         @Test
         fun `Should properly deserialize as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -549,7 +549,7 @@ internal class TabsComponentTests {
         @Test
         fun `Should properly deserialize PartialTabsComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialTabsComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialTabsComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)

@@ -1,13 +1,12 @@
 package com.revenuecat.purchases.utils
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.Constants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
-
-private const val MICRO_MULTIPLIER = 1_000_000.0
 
 @JvmSynthetic
 @OptIn(InternalRevenueCatAPI::class)

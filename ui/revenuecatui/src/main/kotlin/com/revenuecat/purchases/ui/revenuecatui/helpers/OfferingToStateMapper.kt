@@ -182,6 +182,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
             variableConfig = paywallComponents.uiConfig.variableConfig,
+            variableDataProvider = VariableDataProvider(resourceProvider),
             packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
             initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
         )
@@ -318,6 +319,7 @@ internal fun Offering.toComponentsPaywallState(
         background = validationResult.background,
         showPricesWithDecimals = showPricesWithDecimals,
         variableConfig = validationResult.variableConfig,
+        variableDataProvider = validationResult.variableDataProvider,
         offering = this,
         locales = validationResult.locales,
         activelySubscribedProductIds = activelySubscribedProductIds,

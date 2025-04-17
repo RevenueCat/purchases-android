@@ -117,6 +117,64 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(purchases.appUserID).isEqualTo(appUserId)
     }
 
+    // region storefrontCountryCode
+
+    @Test
+    fun `getting storefront country code calls billing store with correct parameters`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront")
+        }
+
+        var storefrontCountryCode: String? = null
+        purchases.getStorefrontCountryCodeWith { storefrontCountryCode = it }
+
+        assertThat(storefrontCountryCode).isEqualTo("test-storefront")
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `if already there, getting storefront country code does not calls billing store`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront-should-not-be-called")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `if getting storefront fails, it propagates failure`() {
+        every { mockBillingAbstract.getStorefront(any(), captureLambda()) }.answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+
+        var error: PurchasesError? = null
+        purchases.getStorefrontCountryCodeWith(
+            onError = { error = it },
+            onSuccess = { fail("Should error") }
+        )
+
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    // endregion storefrontCountryCode
+
     // region purchasing
 
     @Test

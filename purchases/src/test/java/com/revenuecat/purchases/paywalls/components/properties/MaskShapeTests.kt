@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -102,13 +102,27 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                     expected = MaskShape.Circle
                 )
             ),
+            arrayOf(
+                "unknown",
+                Args(
+                    json = """
+                        {
+                          "unknown_property": "some_value",
+                          "type": "some_unknown_type"
+                        }
+                        """.trimIndent(),
+                    expected = MaskShape.Rectangle(
+                        corners = null
+                    )
+                )
+            )
         )
     }
 
     @Test
     fun `Should properly deserialize MaskShape`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<MaskShape>(args.json)
+        val actual = JsonTools.json.decodeFromString<MaskShape>(args.json)
 
         // Assert
         assert(actual == args.expected)

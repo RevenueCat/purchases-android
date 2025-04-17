@@ -2,7 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
-import android.annotation.SuppressLint
+import android.content.res.AssetManager
 import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -40,6 +40,7 @@ private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
  */
 internal sealed interface FontSpec {
     data class Resource(@get:JvmSynthetic val id: Int) : FontSpec
+    data class Asset(@get:JvmSynthetic val path: String) : FontSpec
     data class Google(@get:JvmSynthetic val name: String) : FontSpec
     sealed interface Generic : FontSpec {
         object SansSerif : Generic
@@ -93,10 +94,12 @@ internal fun Result<FontSpec, PaywallValidationError>.recoverFromBlankFontAlias(
 
 @JvmSynthetic
 internal fun FontSpec.resolve(
+    assets: AssetManager,
     weight: FontWeight,
     style: FontStyle,
 ): FontFamily = when (this) {
     is FontSpec.Resource -> FontFamily(Font(resId = id, weight = weight, style = style))
+    is FontSpec.Asset -> FontFamily(Font(path = path, assetManager = assets, weight = weight, style = style))
     is FontSpec.Google -> FontFamily(
         Font(googleFont = GoogleFont(name), fontProvider = GoogleFontsProvider, weight = weight, style = style),
     )
@@ -119,19 +122,17 @@ private fun ResourceProvider.determineFontSpec(info: FontInfo): FontSpec =
             FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
             FontFamily.Serif.name -> FontSpec.Generic.Serif
             FontFamily.Monospace.name -> FontSpec.Generic.Monospace
-            else -> {
-                @SuppressLint("DiscouragedApi")
-                val fontId = getResourceIdentifier(name = info.value, type = "font")
-                if (fontId != 0) {
-                    FontSpec.Resource(id = fontId)
-                } else {
+            else -> getResourceIdentifier(name = info.value, type = "font")
+                .takeUnless { it == 0 }
+                ?.let { fontId -> FontSpec.Resource(id = fontId) }
+                ?: getAssetFontPath(name = info.value)
+                    ?.let { path -> FontSpec.Asset(path = path) }
+                ?: FontSpec.System(name = info.value).also {
                     Logger.d(
                         "Could not find a font resource named `${info.value}`. Assuming it's an OEM system font. " +
                             "If it isn't, make sure the font exists in the `res/font` folder. See for more info: " +
                             "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
                     )
-                    FontSpec.System(name = info.value)
                 }
-            }
         }
     }
