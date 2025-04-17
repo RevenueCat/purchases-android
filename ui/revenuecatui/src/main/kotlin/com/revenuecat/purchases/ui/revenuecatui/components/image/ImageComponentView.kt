@@ -275,6 +275,7 @@ private fun ImageComponentView_Bigger_Container_Fit_Fill_FitModeFill_Preview() {
     }
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_SmallerContainer() {
@@ -391,6 +392,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
 }
 
 @Suppress("MagicNumber")
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_RadialGradient() {
