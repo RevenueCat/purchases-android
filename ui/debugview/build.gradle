@@ -36,7 +36,6 @@ android {
 dependencies {
     implementation project(path: ':purchases')
 
-    implementation(platform(libs.kotlin.bom))
     implementation libs.androidx.core
     implementation platform(libs.compose.bom)
     implementation libs.compose.ui
