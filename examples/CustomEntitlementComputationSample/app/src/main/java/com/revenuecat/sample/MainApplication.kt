@@ -26,8 +26,8 @@ class MainApplication : Application() {
          */
         Purchases.configureInCustomEntitlementsComputationMode(
             this,
-            BuildConfig.GOOGLE_API_KEY,
-            BuildConfig.DEFAULT_APP_USER_ID,
+            BuildConfig.RC_API_KEY_ENTITLEMENT_SAMPLE,
+            BuildConfig.DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE,
         )
     }
 }

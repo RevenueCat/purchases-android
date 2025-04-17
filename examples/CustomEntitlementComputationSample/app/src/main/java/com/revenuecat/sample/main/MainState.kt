@@ -12,5 +12,5 @@ data class MainState(
     val shouldShowSwitchingUserDialog: Boolean = false,
     val shouldShowExplanationDialog: Boolean = false,
     val offerings: Offerings? = null,
-    val currentAppUserID: String = BuildConfig.DEFAULT_APP_USER_ID,
+    val currentAppUserID: String = BuildConfig.DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE,
 )

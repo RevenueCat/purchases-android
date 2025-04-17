@@ -48,8 +48,8 @@ implementation("com.revenuecat.purchases:purchases-custom-entitlement-computatio
 First, you should correctly configure these build settings in your `local.properties` file as shown below:
 
 ```properties
-GOOGLE_API_KEY="YOUR_GOOGLE_API_KEY"
-DEFAULT_APP_USER_ID="YOUR_APP_USER_ID"
+RC_API_KEY_ENTITLEMENT_SAMPLE="YOUR_GOOGLE_API_KEY"
+DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE="YOUR_APP_USER_ID"
 ```
 
 The SDK should be configured once the user has already logged in. To configure, call:
@@ -57,7 +57,7 @@ The SDK should be configured once the user has already logged in. To configure, 
 ```kotlin
 Purchases.configureInCustomEntitlementsComputationMode(
     applicationContext,
-    BuildConfig.GOOGLE_API_KEY,
+    BuildConfig.RC_API_KEY_ENTITLEMENT_SAMPLE,
     BuildConfig.DEFAULT_APP_USER_ID
 )
 ```

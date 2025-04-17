@@ -28,13 +28,13 @@ android {
 
         buildConfigField(
             type = "String",
-            name = "GOOGLE_API_KEY",
-            value = localProperties["GOOGLE_API_KEY"].toString(),
+            name = "RC_API_KEY_ENTITLEMENT_SAMPLE",
+            value = localProperties["RC_API_KEY_ENTITLEMENT_SAMPLE"].toString(),
         )
         buildConfigField(
             type = "String",
-            name = "DEFAULT_APP_USER_ID",
-            value = localProperties["DEFAULT_APP_USER_ID"].toString(),
+            name = "DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE",
+            value = localProperties["DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE"].toString(),
         )
     }
 
