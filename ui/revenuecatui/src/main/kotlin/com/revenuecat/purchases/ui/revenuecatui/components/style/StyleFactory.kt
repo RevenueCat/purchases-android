@@ -135,19 +135,19 @@ internal class StyleFactory(
             /**
              * We're only interested in the first non-container component. After that, we can stop looking.
              */
-            private var stillLookingForHeroImage = true
+            private var stillLookingForHeaderImage = true
 
             /**
-             * This will be called for every component in the tree, and will determine whether we have a hero image
-             * that needs special top-window-insets treatment. A hero image is found if the first non-container
+             * This will be called for every component in the tree, and will determine whether we have a header image
+             * that needs special top-window-insets treatment. A header image is found if the first non-container
              * component is an image component with a Fill width and a ZLayer parent stack.
              */
-            fun handleHeroImageWindowInsets(component: PaywallComponent) {
+            fun handleHeaderImageWindowInsets(component: PaywallComponent) {
                 when (component) {
-                    is StackComponent -> if (stillLookingForHeroImage) {
+                    is StackComponent -> if (stillLookingForHeaderImage) {
                         applyTopWindowInsets = when (component.dimension) {
                             is Dimension.ZLayer -> {
-                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeroImage == true
+                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderImage == true
                                 topWindowInsetsApplied
                             }
                             is Dimension.Horizontal,
@@ -157,17 +157,17 @@ internal class StyleFactory(
                     }
 
                     is ImageComponent -> {
-                        if (stillLookingForHeroImage) {
-                            ignoreTopWindowInsets = component.isHeroImage
+                        if (stillLookingForHeaderImage) {
+                            ignoreTopWindowInsets = component.isHeaderImage
                         }
-                        stillLookingForHeroImage = false
+                        stillLookingForHeaderImage = false
                     }
 
-                    else -> stillLookingForHeroImage = false
+                    else -> stillLookingForHeaderImage = false
                 }
             }
 
-            private val PaywallComponent.isHeroImage: Boolean
+            private val PaywallComponent.isHeaderImage: Boolean
                 get() = this is ImageComponent &&
                     when (size.width) {
                         is SizeConstraint.Fill -> true
@@ -261,7 +261,7 @@ internal class StyleFactory(
          * Tells the StyleFactoryScope about a component. This should be called for every component in the tree.
          */
         fun recordComponent(component: PaywallComponent) {
-            windowInsetsState.handleHeroImageWindowInsets(component)
+            windowInsetsState.handleHeaderImageWindowInsets(component)
         }
 
         /**
