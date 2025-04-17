@@ -626,6 +626,7 @@ DESC
 
     # Update the target repository and create a new branch
     Dir.chdir(target_repository_path) do
+      UI.user_error!("Target repository (#{target_repository_path}) is not clean.") unless sh("git", "status", "--porcelain").empty?
       sh("git", "fetch")
       sh("git", "checkout", "main")
       sh("git", "pull")
