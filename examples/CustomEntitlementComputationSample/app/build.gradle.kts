@@ -26,7 +26,6 @@ android {
         }
         missingDimensionStrategy("apis", "customEntitlementComputation")
 
-        // apiKey is overridden in targetConfigs.
         buildConfigField(
             type = "String",
             name = "GOOGLE_API_KEY",
