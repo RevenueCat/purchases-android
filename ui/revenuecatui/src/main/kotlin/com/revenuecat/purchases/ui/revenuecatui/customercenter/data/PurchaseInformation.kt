@@ -105,7 +105,7 @@ private fun EntitlementInfo.explanation(): Explanation {
     return when (store) {
         Store.APP_STORE, Store.MAC_APP_STORE -> Explanation.APPLE
         Store.PLAY_STORE -> explanationForPlayStore()
-        Store.STRIPE, Store.RC_BILLING -> Explanation.WEB
+        Store.STRIPE, Store.RC_BILLING, Store.PADDLE -> Explanation.WEB
         Store.PROMOTIONAL -> Explanation.PROMOTIONAL
         Store.EXTERNAL, Store.UNKNOWN_STORE -> Explanation.OTHER_STORE_PURCHASE
         Store.AMAZON -> Explanation.AMAZON
