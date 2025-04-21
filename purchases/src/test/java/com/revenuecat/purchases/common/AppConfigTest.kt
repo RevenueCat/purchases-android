@@ -438,4 +438,36 @@ class AppConfigTest {
                 "showInAppMessagesAutomatically=false, " +
                 "baseURL=https://api.revenuecat.com/)")
     }
+
+    // region Fallback API host
+
+    @Test
+    fun `appConfig returns expected fallback URLs list when no proxy URL is set`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+        )
+        assertThat(appConfig.fallbackBaseURLs).isEqualTo(listOf(URL("https://api-production.8-lives-cat.io/")))
+    }
+
+    @Test
+    fun `appConfig returns empty fallback URLs list when a proxy URL is set`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = URL("https://proxy.com"),
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+        )
+        assertThat(appConfig.fallbackBaseURLs).isEmpty()
+    }
+
+    // endregion Fallback API host
 }
