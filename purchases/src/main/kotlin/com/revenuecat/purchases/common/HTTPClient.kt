@@ -99,7 +99,7 @@ internal class HTTPClient(
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         baseURL: URL,
@@ -148,8 +148,7 @@ internal class HTTPClient(
                 fallbackBaseURLs,
                 fallbackURLIndex,
             )
-        } else if (
-            RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
+        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
             endpoint.supportsFallbackBaseURLs &&
             fallbackURLIndex in fallbackBaseURLs.indices
         ) {
@@ -157,7 +156,7 @@ internal class HTTPClient(
             val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
             log(
                 LogIntent.DEBUG,
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL),
             )
             callResult = performRequest(
                 fallbackBaseURL,
