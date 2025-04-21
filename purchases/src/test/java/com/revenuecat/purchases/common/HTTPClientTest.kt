@@ -875,5 +875,69 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
 
+    @Test
+    fun `if performRequest uses a fallback host URL, then the correct track diagnostics calls happen`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.SUCCESS),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
+                endpoint,
+                any(),
+                false,
+                RCHTTPStatusCodes.ERROR,
+                null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false
+            )
+        }
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                fallbackServer.hostName,
+                endpoint,
+                any(),
+                true,
+                RCHTTPStatusCodes.SUCCESS,
+                null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false
+            )
+        }
+    }
+
     // endregion Fallback API host
 }
