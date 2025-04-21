@@ -20,11 +20,13 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URL
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
@@ -682,4 +684,195 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     // endregion
+
+    // region Fallback API host
+
+    @Test
+    fun `performRequest retries call with fallback API host if server returns 500`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        val request0 = server.takeRequest()
+        assertThat(request0.method).isEqualTo("GET")
+        assertThat(request0.path).isEqualTo("/v1/subscribers/test_user_id/offerings")
+
+        assertThat(server.requestCount).isEqualTo(1)
+
+        val request1 = fallbackServer.takeRequest()
+        assertThat(request1.method).isEqualTo("GET")
+        assertThat(request1.path).isEqualTo("/v1/subscribers/test_user_id/offerings")
+    }
+
+    @Test
+    fun `performRequest does not retry call with fallback API host if server returns non-500 error`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.NOT_FOUND
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("GET")
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id/offerings")
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(fallbackServer.requestCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `performRequest does not retry call with fallback API host if endpoint does not support fallback base URLs`() {
+        // This test requires an endpoint that does not support fallback host URLs
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("GET")
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(fallbackServer.requestCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `performRequest returns failed response of fallback request if main server returns 500`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.NOT_FOUND),
+            server = fallbackServer,
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        assertThat(result.responseCode).`as`("responsecode is 404").isEqualTo(404)
+    }
+
+    @Test
+    fun `performRequest returns successful response of fallback request if main server returns 500`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetProductEntitlementMapping
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}"),
+            server = fallbackServer
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        assertThat(result.responseCode).`as`("responsecode is 223").isEqualTo(223)
+        assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
+    }
+
+    // endregion Fallback API host
 }
