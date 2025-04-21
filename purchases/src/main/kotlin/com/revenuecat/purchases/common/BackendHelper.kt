@@ -32,6 +32,7 @@ internal class BackendHelper(
                         body,
                         postFieldsToSign,
                         authenticationHeaders,
+                        fallbackBaseURLs = appConfig.fallbackBaseURLs,
                     )
                 }
 
