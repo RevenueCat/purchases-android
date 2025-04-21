@@ -108,6 +108,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false,
+        fallbackBaseURLs: List<URL> = appConfig.fallbackBaseURLs,
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
         if (appConfig.forceServerErrors) {
@@ -137,14 +138,23 @@ internal class HTTPClient(
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            callResult = performRequest(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag = true)
+            callResult = performRequest(
+                baseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag = true,
+                fallbackBaseURLs,
+                fallbackURLIndex,
+            )
         } else if (
             RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
             endpoint.supportsFallbackBaseURLs &&
-            fallbackURLIndex in appConfig.fallbackBaseURLs.indices
+            fallbackURLIndex in fallbackBaseURLs.indices
         ) {
             // Handle server errors with fallback URLs
-            val fallbackBaseURL = appConfig.fallbackBaseURLs[fallbackURLIndex]
+            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
             log(
                 LogIntent.DEBUG,
                 NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
@@ -156,9 +166,10 @@ internal class HTTPClient(
                 postFieldsToSign,
                 requestHeaders,
                 refreshETag,
-                fallbackURLIndex + 1
+                fallbackBaseURLs,
+                fallbackURLIndex + 1,
             )
-        } 
+        }
         return callResult
     }
 
