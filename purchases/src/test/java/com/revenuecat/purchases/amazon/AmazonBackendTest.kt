@@ -46,6 +46,7 @@ class AmazonBackendTest {
         mockClient = mockk()
         mockAppConfig = mockk<AppConfig>().apply {
             every { baseURL } returns this@AmazonBackendTest.baseURL
+            every { fallbackBaseURLs } returns emptyList()
         }
         dispatcher = SyncDispatcher()
         backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)

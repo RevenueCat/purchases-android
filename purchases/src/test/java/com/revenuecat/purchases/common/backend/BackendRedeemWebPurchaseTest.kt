@@ -49,6 +49,7 @@ class BackendRedeemWebPurchaseTest {
     fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns mockBaseURL
+            every { fallbackBaseURLs } returns emptyList()
         }
         httpClient = mockk()
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
