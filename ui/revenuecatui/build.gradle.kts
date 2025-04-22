@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.paparazzi)
     alias(libs.plugins.poko)
+    alias(libs.plugins.metalava)
 }
 
 // Conditional Maven Publish plugin application
