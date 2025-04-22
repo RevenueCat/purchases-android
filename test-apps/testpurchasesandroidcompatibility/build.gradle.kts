@@ -40,7 +40,6 @@ dependencies {
     implementation(project(":feature:amazon"))
 
     implementation(libs.androidx.core)
-    implementation(platform(libs.kotlin.bom))
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.multidex)

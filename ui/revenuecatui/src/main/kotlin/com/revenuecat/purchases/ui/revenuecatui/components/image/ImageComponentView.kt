@@ -39,6 +39,7 @@ import androidx.core.graphics.component4
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.SuccessResult
+import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -193,6 +194,7 @@ private class PreviewParametersProvider : PreviewParameterProvider<PreviewParame
     )
 }
 
+@EmergeSnapshotConfig(precision = 0.95f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview(
@@ -221,6 +223,7 @@ private fun ImageComponentView_Preview(
     }
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Bigger_Container_Fill_Fit_FitModeFill_Preview() {
@@ -246,6 +249,7 @@ private fun ImageComponentView_Bigger_Container_Fill_Fit_FitModeFill_Preview() {
     }
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Bigger_Container_Fit_Fill_FitModeFill_Preview() {
@@ -271,6 +275,7 @@ private fun ImageComponentView_Bigger_Container_Fit_Fill_FitModeFill_Preview() {
     }
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_SmallerContainer() {
@@ -387,6 +392,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
 }
 
 @Suppress("MagicNumber")
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_RadialGradient() {
@@ -447,6 +453,7 @@ private class MaskShapeProvider : PreviewParameterProvider<MaskShape> {
     )
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_MaskShape(
