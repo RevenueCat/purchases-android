@@ -9,8 +9,10 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
 import com.revenuecat.purchases.paywalls.components.TabControlComponent
@@ -30,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.Background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
@@ -67,7 +70,10 @@ class StyleFactoryTests {
         identifier = "identifier",
         serverDescription = "description",
         metadata = emptyMap(),
-        availablePackages = emptyList(),
+        availablePackages = listOf(
+            TestData.Packages.annual,
+            TestData.Packages.monthly,
+        ),
     )
 
     @Before
@@ -727,5 +733,75 @@ class StyleFactoryTests {
         with(style.children[0] as TextComponentStyle) {
             assertThat(texts[localeId]).isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
         }
+    }
+
+    @Test
+    fun `Should mark a PackageComponentStyle as not selectable if it contains a purchase button`(){
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = "\$rc_annual",
+                    isSelectedByDefault = false,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_1,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                            ),
+                            PurchaseButtonComponent(
+                                stack = StackComponent(
+                                    components = listOf(
+                                        TextComponent(
+                                            text = LOCALIZATION_KEY_TEXT_2,
+                                            color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                                        ),
+                                    )
+                                )
+                            ),
+                        )
+                    )
+                )
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        val packageComponentStyle = stackComponentStyle.children.first() as PackageComponentStyle
+        assertThat(packageComponentStyle.isSelectable).isFalse()
+    }
+
+    @Test
+    fun `Should mark a PackageComponentStyle as selectable if it does not contain a purchase button`(){
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = "\$rc_annual",
+                    isSelectedByDefault = false,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_1,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                            ),
+                        )
+                    )
+                )
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        val packageComponentStyle = stackComponentStyle.children.first() as PackageComponentStyle
+        assertThat(packageComponentStyle.isSelectable).isTrue()
     }
 }

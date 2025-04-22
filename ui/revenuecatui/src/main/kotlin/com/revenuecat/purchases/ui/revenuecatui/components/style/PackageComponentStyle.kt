@@ -12,6 +12,8 @@ internal data class PackageComponentStyle(
     val isSelectedByDefault: Boolean,
     @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
+    @get:JvmSynthetic
+    val isSelectable: Boolean,
 ) : ComponentStyle {
     override val visible: Boolean = stackComponentStyle.visible
     override val size: Size = stackComponentStyle.size

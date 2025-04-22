@@ -103,7 +103,20 @@ internal class StyleFactory(
          * If this is non-null, it means the branch currently being built is inside a tab component.
          */
         var tabIndex: Int? = null,
+        /**
+         * Keeps the predicates we're actively using to count components.
+         */
+        private val countPredicates: MutableMap<Int, (PaywallComponent) -> Boolean> = mutableMapOf(),
+        /**
+         * The counts we're actively keeping track of.
+         */
+        private val countValues: MutableMap<Int, Int> = mutableMapOf(),
     ) {
+        data class WithCount<T>(
+            val value: T,
+            val count: Int,
+        )
+
         private class WindowInsetsState {
             /**
              * Whether the current component should apply the top window insets. This field is reset when it is read,
@@ -257,10 +270,32 @@ internal class StyleFactory(
             return result
         }
 
+        inline fun <T> withCount(
+            noinline predicate: (PaywallComponent) -> Boolean,
+            block: StyleFactoryScope.() -> T,
+        ): WithCount<T> {
+            val maxKey = countPredicates.keys.maxOrNull() ?: -1
+            val key = maxKey + 1
+            countPredicates[key] = predicate
+            countValues[key] = 0
+
+            val value = block()
+            val result = WithCount(value = value, count = countValues.getValue(key))
+
+            countPredicates.remove(key)
+            countValues.remove(key)
+
+            return result
+        }
+
         /**
          * Tells the StyleFactoryScope about a component. This should be called for every component in the tree.
          */
         fun recordComponent(component: PaywallComponent) {
+            countPredicates.forEach { (key, predicate) ->
+                if (predicate(component)) countValues[key] = countValues.getValue(key) + 1
+            }
+
             windowInsetsState.handleHeaderImageWindowInsets(component)
         }
 
@@ -405,13 +440,18 @@ internal class StyleFactory(
                     // visually become "selected" if its tab control parent is.
                     tabControlIndex = null,
                 ) {
-                    createStackComponentStyle(
-                        component = component.stack,
-                    ).map { stack ->
+                    val (stackComponentStyleResult, purchaseButtons) = withCount(
+                        predicate = { it is PurchaseButtonComponent },
+                    ) {
+                        createStackComponentStyle(component.stack)
+                    }
+
+                    stackComponentStyleResult.map { stack ->
                         PackageComponentStyle(
                             stackComponentStyle = stack,
                             rcPackage = rcPackage,
                             isSelectedByDefault = component.isSelectedByDefault,
+                            isSelectable = purchaseButtons == 0,
                         )
                     }
                 }

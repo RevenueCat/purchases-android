@@ -63,7 +63,12 @@ internal fun ComponentView(
         clickHandler = onClick,
         modifier = modifier,
     )
-    is PackageComponentStyle -> PackageComponentView(style = style, state = state, modifier = modifier)
+    is PackageComponentStyle -> PackageComponentView(
+        style = style,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
     is TimelineComponentStyle -> TimelineComponentView(style = style, state = state, modifier = modifier)
     is CarouselComponentStyle -> CarouselComponentView(
