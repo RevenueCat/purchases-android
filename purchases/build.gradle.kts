@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.poko)
+    alias(libs.plugins.metalava)
 }
 
 apply(from = "${rootProject.projectDir}/library.gradle")

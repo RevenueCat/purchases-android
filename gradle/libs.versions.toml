@@ -38,6 +38,7 @@ legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
 material = "1.6.0"
 mavenPublish = "0.27.0"
+metalava = "0.3.5"
 mockk = "1.13.11"
 mockwebserver = "4.2.0"
 multidex = "2.0.1"
@@ -124,6 +125,7 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
 
 material = { module = "com.google.android.material:material", version.ref = "material" }
+metalavaGradle = { module = "me.tylerbwong.gradle.metalava:plugin", version.ref = "metalava" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-agent = { module = "io.mockk:mockk-agent", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
@@ -150,6 +152,7 @@ kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref =
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover"}
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+metalava = { id = "me.tylerbwong.gradle.metalava", version.ref = "metalava" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
 poko = { id = "dev.drewhamilton.poko", version.ref = "poko" }
 
