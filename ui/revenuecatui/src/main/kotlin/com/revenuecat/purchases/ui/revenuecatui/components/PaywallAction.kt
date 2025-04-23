@@ -1,12 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import dev.drewhamilton.poko.Poko
 
 internal sealed interface PaywallAction {
     object RestorePurchases : PaywallAction
     object NavigateBack : PaywallAction
-    object PurchasePackage : PaywallAction
+    data class PurchasePackage(val rcPackage: Package?) : PaywallAction
 
     @Poko class NavigateTo(@get:JvmSynthetic val destination: Destination) : PaywallAction {
         sealed interface Destination {
