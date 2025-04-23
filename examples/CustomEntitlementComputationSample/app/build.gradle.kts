@@ -7,7 +7,8 @@ plugins {
 }
 
 val localProperties = Properties()
-localProperties.load(FileInputStream(rootProject.file("local.properties")))
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
 android {
     namespace = "com.revenuecat.sample"
