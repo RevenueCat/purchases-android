@@ -464,7 +464,7 @@ internal class StyleFactory(
     ).map {
         ButtonComponentStyle(
             stackComponentStyle = it,
-            action = ButtonComponentStyle.Action.PurchasePackage,
+            action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
         )
     }
 

@@ -804,4 +804,87 @@ class StyleFactoryTests {
         val packageComponentStyle = stackComponentStyle.children.first() as PackageComponentStyle
         assertThat(packageComponentStyle.isSelectable).isTrue()
     }
+
+    @Test
+    fun `If a purchase button is inside a package component, the button should be linked to that specific package`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = TestData.Packages.annual.identifier,
+                    isSelectedByDefault = false,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_1,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                            ),
+                            PurchaseButtonComponent(stack = StackComponent(components = emptyList())),
+                        )
+                    )
+                ),
+                PackageComponent(
+                    packageId = TestData.Packages.monthly.identifier,
+                    isSelectedByDefault = false,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_1,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                            ),
+                            PurchaseButtonComponent(stack = StackComponent(components = emptyList())),
+                        )
+                    )
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(stackComponentStyle.children.size).isEqualTo(2)
+
+        val annualPackageComponentStyle = stackComponentStyle.children[0] as PackageComponentStyle
+        val annualPurchaseButtonStyle =
+            annualPackageComponentStyle.stackComponentStyle.children[1] as ButtonComponentStyle
+        val annualPurchaseAction = annualPurchaseButtonStyle.action as ButtonComponentStyle.Action.PurchasePackage
+        assertThat(annualPurchaseAction.rcPackage).isEqualTo(annualPackageComponentStyle.rcPackage)
+
+        val monthlyPackageComponentStyle = stackComponentStyle.children[1] as PackageComponentStyle
+        val monthlyPurchaseButtonStyle =
+            monthlyPackageComponentStyle.stackComponentStyle.children[1] as ButtonComponentStyle
+        val monthlyPurchaseAction = monthlyPurchaseButtonStyle.action as ButtonComponentStyle.Action.PurchasePackage
+        assertThat(monthlyPurchaseAction.rcPackage).isEqualTo(monthlyPackageComponentStyle.rcPackage)
+    }
+
+    @Test
+    fun `If a purchase button is outside a package component, the button should not be linked to any package`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = TestData.Packages.annual.identifier,
+                    isSelectedByDefault = false,
+                    stack = StackComponent(components = emptyList())
+                ),
+                PurchaseButtonComponent(stack = StackComponent(components = emptyList())),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(stackComponentStyle.children.size).isEqualTo(2)
+
+        val purchaseButtonStyle =
+            stackComponentStyle.children[1] as ButtonComponentStyle
+        val purchaseAction = purchaseButtonStyle.action as ButtonComponentStyle.Action.PurchasePackage
+        assertThat(purchaseAction.rcPackage).isNull()
+    }
 }
