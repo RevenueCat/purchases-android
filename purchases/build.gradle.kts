@@ -52,7 +52,30 @@ android {
     }
 }
 
+androidComponents {
+    onVariants { variant ->
+        if (variant.productFlavors.any { it.second == "free" }) {
+            tasks.register("customTaskForFree${variant.name.capitalize()}") {
+                doLast {
+                    println("Running for FREE flavor: ${variant.name}")
+                }
+            }
+        }
+    }
+}
+
+val variantName = project.gradle.startParameter.taskNames.joinToString(" ")
+
 metalava {
+    val name = if (variantName.lowercase().contains("defaults")) {
+        "api-defauts.txt"
+    } else if (variantName.lowercase().contains("entitlement")) {
+        "api-entitlement.txt"
+    } else {
+        "unknwon.txt"
+    }
+
+    filename.set(name)
     hiddenAnnotations.add("com.revenuecat.purchases.InternalRevenueCatAPI")
     arguments.addAll(listOf("--hide", "ReferencesHidden"))
     excludedSourceSets.setFrom(
