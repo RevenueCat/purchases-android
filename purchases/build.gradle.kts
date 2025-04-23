@@ -83,7 +83,7 @@ metalava {
         excludeSourceSets.add("src/defaults/kotlin")
         "api-entitlement.txt"
     } else {
-        "unknwon.txt"
+        "unknown.txt"
     }
 
     filename.set(name)
