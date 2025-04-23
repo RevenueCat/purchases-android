@@ -67,9 +67,20 @@ androidComponents {
 val variantName = project.gradle.startParameter.taskNames.joinToString(" ")
 
 metalava {
+    val excludeSourceSets = mutableListOf(
+        "src/test",
+        "src/testDefaults",
+        "src/testCustomEntitlementComputation",
+        "src/androidTest",
+        "src/androidTestDefaults",
+        "src/androidTestCustomEntitlementComputation",
+    )
+
     val name = if (variantName.lowercase().contains("defaults")) {
+        excludeSourceSets.add("src/customEntitlementComputation/kotlin")
         "api-defauts.txt"
     } else if (variantName.lowercase().contains("entitlement")) {
+        excludeSourceSets.add("src/defaults/kotlin")
         "api-entitlement.txt"
     } else {
         "unknwon.txt"
@@ -78,14 +89,7 @@ metalava {
     filename.set(name)
     hiddenAnnotations.add("com.revenuecat.purchases.InternalRevenueCatAPI")
     arguments.addAll(listOf("--hide", "ReferencesHidden"))
-    excludedSourceSets.setFrom(
-        "src/test",
-        "src/testDefaults",
-        "src/testCustomEntitlementComputation",
-        "src/androidTest",
-        "src/androidTestDefaults",
-        "src/androidTestCustomEntitlementComputation",
-    )
+    excludedSourceSets.setFrom(excludeSourceSets)
 }
 
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
