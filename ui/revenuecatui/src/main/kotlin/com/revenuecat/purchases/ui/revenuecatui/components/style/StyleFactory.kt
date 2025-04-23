@@ -293,7 +293,10 @@ internal class StyleFactory(
          */
         fun recordComponent(component: PaywallComponent) {
             countPredicates.forEach { (key, predicate) ->
-                if (predicate(component)) countValues[key] = countValues.getValue(key) + 1
+                if (predicate(component)) {
+                    val currentValue = countValues[key] ?: 0
+                    countValues[key] = currentValue + 1
+                }
             }
 
             windowInsetsState.handleHeaderImageWindowInsets(component)
