@@ -26,8 +26,14 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
+import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
@@ -886,5 +892,201 @@ class StyleFactoryTests {
             stackComponentStyle.children[1] as ButtonComponentStyle
         val purchaseAction = purchaseButtonStyle.action as ButtonComponentStyle.Action.PurchasePackage
         assertThat(purchaseAction.rcPackage).isNull()
+    }
+
+    @Test
+    fun `Should ignore top window insets for the first full-width image in the first z-stack`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(
+                        ImageComponent(
+                            source = imageUrls,
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        ),
+                    ),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP,
+                    )
+                ),
+
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isFalse()
+        assertThat(style.children).hasSize(2)
+        val firstZStack = style.children[0] as StackComponentStyle
+        assertThat(firstZStack.applyTopWindowInsets).isTrue()
+        assertThat(firstZStack.children).hasSize(1)
+        val firstImage = firstZStack.children[0] as ImageComponentStyle
+        assertThat(firstImage.ignoreTopWindowInsets).isTrue()
+        val secondImage = style.children[1] as ImageComponentStyle
+        assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should not ignore top window insets for the first image in the first z-stack if it is not full-width`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(
+                        ImageComponent(
+                            source = imageUrls,
+                            // Width is not Fill.
+                            size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit),
+                        ),
+                    ),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP,
+                    )
+                ),
+
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isTrue()
+        assertThat(style.children).hasSize(2)
+        val firstZStack = style.children[0] as StackComponentStyle
+        assertThat(firstZStack.applyTopWindowInsets).isFalse()
+        assertThat(firstZStack.children).hasSize(1)
+        val firstImage = firstZStack.children[0] as ImageComponentStyle
+        assertThat(firstImage.ignoreTopWindowInsets).isFalse()
+        val secondImage = style.children[1] as ImageComponentStyle
+        assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should ignore top window insets for the first full-width image in the root`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(2)
+        assertThat(style.applyTopWindowInsets).isTrue()
+        val firstImage = style.children[0] as ImageComponentStyle
+        assertThat(firstImage.ignoreTopWindowInsets).isTrue()
+        val secondImage = style.children[1] as ImageComponentStyle
+        assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should not ignore top window insets for the first image in the root if it is not full-width`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                ImageComponent(
+                    source = imageUrls,
+                    // Width is not Fill.
+                    size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit),
+                ),
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(2)
+        assertThat(style.applyTopWindowInsets).isTrue()
+        val firstImage = style.children[0] as ImageComponentStyle
+        assertThat(firstImage.ignoreTopWindowInsets).isFalse()
+        val secondImage = style.children[1] as ImageComponentStyle
+        assertThat(secondImage.ignoreTopWindowInsets).isFalse()
     }
 }
