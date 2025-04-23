@@ -52,6 +52,19 @@ android {
     }
 }
 
+metalava {
+    hiddenAnnotations.add("com.revenuecat.purchases.InternalRevenueCatAPI")
+    arguments.addAll(listOf("--hide", "ReferencesHidden"))
+    excludedSourceSets.setFrom(
+        "src/test",
+        "src/testDefaults",
+        "src/testCustomEntitlementComputation",
+        "src/androidTest",
+        "src/androidTestDefaults",
+        "src/androidTestCustomEntitlementComputation",
+    )
+}
+
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
     compilerOptions {
         freeCompilerArgs.add("-Xjvm-default=all-compatibility")
