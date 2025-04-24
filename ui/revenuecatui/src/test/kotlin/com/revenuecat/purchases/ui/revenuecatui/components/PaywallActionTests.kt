@@ -66,7 +66,7 @@ class PaywallActionTests {
         val components = listOf(
             PaywallAction.RestorePurchases to localizationKeyRestore,
             PaywallAction.NavigateBack to localizationKeyBack,
-            PaywallAction.PurchasePackage to localizationKeyPurchase,
+            PaywallAction.PurchasePackage(rcPackage = null) to localizationKeyPurchase,
         ).map { (action, key) ->
             when (action) {
                 is PaywallAction.RestorePurchases,

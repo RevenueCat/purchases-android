@@ -56,7 +56,7 @@ internal class ButtonComponentState(
             is ButtonComponentStyle.Action.NavigateTo -> PaywallAction.NavigateTo(
                 destination = destination.toPaywallDestination(localeId),
             )
-            is ButtonComponentStyle.Action.PurchasePackage -> PaywallAction.PurchasePackage
+            is ButtonComponentStyle.Action.PurchasePackage -> PaywallAction.PurchasePackage(rcPackage = rcPackage)
             is ButtonComponentStyle.Action.RestorePurchases -> PaywallAction.RestorePurchases
         }
 
