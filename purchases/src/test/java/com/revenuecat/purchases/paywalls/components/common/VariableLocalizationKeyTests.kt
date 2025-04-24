@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -32,6 +32,7 @@ internal class VariableLocalizationKeyTests(
                 VariableLocalizationKey.ANNUAL -> "\"annual\""
                 VariableLocalizationKey.ANNUALLY -> "\"annually\""
                 VariableLocalizationKey.ANNUAL_SHORT -> "\"annual_short\""
+                VariableLocalizationKey.LIFETIME -> "\"lifetime\""
                 VariableLocalizationKey.FREE_PRICE -> "\"free_price\""
                 VariableLocalizationKey.PERCENT -> "\"percent\""
                 VariableLocalizationKey.NUM_DAY_ZERO -> "\"num_day_zero\""
@@ -58,6 +59,10 @@ internal class VariableLocalizationKeyTests(
                 VariableLocalizationKey.NUM_YEAR_FEW -> "\"num_year_few\""
                 VariableLocalizationKey.NUM_YEAR_MANY -> "\"num_year_many\""
                 VariableLocalizationKey.NUM_YEAR_OTHER -> "\"num_year_other\""
+                VariableLocalizationKey.NUM_DAYS_SHORT -> "\"num_days_short\""
+                VariableLocalizationKey.NUM_WEEKS_SHORT -> "\"num_weeks_short\""
+                VariableLocalizationKey.NUM_MONTHS_SHORT -> "\"num_months_short\""
+                VariableLocalizationKey.NUM_YEARS_SHORT -> "\"num_years_short\""
             }
             arrayOf(serialized, expected)
         }
@@ -66,7 +71,7 @@ internal class VariableLocalizationKeyTests(
     @Test
     fun `Should properly deserialize VariableLocalizationKey`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<VariableLocalizationKey>(serialized)
+        val actual = JsonTools.json.decodeFromString<VariableLocalizationKey>(serialized)
 
         // Assert
         assert(actual == expected)

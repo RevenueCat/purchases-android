@@ -219,8 +219,10 @@ private fun MDParagraph(
             pushStyle(
                 style
                     .copy(
+                        color = color,
                         fontWeight = fontWeight,
                         fontSize = if (applyFontSizeToParagraph) fontSize else style.fontSize,
+                        fontFamily = fontFamily,
                     )
                     .toSpanStyle(),
             )

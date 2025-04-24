@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin.revenuecatui
 
 import androidx.compose.runtime.Composable
+import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
@@ -21,6 +22,10 @@ private class PaywallAPI {
         PaywallFooter(options = options, condensed = true)
         PaywallFooter(options = options) {}
         PaywallFooter(options = options, condensed = true) {}
+        OriginalTemplatePaywallFooter(options = options)
+        OriginalTemplatePaywallFooter(options = options, condensed = true)
+        OriginalTemplatePaywallFooter(options = options) {}
+        OriginalTemplatePaywallFooter(options = options, condensed = true) {}
     }
 
     @Composable

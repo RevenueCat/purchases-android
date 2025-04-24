@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.FontAlias
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.colorInt
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -81,7 +82,8 @@ internal class TextComponentTests {
                             }
                           },
                           "text_lid": "7bkohQjzIE",
-                          "type": "text"
+                          "type": "text",
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = TextComponent(
@@ -89,10 +91,11 @@ internal class TextComponentTests {
                             color = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0, green = 0, blue = 0))
                             ),
+                            visible = false,
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0xee, green = 0xee, blue = 0xee))
                             ),
-                            fontName = "some font",
+                            fontName = FontAlias("some font"),
                             fontWeight = FontWeight.BOLD,
                             fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
@@ -192,7 +195,7 @@ internal class TextComponentTests {
         @Test
         fun `Should properly deserialize TextComponent as TextComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<TextComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<TextComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -201,7 +204,7 @@ internal class TextComponentTests {
         @Test
         fun `Should properly deserialize TextComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -282,7 +285,7 @@ internal class TextComponentTests {
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0xee, green = 0xee, blue = 0xee))
                             ),
-                            fontName = "some font",
+                            fontName = FontAlias("some font"),
                             fontWeight = FontWeight.BOLD,
                             fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
@@ -335,7 +338,7 @@ internal class TextComponentTests {
         @Test
         fun `Should properly deserialize PartialTextComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialTextComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialTextComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)

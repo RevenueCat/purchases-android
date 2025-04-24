@@ -1,7 +1,8 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -28,6 +30,8 @@ class StackComponent(
     @get:JvmSynthetic
     val components: List<PaywallComponent>,
     @get:JvmSynthetic
+    val visible: Boolean? = null,
+    @get:JvmSynthetic
     val dimension: Dimension = Vertical(CENTER, START),
     @get:JvmSynthetic
     val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
@@ -36,6 +40,8 @@ class StackComponent(
     @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
+    @get:JvmSynthetic
+    val background: Background? = null,
     @get:JvmSynthetic
     val padding: Padding = zero,
     @get:JvmSynthetic
@@ -49,8 +55,19 @@ class StackComponent(
     @get:JvmSynthetic
     val badge: Badge? = null,
     @get:JvmSynthetic
-    val overrides: ComponentOverrides<PartialStackComponent>? = null,
-) : PaywallComponent
+    val overflow: Overflow? = null,
+    @get:JvmSynthetic
+    val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
+) : PaywallComponent {
+
+    @Serializable(with = StackOverflowDeserializer::class)
+    enum class Overflow {
+        // SerialNames are handled by the StackOverflowDeserializer
+
+        NONE,
+        SCROLL,
+    }
+}
 
 @Suppress("LongParameterList")
 @InternalRevenueCatAPI
@@ -69,6 +86,8 @@ class PartialStackComponent(
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
+    val background: Background? = null,
+    @get:JvmSynthetic
     val padding: Padding? = null,
     @get:JvmSynthetic
     val margin: Padding? = null,
@@ -80,4 +99,11 @@ class PartialStackComponent(
     val shadow: Shadow? = null,
     @get:JvmSynthetic
     val badge: Badge? = null,
+    @get:JvmSynthetic
+    val overflow: StackComponent.Overflow? = null,
 ) : PartialComponent
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
+    defaultValue = StackComponent.Overflow.NONE,
+)

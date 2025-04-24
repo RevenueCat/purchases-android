@@ -23,6 +23,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -36,14 +37,11 @@ import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
-import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
-import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
-import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
@@ -249,6 +247,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,
+                diagnosticsTracker,
             )
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
@@ -266,6 +265,7 @@ internal class PurchasesFactory(
                     backend,
                     eventsDispatcher,
                 )
+                diagnosticsTracker.listener = diagnosticsSynchronizer
             }
 
             val syncPurchasesHelper = SyncPurchasesHelper(
@@ -273,6 +273,7 @@ internal class PurchasesFactory(
                 identityManager,
                 customerInfoHelper,
                 postReceiptHelper,
+                diagnosticsTracker,
             )
 
             val offeringsManager = OfferingsManager(
@@ -280,6 +281,7 @@ internal class PurchasesFactory(
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
+                diagnosticsTracker,
             )
 
             log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
@@ -303,15 +305,16 @@ internal class PurchasesFactory(
                 customerInfoHelper,
                 customerInfoUpdateHandler,
                 diagnosticsSynchronizer,
-                offlineEntitlementsManager,
-                postReceiptHelper,
-                postTransactionWithProductDetailsHelper,
-                postPendingTransactionsHelper,
-                syncPurchasesHelper,
-                offeringsManager,
-                createPaywallEventsManager(application, identityManager, eventsDispatcher, backend),
-                paywallPresentedCache,
-                purchasesStateProvider,
+                diagnosticsTracker,
+                offlineEntitlementsManager = offlineEntitlementsManager,
+                postReceiptHelper = postReceiptHelper,
+                postTransactionWithProductDetailsHelper = postTransactionWithProductDetailsHelper,
+                postPendingTransactionsHelper = postPendingTransactionsHelper,
+                syncPurchasesHelper = syncPurchasesHelper,
+                offeringsManager = offeringsManager,
+                eventsManager = createEventsManager(application, identityManager, eventsDispatcher, backend),
+                paywallPresentedCache = paywallPresentedCache,
+                purchasesStateCache = purchasesStateProvider,
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
             )
@@ -320,25 +323,28 @@ internal class PurchasesFactory(
         }
     }
 
-    private fun createPaywallEventsManager(
+    private fun createEventsManager(
         context: Context,
         identityManager: IdentityManager,
         eventsDispatcher: Dispatcher,
         backend: Backend,
-    ): PaywallEventsManager? {
+    ): EventsManager? {
         // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
         // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
         // older versions.
         return if (isAndroidNOrNewer()) {
-            PaywallEventsManager(
-                EventsFileHelper(
-                    FileHelper(context),
-                    PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH,
-                    PaywallStoredEvent::fromString,
-                ),
-                identityManager,
-                eventsDispatcher,
-                backend,
+            EventsManager(
+                legacyEventsFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context)),
+                fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context)),
+                identityManager = identityManager,
+                eventsDispatcher = eventsDispatcher,
+                postEvents = { request, onSuccess, onError ->
+                    backend.postEvents(
+                        paywallEventRequest = request,
+                        onSuccessHandler = onSuccess,
+                        onErrorHandler = onError,
+                    )
+                },
             )
         } else {
             debugLog("Paywall events are only supported on Android N or newer.")

@@ -105,7 +105,7 @@ class Purchases internal constructor(
      *
      * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [defaultOption] will be purchased.
      * [defaultOption] is selected via the following logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -285,19 +285,46 @@ class Purchases internal constructor(
             context: Context,
             apiKey: String,
             appUserID: String,
+        ): Purchases =
+            configureInCustomEntitlementsComputationMode(
+                configuration = PurchasesConfigurationForCustomEntitlementsComputationMode
+                    .Builder(
+                        context = context,
+                        apiKey = apiKey,
+                        appUserID = appUserID,
+                    )
+                    .showInAppMessagesAutomatically(true)
+                    .pendingTransactionsForPrepaidPlansEnabled(true)
+                    .build(),
+            )
+
+        /**
+         * Configures an instance of the Purchases SDK with a specified API key. The instance will
+         * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
+         * @param configuration The [PurchasesConfigurationForCustomEntitlementsComputationMode] object you wish to use
+         * to configure [Purchases].
+         *
+         * @return An instantiated `[Purchases] object that has been set as a singleton.
+         */
+        @JvmStatic
+        fun configureInCustomEntitlementsComputationMode(
+            configuration: PurchasesConfigurationForCustomEntitlementsComputationMode,
         ): Purchases {
             if (isConfigured) {
                 infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
             }
-            val configuration = PurchasesConfiguration.Builder(context, apiKey)
-                .appUserID(appUserID)
-                .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
-                .pendingTransactionsForPrepaidPlansEnabled(true)
-                .build()
+            val purchasesConfiguration = with(configuration) {
+                PurchasesConfiguration.Builder(context, apiKey)
+                    .appUserID(appUserID)
+                    .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+                    .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
+                    .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
+                    .build()
+            }
             return PurchasesFactory(
-                isDebugBuild = DefaultIsDebugBuildProvider(context),
+                isDebugBuild = DefaultIsDebugBuildProvider(configuration.context),
             ).createPurchases(
-                configuration,
+                purchasesConfiguration,
                 platformInfo,
                 proxyURL,
             ).also {

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.ColorAlias
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -58,7 +59,7 @@ internal class StickyFooterComponentTests(
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                 )
                             ),
                         )
@@ -90,7 +91,7 @@ internal class StickyFooterComponentTests(
     @Test
     fun `Should properly deserialize StickyFooterComponent as StickyFooterComponent`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<StickyFooterComponent>(args.json)
+        val actual = JsonTools.json.decodeFromString<StickyFooterComponent>(args.json)
 
         // Assert
         assert(actual == args.expected)
@@ -99,7 +100,7 @@ internal class StickyFooterComponentTests(
     @Test
     fun `Should properly deserialize StickyFooterComponent as PaywallComponent`() {
         // Arrange, Act
-        val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
         // Assert
         assert(actual == args.expected)

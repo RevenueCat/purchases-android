@@ -1,14 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.res.Configuration
-import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,11 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -31,9 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -41,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
+import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
@@ -49,10 +38,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
@@ -61,6 +50,8 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
 @Suppress("LongMethod")
 @Composable
@@ -71,12 +62,13 @@ internal fun InternalPaywall(
     BackHandler {
         viewModel.closePaywall()
     }
+
+    viewModel.refreshStateIfLocaleChanged()
+    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+
+    val state = viewModel.state.collectAsState().value
+
     PaywallTheme(fontProvider = options.fontProvider) {
-        viewModel.refreshStateIfLocaleChanged()
-        viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
-
-        val state = viewModel.state.collectAsState().value
-
         AnimatedVisibility(
             visible = state is PaywallState.Loading || state is PaywallState.Error,
             enter = fadeIn(animationSpec = defaultAnimation()),
@@ -88,7 +80,9 @@ internal fun InternalPaywall(
                 onDismiss = viewModel::closePaywall,
             )
         }
+    }
 
+    PaywallTheme(fontProvider = options.fontProvider) {
         AnimatedVisibility(
             visible = state is PaywallState.Loaded.Legacy,
             enter = fadeIn(animationSpec = defaultAnimation()),
@@ -103,42 +97,51 @@ internal fun InternalPaywall(
                 )
             }
         }
+    }
 
-        AnimatedVisibility(
-            visible = state is PaywallState.Loaded.Components,
-            enter = fadeIn(animationSpec = defaultAnimation()),
-            exit = fadeOut(animationSpec = defaultAnimation()),
-        ) {
-            if (state is PaywallState.Loaded.Components) {
-                viewModel.trackPaywallImpressionIfNeeded()
-                LoadedPaywallComponents(
-                    state = state,
-                    clickHandler = rememberPaywallActionHandler(viewModel),
-                )
-            } else {
-                Logger.e(
-                    "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
-                        "from being loaded to a different state. This should not happen.",
-                )
-            }
+    // V2 Paywalls set custom fonts on the dashboard, so we don't want to use FontProvider here to set the fonts.
+    AnimatedVisibility(
+        visible = state is PaywallState.Loaded.Components,
+        enter = fadeIn(animationSpec = defaultAnimation()),
+        exit = fadeOut(animationSpec = defaultAnimation()),
+    ) {
+        if (state is PaywallState.Loaded.Components) {
+            viewModel.trackPaywallImpressionIfNeeded()
+            LoadedPaywallComponents(
+                state = state,
+                clickHandler = rememberPaywallActionHandler(viewModel),
+            )
+        } else {
+            Logger.e(
+                "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
+                    "from being loaded to a different state. This should not happen.",
+            )
         }
+    }
 
-        when (state) {
-            is PaywallState.Loading -> {}
+    when (state) {
+        is PaywallState.Loading -> {}
 
-            is PaywallState.Error -> {
+        is PaywallState.Error -> {
+            PaywallTheme(fontProvider = options.fontProvider) {
                 ErrorDialog(
                     dismissRequest = options.dismissRequest,
                     error = state.errorMessage,
                 )
             }
+        }
 
-            is PaywallState.Loaded -> {
-                viewModel.actionError.value?.let {
+        is PaywallState.Loaded -> {
+            viewModel.actionError.value?.let {
+                val errorDialog = @Composable {
                     ErrorDialog(
                         dismissRequest = viewModel::clearActionError,
                         error = it.message,
                     )
+                }
+                when (state) {
+                    is PaywallState.Loaded.Legacy -> PaywallTheme(fontProvider = options.fontProvider) { errorDialog() }
+                    is PaywallState.Loaded.Components -> errorDialog()
                 }
             }
         }
@@ -237,30 +240,6 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
 }
 
 @Composable
-private fun ErrorDialog(
-    dismissRequest: () -> Unit,
-    error: String,
-) {
-    AlertDialog(
-        onDismissRequest = dismissRequest,
-        confirmButton = {
-            TextButton(
-                onClick = dismissRequest,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.OK),
-                    textAlign = TextAlign.Center,
-                )
-            }
-        },
-        icon = { Icon(painter = painterResource(id = R.drawable.error), contentDescription = null) },
-        text = {
-            Text(text = error)
-        },
-    )
-}
-
-@Composable
 private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
@@ -280,6 +259,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                 is PaywallAction.NavigateTo -> when (val destination = action.destination) {
                     is PaywallAction.NavigateTo.Destination.CustomerCenter ->
                         Logger.w("Customer Center is not yet implemented on Android.")
+
                     is PaywallAction.NavigateTo.Destination.Url -> context.handleUrlDestination(
                         url = destination.url,
                         method = destination.method,
@@ -291,48 +271,16 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
 }
 
 private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
-    fun handleException(exception: Exception) {
-        val message = if (exception is ActivityNotFoundException) {
-            getString(R.string.no_browser_cannot_open_link)
-        } else {
-            getString(R.string.cannot_open_link)
+    val openingMethod = when (method) {
+        ButtonComponent.UrlMethod.IN_APP_BROWSER -> URLOpeningMethod.IN_APP_BROWSER
+        ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> URLOpeningMethod.EXTERNAL_BROWSER
+        ButtonComponent.UrlMethod.DEEP_LINK -> URLOpeningMethod.DEEP_LINK
+        ButtonComponent.UrlMethod.UNKNOWN -> {
+            // Buttons like this should be hidden, so this log should never be shown.
+            Logger.e("Ignoring button click with unknown open method for URL: '$url'. This is a bug in the SDK.")
+            return
         }
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        Logger.e(message, exception)
     }
 
-    when (method) {
-        ButtonComponent.UrlMethod.IN_APP_BROWSER -> {
-            val intent = CustomTabsIntent.Builder()
-                .build()
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                intent.launchUrl(this, Uri.parse(url))
-            } catch (e: ActivityNotFoundException) {
-                handleException(e)
-            } catch (e: IllegalArgumentException) {
-                handleException(e)
-            }
-        }
-
-        ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        ButtonComponent.UrlMethod.DEEP_LINK,
-        -> openUriOrElse(url, ::handleException)
-    }
-}
-
-/**
- * Returns the activity from a given context. Most times, the context itself will be
- * an activity, but in the case it's not, it will iterate through the context wrappers until it
- * finds one that is an activity.
- */
-private fun Context.getActivity(): Activity? {
-    var currentContext = this
-    while (currentContext is ContextWrapper) {
-        if (currentContext is Activity) {
-            return currentContext
-        }
-        currentContext = currentContext.baseContext
-    }
-    return null
+    URLOpener.openURL(this, url, openingMethod)
 }

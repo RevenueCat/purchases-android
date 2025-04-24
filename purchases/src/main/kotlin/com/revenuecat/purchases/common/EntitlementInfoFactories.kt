@@ -69,6 +69,7 @@ internal fun JSONObject.optPeriodType(name: String) = when (optString(name)) {
     "normal" -> PeriodType.NORMAL
     "intro" -> PeriodType.INTRO
     "trial" -> PeriodType.TRIAL
+    "prepaid" -> PeriodType.PREPAID
     else -> PeriodType.NORMAL
 }
 
@@ -87,7 +88,7 @@ internal fun JSONObject.buildEntitlementInfo(
     val expirationDate = optDate(EntitlementsResponseJsonKeys.EXPIRES_DATE)
     val unsubscribeDetectedAt = productData.optDate(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT)
     val billingIssueDetectedAt = productData.optDate(ProductResponseJsonKeys.BILLING_ISSUES_DETECTED_AT)
-
+    val periodType = productData.optPeriodType(ProductResponseJsonKeys.PERIOD_TYPE)
     val store = productData.getStore(ProductResponseJsonKeys.STORE)
 
     return EntitlementInfo(
@@ -98,8 +99,9 @@ internal fun JSONObject.buildEntitlementInfo(
             expirationDate,
             unsubscribeDetectedAt,
             billingIssueDetectedAt,
+            periodType,
         ),
-        periodType = productData.optPeriodType(ProductResponseJsonKeys.PERIOD_TYPE),
+        periodType = periodType,
         latestPurchaseDate = getDate(ProductResponseJsonKeys.PURCHASE_DATE),
         originalPurchaseDate = productData.getDate(ProductResponseJsonKeys.ORIGINAL_PURCHASE_DATE),
         expirationDate = expirationDate,

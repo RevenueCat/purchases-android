@@ -5,6 +5,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,26 +37,38 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
 
+@Suppress("LongMethod")
 @JvmSynthetic
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
-    viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(),
+    listener: CustomerCenterListener? = null,
+    viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(
+        isDarkMode = isSystemInDarkTheme(),
+        listener = listener,
+    ),
     onDismiss: () -> Unit,
 ) {
+    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -64,12 +79,19 @@ internal fun InternalCustomerCenter(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.trackImpressionIfNeeded()
+    }
+
     BackHandler {
-        val buttonType = state.navigationButtonType
-        viewModel.onNavigationButtonPressed()
-        if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
-            onDismiss()
-        }
+        viewModel.onNavigationButtonPressed(context, onDismiss)
+    }
+
+    viewModel.actionError.value?.let {
+        ErrorDialog(
+            dismissRequest = viewModel::clearActionError,
+            error = it.message,
+        )
     }
 
     InternalCustomerCenter(
@@ -79,7 +101,7 @@ internal fun InternalCustomerCenter(
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
                     coroutineScope.launch {
-                        viewModel.pathButtonPressed(context, action.path)
+                        viewModel.pathButtonPressed(context, action.path, action.product)
                     }
                 }
 
@@ -89,13 +111,24 @@ internal fun InternalCustomerCenter(
                     }
                 }
 
-                is CustomerCenterAction.DismissRestoreDialog -> viewModel.dismissRestoreDialog()
+                is CustomerCenterAction.DismissRestoreDialog ->
+                    coroutineScope.launch {
+                        viewModel.dismissRestoreDialog()
+                    }
+
                 is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
+                is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
                 is CustomerCenterAction.NavigationButtonPressed -> {
-                    val buttonType = state.navigationButtonType
-                    viewModel.onNavigationButtonPressed()
-                    if (buttonType == CustomerCenterState.NavigationButtonType.CLOSE) {
-                        onDismiss()
+                    viewModel.onNavigationButtonPressed(context, onDismiss)
+                }
+
+                is CustomerCenterAction.DismissPromotionalOffer ->
+                    viewModel.dismissPromotionalOffer(context, action.originalPath)
+
+                is CustomerCenterAction.PurchasePromotionalOffer -> {
+                    val activity = context.getActivity()
+                    coroutineScope.launch {
+                        viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
                 }
             }
@@ -110,25 +143,51 @@ private fun InternalCustomerCenter(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val title = getTitleForState(state)
-    CustomerCenterScaffold(
-        modifier = modifier,
-        title = title,
-        onAction = onAction,
-        navigationButtonType =
-        if (state is CustomerCenterState.Success) {
-            state.navigationButtonType
+
+    val colorScheme = if (state is CustomerCenterState.Success) {
+        val isDark = isSystemInDarkTheme()
+        val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
+        val accentColor = appearance.getColorForTheme(isDark) { it.accentColor }
+
+        // Only change background when presenting a promotional offer
+        val backgroundColor = if (state.promotionalOfferData != null) {
+            appearance.getColorForTheme(isDark) { it.backgroundColor }
         } else {
-            CustomerCenterState.NavigationButtonType.CLOSE
-        },
+            null
+        }
+
+        MaterialTheme.colorScheme.copy(
+            primary = accentColor ?: MaterialTheme.colorScheme.primary,
+            background = backgroundColor ?: MaterialTheme.colorScheme.background,
+        )
+    } else {
+        MaterialTheme.colorScheme
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
     ) {
-        when (state) {
-            is CustomerCenterState.NotLoaded -> {}
-            is CustomerCenterState.Loading -> CustomerCenterLoading()
-            is CustomerCenterState.Error -> CustomerCenterError(state)
-            is CustomerCenterState.Success -> CustomerCenterLoaded(
-                state,
-                onAction,
-            )
+        CustomerCenterScaffold(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.background),
+            title = title,
+            onAction = onAction,
+            navigationButtonType =
+            if (state is CustomerCenterState.Success) {
+                state.navigationButtonType
+            } else {
+                CustomerCenterState.NavigationButtonType.CLOSE
+            },
+        ) {
+            when (state) {
+                is CustomerCenterState.NotLoaded -> {}
+                is CustomerCenterState.Loading -> CustomerCenterLoading()
+                is CustomerCenterState.Error -> CustomerCenterError(state)
+                is CustomerCenterState.Success -> CustomerCenterLoaded(
+                    state,
+                    onAction,
+                )
+            }
         }
     }
 }
@@ -198,13 +257,27 @@ private fun CustomerCenterLoaded(
 ) {
     if (state.feedbackSurveyData != null) {
         FeedbackSurveyView(state.feedbackSurveyData)
-    } else if (state.showRestoreDialog) {
+    } else if (state.promotionalOfferData != null) {
+        val promotionalOfferData = state.promotionalOfferData
+        PromotionalOfferScreen(
+            promotionalOfferData = promotionalOfferData,
+            appearance = state.customerCenterConfigData.appearance,
+            localization = state.customerCenterConfigData.localization,
+            onAccept = { subscriptionOption ->
+                onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
+            },
+            onDismiss = {
+                onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
+            },
+        )
+    } else if (state.restorePurchasesState != null) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
+            localization = state.customerCenterConfigData.localization,
             onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
             onRestore = { onAction(CustomerCenterAction.PerformRestore) },
-            onContactSupport = {
-                state.customerCenterConfigData.support.email?.let { email ->
+            onContactSupport = state.customerCenterConfigData.support.email?.let { email ->
+                {
                     onAction(CustomerCenterAction.ContactSupport(email))
                 }
             },
@@ -224,11 +297,14 @@ private fun MainScreen(
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
-                screen = managementScreen,
+                screenTitle = managementScreen.title,
+                screenSubtitle = managementScreen.subtitle,
+                screenType = managementScreen.type,
+                supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                contactEmail = configuration.support.email,
+                localization = configuration.localization,
                 purchaseInformation = state.purchaseInformation,
-                onPathButtonPress = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path))
-                },
+                onAction = onAction,
             )
         } ?: run {
             // Handle missing management screen
@@ -237,10 +313,13 @@ private fun MainScreen(
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             ManageSubscriptionsView(
-                screen = noActiveScreen,
-                onPathButtonPress = { path ->
-                    onAction(CustomerCenterAction.PathButtonPressed(path))
-                },
+                screenTitle = noActiveScreen.title,
+                screenSubtitle = noActiveScreen.subtitle,
+                screenType = noActiveScreen.type,
+                supportedPaths = noActiveScreen.paths,
+                contactEmail = configuration.support.email,
+                localization = configuration.localization,
+                onAction = onAction,
             )
         } ?: run {
             // Fallback with a restore button
@@ -261,9 +340,16 @@ private fun getTitleForState(state: CustomerCenterState): String? {
 
 @Composable
 private fun getCustomerCenterViewModel(
+    isDarkMode: Boolean,
+    listener: CustomerCenterListener? = null,
     purchases: PurchasesType = PurchasesImpl(),
     viewModel: CustomerCenterViewModel = viewModel<CustomerCenterViewModelImpl>(
-        factory = CustomerCenterViewModelFactory(purchases),
+        factory = CustomerCenterViewModelFactory(
+            purchases,
+            MaterialTheme.colorScheme,
+            isDarkMode = isDarkMode,
+            listener = listener,
+        ),
     ),
 ): CustomerCenterViewModel {
     return viewModel
@@ -282,6 +368,19 @@ private val previewConfigData = CustomerCenterConfigData(
                     type = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
                     promotionalOffer = null,
                     feedbackSurvey = null,
+                    openMethod = null,
+                ),
+            ),
+        ),
+        CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE to CustomerCenterConfigData.Screen(
+            type = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
+            title = "No subscriptions found",
+            subtitle = "We can try checking your account for any previous purchases",
+            paths = listOf(
+                CustomerCenterConfigData.HelpPath(
+                    id = "9q9719171o",
+                    title = "Check for previous purchases",
+                    type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
                 ),
             ),
         ),
@@ -296,6 +395,22 @@ private val previewConfigData = CustomerCenterConfigData(
     ),
     support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
 )
+
+@Preview
+@Composable
+internal fun CustomerCenterNoActiveScreenPreview() {
+    InternalCustomerCenter(
+        state = CustomerCenterState.Success(
+            customerCenterConfigData = previewConfigData,
+            purchaseInformation = null,
+            supportedPathsForManagementScreen = listOf(),
+        ),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        onAction = {},
+    )
+}
 
 @Preview
 @Composable
@@ -328,6 +443,7 @@ internal fun CustomerCenterLoadedPreview() {
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
             purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+            supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
         ),
         modifier = Modifier
             .fillMaxSize()

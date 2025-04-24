@@ -19,3 +19,11 @@ style:
   UnusedPrivateMember:
     active: true
     ignoreAnnotated: [ 'Preview' ]
+complexity:
+  LongMethod:
+    ignoreAnnotated: [ 'Preview' ]
+  TooManyFunctions:
+    ignoreAnnotatedFunctions: [ 'Preview' ]
+Compose:
+  CompositionLocalAllowlist:
+    allowedCompositionLocals: LocalPreviewImageLoader

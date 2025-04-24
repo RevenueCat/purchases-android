@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import androidx.annotation.StringRes
@@ -9,18 +10,25 @@ import java.util.Locale
  * Abstraction around [Context]
  */
 internal interface ResourceProvider {
+    companion object {
+        const val ASSETS_FONTS_DIR = "fonts"
+    }
+
     fun getApplicationName(): String
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
+    fun getResourceIdentifier(name: String, type: String): Int
+    fun getAssetFontPath(name: String): String?
 }
 
 internal class PaywallResourceProvider(
     private val applicationName: String,
+    private val packageName: String,
     private val resources: Resources,
 ) : ResourceProvider {
     constructor(
         context: Context,
-    ) : this(context.applicationContext.applicationName(), context.resources)
+    ) : this(context.applicationContext.applicationName(), context.packageName, context.resources)
 
     override fun getApplicationName(): String {
         return applicationName
@@ -32,6 +40,22 @@ internal class PaywallResourceProvider(
 
     override fun getLocale(): Locale {
         return resources.configuration.locales.get(0)
+    }
+
+    /**
+     * Use sparingly. The underlying platform API is discouraged because
+     * > resource reflection makes it harder to perform build optimizations and compile-time verification of code.
+     */
+    @SuppressLint("DiscouragedApi")
+    override fun getResourceIdentifier(name: String, type: String): Int =
+        resources.getIdentifier(name, type, packageName)
+
+    override fun getAssetFontPath(name: String): String? {
+        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+
+        return resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
+            ?.find { it == nameWithExtension }
+            ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
     }
 }
 

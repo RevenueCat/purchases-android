@@ -31,7 +31,22 @@ internal class NonEmptyList<out A> private constructor(
 
     override fun toString(): String =
         "NonEmptyList(${all.joinToString()})"
+
+    @JvmSynthetic
+    fun <B> map(transform: (A) -> B): NonEmptyList<B> =
+        NonEmptyList(all.map(transform))
+
+    @JvmSynthetic
+    fun <B> mapIndexed(transform: (index: Int, A) -> B): NonEmptyList<B> =
+        NonEmptyList(all.mapIndexed(transform))
 }
+
+/**
+ * Convert this NonEmptyList of Results into a Result of a NonEmptyList.
+ */
+@JvmSynthetic
+internal fun <A, B> NonEmptyList<Result<A, NonEmptyList<B>>>.flatten(): Result<NonEmptyList<A>, NonEmptyList<B>> =
+    mapOrAccumulate { it }.map { it.toNonEmptyListOrNull()!! }
 
 @JvmSynthetic
 internal fun <A> nonEmptyListOf(head: A, vararg t: A): NonEmptyList<A> =

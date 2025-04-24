@@ -18,13 +18,11 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -45,14 +43,15 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertRectangularBord
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,12 +76,6 @@ class StackComponentViewTests {
     )
     private val styleFactory = StyleFactory(
         localizations = localizations,
-        offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
     )
     private val packageWithoutIntroOffer = TestData.Packages.monthly
     private val packageWithSingleIntroOffer = TestData.Packages.annual
@@ -106,7 +99,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
             },
             act = {
                 StackComponentView(
@@ -155,7 +148,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
             },
             act = {
                 StackComponentView(
@@ -214,7 +207,7 @@ class StackComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as StackComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
             },
             act = {
                 // An outer box, because a shadow draws outside the Composable's bounds.
@@ -290,23 +283,22 @@ class StackComponentViewTests {
                     x = 10.0,
                     y = 10.0,
                 ),
-                overrides = ComponentOverrides(
-                    states = ComponentStates(
-                        selected = PartialStackComponent(
-                            backgroundColor = ColorScheme(ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
-                            border = Border(
-                                color = ColorScheme(light = ColorInfo.Hex(expectedSelectedBorderColor.toArgb())),
-                                width = expectedSelectedBorderWidth
-                            ),
-                            shadow = Shadow(
-                                color = ColorScheme(light = ColorInfo.Hex(expectedSelectedShadowColor.toArgb())),
-                                radius = 5.0,
-                                x = 10.0,
-                                y = 10.0,
-                            ),
+                overrides = listOf(ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSelectedBorderColor.toArgb())),
+                            width = expectedSelectedBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSelectedShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
                         ),
                     ),
-                )
+                ))
             )
         )
 
@@ -336,7 +328,7 @@ class StackComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as PackageComponentStyle
 
 
         // Act
@@ -350,7 +342,12 @@ class StackComponentViewTests {
                 contentAlignment = Alignment.Center,
             ) {
                 // This PackageComponentView has a StackComponentView child.
-                PackageComponentView(style = style, state = state, modifier = Modifier.testTag("pkg"))
+                PackageComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("pkg")
+                )
             }
         }
 
@@ -420,35 +417,41 @@ class StackComponentViewTests {
                 x = 10.0,
                 y = 10.0,
             ),
-            overrides = ComponentOverrides(
-                introOffer = PartialStackComponent(
-                    backgroundColor = ColorScheme(
-                        light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
-                    ),
-                    border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
-                        width = expectedSingleEligibleBorderWidth
-                    ),
-                    shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
-                        radius = 5.0,
-                        x = 10.0,
-                        y = 10.0,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(
+                            light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
+                        ),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
+                            width = expectedSingleEligibleBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
+                        ),
                     ),
                 ),
-                multipleIntroOffers = PartialStackComponent(
-                    backgroundColor = ColorScheme(
-                        light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
-                    ),
-                    border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
-                        width = expectedMultipleEligibleBorderWidth
-                    ),
-                    shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
-                        radius = 5.0,
-                        x = 10.0,
-                        y = 10.0,
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(
+                            light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
+                        ),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
+                            width = expectedMultipleEligibleBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
+                        ),
                     ),
                 ),
             )
@@ -461,7 +464,7 @@ class StackComponentViewTests {
                 packageWithMultipleIntroOffers
             )
         )
-        val style = styleFactory.create(component).getOrThrow() as StackComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
 
         // Act
         setContent {
@@ -571,35 +574,41 @@ class StackComponentViewTests {
                 x = 10.0,
                 y = 10.0,
             ),
-            overrides = ComponentOverrides(
-                introOffer = PartialStackComponent(
-                    backgroundColor = ColorScheme(
-                        light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
-                    ),
-                    border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
-                        width = expectedSingleEligibleBorderWidth
-                    ),
-                    shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
-                        radius = 5.0,
-                        x = 10.0,
-                        y = 10.0,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(
+                            light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
+                        ),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleBorderColor.toArgb())),
+                            width = expectedSingleEligibleBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedSingleEligibleShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
+                        ),
                     ),
                 ),
-                multipleIntroOffers = PartialStackComponent(
-                    backgroundColor = ColorScheme(
-                        light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
-                    ),
-                    border = Border(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
-                        width = expectedMultipleEligibleBorderWidth
-                    ),
-                    shadow = Shadow(
-                        color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
-                        radius = 5.0,
-                        x = 10.0,
-                        y = 10.0,
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    properties = PartialStackComponent(
+                        backgroundColor = ColorScheme(
+                            light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
+                        ),
+                        border = Border(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleBorderColor.toArgb())),
+                            width = expectedMultipleEligibleBorderWidth
+                        ),
+                        shadow = Shadow(
+                            color = ColorScheme(light = ColorInfo.Hex(expectedMultipleEligibleShadowColor.toArgb())),
+                            radius = 5.0,
+                            x = 10.0,
+                            y = 10.0,
+                        ),
                     ),
                 ),
             )
@@ -656,11 +665,11 @@ class StackComponentViewTests {
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
-            styleFactory.create(noIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(noIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
         val singleIntroOfferPackageComponentStyle =
-            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
         val multipleIntroOffersPackageComponentStyle =
-            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
 
         // Act
         setContent {
@@ -675,7 +684,7 @@ class StackComponentViewTests {
                         .background(parentBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    PackageComponentView(style = noIntroOfferPackageComponentStyle, state = state)
+                    PackageComponentView(style = noIntroOfferPackageComponentStyle, state = state, clickHandler = { })
                 }
                 Box(
                     modifier = Modifier
@@ -684,7 +693,11 @@ class StackComponentViewTests {
                         .background(parentBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    PackageComponentView(style = singleIntroOfferPackageComponentStyle, state = state)
+                    PackageComponentView(
+                        style = singleIntroOfferPackageComponentStyle,
+                        state = state,
+                        clickHandler = { }
+                    )
                 }
                 Box(
                     modifier = Modifier
@@ -693,7 +706,11 @@ class StackComponentViewTests {
                         .background(parentBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    PackageComponentView(style = multipleIntroOffersPackageComponentStyle, state = state)
+                    PackageComponentView(
+                        style = multipleIntroOffersPackageComponentStyle,
+                        state = state,
+                        clickHandler = { }
+                    )
                 }
             }
         }

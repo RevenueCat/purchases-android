@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,68 +14,51 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.emergetools.snapshots.annotations.IgnoreEmergeSnapshot
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 @Composable
 internal fun RestorePurchasesDialog(
     state: RestorePurchasesState,
+    localization: Localization,
     onDismiss: () -> Unit,
     onRestore: () -> Unit,
-    onContactSupport: () -> Unit,
+    onContactSupport: (() -> Unit)?,
 ) {
     when (state) {
-        RestorePurchasesState.INITIAL -> InitialStateDialog(
-            onDismiss = onDismiss,
-            onRestore = onRestore,
+        RestorePurchasesState.PURCHASES_RECOVERED -> PurchasesRecoveredDialog(
+            localization,
+            onDismiss,
         )
-        RestorePurchasesState.PURCHASES_RECOVERED -> PurchasesRecoveredDialog(onDismiss)
         RestorePurchasesState.PURCHASES_NOT_FOUND -> PurchasesNotFoundDialog(
+            localization,
             onDismiss = onDismiss,
             onContactSupport = onContactSupport,
         )
-        RestorePurchasesState.RESTORING -> RestoringDialog()
+        RestorePurchasesState.RESTORING -> RestoringDialog(
+            localization,
+        ).also {
+            onRestore()
+        }
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
-private fun InitialStateDialog(
-    onDismiss: () -> Unit,
-    onRestore: () -> Unit,
+private fun RestoringDialog(
+    localization: Localization,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Restore Purchases",
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        },
-        text = {
-            Text(
-                text = "Going to check for previous purchases",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        },
-        confirmButton = {
-            Button(onClick = onRestore) {
-                Text("Check Past Purchases")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-    )
-}
-
-@Composable
-private fun RestoringDialog() {
     AlertDialog(
         onDismissRequest = { /* Prevent dismiss while restoring */ },
         title = {
             Text(
-                text = "Restoring Purchases...",
+                text = localization.commonLocalizedString(
+                    key = Localization.CommonLocalizedString.PURCHASES_RESTORING,
+                ),
                 style = MaterialTheme.typography.headlineSmall,
             )
         },
@@ -93,111 +75,126 @@ private fun RestoringDialog() {
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
-private fun PurchasesRecoveredDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Purchases Recovered",
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        },
-        text = {
-            Text(
-                text = "Your purchases have been restored successfully",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Dismiss")
-            }
-        },
-    )
-}
-
-@Composable
-private fun PurchasesNotFoundDialog(
+private fun PurchasesRecoveredDialog(
+    localization: Localization,
     onDismiss: () -> Unit,
-    onContactSupport: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "No Purchases Found",
+                localization.commonLocalizedString(
+                    key = Localization.CommonLocalizedString.PURCHASES_RECOVERED,
+                ),
                 style = MaterialTheme.typography.headlineSmall,
             )
         },
         text = {
             Text(
-                text = "No previous purchases were found",
+                localization.commonLocalizedString(
+                    key = Localization.CommonLocalizedString.PURCHASES_RECOVERED_EXPLANATION,
+                ),
                 style = MaterialTheme.typography.bodyLarge,
             )
         },
         confirmButton = {
-            Button(onClick = onContactSupport) {
-                Text("Contact Support")
+            TextButton(onClick = onDismiss) {
+                Text(
+                    localization.commonLocalizedString(
+                        key = Localization.CommonLocalizedString.DONE,
+                    ),
+                )
+            }
+        },
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Composable
+private fun PurchasesNotFoundDialog(
+    localization: Localization,
+    onDismiss: () -> Unit,
+    onContactSupport: (() -> Unit)? = null,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = localization.commonLocalizedString(
+                    key = Localization.CommonLocalizedString.PURCHASES_NOT_FOUND,
+                ),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+        },
+        text = {
+            Text(
+                text = localization.commonLocalizedString(
+                    key = Localization.CommonLocalizedString.PURCHASES_NOT_RECOVERED,
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        },
+        confirmButton = {
+            if (onContactSupport != null) {
+                TextButton(onClick = onContactSupport) {
+                    Text(
+                        localization.commonLocalizedString(
+                            key = Localization.CommonLocalizedString.CONTACT_SUPPORT,
+                        ),
+                    )
+                }
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Dismiss")
+            TextButton(onClick = onDismiss) {
+                Text(
+                    localization.commonLocalizedString(
+                        key = Localization.CommonLocalizedString.DISMISS,
+                    ),
+                )
             }
         },
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true)
-@Composable
-private fun RestorePurchasesDialogInitialPreview() {
-    RestorePurchasesDialog(
-        state = RestorePurchasesState.INITIAL,
-        onDismiss = {},
-        onRestore = {},
-        onContactSupport = {},
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun RestorePurchasesDialogRecoveredPreview() {
-    RestorePurchasesDialog(
-        state = RestorePurchasesState.PURCHASES_RECOVERED,
-        onDismiss = {},
-        onRestore = {},
-        onContactSupport = {},
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun RestorePurchasesDialogNotFoundPreview() {
-    RestorePurchasesDialog(
-        state = RestorePurchasesState.PURCHASES_NOT_FOUND,
-        onDismiss = {},
-        onRestore = {},
-        onContactSupport = {},
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun RestorePurchasesDialogLoadingPreview() {
-    RestorePurchasesDialog(
-        state = RestorePurchasesState.INITIAL,
-        onDismiss = {},
-        onRestore = {},
-        onContactSupport = {},
-    )
-}
-
-@Preview(showBackground = true)
+@IgnoreEmergeSnapshot
 @Composable
 private fun RestorePurchasesDialogRestoringPreview() {
     RestorePurchasesDialog(
         state = RestorePurchasesState.RESTORING,
+        localization = CustomerCenterConfigTestData.customerCenterData().localization,
+        onDismiss = {},
+        onRestore = {},
+        onContactSupport = {},
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Preview(showBackground = true)
+@IgnoreEmergeSnapshot
+@Composable
+private fun RestorePurchasesDialogRecoveredPreview() {
+    RestorePurchasesDialog(
+        state = RestorePurchasesState.PURCHASES_RECOVERED,
+        localization = CustomerCenterConfigTestData.customerCenterData().localization,
+        onDismiss = {},
+        onRestore = {},
+        onContactSupport = {},
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Preview(showBackground = true)
+@IgnoreEmergeSnapshot
+@Composable
+private fun RestorePurchasesDialogNotFoundPreview() {
+    RestorePurchasesDialog(
+        state = RestorePurchasesState.PURCHASES_NOT_FOUND,
+        localization = CustomerCenterConfigTestData.customerCenterData().localization,
         onDismiss = {},
         onRestore = {},
         onContactSupport = {},

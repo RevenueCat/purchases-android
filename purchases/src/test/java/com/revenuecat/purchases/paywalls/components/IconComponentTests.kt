@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.ColorAlias
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -109,7 +110,8 @@ internal class IconComponentTests {
                               "width": 123
                             }
                           },
-                          "type": "icon"
+                          "type": "icon",
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = IconComponent(
@@ -118,12 +120,13 @@ internal class IconComponentTests {
                             formats = IconComponent.Formats(
                                 webp = "test.webp"
                             ),
+                            visible = false,
                             size = Size(
                                 height = SizeConstraint.Fixed(200u),
                                 width = SizeConstraint.Fixed(200u),
                             ),
                             color = ColorScheme(
-                                light = ColorInfo.Alias("primary")
+                                light = ColorInfo.Alias(ColorAlias("primary"))
                             ),
                             padding = Padding(
                                 bottom = 16.0,
@@ -139,7 +142,7 @@ internal class IconComponentTests {
                             ),
                             iconBackground = IconComponent.IconBackground(
                                 color = ColorScheme(
-                                    light = ColorInfo.Alias("secondary")
+                                    light = ColorInfo.Alias(ColorAlias("secondary"))
                                 ),
                                 shape = MaskShape.Rectangle(
                                     corners = CornerRadiuses.Dp(
@@ -151,7 +154,7 @@ internal class IconComponentTests {
                                 ),
                                 shadow = Shadow(
                                     color = ColorScheme(
-                                        light = ColorInfo.Alias("tertiary")
+                                        light = ColorInfo.Alias(ColorAlias("tertiary"))
                                     ),
                                     radius = 20.1,
                                     x = 23.6,
@@ -159,7 +162,7 @@ internal class IconComponentTests {
                                 ),
                                 border = Border(
                                     color = ColorScheme(
-                                        light = ColorInfo.Alias("secondary")
+                                        light = ColorInfo.Alias(ColorAlias("secondary"))
                                     ),
                                     width = 123.0,
                                 ),
@@ -195,7 +198,7 @@ internal class IconComponentTests {
         @Test
         fun `Should properly deserialize IconComponent as IconComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<IconComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<IconComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -204,7 +207,7 @@ internal class IconComponentTests {
         @Test
         fun `Should properly deserialize IconComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -320,7 +323,7 @@ internal class IconComponentTests {
                                 width = SizeConstraint.Fixed(200u),
                             ),
                             color = ColorScheme(
-                                light = ColorInfo.Alias("primary")
+                                light = ColorInfo.Alias(ColorAlias("primary"))
                             ),
                             padding = Padding(
                                 bottom = 16.0,
@@ -336,7 +339,7 @@ internal class IconComponentTests {
                             ),
                             iconBackground = IconComponent.IconBackground(
                                 color = ColorScheme(
-                                    light = ColorInfo.Alias("secondary")
+                                    light = ColorInfo.Alias(ColorAlias("secondary"))
                                 ),
                                 shape = MaskShape.Rectangle(
                                     corners = CornerRadiuses.Dp(
@@ -348,7 +351,7 @@ internal class IconComponentTests {
                                 ),
                                 shadow = Shadow(
                                     color = ColorScheme(
-                                        light = ColorInfo.Alias("tertiary")
+                                        light = ColorInfo.Alias(ColorAlias("tertiary"))
                                     ),
                                     radius = 20.1,
                                     x = 23.6,
@@ -356,7 +359,7 @@ internal class IconComponentTests {
                                 ),
                                 border = Border(
                                     color = ColorScheme(
-                                        light = ColorInfo.Alias("secondary")
+                                        light = ColorInfo.Alias(ColorAlias("secondary"))
                                     ),
                                     width = 123.0,
                                 ),
@@ -379,7 +382,7 @@ internal class IconComponentTests {
         @Test
         fun `Should properly deserialize PartialIconComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialIconComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialIconComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)

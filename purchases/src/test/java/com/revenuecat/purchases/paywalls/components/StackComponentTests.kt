@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.paywalls.components
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.ColorAlias
+import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -46,6 +48,15 @@ internal class StackComponentTests {
                             "light": {
                               "type": "alias",
                               "value": "secondary"
+                            }
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
                             }
                           },
                           "border": {
@@ -122,33 +133,40 @@ internal class StackComponentTests {
                             "radius": 20.1,
                             "x": 23.6,
                             "y": 45.2
-                          }
+                          },
+                          "overflow": "scroll",
+                          "visible": false
                         }
                         """.trimIndent(),
                         expected = StackComponent(
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                 )
                             ),
+                            visible = false,
                             dimension = Dimension.Vertical(
                                 alignment = HorizontalAlignment.LEADING,
                                 distribution = FlexDistribution.SPACE_BETWEEN
                             ),
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             spacing = 8f,
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias("secondary")),
+                            backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
+                            background = Background.Color(ColorScheme(
+                                light = ColorInfo.Alias(ColorAlias("primary")))
+                            ),
                             padding = Padding(top = 12.0, leading = 14.0, bottom = 16.0, trailing = 10.0),
                             margin = Padding(top = 14.0, leading = 12.0, bottom = 10.0, trailing = 16.0),
                             shape = Shape.Pill,
-                            border = Border(color = ColorScheme(light = ColorInfo.Alias("primary")), width = 123.0),
+                            border = Border(color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))), width = 123.0),
                             shadow = Shadow(
-                                color = ColorScheme(light = ColorInfo.Alias("tertiary")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("tertiary"))),
                                 radius = 20.1,
                                 x = 23.6,
                                 y = 45.2
                             ),
+                            overflow = StackComponent.Overflow.SCROLL,
                         )
                     ),
                 ),
@@ -181,7 +199,7 @@ internal class StackComponentTests {
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                 )
                             ),
                         )
@@ -217,7 +235,7 @@ internal class StackComponentTests {
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                 )
                             ),
                             margin = Padding.zero,
@@ -231,7 +249,7 @@ internal class StackComponentTests {
         @Test
         fun `Should properly deserialize StackComponent as StackComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<StackComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<StackComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -240,7 +258,7 @@ internal class StackComponentTests {
         @Test
         fun `Should properly deserialize StackComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PaywallComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -293,6 +311,15 @@ internal class StackComponentTests {
                               "value": "primary"
                             }
                           },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
                           "padding": {
                             "bottom": 2,
                             "leading": 3,
@@ -327,7 +354,8 @@ internal class StackComponentTests {
                             "radius": 20.1,
                             "x": 23.6,
                             "y": 45.2
-                          }
+                          },
+                          "overflow": "scroll"
                         }
                         """.trimIndent(),
                         expected = PartialStackComponent(
@@ -338,20 +366,24 @@ internal class StackComponentTests {
                             ),
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             spacing = 8f,
-                            backgroundColor = ColorScheme(light = ColorInfo.Alias("primary")),
+                            backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                            background = Background.Color(ColorScheme(
+                                light = ColorInfo.Alias(ColorAlias("primary")))
+                            ),
                             padding = Padding(top = 1.0, bottom = 2.0, leading = 3.0, trailing = 4.0),
                             margin = Padding(top = 4.0, bottom = 3.0, leading = 2.0, trailing = 1.0),
                             shape = Shape.Pill,
                             border = Border(
-                                color = ColorScheme(light = ColorInfo.Alias("secondary")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
                                 width = 23.0
                             ),
                             shadow = Shadow(
-                                color = ColorScheme(light = ColorInfo.Alias("tertiary")),
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("tertiary"))),
                                 radius = 20.1,
                                 x = 23.6,
                                 y = 45.2
-                            )
+                            ),
+                            overflow = StackComponent.Overflow.SCROLL,
                         )
                     )
                 ),
@@ -385,10 +417,41 @@ internal class StackComponentTests {
         @Test
         fun `Should properly deserialize PartialStackComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialStackComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialStackComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
+        }
+    }
+
+    @RunWith(Parameterized::class)
+    internal class DeserializeStackOverflowTests(
+        private val serialized: String,
+        private val expected: StackComponent.Overflow,
+    ) {
+
+        companion object {
+            @Suppress("LongMethod")
+            @JvmStatic
+            @Parameterized.Parameters(name = "{0}")
+            fun parameters(): Collection<*> = StackComponent.Overflow.values().map { expected ->
+                val serialized = when (expected) {
+                    StackComponent.Overflow.NONE -> "\"none\""
+                    StackComponent.Overflow.SCROLL -> "\"scroll\""
+                }
+                arrayOf(serialized, expected)
+            } + listOf(
+                arrayOf("\"some_unknown_overflow\"", StackComponent.Overflow.NONE),
+            )
+        }
+
+        @Test
+        fun `Should properly deserialize Overflow`() {
+            // Arrange, Act
+            val actual = JsonTools.json.decodeFromString<StackComponent.Overflow>(serialized)
+
+            // Assert
+            assert(actual == expected)
         }
     }
 }

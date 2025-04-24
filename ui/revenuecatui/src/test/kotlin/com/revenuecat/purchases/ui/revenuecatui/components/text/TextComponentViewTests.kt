@@ -20,7 +20,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -29,8 +28,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
-import com.revenuecat.purchases.paywalls.components.common.ComponentStates
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -47,15 +45,16 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -157,12 +156,6 @@ class TextComponentViewTests {
     )
     private val styleFactory = StyleFactory(
         localizations = localizations,
-        offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
     )
 
     @Test
@@ -186,7 +179,7 @@ class TextComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as TextComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
             },
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
@@ -231,7 +224,7 @@ class TextComponentViewTests {
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-                styleFactory.create(component).getOrThrow() as TextComponentStyle
+                styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
             },
             act = { TextComponentView(style = it, state = state) },
             assert = { theme ->
@@ -270,8 +263,10 @@ class TextComponentViewTests {
             smallTextComponent
         )
         setContent {
-            val largeTextStyle = styleFactory.create(largeTextComponent).getOrThrow() as TextComponentStyle
-            val smallTextStyle = styleFactory.create(smallTextComponent).getOrThrow() as TextComponentStyle
+            val largeTextStyle =
+                styleFactory.create(largeTextComponent).getOrThrow().componentStyle as TextComponentStyle
+            val smallTextStyle =
+                styleFactory.create(smallTextComponent).getOrThrow().componentStyle as TextComponentStyle
 
             // Act
             MaterialTheme {
@@ -324,17 +319,16 @@ class TextComponentViewTests {
                         text = unselectedLocalizationKey,
                         color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedTextColor.toArgb())),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedUnselectedBackgroundColor.toArgb())),
-                        overrides = ComponentOverrides(
-                            states = ComponentStates(
-                                selected = PartialTextComponent(
-                                    text = selectedLocalizationKey,
-                                    color = ColorScheme(ColorInfo.Hex(expectedSelectedTextColor.toArgb())),
-                                    backgroundColor = ColorScheme(
-                                        ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())
-                                    ),
+                        overrides = listOf(ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Selected),
+                            properties = PartialTextComponent(
+                                text = selectedLocalizationKey,
+                                color = ColorScheme(ColorInfo.Hex(expectedSelectedTextColor.toArgb())),
+                                backgroundColor = ColorScheme(
+                                    ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())
                                 ),
                             ),
-                        )
+                        ))
                     )
                 )
             )
@@ -365,12 +359,12 @@ class TextComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val style = styleFactory.create(component).getOrThrow() as PackageComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as PackageComponentStyle
 
         // Act
         setContent {
             // This PackageComponentView has a TextComponentView child.
-            PackageComponentView(style = style, state = state)
+            PackageComponentView(style = style, state = state, clickHandler = { })
         }
 
         // Assert
@@ -403,17 +397,23 @@ class TextComponentViewTests {
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleTextColor.toArgb())),
             backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
-            overrides = ComponentOverrides(
-                introOffer = PartialTextComponent(
-                    text = singleEligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialTextComponent(
+                        text = singleEligibleLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+                    )
                 ),
-                multipleIntroOffers = PartialTextComponent(
-                    text = multipleEligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
-                )
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    properties = PartialTextComponent(
+                        text = multipleEligibleLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
+                    )
+                ),
             )
         )
         val state = FakePaywallState(
@@ -422,7 +422,7 @@ class TextComponentViewTests {
             components = listOf(component),
             packages = listOf(packageWithoutIntroOffer, packageWithSingleIntroOffer, packageWithMultipleIntroOffers)
         )
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
 
         // Act
         setContent { TextComponentView(style = style, state = state) }
@@ -462,17 +462,23 @@ class TextComponentViewTests {
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleTextColor.toArgb())),
             backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
-            overrides = ComponentOverrides(
-                introOffer = PartialTextComponent(
-                    text = singleEligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialTextComponent(
+                        text = singleEligibleLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())),
+                    )
                 ),
-                multipleIntroOffers = PartialTextComponent(
-                    text = multipleEligibleLocalizationKey,
-                    color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
-                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
-                )
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    properties = PartialTextComponent(
+                        text = multipleEligibleLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedMultiEligibleBackgroundColor.toArgb())),
+                    )
+                ),
             )
         )
         val noIntroOfferPackageComponent = PackageComponent(
@@ -527,11 +533,11 @@ class TextComponentViewTests {
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
-            styleFactory.create(noIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(noIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
         val singleIntroOfferPackageComponentStyle =
-            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
         val multipleIntroOffersPackageComponentStyle =
-            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow() as PackageComponentStyle
+            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
 
         // Act
         setContent {
@@ -539,16 +545,19 @@ class TextComponentViewTests {
                 PackageComponentView(
                     style = noIntroOfferPackageComponentStyle,
                     state = state,
+                    clickHandler = { },
                     modifier = Modifier.testTag("noIntroOffer")
                 )
                 PackageComponentView(
                     style = singleIntroOfferPackageComponentStyle,
                     state = state,
+                    clickHandler = { },
                     modifier = Modifier.testTag("singleIntroOffer")
                 )
                 PackageComponentView(
                     style = multipleIntroOffersPackageComponentStyle,
                     state = state,
+                    clickHandler = { },
                     modifier = Modifier.testTag("multipleIntroOffers")
                 )
             }
@@ -601,14 +610,8 @@ class TextComponentViewTests {
                 ineligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
-        val offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
-        val styleFactory = StyleFactory(localizations, offering)
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val styleFactory = StyleFactory(localizations)
+        val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
@@ -634,11 +637,12 @@ class TextComponentViewTests {
         val component = TextComponent(
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
-            overrides = ComponentOverrides(
-                introOffer = PartialTextComponent(
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                properties = PartialTextComponent(
                     text = singleEligibleLocalizationKey,
                 ),
-            )
+            )),
         )
         val localizations = nonEmptyMapOf(
             localeIdEnUs to nonEmptyMapOf(
@@ -650,14 +654,8 @@ class TextComponentViewTests {
                 singleEligibleLocalizationKey to LocalizationData.Text(expectedTextNlNl),
             )
         )
-        val offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
-        val styleFactory = StyleFactory(localizations, offering)
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val styleFactory = StyleFactory(localizations)
+        val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
@@ -684,7 +682,9 @@ class TextComponentViewTests {
         val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocaleIdentifier = LocaleId("en_US")
         val selectedPackageTextKey = LocalizationKey("key_selected")
-        val selectedPackageTextWithVariable = LocalizationData.Text("Selected product: {{ product_name }}")
+        val selectedPackageTextWithVariable = LocalizationData.Text(
+            "Selected product: {{ product.store_product_name }}"
+        )
         val expectedTextYearly = "Selected product: ${packageYearly.product.name}"
         val expectedTextMonthly = "Selected product: ${packageMonthly.product.name}"
         val localizations = nonEmptyMapOf(
@@ -723,7 +723,7 @@ class TextComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val styleSelected = styleFactory.create(selectedComponent).getOrThrow() as TextComponentStyle
+        val styleSelected = styleFactory.create(selectedComponent).getOrThrow().componentStyle as TextComponentStyle
 
         // Act
         setContent {
@@ -763,7 +763,7 @@ class TextComponentViewTests {
         val mxnPackage = packageMonthlyMxn
         val countryWithoutDecimals = "MX"
         val textKey = LocalizationKey("key_selected")
-        val textWithPriceVariable = LocalizationData.Text("Price: {{ price }}")
+        val textWithPriceVariable = LocalizationData.Text("Price: {{ product.price }}")
         val expectedTextWithDecimals = "Price: \$ 2.00"
         val expectedTextWithoutDecimals = "Price: MX\$1"
         val localizations = nonEmptyMapOf(
@@ -814,7 +814,7 @@ class TextComponentViewTests {
             localizations = localizations,
             offering = offering,
         )
-        val styleSelected = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val styleSelected = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
 
         // Act
         setContent {

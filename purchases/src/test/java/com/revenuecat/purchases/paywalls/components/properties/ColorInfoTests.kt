@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.ColorAlias
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.colorInt
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo.Gradient.Point
 import org.intellij.lang.annotations.Language
@@ -65,7 +66,9 @@ internal class ColorInfoTests {
                             }
                         """.trimIndent(),
                         expected = ColorInfo.Alias(
-                            value = "primary"
+                            ColorAlias(
+                                value = "primary"
+                            )
                         )
                     )
                 ),
@@ -157,7 +160,7 @@ internal class ColorInfoTests {
         @Test
         fun `Should properly deserialize ColorInfo`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ColorInfo>(args.json)
+            val actual = JsonTools.json.decodeFromString<ColorInfo>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -196,9 +199,9 @@ internal class ColorInfoTests {
                         """.trimIndent(),
                         expected = ColorScheme(
                             light = ColorInfo.Hex(
-                                value = colorInt(alpha = 0xde, red = 0xf4, green = 0x03, blue = 0xa1))
-                            ,
-                            dark = ColorInfo.Alias(value = "primary"),
+                                value = colorInt(alpha = 0xde, red = 0xf4, green = 0x03, blue = 0xa1)
+                            ),
+                            dark = ColorInfo.Alias(ColorAlias(value = "primary")),
                         )
                     )
                 ),
@@ -214,7 +217,7 @@ internal class ColorInfoTests {
                             }
                         """.trimIndent(),
                         expected = ColorScheme(
-                            light = ColorInfo.Alias(value = "primary"),
+                            light = ColorInfo.Alias(ColorAlias(value = "primary")),
                         )
                     )
                 ),
@@ -224,7 +227,7 @@ internal class ColorInfoTests {
         @Test
         fun `Should properly deserialize ColorScheme`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<ColorScheme>(args.json)
+            val actual = JsonTools.json.decodeFromString<ColorScheme>(args.json)
 
             // Assert
             assert(actual == args.expected)

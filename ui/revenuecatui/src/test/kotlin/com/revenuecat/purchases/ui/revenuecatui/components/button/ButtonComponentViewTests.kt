@@ -13,12 +13,13 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -27,7 +28,6 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.CENTER
 import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
@@ -37,11 +37,19 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import kotlinx.coroutines.CompletableDeferred
@@ -67,44 +75,52 @@ class ButtonComponentViewTests {
                     children = listOf(
                         TextComponentStyle(
                             texts = nonEmptyMapOf(LocaleId("en_US") to "Purchase"),
-                            color = ColorScheme(
-                                light = ColorInfo.Hex(Color.Black.toArgb()),
+                            color = ColorStyles(
+                                light = ColorStyle.Solid(Color.Black),
                             ),
                             fontSize = 15,
                             fontWeight = FontWeight.REGULAR.toFontWeight(),
-                            fontFamily = null,
+                            fontSpec = null,
                             textAlign = CENTER.toTextAlign(),
                             horizontalAlignment = CENTER.toAlignment(),
-                            backgroundColor = ColorScheme(
-                                light = ColorInfo.Hex(Color.Yellow.toArgb()),
+                            backgroundColor = ColorStyles(
+                                light = ColorStyle.Solid(Color.Yellow),
                             ),
+                            visible = true,
                             size = Size(width = Fill, height = Fill),
                             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
                             margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
                                 .toPaddingValues(),
                             rcPackage = null,
-                            overrides = null,
+                            tabIndex = null,
+                            variableLocalizations = nonEmptyMapOf(
+                                LocaleId("en_US") to variableLocalizationKeysForEnUs()
+                            ),
+                            overrides = emptyList(),
                         ),
                     ),
                     dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
+                    visible = true,
                     size = Size(width = Fill, height = Fill),
                     spacing = 16.dp,
-                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
+                    background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Red))),
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
                     shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                    border = Border(width = 2.0, color = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb()))),
-                    shadow = Shadow(
-                        color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
-                        radius = 10.0,
-                        x = 0.0,
-                        y = 3.0
+                    border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
+                    shadow = ShadowStyles(
+                        colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                        radius = 10.dp,
+                        x = 0.dp,
+                        y = 3.dp,
                     ),
                     badge = null,
+                    scrollOrientation = null,
                     rcPackage = null,
-                    overrides = null,
+                    tabIndex = null,
+                    overrides = emptyList(),
                 ),
-                action = ButtonComponentStyle.Action.PurchasePackage,
+                action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
             )
             ButtonComponentView(
                 style = style,
@@ -164,14 +180,8 @@ class ButtonComponentViewTests {
                 localizationKey to LocalizationData.Text(expectedUrlNlNl),
             )
         )
-        val offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
-        val styleFactory = StyleFactory(localizations, offering)
-        val style = styleFactory.create(component).getOrThrow() as ButtonComponentStyle
+        val styleFactory = StyleFactory(localizations = localizations)
+        val style = styleFactory.create(component).getOrThrow().componentStyle as ButtonComponentStyle
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
@@ -208,5 +218,189 @@ class ButtonComponentViewTests {
             .performClick()
         assertThat(clickedUrl).isEqualTo(expectedUrlNlNl)
     }
+
+    @Test
+    fun `If a purchase button is inside a package component, the button should be linked to that specific package`(): Unit =
+        with(composeTestRule) {
+            val ctaPurchaseAnnual = "purchase annual package"
+            val ctaPurchaseMonthly = "purchase monthly package"
+            val stackComponent = StackComponent(
+                components = listOf(
+                    PackageComponent(
+                        packageId = TestData.Packages.annual.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                PurchaseButtonComponent(
+                                    stack = StackComponent(
+                                        components = listOf(
+                                            TextComponent(
+                                                text = LocalizationKey("purchase-annual"),
+                                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                            )
+                                        )
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                    PackageComponent(
+                        packageId = TestData.Packages.monthly.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                PurchaseButtonComponent(
+                                    stack = StackComponent(
+                                        components = listOf(
+                                            TextComponent(
+                                                text = LocalizationKey("purchase-monthly"),
+                                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                            )
+                                        )
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                ),
+            )
+            val styleFactory = StyleFactory(
+                localizations = nonEmptyMapOf(
+                    LocaleId("en_US") to nonEmptyMapOf(
+                        LocalizationKey("purchase-annual") to LocalizationData.Text(ctaPurchaseAnnual),
+                        LocalizationKey("purchase-monthly") to LocalizationData.Text(ctaPurchaseMonthly),
+                    )
+                ),
+                offering = Offering(
+                    identifier = "identifier",
+                    serverDescription = "description",
+                    metadata = emptyMap(),
+                    availablePackages = listOf(TestData.Packages.annual, TestData.Packages.monthly),
+                )
+            )
+            val style = styleFactory.create(stackComponent).getOrThrow().componentStyle as StackComponentStyle
+            val state = FakePaywallState()
+
+            // Act
+            var expectedPackageId: String? = null
+            setContent {
+                StackComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { action ->
+                        val purchaseAction = action as PaywallAction.PurchasePackage
+                        assertThat(purchaseAction.rcPackage).isNotNull
+                        assertThat(purchaseAction.rcPackage?.identifier).isEqualTo(expectedPackageId)
+                    },
+                )
+            }
+
+            // Assert
+            expectedPackageId = TestData.Packages.annual.identifier
+            onNodeWithText(ctaPurchaseAnnual)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+
+            expectedPackageId = TestData.Packages.monthly.identifier
+            onNodeWithText(ctaPurchaseMonthly)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+        }
+
+    @Test
+    fun `If a purchase button is not inside a package component, the button should not be linked to any package`(): Unit =
+        with(composeTestRule) {
+            val ctaPurchase = "purchase"
+            val selectAnnual = "select annual package"
+            val selectMonthly = "select monthly package"
+            val stackComponent = StackComponent(
+                components = listOf(
+                    PackageComponent(
+                        packageId = TestData.Packages.annual.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("select-annual"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                    PackageComponent(
+                        packageId = TestData.Packages.monthly.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("select-monthly"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                    PurchaseButtonComponent(
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("purchase"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                ),
+            )
+            val styleFactory = StyleFactory(
+                localizations = nonEmptyMapOf(
+                    LocaleId("en_US") to nonEmptyMapOf(
+                        LocalizationKey("purchase") to LocalizationData.Text(ctaPurchase),
+                        LocalizationKey("select-annual") to LocalizationData.Text(selectAnnual),
+                        LocalizationKey("select-monthly") to LocalizationData.Text(selectMonthly),
+                    )
+                ),
+                offering = Offering(
+                    identifier = "identifier",
+                    serverDescription = "description",
+                    metadata = emptyMap(),
+                    availablePackages = listOf(TestData.Packages.annual, TestData.Packages.monthly),
+                )
+            )
+            val style = styleFactory.create(stackComponent).getOrThrow().componentStyle as StackComponentStyle
+            val state = FakePaywallState()
+
+            // Act
+            setContent {
+                StackComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { action ->
+                        val purchaseAction = action as PaywallAction.PurchasePackage
+                        assertThat(purchaseAction.rcPackage).isNull()
+                    },
+                )
+            }
+
+            // Assert
+            onNodeWithText(selectAnnual)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            onNodeWithText(ctaPurchase)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+
+            onNodeWithText(selectMonthly)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            onNodeWithText(ctaPurchase)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+        }
 
 }

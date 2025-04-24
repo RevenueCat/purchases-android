@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.createCustomerInfo
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -115,6 +116,64 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases.appUserID).isEqualTo(appUserId)
     }
+
+    // region storefrontCountryCode
+
+    @Test
+    fun `getting storefront country code calls billing store with correct parameters`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront")
+        }
+
+        var storefrontCountryCode: String? = null
+        purchases.getStorefrontCountryCodeWith { storefrontCountryCode = it }
+
+        assertThat(storefrontCountryCode).isEqualTo("test-storefront")
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `if already there, getting storefront country code does not calls billing store`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront-should-not-be-called")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `if getting storefront fails, it propagates failure`() {
+        every { mockBillingAbstract.getStorefront(any(), captureLambda()) }.answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+
+        var error: PurchasesError? = null
+        purchases.getStorefrontCountryCodeWith(
+            onError = { error = it },
+            onSuccess = { fail("Should error") }
+        )
+
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    // endregion storefrontCountryCode
 
     // region purchasing
 
@@ -362,7 +421,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         verify(exactly = 1) {
             mockCompletion.onReceived(any(), any())
-            mockCustomerInfoHelper.retrieveCustomerInfo(appUserID, any(), any(), any(), any())
+            mockCustomerInfoHelper.retrieveCustomerInfo(appUserID, any(), any(), any(), false, any())
         }
     }
 
@@ -529,6 +588,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground = false,
                 allowSharingPlayStoreAccount = false,
+                false,
                 any(),
             )
         }
@@ -566,7 +626,8 @@ internal class PurchasesTest : BasePurchasesTest() {
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
                 allowSharingPlayStoreAccount = false,
-                null,
+                false,
+                callback = null,
             )
         }
     }
@@ -1314,7 +1375,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockPaywallEventsManager.track(event) } just Runs
+        every { mockEventsManager.track(event) } just Runs
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
         purchases.track(event)
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
@@ -1322,7 +1383,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `track close event clears cache`() {
-        every { mockPaywallEventsManager.track(any()) } just Runs
+        every { mockEventsManager.track(any()) } just Runs
         val impressionEvent = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
@@ -1340,10 +1401,10 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockPaywallEventsManager.track(event) } just Runs
+        every { mockEventsManager.track(event) } just Runs
 
         purchases.track(event)
-        verify(exactly = 1) { mockPaywallEventsManager.track(event) }
+        verify(exactly = 1) { mockEventsManager.track(event) }
     }
 
     // endregion track events

@@ -3,12 +3,21 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.material3.ColorScheme
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -21,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
+import java.util.Date
 import kotlin.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 
@@ -29,7 +39,7 @@ internal fun Offering.validatedPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
 ): PaywallValidationResult =
-    validatePaywallComponentsDataOrNull()?.let { result ->
+    validatePaywallComponentsDataOrNull(resourceProvider)?.let { result ->
         // We need to either unwrap the success value, or wrap the errors in a fallback Paywall.
         when (result) {
             is RcResult.Success -> result.value
@@ -59,7 +69,8 @@ internal fun PaywallData.validate(
     )
 }
 
-private fun Offering.fallbackPaywall(
+@JvmSynthetic
+internal fun Offering.fallbackPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
     error: PaywallValidationError,
@@ -85,8 +96,10 @@ private fun Offering.fallbackPaywall(
         errors,
     )
 
-@Suppress("MaxLineLength", "ReturnCount")
-internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? {
+@Suppress("MaxLineLength", "ReturnCount", "LongMethod")
+internal fun Offering.validatePaywallComponentsDataOrNull(
+    resourceProvider: ResourceProvider,
+): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? {
     val paywallComponents = paywallComponents ?: return null
 
     // Check that the default localization is present in the localizations map.
@@ -108,21 +121,70 @@ internal fun Offering.validatePaywallComponentsDataOrNull(): RcResult<PaywallVal
     }.mapValuesOrAccumulate { it }
         .getOrElse { error -> return RcResult.Error(error) }
 
+    // Check that the default variable localization is present in the localizations map.
+    val defaultVariableLocalization = paywallComponents.defaultVariableLocalization
+        .errorIfNull(
+            PaywallValidationError.AllVariableLocalizationsMissing(paywallComponents.data.defaultLocaleIdentifier),
+        )
+        .mapError { nonEmptyListOf(it) }
+        .getOrElse { error -> return RcResult.Error(error) }
+
+    // Build a NonEmptyMap of variable localizations, ensuring that we always have the default localization as fallback.
+    val variableLocalizations = nonEmptyMapOf(
+        paywallComponents.data.defaultLocaleIdentifier to defaultVariableLocalization,
+        paywallComponents.uiConfig.localizations,
+    ).mapValues { (locale, map) ->
+        // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>. If a certain locale
+        // has an empty Map, we add an AllLocalizationsMissing error for that locale to our list of errors.
+        map.toNonEmptyMapOrNull()
+            .errorIfNull(PaywallValidationError.AllLocalizationsMissing(locale))
+            .mapError { nonEmptyListOf(it) }
+    }.mapValuesOrAccumulate { it }
+        .getOrElse { error -> return RcResult.Error(error) }
+
+    val colorAliases = paywallComponents.uiConfig.app.colors
+
+    // Build a map of FontAliases to FontSpecs.
+    val fontAliases: Map<FontAlias, FontSpec> =
+        paywallComponents.uiConfig.app.fonts.determineFontSpecs(resourceProvider)
+
     // Create the StyleFactory to recursively create and validate all ComponentStyles.
-    val styleFactory = StyleFactory(localizations = localizations, offering = this)
+    val styleFactory = StyleFactory(
+        localizations = localizations,
+        colorAliases = colorAliases,
+        fontAliases = fontAliases,
+        variableLocalizations = variableLocalizations,
+        offering = this,
+    )
     val config = paywallComponents.data.componentsConfig.base
 
-    // Combine the main stack with the stickyFooter, or accumulate the encountered errors.
+    // Combine the main stack with the stickyFooter and the background, or accumulate the encountered errors.
     return zipOrAccumulate(
-        styleFactory.create(config.stack),
-        config.stickyFooter?.let { styleFactory.create(it) }.orSuccessfullyNull(),
-    ) { stack, stickyFooter ->
+        first = styleFactory.create(config.stack, applyBottomWindowInsets = config.stickyFooter == null),
+        second = config.stickyFooter
+            ?.let { styleFactory.create(it, applyBottomWindowInsets = true) }
+            .orSuccessfullyNull(),
+        third = config.background.toBackgroundStyles(aliases = colorAliases),
+    ) { backendRootComponentResult, stickyFooterResult, background ->
+        val backendRootComponent = backendRootComponentResult.componentStyle
+        val stickyFooter = stickyFooterResult?.componentStyle
+        // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
+        // definite solution for positioning the root component.
+        val rootComponent = (backendRootComponent as? StackComponentStyle)
+            ?.takeIf { it.size.height == SizeConstraint.Fit }
+            ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
+            ?: backendRootComponent
+
         PaywallValidationResult.Components(
-            stack = stack,
+            stack = rootComponent,
             stickyFooter = stickyFooter,
-            background = config.background,
+            background = background,
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
+            variableConfig = paywallComponents.uiConfig.variableConfig,
+            variableDataProvider = VariableDataProvider(resourceProvider),
+            packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
+            initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
         )
     }
 }
@@ -140,6 +202,7 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
                 return Result.failure(error)
             }
         }
+
         PackageConfigurationType.MULTITIER -> {
             // Step 1: Validate tiers in config is not empty
             val tiers = config.tiers ?: emptyList()
@@ -238,11 +301,13 @@ internal fun Offering.toLegacyPaywallState(
     )
 }
 
+@Suppress("LongParameterList")
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
     activelySubscribedProductIds: Set<String>,
     purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
+    dateProvider: () -> Date,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -253,10 +318,15 @@ internal fun Offering.toComponentsPaywallState(
         stickyFooter = validationResult.stickyFooter,
         background = validationResult.background,
         showPricesWithDecimals = showPricesWithDecimals,
+        variableConfig = validationResult.variableConfig,
+        variableDataProvider = validationResult.variableDataProvider,
         offering = this,
         locales = validationResult.locales,
         activelySubscribedProductIds = activelySubscribedProductIds,
         purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
+        dateProvider = dateProvider,
+        packages = validationResult.packages,
+        initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
     )
 }
 
@@ -316,4 +386,7 @@ private fun PaywallData.validateTemplate(): PaywallTemplate? {
 }
 
 private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, LocalizationData>?
-    get() = componentsLocalizations[defaultLocaleIdentifier]
+    get() = componentsLocalizations.getBestMatch(defaultLocaleIdentifier)
+
+private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
+    get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)

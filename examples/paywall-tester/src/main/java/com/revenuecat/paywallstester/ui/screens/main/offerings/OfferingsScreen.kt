@@ -5,17 +5,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Divider
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -60,6 +65,7 @@ fun OfferingsScreen(
             tappedOnNavigateToOfferingFooter = tappedOnOfferingFooter,
             tappedOnNavigateToOfferingCondensedFooter = tappedOnOfferingCondensedFooter,
             tappedOnNavigateToOfferingByPlacement = tappedOnOfferingByPlacement,
+            tappedOnReloadOfferings = { viewModel.refreshOfferings() },
         )
         OfferingsState.Loading -> LoadingOfferingsScreen()
     }
@@ -86,7 +92,7 @@ private fun LoadingOfferingsScreen() {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun OfferingsListScreen(
     offeringsState: OfferingsState.Loaded,
@@ -94,62 +100,77 @@ private fun OfferingsListScreen(
     tappedOnNavigateToOfferingFooter: (Offering) -> Unit,
     tappedOnNavigateToOfferingCondensedFooter: (Offering) -> Unit,
     tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
+    tappedOnReloadOfferings: () -> Unit,
 ) {
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
 
     val showDialog = remember { mutableStateOf(false) }
 
-    LazyColumn {
-        item {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { showDialog.value = true }
-                            .padding(16.dp),
-                    ) {
-                        Column {
-                            Text("Get offering by placement")
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn {
+            item {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { showDialog.value = true }
+                                .padding(16.dp),
+                        ) {
+                            Column {
+                                Text("Get offering by placement")
+                            }
                         }
+                        Divider()
                     }
-                    Divider()
+                }
+            }
+            items(offeringsState.offerings.all.values.toList()) { offering ->
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    if (offering == dropdownExpandedOffering) {
+                        DisplayOfferingMenu(
+                            offering = offering,
+                            tappedOnNavigateToOffering = tappedOnNavigateToOffering,
+                            tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
+                            tappedOnDisplayOfferingAsFooter = tappedOnNavigateToOfferingFooter,
+                            tappedOnDisplayOfferingAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
+                            dismissed = { dropdownExpandedOffering = null },
+                        )
+                    }
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { dropdownExpandedOffering = offering }
+                                .padding(16.dp),
+                        ) {
+                            Column {
+                                Text(text = offering.identifier)
+
+                                offering.paywall?.also {
+                                    Text("Template ${it.templateName}")
+                                } ?: offering.paywallComponents?.also {
+                                    Text("Components ${it.data.templateName}")
+                                } ?: Text("No paywall")
+                            }
+                        }
+                        Divider()
+                    }
                 }
             }
         }
-        items(offeringsState.offerings.all.values.toList()) { offering ->
-            Box(modifier = Modifier.fillMaxWidth()) {
-                if (offering == dropdownExpandedOffering) {
-                    DisplayOfferingMenu(
-                        offering = offering,
-                        tappedOnNavigateToOffering = tappedOnNavigateToOffering,
-                        tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
-                        tappedOnDisplayOfferingAsFooter = tappedOnNavigateToOfferingFooter,
-                        tappedOnDisplayOfferingAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
-                        dismissed = { dropdownExpandedOffering = null },
-                    )
-                }
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { dropdownExpandedOffering = offering }
-                            .padding(16.dp),
-                    ) {
-                        Column {
-                            Text(text = offering.identifier)
 
-                            offering.paywall?.also {
-                                Text("Template ${it.templateName}")
-                            } ?: offering.paywallComponents?.also {
-                                Text("Components ${it.data.templateName}")
-                            } ?: Text("No paywall")
-                        }
-                    }
-                    Divider()
-                }
-            }
+        FloatingActionButton(
+            onClick = {
+                tappedOnReloadOfferings()
+            },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "Refresh offerings",
+            )
         }
     }
 
@@ -290,6 +311,10 @@ fun OfferingsScreenPreview() {
 
             override val offeringsState: StateFlow<OfferingsState>
                 get() = _offeringsState.asStateFlow()
+
+            override fun refreshOfferings() {
+                // no-op
+            }
         },
     )
 }

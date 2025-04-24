@@ -115,6 +115,7 @@ class PaywallView : AbstractComposeView {
 
     /**
      * Sets the font provider to be used for the Paywall. If not set, the default one will be used.
+     * Only available for original template paywalls. Ignored for V2 Paywalls.
      */
     fun setFontProvider(fontProvider: FontProvider?) {
         paywallOptions = paywallOptions.copy(fontProvider = fontProvider)
@@ -122,6 +123,7 @@ class PaywallView : AbstractComposeView {
 
     /**
      * Sets the visibility of the dismiss button in the Paywall.
+     * Only available for original template paywalls. Ignored for V2 Paywalls.
      */
     fun setDisplayDismissButton(shouldDisplayDismissButton: Boolean) {
         paywallOptions = paywallOptions.copy(shouldDisplayDismissButton = shouldDisplayDismissButton)

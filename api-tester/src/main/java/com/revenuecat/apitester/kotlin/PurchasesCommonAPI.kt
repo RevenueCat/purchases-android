@@ -18,8 +18,11 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.awaitGetProducts
+import com.revenuecat.purchases.awaitGetProductsResult
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitOfferingsResult
 import com.revenuecat.purchases.awaitPurchase
+import com.revenuecat.purchases.awaitPurchaseResult
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
@@ -166,6 +169,18 @@ private class PurchasesCommonAPI {
         val (transaction, newCustomerInfo) = purchases.awaitPurchase(purchasePackageBuilder.build())
         val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
         val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
+    }
+
+    suspend fun checkCoroutinesResult(
+        purchases: Purchases,
+        activity: Activity,
+        packageToPurchase: Package,
+    ) {
+        val offerings: Offerings = purchases.awaitOfferingsResult().getOrThrow()
+
+        val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
+        val purchaseResult: Result<PurchaseResult> = purchases.awaitPurchaseResult(purchasePackageBuilder.build())
+        val getProductsResult: Result<List<StoreProduct>> = purchases.awaitGetProductsResult(listOf("product"))
     }
 
     @Suppress("ForbiddenComment")

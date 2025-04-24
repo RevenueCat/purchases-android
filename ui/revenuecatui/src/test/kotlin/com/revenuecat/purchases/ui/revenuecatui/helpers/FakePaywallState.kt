@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -21,6 +21,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import java.net.URL
 
 internal fun FakePaywallState(vararg pkg: Package): PaywallState.Loaded.Components =
@@ -54,12 +55,19 @@ internal fun FakePaywallState(
     ),
     defaultLocaleIdentifier: LocaleId = LocaleId("en_US"),
 ): PaywallState.Loaded.Components {
+    val packageComponents = packages.map { pkg ->
+        PackageComponent(
+            packageId = pkg.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList())
+        )
+    }
     val data = PaywallComponentsData(
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
             base = PaywallComponentsConfig(
-                stack = StackComponent(components = components),
+                stack = StackComponent(components = components + packageComponents),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 stickyFooter = null,
             ),

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.ColorAlias
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -46,13 +47,13 @@ internal class FallbackComponentTests {
             components = listOf(
                 TextComponent(
                     text = LocalizationKey("7bkohQjzIE"),
-                    color = ColorScheme(light = ColorInfo.Alias("primary"))
+                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                 )
             )
         )
 
         // Act
-        val actual = OfferingParser.json.decodeFromString<PaywallComponent>(serialized)
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(serialized)
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -73,7 +74,7 @@ internal class FallbackComponentTests {
 
         // Act
         val actual = try{
-            OfferingParser.json.decodeFromString<PaywallComponent>(serialized)
+            JsonTools.json.decodeFromString<PaywallComponent>(serialized)
             error("Should have thrown an exception")
         } catch (e: SerializationException) {
             e
@@ -100,7 +101,7 @@ internal class FallbackComponentTests {
 
         // Act
         val actual = try{
-            OfferingParser.json.decodeFromString<PaywallComponent>(serialized)
+            JsonTools.json.decodeFromString<PaywallComponent>(serialized)
             error("Should have thrown an exception")
         } catch (e: SerializationException) {
             e
@@ -132,7 +133,7 @@ internal class FallbackComponentTests {
 
         // Act
         val actual = try{
-            OfferingParser.json.decodeFromString<PaywallComponent>(serialized)
+            JsonTools.json.decodeFromString<PaywallComponent>(serialized)
             error("Should have thrown an exception")
         } catch (e: SerializationException) {
             e
@@ -162,7 +163,7 @@ internal class FallbackComponentTests {
 
         // Act
         val actual = try{
-            OfferingParser.json.decodeFromString<PaywallComponent>(serialized)
+            JsonTools.json.decodeFromString<PaywallComponent>(serialized)
             error("Should have thrown an exception")
         } catch (e: SerializationException) {
             e

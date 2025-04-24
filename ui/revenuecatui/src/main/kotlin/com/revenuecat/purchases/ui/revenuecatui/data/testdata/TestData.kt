@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.URL
+import java.util.Date
 import java.util.Locale
 
 internal object TestData {
@@ -391,7 +392,19 @@ internal object TestData {
     }
 }
 
-internal class MockResourceProvider : ResourceProvider {
+internal class MockResourceProvider(
+    /**
+     * A map of resource type to a map of resource name to resource ID. For instance, to specify a font resource, do:
+     *
+     * ```kotlin
+     * mapOf(
+     *     "font" to mapOf("Roboto" to 100)
+     * )
+     * ```
+     */
+    private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
+    private val assetPaths: List<String> = emptyList(),
+) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
     }
@@ -419,6 +432,16 @@ internal class MockResourceProvider : ResourceProvider {
 
     override fun getLocale(): Locale {
         return Locale.getDefault()
+    }
+
+    override fun getResourceIdentifier(name: String, type: String): Int =
+        resourceIds[type]?.get(name) ?: 0
+
+    override fun getAssetFontPath(name: String): String? {
+        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+        val filePath = "${ResourceProvider.ASSETS_FONTS_DIR}/$nameWithExtension"
+
+        return assetPaths.find { it == filePath }
     }
 }
 
@@ -459,6 +482,7 @@ internal class MockViewModel(
                 activelySubscribedProductIds = emptySet(),
                 purchasedNonSubscriptionProductIds = emptySet(),
                 storefrontCountryCode = null,
+                dateProvider = { Date(MILLIS_2025_01_25) },
             )
         },
     )
@@ -577,5 +601,6 @@ internal class MockViewModel(
 
     private companion object {
         const val fakePurchaseDelayMillis: Long = 2000
+        private const val MILLIS_2025_01_25 = 1737763200000
     }
 }

@@ -30,6 +30,25 @@ data class CustomerCenterConfigData(
         val locale: String,
         @SerialName("localized_strings") val localizedStrings: Map<String, String>,
     ) {
+        enum class VariableName(val identifier: String) {
+            PRICE("price"),
+            SUB_OFFER_DURATION("sub_offer_duration"),
+            SUB_OFFER_DURATION_2("sub_offer_duration_2"),
+            SUB_OFFER_PRICE("sub_offer_price"),
+            SUB_OFFER_PRICE_2("sub_offer_price_2"),
+            ;
+
+            companion object {
+                private val valueMap by lazy {
+                    values().associateBy { it.identifier }
+                }
+
+                fun valueOfIdentifier(identifier: String): VariableName? {
+                    return valueMap[identifier]
+                }
+            }
+        }
+
         @Serializable
         enum class CommonLocalizedString {
             @SerialName("no_thanks")
@@ -136,6 +155,48 @@ data class CustomerCenterConfigData(
 
             @SerialName("purchases_not_recovered")
             PURCHASES_NOT_RECOVERED,
+
+            @SerialName("purchases_not_found")
+            PURCHASES_NOT_FOUND,
+
+            @SerialName("purchases_restoring")
+            PURCHASES_RESTORING,
+
+            @SerialName("manage_subscription")
+            MANAGE_SUBSCRIPTION,
+
+            @SerialName("you_have_promo")
+            YOU_HAVE_PROMO,
+
+            @SerialName("you_have_lifetime")
+            YOU_HAVE_LIFETIME,
+
+            @SerialName("web_subscription_manage")
+            WEB_SUBSCRIPTION_MANAGE,
+
+            @SerialName("free")
+            FREE,
+
+            @SerialName("never")
+            NEVER,
+
+            @SerialName("free_trial_then_price")
+            FREE_TRIAL_THEN_PRICE,
+
+            @SerialName("single_payment_then_price")
+            SINGLE_PAYMENT_THEN_PRICE,
+
+            @SerialName("discounted_recurring_then_price")
+            DISCOUNTED_RECURRING_THEN_PRICE,
+
+            @SerialName("free_trial_single_payment_then_price")
+            FREE_TRIAL_SINGLE_PAYMENT_THEN_PRICE,
+
+            @SerialName("free_trial_discounted_then_price")
+            FREE_TRIAL_DISCOUNTED_THEN_PRICE,
+
+            @SerialName("done")
+            DONE,
             ;
 
             val defaultValue: String
@@ -171,18 +232,40 @@ data class CustomerCenterConfigData(
                     APPLE_SUBSCRIPTION_MANAGE ->
                         "You can manage your subscription by using the App Store app on an Apple device."
                     GOOGLE_SUBSCRIPTION_MANAGE ->
-                        "You can manage your subscription by using the Play Store app on an Android device"
+                        "You have an active subscription from the Google Play Store"
                     AMAZON_SUBSCRIPTION_MANAGE ->
-                        "You can manage your subscription in the Amazon Appstore app on an Amazon device."
+                        "You have an active subscription from the Amazon Appstore. " +
+                            "You can manage your subscription in the Amazon Appstore app."
                     GOING_TO_CHECK_PURCHASES ->
-                        "Let’s take a look! We’re going to check your account for missing purchases."
+                        "Let's take a look! We're going to check your account for missing purchases."
                     CHECK_PAST_PURCHASES -> "Check past purchases"
-                    PURCHASES_RECOVERED -> "Purchases recovered!"
+                    PURCHASES_RECOVERED -> "Purchases restored"
                     PURCHASES_RECOVERED_EXPLANATION ->
-                        "We applied the previously purchased items to your account. Sorry for the inconvenience."
+                        "We restored your past purchases and applied them to your account."
                     PURCHASES_NOT_RECOVERED ->
-                        "We couldn't find any additional purchases under this account. " +
-                            "Contact support for assistance if you think this is an error."
+                        "We could not find any purchases with your account. " +
+                            "If you think this is an error, please contact support."
+                    PURCHASES_NOT_FOUND -> "No past purchases"
+                    PURCHASES_RESTORING -> "Restoring..."
+                    MANAGE_SUBSCRIPTION -> "Manage your subscription"
+                    YOU_HAVE_PROMO -> "You've been granted a subscription that doesn't renew"
+                    YOU_HAVE_LIFETIME -> "Your active lifetime subscription"
+                    WEB_SUBSCRIPTION_MANAGE ->
+                        "You have an active subscription that was purchased on the web. " +
+                            "You can manage your subscription using the button below."
+                    FREE -> "Free"
+                    NEVER -> "Never"
+                    FREE_TRIAL_THEN_PRICE -> "First {{ sub_offer_duration }} free, then {{ price }}"
+                    SINGLE_PAYMENT_THEN_PRICE -> "{{ sub_offer_duration }} for {{ sub_offer_price }}, then {{ price }}"
+                    DISCOUNTED_RECURRING_THEN_PRICE ->
+                        "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}"
+                    FREE_TRIAL_SINGLE_PAYMENT_THEN_PRICE ->
+                        "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for" +
+                            " {{ sub_offer_price_2 }}, and {{ price }} thereafter"
+                    FREE_TRIAL_DISCOUNTED_THEN_PRICE ->
+                        "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} " +
+                            "during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
+                    DONE -> "Done"
                 }
         }
 
@@ -198,6 +281,8 @@ data class CustomerCenterConfigData(
         val type: PathType,
         @SerialName("promotional_offer") val promotionalOffer: PathDetail.PromotionalOffer? = null,
         @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
+        val url: String? = null,
+        @SerialName("open_method") val openMethod: OpenMethod? = null,
     ) {
         @Serializable
         sealed class PathDetail {
@@ -230,7 +315,14 @@ data class CustomerCenterConfigData(
             REFUND_REQUEST,
             CHANGE_PLANS,
             CANCEL,
+            CUSTOM_URL,
             UNKNOWN,
+        }
+
+        @Serializable
+        enum class OpenMethod {
+            IN_APP,
+            EXTERNAL,
         }
     }
 
@@ -272,6 +364,7 @@ data class CustomerCenterConfigData(
             val androidSupportedPathTypes = setOf(
                 HelpPath.PathType.MISSING_PURCHASE,
                 HelpPath.PathType.CANCEL,
+                HelpPath.PathType.CUSTOM_URL,
             )
             paths.filter { it.type in androidSupportedPathTypes }
         }

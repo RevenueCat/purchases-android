@@ -15,8 +15,11 @@ import androidx.annotation.Px
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -24,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -37,24 +39,13 @@ import androidx.core.graphics.component4
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.SuccessResult
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.paywalls.components.StackComponent
-import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.LocalizationData
-import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
-import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -69,17 +60,21 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 import androidx.compose.ui.graphics.Color as ComposeColor
 
@@ -89,7 +84,6 @@ internal fun ImageComponentView(
     style: ImageComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    previewImageLoader: ImageLoader? = null,
 ) {
     // Get an ImageComponentState that calculates the overridden properties we should use.
     val imageState = rememberUpdatedImageComponentState(
@@ -98,26 +92,33 @@ internal fun ImageComponentView(
     )
 
     if (imageState.visible) {
-        val overlay = imageState.overlay?.let { rememberColorStyle(it) }
+        val overlay = imageState.overlay?.forCurrentTheme
         val borderStyle = imageState.border?.let { rememberBorderStyle(border = it) }
         val shadowStyle = imageState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(imageState.shape) { derivedStateOf { imageState.shape ?: RectangleShape } }
 
-        RemoteImage(
-            urlString = imageState.imageUrls.webp.toString(),
+        // We are using a Box here instead of applying the modifiers directly to the RemoteImage
+        // in order to have the border applied on top of the overlay, which uses onDrawWithContent
+        Box(
             modifier = modifier
                 .size(imageState.size)
                 .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
                 .padding(imageState.margin)
                 .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-                .applyIfNotNull(overlay) { overlay(it, composeShape) }
                 .clip(composeShape)
-                .applyIfNotNull(borderStyle) { border(it, composeShape) }
-                .padding(imageState.padding),
-            placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
-            contentScale = imageState.contentScale,
-            previewImageLoader = previewImageLoader,
-        )
+                .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
+        ) {
+            RemoteImage(
+                urlString = imageState.imageUrls.webp.toString(),
+                modifier = Modifier
+                    .size(imageState.size)
+                    .applyIfNotNull(imageState.aspectRatio) { aspectRatio(it) }
+                    .applyIfNotNull(overlay) { overlay(it) }
+                    .padding(imageState.padding),
+                placeholderUrlString = imageState.imageUrls.webpLowRes.toString(),
+                contentScale = imageState.contentScale,
+            )
+        }
     }
 }
 
@@ -193,59 +194,115 @@ private class PreviewParametersProvider : PreviewParameterProvider<PreviewParame
     )
 }
 
+@EmergeSnapshotConfig(precision = 0.95f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview(
     @PreviewParameter(PreviewParametersProvider::class) parameters: PreviewParameters,
 ) {
     val themeImageUrls = previewThemeImageUrls(widthPx = parameters.imageWidth, heightPx = parameters.imageHeight)
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                themeImageUrls = themeImageUrls,
-                size = parameters.viewSize,
-                fitMode = parameters.fitMode,
-                shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses.Dp(
-                        topLeading = 20.0,
-                        topTrailing = 20.0,
-                        bottomLeading = 20.0,
-                        bottomTrailing = 20.0,
+    ProvidePreviewImageLoader(previewImageLoader(themeImageUrls)) {
+        Box(modifier = Modifier.background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    themeImageUrls = themeImageUrls,
+                    size = parameters.viewSize,
+                    fitMode = parameters.fitMode,
+                    shape = MaskShape.Rectangle(
+                        corners = CornerRadiuses.Dp(
+                            topLeading = 20.0,
+                            topTrailing = 20.0,
+                            bottomLeading = 20.0,
+                            bottomTrailing = 20.0,
+                        ),
                     ),
                 ),
-            ),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(themeImageUrls),
-        )
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
+@Preview
+@Composable
+private fun ImageComponentView_Bigger_Container_Fill_Fit_FitModeFill_Preview() {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 100u, heightPx = 100u)
+    ProvidePreviewImageLoader(previewImageLoader(themeImageUrls)) {
+        Box(
+            modifier = Modifier
+                .background(ComposeColor.Red)
+                .fillMaxHeight()
+                .width(200.dp)
+                .padding(20.dp),
+        ) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    themeImageUrls = themeImageUrls,
+                    size = Size(width = Fill, height = Fit),
+                    fitMode = FitMode.FILL,
+                    shape = MaskShape.Rectangle(),
+                ),
+                state = previewEmptyState(),
+            )
+        }
+    }
+}
+
+@EmergeSnapshotConfig(precision = 0.99f)
+@Preview
+@Composable
+private fun ImageComponentView_Bigger_Container_Fit_Fill_FitModeFill_Preview() {
+    val themeImageUrls = previewThemeImageUrls(widthPx = 100u, heightPx = 100u)
+    ProvidePreviewImageLoader(previewImageLoader(themeImageUrls)) {
+        Box(
+            modifier = Modifier
+                .background(ComposeColor.Red)
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(20.dp),
+        ) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    themeImageUrls = themeImageUrls,
+                    size = Size(width = Fit, height = Fill),
+                    fitMode = FitMode.FILL,
+                    shape = MaskShape.Rectangle(),
+                ),
+                state = previewEmptyState(),
+            )
+        }
+    }
+}
+
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_SmallerContainer() {
     val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
-    Box(
-        modifier = Modifier
-            .height(200.dp)
-            .background(ComposeColor.Blue),
-    ) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                themeImageUrls = themeImageUrls,
-                size = Size(width = Fixed(400u), height = Fixed(400u)),
-                fitMode = FitMode.FIT,
-                shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses.Dp(
-                        topLeading = 20.0,
-                        topTrailing = 20.0,
-                        bottomLeading = 20.0,
-                        bottomTrailing = 20.0,
+    ProvidePreviewImageLoader(previewImageLoader(themeImageUrls)) {
+        Box(
+            modifier = Modifier
+                .height(200.dp)
+                .background(ComposeColor.Blue),
+        ) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    themeImageUrls = themeImageUrls,
+                    size = Size(width = Fixed(400u), height = Fixed(400u)),
+                    fitMode = FitMode.FIT,
+                    shape = MaskShape.Rectangle(
+                        corners = CornerRadiuses.Dp(
+                            topLeading = 20.0,
+                            topTrailing = 20.0,
+                            bottomLeading = 20.0,
+                            bottomTrailing = 20.0,
+                        ),
                     ),
                 ),
-            ),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(themeImageUrls),
-        )
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
@@ -253,31 +310,32 @@ private fun ImageComponentView_Preview_SmallerContainer() {
 @Composable
 private fun ImageComponentView_Preview_Margin_Padding() {
     val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
-    Box(
-        modifier = Modifier
-            .height(200.dp)
-            .background(ComposeColor.Gray),
-    ) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                themeImageUrls = themeImageUrls,
-                size = Size(width = Fixed(400u), height = Fixed(400u)),
-                paddingValues = PaddingValues(20.dp),
-                marginValues = PaddingValues(20.dp),
-                fitMode = FitMode.FIT,
-                shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses.Dp(
-                        topLeading = 20.0,
-                        topTrailing = 20.0,
-                        bottomLeading = 20.0,
-                        bottomTrailing = 20.0,
+    ProvidePreviewImageLoader(previewImageLoader(themeImageUrls)) {
+        Box(
+            modifier = Modifier
+                .height(200.dp)
+                .background(ComposeColor.Gray),
+        ) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    themeImageUrls = themeImageUrls,
+                    size = Size(width = Fixed(400u), height = Fixed(400u)),
+                    paddingValues = PaddingValues(20.dp),
+                    marginValues = PaddingValues(20.dp),
+                    fitMode = FitMode.FIT,
+                    shape = MaskShape.Rectangle(
+                        corners = CornerRadiuses.Dp(
+                            topLeading = 20.0,
+                            topTrailing = 20.0,
+                            bottomLeading = 20.0,
+                            bottomTrailing = 20.0,
+                        ),
                     ),
+                    shadow = null,
                 ),
-                shadow = null,
-            ),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(themeImageUrls),
-        )
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
@@ -286,87 +344,96 @@ private fun ImageComponentView_Preview_Margin_Padding() {
 @Composable
 private fun ImageComponentView_Preview_LinearGradient() {
     val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                themeImageUrls = themeImageUrls,
-                size = Size(width = Fixed(400u), height = Fit),
-                fitMode = FitMode.FIT,
-                shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses.Dp(
-                        topLeading = 20.0,
-                        topTrailing = 20.0,
-                        bottomLeading = 20.0,
-                        bottomTrailing = 20.0,
-                    ),
-                ),
-                overlay = ColorScheme(
-                    light = ColorInfo.Gradient.Linear(
-                        degrees = -90f,
-                        points = listOf(
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#88FF0000"),
-                                percent = 0f,
-                            ),
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#8800FF00"),
-                                percent = 50f,
-                            ),
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#880000FF"),
-                                percent = 100f,
-                            ),
+    ProvidePreviewImageLoader(previewImageLoader(themeImageUrls)) {
+        Box(modifier = Modifier.background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    themeImageUrls = themeImageUrls,
+                    size = Size(width = Fixed(400u), height = Fit),
+                    fitMode = FitMode.FIT,
+                    shape = MaskShape.Rectangle(
+                        corners = CornerRadiuses.Dp(
+                            topLeading = 20.0,
+                            topTrailing = 20.0,
+                            bottomLeading = 20.0,
+                            bottomTrailing = 20.0,
                         ),
                     ),
+                    border = BorderStyles(
+                        width = 10.dp,
+                        colors = ColorStyles(
+                            light = ColorStyle.Solid(ComposeColor.Blue),
+                        ),
+                    ),
+                    overlay = ColorStyles(
+                        light = ColorInfo.Gradient.Linear(
+                            degrees = 0f,
+                            points = listOf(
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#88FF0000"),
+                                    percent = 0f,
+                                ),
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#8800FF00"),
+                                    percent = 50f,
+                                ),
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#880000FF"),
+                                    percent = 100f,
+                                ),
+                            ),
+                        ).toColorStyle(),
+                    ),
                 ),
-            ),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(themeImageUrls),
-        )
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
 @Suppress("MagicNumber")
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_RadialGradient() {
     val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 400u)
-    Box(modifier = Modifier.background(ComposeColor.Red)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                themeImageUrls = themeImageUrls,
-                size = Size(width = Fixed(400u), height = Fit),
-                fitMode = FitMode.FIT,
-                shape = MaskShape.Rectangle(
-                    corners = CornerRadiuses.Dp(
-                        topLeading = 20.0,
-                        topTrailing = 20.0,
-                        bottomLeading = 20.0,
-                        bottomTrailing = 20.0,
-                    ),
-                ),
-                overlay = ColorScheme(
-                    light = ColorInfo.Gradient.Radial(
-                        listOf(
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#88FF0000"),
-                                percent = 0f,
-                            ),
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#8800FF00"),
-                                percent = 50f,
-                            ),
-                            ColorInfo.Gradient.Point(
-                                color = Color.parseColor("#880000FF"),
-                                percent = 100f,
-                            ),
+    ProvidePreviewImageLoader(previewImageLoader(themeImageUrls)) {
+        Box(modifier = Modifier.background(ComposeColor.Red)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    themeImageUrls = themeImageUrls,
+                    size = Size(width = Fixed(400u), height = Fit),
+                    fitMode = FitMode.FIT,
+                    shape = MaskShape.Rectangle(
+                        corners = CornerRadiuses.Dp(
+                            topLeading = 20.0,
+                            topTrailing = 20.0,
+                            bottomLeading = 20.0,
+                            bottomTrailing = 20.0,
                         ),
                     ),
+                    overlay = ColorStyles(
+                        light = ColorInfo.Gradient.Radial(
+                            listOf(
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#88FF0000"),
+                                    percent = 0f,
+                                ),
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#8800FF00"),
+                                    percent = 50f,
+                                ),
+                                ColorInfo.Gradient.Point(
+                                    color = Color.parseColor("#880000FF"),
+                                    percent = 100f,
+                                ),
+                            ),
+                        ).toColorStyle(),
+                    ),
                 ),
-            ),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(themeImageUrls),
-        )
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
@@ -386,23 +453,25 @@ private class MaskShapeProvider : PreviewParameterProvider<MaskShape> {
     )
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_MaskShape(
     @PreviewParameter(MaskShapeProvider::class) maskShape: MaskShape,
 ) {
     val themeImageUrls = previewThemeImageUrls(widthPx = 400u, heightPx = 200u)
-    Box(modifier = Modifier.background(ComposeColor.Blue)) {
-        ImageComponentView(
-            style = previewImageComponentStyle(
-                themeImageUrls = themeImageUrls,
-                size = Size(width = Fixed(400u), height = Fixed(200u)),
-                fitMode = FitMode.FIT,
-                shape = maskShape,
-            ),
-            state = previewEmptyState(),
-            previewImageLoader = previewImageLoader(themeImageUrls),
-        )
+    ProvidePreviewImageLoader(previewImageLoader(themeImageUrls)) {
+        Box(modifier = Modifier.background(ComposeColor.Blue)) {
+            ImageComponentView(
+                style = previewImageComponentStyle(
+                    themeImageUrls = themeImageUrls,
+                    size = Size(width = Fixed(400u), height = Fixed(200u)),
+                    fitMode = FitMode.FIT,
+                    shape = maskShape,
+                ),
+                state = previewEmptyState(),
+            )
+        }
     }
 }
 
@@ -413,25 +482,23 @@ private fun previewImageComponentStyle(
     size: Size,
     fitMode: FitMode,
     shape: MaskShape,
-    overlay: ColorScheme? = null,
+    visible: Boolean = true,
+    overlay: ColorStyles? = null,
     paddingValues: PaddingValues = PaddingValues(0.dp),
     marginValues: PaddingValues = PaddingValues(0.dp),
-    border: Border? = Border(
-        width = 2.0,
-        color = ColorScheme(
-            light = ColorInfo.Hex(
-                ComposeColor.Cyan.toArgb(),
-            ),
-        ),
+    border: BorderStyles? = BorderStyles(
+        width = 2.dp,
+        colors = ColorStyles(light = ColorStyle.Solid(ComposeColor.Cyan)),
     ),
-    shadow: Shadow? = Shadow(
-        color = ColorScheme(ColorInfo.Hex(ComposeColor.Black.toArgb())),
-        radius = 10.0,
-        x = 0.0,
-        y = 3.0,
+    shadow: ShadowStyles? = ShadowStyles(
+        colors = ColorStyles(ColorStyle.Solid(ComposeColor.Black)),
+        radius = 10.dp,
+        x = 0.dp,
+        y = 3.dp,
     ),
 ) = ImageComponentStyle(
     sources = nonEmptyMapOf(LocaleId("en_US") to themeImageUrls),
+    visible = visible,
     size = size,
     shape = shape.toShape(),
     padding = paddingValues,
@@ -441,43 +508,9 @@ private fun previewImageComponentStyle(
     overlay = overlay,
     contentScale = fitMode.toContentScale(),
     rcPackage = null,
-    overrides = null,
+    tabIndex = null,
+    overrides = emptyList(),
 )
-
-private fun previewEmptyState(): PaywallState.Loaded.Components {
-    val data = PaywallComponentsData(
-        templateName = "template",
-        assetBaseURL = URL("https://assets.pawwalls.com"),
-        componentsConfig = ComponentsConfig(
-            base = PaywallComponentsConfig(
-                // This would normally contain at least one ImageComponent, but that's not needed for previews.
-                stack = StackComponent(components = emptyList()),
-                background = Background.Color(
-                    ColorScheme(light = ColorInfo.Hex(ComposeColor.White.toArgb())),
-                ),
-                stickyFooter = null,
-            ),
-        ),
-        componentsLocalizations = nonEmptyMapOf(
-            LocaleId("en_US") to nonEmptyMapOf(LocalizationKey("dummy") to LocalizationData.Text("dummy")),
-        ),
-        defaultLocaleIdentifier = LocaleId("en_US"),
-    )
-    val offering = Offering(
-        identifier = "identifier",
-        serverDescription = "serverDescription",
-        metadata = emptyMap(),
-        availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(UiConfig(), data),
-    )
-    val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(
-        validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
-        storefrontCountryCode = null,
-    )
-}
 
 @Composable
 private fun previewImageLoader(themeImageUrls: ThemeImageUrls) =

@@ -21,7 +21,9 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                 onSuccessHandler = { productEntitlementMapping ->
                     assertThat(productEntitlementMapping.mappings).containsOnlyKeys(
                         "com.revenuecat.loadshedder.monthly",
-                        "com.revenuecat.loadshedder.monthly:monthly"
+                        "com.revenuecat.loadshedder.monthly:monthly",
+                        "consumable.10_coins",
+                        "lifetime",
                     )
                     assertThat(productEntitlementMapping.mappings["com.revenuecat.loadshedder.monthly"]).isEqualTo(
                         ProductEntitlementMapping.Mapping(
@@ -34,6 +36,20 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                         ProductEntitlementMapping.Mapping(
                             productIdentifier = "com.revenuecat.loadshedder.monthly",
                             basePlanId = "monthly",
+                            entitlements = listOf("premium", "pro")
+                        )
+                    )
+                    assertThat(productEntitlementMapping.mappings["consumable.10_coins"]).isEqualTo(
+                        ProductEntitlementMapping.Mapping(
+                            productIdentifier = "consumable.10_coins",
+                            basePlanId = null,
+                            entitlements = emptyList()
+                        )
+                    )
+                    assertThat(productEntitlementMapping.mappings["lifetime"]).isEqualTo(
+                        ProductEntitlementMapping.Mapping(
+                            productIdentifier = "lifetime",
+                            basePlanId = null,
                             entitlements = listOf("premium", "pro")
                         )
                     )
@@ -56,7 +72,9 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                 onSuccessHandler = { productEntitlementMapping ->
                     assertThat(productEntitlementMapping.mappings).containsOnlyKeys(
                         "com.revenuecat.loadshedder.monthly",
-                        "com.revenuecat.loadshedder.monthly:monthly"
+                        "com.revenuecat.loadshedder.monthly:monthly",
+                        "consumable.10_coins",
+                        "lifetime",
                     )
                     assertThat(productEntitlementMapping.mappings["com.revenuecat.loadshedder.monthly"]).isEqualTo(
                         ProductEntitlementMapping.Mapping(
@@ -69,6 +87,20 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                         ProductEntitlementMapping.Mapping(
                             productIdentifier = "com.revenuecat.loadshedder.monthly",
                             basePlanId = "monthly",
+                            entitlements = listOf("premium", "pro")
+                        )
+                    )
+                    assertThat(productEntitlementMapping.mappings["consumable.10_coins"]).isEqualTo(
+                        ProductEntitlementMapping.Mapping(
+                            productIdentifier = "consumable.10_coins",
+                            basePlanId = null,
+                            entitlements = emptyList()
+                        )
+                    )
+                    assertThat(productEntitlementMapping.mappings["lifetime"]).isEqualTo(
+                        ProductEntitlementMapping.Mapping(
+                            productIdentifier = "lifetime",
+                            basePlanId = null,
                             entitlements = listOf("premium", "pro")
                         )
                     )

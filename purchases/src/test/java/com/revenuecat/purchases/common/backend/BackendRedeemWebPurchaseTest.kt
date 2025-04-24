@@ -95,7 +95,7 @@ class BackendRedeemWebPurchaseTest {
         val responseBody = """
             {
                 "code": 7849,
-                "message": "Invalid RevenueCat Billing redemption token."
+                "message": "Invalid Web Billing redemption token."
             }
         """.trimIndent()
         mockHttpResult(responseCode = RCHTTPStatusCodes.BAD_REQUEST, responseBody = responseBody)

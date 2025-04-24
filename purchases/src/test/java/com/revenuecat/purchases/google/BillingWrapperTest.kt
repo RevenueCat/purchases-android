@@ -18,6 +18,7 @@ import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -34,6 +35,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -1368,6 +1370,7 @@ class BillingWrapperTest {
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+                setOf("test-sku"),
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
@@ -1403,6 +1406,7 @@ class BillingWrapperTest {
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+                setOf("test-sku"),
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR,
                 billingDebugMessage = "test-debug-message",
@@ -1424,6 +1428,114 @@ class BillingWrapperTest {
                 billingDebugMessage = ""
             )
         }
+    }
+
+    @Test
+    fun `startConnectionOnMainThread tracks diagnostics call with correct parameters`() {
+        // Arrange, Act, Assert
+        // Our test setup() method calls startConnectionOnMainThread().
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingStartConnection() }
+    }
+
+    @Test
+    fun `onBillingSetupFinished tracks diagnostics call with correct parameters`() {
+        // Arrange
+        every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
+        // BillingClient is not connected, to check pendingRequestCount.
+        every { mockClient.isReady } returns false
+        val billingResult = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.OK)
+            .setDebugMessage("test-debug-message")
+            .build()
+        val expectedResponseCode = billingResult.responseCode
+        val expectedDebugMessage = billingResult.debugMessage
+        // We expect this to be capped at 100, even though we have 200 pending requests.
+        val expectedPendingRequestCount = 100
+
+        // Act
+        repeat(200) {
+            wrapper.queryProductDetailsAsync(
+                productType = ProductType.SUBS,
+                productIds = setOf("product_a"),
+                onReceive = { },
+                onError = { fail("shouldn't be an error") }
+            )
+        }
+        wrapper.onBillingSetupFinished(billingResult)
+
+        // Assert
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(
+                responseCode = expectedResponseCode,
+                debugMessage = expectedDebugMessage,
+                pendingRequestCount = expectedPendingRequestCount,
+            )
+        }
+    }
+
+    @Test
+    fun `onBillingServiceDisconnected tracks diagnostics call with correct parameters`() {
+        // Arrange, Act
+        wrapper.onBillingServiceDisconnected()
+
+        // Assert
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() }
+    }
+
+    @Test
+    fun `make a purchase tracks start purchase event`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+
+        val storeProduct = createStoreProductWithoutOffers()
+        val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
+        val replaceSkuInfo = mockReplaceSkuInfo()
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            replaceSkuInfo,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted(
+                productId = purchasingData.productId,
+                oldProductId = replaceSkuInfo.oldPurchase.productIds.first(),
+                hasIntroTrial = false,
+                hasIntroPrice = false,
+            )
+        }
+    }
+
+    @Test
+    fun `tracks purchase update received event`() {
+        val purchases = listOf(stubGooglePurchase())
+        every {
+            mockPurchasesListener.onPurchasesUpdated(any())
+        } just Runs
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList()
+        )
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(
+                productIds = listOf(purchases.first().firstProductId),
+                purchaseStatuses = listOf("PURCHASED"),
+                billingResponseCode = BillingClient.BillingResponseCode.OK,
+                billingDebugMessage = "",
+            )
+        }
+
     }
 
     // endregion diagnostics tracking
@@ -1625,10 +1737,10 @@ class BillingWrapperTest {
 
     private fun mockDiagnosticsTracker() {
         every {
-            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any(), any())
         } just Runs
         every {
-            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any(), any())
         } just Runs
         every {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
@@ -1636,5 +1748,10 @@ class BillingWrapperTest {
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
+        every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
+        every { mockDiagnosticsTracker.trackGooglePurchaseStarted(any(), any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(any(), any(), any(), any()) } just runs
     }
 }

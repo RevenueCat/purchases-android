@@ -15,11 +15,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
-import com.revenuecat.purchases.paywalls.components.common.ComponentConditions
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -27,9 +25,9 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowChangingTest
@@ -80,24 +78,31 @@ internal class TextComponentViewWindowTests {
         val component = TextComponent(
             text = defaultLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            overrides = ComponentOverrides(
-                conditions = ComponentConditions(
-                    compact = PartialTextComponent(
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialTextComponent(
                         text = compactLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedCompactTextColor.toArgb())),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedCompactBackgroundColor.toArgb())),
-                    ),
-                    medium = PartialTextComponent(
+                    )
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Medium),
+                    properties = PartialTextComponent(
                         text = mediumLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMediumTextColor.toArgb())),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedMediumBackgroundColor.toArgb())),
-                    ),
-                    expanded = PartialTextComponent(
+                    )
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Expanded),
+                    properties = PartialTextComponent(
                         text = expandedLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedExpandedTextColor.toArgb())),
                         backgroundColor = ColorScheme(ColorInfo.Hex(expectedExpandedBackgroundColor.toArgb())),
-                    ),
-                )
+                    )
+                ),
             )
         )
         val state = FakePaywallState(
@@ -107,14 +112,8 @@ internal class TextComponentViewWindowTests {
         )
         val styleFactory = StyleFactory(
             localizations = localizations,
-            offering = Offering(
-            identifier = "identifier",
-            serverDescription = "description",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
         )
-        )
-        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+        val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
     }
 
     @GraphicsMode(GraphicsMode.Mode.NATIVE)

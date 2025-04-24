@@ -126,7 +126,13 @@ internal class HTTPClient(
             callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
             callSuccessful = true
         } finally {
-            trackHttpRequestPerformedIfNeeded(endpoint, requestStartTime, callSuccessful, callResult)
+            trackHttpRequestPerformedIfNeeded(
+                endpoint,
+                requestStartTime,
+                callSuccessful,
+                callResult,
+                isRetry = refreshETag,
+            )
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
@@ -223,6 +229,7 @@ internal class HTTPClient(
         requestStartTime: Date,
         callSuccessful: Boolean,
         callResult: HTTPResult?,
+        isRetry: Boolean,
     ) {
         diagnosticsTrackerIfEnabled?.let { tracker ->
             val responseTime = Duration.between(requestStartTime, dateProvider.now)
@@ -244,6 +251,7 @@ internal class HTTPClient(
                 callResult?.backendErrorCode,
                 origin,
                 verificationResult,
+                isRetry,
             )
         }
     }
@@ -270,7 +278,7 @@ internal class HTTPClient(
             "X-Platform-Device" to Build.MODEL,
             "X-Platform-Brand" to Build.BRAND,
             "X-Version" to Config.frameworkVersion,
-            "X-Preferred-Locales" to localeProvider.currentLocalesLanguageTags,
+            "X-Preferred-Locales" to localeProvider.currentLocalesLanguageTags.replace(oldChar = '-', newChar = '_'),
             "X-Client-Locale" to appConfig.languageTag,
             "X-Client-Version" to appConfig.versionName,
             "X-Client-Bundle-ID" to appConfig.packageName,
@@ -280,6 +288,8 @@ internal class HTTPClient(
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
             "X-Storefront" to storefrontProvider.getStorefront(),
             "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
+            "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),
+            "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))

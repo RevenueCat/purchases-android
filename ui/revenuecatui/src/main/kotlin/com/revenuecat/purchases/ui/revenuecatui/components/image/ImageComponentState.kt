@@ -18,7 +18,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -34,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -49,6 +49,7 @@ internal fun rememberUpdatedImageComponentState(
         style = style,
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
 @JvmSynthetic
@@ -57,6 +58,7 @@ internal fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
+    selectedTabIndexProvider: () -> Int,
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -70,6 +72,7 @@ internal fun rememberUpdatedImageComponentState(
             style = style,
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -89,10 +92,17 @@ internal class ImageComponentState(
     private val style: ImageComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+        if (style.rcPackage != null) {
+            style.rcPackage.identifier == selectedPackageProvider()?.identifier
+        } else if (style.tabIndex != null) {
+            style.tabIndex == selectedTabIndexProvider()
+        } else {
+            false
+        }
     }
     private var density by mutableStateOf(initialDensity)
     private var darkMode by mutableStateOf(initialDarkMode)
@@ -109,7 +119,7 @@ internal class ImageComponentState(
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
     private val themeImageUrls: ThemeImageUrls by derivedStateOf {
         val localeId = localeProvider().toLocaleId()
@@ -119,7 +129,7 @@ internal class ImageComponentState(
     }
 
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
+    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
     @get:JvmSynthetic
     val imageUrls: ImageUrls by derivedStateOf {
@@ -178,13 +188,13 @@ internal class ImageComponentState(
     val shape: Shape? by derivedStateOf { presentedPartial?.partial?.maskShape?.toShape() ?: style.shape }
 
     @get:JvmSynthetic
-    val border by derivedStateOf { presentedPartial?.partial?.border ?: style.border }
+    val border by derivedStateOf { presentedPartial?.border ?: style.border }
 
     @get:JvmSynthetic
-    val shadow by derivedStateOf { presentedPartial?.partial?.shadow ?: style.shadow }
+    val shadow by derivedStateOf { presentedPartial?.shadow ?: style.shadow }
 
     @get:JvmSynthetic
-    val overlay: ColorScheme? by derivedStateOf { presentedPartial?.partial?.colorOverlay ?: style.overlay }
+    val overlay: ColorStyles? by derivedStateOf { presentedPartial?.overlay ?: style.overlay }
 
     @get:JvmSynthetic
     val contentScale: ContentScale by derivedStateOf {

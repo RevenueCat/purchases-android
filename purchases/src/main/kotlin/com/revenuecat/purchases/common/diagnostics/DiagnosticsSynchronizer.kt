@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
 import org.json.JSONObject
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * This class is in charge of syncing all previously tracked diagnostics. All operations will be executed
@@ -22,7 +23,7 @@ internal class DiagnosticsSynchronizer(
     private val diagnosticsTracker: DiagnosticsTracker,
     private val backend: Backend,
     private val diagnosticsDispatcher: Dispatcher,
-) {
+) : DiagnosticsEventTrackerListener {
     companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_POST_RETRIES = 3
@@ -37,13 +38,20 @@ internal class DiagnosticsSynchronizer(
             )
     }
 
+    val isSyncing = AtomicBoolean(false)
+
     fun syncDiagnosticsFileIfNeeded() {
         enqueue {
             try {
+                if (isSyncing.getAndSet(true)) {
+                    verboseLog("Already syncing diagnostics file.")
+                    return@enqueue
+                }
                 val diagnosticsList = getEventsToSync()
                 val diagnosticsCount = diagnosticsList.size
                 if (diagnosticsCount == 0) {
                     verboseLog("No diagnostics to sync.")
+                    isSyncing.set(false)
                     return@enqueue
                 }
                 backend.postDiagnostics(
@@ -52,6 +60,7 @@ internal class DiagnosticsSynchronizer(
                         verboseLog("Synced diagnostics file successfully.")
                         diagnosticsHelper.clearConsecutiveNumberOfErrors()
                         diagnosticsFileHelper.clear(diagnosticsCount)
+                        isSyncing.set(false)
                     },
                     onErrorHandler = { error, shouldRetry ->
                         if (shouldRetry) {
@@ -76,6 +85,7 @@ internal class DiagnosticsSynchronizer(
                             diagnosticsHelper.resetDiagnosticsStatus()
                             diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync()
                         }
+                        isSyncing.set(false)
                     },
                 )
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -85,6 +95,20 @@ internal class DiagnosticsSynchronizer(
                 } catch (e: IOException) {
                     verboseLog("Error deleting diagnostics file: $e")
                 }
+                isSyncing.set(false)
+            }
+        }
+    }
+
+    override fun onEventTracked() {
+        syncDiagnosticsFileIfBigEnough()
+    }
+
+    private fun syncDiagnosticsFileIfBigEnough() {
+        enqueue {
+            if (diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync()) {
+                verboseLog("Diagnostics file is big enough to sync. Syncing it.")
+                syncDiagnosticsFileIfNeeded()
             }
         }
     }

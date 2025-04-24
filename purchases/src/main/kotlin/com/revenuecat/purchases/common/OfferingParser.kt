@@ -2,13 +2,13 @@ package com.revenuecat.purchases.common
 
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.JsonTools.json
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
@@ -19,17 +19,9 @@ import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.utils.replaceJsonNullWithKotlinNull
 import com.revenuecat.purchases.utils.toMap
 import com.revenuecat.purchases.withPresentedContext
-import kotlinx.serialization.json.Json
 import org.json.JSONObject
 
 internal abstract class OfferingParser {
-
-    companion object {
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal val json = Json {
-            ignoreUnknownKeys = true
-        }
-    }
 
     protected abstract fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
@@ -140,17 +132,13 @@ internal abstract class OfferingParser {
 
         @Suppress("TooGenericExceptionCaught")
         val paywallComponentsData: PaywallComponentsData? =
-            if (BuildConfig.FLAG_PAYWALL_COMPONENTS) {
-                offeringJson.optJSONObject("paywall_components")?.let {
-                    try {
-                        json.decodeFromString<PaywallComponentsData>(it.toString())
-                    } catch (e: Throwable) {
-                        errorLog("Error deserializing paywall components data", e)
-                        null
-                    }
+            offeringJson.optJSONObject("paywall_components")?.let {
+                try {
+                    json.decodeFromString<PaywallComponentsData>(it.toString())
+                } catch (e: Throwable) {
+                    errorLog("Error deserializing paywall components data", e)
+                    null
                 }
-            } else {
-                null
             }
 
         val paywallComponents = if (paywallComponentsData != null && uiConfig != null) {

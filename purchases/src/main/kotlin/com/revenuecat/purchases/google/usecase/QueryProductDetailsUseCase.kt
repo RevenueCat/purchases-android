@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.google.usecase
 
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
-import com.android.billingclient.api.QueryProductDetailsParams
+import com.revenuecat.purchases.NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.DateProvider
@@ -13,6 +15,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.google.buildQueryProductDetailsParams
 import com.revenuecat.purchases.google.toGoogleProductType
@@ -51,12 +54,11 @@ internal class QueryProductDetailsUseCase(
         }
         withConnectedClient {
             val googleType: String = useCaseParams.productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
-            val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
 
             queryProductDetailsAsyncEnsuringOneResponse(
                 this,
                 googleType,
-                params,
+                nonEmptyProductIds,
                 ::processResult,
             )
         }
@@ -71,6 +73,7 @@ internal class QueryProductDetailsUseCase(
             LogIntent.PURCHASE,
             OfferingStrings.RETRIEVED_PRODUCTS.format(received.joinToString { it.toString() }),
         )
+        logErrorIfIssueBuildingBillingParams(received)
         received.takeUnless { it.isEmpty() }?.forEach {
             log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
         }
@@ -83,9 +86,10 @@ internal class QueryProductDetailsUseCase(
     private fun queryProductDetailsAsyncEnsuringOneResponse(
         billingClient: BillingClient,
         @BillingClient.ProductType productType: String,
-        params: QueryProductDetailsParams,
+        productIds: Set<String>,
         listener: ProductDetailsResponseListener,
     ) {
+        val params = productType.buildQueryProductDetailsParams(productIds)
         val hasResponded = AtomicBoolean(false)
         val requestStartTime = useCaseParams.dateProvider.now
         billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
@@ -96,21 +100,53 @@ internal class QueryProductDetailsUseCase(
                 )
                 return@queryProductDetailsAsync
             }
-            trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
+            trackGoogleQueryProductDetailsRequestIfNeeded(productIds, productType, billingResult, requestStartTime)
             listener.onProductDetailsResponse(billingResult, productDetailsList)
         }
     }
 
     private fun trackGoogleQueryProductDetailsRequestIfNeeded(
+        requestedProductIds: Set<String>,
         @BillingClient.ProductType productType: String,
         billingResult: BillingResult,
         requestStartTime: Date,
     ) {
         useCaseParams.diagnosticsTrackerIfEnabled?.trackGoogleQueryProductDetailsRequest(
+            requestedProductIds,
             productType,
             billingResult.responseCode,
             billingResult.debugMessage,
             responseTime = Duration.between(requestStartTime, useCaseParams.dateProvider.now),
         )
+    }
+
+    // This error was introduced in Google's Billing Client 7.1.0 and 7.1.1. Logging an error to notify the developer,
+    // as soon as possible that purchases will fail unless core library desugaring is enabled.
+    private companion object {
+        val hasLoggedBillingFlowParamsError = AtomicBoolean(false)
+    }
+
+    @Suppress("NestedBlockDepth")
+    private fun logErrorIfIssueBuildingBillingParams(productDetails: List<ProductDetails>) {
+        productDetails.firstOrNull()?.let {
+            if (hasLoggedBillingFlowParamsError.getAndSet(true)) {
+                return
+            }
+            try {
+                val offerToken = it.subscriptionOfferDetails?.firstOrNull()?.offerToken
+                val productDetailsParams = ProductDetailsParams.newBuilder()
+                    .setProductDetails(it)
+                    .apply { if (offerToken != null) setOfferToken(offerToken) }
+                    .build()
+
+                try {
+                    BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(productDetailsParams)).build()
+                } catch (e: NoClassDefFoundError) {
+                    errorLog(NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE, e)
+                }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                errorLog("Error building Params during safety check.", e)
+            }
+        }
     }
 }

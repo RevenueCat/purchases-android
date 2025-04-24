@@ -32,6 +32,7 @@ internal fun rememberUpdatedIconComponentState(
     rememberUpdatedIconComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
 @JvmSynthetic
@@ -39,6 +40,7 @@ internal fun rememberUpdatedIconComponentState(
 private fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
     selectedPackageProvider: () -> Package?,
+    selectedTabIndexProvider: () -> Int,
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -47,6 +49,7 @@ private fun rememberUpdatedIconComponentState(
             initialWindowSize = windowSize,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -60,10 +63,17 @@ internal class IconComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: IconComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) style.rcPackage.identifier == selectedPackageProvider()?.identifier else false
+        if (style.rcPackage != null) {
+            style.rcPackage.identifier == selectedPackageProvider()?.identifier
+        } else if (style.tabIndex != null) {
+            style.tabIndex == selectedTabIndexProvider()
+        } else {
+            false
+        }
     }
     private val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
@@ -73,7 +83,7 @@ internal class IconComponentState(
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides?.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
     private val baseUrl: String by derivedStateOf {
         presentedPartial?.partial?.baseUrl ?: style.baseUrl
@@ -84,12 +94,12 @@ internal class IconComponentState(
     private val formats: IconComponent.Formats by derivedStateOf {
         presentedPartial?.partial?.formats ?: style.formats
     }
-    private val iconBackground: IconComponent.IconBackground? by derivedStateOf {
-        presentedPartial?.partial?.iconBackground ?: style.iconBackground
+    private val iconBackground: IconComponentStyle.Background? by derivedStateOf {
+        presentedPartial?.background ?: style.iconBackground
     }
 
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: true }
+    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
     @get:JvmSynthetic
     val url: String by derivedStateOf {
@@ -117,9 +127,9 @@ internal class IconComponentState(
     val shadow by derivedStateOf { iconBackground?.shadow }
 
     @get:JvmSynthetic
-    val backgroundColorScheme by derivedStateOf { iconBackground?.color }
+    val backgroundColorStyles by derivedStateOf { iconBackground?.color }
 
-    val tintColor by derivedStateOf { presentedPartial?.partial?.color ?: style.color }
+    val tintColor by derivedStateOf { presentedPartial?.colorStyles ?: style.color }
 
     @JvmSynthetic
     fun update(

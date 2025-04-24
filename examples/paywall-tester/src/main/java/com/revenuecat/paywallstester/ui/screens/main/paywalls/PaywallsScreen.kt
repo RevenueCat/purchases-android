@@ -36,9 +36,9 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
-import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
@@ -160,7 +160,7 @@ fun PaywallsScreen(
                         label = "Condenser footer",
                     )
                 }
-                // Custom font is not yet supported by Paywalls V2.
+                // Custom font is set on the paywall level in Paywalls V2.
                 if (offering.paywallComponents == null) {
                     ButtonWithEmoji(
                         onClick = {
@@ -209,7 +209,7 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
     ) {
         Scaffold { scaffoldPadding ->
             Box(modifier = Modifier.padding(scaffoldPadding)) {
-                PaywallFooter(
+                OriginalTemplatePaywallFooter(
                     options = PaywallOptions.Builder(dismissRequest = onDismiss)
                         .setOffering(currentState.offering)
                         .setPurchaseLogic(currentState.purchaseLogic)

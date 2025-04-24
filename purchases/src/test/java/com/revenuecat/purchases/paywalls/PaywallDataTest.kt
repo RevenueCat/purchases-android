@@ -2,16 +2,15 @@ package com.revenuecat.purchases.paywalls
 
 import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.utils.toLocale
-import kotlinx.serialization.decodeFromString
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.File
 import java.net.URL
-import java.util.*
+import java.util.Locale
 
 private const val PAYWALLDATA_SAMPLE1 = "paywalldata-sample1.json"
 private const val PAYWALLDATA_CHINESE = "paywalldata-chinese.json"
@@ -202,5 +201,5 @@ class PaywallDataTest {
 
     private fun loadJSON(jsonFileName: String) = File(javaClass.classLoader!!.getResource(jsonFileName).file).readText()
     private fun decode(file: String): PaywallData =
-        OfferingParser.json.decodeFromString(loadJSON(file))
+        JsonTools.json.decodeFromString(loadJSON(file))
 }

@@ -8,6 +8,9 @@ package com.revenuecat.purchases
 import android.Manifest
 import android.app.Activity
 import android.app.Application
+import android.content.Context
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.billingclient.api.Purchase
@@ -16,9 +19,12 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -32,7 +38,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
-import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -46,11 +51,10 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.slot
-import io.mockk.unmockkStatic
 import org.junit.After
 import org.junit.Before
+import java.util.Date
 import org.robolectric.Shadows.shadowOf
 
 internal open class BasePurchasesTest {
@@ -67,14 +71,20 @@ internal open class BasePurchasesTest {
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
     internal val mockCustomerInfoUpdateHandler = mockk<CustomerInfoUpdateHandler>()
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
+    protected val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxUnitFun = true)
+    protected val mockDateProvider = mockk<DateProvider>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
     internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
-    internal val mockPaywallEventsManager = mockk<PaywallEventsManager>()
+    internal val mockEventsManager = mockk<EventsManager>()
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
+    internal val mockLifecycleOwner = mockk<LifecycleOwner>()
+    internal val mockLifecycle = mockk<Lifecycle>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
+
+    protected lateinit var appConfig: AppConfig
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -97,14 +107,13 @@ internal open class BasePurchasesTest {
 
     @Before
     fun setUp() {
-        mockkStatic(ProcessLifecycleOwner::class)
-
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
         mockCache()
         mockPostReceiptHelper()
         mockBackend()
         mockBillingWrapper()
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
+        mockCustomerInfo()
         mockCustomerInfoHelper()
         mockCustomerInfoUpdateHandler()
         mockPostPendingTransactionsHelper()
@@ -123,8 +132,16 @@ internal open class BasePurchasesTest {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         } just Runs
         every {
-            mockPaywallEventsManager.flushEvents()
+            mockEventsManager.flushEvents()
         } just Runs
+        every {
+            mockLifecycleOwner.lifecycle
+        } returns mockLifecycle
+
+        every { mockLifecycle.addObserver(any()) } just Runs
+        every { mockLifecycle.removeObserver(any()) } just Runs
+
+        every { mockDateProvider.now } returns Date()
 
         if (shouldConfigureOnSetUp) {
             anonymousSetup(false)
@@ -141,10 +158,11 @@ internal open class BasePurchasesTest {
             mockOfferingsManager,
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
-            mockPaywallEventsManager,
+            mockEventsManager,
             mockWebPurchasesRedemptionHelper,
+            mockLifecycleOwner,
+            mockLifecycle,
         )
-        unmockkStatic(ProcessLifecycleOwner::class)
     }
 
     // region Private Methods
@@ -273,6 +291,13 @@ internal open class BasePurchasesTest {
     // endregion
 
     // region Protected methods
+
+    protected fun mockCustomerInfo(verificationResult: VerificationResult = VerificationResult.VERIFIED) {
+        val mockEntitlements = mockk<EntitlementInfos>()
+        every { mockEntitlements.verification } returns verificationResult
+        every { mockInfo.entitlements } returns mockEntitlements
+    }
+
     protected fun mockCustomerInfoHelper(
         errorGettingCustomerInfo: PurchasesError? = null,
         mockedCustomerInfo: CustomerInfo = mockInfo
@@ -285,7 +310,8 @@ internal open class BasePurchasesTest {
                     any(),
                     appInBackground = false,
                     allowSharingPlayStoreAccount = false,
-                    captureNullable(slotList),
+                    any(),
+                    callback = captureNullable(slotList),
                 )
             } answers {
                 if (errorGettingCustomerInfo == null) {
@@ -381,7 +407,7 @@ internal open class BasePurchasesTest {
         customEntitlementComputation: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
     ) {
-        val appConfig = AppConfig(
+        appConfig = AppConfig(
             context = mockContext,
             purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
@@ -407,18 +433,21 @@ internal open class BasePurchasesTest {
             customerInfoHelper = mockCustomerInfoHelper,
             customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            dateProvider = mockDateProvider,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
             postTransactionWithProductDetailsHelper = postTransactionsHelper,
             postPendingTransactionsHelper = mockPostPendingTransactionsHelper,
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager,
-            paywallEventsManager = mockPaywallEventsManager,
+            eventsManager = mockEventsManager,
             paywallPresentedCache = paywallPresentedCache,
             purchasesStateCache = purchasesStateProvider,
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(mockContext, "api_key").build(),
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
+            processLifecycleOwnerProvider = { mockLifecycleOwner }
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases
@@ -451,7 +480,7 @@ internal open class BasePurchasesTest {
 
     protected fun mockPostPendingTransactionsHelper() {
         every {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
         } just Runs
     }
 

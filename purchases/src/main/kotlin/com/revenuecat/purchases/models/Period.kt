@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
 import kotlinx.parcelize.Parcelize
 import kotlin.math.roundToInt
@@ -60,17 +61,31 @@ data class Period(
         UNKNOWN,
     }
 
+    @InternalRevenueCatAPI
+    val valueInDays: Double
+        get() = when (unit) {
+            Unit.DAY -> value.toDouble()
+            Unit.WEEK -> value * PeriodConstants.DAYS_PER_WEEK
+            Unit.MONTH -> value * PeriodConstants.DAYS_PER_MONTH
+            Unit.YEAR -> value * PeriodConstants.DAYS_PER_YEAR
+            Unit.UNKNOWN -> {
+                errorLog("Unknown period unit trying to get value in days: $unit")
+                0.0
+            }
+        }
+
     /**
      * The period value in week units. This is an approximated value.
      */
-    internal val valueInWeeks: Double
+    @InternalRevenueCatAPI
+    val valueInWeeks: Double
         get() = when (unit) {
             Unit.DAY -> value / PeriodConstants.DAYS_PER_WEEK
             Unit.WEEK -> value.toDouble()
             Unit.MONTH -> value.toDouble() * PeriodConstants.WEEKS_PER_MONTH
             Unit.YEAR -> value * PeriodConstants.WEEKS_PER_YEAR
             Unit.UNKNOWN -> {
-                errorLog("Unknown period unit trying to get value in months: $unit")
+                errorLog("Unknown period unit trying to get value in weeks: $unit")
                 0.0
             }
         }
@@ -93,14 +108,15 @@ data class Period(
     /**
      * The period value in week units. This is an approximated value.
      */
-    internal val valueInYears: Double
+    @InternalRevenueCatAPI
+    val valueInYears: Double
         get() = when (unit) {
             Unit.DAY -> value / PeriodConstants.DAYS_PER_YEAR
             Unit.WEEK -> value / PeriodConstants.WEEKS_PER_YEAR
             Unit.MONTH -> value / PeriodConstants.MONTHS_PER_YEAR
             Unit.YEAR -> value.toDouble()
             Unit.UNKNOWN -> {
-                errorLog("Unknown period unit trying to get value in months: $unit")
+                errorLog("Unknown period unit trying to get value in years: $unit")
                 0.0
             }
         }

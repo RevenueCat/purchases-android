@@ -3,7 +3,6 @@ package com.revenuecat.sample
 import android.app.Application
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.sample.data.Constants
 
 class MainApplication : Application() {
 
@@ -27,8 +26,8 @@ class MainApplication : Application() {
          */
         Purchases.configureInCustomEntitlementsComputationMode(
             this,
-            Constants.GOOGLE_API_KEY,
-            Constants.defaultAppUserID,
+            BuildConfig.RC_API_KEY_ENTITLEMENT_SAMPLE,
+            BuildConfig.DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE,
         )
     }
 }
