@@ -100,7 +100,7 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseRes
  * @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
  * @return The [Result] of [PurchaseResult] contains [StoreTransaction] for this purchase and the updated,
  * [CustomerInfo] for this user if the execution succeeds, or a [Result] containing
- * [PurchasesTransactionException] if it fails.
+ * [PurchasesException] if it fails.
  */
 @JvmSynthetic
 suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
@@ -158,7 +158,7 @@ suspend fun Purchases.awaitGetProducts(
  * @param [type] A product type to filter by
  *
  * @return A [Result] of list of [StoreProduct] with the products that have been able to be fetched from the
- * store successfully, or a [Result] containing  [PurchasesTransactionException] if it fails.
+ * store successfully, or a [Result] containing  [PurchasesException] if it fails.
  * Not found products will be ignored.
  */
 @JvmSynthetic
@@ -221,7 +221,7 @@ suspend fun Purchases.awaitRestore(): CustomerInfo {
  * Coroutine friendly version of [Purchases.restorePurchases].
  *
  * @return The [Result] of [CustomerInfo] with the restored purchases if the execution succeeds,
- * or a [Result] containing [PurchasesTransactionException] if it fails.
+ * or a [Result] containing [PurchasesException] if it fails.
  */
 @JvmSynthetic
 suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
