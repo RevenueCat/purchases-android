@@ -8,10 +8,8 @@ package com.revenuecat.purchases
 import android.Manifest
 import android.app.Activity
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
@@ -54,8 +52,8 @@ import io.mockk.mockk
 import io.mockk.slot
 import org.junit.After
 import org.junit.Before
-import java.util.Date
 import org.robolectric.Shadows.shadowOf
+import java.util.Date
 
 internal open class BasePurchasesTest {
     protected val mockBillingAbstract: BillingAbstract = mockk()
