@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases
 
+import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -180,7 +181,8 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
         purchases.close()
         val deviceProtectedStorageContext = mockk<Context>().apply {
             every { applicationContext } returns mockContext.applicationContext
-            every { checkCallingOrSelfPermission(any()) } returns PackageManager.PERMISSION_GRANTED
+            every { checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+                PackageManager.PERMISSION_GRANTED
             every { resources } returns mockContext.resources
             every { packageManager } returns mockContext.packageManager
             every { packageName } returns mockContext.packageName
