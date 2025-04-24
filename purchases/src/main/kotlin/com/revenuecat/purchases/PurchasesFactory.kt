@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
@@ -25,6 +24,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
+import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -39,6 +39,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -87,8 +88,9 @@ internal class PurchasesFactory(
             val contextForPrefs = if (context.isDeviceProtectedStorageCompat) {
                 @Suppress("MaxLineLength")
                 debugLog(
-                    "Using device-protected storage. Make sure to *always* configure Purchases with a Context object " +
-                        "created using `createDeviceProtectedStorageContext()` to avoid undefined behavior.\nSee " +
+                    "${Emojis.DOUBLE_EXCLAMATION} Using device-protected storage. Make sure to *always* configure " +
+                        "Purchases with a Context object created using `createDeviceProtectedStorageContext()` to " +
+                        "avoid undefined behavior.\nSee " +
                         "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
                         "for more info.",
                 )
@@ -115,7 +117,7 @@ internal class PurchasesFactory(
                 }
             }
 
-            val eTagManager = ETagManager(context)
+            val eTagManager = ETagManager(contextForPrefs)
 
             val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests = runningIntegrationTests)
             val backendDispatcher = Dispatcher(
@@ -131,8 +133,8 @@ internal class PurchasesFactory(
             var diagnosticsHelper: DiagnosticsHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
             if (diagnosticsEnabled && isAndroidNOrNewer()) {
-                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(context))
-                diagnosticsHelper = DiagnosticsHelper(context, diagnosticsFileHelper)
+                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(contextForPrefs))
+                diagnosticsHelper = DiagnosticsHelper(contextForPrefs, diagnosticsFileHelper)
                 diagnosticsTracker = DiagnosticsTracker(
                     appConfig,
                     diagnosticsFileHelper,
@@ -405,7 +407,4 @@ internal class PurchasesFactory(
             return Thread(wrapperRunnable, threadName)
         }
     }
-
-    private val Context.isDeviceProtectedStorageCompat: Boolean
-        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isDeviceProtectedStorage
 }
