@@ -85,7 +85,7 @@ internal class PurchasesFactory(
                 forceSigningError,
             )
 
-            val contextForPrefs = if (context.isDeviceProtectedStorageCompat) {
+            val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
                 @Suppress("MaxLineLength")
                 debugLog(
                     "${Emojis.DOUBLE_EXCLAMATION} Using device-protected storage. Make sure to *always* configure " +
@@ -100,7 +100,7 @@ internal class PurchasesFactory(
             }
 
             val prefs = try {
-                PreferenceManager.getDefaultSharedPreferences(contextForPrefs)
+                PreferenceManager.getDefaultSharedPreferences(contextForStorage)
             } catch (e: IllegalStateException) {
                 @Suppress("MaxLineLength")
                 if (!UserManagerCompat.isUserUnlocked(context)) {
@@ -117,7 +117,7 @@ internal class PurchasesFactory(
                 }
             }
 
-            val eTagManager = ETagManager(contextForPrefs)
+            val eTagManager = ETagManager(contextForStorage)
 
             val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests = runningIntegrationTests)
             val backendDispatcher = Dispatcher(
@@ -133,8 +133,8 @@ internal class PurchasesFactory(
             var diagnosticsHelper: DiagnosticsHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
             if (diagnosticsEnabled && isAndroidNOrNewer()) {
-                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(contextForPrefs))
-                diagnosticsHelper = DiagnosticsHelper(contextForPrefs, diagnosticsFileHelper)
+                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(contextForStorage))
+                diagnosticsHelper = DiagnosticsHelper(contextForStorage, diagnosticsFileHelper)
                 diagnosticsTracker = DiagnosticsTracker(
                     appConfig,
                     diagnosticsFileHelper,
