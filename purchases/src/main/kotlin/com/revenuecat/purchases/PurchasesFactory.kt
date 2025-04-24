@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
@@ -83,16 +84,28 @@ internal class PurchasesFactory(
                 forceSigningError,
             )
 
-            val isUserUnlocked = UserManagerCompat.isUserUnlocked(context)
+            val contextForPrefs = if (context.isDeviceProtectedStorageCompat) {
+                @Suppress("MaxLineLength")
+                debugLog(
+                    "Using device-protected storage. Make sure to *always* configure Purchases with a Context object " +
+                        "created using `createDeviceProtectedStorageContext()` to avoid undefined behavior.\nSee " +
+                        "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
+                        "for more info.",
+                )
+                context
+            } else {
+                application
+            }
+
             val prefs = try {
-                PreferenceManager.getDefaultSharedPreferences(if (isUserUnlocked) application else context)
+                PreferenceManager.getDefaultSharedPreferences(contextForPrefs)
             } catch (e: IllegalStateException) {
                 @Suppress("MaxLineLength")
-                if (!isUserUnlocked) {
+                if (!UserManagerCompat.isUserUnlocked(context)) {
                     throw IllegalStateException(
                         "Trying to configure Purchases while the device is locked. If you need to support this " +
-                            "scenario, ensure you provide a Context created with " +
-                            "`createDeviceProtectedStorageContext()`.\nSee " +
+                            "scenario, ensure you *always* configure Purchases with a Context created with " +
+                            "`createDeviceProtectedStorageContext()` to avoid undefined behavior.\nSee " +
                             "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
                             "for more info.",
                         e,
@@ -392,4 +405,7 @@ internal class PurchasesFactory(
             return Thread(wrapperRunnable, threadName)
         }
     }
+
+    private val Context.isDeviceProtectedStorageCompat: Boolean
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isDeviceProtectedStorage
 }
