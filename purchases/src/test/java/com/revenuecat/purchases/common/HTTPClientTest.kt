@@ -526,7 +526,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request successful`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -547,7 +547,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, true, responseCode, null, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
+            diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, responseTime, true, responseCode, null, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
         }
     }
 
@@ -555,7 +555,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request fails`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -577,7 +577,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, false, responseCode, backendErrorCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
+            diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, responseTime, false, responseCode, backendErrorCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
         }
     }
 
@@ -585,7 +585,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -610,7 +610,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
-                diagnosticsTracker.trackHttpRequestPerformed(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, null, VerificationResult.NOT_REQUESTED, false)
+                diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, null, VerificationResult.NOT_REQUESTED, false)
             }
             return
         }
@@ -620,7 +620,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `if there's an error getting ETag, retry call passes track diagnostics parameter isRetry to true`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         client = createClient(diagnosticsTracker = diagnosticsTracker)
 
         val response =
@@ -671,6 +671,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         verify(exactly = 1) {
             diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
                 endpoint,
                 any(),
                 true,
@@ -908,6 +909,70 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         assertThat(result.responseCode).`as`("responsecode is 223").isEqualTo(223)
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
+    }
+
+    @Test
+    fun `if performRequest uses a fallback host URL, then the correct track diagnostics calls happen`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.SUCCESS),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
+                endpoint,
+                any(),
+                false,
+                RCHTTPStatusCodes.ERROR,
+                null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false
+            )
+        }
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                fallbackServer.hostName,
+                endpoint,
+                any(),
+                true,
+                RCHTTPStatusCodes.SUCCESS,
+                null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false
+            )
+        }
     }
 
     // endregion Fallback API host

@@ -129,6 +129,7 @@ internal class HTTPClient(
             callSuccessful = true
         } finally {
             trackHttpRequestPerformedIfNeeded(
+                baseURL,
                 endpoint,
                 requestStartTime,
                 callSuccessful,
@@ -256,6 +257,7 @@ internal class HTTPClient(
     }
 
     private fun trackHttpRequestPerformedIfNeeded(
+        baseURL: URL,
         endpoint: Endpoint,
         requestStartTime: Date,
         callSuccessful: Boolean,
@@ -275,6 +277,7 @@ internal class HTTPClient(
             val verificationResult = callResult?.verificationResult ?: VerificationResult.NOT_REQUESTED
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
             tracker.trackHttpRequestPerformed(
+                baseURL.host,
                 endpoint,
                 responseTime,
                 requestWasError,
