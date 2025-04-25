@@ -664,7 +664,7 @@ DESC
         commit_message: "[Automated] Updates Android template screenshots.",
         title: "[AUTOMATIC] Updates Android template screenshots",
         body: "This is an automatic update of the Android template screenshots.",
-        team_reviewers: ["coresdk", "monetization"]
+        team_reviewers: ["coresdk", "monetization", "bab-s"]
       )
     end
   end
