@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -15,8 +16,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.properties.MaskShape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
@@ -61,19 +65,22 @@ internal fun IconComponentView(
             (tintColor as? ColorStyle.Solid)?.let { ColorFilter.tint(it.color) }
         }
     }
-
-    RemoteImage(
-        urlString = iconState.url,
+    Box(
         modifier = modifier
-            .size(iconState.size)
             .padding(iconState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-            .applyIfNotNull(backgroundColor) { background(it, composeShape) }
             .clip(composeShape)
-            .applyIfNotNull(borderStyle) { border(it, composeShape) }
-            .padding(iconState.padding),
-        colorFilter = colorFilter,
-    )
+            .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
+    ) {
+        RemoteImage(
+            urlString = iconState.url,
+            modifier = Modifier
+                .size(iconState.size)
+                .applyIfNotNull(backgroundColor) { background(it, composeShape) }
+                .padding(iconState.padding),
+            colorFilter = colorFilter,
+        )
+    }
 }
 
 @Preview
@@ -87,6 +94,26 @@ private fun IconComponentView_Preview() {
                         width = SizeConstraint.Fixed(200u),
                         height = SizeConstraint.Fixed(200u),
                     ),
+                ),
+                state = previewEmptyState(),
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun IconComponentView_Preview_FixedFixedFitMargin() {
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        Box(modifier = Modifier.background(Color.Blue)) {
+            IconComponentView(
+                style = previewIconComponentStyle(
+                    size = Size(width = Fixed(24u), height = Fixed(24u)),
+                    shape = MaskShape.Rectangle(),
+                    paddingValues = PaddingValues(all = 0.dp),
+                    marginValues = PaddingValues(end = 8.dp),
+                    border = null,
+                    shadow = null,
                 ),
                 state = previewEmptyState(),
             )
