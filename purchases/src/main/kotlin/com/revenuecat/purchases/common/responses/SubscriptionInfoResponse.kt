@@ -19,35 +19,35 @@ internal data class SubscriptionInfoResponse(
     @SerialName("purchase_date") @Serializable(with = ISO8601DateSerializer::class)
     val purchaseDate: Date,
     @SerialName("original_purchase_date") @Serializable(with = ISO8601DateSerializer::class)
-    val originalPurchaseDate: Date?,
+    val originalPurchaseDate: Date? = null,
     @SerialName("expires_date") @Serializable(with = ISO8601DateSerializer::class)
-    val expiresDate: Date?,
+    val expiresDate: Date? = null,
     @SerialName("store")
     val store: Store,
     @SerialName("is_sandbox")
     val isSandbox: Boolean,
     @SerialName("unsubscribe_detected_at") @Serializable(with = ISO8601DateSerializer::class)
-    val unsubscribeDetectedAt: Date?,
+    val unsubscribeDetectedAt: Date? = null,
     @SerialName("billing_issues_detected_at") @Serializable(with = ISO8601DateSerializer::class)
-    val billingIssuesDetectedAt: Date?,
+    val billingIssuesDetectedAt: Date? = null,
     @SerialName("grace_period_expires_date") @Serializable(with = ISO8601DateSerializer::class)
-    val gracePeriodExpiresDate: Date?,
+    val gracePeriodExpiresDate: Date? = null,
     @SerialName("ownership_type")
     val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
     @SerialName("period_type")
     val periodType: PeriodType,
     @SerialName("refunded_at") @Serializable(with = ISO8601DateSerializer::class)
-    val refundedAt: Date?,
+    val refundedAt: Date? = null,
     @SerialName("store_transaction_id")
-    val storeTransactionId: String?,
+    val storeTransactionId: String? = null,
     @SerialName("auto_resume_date") @Serializable(with = ISO8601DateSerializer::class)
-    val autoResumeDate: Date?,
+    val autoResumeDate: Date? = null,
     @SerialName("display_name")
-    val displayName: String?,
+    val displayName: String? = null,
     @SerialName("price")
-    val price: PriceResponse?,
+    val price: PriceResponse? = null,
     @SerialName("product_plan_identifier")
-    val productPlanIdentifier: String?,
+    val productPlanIdentifier: String? = null,
 ) {
 
     @Serializable

@@ -9,8 +9,10 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
 import com.revenuecat.purchases.paywalls.components.TabControlComponent
@@ -24,12 +26,19 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
+import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
@@ -67,7 +76,10 @@ class StyleFactoryTests {
         identifier = "identifier",
         serverDescription = "description",
         metadata = emptyMap(),
-        availablePackages = emptyList(),
+        availablePackages = listOf(
+            TestData.Packages.annual,
+            TestData.Packages.monthly,
+        ),
     )
 
     @Before
@@ -727,5 +739,354 @@ class StyleFactoryTests {
         with(style.children[0] as TextComponentStyle) {
             assertThat(texts[localeId]).isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
         }
+    }
+
+    @Test
+    fun `Should mark a PackageComponentStyle as not selectable if it contains a purchase button`(){
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = "\$rc_annual",
+                    isSelectedByDefault = false,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_1,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                            ),
+                            PurchaseButtonComponent(
+                                stack = StackComponent(
+                                    components = listOf(
+                                        TextComponent(
+                                            text = LOCALIZATION_KEY_TEXT_2,
+                                            color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
+                                        ),
+                                    )
+                                )
+                            ),
+                        )
+                    )
+                )
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        val packageComponentStyle = stackComponentStyle.children.first() as PackageComponentStyle
+        assertThat(packageComponentStyle.isSelectable).isFalse()
+    }
+
+    @Test
+    fun `Should mark a PackageComponentStyle as selectable if it does not contain a purchase button`(){
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = "\$rc_annual",
+                    isSelectedByDefault = false,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_1,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                            ),
+                        )
+                    )
+                )
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        val packageComponentStyle = stackComponentStyle.children.first() as PackageComponentStyle
+        assertThat(packageComponentStyle.isSelectable).isTrue()
+    }
+
+    @Test
+    fun `If a purchase button is inside a package component, the button should be linked to that specific package`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = TestData.Packages.annual.identifier,
+                    isSelectedByDefault = false,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_1,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                            ),
+                            PurchaseButtonComponent(stack = StackComponent(components = emptyList())),
+                        )
+                    )
+                ),
+                PackageComponent(
+                    packageId = TestData.Packages.monthly.identifier,
+                    isSelectedByDefault = false,
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LOCALIZATION_KEY_TEXT_1,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb()))
+                            ),
+                            PurchaseButtonComponent(stack = StackComponent(components = emptyList())),
+                        )
+                    )
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(stackComponentStyle.children.size).isEqualTo(2)
+
+        val annualPackageComponentStyle = stackComponentStyle.children[0] as PackageComponentStyle
+        val annualPurchaseButtonStyle =
+            annualPackageComponentStyle.stackComponentStyle.children[1] as ButtonComponentStyle
+        val annualPurchaseAction = annualPurchaseButtonStyle.action as ButtonComponentStyle.Action.PurchasePackage
+        assertThat(annualPurchaseAction.rcPackage).isEqualTo(annualPackageComponentStyle.rcPackage)
+
+        val monthlyPackageComponentStyle = stackComponentStyle.children[1] as PackageComponentStyle
+        val monthlyPurchaseButtonStyle =
+            monthlyPackageComponentStyle.stackComponentStyle.children[1] as ButtonComponentStyle
+        val monthlyPurchaseAction = monthlyPurchaseButtonStyle.action as ButtonComponentStyle.Action.PurchasePackage
+        assertThat(monthlyPurchaseAction.rcPackage).isEqualTo(monthlyPackageComponentStyle.rcPackage)
+    }
+
+    @Test
+    fun `If a purchase button is outside a package component, the button should not be linked to any package`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = TestData.Packages.annual.identifier,
+                    isSelectedByDefault = false,
+                    stack = StackComponent(components = emptyList())
+                ),
+                PurchaseButtonComponent(stack = StackComponent(components = emptyList())),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(stackComponentStyle.children.size).isEqualTo(2)
+
+        val purchaseButtonStyle =
+            stackComponentStyle.children[1] as ButtonComponentStyle
+        val purchaseAction = purchaseButtonStyle.action as ButtonComponentStyle.Action.PurchasePackage
+        assertThat(purchaseAction.rcPackage).isNull()
+    }
+
+    @Test
+    fun `Should ignore top window insets for the first full-width image in the first z-stack`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(
+                        ImageComponent(
+                            source = imageUrls,
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        ),
+                    ),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP,
+                    )
+                ),
+
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isFalse()
+        assertThat(style.children).hasSize(2)
+        val firstZStack = style.children[0] as StackComponentStyle
+        assertThat(firstZStack.applyTopWindowInsets).isTrue()
+        assertThat(firstZStack.children).hasSize(1)
+        val firstImage = firstZStack.children[0] as ImageComponentStyle
+        assertThat(firstImage.ignoreTopWindowInsets).isTrue()
+        val secondImage = style.children[1] as ImageComponentStyle
+        assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should not ignore top window insets for the first image in the first z-stack if it is not full-width`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(
+                        ImageComponent(
+                            source = imageUrls,
+                            // Width is not Fill.
+                            size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit),
+                        ),
+                    ),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP,
+                    )
+                ),
+
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isTrue()
+        assertThat(style.children).hasSize(2)
+        val firstZStack = style.children[0] as StackComponentStyle
+        assertThat(firstZStack.applyTopWindowInsets).isFalse()
+        assertThat(firstZStack.children).hasSize(1)
+        val firstImage = firstZStack.children[0] as ImageComponentStyle
+        assertThat(firstImage.ignoreTopWindowInsets).isFalse()
+        val secondImage = style.children[1] as ImageComponentStyle
+        assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should ignore top window insets for the first full-width image in the root`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(2)
+        assertThat(style.applyTopWindowInsets).isTrue()
+        val firstImage = style.children[0] as ImageComponentStyle
+        assertThat(firstImage.ignoreTopWindowInsets).isTrue()
+        val secondImage = style.children[1] as ImageComponentStyle
+        assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should not ignore top window insets for the first image in the root if it is not full-width`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                ImageComponent(
+                    source = imageUrls,
+                    // Width is not Fill.
+                    size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit),
+                ),
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(2)
+        assertThat(style.applyTopWindowInsets).isTrue()
+        val firstImage = style.children[0] as ImageComponentStyle
+        assertThat(firstImage.ignoreTopWindowInsets).isFalse()
+        val secondImage = style.children[1] as ImageComponentStyle
+        assertThat(secondImage.ignoreTopWindowInsets).isFalse()
     }
 }
