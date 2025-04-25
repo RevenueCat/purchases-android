@@ -99,7 +99,7 @@ internal class HTTPClient(
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         baseURL: URL,
@@ -108,6 +108,8 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false,
+        fallbackBaseURLs: List<URL> = emptyList(),
+        fallbackURLIndex: Int = 0,
     ): HTTPResult {
         if (appConfig.forceServerErrors) {
             warnLog("Forcing server error for request to ${endpoint.getPath()}")
@@ -136,7 +138,36 @@ internal class HTTPClient(
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            callResult = performRequest(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag = true)
+            callResult = performRequest(
+                baseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag = true,
+                fallbackBaseURLs,
+                fallbackURLIndex,
+            )
+        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
+            endpoint.supportsFallbackBaseURLs &&
+            fallbackURLIndex in fallbackBaseURLs.indices
+        ) {
+            // Handle server errors with fallback URLs
+            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
+            log(
+                LogIntent.DEBUG,
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL),
+            )
+            callResult = performRequest(
+                fallbackBaseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackBaseURLs,
+                fallbackURLIndex + 1,
+            )
         }
         return callResult
     }
