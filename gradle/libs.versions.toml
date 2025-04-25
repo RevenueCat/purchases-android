@@ -38,6 +38,7 @@ legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
 material = "1.6.0"
 mavenPublish = "0.27.0"
+metalava = "0.4.0-alpha03"
 mockk = "1.13.11"
 mockwebserver = "4.2.0"
 multidex = "2.0.1"
@@ -150,6 +151,7 @@ kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref =
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover"}
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+metalava = { id = "me.tylerbwong.gradle.metalava", version.ref = "metalava" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
 poko = { id = "dev.drewhamilton.poko", version.ref = "poko" }
 
