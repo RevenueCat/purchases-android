@@ -227,6 +227,7 @@ class BackendGetCustomerCenterConfigTest {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns mockBaseURL
             every { customEntitlementComputation } returns false
+            every { fallbackBaseURLs } returns emptyList()
         }
         httpClient = mockk()
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
@@ -326,6 +327,7 @@ class BackendGetCustomerCenterConfigTest {
                 any(),
                 any(),
                 any(),
+                fallbackBaseURLs = any(),
             )
         } answers {
             if (delayMs != null) {
