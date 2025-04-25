@@ -49,3 +49,6 @@ internal val Context.playStoreVersionName: String?
 
 internal val Context.playServicesVersionName: String?
     get() = packageVersionName("com.google.android.gms")
+
+internal val Context.isDeviceProtectedStorageCompat: Boolean
+    get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isDeviceProtectedStorage
