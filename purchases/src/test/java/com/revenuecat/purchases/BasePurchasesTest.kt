@@ -5,11 +5,12 @@
 
 package com.revenuecat.purchases
 
+import android.Manifest
 import android.app.Activity
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.test.platform.app.InstrumentationRegistry
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
@@ -51,6 +52,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import org.junit.After
 import org.junit.Before
+import org.robolectric.Shadows.shadowOf
 import java.util.Date
 
 internal open class BasePurchasesTest {
@@ -58,13 +60,9 @@ internal open class BasePurchasesTest {
     protected val mockBackend: Backend = mockk()
     protected val mockCache: DeviceCache = mockk()
     protected val updatedCustomerInfoListener: UpdatedCustomerInfoListener = mockk()
-    private val mockApplication = mockk<Application>(relaxed = true).apply {
-        every { applicationContext } returns this
-    }
-    protected val mockContext = mockk<Context>(relaxed = true).apply {
-        every {
-            applicationContext
-        } returns mockApplication
+    protected val mockContext = InstrumentationRegistry.getInstrumentation().targetContext
+    private val mockApplication = (mockContext.applicationContext as Application).apply {
+        shadowOf(this).grantPermissions(Manifest.permission.INTERNET)
     }
     protected val mockIdentityManager = mockk<IdentityManager>()
     protected val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()

@@ -837,7 +837,43 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             fallbackBaseURLs = listOf(fallbackBaseURL),
         )
 
-        assertThat(result.responseCode).`as`("responsecode is 404").isEqualTo(404)
+        assertThat(result.responseCode).`as`("response code is 404").isEqualTo(404)
+    }
+
+    @Test
+    fun `performRequest returns failed response (500) if both the main server and fallback server return 500`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode),
+            server = fallbackServer,
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(fallbackServer.requestCount).isEqualTo(1)
+        assertThat(result.responseCode).`as`("response code is 500").isEqualTo(500)
     }
 
     @Test
