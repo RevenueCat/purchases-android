@@ -15,6 +15,7 @@ if [ $EXIT_CODE -ne 0 ]; then
 fi
 rm $OUTPUT
 
+echo "Running metalava (defaults) check..."
 ./gradlew metalavaCheckCompatibilityDefaultsRelease -q
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
@@ -26,7 +27,7 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit $EXIT_CODE
 fi
 
-
+echo "Running metalava (custom entitlement) check..."
 ./gradlew metalavaCheckCompatibilityCustomEntitlementComputationRelease -q
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
@@ -37,5 +38,3 @@ if [ $EXIT_CODE -ne 0 ]; then
   echo "API dump done, please check the results and then try your commit again!"
   exit $EXIT_CODE
 fi
-
-exit 0
