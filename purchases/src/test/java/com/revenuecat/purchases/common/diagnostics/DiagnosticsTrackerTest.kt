@@ -142,6 +142,7 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackHttpRequestPerformed tracks correct event when coming from cache`() {
         val expectedProperties = mapOf(
+            "host" to "test.host.com",
             "play_store_version" to "123",
             "play_services_version" to "456",
             "endpoint_name" to "post_receipt",
@@ -154,6 +155,7 @@ class DiagnosticsTrackerTest {
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
             Endpoint.PostReceipt,
             1234L.milliseconds,
             true,
@@ -173,6 +175,7 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackHttpRequestPerformed tracks correct event when coming from backend`() {
         val expectedProperties = mapOf(
+            "host" to "test.host.com",
             "play_store_version" to "123",
             "play_services_version" to "456",
             "endpoint_name" to "get_offerings",
@@ -186,6 +189,7 @@ class DiagnosticsTrackerTest {
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
             Endpoint.GetOfferings("test id"),
             1234L.milliseconds,
             true,
@@ -205,6 +209,7 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackHttpRequestPerformed tracks correct event when is retry`() {
         val expectedProperties = mapOf(
+            "host" to "test.host.com",
             "play_store_version" to "123",
             "play_services_version" to "456",
             "endpoint_name" to "get_offerings",
@@ -218,6 +223,7 @@ class DiagnosticsTrackerTest {
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
             Endpoint.GetOfferings("test id"),
             1234L.milliseconds,
             true,
