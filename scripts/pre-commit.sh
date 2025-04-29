@@ -21,9 +21,9 @@ EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
   echo "❌ metalava for defaults flavor failed, running it for you..."
 
-  ./gradlew metalavaCheckCompatibilityDefaultsRelease -q
+  ./gradlew metalavaGenerateSignatureDefaultsRelease -q
 
-  echo "API dump done, please check the results and then try your commit again!"
+  echo "API dump done. Please check the updated API dump and add it to your commit.
   exit $EXIT_CODE
 fi
 
@@ -33,8 +33,8 @@ EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
   echo "❌ metalava for custom entitlement flavor failed, running it for you..."
 
-  ./gradlew metalavaCheckCompatibilityCustomEntitlementComputationRelease -q
+  ./gradlew metalavaGenerateSignatureCustomEntitlementComputationRelease -q
 
-  echo "API dump done, please check the results and then try your commit again!"
+  echo "API dump done. Please check the updated API dump and add it to your commit.
   exit $EXIT_CODE
 fi
