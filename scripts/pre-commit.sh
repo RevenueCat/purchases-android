@@ -15,7 +15,7 @@ if [ $EXIT_CODE -ne 0 ]; then
 fi
 rm $OUTPUT
 
-echo "Running metalava (defaults) check..."
+echo "Running metalava check on defaultsRelease..."
 ./gradlew metalavaCheckCompatibilityDefaultsRelease -q
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
@@ -27,7 +27,7 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit $EXIT_CODE
 fi
 
-echo "Running metalava (custom entitlement) check..."
+echo "Running metalava check on customEntitlementComputationRelease..."
 ./gradlew metalavaCheckCompatibilityCustomEntitlementComputationRelease -q
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
