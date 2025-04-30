@@ -255,8 +255,18 @@ private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
     if (state.feedbackSurveyData != null) {
-        FeedbackSurveyView(state.feedbackSurveyData)
+        FeedbackSurveyView(
+            data = state.feedbackSurveyData.copy(
+                onAnswerSubmitted = { option ->
+                    coroutineScope.launch {
+                        state.feedbackSurveyData.onAnswerSubmitted(option)
+                    }
+                },
+            ),
+        )
     } else if (state.promotionalOfferData != null) {
         val promotionalOfferData = state.promotionalOfferData
         PromotionalOfferScreen(

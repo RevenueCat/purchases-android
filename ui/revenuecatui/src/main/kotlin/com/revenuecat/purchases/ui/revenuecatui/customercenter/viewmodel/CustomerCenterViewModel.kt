@@ -69,7 +69,7 @@ internal interface CustomerCenterViewModel {
     suspend fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
-    fun loadAndDisplayPromotionalOffer(
+    suspend fun loadAndDisplayPromotionalOffer(
         context: Context,
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
@@ -430,7 +430,8 @@ internal class CustomerCenterViewModelImpl(
         _actionError.value = null
     }
 
-    override fun loadAndDisplayPromotionalOffer(
+    @SuppressWarnings("ReturnCount")
+    override suspend fun loadAndDisplayPromotionalOffer(
         context: Context,
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
@@ -446,8 +447,29 @@ internal class CustomerCenterViewModelImpl(
             return false
         }
 
-        val offerIdentifier = promotionalOffer.productMapping[product.id]
-        val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
+        val crossProductPromotion = promotionalOffer.crossProductPromotions.firstOrNull {
+            it.originProductId == product.id
+        }
+
+        val targetProduct = if (crossProductPromotion != null) {
+            purchases.awaitGetProduct(crossProductPromotion.targetProductId, null)
+        } else {
+            product // For old product mapping, target is same as origin
+        }
+
+        if (targetProduct == null) {
+            Log.d(
+                "CustomerCenter",
+                "Could not find target product (${crossProductPromotion?.targetProductId}) " +
+                    "for discount for active subscription ${product.id}",
+            )
+            return false
+        }
+
+        val offerIdentifier = crossProductPromotion?.storeOfferIdentifier
+            ?: promotionalOffer.productMapping[product.id]
+
+        val subscriptionOption = targetProduct.subscriptionOptions?.firstOrNull { option ->
             when (option) {
                 is GoogleSubscriptionOption ->
                     option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
@@ -455,28 +477,31 @@ internal class CustomerCenterViewModelImpl(
                 else -> false
             }
         }
-        var loaded = false
-        if (subscriptionOption != null) {
-            _state.update {
-                val currentState = _state.value
-                if (currentState is CustomerCenterState.Success) {
-                    val localization = currentState.customerCenterConfigData.localization
-                    val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
-                    loaded = true
-                    currentState.copy(
-                        promotionalOfferData = PromotionalOfferData(
-                            promotionalOffer,
-                            subscriptionOption,
-                            originalPath,
-                            pricingPhasesDescription,
-                        ),
-                    )
-                } else {
-                    currentState
-                }
-            }
+
+        if (subscriptionOption == null) {
+            return false
         }
-        return loaded
+
+        val currentState = _state.value
+        if (currentState !is CustomerCenterState.Success) {
+            return false
+        }
+
+        val localization = currentState.customerCenterConfigData.localization
+        val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
+
+        _state.update {
+            currentState.copy(
+                promotionalOfferData = PromotionalOfferData(
+                    promotionalOffer,
+                    subscriptionOption,
+                    originalPath,
+                    pricingPhasesDescription,
+                ),
+            )
+        }
+
+        return true
     }
 
     override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
@@ -632,7 +657,7 @@ internal class CustomerCenterViewModelImpl(
 
     private fun displayFeedbackSurvey(
         feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-        onAnswerSubmitted: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+        onAnswerSubmitted: suspend (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
     ) {
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {

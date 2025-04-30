@@ -664,7 +664,7 @@ class CustomerCenterViewModelTests {
         assertThat(feedbackState).isNotNull
         assertThat(feedbackState?.feedbackSurveyData).isNotNull
 
-        feedbackState?.feedbackSurveyData?.onOptionSelected?.invoke(feedbackSurveyOption)
+        feedbackState?.feedbackSurveyData?.onAnswerSubmitted?.invoke(feedbackSurveyOption)
 
         // Verify both listeners were called with the correct ID
         verify(exactly = 1) { directListener.onFeedbackSurveyCompleted(feedbackSurveyOptionId) }

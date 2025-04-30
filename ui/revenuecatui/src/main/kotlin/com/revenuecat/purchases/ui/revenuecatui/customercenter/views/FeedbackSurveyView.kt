@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
+import kotlinx.coroutines.launch
 
 @JvmSynthetic
 @Composable
@@ -30,13 +32,16 @@ internal fun FeedbackSurveyView(
 ) {
     var loadingOption by remember { mutableStateOf<String?>(null) }
     val feedbackSurvey = data.feedbackSurvey
+    val coroutineScope = rememberCoroutineScope()
 
     Box {
         FeedbackSurveyButtonsView(
             options = feedbackSurvey.options,
-            onOptionSelect = { option ->
+            onAnswerSubmit = { option ->
                 loadingOption = option.id
-                data.onOptionSelected(option)
+                coroutineScope.launch {
+                    data.onAnswerSubmitted(option)
+                }
                 loadingOption = null
             },
             loadingOption = loadingOption,
@@ -48,14 +53,14 @@ internal fun FeedbackSurveyView(
 @Composable
 internal fun FeedbackSurveyButtonsView(
     options: List<CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option>,
-    onOptionSelect: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option) -> Unit,
+    onAnswerSubmit: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option) -> Unit,
     loadingOption: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         options.forEach { option ->
             Button(
-                onClick = { onOptionSelect(option) },
+                onClick = { onAnswerSubmit(option) },
                 enabled = loadingOption == null,
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
             ) {
@@ -79,8 +84,7 @@ internal fun FeedbackSurveyPreview() {
             feedbackSurvey = CustomerCenterConfigTestData.customerCenterData()
                 .getManagementScreen()?.paths?.first { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }!!
                 .feedbackSurvey!!,
-            onOptionSelected = { _ -> },
+            onAnswerSubmitted = { _ -> },
         ),
-
     )
 }

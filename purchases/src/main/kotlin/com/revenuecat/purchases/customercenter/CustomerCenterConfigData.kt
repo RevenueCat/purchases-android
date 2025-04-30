@@ -293,7 +293,44 @@ data class CustomerCenterConfigData(
                 val title: String,
                 val subtitle: String,
                 @SerialName("product_mapping") val productMapping: Map<String, String>,
-            ) : PathDetail()
+                @SerialName("cross_product_promotions") val crossProductPromotions: List<CrossProductPromotion>,
+            ) : PathDetail() {
+                @Deprecated(
+                    "Use constructor with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyList())",
+                    ),
+                )
+                constructor(
+                    androidOfferId: String,
+                    eligible: Boolean,
+                    title: String,
+                    subtitle: String,
+                    productMapping: Map<String, String>,
+                ) : this(androidOfferId, eligible, title, subtitle, productMapping, emptyList())
+
+                @Deprecated(
+                    "Use copy with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyList())",
+                    ),
+                )
+                fun copy(
+                    androidOfferId: String = this.androidOfferId,
+                    eligible: Boolean = this.eligible,
+                    title: String = this.title,
+                    subtitle: String = this.subtitle,
+                    productMapping: Map<String, String> = this.productMapping,
+                ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyList())
+
+                @Serializable
+                data class CrossProductPromotion(
+                    @SerialName("origin_product_id") val originProductId: String,
+                    @SerialName("target_product_id") val targetProductId: String,
+                    @SerialName("app_id") val appId: String,
+                    @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
+                )
+            }
 
             @Serializable
             data class FeedbackSurvey(
@@ -376,6 +413,14 @@ data class CustomerCenterConfigData(
         val email: String? = null,
         @SerialName("should_warn_customer_to_update")
         val shouldWarnCustomerToUpdate: Boolean? = null,
+    )
+
+    @Serializable
+    data class CrossProductPromotion(
+        @SerialName("origin_product_id") val originProductId: String,
+        @SerialName("target_product_id") val targetProductId: String,
+        @SerialName("app_id") val appId: String,
+        @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
     )
 
     fun getManagementScreen(): CustomerCenterConfigData.Screen? {
