@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 
@@ -60,7 +61,7 @@ internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
     val actionError: State<PurchasesError?>
 
-    suspend fun pathButtonPressed(
+    fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
         product: StoreProduct?,
@@ -145,7 +146,7 @@ internal class CustomerCenterViewModelImpl(
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
 
-    override suspend fun pathButtonPressed(
+    override fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
         product: StoreProduct?,
@@ -162,37 +163,13 @@ internal class CustomerCenterViewModelImpl(
                     )
                     notifyListenersForFeedbackSurveyCompleted(it.id)
 
-                    if (product != null && it.promotionalOffer != null) {
-                        val loaded = loadAndDisplayPromotionalOffer(
-                            context,
-                            product,
-                            it.promotionalOffer!!,
-                            path,
-                        )
-                        if (!loaded) {
-                            mainPathAction(path, context)
-                        }
-                    } else {
-                        mainPathAction(path, context)
-                    }
+                    handlePromotionalOffer(context, product, it.promotionalOffer, path)
                 }
             })
             return
         }
 
-        if (product != null && path.promotionalOffer != null) {
-            val loaded = loadAndDisplayPromotionalOffer(
-                context,
-                product,
-                path.promotionalOffer!!,
-                path,
-            )
-            if (!loaded) {
-                mainPathAction(path, context)
-            }
-        } else {
-            mainPathAction(path, context)
-        }
+        handlePromotionalOffer(context, product, path.promotionalOffer, path)
     }
 
     private fun mainPathAction(
@@ -657,7 +634,7 @@ internal class CustomerCenterViewModelImpl(
 
     private fun displayFeedbackSurvey(
         feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-        onAnswerSubmitted: suspend (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
+        onAnswerSubmitted: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?) -> Unit,
     ) {
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
@@ -668,6 +645,29 @@ internal class CustomerCenterViewModelImpl(
                 )
             } else {
                 currentState
+            }
+        }
+    }
+
+    private fun handlePromotionalOffer(
+        context: Context,
+        product: StoreProduct?,
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer?,
+        path: CustomerCenterConfigData.HelpPath,
+    ) {
+        viewModelScope.launch {
+            if (product != null && promotionalOffer != null) {
+                val loaded = loadAndDisplayPromotionalOffer(
+                    context,
+                    product,
+                    promotionalOffer,
+                    path,
+                )
+                if (!loaded) {
+                    mainPathAction(path, context)
+                }
+            } else {
+                mainPathAction(path, context)
             }
         }
     }
