@@ -89,9 +89,10 @@
                 "monthly_subscription":"rc-refund-offer"
               },
               "cross_product_promotions": {
-                "origin_product_id": "monthly_subscription",
-                "target_product_id": "yearly_subscription",
-                "store_offer_identifier": "rc-refund-offer"
+                "monthly_subscription": {
+                  "target_product_id": "yearly_subscription",
+                  "store_offer_identifier": "rc-refund-offer"
+                }
               }
             },
             "title":"Request a refund",
@@ -114,6 +115,12 @@
                     "title":"Wait!",
                     "product_mapping":{
                       "monthly_subscription":"rc-cancel-offer"
+                    },
+                    "cross_product_promotions": {
+                      "monthly_subscription": {
+                        "target_product_id": "yearly_subscription",
+                        "store_offer_identifier": "rc-cancel-offer"
+                      }
                     }
                   },
                   "title":"Too expensive"
@@ -127,6 +134,12 @@
                     "title":"Wait!",
                     "product_mapping":{
                       "monthly_subscription":"rc-cancel-offer"
+                    },
+                    "cross_product_promotions": {
+                      "monthly_subscription": {
+                        "target_product_id": "yearly_subscription",
+                        "store_offer_identifier": "rc-cancel-offer"
+                      }
                     }
                   },
                   "title":"Don't use the app"
