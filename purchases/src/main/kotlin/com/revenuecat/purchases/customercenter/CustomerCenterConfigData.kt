@@ -293,7 +293,8 @@ data class CustomerCenterConfigData(
                 val title: String,
                 val subtitle: String,
                 @SerialName("product_mapping") val productMapping: Map<String, String>,
-                @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion>,
+                @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion> =
+                    emptyMap(),
             ) : PathDetail() {
                 @Deprecated(
                     "Use constructor with crossProductPromotions parameter",
