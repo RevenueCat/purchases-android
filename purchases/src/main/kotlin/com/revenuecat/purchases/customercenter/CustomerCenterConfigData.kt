@@ -293,12 +293,12 @@ data class CustomerCenterConfigData(
                 val title: String,
                 val subtitle: String,
                 @SerialName("product_mapping") val productMapping: Map<String, String>,
-                @SerialName("cross_product_promotions") val crossProductPromotions: List<CrossProductPromotion>,
+                @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion>,
             ) : PathDetail() {
                 @Deprecated(
                     "Use constructor with crossProductPromotions parameter",
                     ReplaceWith(
-                        "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyList())",
+                        "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
                     ),
                 )
                 constructor(
@@ -307,12 +307,12 @@ data class CustomerCenterConfigData(
                     title: String,
                     subtitle: String,
                     productMapping: Map<String, String>,
-                ) : this(androidOfferId, eligible, title, subtitle, productMapping, emptyList())
+                ) : this(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
 
                 @Deprecated(
                     "Use copy with crossProductPromotions parameter",
                     ReplaceWith(
-                        "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyList())",
+                        "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
                     ),
                 )
                 fun copy(
@@ -321,14 +321,12 @@ data class CustomerCenterConfigData(
                     title: String = this.title,
                     subtitle: String = this.subtitle,
                     productMapping: Map<String, String> = this.productMapping,
-                ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyList())
+                ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
 
                 @Serializable
                 data class CrossProductPromotion(
-                    @SerialName("origin_product_id") val originProductId: String,
-                    @SerialName("target_product_id") val targetProductId: String,
-                    @SerialName("app_id") val appId: String,
                     @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
+                    @SerialName("target_product_id") val targetProductId: String,
                 )
             }
 

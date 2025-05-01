@@ -424,40 +424,7 @@ internal class CustomerCenterViewModelImpl(
             return false
         }
 
-        val crossProductPromotion = promotionalOffer.crossProductPromotions.firstOrNull {
-            it.originProductId == product.id
-        }
-
-        val targetProduct = if (crossProductPromotion != null) {
-            purchases.awaitGetProduct(crossProductPromotion.targetProductId, null)
-        } else {
-            product // For old product mapping, target is same as origin
-        }
-
-        if (targetProduct == null) {
-            Log.d(
-                "CustomerCenter",
-                "Could not find target product (${crossProductPromotion?.targetProductId}) " +
-                    "for discount for active subscription ${product.id}",
-            )
-            return false
-        }
-
-        val offerIdentifier = crossProductPromotion?.storeOfferIdentifier
-            ?: promotionalOffer.productMapping[product.id]
-
-        val subscriptionOption = targetProduct.subscriptionOptions?.firstOrNull { option ->
-            when (option) {
-                is GoogleSubscriptionOption ->
-                    option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
-
-                else -> false
-            }
-        }
-
-        if (subscriptionOption == null) {
-            return false
-        }
+        val subscriptionOption = getPromotionalSubscriptionOption(promotionalOffer, product) ?: return false
 
         val currentState = _state.value
         if (currentState !is CustomerCenterState.Success) {
@@ -645,6 +612,75 @@ internal class CustomerCenterViewModelImpl(
                 )
             } else {
                 currentState
+            }
+        }
+    }
+
+    @SuppressWarnings("ReturnCount")
+    private suspend fun getPromotionalSubscriptionOption(
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+        product: StoreProduct,
+    ): SubscriptionOption? {
+        val subscriptionOption: SubscriptionOption?
+        if (promotionalOffer.crossProductPromotions.isEmpty() && promotionalOffer.productMapping.isNotEmpty()) {
+            val offerIdentifier = promotionalOffer.productMapping[product.id]
+            if (offerIdentifier == null) {
+                Log.d(
+                    "CustomerCenter",
+                    "No promotional offer configured for product ${product.id}",
+                )
+                return null
+            }
+
+            subscriptionOption = getCustomerCenterSubscriptionOption(offerIdentifier, product)
+        } else {
+            val crossProductPromotion = promotionalOffer.crossProductPromotions[product.id]
+            if (crossProductPromotion == null) {
+                Log.d(
+                    "CustomerCenter",
+                    "No promotional offer configured for product ${product.id}",
+                )
+                return null
+            }
+
+            val targetProduct = findTargetProduct(crossProductPromotion)
+            if (targetProduct == null) {
+                Log.d(
+                    "CustomerCenter",
+                    "Could not find discount of product (${crossProductPromotion.targetProductId}) " +
+                        "for active subscription ${product.id}",
+                )
+                return null
+            }
+
+            subscriptionOption = getCustomerCenterSubscriptionOption(
+                crossProductPromotion.storeOfferIdentifier,
+                targetProduct,
+            )
+        }
+        return subscriptionOption
+    }
+
+    private suspend fun findTargetProduct(
+        crossProductPromotion: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion,
+    ): StoreProduct? {
+        val splitProduct = crossProductPromotion.targetProductId.split(":")
+        val productId = splitProduct.first()
+        val basePlan = splitProduct.getOrNull(1)
+        val targetProduct = purchases.awaitGetProduct(productId, basePlan)
+        return targetProduct
+    }
+
+    private fun getCustomerCenterSubscriptionOption(
+        offerIdentifier: String,
+        targetProduct: StoreProduct,
+    ): SubscriptionOption? {
+        return targetProduct.subscriptionOptions?.firstOrNull { option ->
+            when (option) {
+                is GoogleSubscriptionOption ->
+                    option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
+
+                else -> false
             }
         }
     }
