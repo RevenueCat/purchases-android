@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,7 +22,6 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
-import kotlinx.coroutines.launch
 
 @JvmSynthetic
 @Composable
@@ -32,16 +30,13 @@ internal fun FeedbackSurveyView(
 ) {
     var loadingOption by remember { mutableStateOf<String?>(null) }
     val feedbackSurvey = data.feedbackSurvey
-    val coroutineScope = rememberCoroutineScope()
 
     Box {
         FeedbackSurveyButtonsView(
             options = feedbackSurvey.options,
             onAnswerSubmit = { option ->
                 loadingOption = option.id
-                coroutineScope.launch {
-                    data.onAnswerSubmitted(option)
-                }
+                data.onAnswerSubmitted(option)
                 loadingOption = null
             },
             loadingOption = loadingOption,
