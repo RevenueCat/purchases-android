@@ -32,7 +32,15 @@ private fun PricingPhase.localizedDuration(
     locale: Locale,
 ): String {
     return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE).format(
-        Measure(billingCycleCount, billingPeriod.unit.measureUnit),
+        Measure(billingPeriod.value, billingPeriod.unit.measureUnit),
+    )
+}
+
+private fun PricingPhase.localizedTotalDuration(
+    locale: Locale,
+): String {
+    return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE).format(
+        Measure((billingCycleCount ?: 1) * billingPeriod.value, billingPeriod.unit.measureUnit),
     )
 }
 
@@ -75,7 +83,7 @@ private fun SubscriptionOption.getTwoPhaseDescription(
         }
 
         OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT -> {
-            // "$0.99 during 2 months, then $3.99/mth"
+            // "$0.99/mth during 2 months, then $3.99/mth"
             val commonLocalizedString =
                 localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.DISCOUNTED_RECURRING_THEN_PRICE,
@@ -108,15 +116,17 @@ private fun SubscriptionOption.getThreePhaseDescription(
     val trialDuration = firstPhase.localizedDuration(locale)
     val secondDuration = secondPhase.localizedDuration(locale)
 
-    val replacements = mapOf(
+    val replacements = mutableMapOf(
         CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION to trialDuration,
         CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION_2 to secondDuration,
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_PRICE_2 to secondPhase.price.formatted,
         CustomerCenterConfigData.Localization.VariableName.PRICE to basePrice,
     )
 
     return when (secondPhase.offerPaymentMode) {
         OfferPaymentMode.SINGLE_PAYMENT -> {
+            replacements[CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_PRICE_2] =
+                secondPhase.price.formatted
+
             val commonLocalizedString =
                 localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.FREE_TRIAL_SINGLE_PAYMENT_THEN_PRICE,
@@ -125,6 +135,16 @@ private fun SubscriptionOption.getThreePhaseDescription(
         }
 
         OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT -> {
+            // Try 2 months for free, then $0.99/6 mths during 12 months, and $9.99/6 mths thereafter"
+            // "$0.99/6 mths
+            val secondPricePerPeriod = secondPhase.price.localizedPerPeriod(
+                secondPhase.billingPeriod,
+                locale,
+                showZeroDecimalPlacePrices = false,
+            )
+            val secondTotalDuration = secondPhase.localizedTotalDuration(locale)
+            replacements[CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_PRICE_2] = secondPricePerPeriod
+            replacements[CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION_2] = secondTotalDuration
             val commonLocalizedString =
                 localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.FREE_TRIAL_DISCOUNTED_THEN_PRICE,
