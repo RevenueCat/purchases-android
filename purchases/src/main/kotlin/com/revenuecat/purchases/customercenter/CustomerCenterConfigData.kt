@@ -325,7 +325,7 @@ data class CustomerCenterConfigData(
                 ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
 
                 @Serializable
-                data class CrossProductPromotion(
+                class CrossProductPromotion(
                     @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
                     @SerialName("target_product_id") val targetProductId: String,
                 )
@@ -412,14 +412,6 @@ data class CustomerCenterConfigData(
         val email: String? = null,
         @SerialName("should_warn_customer_to_update")
         val shouldWarnCustomerToUpdate: Boolean? = null,
-    )
-
-    @Serializable
-    data class CrossProductPromotion(
-        @SerialName("origin_product_id") val originProductId: String,
-        @SerialName("target_product_id") val targetProductId: String,
-        @SerialName("app_id") val appId: String,
-        @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
     )
 
     fun getManagementScreen(): CustomerCenterConfigData.Screen? {
