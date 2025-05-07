@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import android.app.Activity
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -15,11 +16,14 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
@@ -28,6 +32,9 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePu
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createGoogleStoreProduct
+import com.revenuecat.purchases.ui.revenuecatui.helpers.stubGoogleSubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.helpers.stubPricingPhase
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearMocks
@@ -41,6 +48,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -96,13 +104,14 @@ class CustomerCenterViewModelTests {
 
     @Test
     fun `loadAndDisplayPromotionalOffer returns false when offer is not eligible`() = runTest {
-        val viewModel = CustomerCenterViewModelImpl(
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
             purchases = purchases,
             locale = Locale.US,
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false
         )
-
 
         // Mock the product
         val product = mockk<StoreProduct>(relaxed = true)
@@ -127,7 +136,7 @@ class CustomerCenterViewModelTests {
             type = HelpPath.PathType.CUSTOM_URL
         )
 
-        val result = viewModel.loadAndDisplayPromotionalOffer(
+        val result = model.loadAndDisplayPromotionalOffer(
             context = mockk(relaxed = true),
             product = product,
             promotionalOffer = ineligibleOffer,
@@ -135,6 +144,356 @@ class CustomerCenterViewModelTests {
         )
 
         assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer works if legacy product mapping`() = runTest {
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val subscriptionOption = stubGoogleSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            productDetails = mockk(),
+            offerId = "rc-cancel-offer",
+            pricingPhases = listOf(stubPricingPhase(
+                billingCycleCount = 1,
+                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                price = 7.99,
+                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+            ), stubPricingPhase(
+                billingCycleCount = 0,
+                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                price = 9.99,
+                recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+                )
+            ),
+            tags = listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
+        )
+
+        // Create mock product and subscription option
+        val product = createGoogleStoreProduct(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(subscriptionOption)
+        )
+
+        val promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = "test_offer_id",
+            eligible = true,
+            title = "Test Offer",
+            subtitle = "Test Subtitle",
+            productMapping = mapOf("product_id:base_plan_id" to "test_offer_id")
+        )
+
+        val originalPath = HelpPath(
+            id = "path_id",
+            title = "Some Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        setupSuccessLoadScreen(originalPath, model)
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        assertThat(result).isTrue()
+
+        val updatedState = model.state.value
+        assertThat(updatedState).isInstanceOf(CustomerCenterState.Success::class.java)
+        val successState = updatedState as CustomerCenterState.Success
+        assertThat(successState.promotionalOfferData).isNotNull
+        successState.promotionalOfferData?.let { data ->
+            assertThat(data.configuredPromotionalOffer).isEqualTo(promotionalOffer)
+            assertThat(data.subscriptionOption).isEqualTo(subscriptionOption)
+            assertThat(data.originalPath).isEqualTo(originalPath)
+            assertThat(data.localizedPricingPhasesDescription).isEqualTo("First 1 month free, then $4.99/mth")
+        }
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer returns false when no matching offer found in legacy product mapping`() = runTest {
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val subscriptionOption = stubGoogleSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            productDetails = mockk(),
+            offerId = "other-offer",
+            pricingPhases = listOf(stubPricingPhase(
+                billingCycleCount = 1,
+                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                price = 7.99,
+                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+            ), stubPricingPhase(
+                billingCycleCount = 0,
+                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                price = 9.99,
+                recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+            )
+            ),
+            tags = listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
+        )
+
+        // Create mock product and subscription option
+        val product = createGoogleStoreProduct(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(subscriptionOption)
+        )
+
+        val promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = "test_offer_id",
+            eligible = true,
+            title = "Test Offer",
+            subtitle = "Test Subtitle",
+            productMapping = mapOf("product_id:base_plan_id" to "test_offer_id")
+        )
+
+        val originalPath = HelpPath(
+            id = "path_id",
+            title = "Some Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        setupSuccessLoadScreen(originalPath, model)
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        assertThat(result).isTrue()
+
+        val updatedState = model.state.value
+        assertThat(updatedState).isInstanceOf(CustomerCenterState.Success::class.java)
+        val successState = updatedState as CustomerCenterState.Success
+        assertThat(successState.promotionalOfferData).isNotNull
+        successState.promotionalOfferData?.let { data ->
+            assertThat(data.configuredPromotionalOffer).isEqualTo(promotionalOffer)
+            assertThat(data.subscriptionOption).isEqualTo(subscriptionOption)
+            assertThat(data.originalPath).isEqualTo(originalPath)
+            assertThat(data.localizedPricingPhasesDescription).isEqualTo("First 1 month free, then $4.99/mth")
+        }
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer returns true for cross-product promotion`() = runTest {
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Create mock source product
+        val sourceProduct = mockk<StoreProduct>(relaxed = true)
+        every { sourceProduct.id } returns "source_product_id"
+
+        // Create mock target product and subscription option
+        val targetProduct = mockk<StoreProduct>(relaxed = true)
+        every { targetProduct.id } returns "target_product_id"
+        every { targetProduct.subscriptionOptions } returns mockk<SubscriptionOptions>()
+
+        val subscriptionOption = mockk<GoogleSubscriptionOption>(relaxed = true)
+        every { subscriptionOption.tags } returns listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
+        every { subscriptionOption.offerId } returns "test_offer_id"
+        every { targetProduct.subscriptionOptions?.iterator() } returns listOf(subscriptionOption).iterator()
+
+        // Mock the findTargetProduct call
+        coEvery { purchases.awaitGetProduct("target_product_id", null) } returns targetProduct
+
+        val crossProductPromotion = HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+            storeOfferIdentifier = "test_offer_id",
+            targetProductId = "target_product_id"
+        )
+
+        val promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = "test_offer_id",
+            eligible = true,
+            title = "Test Offer",
+            subtitle = "Test Subtitle",
+            productMapping = emptyMap(),
+            crossProductPromotions = mapOf("source_product_id" to crossProductPromotion)
+        )
+
+        val originalPath = HelpPath(
+            id = "path_id",
+            title = "Some Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = sourceProduct,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer returns false when target product not found in cross-product promotion`() = runTest {
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val sourceProduct = mockk<StoreProduct>(relaxed = true)
+        every { sourceProduct.id } returns "source_product_id"
+
+        // Mock the findTargetProduct call to return null
+        coEvery { purchases.awaitGetProduct("target_product_id", null) } returns null
+
+        val crossProductPromotion = HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+            storeOfferIdentifier = "test_offer_id",
+            targetProductId = "target_product_id"
+        )
+
+        val promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = "test_offer_id",
+            eligible = true,
+            title = "Test Offer",
+            subtitle = "Test Subtitle",
+            productMapping = emptyMap(),
+            crossProductPromotions = mapOf("source_product_id" to crossProductPromotion)
+        )
+
+        val originalPath = HelpPath(
+            id = "path_id",
+            title = "Some Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = sourceProduct,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer returns false when no matching cross-product promotion found`() = runTest {
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val sourceProduct = mockk<StoreProduct>(relaxed = true)
+        every { sourceProduct.id } returns "source_product_id"
+
+        val promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = "test_offer_id",
+            eligible = true,
+            title = "Test Offer",
+            subtitle = "Test Subtitle",
+            productMapping = emptyMap(),
+            crossProductPromotions = mapOf("different_product_id" to mockk())
+        )
+
+        val originalPath = HelpPath(
+            id = "path_id",
+            title = "Some Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = sourceProduct,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer handles target product with base plan`() = runTest {
+        setupPurchasesMock()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val sourceProduct = mockk<StoreProduct>(relaxed = true)
+        every { sourceProduct.id } returns "source_product_id"
+
+        val targetProduct = mockk<StoreProduct>(relaxed = true)
+        every { targetProduct.id } returns "target_product_id"
+        every { targetProduct.subscriptionOptions } returns mockk<SubscriptionOptions>()
+
+        val subscriptionOption = mockk<GoogleSubscriptionOption>(relaxed = true)
+        every { subscriptionOption.tags } returns listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
+        every { subscriptionOption.offerId } returns "test_offer_id"
+        every { targetProduct.subscriptionOptions?.iterator() } returns listOf(subscriptionOption).iterator()
+
+        // Mock the findTargetProduct call with base plan
+        coEvery { purchases.awaitGetProduct("target_product_id", "base_plan") } returns targetProduct
+
+        val crossProductPromotion = HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+            storeOfferIdentifier = "test_offer_id",
+            targetProductId = "target_product_id:base_plan"
+        )
+
+        val promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = "test_offer_id",
+            eligible = true,
+            title = "Test Offer",
+            subtitle = "Test Subtitle",
+            productMapping = emptyMap(),
+            crossProductPromotions = mapOf("source_product_id" to crossProductPromotion)
+        )
+
+        val originalPath = HelpPath(
+            id = "path_id",
+            title = "Some Path",
+            type = HelpPath.PathType.CUSTOM_URL
+        )
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = sourceProduct,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        assertThat(result).isTrue()
     }
 
     @Test
@@ -793,4 +1152,41 @@ class CustomerCenterViewModelTests {
         every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
         every { customerInfo.nonSubscriptionTransactions } returns emptyList()
     }
+    private suspend fun TestScope.setupSuccessLoadScreen(
+        originalPath: HelpPath,
+        model: CustomerCenterViewModelImpl,
+    ) {
+        // Set up the state as Success
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(originalPath)
+        )
+
+        val mockScreens = mapOf(
+            Screen.ScreenType.MANAGEMENT to managementScreen
+        )
+
+        val localization = CustomerCenterConfigData.Localization(
+            locale = "en",
+            localizedStrings = emptyMap()
+        )
+
+        every { configData.screens } returns mockScreens
+        every { configData.getManagementScreen() } returns managementScreen
+        every { configData.localization } returns localization
+
+        // Wait for initial state to load
+        model.loadCustomerCenter()
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    cancel()
+                }
+            }
+        }
+        job.join()
+    }
+
 }
