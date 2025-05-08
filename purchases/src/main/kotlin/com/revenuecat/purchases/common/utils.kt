@@ -12,8 +12,6 @@ import android.util.Base64
 import java.security.MessageDigest
 import java.util.Locale
 
-internal const val MICROS_MULTIPLIER = 1_000_000
-
 internal fun Context.getLocale(): Locale? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         resources.configuration.locales.get(0)

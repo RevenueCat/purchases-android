@@ -293,7 +293,67 @@ data class CustomerCenterConfigData(
                 val title: String,
                 val subtitle: String,
                 @SerialName("product_mapping") val productMapping: Map<String, String>,
-            ) : PathDetail()
+                @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion> =
+                    emptyMap(),
+            ) : PathDetail() {
+                @Deprecated(
+                    "Use constructor with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
+                    ),
+                )
+                constructor(
+                    androidOfferId: String,
+                    eligible: Boolean,
+                    title: String,
+                    subtitle: String,
+                    productMapping: Map<String, String>,
+                ) : this(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+
+                @Deprecated(
+                    "Use copy with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
+                    ),
+                )
+                fun copy(
+                    androidOfferId: String = this.androidOfferId,
+                    eligible: Boolean = this.eligible,
+                    title: String = this.title,
+                    subtitle: String = this.subtitle,
+                    productMapping: Map<String, String> = this.productMapping,
+                ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+
+                @Serializable
+                class CrossProductPromotion(
+                    @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
+                    @SerialName("target_product_id") val targetProductId: String,
+                ) {
+                    override fun equals(other: Any?): Boolean {
+                        if (this === other) return true
+                        if (javaClass != other?.javaClass) return false
+
+                        other as CrossProductPromotion
+
+                        if (storeOfferIdentifier != other.storeOfferIdentifier) return false
+                        if (targetProductId != other.targetProductId) return false
+
+                        return true
+                    }
+
+                    override fun hashCode(): Int {
+                        var result = storeOfferIdentifier.hashCode()
+                        result = 31 * result + targetProductId.hashCode()
+                        return result
+                    }
+
+                    override fun toString(): String {
+                        return "CrossProductPromotion(" +
+                            "storeOfferIdentifier='$storeOfferIdentifier'," +
+                            "targetProductId='$targetProductId')"
+                    }
+                }
+            }
 
             @Serializable
             data class FeedbackSurvey(

@@ -67,7 +67,13 @@ class BackendGetCustomerCenterConfigTest {
                             eligible = true,
                             title = "Wait!",
                             subtitle = "Before you go, here's a one-time offer to continue at a discount.",
-                            productMapping = mapOf("monthly_subscription" to "rc-refund-offer")
+                            productMapping = mapOf("monthly_subscription" to "rc-refund-offer"),
+                            crossProductPromotions = mapOf(
+                                "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                    storeOfferIdentifier = "rc-refund-offer",
+                                    targetProductId = "yearly_subscription",
+                                )
+                            )
                         )
                     ),
                     HelpPath(
@@ -90,7 +96,13 @@ class BackendGetCustomerCenterConfigTest {
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
-                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer")
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer"),
+                                        crossProductPromotions = mapOf(
+                                            "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                                storeOfferIdentifier = "rc-cancel-offer",
+                                                targetProductId = "yearly_subscription",
+                                            )
+                                        )
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -101,7 +113,13 @@ class BackendGetCustomerCenterConfigTest {
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
-                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer")
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer"),
+                                        crossProductPromotions = mapOf(
+                                            "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                                storeOfferIdentifier = "rc-cancel-offer",
+                                                targetProductId = "yearly_subscription",
+                                            )
+                                        )
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(

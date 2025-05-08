@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.utils
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.Constants.MICRO_MULTIPLIER
+import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import java.text.NumberFormat
@@ -28,6 +28,7 @@ internal fun Price.pricePerYear(billingPeriod: Period, locale: Locale): Price {
     return pricePerPeriod(billingPeriod.valueInYears, locale)
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 private fun Price.pricePerPeriod(units: Double, locale: Locale): Price {
     val currency = Currency.getInstance(currencyCode)
     val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {

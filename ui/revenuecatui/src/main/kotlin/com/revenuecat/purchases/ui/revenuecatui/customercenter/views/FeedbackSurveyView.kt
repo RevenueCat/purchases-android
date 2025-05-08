@@ -34,9 +34,9 @@ internal fun FeedbackSurveyView(
     Box {
         FeedbackSurveyButtonsView(
             options = feedbackSurvey.options,
-            onOptionSelect = { option ->
+            onAnswerSubmit = { option ->
                 loadingOption = option.id
-                data.onOptionSelected(option)
+                data.onAnswerSubmitted(option)
                 loadingOption = null
             },
             loadingOption = loadingOption,
@@ -48,14 +48,14 @@ internal fun FeedbackSurveyView(
 @Composable
 internal fun FeedbackSurveyButtonsView(
     options: List<CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option>,
-    onOptionSelect: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option) -> Unit,
+    onAnswerSubmit: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option) -> Unit,
     loadingOption: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         options.forEach { option ->
             Button(
-                onClick = { onOptionSelect(option) },
+                onClick = { onAnswerSubmit(option) },
                 enabled = loadingOption == null,
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
             ) {
@@ -79,8 +79,7 @@ internal fun FeedbackSurveyPreview() {
             feedbackSurvey = CustomerCenterConfigTestData.customerCenterData()
                 .getManagementScreen()?.paths?.first { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }!!
                 .feedbackSurvey!!,
-            onOptionSelected = { _ -> },
+            onAnswerSubmitted = { _ -> },
         ),
-
     )
 }

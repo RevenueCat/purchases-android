@@ -1,13 +1,12 @@
-package com.revenuecat.purchases.utils
+package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import com.android.billingclient.api.ProductDetails
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
+import com.revenuecat.purchases.models.GoogleInstallmentsInfo
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -17,29 +16,13 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
-import org.json.JSONObject
+import io.mockk.mockk
 
 @SuppressWarnings("MatchingDeclarationName")
 private data class StubPurchasingData(
     override val productId: String,
-    override val productType: ProductType = ProductType.SUBS
+    override val productType: ProductType = ProductType.SUBS,
 ) : PurchasingData
-
-const val STUB_OFFERING_IDENTIFIER = "offering_a"
-const val STUB_PRODUCT_IDENTIFIER = "monthly_freetrial"
-const val ONE_OFFERINGS_RESPONSE = "{'offerings': [" +
-    "{'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-    "'description': 'This is the base offering', " +
-    "'packages': [" +
-    "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'," +
-    "'platform_product_plan_identifier': 'p1m'}]}]," +
-    "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
-const val ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE = "{'offerings': [" +
-    "{'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-    "'description': 'This is the base offering', " +
-    "'packages': [" +
-    "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}]}]," +
-    "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
@@ -140,6 +123,43 @@ fun stubStoreProduct(
     }
 }
 
+@Suppress("LongParameterList")
+fun createGoogleStoreProduct(
+    productId: String,
+    basePlanId: String,
+    type: ProductType = ProductType.SUBS,
+    productDetails: ProductDetails = mockk(),
+    subscriptionOptions: List<SubscriptionOption>? = listOf(
+        stubGoogleSubscriptionOption(
+            productId = productId,
+            basePlanId = basePlanId,
+            productDetails = productDetails
+        )
+    ),
+    price: Price = subscriptionOptions?.first()?.fullPricePhase!!.price,
+    name: String = "Monthly Product Intro Pricing One Week",
+    title: String = "Monthly Product Intro Pricing One Week (RevenueCat SDK Tester)",
+    description: String = "Monthly Product Intro Pricing One Week",
+    period: Period? = subscriptionOptions?.first()?.fullPricePhase!!.billingPeriod,
+    defaultOptionIndex: Int = 0,
+): StoreProduct {
+    val subscriptionOptions = subscriptionOptions?.let { SubscriptionOptions(it) }
+    return GoogleStoreProduct(
+        productId = productId,
+        basePlanId = basePlanId,
+        type = type,
+        price = price,
+        name = name,
+        title = title,
+        description = description,
+        period = period,
+        subscriptionOptions = subscriptionOptions,
+        defaultOption = subscriptionOptions?.let { it[defaultOptionIndex] },
+        productDetails = productDetails,
+        presentedOfferingContext = null,
+    )
+}
+
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubINAPPStoreProduct(
     productId: String,
@@ -206,7 +226,8 @@ fun stubINAPPStoreProduct(
                 get() = productId
 
             override fun copyWithOfferingId(offeringId: String): StoreProduct = this
-            override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct = this
+            override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct =
+                this
         }
     }
 
@@ -223,13 +244,14 @@ fun stubSubscriptionOption(
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration)),
     presentedOfferingContext: PresentedOfferingContext? = null,
     installmentsInfo: InstallmentsInfo? = null,
+    tags: List<String> = listOf("tag"),
 ): SubscriptionOption = object : SubscriptionOption {
     override val id: String
         get() = id
     override val pricingPhases: List<PricingPhase>
         get() = pricingPhases
     override val tags: List<String>
-        get() = listOf("tag")
+        get() = tags
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
     override val presentedOfferingContext: PresentedOfferingContext?
@@ -241,6 +263,30 @@ fun stubSubscriptionOption(
     override val installmentsInfo: InstallmentsInfo?
         get() = installmentsInfo
 }
+
+@SuppressWarnings("LongParameterList")
+@JvmSynthetic
+internal fun stubGoogleSubscriptionOption(
+    productId: String,
+    basePlanId: String,
+    productDetails: ProductDetails,
+    offerId: String? = null,
+    pricingPhases: List<PricingPhase> = listOf(stubPricingPhase()),
+    tags: List<String> = listOf("tag"),
+    offerToken: String = "test_offer_token",
+    presentedOfferingContext: PresentedOfferingContext? = null,
+    installmentsInfo: GoogleInstallmentsInfo? = null,
+): GoogleSubscriptionOption = GoogleSubscriptionOption(
+    productId = productId,
+    basePlanId = basePlanId,
+    offerId = offerId,
+    pricingPhases = pricingPhases,
+    tags = tags,
+    productDetails = productDetails,
+    offerToken = offerToken,
+    presentedOfferingContext = presentedOfferingContext,
+    installmentsInfo = installmentsInfo
+)
 
 fun stubFreeTrialPricingPhase(
     billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
@@ -269,75 +315,3 @@ fun stubPricingPhase(
         priceCurrencyCodeValue,
     ),
 )
-
-fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
-    val packageObject = Package(
-        "\$rc_monthly",
-        PackageType.MONTHLY,
-        storeProduct,
-        STUB_OFFERING_IDENTIFIER,
-    )
-    val offering = Offering(
-        STUB_OFFERING_IDENTIFIER,
-        "This is the base offering",
-        emptyMap(),
-        listOf(packageObject),
-        null,
-    )
-    val offerings = Offerings(
-        offering,
-        mapOf(offering.identifier to offering),
-        null,
-    )
-    return Pair(storeProduct, offerings)
-}
-
-fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offerings> {
-    val packageObject = Package(
-        "${inAppProduct.id} package",
-        PackageType.CUSTOM,
-        inAppProduct,
-        STUB_OFFERING_IDENTIFIER,
-    )
-    val offering = Offering(
-        STUB_OFFERING_IDENTIFIER,
-        "This is the base offering",
-        emptyMap(),
-        listOf(packageObject),
-        null,
-    )
-    val offerings = Offerings(
-        offering,
-        mapOf(offering.identifier to offering),
-        null,
-    )
-    return Pair(inAppProduct, offerings)
-}
-
-fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
-    val storeProduct = stubStoreProduct(productId)
-    return stubOfferings(storeProduct)
-}
-
-fun getLifetimePackageJSON() =
-    JSONObject(
-        """
-                {
-                    'identifier': '${PackageType.LIFETIME.identifier}',
-                    'platform_product_identifier': 'com.myproduct.lifetime'
-                }
-        """.trimIndent(),
-    )
-
-fun getAmazonPackageJSON(
-    packageIdentifier: String = "com.myproduct",
-    productIdentifier: String = "com.myproduct.monthly",
-) =
-    JSONObject(
-        """
-                {
-                    'identifier': '$packageIdentifier',
-                    'platform_product_identifier': '$productIdentifier'
-                }
-        """.trimIndent(),
-    )
