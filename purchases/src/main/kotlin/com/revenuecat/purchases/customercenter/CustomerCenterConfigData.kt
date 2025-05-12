@@ -3,6 +3,7 @@ package com.revenuecat.purchases.customercenter
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.paywalls.EmptyStringToNullSerializer
 import com.revenuecat.purchases.paywalls.PaywallColor
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -325,34 +326,11 @@ data class CustomerCenterConfigData(
                 ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
 
                 @Serializable
+                @Poko
                 class CrossProductPromotion(
                     @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
                     @SerialName("target_product_id") val targetProductId: String,
-                ) {
-                    override fun equals(other: Any?): Boolean {
-                        if (this === other) return true
-                        if (javaClass != other?.javaClass) return false
-
-                        other as CrossProductPromotion
-
-                        if (storeOfferIdentifier != other.storeOfferIdentifier) return false
-                        if (targetProductId != other.targetProductId) return false
-
-                        return true
-                    }
-
-                    override fun hashCode(): Int {
-                        var result = storeOfferIdentifier.hashCode()
-                        result = 31 * result + targetProductId.hashCode()
-                        return result
-                    }
-
-                    override fun toString(): String {
-                        return "CrossProductPromotion(" +
-                            "storeOfferIdentifier='$storeOfferIdentifier'," +
-                            "targetProductId='$targetProductId')"
-                    }
-                }
+                )
             }
 
             @Serializable
