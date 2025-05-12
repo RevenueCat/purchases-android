@@ -106,12 +106,7 @@ class CustomerCenterViewModelTests {
     fun `loadAndDisplayPromotionalOffer returns false when offer is not eligible`() = runTest {
         setupPurchasesMock()
 
-        val model = CustomerCenterViewModelImpl(
-            purchases = purchases,
-            locale = Locale.US,
-            colorScheme = TestData.Constants.currentColorScheme,
-            isDarkMode = false
-        )
+        val model = setupViewModel()
 
         // Mock the product
         val product = mockk<StoreProduct>(relaxed = true)
@@ -122,19 +117,15 @@ class CustomerCenterViewModelTests {
         every { emptySubscriptionOptions.iterator() } returns emptyList<SubscriptionOption>().iterator()
         every { product.subscriptionOptions } returns emptySubscriptionOptions
 
-        val ineligibleOffer = HelpPath.PathDetail.PromotionalOffer(
+        val ineligibleOffer = createPromotionalOffer(
             androidOfferId = "test_offer_id",
             eligible = false,
-            title = "Ineligible Offer",
-            subtitle = "Should not be shown",
             productMapping = mapOf("product_id" to "test_offer_id")
         )
 
-        val originalPath = HelpPath(
-            id = "path_id",
-            title = "Some Path",
-            type = HelpPath.PathType.CUSTOM_URL
-        )
+        val originalPath = createOriginalPath()
+
+        setupSuccessLoadScreen(originalPath, model)
 
         val result = model.loadAndDisplayPromotionalOffer(
             context = mockk(relaxed = true),
@@ -143,38 +134,25 @@ class CustomerCenterViewModelTests {
             originalPath = originalPath
         )
 
-        assertThat(result).isFalse()
+        verifyPromotionalOfferResult(
+            result = result,
+            model = model,
+            expectedResult = false
+        )
     }
 
     @Test
     fun `loadAndDisplayPromotionalOffer works if legacy product mapping`() = runTest {
         setupPurchasesMock()
 
-        val model = CustomerCenterViewModelImpl(
-            purchases = purchases,
-            locale = Locale.US,
-            colorScheme = TestData.Constants.currentColorScheme,
-            isDarkMode = false
-        )
+        val model = setupViewModel()
 
-        val subscriptionOption = stubGoogleSubscriptionOption(
+        val subscriptionOption = createSubscriptionOption(
             productId = "paywall_tester.subs",
             basePlanId = "monthly",
-            productDetails = mockk(),
             offerId = "rc-cancel-offer",
-            pricingPhases = listOf(stubPricingPhase(
-                billingCycleCount = 1,
-                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
-                price = 7.99,
-                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
-            ), stubPricingPhase(
-                billingCycleCount = 0,
-                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
-                price = 9.99,
-                recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
-                )
-            ),
-            tags = listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
+            firstPhasePrice = 7.99,
+            secondPhasePrice = 9.99
         )
 
         val product = createGoogleStoreProduct(
@@ -183,19 +161,12 @@ class CustomerCenterViewModelTests {
             subscriptionOptions = listOf(subscriptionOption)
         )
 
-        val promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
+        val promotionalOffer = createPromotionalOffer(
             androidOfferId = "rc-cancel-offer",
-            eligible = true,
-            title = "Test Offer",
-            subtitle = "Test Subtitle",
             productMapping = mapOf("paywall_tester.subs:monthly" to "rc-cancel-offer")
         )
 
-        val originalPath = HelpPath(
-            id = "path_id",
-            title = "Some Path",
-            type = HelpPath.PathType.CUSTOM_URL
-        )
+        val originalPath = createOriginalPath()
 
         setupSuccessLoadScreen(originalPath, model)
 
@@ -206,18 +177,15 @@ class CustomerCenterViewModelTests {
             originalPath = originalPath
         )
 
-        assertThat(result).isTrue()
-
-        val updatedState = model.state.value
-        assertThat(updatedState).isInstanceOf(CustomerCenterState.Success::class.java)
-        val successState = updatedState as CustomerCenterState.Success
-        assertThat(successState.promotionalOfferData).isNotNull
-        successState.promotionalOfferData?.let { data ->
-            assertThat(data.configuredPromotionalOffer).isEqualTo(promotionalOffer)
-            assertThat(data.subscriptionOption).isEqualTo(subscriptionOption)
-            assertThat(data.originalPath).isEqualTo(originalPath)
-            assertThat(data.localizedPricingPhasesDescription).isEqualTo("1 month for $7.99, then $9.99/mth")
-        }
+        verifyPromotionalOfferResult(
+            result = result,
+            model = model,
+            expectedResult = true,
+            expectedPromotionalOffer = promotionalOffer,
+            expectedSubscriptionOption = subscriptionOption,
+            expectedOriginalPath = originalPath,
+            expectedPricingDescription = "1 month for $7.99, then $9.99/mth"
+        )
     }
 
     @Test
@@ -1431,6 +1399,106 @@ class CustomerCenterViewModelTests {
             }
         }
         job.join()
+    }
+
+    private fun createSubscriptionOption(
+        productId: String,
+        basePlanId: String,
+        offerId: String,
+        firstPhasePeriod: Period = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+        firstPhasePrice: Double = 0.0,
+        secondPhasePeriod: Period = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+        secondPhasePrice: Double = 9.99,
+        secondPhaseUnit: String = "mth"
+    ): GoogleSubscriptionOption {
+        return stubGoogleSubscriptionOption(
+            productId = productId,
+            basePlanId = basePlanId,
+            productDetails = mockk(),
+            offerId = offerId,
+            pricingPhases = listOf(
+                stubPricingPhase(
+                    billingCycleCount = 1,
+                    billingPeriod = firstPhasePeriod,
+                    price = firstPhasePrice,
+                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+                ),
+                stubPricingPhase(
+                    billingCycleCount = 0,
+                    billingPeriod = secondPhasePeriod,
+                    price = secondPhasePrice,
+                    recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+                )
+            ),
+            tags = listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
+        )
+    }
+
+    private fun createPromotionalOffer(
+        androidOfferId: String,
+        eligible: Boolean = true,
+        title: String = "Test Offer",
+        subtitle: String = "Test Subtitle",
+        productMapping: Map<String, String> = emptyMap(),
+        crossProductPromotions: Map<String, HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion> = emptyMap()
+    ): HelpPath.PathDetail.PromotionalOffer {
+        return HelpPath.PathDetail.PromotionalOffer(
+            androidOfferId = androidOfferId,
+            eligible = eligible,
+            title = title,
+            subtitle = subtitle,
+            productMapping = productMapping,
+            crossProductPromotions = crossProductPromotions
+        )
+    }
+
+    private fun createOriginalPath(
+        id: String = "path_id",
+        title: String = "Some Path",
+        type: HelpPath.PathType = HelpPath.PathType.CUSTOM_URL
+    ): HelpPath {
+        return HelpPath(
+            id = id,
+            title = title,
+            type = type
+        )
+    }
+
+    private fun verifyPromotionalOfferResult(
+        result: Boolean,
+        model: CustomerCenterViewModelImpl,
+        expectedResult: Boolean,
+        expectedPromotionalOffer: HelpPath.PathDetail.PromotionalOffer? = null,
+        expectedSubscriptionOption: GoogleSubscriptionOption? = null,
+        expectedOriginalPath: HelpPath? = null,
+        expectedPricingDescription: String? = null
+    ) {
+        assertThat(result).isEqualTo(expectedResult)
+
+        val updatedState = model.state.value
+        assertThat(updatedState).isInstanceOf(CustomerCenterState.Success::class.java)
+        val successState = updatedState as CustomerCenterState.Success
+
+        if (expectedResult) {
+            assertThat(successState.promotionalOfferData).isNotNull
+            successState.promotionalOfferData?.let { data ->
+                assertThat(data.configuredPromotionalOffer).isEqualTo(expectedPromotionalOffer)
+                assertThat(data.subscriptionOption).isEqualTo(expectedSubscriptionOption)
+                assertThat(data.originalPath).isEqualTo(expectedOriginalPath)
+                assertThat(data.localizedPricingPhasesDescription).isEqualTo(expectedPricingDescription)
+            }
+        } else {
+            assertThat(successState.promotionalOfferData).isNull()
+        }
+    }
+
+    private fun setupViewModel(): CustomerCenterViewModelImpl {
+        return CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
     }
 
 }
