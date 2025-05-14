@@ -428,26 +428,26 @@ internal class CustomerCenterViewModelImpl(
 
         val subscriptionOption = getPromotionalSubscriptionOption(promotionalOffer, product) ?: return false
 
-        val currentState = _state.value
-        if (currentState !is CustomerCenterState.Success) {
-            return false
+        var loaded = false
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val localization = currentState.customerCenterConfigData.localization
+                val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
+                loaded = true
+                currentState.copy(
+                    promotionalOfferData = PromotionalOfferData(
+                        promotionalOffer,
+                        subscriptionOption,
+                        originalPath,
+                        pricingPhasesDescription,
+                    ),
+                )
+            } else {
+                currentState
+            }
         }
 
-        val localization = currentState.customerCenterConfigData.localization
-        val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
-
-        _state.update {
-            currentState.copy(
-                promotionalOfferData = PromotionalOfferData(
-                    promotionalOffer,
-                    subscriptionOption,
-                    originalPath,
-                    pricingPhasesDescription,
-                ),
-            )
-        }
-
-        return true
+        return loaded
     }
 
     override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
