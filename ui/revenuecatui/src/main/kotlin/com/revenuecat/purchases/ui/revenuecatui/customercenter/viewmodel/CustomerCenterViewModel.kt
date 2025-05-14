@@ -9,6 +9,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,7 +54,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
-import androidx.core.net.toUri
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -402,7 +402,7 @@ internal class CustomerCenterViewModelImpl(
         val openingMethod = when (method) {
             CustomerCenterConfigData.HelpPath.OpenMethod.IN_APP -> URLOpeningMethod.IN_APP_BROWSER
             CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
-                -> URLOpeningMethod.EXTERNAL_BROWSER
+            -> URLOpeningMethod.EXTERNAL_BROWSER
         }
         URLOpener.openURL(context, url, openingMethod)
     }
@@ -629,7 +629,7 @@ internal class CustomerCenterViewModelImpl(
                 ?: promotionalOffer.productMapping[product.id]?.let {
                     CrossProductPromotion(
                         storeOfferIdentifier = it,
-                        targetProductId = product.id
+                        targetProductId = product.id,
                     )
                 }
 
