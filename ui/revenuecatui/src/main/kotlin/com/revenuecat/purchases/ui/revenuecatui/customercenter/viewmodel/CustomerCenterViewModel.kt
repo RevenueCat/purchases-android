@@ -5,11 +5,11 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -51,8 +51,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
@@ -60,7 +62,7 @@ internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
     val actionError: State<PurchasesError?>
 
-    suspend fun pathButtonPressed(
+    fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
         product: StoreProduct?,
@@ -69,7 +71,7 @@ internal interface CustomerCenterViewModel {
     suspend fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
-    fun loadAndDisplayPromotionalOffer(
+    suspend fun loadAndDisplayPromotionalOffer(
         context: Context,
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
@@ -85,6 +87,7 @@ internal interface CustomerCenterViewModel {
         url: String,
         method: CustomerCenterConfigData.HelpPath.OpenMethod = CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
     )
+
     fun clearActionError()
 
     // trigger state refresh
@@ -145,7 +148,7 @@ internal class CustomerCenterViewModelImpl(
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
 
-    override suspend fun pathButtonPressed(
+    override fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
         product: StoreProduct?,
@@ -161,37 +164,15 @@ internal class CustomerCenterViewModelImpl(
                         surveyOptionID = it.id,
                     )
                     notifyListenersForFeedbackSurveyCompleted(it.id)
-
-                    if (product != null && it.promotionalOffer != null) {
-                        val loaded = loadAndDisplayPromotionalOffer(
-                            context,
-                            product,
-                            it.promotionalOffer!!,
-                            path,
-                        )
-                        if (!loaded) {
-                            mainPathAction(path, context)
-                        }
-                    } else {
-                        mainPathAction(path, context)
+                    viewModelScope.launch {
+                        handlePromotionalOffer(context, product, it.promotionalOffer, path)
                     }
                 }
             })
             return
         }
-
-        if (product != null && path.promotionalOffer != null) {
-            val loaded = loadAndDisplayPromotionalOffer(
-                context,
-                product,
-                path.promotionalOffer!!,
-                path,
-            )
-            if (!loaded) {
-                mainPathAction(path, context)
-            }
-        } else {
-            mainPathAction(path, context)
+        viewModelScope.launch {
+            handlePromotionalOffer(context, product, path.promotionalOffer, path)
         }
     }
 
@@ -409,7 +390,7 @@ internal class CustomerCenterViewModelImpl(
 
     override fun contactSupport(context: Context, supportEmail: String) {
         val intent = Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:$supportEmail")
+            data = "mailto:$supportEmail".toUri()
             putExtra(Intent.EXTRA_SUBJECT, "Support Request")
             putExtra(Intent.EXTRA_TEXT, "Support request details...")
         }
@@ -430,15 +411,15 @@ internal class CustomerCenterViewModelImpl(
         _actionError.value = null
     }
 
-    override fun loadAndDisplayPromotionalOffer(
+    @SuppressWarnings("ReturnCount")
+    override suspend fun loadAndDisplayPromotionalOffer(
         context: Context,
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
     ): Boolean {
         if (!promotionalOffer.eligible) {
-            Log.d(
-                "CustomerCenter",
+            Logger.d(
                 "User not eligible for promo with id '${promotionalOffer.androidOfferId}'. " +
                     "Check eligibility configuration in the dashboard, and make sure the user has " +
                     "an active/expired subscription for the product with id '${product.id}'.",
@@ -446,36 +427,27 @@ internal class CustomerCenterViewModelImpl(
             return false
         }
 
-        val offerIdentifier = promotionalOffer.productMapping[product.id]
-        val subscriptionOption = product.subscriptionOptions?.firstOrNull { option ->
-            when (option) {
-                is GoogleSubscriptionOption ->
-                    option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
+        val subscriptionOption = getPromotionalSubscriptionOption(promotionalOffer, product) ?: return false
 
-                else -> false
-            }
-        }
         var loaded = false
-        if (subscriptionOption != null) {
-            _state.update {
-                val currentState = _state.value
-                if (currentState is CustomerCenterState.Success) {
-                    val localization = currentState.customerCenterConfigData.localization
-                    val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
-                    loaded = true
-                    currentState.copy(
-                        promotionalOfferData = PromotionalOfferData(
-                            promotionalOffer,
-                            subscriptionOption,
-                            originalPath,
-                            pricingPhasesDescription,
-                        ),
-                    )
-                } else {
-                    currentState
-                }
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val localization = currentState.customerCenterConfigData.localization
+                val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
+                loaded = true
+                currentState.copy(
+                    promotionalOfferData = PromotionalOfferData(
+                        promotionalOffer,
+                        subscriptionOption,
+                        originalPath,
+                        pricingPhasesDescription,
+                    ),
+                )
+            } else {
+                currentState
             }
         }
+
         return loaded
     }
 
@@ -647,6 +619,92 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    @SuppressWarnings("ReturnCount")
+    private suspend fun getPromotionalSubscriptionOption(
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
+        product: StoreProduct,
+    ): SubscriptionOption? {
+        val crossProductPromotion: CrossProductPromotion? =
+            promotionalOffer.crossProductPromotions[product.id]
+                ?: promotionalOffer.productMapping[product.id]?.let {
+                    CrossProductPromotion(
+                        storeOfferIdentifier = it,
+                        targetProductId = product.id,
+                    )
+                }
+
+        if (crossProductPromotion == null) {
+            Logger.d(
+                "No promotional offer configured for product ${product.id}",
+            )
+            return null
+        }
+
+        val targetProduct: StoreProduct? = if (crossProductPromotion.targetProductId == product.id) {
+            product
+        } else {
+            findTargetProduct(crossProductPromotion.targetProductId)
+        }
+
+        if (targetProduct == null) {
+            Logger.d(
+                "Could not find discount of product (${crossProductPromotion.targetProductId}) " +
+                    "for active subscription ${product.id}",
+            )
+            return null
+        }
+
+        return getCustomerCenterSubscriptionOption(
+            crossProductPromotion.storeOfferIdentifier,
+            targetProduct,
+        )
+    }
+
+    private suspend fun findTargetProduct(
+        targetProductId: String,
+    ): StoreProduct? {
+        val splitProduct = targetProductId.split(":")
+        val productId = splitProduct.first()
+        val basePlan = splitProduct.getOrNull(1)
+        val targetProduct = purchases.awaitGetProduct(productId, basePlan)
+        return targetProduct
+    }
+
+    private fun getCustomerCenterSubscriptionOption(
+        offerIdentifier: String,
+        targetProduct: StoreProduct,
+    ): SubscriptionOption? {
+        return targetProduct.subscriptionOptions?.firstOrNull { option ->
+            when (option) {
+                is GoogleSubscriptionOption ->
+                    option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
+
+                else -> false
+            }
+        }
+    }
+
+    private suspend fun handlePromotionalOffer(
+        context: Context,
+        product: StoreProduct?,
+        promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer?,
+        path: CustomerCenterConfigData.HelpPath,
+    ) {
+        if (product != null && promotionalOffer != null) {
+            val loaded = loadAndDisplayPromotionalOffer(
+                context,
+                product,
+                promotionalOffer,
+                path,
+            )
+            if (!loaded) {
+                mainPathAction(path, context)
+            }
+        } else {
+            mainPathAction(path, context)
+        }
+    }
+
     private fun goBackToMain() {
         _state.update { currentState ->
             when (currentState) {
@@ -669,7 +727,7 @@ internal class CustomerCenterViewModelImpl(
         try {
             val packageName = context.packageName
             val uri = "https://play.google.com/store/account/subscriptions?sku=$productId&package=$packageName"
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))
         } catch (e: ActivityNotFoundException) {
             Logger.e("Error opening manage subscriptions", e)
         }
@@ -710,7 +768,7 @@ internal class CustomerCenterViewModelImpl(
 
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL ->
                 path.url?.let {
-                    CustomerCenterManagementOption.CustomUrl(Uri.parse(it))
+                    CustomerCenterManagementOption.CustomUrl(it.toUri())
                 }
 
             else -> null

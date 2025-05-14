@@ -2,10 +2,10 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * View that wraps the [CustomerCenter] Composable to display the Customer Center through the View system.
@@ -42,7 +42,7 @@ public class CustomerCenterView : AbstractComposeView {
     }
 
     private fun init() {
-        Log.d("CustomerCenterView", "Initialized CustomerCenterView")
+        Logger.d("Initialized CustomerCenterView")
     }
 
     @Composable
