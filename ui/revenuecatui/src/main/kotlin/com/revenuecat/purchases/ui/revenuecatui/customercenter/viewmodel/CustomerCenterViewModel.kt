@@ -54,6 +54,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
@@ -86,6 +87,7 @@ internal interface CustomerCenterViewModel {
         url: String,
         method: CustomerCenterConfigData.HelpPath.OpenMethod = CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
     )
+
     fun clearActionError()
 
     // trigger state refresh
@@ -388,7 +390,7 @@ internal class CustomerCenterViewModelImpl(
 
     override fun contactSupport(context: Context, supportEmail: String) {
         val intent = Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:$supportEmail")
+            data = "mailto:$supportEmail".toUri()
             putExtra(Intent.EXTRA_SUBJECT, "Support Request")
             putExtra(Intent.EXTRA_TEXT, "Support request details...")
         }
@@ -400,7 +402,7 @@ internal class CustomerCenterViewModelImpl(
         val openingMethod = when (method) {
             CustomerCenterConfigData.HelpPath.OpenMethod.IN_APP -> URLOpeningMethod.IN_APP_BROWSER
             CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
-            -> URLOpeningMethod.EXTERNAL_BROWSER
+                -> URLOpeningMethod.EXTERNAL_BROWSER
         }
         URLOpener.openURL(context, url, openingMethod)
     }
@@ -417,8 +419,7 @@ internal class CustomerCenterViewModelImpl(
         originalPath: CustomerCenterConfigData.HelpPath,
     ): Boolean {
         if (!promotionalOffer.eligible) {
-            Log.d(
-                "CustomerCenter",
+            Logger.d(
                 "User not eligible for promo with id '${promotionalOffer.androidOfferId}'. " +
                     "Check eligibility configuration in the dashboard, and make sure the user has " +
                     "an active/expired subscription for the product with id '${product.id}'.",
@@ -627,8 +628,7 @@ internal class CustomerCenterViewModelImpl(
         if (promotionalOffer.crossProductPromotions.isEmpty() && promotionalOffer.productMapping.isNotEmpty()) {
             val offerIdentifier = promotionalOffer.productMapping[product.id]
             if (offerIdentifier == null) {
-                Log.d(
-                    "CustomerCenter",
+                Logger.d(
                     "No promotional offer configured for product ${product.id}",
                 )
                 return null
@@ -638,8 +638,7 @@ internal class CustomerCenterViewModelImpl(
         } else {
             val crossProductPromotion = promotionalOffer.crossProductPromotions[product.id]
             if (crossProductPromotion == null) {
-                Log.d(
-                    "CustomerCenter",
+                Logger.d(
                     "No promotional offer configured for product ${product.id}",
                 )
                 return null
@@ -647,8 +646,7 @@ internal class CustomerCenterViewModelImpl(
 
             val targetProduct = findTargetProduct(crossProductPromotion)
             if (targetProduct == null) {
-                Log.d(
-                    "CustomerCenter",
+                Logger.d(
                     "Could not find discount of product (${crossProductPromotion.targetProductId}) " +
                         "for active subscription ${product.id}",
                 )
@@ -730,7 +728,7 @@ internal class CustomerCenterViewModelImpl(
         try {
             val packageName = context.packageName
             val uri = "https://play.google.com/store/account/subscriptions?sku=$productId&package=$packageName"
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))
         } catch (e: ActivityNotFoundException) {
             Logger.e("Error opening manage subscriptions", e)
         }
@@ -771,7 +769,7 @@ internal class CustomerCenterViewModelImpl(
 
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL ->
                 path.url?.let {
-                    CustomerCenterManagementOption.CustomUrl(Uri.parse(it))
+                    CustomerCenterManagementOption.CustomUrl(it.toUri())
                 }
 
             else -> null
