@@ -5,7 +5,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -55,6 +54,7 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 import androidx.core.net.toUri
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
@@ -624,47 +624,46 @@ internal class CustomerCenterViewModelImpl(
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         product: StoreProduct,
     ): SubscriptionOption? {
-        val subscriptionOption: SubscriptionOption?
-        if (promotionalOffer.crossProductPromotions.isEmpty() && promotionalOffer.productMapping.isNotEmpty()) {
-            val offerIdentifier = promotionalOffer.productMapping[product.id]
-            if (offerIdentifier == null) {
-                Logger.d(
-                    "No promotional offer configured for product ${product.id}",
-                )
-                return null
-            }
+        val crossProductPromotion: CrossProductPromotion? =
+            promotionalOffer.crossProductPromotions[product.id]
+                ?: promotionalOffer.productMapping[product.id]?.let {
+                    CrossProductPromotion(
+                        storeOfferIdentifier = it,
+                        targetProductId = product.id
+                    )
+                }
 
-            subscriptionOption = getCustomerCenterSubscriptionOption(offerIdentifier, product)
-        } else {
-            val crossProductPromotion = promotionalOffer.crossProductPromotions[product.id]
-            if (crossProductPromotion == null) {
-                Logger.d(
-                    "No promotional offer configured for product ${product.id}",
-                )
-                return null
-            }
-
-            val targetProduct = findTargetProduct(crossProductPromotion)
-            if (targetProduct == null) {
-                Logger.d(
-                    "Could not find discount of product (${crossProductPromotion.targetProductId}) " +
-                        "for active subscription ${product.id}",
-                )
-                return null
-            }
-
-            subscriptionOption = getCustomerCenterSubscriptionOption(
-                crossProductPromotion.storeOfferIdentifier,
-                targetProduct,
+        if (crossProductPromotion == null) {
+            Logger.d(
+                "No promotional offer configured for product ${product.id}",
             )
+            return null
         }
-        return subscriptionOption
+
+        val targetProduct: StoreProduct? = if (crossProductPromotion.targetProductId == product.id) {
+            product
+        } else {
+            findTargetProduct(crossProductPromotion.targetProductId)
+        }
+
+        if (targetProduct == null) {
+            Logger.d(
+                "Could not find discount of product (${crossProductPromotion.targetProductId}) " +
+                    "for active subscription ${product.id}",
+            )
+            return null
+        }
+
+        return getCustomerCenterSubscriptionOption(
+            crossProductPromotion.storeOfferIdentifier,
+            targetProduct,
+        )
     }
 
     private suspend fun findTargetProduct(
-        crossProductPromotion: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion,
+        targetProductId: String,
     ): StoreProduct? {
-        val splitProduct = crossProductPromotion.targetProductId.split(":")
+        val splitProduct = targetProductId.split(":")
         val productId = splitProduct.first()
         val basePlan = splitProduct.getOrNull(1)
         val targetProduct = purchases.awaitGetProduct(productId, basePlan)
