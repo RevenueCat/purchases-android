@@ -6,6 +6,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.carousel
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +59,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
@@ -230,6 +232,16 @@ private fun Indicator(
         }
     }
 
+    val targetStrokeWidth by remember {
+        derivedStateOf {
+            lerpUnit(
+                pageControl.default.strokeWidth ?: 0.dp,
+                pageControl.active.strokeWidth ?: 0.dp,
+                progress,
+            )
+        }
+    }
+
     val width by animateDpAsState(
         targetValue = targetWidth,
     )
@@ -243,12 +255,28 @@ private fun Indicator(
         progress,
     )
 
+    val shouldApplyStroke = (pageControl.default.strokeColor != null || pageControl.active.strokeColor != null) &&
+        (pageControl.default.strokeWidth != null || pageControl.active.strokeWidth != null)
+
+    val strokeColor = lerp(
+        (pageControl.default.strokeColor?.forCurrentTheme as? ColorStyle.Solid)?.color ?: Color.Transparent,
+        (pageControl.active.strokeColor?.forCurrentTheme as? ColorStyle.Solid)?.color ?: Color.Transparent,
+        progress,
+    )
+
+    val strokeWidth by animateDpAsState(
+        targetValue = targetStrokeWidth,
+    )
+
     Box(
         modifier = Modifier
             .padding(horizontal = pageControl.spacing / 2)
             .clip(Shape.Pill.toShape())
             .background(color)
-            .size(width = width, height = height),
+            .size(width = width, height = height)
+            .conditional(shouldApplyStroke) {
+                border(width = strokeWidth, color = strokeColor, shape = Shape.Pill.toShape())
+            },
     )
 }
 
@@ -331,6 +359,7 @@ private fun CarouselComponentView_Loop_Preview() {
                 autoAdvance = CarouselComponent.AutoAdvancePages(
                     msTimePerPage = 1000,
                     msTransitionTime = 500,
+                    transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
                 ),
             ),
             state = previewEmptyState(),
@@ -416,11 +445,15 @@ private fun previewPageControl(
             width = 14.dp,
             height = 10.dp,
             color = ColorStyles(light = ColorStyle.Solid(Color.Blue)),
+            strokeColor = ColorStyles(light = ColorStyle.Solid(Color.Red)),
+            strokeWidth = 2.dp,
         ),
         default = CarouselComponentStyle.IndicatorStyles(
             width = 8.dp,
             height = 8.dp,
             color = ColorStyles(light = ColorStyle.Solid(Color.Gray)),
+            strokeColor = null,
+            strokeWidth = null,
         ),
     )
 }

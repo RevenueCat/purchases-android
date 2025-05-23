@@ -77,7 +77,17 @@ class CarouselComponent(
         @get:JvmSynthetic
         @SerialName("ms_transition_time")
         val msTransitionTime: Int,
-    )
+        @get:JvmSynthetic
+        @SerialName("transition_type")
+        val transitionType: TransitionType?,
+    ) {
+        @Serializable(with = CarouselTransitionTypeDeserializer::class)
+        enum class TransitionType {
+            // SerialNames are handled by the CarouselTransitionTypeDeserializer.
+            FADE,
+            SLIDE,
+        }
+    }
 
     @Poko
     @Serializable
@@ -114,6 +124,12 @@ class CarouselComponent(
             val height: UInt,
             @get:JvmSynthetic
             val color: ColorScheme,
+            @get:JvmSynthetic
+            @SerialName("stroke_color")
+            val strokeColor: ColorScheme? = null,
+            @get:JvmSynthetic
+            @SerialName("stroke_width")
+            val strokeWidth: UInt? = null,
         )
 
         @Serializable(with = CarouselPageControlPositionDeserializer::class)
@@ -175,3 +191,9 @@ class PartialCarouselComponent(
 internal object CarouselPageControlPositionDeserializer : EnumDeserializerWithDefault<PageControl.Position>(
     defaultValue = PageControl.Position.BOTTOM,
 )
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object CarouselTransitionTypeDeserializer :
+    EnumDeserializerWithDefault<CarouselComponent.AutoAdvancePages.TransitionType>(
+        defaultValue = CarouselComponent.AutoAdvancePages.TransitionType.SLIDE,
+    )

@@ -97,5 +97,9 @@ internal data class CarouselComponentStyle(
         val height: Dp,
         @get:JvmSynthetic
         val color: ColorStyles,
+        @get:JvmSynthetic
+        val strokeColor: ColorStyles?,
+        @get:JvmSynthetic
+        val strokeWidth: Dp?,
     )
 }
