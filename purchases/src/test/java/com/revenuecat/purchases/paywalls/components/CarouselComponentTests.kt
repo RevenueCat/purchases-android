@@ -186,7 +186,8 @@ internal class CarouselComponentTests {
                           "loop": true,
                           "auto_advance": {
                             "ms_time_per_page": 1000,
-                            "ms_transition_time": 500
+                            "ms_transition_time": 500,
+                            "transition_type": "fade"
                           },
                           "pages": [
                             {
@@ -288,7 +289,8 @@ internal class CarouselComponentTests {
                             loop = true,
                             autoAdvance = CarouselComponent.AutoAdvancePages(
                                 msTimePerPage = 1000,
-                                msTransitionTime = 500
+                                msTransitionTime = 500,
+                                transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
                             )
                         )
                     ),
@@ -583,7 +585,8 @@ internal class CarouselComponentTests {
                           "loop": true,
                           "auto_advance": {
                             "ms_time_per_page": 1000,
-                            "ms_transition_time": 500
+                            "ms_transition_time": 500,
+                            "transition_type": "fade"
                           }
                         }
                         """.trimIndent(),
@@ -673,7 +676,8 @@ internal class CarouselComponentTests {
                             loop = true,
                             autoAdvance = CarouselComponent.AutoAdvancePages(
                                 msTimePerPage = 1000,
-                                msTransitionTime = 500
+                                msTransitionTime = 500,
+                                transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
                             )
                         )
                     )
