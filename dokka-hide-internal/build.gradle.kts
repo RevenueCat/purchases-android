@@ -9,6 +9,9 @@ tasks.withType<KotlinCompile>().configureEach {
         jvmTarget = "17"
     }
 }
+tasks.withType<JavaCompile>().configureEach {
+    targetCompatibility = "17"
+}
 
 dependencies {
     compileOnly(libs.dokka.core)
