@@ -83,7 +83,7 @@ data class Transaction(
         displayName = jsonObject.optString("display_name").takeIf {
             it.isNotBlank()
         },
-        isSandbox = jsonObject.optBoolean("sandbox", false),
+        isSandbox = jsonObject.optBoolean("is_sandbox", false),
         originalPurchaseDate = jsonObject.optDate("original_purchase_date"),
         // Using the PriceResponse class to parse the price JSON object to make it easier to migrate
         // to Kotlin serialization in the future
