@@ -2,7 +2,11 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.Responses
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -18,6 +22,25 @@ class CustomerInfoFactoryTest {
         overrideRequestDate = null,
         verificationResult = VerificationResult.NOT_REQUESTED
     )
+
+    @Test
+    fun `parses non subscription transactions correctly`() {
+        val firstNonSubscriptionTransaction = Transaction(
+            transactionIdentifier = "72c26cc69c",
+            revenuecatId = "72c26cc69c",
+            productIdentifier = "100_coins_pack",
+            productId = "100_coins_pack",
+            purchaseDate = Iso8601Utils.parse("1990-08-30T02:40:36Z"),
+            storeTransactionId = null,
+            store = Store.APP_STORE,
+            displayName = "100 Coins",
+            isSandbox = true,
+            originalPurchaseDate = Iso8601Utils.parse("1990-08-30T02:40:36Z"),
+            price = Price(formatted="$0.99", amountMicros=990000, currencyCode="USD"),
+        )
+        assertThat(defaultCustomerInfo.nonSubscriptionTransactions.size).isEqualTo(5)
+        assertThat(defaultCustomerInfo.nonSubscriptionTransactions.first()).isEqualTo(firstNonSubscriptionTransaction)
+    }
 
     @Test
     fun `assigns active entitlements correctly`() {
