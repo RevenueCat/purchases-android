@@ -57,10 +57,27 @@ internal class TextComponentViewVariablesTests(
         val packages: List<Package>,
         val locale: String,
         val storefrontCountryCode: String,
-        val variableLocalizations: NonEmptyMap<VariableLocalizationKey, String>,
+        val variableLocalizations: NonEmptyMap<String, NonEmptyMap<VariableLocalizationKey, String>>,
         val date: Date = Date(),
         val variableConfig: VariableConfig = VariableConfig(),
-    )
+    ) {
+        constructor(
+             packages: List<Package>,
+             locale: String,
+             storefrontCountryCode: String,
+             variableLocalizations: NonEmptyMap<VariableLocalizationKey, String>,
+             variablesLocale: String = locale,
+             date: Date = Date(),
+             variableConfig: VariableConfig = VariableConfig(),
+        ): this(
+            packages = packages,
+            locale = locale,
+            storefrontCountryCode = storefrontCountryCode,
+            variableLocalizations = nonEmptyMapOf(variablesLocale to variableLocalizations),
+            date = date,
+            variableConfig = variableConfig,
+        )
+    }
 
     @Suppress("LargeClass")
     companion object {
@@ -1303,13 +1320,28 @@ internal class TextComponentViewVariablesTests(
                 ),
                 "3mo",
             ),
+            // LocaleId doesn't exactly match
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PERIODLY.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlyMxnOneOffer),
+                    locale = "es_MX",
+                    storefrontCountryCode = "MX",
+                    variableLocalizations = nonEmptyMapOf(
+                        "en_US" to variableLocalizationKeysForEnUs(),
+                        // Our variables are keyed by just "es" but the rest of the paywall is keyed by "es_MX".
+                        "es" to variableLocalizationKeysForEsMx()
+                    )
+                ),
+                "anualmente",
+            ),
         )
     }
 
     private val packages = args.packages
     private val locale = args.locale
     private val storefrontCountryCode = args.storefrontCountryCode
-    private val variableLocalizations = args.variableLocalizations
+    private val variableLocalizations = args.variableLocalizations.mapKeys { LocaleId(it.key) }
     private val date = args.date
     private val variableConfig = args.variableConfig
 
@@ -1356,7 +1388,7 @@ internal class TextComponentViewVariablesTests(
             availablePackages = packages,
             paywallComponents = Offering.PaywallComponents(
                 uiConfig = UiConfig(
-                    localizations = mapOf(LocaleId(locale) to variableLocalizations),
+                    localizations = variableLocalizations,
                     variableConfig = variableConfig,
                 ),
                 data = data
@@ -1371,6 +1403,7 @@ internal class TextComponentViewVariablesTests(
 
         val styleFactory = StyleFactory(
             localizations = localizations,
+            variableLocalizations = variableLocalizations,
             offering = offering,
         )
         val style = styleFactory.create(textComponent).getOrThrow().componentStyle as TextComponentStyle
