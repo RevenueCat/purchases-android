@@ -23,6 +23,7 @@ class PurchasesFactoryTest {
     private val applicationMock = mockk<Context>()
     private val contextMock = mockk<Context>().apply {
         every { applicationContext } returns applicationMock
+        every { isDeviceProtectedStorage } returns false
     }
     private val apiKeyValidatorMock = mockk<APIKeyValidator>()
 

@@ -12,8 +12,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Before
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -38,8 +38,8 @@ class PaywallComponentsTemplatePreviewRecorder(
 
     companion object {
         @JvmStatic
-        // Placing the offering ID in double square brackets so we can easily parse it later.
-        @Parameters(name = "[[{0}]]")
+        // Placing the offering ID in inverted double diamond brackets so we can easily parse it later.
+        @Parameters(name = ">>{0}<<")
         fun data(): List<Array<Any>> {
             // The OfferingProvider uses an OfferingParser under the hood, which logs.
             // We have to replace the log handler, as the default one uses android.util.Log, which gives an
@@ -50,16 +50,18 @@ class PaywallComponentsTemplatePreviewRecorder(
                 .map { offering -> arrayOf(offering.identifier, offering) }
                 .toList()
         }
-    }
 
-    @Before
-    fun setup() {
-        Dispatchers.setMain(newSingleThreadContext("PaywallComponentsTemplatePreviewRecorder-main-dispatcher"))
-    }
+        @JvmStatic
+        @BeforeClass
+        fun setup() {
+            Dispatchers.setMain(newSingleThreadContext("PaywallComponentsTemplatePreviewRecorder-main-dispatcher"))
+        }
 
-    @After
-    fun teardown() {
-        Dispatchers.resetMain()
+        @JvmStatic
+        @AfterClass
+        fun teardown() {
+            Dispatchers.resetMain()
+        }
     }
 
     @Suppress("TestFunctionName", "FunctionNaming")

@@ -37,6 +37,13 @@ internal class NonEmptyMap<K, out V> private constructor(
         all.mapValues(transform)
             // Make sure the entry still has the same key.
             .let { nonEmptyMapOf(entry = entry.key to it.getValue(entry.key), map = it) }
+
+    @JvmSynthetic
+    inline fun <R> mapKeys(transform: (Map.Entry<K, V>) -> R): NonEmptyMap<R, V> {
+        val mappedEntryKey = transform(entry)
+        val mappedAll = all.mapKeys { if (it.key == entry.key) mappedEntryKey else transform(it) }
+        return nonEmptyMapOf(entry = mappedEntryKey to mappedAll.getValue(mappedEntryKey), map = mappedAll)
+    }
 }
 
 @JvmSynthetic

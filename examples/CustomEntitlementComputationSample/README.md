@@ -40,18 +40,25 @@ This package is available on Maven and can be included via Gradle.
 To use this mode, ensure that you install the purchases-custom-entitlement-computation artifact by specifying the dependency as:
 
 ```gradle
-implementation 'com.revenuecat.purchases:purchases-custom-entitlement-computation:6.8.0'
+implementation("com.revenuecat.purchases:purchases-custom-entitlement-computation:6.8.0")
 ```
 
 ### Configuration: 
+
+First, you should correctly configure these build settings in your `local.properties` file as shown below:
+
+```properties
+RC_API_KEY_ENTITLEMENT_SAMPLE="YOUR_GOOGLE_API_KEY"
+DEFAULT_APP_USER_ID_ENTITLEMENT_SAMPLE="YOUR_APP_USER_ID"
+```
 
 The SDK should be configured once the user has already logged in. To configure, call:
 
 ```kotlin
 Purchases.configureInCustomEntitlementsComputationMode(
     applicationContext,
-    Constants.GOOGLE_API_KEY,
-    Constants.defaultAppUserID
+    BuildConfig.RC_API_KEY_ENTITLEMENT_SAMPLE,
+    BuildConfig.DEFAULT_APP_USER_ID
 )
 ```
 
@@ -60,9 +67,7 @@ Purchases.configureInCustomEntitlementsComputationMode(
 Call getOfferings through either the Async / Await or completion blocks alternatives:
 
 ```kotlin
-
 val offerings = Purchases.sharedInstance.awaitOfferings()
-
 ```
 
 ### Switching users: 

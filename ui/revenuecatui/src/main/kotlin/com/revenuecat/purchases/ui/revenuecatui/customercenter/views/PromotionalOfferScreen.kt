@@ -32,7 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.previewSubscriptionOption
 
 @JvmSynthetic
 @Composable
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 internal fun PromotionalOfferScreen(
     promotionalOfferData: PromotionalOfferData,
     appearance: CustomerCenterConfigData.Appearance,
@@ -85,7 +85,10 @@ internal fun PromotionalOfferScreen(
                 contentColor = buttonTextColor ?: MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
-            Text(promotionalOfferData.localizedPricingPhasesDescription)
+            Text(
+                text = promotionalOfferData.localizedPricingPhasesDescription,
+                textAlign = TextAlign.Center,
+            )
         }
 
         TextButton(

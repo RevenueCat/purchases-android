@@ -1,3 +1,104 @@
+## 8.18.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix `Transaction` `isSandbox` parsing (#2404) via Toni Rico (@tonidero)
+* Fix downgrade of constraint layout version (#2396) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls v2] The `ButtonComponentView`'s progress indicator now takes margin into account (#2401) via JayShortway (@JayShortway)
+* Correctly translates variables when a fuzzy match is required. (#2402) via JayShortway (@JayShortway)
+### Customer Center
+#### ✨ New Features
+* Add support for cross product promotional offers (#2385) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2403) via RevenueCat Git Bot (@RCGitBot)
+* [Paywalls V2] Support stroke color and width in Carousel indicator (#2398) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2400) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2397) via RevenueCat Git Bot (@RCGitBot)
+* Use SideEffect for refreshing vm states inside InternalPaywall (#2393) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2394) via RevenueCat Git Bot (@RCGitBot)
+* Bump nokogiri from 1.18.6 to 1.18.8 (#2371) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2390) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2388) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.17.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Handles configuring while the device is locked (#2077) via JayShortway (@JayShortway)
+* [EXTERNAL] fix: Optional property deserialisation error (#2376) by @thomas-coldwell (#2377) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls v2] Avoid image cropping when combining single-sided margin with Fixed size constraint (#2380) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* Fix pre commit hook (#2384) via Cesar de la Vega (@vegaro)
+* Fixes pre-commit script (#2386) via JayShortway (@JayShortway)
+* Update pre-commit hooks rule for checking metalava (#2378) via Jaewoong Eum (@skydoves)
+* [Paywalls v2] Adds design as reviewer of the paywall template screenshot PRs. (#2383) via JayShortway (@JayShortway)
+* [Diagnostics] add host parameter to http_request_performed event (#2369) via Antonio Pallares (@ajpallares)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2381) via RevenueCat Git Bot (@RCGitBot)
+* Use fallback API hosts when receiving server down response (#2368) via Antonio Pallares (@ajpallares)
+* Fixes a typo: matalava -> metalava. (#2375) via JayShortway (@JayShortway)
+* Introduce Metalava for tracking the public API surfaces (#2370) via Jaewoong Eum (@skydoves)
+* Add Purchases Coroutine extensions for Result (#2358) via Jaewoong Eum (@skydoves)
+* [Paywalls v2] Supports purchase buttons inside packages (#2372) via JayShortway (@JayShortway)
+* [Paywalls v2] Adds some more tests asserting top window insets behavior. (#2374) via JayShortway (@JayShortway)
+* Do not fail the build if `local.properties` does not exist. (#2373) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2342) via RevenueCat Git Bot (@RCGitBot)
+* [Paywalls V2] Avoids re-parsing the component tree to handle window insets (#2258) via JayShortway (@JayShortway)
+* Migrate Constants to local.properties for the custom entitlement sample project (#2357) via Jaewoong Eum (@skydoves)
+* Adjusts precision of some Emerge Snapshots (#2348) via JayShortway (@JayShortway)
+* [Paywalls v2] Records and pushes template screenshots to paywall-rendering-validation (#2365) via JayShortway (@JayShortway)
+* Remove redundant Kotlin bom dependencies (#2363) via Jaewoong Eum (@skydoves)
+
+## 8.17.0
+## RevenueCat SDK
+### ✨ New Features
+* Add async storefront country code apis (#2361) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Product name truncation issue in Customer Center on Android (#2364) via Cesar de la Vega (@vegaro)
+
+## 8.16.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Add missing response fields to `CustomerInfo`. Including transaction Prices (#2128) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls v2] Fixes timeline layout when width is Fit (#2354) via JayShortway (@JayShortway)
+* [Paywalls V2] Improves fuzzy matching locale when the region doesn't match (#2355) via JayShortway (@JayShortway)
+* [Paywalls V2] Norwegian Bokmål and Norwegian Nynorsk fall back to Norwegian. (#2329) via JayShortway (@JayShortway)
+### Customer Center
+#### 🐞 Bugfixes
+* Clean up on restoring functionality in customer center (#2316) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Paywalls v2] Adds the unsupported Background type to the error message (#2350) via JayShortway (@JayShortway)
+* [Paywalls v2] Uses a fixed date for template previews to avoid daily changes. (#2351) via JayShortway (@JayShortway)
+* [Paywalls v2] Adds a default case to `Background` and `ButtonComponent` (#2347) via JayShortway (@JayShortway)
+* [Paywalls v2] Improves `PaywallComponentsTemplatePreviewRecorder` stability (#2352) via JayShortway (@JayShortway)
+* [Paywalls v2] Adds a default case to most enums and sealed types (#2346) via JayShortway (@JayShortway)
+* Adds `EnumDeserializerWithDefault` and `SealedDeserializerWithDefault` (#2345) via JayShortway (@JayShortway)
+* [Paywalls V2] Renders template previews in a fixed resolution using Paparazzi (#2214) via JayShortway (@JayShortway)
+* Bump fastlane from 2.227.0 to 2.227.1 (#2344) via dependabot[bot] (@dependabot[bot])
+* Migrate root gradle file to KTS (#2343) via Jaewoong Eum (@skydoves)
+* Migrate tester modules to KTS format (#2340) via Jaewoong Eum (@skydoves)
+* Introduce purchases-bom package (#2339) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2338) via RevenueCat Git Bot (@RCGitBot)
+* [Diagnostics] Removes Android 7 requirement (#2335) via JayShortway (@JayShortway)
+* [Paywalls v2] Fixes `update-paywall-preview-resources-submodule` CI job (#2337) via JayShortway (@JayShortway)
+* Make purchases module to transitive dependency for the ui module (#2334) via Jaewoong Eum (@skydoves)
+* Migrate settings.gradle to KTS and add the dependency resolutions (#2328) via Jaewoong Eum (@skydoves)
+
 ## 8.16.0
 ## RevenueCat SDK
 ### 📦 Dependency Updates

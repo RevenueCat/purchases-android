@@ -364,7 +364,7 @@ class TextComponentViewTests {
         // Act
         setContent {
             // This PackageComponentView has a TextComponentView child.
-            PackageComponentView(style = style, state = state)
+            PackageComponentView(style = style, state = state, clickHandler = { })
         }
 
         // Assert
@@ -545,16 +545,19 @@ class TextComponentViewTests {
                 PackageComponentView(
                     style = noIntroOfferPackageComponentStyle,
                     state = state,
+                    clickHandler = { },
                     modifier = Modifier.testTag("noIntroOffer")
                 )
                 PackageComponentView(
                     style = singleIntroOfferPackageComponentStyle,
                     state = state,
+                    clickHandler = { },
                     modifier = Modifier.testTag("singleIntroOffer")
                 )
                 PackageComponentView(
                     style = multipleIntroOffersPackageComponentStyle,
                     state = state,
+                    clickHandler = { },
                     modifier = Modifier.testTag("multipleIntroOffers")
                 )
             }

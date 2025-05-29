@@ -3,6 +3,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.image
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -14,8 +17,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
@@ -63,12 +69,14 @@ internal fun rememberUpdatedImageComponentState(
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
     val darkMode = isSystemInDarkTheme()
+    val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
         ImageComponentState(
             initialWindowSize = windowSize,
             initialDensity = density,
             initialDarkMode = darkMode,
+            initialLayoutDirection = layoutDirection,
             style = style,
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
@@ -79,6 +87,7 @@ internal fun rememberUpdatedImageComponentState(
             windowSize = windowSize,
             density = density,
             darkMode = darkMode,
+            layoutDirection = layoutDirection,
         )
     }
 }
@@ -89,6 +98,7 @@ internal class ImageComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialDensity: Density,
     initialDarkMode: Boolean,
+    initialLayoutDirection: LayoutDirection,
     private val style: ImageComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
@@ -106,6 +116,7 @@ internal class ImageComponentState(
     }
     private var density by mutableStateOf(initialDensity)
     private var darkMode by mutableStateOf(initialDarkMode)
+    private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
     /**
      * The package to consider for intro offer eligibility.
@@ -185,6 +196,33 @@ internal class ImageComponentState(
     val margin by derivedStateOf { presentedPartial?.partial?.margin?.toPaddingValues() ?: style.margin }
 
     @get:JvmSynthetic
+    val marginAdjustedSize: Size by derivedStateOf {
+        size.adjustForMargin(margin, layoutDirection)
+    }
+
+    @get:JvmSynthetic
+    val marginAdjustedAspectRatio: AspectRatio? by derivedStateOf {
+        with(marginAdjustedSize) {
+            when (val height = height) {
+                is Fixed -> when (val width = width) {
+                    is Fit,
+                    is Fill,
+                    -> null
+                    is Fixed -> {
+                        AspectRatio(
+                            ratio = width.value.toFloat() / height.value.toFloat(),
+                            matchHeightConstraintsFirst = true,
+                        )
+                    }
+                }
+                is Fit,
+                is Fill,
+                -> null
+            }
+        }
+    }
+
+    @get:JvmSynthetic
     val shape: Shape? by derivedStateOf { presentedPartial?.partial?.maskShape?.toShape() ?: style.shape }
 
     @get:JvmSynthetic
@@ -206,10 +244,12 @@ internal class ImageComponentState(
         windowSize: WindowWidthSizeClass? = null,
         density: Density? = null,
         darkMode: Boolean? = null,
+        layoutDirection: LayoutDirection? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
         if (density != null) this.density = density
         if (darkMode != null) this.darkMode = darkMode
+        if (layoutDirection != null) this.layoutDirection = layoutDirection
     }
 
     /**
@@ -258,4 +298,25 @@ internal class ImageComponentState(
         is Fixed,
         -> this
     }
+
+    private fun Size.adjustForMargin(margin: PaddingValues, layoutDirection: LayoutDirection): Size =
+        Size(
+            width = width.adjustDimensionForMargin(margin.calculateHorizontalPadding(layoutDirection).value.toUInt()),
+            height = height.adjustDimensionForMargin(margin.calculateVerticalPadding().value.toUInt()),
+        )
+
+    private fun SizeConstraint.adjustDimensionForMargin(
+        margin: UInt,
+    ): SizeConstraint = when (this) {
+        is Fixed -> Fixed(value + margin)
+        is Fill,
+        is Fit,
+        -> this
+    }
+
+    private fun PaddingValues.calculateHorizontalPadding(layoutDirection: LayoutDirection): Dp =
+        calculateStartPadding(layoutDirection) + calculateEndPadding(layoutDirection)
+
+    private fun PaddingValues.calculateVerticalPadding(): Dp =
+        calculateTopPadding() + calculateBottomPadding()
 }
