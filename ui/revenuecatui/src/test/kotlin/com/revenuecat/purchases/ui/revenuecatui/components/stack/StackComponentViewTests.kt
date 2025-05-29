@@ -94,7 +94,14 @@ class StackComponentViewTests {
                 dark = ColorInfo.Hex(expectedDarkColor.toArgb()),
             ),
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(
+            components = listOf(component),
+            packages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            )
+        )
 
         themeChangingTest(
             arrange = {
@@ -143,7 +150,14 @@ class StackComponentViewTests {
                 width = borderWidthDp
             ),
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(
+            components = listOf(component),
+            packages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            )
+        )
 
         themeChangingTest(
             arrange = {
@@ -202,7 +216,14 @@ class StackComponentViewTests {
             ),
             backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(
+            components = listOf(component),
+            packages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            )
+        )
 
         themeChangingTest(
             arrange = {

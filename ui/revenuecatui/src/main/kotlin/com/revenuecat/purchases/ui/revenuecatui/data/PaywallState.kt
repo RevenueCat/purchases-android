@@ -112,6 +112,9 @@ internal sealed interface PaywallState {
                         packagesOutsideTabs = packagesOutsideTabs + with?.packagesOutsideTabs.orEmpty(),
                         packagesByTab = packagesByTab.ifEmpty { with?.packagesByTab.orEmpty() },
                     )
+
+                val hasAnyPackages: Boolean
+                    get() = packagesOutsideTabs.isNotEmpty() || packagesByTab.isNotEmpty()
             }
 
             data class SelectedPackageInfo(

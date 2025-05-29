@@ -26,9 +26,11 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.FakeData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Assert.assertEquals
@@ -148,7 +150,7 @@ class PaywallActionTests {
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
             base = PaywallComponentsConfig(
-                stack = StackComponent(components = components),
+                stack = StackComponent(components = components + listOf(TestData.Components.monthlyPackageComponent)),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 stickyFooter = StickyFooterComponent(stack = StackComponent(components = components)),
             ),
@@ -163,7 +165,7 @@ class PaywallActionTests {
             identifier = "identifier",
             serverDescription = "description",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 

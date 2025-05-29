@@ -173,7 +173,8 @@ class TextComponentViewTests {
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            component
+            packages = listOf(TestData.Packages.monthly),
+            components = listOf(component),
         )
 
         themeChangingTest(
@@ -218,7 +219,8 @@ class TextComponentViewTests {
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            component
+            packages = listOf(TestData.Packages.monthly),
+            components = listOf(component),
         )
 
         themeChangingTest(
@@ -259,8 +261,8 @@ class TextComponentViewTests {
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            largeTextComponent,
-            smallTextComponent
+            packages = listOf(TestData.Packages.monthly),
+            components = listOf(largeTextComponent, smallTextComponent),
         )
         setContent {
             val largeTextStyle =
@@ -615,7 +617,8 @@ class TextComponentViewTests {
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            component
+            packages = listOf(TestData.Packages.monthly),
+            components = listOf(component),
         )
 
         // Act
@@ -696,12 +699,20 @@ class TextComponentViewTests {
             text = selectedPackageTextKey,
             color = textColor,
         )
+        val packageComponent = PackageComponent(
+            packageId = packageYearly.identifier,
+            isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
         val data = PaywallComponentsData(
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(selectedComponent)),
+                    stack = StackComponent(components = listOf(
+                        selectedComponent,
+                        packageComponent,
+                    )),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),
@@ -772,12 +783,17 @@ class TextComponentViewTests {
             )
         )
         val component = TextComponent(text = textKey, color = textColor)
+        val packageComponent = PackageComponent(
+            packageId = usdPackage.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
         val data = PaywallComponentsData(
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(component)),
+                    stack = StackComponent(components = listOf(component, packageComponent)),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),

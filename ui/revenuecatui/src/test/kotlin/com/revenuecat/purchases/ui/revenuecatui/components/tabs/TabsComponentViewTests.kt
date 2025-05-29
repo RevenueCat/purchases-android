@@ -139,7 +139,10 @@ class TabsComponentViewTests {
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(tabsComponent)),
+                    stack = StackComponent(components = listOf(
+                        tabsComponent,
+                        TestData.Components.monthlyPackageComponent,
+                    )),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),
@@ -151,7 +154,7 @@ class TabsComponentViewTests {
             identifier = "offering-id",
             serverDescription = "description",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
@@ -312,7 +315,10 @@ class TabsComponentViewTests {
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(tabsComponent)),
+                    stack = StackComponent(components = listOf(
+                        tabsComponent,
+                        TestData.Components.monthlyPackageComponent,
+                    )),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),
@@ -324,7 +330,7 @@ class TabsComponentViewTests {
             identifier = "offering-id",
             serverDescription = "description",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
