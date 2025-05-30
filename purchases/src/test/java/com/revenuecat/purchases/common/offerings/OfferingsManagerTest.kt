@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
@@ -39,6 +40,7 @@ class OfferingsManagerTest {
     private lateinit var offeringsFactory: OfferingsFactory
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
+    private lateinit var mockFontSpecProvider: FontSpecProvider
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -51,6 +53,9 @@ class OfferingsManagerTest {
             every { preDownloadOfferingImages(any()) } just Runs
         }
         mockDiagnosticsTracker = mockk()
+        mockFontSpecProvider = mockk<FontSpecProvider>().apply {
+            every { loadFonts(any()) } just Runs
+        }
 
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
@@ -61,6 +66,7 @@ class OfferingsManagerTest {
             offeringsFactory,
             offeringImagePreDownloader,
             mockDiagnosticsTracker,
+            mockFontSpecProvider,
         )
     }
 
@@ -491,6 +497,59 @@ class OfferingsManagerTest {
     }
 
     // endregion pre download offering images
+
+    // region pre load fonts
+
+    @Test
+    fun `getOfferings pre loads offerings fonts`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {}
+        )
+
+        assertThat(testOfferings.all.size).isEqualTo(1)
+
+        verify(exactly = 1) {
+            mockFontSpecProvider.loadFonts(testOfferings.current!!)
+        }
+    }
+
+    @Test
+    fun `getOfferings pre loads offerings fonts when request fails and served from cache`() {
+        every {
+            cache.cachedOfferings
+        } returns null
+        every {
+            cache.cacheOfferings(any(), any())
+        } just Runs
+
+        mockBackendResponseError()
+        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        every { cache.cachedOfferingsResponse } returns backendResponse
+        mockDeviceCache(wasSuccessful = false)
+        mockOfferingsFactory()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {}
+        )
+
+        assertThat(testOfferings.all.size).isEqualTo(1)
+
+        verify(exactly = 1) {
+            mockFontSpecProvider.loadFonts(testOfferings.current!!)
+        }
+    }
+
+    // endregion pre load fonts
 
     // region Get Offerings diagnostics
 

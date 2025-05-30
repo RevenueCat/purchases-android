@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -33,7 +34,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle

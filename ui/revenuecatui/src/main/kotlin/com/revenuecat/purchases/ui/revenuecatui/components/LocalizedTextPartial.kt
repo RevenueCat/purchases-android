@@ -5,10 +5,10 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.recoverFromBlankFontAlias
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles

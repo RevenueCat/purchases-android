@@ -69,6 +69,8 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.components.FontSpecProvider
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.BillingStrings
@@ -118,6 +120,7 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
+    private val fontSpecProvider: FontSpecProvider,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -901,6 +904,11 @@ internal class PurchasesOrchestrator(
 
     //endregion
     //endregion
+
+    @InternalRevenueCatAPI
+    fun getCachedFontSpecs(): Map<FontAlias, FontSpec> {
+        return fontSpecProvider.getFontSpecMap()
+    }
 
     // region Custom entitlements computation
     fun switchUser(newAppUserID: String) {

@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -404,16 +406,15 @@ internal object TestData {
 
 internal class MockResourceProvider(
     /**
-     * A map of resource type to a map of resource name to resource ID. For instance, to specify a font resource, do:
+     * A map of font alias to a map of calculated FontSpec. For instance, to specify a font resource, do:
      *
      * ```kotlin
      * mapOf(
-     *     "font" to mapOf("Roboto" to 100)
+     *     "font" to FontSpec.Generic.Serif
      * )
      * ```
      */
-    private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
-    private val assetPaths: List<String> = emptyList(),
+    private val cachedFontSpecs: Map<FontAlias, FontSpec> = emptyMap(),
 ) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
@@ -444,14 +445,8 @@ internal class MockResourceProvider(
         return Locale.getDefault()
     }
 
-    override fun getResourceIdentifier(name: String, type: String): Int =
-        resourceIds[type]?.get(name) ?: 0
-
-    override fun getAssetFontPath(name: String): String? {
-        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
-        val filePath = "${ResourceProvider.ASSETS_FONTS_DIR}/$nameWithExtension"
-
-        return assetPaths.find { it == filePath }
+    override fun getCachedFontSpecs(): Map<FontAlias, FontSpec> {
+        return cachedFontSpecs
     }
 }
 

@@ -34,6 +34,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
@@ -53,7 +54,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.Background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle

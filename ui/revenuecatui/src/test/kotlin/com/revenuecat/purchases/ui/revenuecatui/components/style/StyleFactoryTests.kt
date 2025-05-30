@@ -36,7 +36,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError

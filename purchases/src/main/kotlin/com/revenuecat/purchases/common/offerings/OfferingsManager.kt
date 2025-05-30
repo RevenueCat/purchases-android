@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offerings
 
 import android.os.Handler
 import android.os.Looper
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -13,6 +14,7 @@ import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import org.json.JSONObject
@@ -26,6 +28,7 @@ internal class OfferingsManager(
     private val offeringsFactory: OfferingsFactory,
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val fontSpecProvider: FontSpecProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
@@ -134,6 +137,7 @@ internal class OfferingsManager(
         )
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
         onError: ((PurchasesError) -> Unit)? = null,
@@ -147,6 +151,12 @@ internal class OfferingsManager(
             onSuccess = { offeringsResultData ->
                 offeringsResultData.offerings.current?.let {
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
+                }
+                // This will load the fonts for the first offering with paywalls V2 in the result,
+                // which should be ok, since the fonts are shared across offerings.
+                // We should clean this up and use the original response instead to get the fonts.
+                offeringsResultData.offerings.all.values.firstOrNull { it.paywallComponents != null }?.let { offering ->
+                    fontSpecProvider.loadFonts(offering)
                 }
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
                 dispatch {

@@ -9,7 +9,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory as ActualStyleFactory

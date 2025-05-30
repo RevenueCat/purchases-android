@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import androidx.annotation.StringRes
+import com.revenuecat.purchases.FontAlias
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import java.util.Locale
 
 /**
@@ -17,8 +19,7 @@ internal interface ResourceProvider {
     fun getApplicationName(): String
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
-    fun getResourceIdentifier(name: String, type: String): Int
-    fun getAssetFontPath(name: String): String?
+    fun getCachedFontSpecs(): Map<FontAlias, FontSpec>
 }
 
 internal class PaywallResourceProvider(
@@ -42,20 +43,8 @@ internal class PaywallResourceProvider(
         return resources.configuration.locales.get(0)
     }
 
-    /**
-     * Use sparingly. The underlying platform API is discouraged because
-     * > resource reflection makes it harder to perform build optimizations and compile-time verification of code.
-     */
-    @SuppressLint("DiscouragedApi")
-    override fun getResourceIdentifier(name: String, type: String): Int =
-        resources.getIdentifier(name, type, packageName)
-
-    override fun getAssetFontPath(name: String): String? {
-        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
-
-        return resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
-            ?.find { it == nameWithExtension }
-            ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+    override fun getCachedFontSpecs(): Map<FontAlias, FontSpec> {
+        return Purchases.sharedInstance.getCachedFontSpecs()
     }
 }
 
