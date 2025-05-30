@@ -36,6 +36,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -80,6 +81,7 @@ internal open class BasePurchasesTest {
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
+    private val mockFontSpecProvider = mockk<FontSpecProvider>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected lateinit var appConfig: AppConfig
@@ -445,7 +447,8 @@ internal open class BasePurchasesTest {
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(mockContext, "api_key").build(),
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
-            processLifecycleOwnerProvider = { mockLifecycleOwner }
+            processLifecycleOwnerProvider = { mockLifecycleOwner },
+            fontSpecProvider = mockFontSpecProvider,
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases

@@ -38,6 +38,7 @@ import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -291,12 +292,17 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
+            val fontSpecProvider = FontSpecProvider(
+                context,
+            )
+
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
                 diagnosticsTracker,
+                fontSpecProvider,
             )
 
             log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
@@ -332,6 +338,7 @@ internal class PurchasesFactory(
                 purchasesStateCache = purchasesStateProvider,
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
+                fontSpecProvider = fontSpecProvider,
             )
 
             return Purchases(purchasesOrchestrator)

@@ -1,11 +1,14 @@
 package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
@@ -39,6 +42,7 @@ class OfferingsManagerTest {
     private lateinit var offeringsFactory: OfferingsFactory
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
+    private lateinit var mockFontSpecProvider: FontSpecProvider
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -51,6 +55,9 @@ class OfferingsManagerTest {
             every { preDownloadOfferingImages(any()) } just Runs
         }
         mockDiagnosticsTracker = mockk()
+        mockFontSpecProvider = mockk<FontSpecProvider>().apply {
+            every { loadFonts(any()) } just Runs
+        }
 
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
@@ -61,6 +68,7 @@ class OfferingsManagerTest {
             offeringsFactory,
             offeringImagePreDownloader,
             mockDiagnosticsTracker,
+            mockFontSpecProvider,
         )
     }
 
@@ -491,6 +499,91 @@ class OfferingsManagerTest {
     }
 
     // endregion pre download offering images
+
+    // region pre load fonts
+
+    @Test
+    fun `getOfferings does not pre load offerings fonts if it doesn't have a Paywalls V2`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {}
+        )
+
+        assertThat(testOfferings.all.size).isEqualTo(1)
+
+        verify(exactly = 0) {
+            mockFontSpecProvider.loadFonts(any())
+        }
+    }
+
+    @Test
+    fun `getOfferings pre loads offerings fonts if it has a Paywalls V2`() {
+        every { cache.cachedOfferings } returns null
+        val newOffering = testOfferings.current!!.copy(
+            paywallComponents = Offering.PaywallComponents(
+                uiConfig = UiConfig(),
+                data = mockk(),
+            )
+        )
+        val offerings = testOfferings.copy(all = mapOf(newOffering.identifier to newOffering), current = newOffering)
+        mockOfferingsFactory(offerings = offerings)
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {}
+        )
+
+        assertThat(offerings.all.size).isEqualTo(1)
+
+        verify(exactly = 1) {
+            mockFontSpecProvider.loadFonts(offerings.current!!)
+        }
+    }
+
+    @Test
+    fun `getOfferings pre loads offerings fonts when request fails and served from cache`() {
+        every {
+            cache.cachedOfferings
+        } returns null
+        every {
+            cache.cacheOfferings(any(), any())
+        } just Runs
+
+        mockBackendResponseError()
+        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        every { cache.cachedOfferingsResponse } returns backendResponse
+        mockDeviceCache(wasSuccessful = false)
+        val newOffering = testOfferings.current!!.copy(
+            paywallComponents = Offering.PaywallComponents(
+                uiConfig = UiConfig(),
+                data = mockk(),
+            )
+        )
+        val offerings = testOfferings.copy(all = mapOf(newOffering.identifier to newOffering), current = newOffering)
+        mockOfferingsFactory(offerings = offerings)
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {}
+        )
+
+        verify(exactly = 1) {
+            mockFontSpecProvider.loadFonts(offerings.current!!)
+        }
+    }
+
+    // endregion pre load fonts
 
     // region Get Offerings diagnostics
 

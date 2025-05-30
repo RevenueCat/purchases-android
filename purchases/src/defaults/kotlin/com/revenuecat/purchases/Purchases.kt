@@ -30,6 +30,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
@@ -768,6 +769,11 @@ class Purchases internal constructor(
     //endregion
     //endregion
     //endregion
+
+    @InternalRevenueCatAPI
+    fun getCachedFontSpecs(): Map<FontAlias, FontSpec> {
+        return purchasesOrchestrator.getCachedFontSpecs()
+    }
 
     // region Deprecated
 

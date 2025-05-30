@@ -32,7 +32,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
@@ -378,14 +378,10 @@ class PaywallComponentDataValidationTests {
             ),
         )
         val resourceProvider = MockResourceProvider(
-            resourceIds = mapOf(
-                "font" to mapOf(
-                    robotoFontResourceName.value to robotoFont.id,
-                ),
+            cachedFontSpecs = mapOf(
+                primaryFontAlias to FontSpec.Resource(robotoFont.id),
+                secondaryFontAlias to FontSpec.Asset(openSansFont.path),
             ),
-            assetPaths = listOf(
-                openSansFont.path
-            )
         )
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
@@ -460,7 +456,7 @@ class PaywallComponentDataValidationTests {
             ),
         )
         val resourceProvider = MockResourceProvider(
-            resourceIds = mapOf("font" to mapOf(existingFontResourceName.value to existingFontResource.id)),
+            cachedFontSpecs = mapOf(existingFontAlias to existingFontResource),
         )
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")

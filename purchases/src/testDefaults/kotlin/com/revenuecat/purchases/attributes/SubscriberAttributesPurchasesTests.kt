@@ -27,6 +27,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.Runs
@@ -54,6 +55,7 @@ class SubscriberAttributesPurchasesTests {
     private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
+    private val fontSpecProviderMock = mockk<FontSpecProvider>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -112,6 +114,7 @@ class SubscriberAttributesPurchasesTests {
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
+            fontSpecProvider = fontSpecProviderMock,
         )
 
         underTest = Purchases(purchasesOrchestrator)
