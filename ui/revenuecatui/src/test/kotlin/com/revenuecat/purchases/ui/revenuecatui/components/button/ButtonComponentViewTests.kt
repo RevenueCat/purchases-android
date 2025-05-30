@@ -124,7 +124,7 @@ class ButtonComponentViewTests {
             )
             ButtonComponentView(
                 style = style,
-                state = FakePaywallState(),
+                state = FakePaywallState(TestData.Packages.annual),
                 onClick = {
                     actionHandleCalledCount++
                     completable.await()
@@ -185,7 +185,8 @@ class ButtonComponentViewTests {
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            component
+            packages = listOf(TestData.Packages.monthly),
+            components = listOf(component)
         )
 
         // Act
@@ -264,6 +265,7 @@ class ButtonComponentViewTests {
                     ),
                 ),
             )
+            val packages = listOf(TestData.Packages.annual, TestData.Packages.monthly)
             val styleFactory = StyleFactory(
                 localizations = nonEmptyMapOf(
                     LocaleId("en_US") to nonEmptyMapOf(
@@ -275,11 +277,11 @@ class ButtonComponentViewTests {
                     identifier = "identifier",
                     serverDescription = "description",
                     metadata = emptyMap(),
-                    availablePackages = listOf(TestData.Packages.annual, TestData.Packages.monthly),
+                    availablePackages = packages,
                 )
             )
             val style = styleFactory.create(stackComponent).getOrThrow().componentStyle as StackComponentStyle
-            val state = FakePaywallState()
+            val state = FakePaywallState(packages = packages)
 
             // Act
             var expectedPackageId: String? = null
@@ -353,6 +355,7 @@ class ButtonComponentViewTests {
                     ),
                 ),
             )
+            val packages = listOf(TestData.Packages.annual, TestData.Packages.monthly)
             val styleFactory = StyleFactory(
                 localizations = nonEmptyMapOf(
                     LocaleId("en_US") to nonEmptyMapOf(
@@ -365,11 +368,11 @@ class ButtonComponentViewTests {
                     identifier = "identifier",
                     serverDescription = "description",
                     metadata = emptyMap(),
-                    availablePackages = listOf(TestData.Packages.annual, TestData.Packages.monthly),
+                    availablePackages = packages,
                 )
             )
             val style = styleFactory.create(stackComponent).getOrThrow().componentStyle as StackComponentStyle
-            val state = FakePaywallState()
+            val state = FakePaywallState(packages = packages)
 
             // Act
             setContent {

@@ -15,6 +15,8 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -388,6 +390,14 @@ internal object TestData {
                 period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
                 introPrice = Price(amountMicros = 4_000_000, currencyCode = "THB", formatted = "THB4.00"),
             ),
+        )
+    }
+
+    object Components {
+        val monthlyPackageComponent = PackageComponent(
+            packageId = PackageType.MONTHLY.identifier!!,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
         )
     }
 }

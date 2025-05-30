@@ -61,6 +61,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
@@ -86,7 +87,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         componentsConfig = ComponentsConfig(
             base = PaywallComponentsConfig(
                 // This would normally contain at least one TextComponent, but that's not needed for previews.
-                stack = StackComponent(components = emptyList()),
+                stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 stickyFooter = null,
             ),
@@ -102,7 +103,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         identifier = "identifier",
         serverDescription = "serverDescription",
         metadata = emptyMap(),
-        availablePackages = emptyList(),
+        availablePackages = listOf(TestData.Packages.monthly),
         paywallComponents = Offering.PaywallComponents(
             uiConfig = UiConfig(
                 localizations = nonEmptyMapOf(LocaleId("en_US") to variableLocalizationKeysForEnUs()),

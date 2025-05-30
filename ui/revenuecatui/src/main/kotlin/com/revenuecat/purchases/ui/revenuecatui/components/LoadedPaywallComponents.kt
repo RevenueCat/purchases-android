@@ -46,6 +46,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
@@ -102,6 +103,7 @@ private fun LoadedPaywallComponents_Preview() {
                             text = LocalizationKey("hello-world"),
                             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
                         ),
+                        TestData.Components.monthlyPackageComponent,
                     ),
                     dimension = Vertical(alignment = CENTER, distribution = START),
                     backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
@@ -155,7 +157,7 @@ private fun LoadedPaywallComponents_Preview() {
         identifier = "id",
         serverDescription = "description",
         metadata = emptyMap(),
-        availablePackages = emptyList(),
+        availablePackages = listOf(TestData.Packages.monthly),
         paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
@@ -194,7 +196,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                 stack = StackComponent(
                     components = listOf(
                         StackComponent(
-                            components = emptyList(),
+                            components = listOf(TestData.Components.monthlyPackageComponent),
                             dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
                             size = Size(width = Fill, height = Fill),
                             backgroundColor = ColorScheme(
@@ -335,7 +337,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         identifier = "id",
         serverDescription = "description",
         metadata = emptyMap(),
-        availablePackages = emptyList(),
+        availablePackages = listOf(TestData.Packages.monthly),
         paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
