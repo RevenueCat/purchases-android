@@ -43,6 +43,7 @@ internal class PaywallResourceProvider(
         return cachedFontSpecs ?: if (Purchases.isConfigured) {
             Purchases.sharedInstance.getCachedFontSpecs()
         } else {
+            Logger.e("getCachedFontSpecs called before Purchases is configured. Returning empty map.")
             emptyMap()
         }
     }

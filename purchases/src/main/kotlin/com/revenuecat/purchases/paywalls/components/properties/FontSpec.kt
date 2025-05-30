@@ -15,7 +15,7 @@ import com.revenuecat.purchases.common.debugLog
  * (e.g. "sans-serif"), a font resource provided by the app, or a device font provided by the OEM.
  *
  * Determining this is relatively costly for font resources. So this abstraction allows us to perform this logic only
- * once for each one (see [determineFontSpecs]) in the validation step, before resolving the actual font where needed.
+ * once for each one (see [determineFontSpecs]), before resolving the actual font where needed.
  *
  * It also allows us to defer resolving the actual font to the UI layer, as only at that time do we know the exact
  * override that's being used. We need to know this, because we need to know the [FontWeight] for which to resolve the
