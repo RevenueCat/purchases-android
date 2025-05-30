@@ -12,10 +12,6 @@ import java.util.Locale
  * Abstraction around [Context]
  */
 internal interface ResourceProvider {
-    companion object {
-        const val ASSETS_FONTS_DIR = "fonts"
-    }
-
     fun getApplicationName(): String
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
@@ -24,12 +20,12 @@ internal interface ResourceProvider {
 
 internal class PaywallResourceProvider(
     private val applicationName: String,
-    private val packageName: String,
     private val resources: Resources,
+    private val cachedFontSpecs: Map<FontAlias, FontSpec>? = null,
 ) : ResourceProvider {
     constructor(
         context: Context,
-    ) : this(context.applicationContext.applicationName(), context.packageName, context.resources)
+    ) : this(context.applicationContext.applicationName(), context.resources)
 
     override fun getApplicationName(): String {
         return applicationName
@@ -44,7 +40,11 @@ internal class PaywallResourceProvider(
     }
 
     override fun getCachedFontSpecs(): Map<FontAlias, FontSpec> {
-        return Purchases.sharedInstance.getCachedFontSpecs()
+        return cachedFontSpecs ?: if (Purchases.isConfigured) {
+            Purchases.sharedInstance.getCachedFontSpecs()
+        } else {
+            emptyMap()
+        }
     }
 }
 

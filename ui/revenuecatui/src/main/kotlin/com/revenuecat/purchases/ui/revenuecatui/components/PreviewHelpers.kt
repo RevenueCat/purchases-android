@@ -290,8 +290,8 @@ internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<P
     validatePaywallComponentsDataOrNull(
         PaywallResourceProvider(
             applicationName = "RevenueCatUI Previews",
-            packageName = "com.revenuecat.purchases.ui.revenuecatui",
             resources = LocalContext.current.resources,
+            cachedFontSpecs = emptyMap(),
         ),
     )
 
