@@ -36,6 +36,9 @@ sealed interface FontSpec {
 }
 
 private const val ASSETS_FONTS_DIR = "fonts"
+private const val SANS_SERIF_FONT_NAME = "sans-serif"
+private const val SERIF_FONT_NAME = "serif"
+private const val MONOSPACE_FONT_NAME = "monospace"
 
 @OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
@@ -55,9 +58,9 @@ private fun Context.determineFontSpec(info: FontInfo): FontSpec =
     when (info) {
         is FontInfo.GoogleFonts -> FontSpec.Google(name = info.value)
         is FontInfo.Name -> when (info.value) {
-            "sans-serif" -> FontSpec.Generic.SansSerif
-            "serif" -> FontSpec.Generic.Serif
-            "monospace" -> FontSpec.Generic.Monospace
+            SANS_SERIF_FONT_NAME -> FontSpec.Generic.SansSerif
+            SERIF_FONT_NAME -> FontSpec.Generic.Serif
+            MONOSPACE_FONT_NAME -> FontSpec.Generic.Monospace
             else -> getResourceIdentifier(name = info.value, type = "font")
                 .takeUnless { it == 0 }
                 ?.let { fontId -> FontSpec.Resource(id = fontId) }
