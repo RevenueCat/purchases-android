@@ -85,7 +85,8 @@ class PaywallViewModelTest {
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
             base = PaywallComponentsConfig(
-                stack = StackComponent(components = emptyList()),
+                // Need to have at least one PackageComponent for the PaywallState to be valid.
+                stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 stickyFooter = null,
             ),

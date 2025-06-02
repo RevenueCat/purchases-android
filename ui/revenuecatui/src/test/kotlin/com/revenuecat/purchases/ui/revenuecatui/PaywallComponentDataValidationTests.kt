@@ -75,7 +75,8 @@ class PaywallComponentDataValidationTests {
                             TextComponent(
                                 text = localizationKey,
                                 color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
-                            )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
                         ),
                         size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                     ),
@@ -93,7 +94,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), paywallComponents),
         )
     }
@@ -114,7 +115,7 @@ class PaywallComponentDataValidationTests {
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = emptyList()),
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),
@@ -126,7 +127,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
@@ -160,7 +161,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
@@ -217,7 +218,7 @@ class PaywallComponentDataValidationTests {
                 assetBaseURL = URL("https://assets.pawwalls.com"),
                 componentsConfig = ComponentsConfig(
                     base = PaywallComponentsConfig(
-                        stack = StackComponent(components = emptyList()),
+                        stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
                         background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                         stickyFooter = null,
                     ),
@@ -229,7 +230,7 @@ class PaywallComponentDataValidationTests {
                 identifier = "identifier",
                 serverDescription = "serverDescription",
                 metadata = emptyMap(),
-                availablePackages = emptyList(),
+                availablePackages = listOf(TestData.Packages.monthly),
                 paywallComponents = Offering.PaywallComponents(UiConfig(localizations = variableLocalizations), data),
             )
 
@@ -322,7 +323,7 @@ class PaywallComponentDataValidationTests {
                 base = PaywallComponentsConfig(
                     stack = StackComponent(
                         // There are no TextComponents using the localizations.
-                        components = emptyList()
+                        components = listOf(TestData.Components.monthlyPackageComponent)
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
@@ -347,7 +348,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
@@ -405,6 +406,7 @@ class PaywallComponentDataValidationTests {
                                 color = textColor,
                                 fontName = secondaryFontAlias,
                             ),
+                            TestData.Components.monthlyPackageComponent,
                         ),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
@@ -423,7 +425,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(uiConfig, data),
         )
 
@@ -434,7 +436,7 @@ class PaywallComponentDataValidationTests {
         val validatedComponents = validated as PaywallValidationResult.Components
         assertNull(validatedComponents.errors)
         val stack = validatedComponents.stack as StackComponentStyle
-        assertEquals(2, stack.children.size)
+        assertEquals(3, stack.children.size)
         val text1 = stack.children[0] as TextComponentStyle
         val text2 = stack.children[1] as TextComponentStyle
         assertEquals(robotoFont, text1.fontSpec)
@@ -485,6 +487,7 @@ class PaywallComponentDataValidationTests {
                                 color = textColor,
                                 fontName = missingFontAlias3,
                             ),
+                            TestData.Components.monthlyPackageComponent,
                         ),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
@@ -503,7 +506,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(uiConfig, data),
         )
 
@@ -550,6 +553,7 @@ class PaywallComponentDataValidationTests {
                                     )
                                 )
                             ),
+                            TestData.Components.monthlyPackageComponent,
                         ),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
@@ -568,7 +572,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(uiConfig, data),
         )
 
@@ -621,7 +625,8 @@ class PaywallComponentDataValidationTests {
                                         )
                                     )
                                 )
-                            )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
                         )
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
@@ -639,7 +644,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
@@ -676,7 +681,8 @@ class PaywallComponentDataValidationTests {
                                     StackComponent(components = listOf()),
                                     StackComponent(components = listOf()),
                                 )
-                            )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
                         )
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
@@ -694,7 +700,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
@@ -728,7 +734,8 @@ class PaywallComponentDataValidationTests {
                                     StackComponent(components = listOf()),
                                     StackComponent(components = listOf()),
                                 )
-                            )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
                         )
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
@@ -760,7 +767,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
@@ -768,8 +775,8 @@ class PaywallComponentDataValidationTests {
         val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
 
         // Assert
-        assertTrue(validated is PaywallValidationResult.Components)
         assertNull(validated.errors)
+        assertTrue(validated is PaywallValidationResult.Components)
         val validatedComponents = validated as PaywallValidationResult.Components
         val actualStickyFooter = validatedComponents.stickyFooter as StickyFooterComponentStyle?
         assertNotNull(actualStickyFooter)
@@ -796,7 +803,8 @@ class PaywallComponentDataValidationTests {
                                     StackComponent(components = listOf()),
                                     StackComponent(components = listOf()),
                                 )
-                            )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
                         )
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
@@ -814,7 +822,7 @@ class PaywallComponentDataValidationTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 
@@ -827,5 +835,92 @@ class PaywallComponentDataValidationTests {
         val validatedComponents = validated as PaywallValidationResult.Components
         val actualStack = validatedComponents.stack as StackComponentStyle
         assertTrue(actualStack.applyBottomWindowInsets)
+    }
+
+    @Test
+    fun `Should fail to validate if no package component is found`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            TestData.Components.monthlyPackageComponent,
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.annual, TestData.Packages.lifetime),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertNotNull(validated.errors)
+        assertEquals(validated.errors?.size, 1)
+        assertEquals(validated.errors?.first(), PaywallValidationError.MissingAllPackages(
+            offeringId = "identifier",
+            allPackageIds = listOf(TestData.Packages.annual.identifier, TestData.Packages.lifetime.identifier)
+        ))
+    }
+
+    @Test
+    fun `Should validate if at least one package component is found`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            TestData.Components.monthlyPackageComponent,
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.annual, TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertNull(validated.errors)
     }
 }
