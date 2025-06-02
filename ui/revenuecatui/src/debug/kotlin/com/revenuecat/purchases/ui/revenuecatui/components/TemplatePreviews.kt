@@ -27,20 +27,12 @@ import java.io.InputStream
 import java.net.URI
 import java.util.Date
 
-private const val DIR_TEMPLATES = "paywall-templates"
 private const val MILLIS_2025_04_23 = 1745366400000
 
 /**
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
  */
 internal class OfferingProvider : PreviewParameterProvider<Offering> {
-    private val offeringsJsonFilePath = "$DIR_TEMPLATES/offerings_paywalls_v2_templates.json"
-    private val packagesJsonFilePath = "packages.json"
-
-    private val packagesJsonArray = JSONObject(getResourceStream(packagesJsonFilePath).readBytes().decodeToString())
-        .getJSONArray("packages")
-    private val uiConfigJsonObject = JSONObject(getResourceStream(offeringsJsonFilePath).readUiConfig())
-
     private val offeringParser = Class.forName("com.revenuecat.purchases.utils.PreviewOfferingParser")
         .getDeclaredConstructor()
         .apply { isAccessible = true }
@@ -48,31 +40,33 @@ internal class OfferingProvider : PreviewParameterProvider<Offering> {
     private val createOfferingsMethod = offeringParser::class.java
         .getMethod("createOfferings", JSONObject::class.java, Map::class.java)
 
-    // Find all start (inclusive) and end (exclusive) indices of each offering in the JSON.
-    private val offeringIndices = getResourceStream(offeringsJsonFilePath).indexOfferings()
+    private val offeringJsonFiles = getAllOfferingsJsonFiles()
 
-    override val values = offeringIndices
+    override val values = offeringJsonFiles
         .asSequence()
-        .mapNotNull { (start, end) ->
-            // Re-open the stream and read only the current offering. While we could keep the stream open for the
-            // entirety of the sequence and yield offerings as we encounter them, we found that Emerge Snapshots closes
-            // the stream prematurely in this case. To avoid that, we reopen the stream for each offering.
-            val offeringJsonString = getResourceStream(offeringsJsonFilePath).readOfferingAt(start, end)
-            val offeringJsonObject = JSONObject(offeringJsonString)
-            val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
-            if (!hasPaywall) return@mapNotNull null
+        .flatMap { (_, file) ->
+            val uiConfig = JSONObject(file.inputStream().readUiConfig())
+            val packagesArray = JSONObject(getResourceStream("packages.json").readBytes().decodeToString())
+                .getJSONArray("packages")
+            val indices = file.inputStream().indexOfferings()
 
-            // Ensure that the offering has all packages.
-            offeringJsonObject.put("packages", packagesJsonArray)
-            val offeringId = offeringJsonObject.getString("identifier")
-            val offeringsJsonObject = JSONObject()
-                .put("current_offering_id", offeringId)
-                .put("offerings", JSONArray().put(offeringJsonObject))
-                .put("ui_config", uiConfigJsonObject)
+            indices.mapNotNull { (start, end) ->
+                val offeringJsonString = file.inputStream().readOfferingAt(start, end)
+                val offeringJsonObject = JSONObject(offeringJsonString)
+                val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
+                if (!hasPaywall) return@mapNotNull null
 
-            createOfferings(offeringsJsonObject)
-                .current
-                ?.takeUnless { it.paywallComponents == null }
+                offeringJsonObject.put("packages", packagesArray)
+                val offeringId = offeringJsonObject.getString("identifier")
+                val offeringsJsonObject = JSONObject()
+                    .put("current_offering_id", offeringId)
+                    .put("offerings", JSONArray().put(offeringJsonObject))
+                    .put("ui_config", uiConfig)
+
+                createOfferings(offeringsJsonObject)
+                    .current
+                    ?.takeUnless { it.paywallComponents == null }
+            }
         }
 
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
@@ -183,11 +177,15 @@ private fun PaywallTemplateImageLoader(
         .components {
             add { chain ->
                 val url = URI(chain.request.data as String)
-                // Create the resourcePath by dropping the TLD, reversing the host, and appending the path.
-                val resourcePath = DIR_TEMPLATES + "/" +
-                    url.host.split('.').dropLast(1).reversed().joinToString("/") +
-                    url.path
-                val bitmap = BitmapFactory.decodeStream(getResourceStream(resourcePath))
+                val relativePath = url.path.removePrefix("/")
+
+                // Look for a matching file in all subdirectories
+                val matchingFile = getResourcesBaseDir().walkTopDown()
+                    .firstOrNull { it.isFile && it.name == relativePath.substringAfterLast("/") }
+
+                val bitmap = matchingFile?.inputStream()?.use {
+                    BitmapFactory.decodeStream(it)
+                } ?: error("Image not found for path: $relativePath")
 
                 SuccessResult(
                     drawable = bitmap.toDrawable(context.resources),
@@ -197,6 +195,21 @@ private fun PaywallTemplateImageLoader(
             }
         }
         .build()
+}
+
+private fun getResourcesBaseDir(): File {
+    return File(BuildConfig.PROJECT_DIR)
+        .resolve("../../upstream/paywall-preview-resources/resources")
+}
+
+private fun getAllOfferingsJsonFiles(): List<Pair<String, File>> {
+    return getResourcesBaseDir()
+        .listFiles { file -> file.isDirectory }
+        ?.mapNotNull { dir ->
+            val file = dir.resolve("offerings.json")
+            if (file.exists()) dir.name to file else null
+        }
+        ?: emptyList()
 }
 
 /**
