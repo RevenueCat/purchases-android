@@ -7,13 +7,18 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
+import com.revenuecat.purchases.paywalls.RemoteFontLoader
 import com.revenuecat.purchases.paywalls.components.properties.FontSpec
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
+import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
+import java.util.concurrent.CompletableFuture
 
 @RunWith(AndroidJUnit4::class)
 class FontSpecProviderTests {
@@ -22,6 +27,7 @@ class FontSpecProviderTests {
 
     private lateinit var mockContext: Context
     private lateinit var mockResources: Resources
+    private lateinit var mockFontLoader: RemoteFontLoader
 
     private lateinit var fontSpecProvider: FontSpecProvider
 
@@ -32,19 +38,26 @@ class FontSpecProviderTests {
             every { resources } returns mockResources
             every { packageName } returns mockPackageName
         }
+        mockFontLoader = mockk<RemoteFontLoader>().apply {
+            every { getOrDownloadFont(any(), any()) } returns CompletableFuture()
+        }
 
-        fontSpecProvider = FontSpecProvider(mockContext)
+
+        fontSpecProvider = FontSpecProvider(mockContext, mockFontLoader)
     }
 
     @Test
     fun `fontSpecProvider loads fonts from offering with fonts`() {
         val font1Name = "Font1"
         val font2Name = "Font2"
+        val font4Name = "Font4"
         val font1Alias = FontAlias("font1")
         val font2Alias = FontAlias("font2")
         val font3Alias = FontAlias("font3")
+        val font4Alias = FontAlias("font4")
         every { mockResources.getIdentifier(font1Name, "font", mockPackageName) } returns 123
         every { mockResources.getIdentifier(font2Name, "font", mockPackageName) } returns 0
+        every { mockResources.getIdentifier(font4Name, "font", mockPackageName) } returns 0
         every { mockResources.assets.list("fonts") } returns arrayOf("other_font.ttf", "${font2Name}.ttf")
         val offering = createOfferingWithFonts(mapOf(
             font1Alias to FontsConfig(
@@ -55,14 +68,28 @@ class FontSpecProviderTests {
             ),
             font3Alias to FontsConfig(
                 android = FontsConfig.FontInfo.Name("serif")
+            ),
+            font4Alias to FontsConfig(
+                android = FontsConfig.FontInfo.Name(font4Name),
+                web = FontsConfig.FontInfo.Name("https://example.com/${font4Name}.ttf", hash = "123abc"),
+                family = "custom-family",
+                weight = FontWeight.BOLD,
+                fontStyle = FontStyle.ITALIC,
             )
         ))
         fontSpecProvider.loadFonts(offering)
         val fontSpecs = fontSpecProvider.getFontSpecMap()
-        assertThat(fontSpecs.size).isEqualTo(3)
+        assertThat(fontSpecs.size).isEqualTo(4)
         assertThat(fontSpecs[font1Alias]).isEqualTo(FontSpec.Resource(123))
         assertThat(fontSpecs[font2Alias]).isEqualTo(FontSpec.Asset("fonts/${font2Name}.ttf"))
         assertThat(fontSpecs[font3Alias]).isEqualTo(FontSpec.Generic.Serif)
+        assertThat(fontSpecs[font4Alias]).isEqualTo(FontSpec.Downloadable(
+            url ="https://example.com/${font4Name}.ttf",
+            family = "custom-family",
+            weight = FontWeight.BOLD,
+            fontStyle = FontStyle.ITALIC,
+            hash = "123abc"
+        ))
     }
 
     @Test

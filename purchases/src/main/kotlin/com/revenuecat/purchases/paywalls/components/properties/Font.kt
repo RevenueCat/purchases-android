@@ -21,6 +21,15 @@ enum class FontWeight {
     BLACK,
 }
 
+@InternalRevenueCatAPI
+@Serializable(with = FontStyleDeserializer::class)
+enum class FontStyle {
+    // SerialNames are handled by the FontStyleDeserializer.
+
+    NORMAL,
+    ITALIC,
+}
+
 @Deprecated(
     "Font sizes are just integers now. Remove after 2025-03-01 when we are sure no more paywalls are using this.",
 )
@@ -73,6 +82,17 @@ internal object FontWeightDeserializer : EnumDeserializerWithDefault<FontWeight>
             FontWeight.BOLD -> "bold"
             FontWeight.EXTRA_BOLD -> "extra_bold"
             FontWeight.BLACK -> "black"
+        }
+    },
+)
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object FontStyleDeserializer : EnumDeserializerWithDefault<FontStyle>(
+    defaultValue = FontStyle.NORMAL,
+    typeForValue = { value ->
+        when (value) {
+            FontStyle.NORMAL -> "normal"
+            FontStyle.ITALIC -> "italic"
         }
     },
 )

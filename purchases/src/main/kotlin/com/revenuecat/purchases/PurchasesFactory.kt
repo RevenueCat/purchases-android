@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
@@ -38,6 +39,7 @@ import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.RemoteFontLoader
 import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
@@ -292,9 +294,22 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val fontSpecProvider = FontSpecProvider(
-                context,
-            )
+            val fontLoader = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                RemoteFontLoader(
+                    context = context,
+                )
+            } else {
+                null
+            }
+
+            val fontSpecProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && fontLoader != null) {
+                FontSpecProvider(
+                    context,
+                    fontLoader,
+                )
+            } else {
+                null
+            }
 
             val offeringsManager = OfferingsManager(
                 offeringsCache,

@@ -9,6 +9,9 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
+import java.net.MalformedURLException
+import java.net.URL
 
 /**
  * A `FontSpec` is a more detailed version of [FontInfo]. A [FontInfo.Name] can be resolved to a generic font
@@ -31,6 +34,13 @@ sealed interface FontSpec {
         object Serif : Generic
         object Monospace : Generic
     }
+    data class Downloadable(
+        @get:JvmSynthetic val url: String,
+        @get:JvmSynthetic val family: String,
+        @get:JvmSynthetic val weight: FontWeight,
+        @get:JvmSynthetic val fontStyle: FontStyle,
+        @get:JvmSynthetic val hash: String,
+    ): FontSpec
 
     data class System(@get:JvmSynthetic val name: String) : FontSpec
 }
@@ -42,39 +52,74 @@ private const val MONOSPACE_FONT_NAME = "monospace"
 
 @OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
-internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
-    context: Context,
-): Map<FontAlias, FontSpec> {
+internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(context: Context): Map<FontAlias, FontSpec> {
     // Get unique FontsConfigs, and determine their FontSpec.
     val configToSpec: Map<FontsConfig, FontSpec> = values.toSet().associateWith { fontsConfig ->
-        context.determineFontSpec(fontsConfig.android)
+        context.determineFontSpec(fontsConfig)
     }
     // Create a map of FontAliases to FontSpecs.
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private fun Context.determineFontSpec(info: FontInfo): FontSpec =
-    when (info) {
-        is FontInfo.GoogleFonts -> FontSpec.Google(name = info.value)
-        is FontInfo.Name -> when (info.value) {
-            SANS_SERIF_FONT_NAME -> FontSpec.Generic.SansSerif
-            SERIF_FONT_NAME -> FontSpec.Generic.Serif
-            MONOSPACE_FONT_NAME -> FontSpec.Generic.Monospace
-            else -> getResourceIdentifier(name = info.value, type = "font")
-                .takeUnless { it == 0 }
-                ?.let { fontId -> FontSpec.Resource(id = fontId) }
-                ?: getAssetFontPath(name = info.value)
-                    ?.let { path -> FontSpec.Asset(path = path) }
-                ?: FontSpec.System(name = info.value).also {
-                    debugLog(
-                        "Could not find a font resource named `${info.value}`. Assuming it's an OEM system font. " +
-                            "If it isn't, make sure the font exists in the `res/font` folder. See for more info: " +
-                            "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
-                    )
-                }
+private fun Context.determineFontSpec(fontsConfig: FontsConfig): FontSpec {
+    val androidInfo = fontsConfig.android
+    val androidInfoValue = androidInfo.value
+    val bundledFont = if (androidInfoValue.isNotEmpty()) {
+        when (androidInfo) {
+            is FontInfo.GoogleFonts -> FontSpec.Google(name = androidInfoValue)
+            is FontInfo.Name -> when (androidInfoValue) {
+                SANS_SERIF_FONT_NAME -> FontSpec.Generic.SansSerif
+                SERIF_FONT_NAME -> FontSpec.Generic.Serif
+                MONOSPACE_FONT_NAME -> FontSpec.Generic.Monospace
+                else -> getResourceIdentifier(name = androidInfoValue, type = "font")
+                    .takeUnless { it == 0 }
+                    ?.let { fontId -> FontSpec.Resource(id = fontId) }
+                    ?: getAssetFontPath(name = androidInfoValue)
+                        ?.let { path -> FontSpec.Asset(path = path) }
+            }
         }
+    } else {
+        null
     }
+    if (bundledFont != null) {
+        return bundledFont
+    }
+    val webUrl = fontsConfig.web?.value?.takeIf { it.isNotEmpty() }
+    val webHash = fontsConfig.web?.hash?.takeIf { it.isNotEmpty() }
+    val webFont = if (webUrl != null && webHash != null) {
+        val url = try {
+            URL(webUrl)
+        } catch (e: MalformedURLException) {
+            errorLog("Error parsing web font URL: $webUrl", e)
+            null
+        }
+        url?.let {
+            FontSpec.Downloadable(
+                url = webUrl,
+                family = fontsConfig.family ?: "default",
+                weight = fontsConfig.weight ?: FontWeight.REGULAR,
+                fontStyle = fontsConfig.fontStyle ?: FontStyle.NORMAL,
+                hash = webHash,
+            )
+        }
+    } else {
+        null
+    }
+
+    if (webFont != null) {
+        return webFont
+    }
+
+    return FontSpec.System(name = androidInfoValue).also {
+        debugLog(
+            "Could not find a font resource named `${androidInfoValue}`. Assuming it's an OEM system font. " +
+                "If it isn't, make sure the font exists in the `res/font` folder. See for more info: " +
+                "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
+        )
+    }
+}
+
 
 /**
  * Use sparingly. The underlying platform API is discouraged because

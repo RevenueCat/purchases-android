@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
@@ -31,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import java.io.File
 
 @JvmSynthetic
 @Composable
@@ -135,6 +137,10 @@ internal class TextComponentState(
 
     private val fontSpec by derivedStateOf {
         presentedPartial?.fontSpec ?: style.fontSpec
+    }
+
+    private val fontDownloadableFile: File? {
+        Purchases.sharedInstance.getOrDownloadFontFile(fontSpec)
     }
 
     @get:JvmSynthetic

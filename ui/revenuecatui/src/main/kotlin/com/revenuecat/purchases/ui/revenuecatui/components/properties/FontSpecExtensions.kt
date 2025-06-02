@@ -72,4 +72,6 @@ internal fun FontSpec.resolve(
     is FontSpec.System -> FontFamily(
         Font(familyName = DeviceFontFamilyName(name), weight = weight, style = style),
     )
+
+    is FontSpec.Downloadable ->
 }

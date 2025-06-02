@@ -3,9 +3,11 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Pair
+import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -69,6 +71,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.RemoteFontLoader
 import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -84,9 +87,11 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import java.io.File
 import java.net.URL
 import java.util.Collections
 import java.util.Date
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -120,7 +125,8 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
-    private val fontSpecProvider: FontSpecProvider,
+    private val fontSpecProvider: FontSpecProvider?,
+    private val fontLoader: RemoteFontLoader?,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -905,10 +911,28 @@ internal class PurchasesOrchestrator(
     //endregion
     //endregion
 
-    @InternalRevenueCatAPI
+    // region Paywall Fonts
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @RequiresApi(Build.VERSION_CODES.N)
     fun getCachedFontSpecs(): Map<FontAlias, FontSpec> {
-        return fontSpecProvider.getFontSpecMap()
+        return fontSpecProvider?.getFontSpecMap() ?: emptyMap()
     }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun getOrDownloadFontFile(fontSpec: FontSpec.Downloadable): CompletableFuture<File> {
+        val fontLoader = fontLoader ?: run {
+            val completableFuture = CompletableFuture<File>()
+            completableFuture.completeExceptionally(
+                IllegalStateException("Font loading only available in Android 24+"),
+            )
+            return completableFuture
+        }
+        return fontLoader.getOrDownloadFont(fontSpec.url, fontSpec.hash)
+    }
+
+    // endregion Paywall Fonts
 
     // region Custom entitlements computation
     fun switchUser(newAppUserID: String) {

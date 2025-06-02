@@ -4,6 +4,8 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizedVariableLocalizationKeyMapSerializer
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
+import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -47,22 +49,35 @@ class UiConfig(
         class FontsConfig(
             @get:JvmSynthetic
             val android: FontInfo,
+            @get:JvmSynthetic
+            val web: FontInfo.Name? = null,
+            @get:JvmSynthetic
+            val family: String? = null,
+            @get:JvmSynthetic
+            val weight: FontWeight? = FontWeight.REGULAR,
+            @get:JvmSynthetic
+            val fontStyle: FontStyle? = FontStyle.NORMAL,
         ) {
 
             @InternalRevenueCatAPI
             @Serializable
             sealed interface FontInfo {
+                @get:JvmSynthetic val value: String
+
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("name")
-                class Name(@get:JvmSynthetic val value: String) : FontInfo
+                class Name(
+                    @get:JvmSynthetic override val value: String,
+                    @get:JvmSynthetic val hash: String? = null,
+                ) : FontInfo
 
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("google_fonts")
-                class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
+                class GoogleFonts(@get:JvmSynthetic override val value: String) : FontInfo
             }
         }
     }

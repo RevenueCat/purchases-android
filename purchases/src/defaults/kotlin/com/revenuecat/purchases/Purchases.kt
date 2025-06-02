@@ -5,6 +5,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
@@ -34,7 +36,9 @@ import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import java.io.File
 import java.net.URL
+import java.util.concurrent.CompletableFuture
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -770,10 +774,21 @@ class Purchases internal constructor(
     //endregion
     //endregion
 
+    // region Paywall fonts
+
     @InternalRevenueCatAPI
+    @RequiresApi(Build.VERSION_CODES.N)
     fun getCachedFontSpecs(): Map<FontAlias, FontSpec> {
         return purchasesOrchestrator.getCachedFontSpecs()
     }
+
+    @InternalRevenueCatAPI
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun getOrDownloadFontFile(fontSpec: FontSpec.Downloadable): CompletableFuture<File> {
+        return purchasesOrchestrator.getOrDownloadFontFile(fontSpec)
+    }
+
+    // endregion Paywall fonts
 
     // region Deprecated
 

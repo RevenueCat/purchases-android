@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.offerings
 
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -28,7 +29,7 @@ internal class OfferingsManager(
     private val offeringsFactory: OfferingsFactory,
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    private val fontSpecProvider: FontSpecProvider,
+    private val fontSpecProvider: FontSpecProvider?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
@@ -155,8 +156,12 @@ internal class OfferingsManager(
                 // This will load the fonts for the first offering with paywalls V2 in the result,
                 // which should be ok, since the fonts are shared across offerings.
                 // We should clean this up and use the original response instead to get the fonts.
-                offeringsResultData.offerings.all.values.firstOrNull { it.paywallComponents != null }?.let { offering ->
-                    fontSpecProvider.loadFonts(offering)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && fontSpecProvider != null) {
+                    offeringsResultData.offerings.all.values
+                        .firstOrNull { it.paywallComponents != null }
+                        ?.let { offering ->
+                            fontSpecProvider.loadFonts(offering)
+                        }
                 }
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
                 dispatch {
