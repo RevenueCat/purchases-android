@@ -166,6 +166,20 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             .orSuccessfullyNull(),
         third = config.background.toBackgroundStyles(aliases = colorAliases),
     ) { backendRootComponentResult, stickyFooterResult, background ->
+        val hasAnyPackages = backendRootComponentResult.availablePackages.hasAnyPackages ||
+            stickyFooterResult?.availablePackages?.hasAnyPackages ?: false
+        // Check if there are any packages available in the offering
+        if (!hasAnyPackages) {
+            return RcResult.Error(
+                nonEmptyListOf(
+                    PaywallValidationError.MissingAllPackages(
+                        identifier,
+                        availablePackages.map { it.identifier },
+                    ),
+                ),
+            )
+        }
+
         val backendRootComponent = backendRootComponentResult.componentStyle
         val stickyFooter = stickyFooterResult?.componentStyle
         // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
