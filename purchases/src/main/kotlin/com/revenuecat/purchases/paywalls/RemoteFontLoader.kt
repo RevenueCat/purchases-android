@@ -1,33 +1,31 @@
 package com.revenuecat.purchases.paywalls
 
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
+import com.revenuecat.purchases.utils.UrlConnection
+import com.revenuecat.purchases.utils.UrlConnectionFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.net.HttpURLConnection
 import java.security.MessageDigest
-import java.util.concurrent.CompletableFuture
 
-@RequiresApi(Build.VERSION_CODES.N)
 internal class RemoteFontLoader(
     private val context: Context,
-    private val httpClient: OkHttpClient = OkHttpClient(),
     private val cacheDir: File = File(context.cacheDir, "rc_paywall_fonts"),
     private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
 ) {
 
-    private val ongoingDownloads = mutableMapOf<String, CompletableFuture<File>>()
+    private val ongoingDownloads = mutableSetOf<String>()
 
     init {
         if (!cacheDir.exists()) {
@@ -41,7 +39,7 @@ internal class RemoteFontLoader(
 
     fun getCachedFontFileOrStartDownload(url: String, expectedMd5: String): File? {
         val urlHash = md5Hex(url.toByteArray(Charsets.UTF_8))
-        val extension = url.substringAfterLast('.', missingDelimiterValue = "bin")
+        val extension = url.substringAfterLast('.')
         val cachedFile = File(cacheDir, "$urlHash.$extension")
 
         if (cachedFile.exists()) {
@@ -50,14 +48,12 @@ internal class RemoteFontLoader(
 
         ioScope.launch {
             synchronized(this) {
-                if (ongoingDownloads.containsKey(urlHash)) {
+                if (ongoingDownloads.contains(urlHash)) {
                     verboseLog("Font download already in progress for $url")
                     return@launch
                 }
+                ongoingDownloads.remove(urlHash)
             }
-
-            val newFuture = CompletableFuture<File>()
-            ongoingDownloads[urlHash] = newFuture
 
             try {
                 performDownloadAndCache(
@@ -112,21 +108,23 @@ internal class RemoteFontLoader(
 
     @Throws(IOException::class)
     private fun downloadToFile(url: String, outputFile: File) {
-        val request = Request.Builder().url(url).build()
         verboseLog("Downloading remote font from $url")
-        httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw IOException("HTTP ${response.code} when downloading paywall font: $url")
+        var connection: UrlConnection? = null
+        try {
+            connection = urlConnectionFactory.createConnection(url)
+
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                throw IOException("HTTP ${connection.responseCode} when downloading paywall font: $url")
             }
-            val bodyStream = response.body?.byteStream()
-                ?: throw IOException("Empty response body downloading paywall font: $url")
-            writeStream(bodyStream, outputFile)
+
+            connection.inputStream.use { input ->
+                writeStream(input, outputFile)
+            }
+        } finally {
+            connection?.disconnect()
         }
     }
 
-    /**
-     * Simple buffered copy from [input] to [file].
-     */
     @Throws(IOException::class)
     private fun writeStream(input: InputStream, file: File) {
         FileOutputStream(file).use { out ->
@@ -140,9 +138,6 @@ internal class RemoteFontLoader(
         }
     }
 
-    /**
-     * Computes the MD5 digest of [bytes] and returns it as a lowercase hex string.
-     */
     private fun md5Hex(bytes: ByteArray): String {
         val md = MessageDigest.getInstance("MD5")
         val digest = md.digest(bytes)

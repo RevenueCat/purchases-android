@@ -5,8 +5,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
@@ -776,13 +774,11 @@ class Purchases internal constructor(
     // region Paywall fonts
 
     @InternalRevenueCatAPI
-    @RequiresApi(Build.VERSION_CODES.N)
     fun getCachedFontSpecs(): Map<FontAlias, FontSpec> {
         return purchasesOrchestrator.getCachedFontSpecs()
     }
 
     @InternalRevenueCatAPI
-    @RequiresApi(Build.VERSION_CODES.N)
     fun getCachedFontFileOrStartDownload(fontSpec: FontSpec.Downloadable): File? {
         return purchasesOrchestrator.getCachedFontFileOrStartDownload(fontSpec)
     }

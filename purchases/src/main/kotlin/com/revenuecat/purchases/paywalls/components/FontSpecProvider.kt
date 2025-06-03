@@ -1,8 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
@@ -10,7 +8,6 @@ import com.revenuecat.purchases.paywalls.RemoteFontLoader
 import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.paywalls.components.properties.determineFontSpecs
 
-@RequiresApi(Build.VERSION_CODES.N)
 @OptIn(InternalRevenueCatAPI::class)
 internal class FontSpecProvider internal constructor(
     private val context: Context,
