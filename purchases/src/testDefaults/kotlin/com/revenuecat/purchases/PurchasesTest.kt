@@ -11,8 +11,6 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.createCustomerInfo
-import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -26,6 +24,9 @@ import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.components.properties.FontSpec
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
+import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
@@ -46,6 +47,7 @@ import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.File
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -1626,6 +1628,48 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion redeemWebPurchase
+
+    // region Paywall fonts
+
+    @Test
+    fun `getCachedFontSpecs returns cached font specs`() {
+        // Arrange
+        val expectedMap = mapOf(
+            FontAlias("font1") to FontSpec.Resource(123),
+            FontAlias("font2") to FontSpec.Resource(456),
+        )
+        every { mockFontSpecProvider.getFontSpecMap() } returns expectedMap
+
+        // Act
+        val cachedFontSpecs = purchases.getCachedFontSpecs()
+
+        // Assert
+        assertThat(cachedFontSpecs).isEqualTo(expectedMap)
+    }
+
+    @Test
+    fun `getDownloadedFont returns font file`() {
+        // Arrange
+        val url = "https://example.com/font1.ttf"
+        val hash = "expectedMd5"
+        val downloadableFontSpec = FontSpec.Downloadable(
+            url = url,
+            family = "Font Family",
+            weight = FontWeight.BOLD,
+            fontStyle = FontStyle.NORMAL,
+            hash = hash
+        )
+        val expectedFile = mockk<File>()
+        every { mockFontLoader.getCachedFontFileOrStartDownload(url, hash) } returns expectedFile
+
+        // Act
+        val downloadedFont = purchases.getCachedFontFileOrStartDownload(downloadableFontSpec)
+
+        // Assert
+        assertThat(downloadedFont).isEqualTo(expectedFile)
+    }
+
+    // endregion Paywall fonts
 
     // region Private Methods
 

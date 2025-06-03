@@ -82,8 +82,8 @@ internal open class BasePurchasesTest {
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
-    private val mockFontSpecProvider = mockk<FontSpecProvider>()
-    private val mockFontLoader = mockk<RemoteFontLoader>()
+    internal val mockFontSpecProvider = mockk<FontSpecProvider>()
+    internal val mockFontLoader = mockk<RemoteFontLoader>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected lateinit var appConfig: AppConfig
