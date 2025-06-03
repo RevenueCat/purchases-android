@@ -104,6 +104,7 @@ internal sealed class TransactionDetails(
 ) {
     data class Subscription(
         override val productIdentifier: String,
+        val productPlanIdentifier: String?,
         override val store: Store,
         val isActive: Boolean,
         val willRenew: Boolean,
@@ -339,6 +340,7 @@ internal class CustomerCenterViewModelImpl(
             when (it) {
                 is SubscriptionInfo -> TransactionDetails.Subscription(
                     productIdentifier = it.productIdentifier,
+                    productPlanIdentifier = it.productPlanIdentifier,
                     store = it.store,
                     isActive = it.isActive,
                     willRenew = it.willRenew,
@@ -365,7 +367,7 @@ internal class CustomerCenterViewModelImpl(
         val product = if (transaction.store == Store.PLAY_STORE) {
             purchases.awaitGetProduct(
                 transaction.productIdentifier,
-                entitlement?.productPlanIdentifier,
+                 (transaction as? TransactionDetails.Subscription)?.productPlanIdentifier,
             ).also {
                 if (it == null) {
                     Logger.w(
