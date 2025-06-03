@@ -47,6 +47,7 @@ class UiConfig(
         class FontsConfig(
             @get:JvmSynthetic
             val android: FontInfo,
+            @get:JvmSynthetic
             val web: WebFontInfo? = null,
         ) {
 
@@ -56,7 +57,7 @@ class UiConfig(
                 @get:JvmSynthetic
                 val value: String,
                 @get:JvmSynthetic
-                val hash: String,
+                val hash: String? = null,
             )
 
             @InternalRevenueCatAPI

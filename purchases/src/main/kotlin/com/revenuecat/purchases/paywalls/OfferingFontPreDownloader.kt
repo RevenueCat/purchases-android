@@ -39,7 +39,9 @@ internal class OfferingFontPreDownloader(
             } ?: emptyList()
 
         for (fontToDownload in fontInfosToDownload) {
-            remoteFontLoader.getCachedFontFileOrStartDownload(fontToDownload.value, fontToDownload.hash)
+            fontToDownload.hash?.takeIf { it.isNotEmpty() }?.let { hash ->
+                remoteFontLoader.getCachedFontFileOrStartDownload(fontToDownload.value, hash)
+            }
         }
     }
 
