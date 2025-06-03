@@ -75,9 +75,13 @@ internal class UiConfigTests {
                       "value": "Roboto"
                     },
                     "web": {
-                      "type": "google_fonts",
-                      "value": "Gothic"
-                    }
+                      "type": "name",
+                      "value": "https://example.com/testfont123.ttf",
+                      "hash": "123abc"
+                    },
+                    "family": "custom-family",
+                    "weight": "bold",
+                    "style": "italic"
                   },
                   "secondary": {
                     "ios": {
@@ -90,8 +94,12 @@ internal class UiConfigTests {
                     },
                     "web": {
                       "type": "name",
-                      "value": "SF Pro"
-                    }
+                      "value": "https://example.com/testfont456.ttf",
+                      "hash": "456def"
+                    },
+                    "family": "custom-family2",
+                    "weight": "regular",
+                    "style": "normal"
                   }
                 }
               },
@@ -160,9 +168,17 @@ internal class UiConfigTests {
                 fonts = mapOf(
                     FontAlias("primary") to UiConfig.AppConfig.FontsConfig(
                         android = UiConfig.AppConfig.FontsConfig.FontInfo.Name("Roboto"),
+                        web = UiConfig.AppConfig.FontsConfig.WebFontInfo(
+                            value = "https://example.com/testfont123.ttf",
+                            hash = "123abc",
+                        ),
                     ),
                     FontAlias("secondary") to UiConfig.AppConfig.FontsConfig(
                         android = UiConfig.AppConfig.FontsConfig.FontInfo.GoogleFonts("Gothic"),
+                        web = UiConfig.AppConfig.FontsConfig.WebFontInfo(
+                            value = "https://example.com/testfont456.ttf",
+                            hash = "456def",
+                        )
                     ),
                 )
             ),

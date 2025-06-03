@@ -47,22 +47,34 @@ class UiConfig(
         class FontsConfig(
             @get:JvmSynthetic
             val android: FontInfo,
+            val web: WebFontInfo? = null,
         ) {
 
             @InternalRevenueCatAPI
             @Serializable
+            data class WebFontInfo(
+                @get:JvmSynthetic
+                val value: String,
+                @get:JvmSynthetic
+                val hash: String,
+            )
+
+            @InternalRevenueCatAPI
+            @Serializable
             sealed interface FontInfo {
+                val value: String
+
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("name")
-                class Name(@get:JvmSynthetic val value: String) : FontInfo
+                class Name(@get:JvmSynthetic override val value: String) : FontInfo
 
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("google_fonts")
-                class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
+                class GoogleFonts(@get:JvmSynthetic override val value: String) : FontInfo
             }
         }
     }

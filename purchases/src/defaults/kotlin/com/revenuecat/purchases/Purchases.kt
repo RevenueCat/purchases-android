@@ -33,6 +33,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import java.io.File
 import java.net.URL
 
 /**
@@ -768,6 +769,18 @@ class Purchases internal constructor(
     //endregion
     //endregion
     //endregion
+
+    // region Paywall fonts
+
+    @InternalRevenueCatAPI
+    fun getCachedFontFileOrStartDownload(
+        url: String,
+        hash: String,
+    ): File? {
+        return purchasesOrchestrator.getCachedFontFileOrStartDownload(url, hash)
+    }
+
+    // endregion Paywall Fonts
 
     // region Deprecated
 

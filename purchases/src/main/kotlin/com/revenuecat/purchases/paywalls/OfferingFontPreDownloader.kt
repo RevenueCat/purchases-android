@@ -1,0 +1,72 @@
+package com.revenuecat.purchases.paywalls
+
+import android.annotation.SuppressLint
+import android.content.Context
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.common.errorLog
+import java.net.MalformedURLException
+import java.net.URL
+
+@OptIn(InternalRevenueCatAPI::class)
+internal class OfferingFontPreDownloader(
+    private val context: Context,
+    private val remoteFontLoader: RemoteFontLoader,
+) {
+
+    private val assetsFontsDir = "fonts"
+    private val genericFonts = setOf(
+        "sans-serif",
+        "serif",
+        "monospace",
+    )
+
+    fun preDownloadOfferingFontsIfNeeded(offerings: Offerings) {
+        // Getting the first offering's paywall components to check for fonts.
+        // All offerings are expected to have the same fonts.
+        val fontInfosToDownload = offerings.all.values.firstOrNull()?.paywallComponents?.uiConfig?.app?.fonts?.values
+            ?.filterNot { isBundled(it.android) }
+            ?.mapNotNull { it.web }
+            ?.filter {
+                try {
+                    URL(it.value)
+                    true
+                } catch (e: MalformedURLException) {
+                    errorLog("Malformed URL for font: ${it.value}. Skipping download.", e)
+                    false
+                }
+            } ?: emptyList()
+
+        for (fontToDownload in fontInfosToDownload) {
+            remoteFontLoader.getCachedFontFileOrStartDownload(fontToDownload.value, fontToDownload.hash)
+        }
+    }
+
+    private fun isBundled(info: FontInfo): Boolean {
+        return when (info) {
+            is FontInfo.GoogleFonts -> true
+            is FontInfo.Name -> when (info.value) {
+                in genericFonts -> true
+                else -> context.getResourceIdentifier(info.value, "font") != 0 ||
+                    context.getAssetFontPath(info.value) != null
+            }
+        }
+    }
+
+    /**
+     * Use sparingly. The underlying platform API is discouraged because
+     * > resource reflection makes it harder to perform build optimizations and compile-time verification of code.
+     */
+    @SuppressLint("DiscouragedApi")
+    private fun Context.getResourceIdentifier(name: String, type: String): Int =
+        resources.getIdentifier(name, type, packageName)
+
+    private fun Context.getAssetFontPath(name: String): String? {
+        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+
+        return resources.assets.list(assetsFontsDir)
+            ?.find { it == nameWithExtension }
+            ?.let { "$assetsFontsDir/$it" }
+    }
+}

@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 import java.net.URL
 import java.util.Date
 import java.util.Locale
@@ -414,6 +415,7 @@ internal class MockResourceProvider(
      */
     private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
     private val assetPaths: List<String> = emptyList(),
+    private val downloadedFiles: Map<String, File> = emptyMap(),
 ) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
@@ -452,6 +454,10 @@ internal class MockResourceProvider(
         val filePath = "${ResourceProvider.ASSETS_FONTS_DIR}/$nameWithExtension"
 
         return assetPaths.find { it == filePath }
+    }
+
+    override fun getCachedFontFileOrStartDownload(url: String, expectedMd5: String): File? {
+        return downloadedFiles[url]
     }
 }
 

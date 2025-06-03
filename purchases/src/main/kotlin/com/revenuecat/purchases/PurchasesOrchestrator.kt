@@ -69,6 +69,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.RemoteFontLoader
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.BillingStrings
@@ -82,6 +83,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import java.io.File
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -118,6 +120,7 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
+    private val fontLoader: RemoteFontLoader,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -916,6 +919,14 @@ internal class PurchasesOrchestrator(
     //endregion
 
     //endregion
+
+    // region Paywall fonts
+
+    fun getCachedFontFileOrStartDownload(url: String, hash: String): File? {
+        return fontLoader.getCachedFontFileOrStartDownload(url, hash)
+    }
+
+    // endregion Paywall fonts
 
     // region Private Methods
     private fun enqueue(command: () -> Unit) {
