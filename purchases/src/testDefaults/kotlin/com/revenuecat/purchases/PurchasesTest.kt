@@ -46,6 +46,7 @@ import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.File
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -1626,6 +1627,22 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion redeemWebPurchase
+
+    // region Paywall fonts
+
+    @Test
+    fun `getCachedFontFileOrStartDownload returns correct file if found`() {
+        val url = "https://example.com/font.ttf"
+        val expectedMd5 = "hash456"
+        val expectedFile = mockk<File>()
+        every { mockFontLoader.getCachedFontFileOrStartDownload(url, expectedMd5) } returns expectedFile
+
+        val result = purchases.getCachedFontFileOrStartDownload(url, expectedMd5)
+
+        assertThat(result).isEqualTo(expectedFile)
+    }
+
+    // endregion Paywall fonts
 
     // region Private Methods
 
