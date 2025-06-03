@@ -27,6 +27,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.RemoteFontLoader
 import com.revenuecat.purchases.paywalls.components.FontSpecProvider
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -56,6 +57,7 @@ class SubscriberAttributesPurchasesTests {
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
     private val fontSpecProviderMock = mockk<FontSpecProvider>()
+    private val fontLoaderMock = mockk<RemoteFontLoader>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -115,6 +117,7 @@ class SubscriberAttributesPurchasesTests {
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
             fontSpecProvider = fontSpecProviderMock,
+            fontLoader = fontLoaderMock,
         )
 
         underTest = Purchases(purchasesOrchestrator)
@@ -122,7 +125,13 @@ class SubscriberAttributesPurchasesTests {
 
     @After
     fun tearDown() {
-        clearMocks(customerInfoHelperMock, customerInfoUpdateHandlerMock, offeringsManagerMock)
+        clearMocks(
+            customerInfoHelperMock,
+            customerInfoUpdateHandlerMock,
+            offeringsManagerMock,
+            fontSpecProviderMock,
+            fontLoaderMock,
+        )
     }
 
     @Test

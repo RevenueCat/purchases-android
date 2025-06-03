@@ -38,7 +38,6 @@ import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import java.io.File
 import java.net.URL
-import java.util.concurrent.CompletableFuture
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -784,8 +783,8 @@ class Purchases internal constructor(
 
     @InternalRevenueCatAPI
     @RequiresApi(Build.VERSION_CODES.N)
-    fun getOrDownloadFontFile(fontSpec: FontSpec.Downloadable): CompletableFuture<File> {
-        return purchasesOrchestrator.getOrDownloadFontFile(fontSpec)
+    fun getCachedFontFileOrStartDownload(fontSpec: FontSpec.Downloadable): File? {
+        return purchasesOrchestrator.getCachedFontFileOrStartDownload(fontSpec)
     }
 
     // endregion Paywall fonts

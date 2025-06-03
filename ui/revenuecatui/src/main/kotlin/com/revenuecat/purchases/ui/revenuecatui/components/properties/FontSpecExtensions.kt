@@ -14,6 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMapError
+import java.io.File
 
 @get:JvmSynthetic
 private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
@@ -56,7 +57,8 @@ internal fun FontSpec.resolve(
     assets: AssetManager,
     weight: FontWeight,
     style: FontStyle,
-): FontFamily = when (this) {
+    downloadedFont: File?,
+): FontFamily? = when (this) {
     is FontSpec.Resource -> FontFamily(Font(resId = id, weight = weight, style = style))
     is FontSpec.Asset -> FontFamily(Font(path = path, assetManager = assets, weight = weight, style = style))
     is FontSpec.Google -> FontFamily(
@@ -73,5 +75,9 @@ internal fun FontSpec.resolve(
         Font(familyName = DeviceFontFamilyName(name), weight = weight, style = style),
     )
 
-    is FontSpec.Downloadable ->
+    is FontSpec.Downloadable -> downloadedFont?.let {
+        FontFamily(
+            Font(file = it, weight = weight, style = style),
+        )
+    }
 }

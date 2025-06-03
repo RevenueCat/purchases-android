@@ -12,6 +12,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDicti
 import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
+import java.io.File
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory as ActualStyleFactory
 
 private val defaultLocaleId = LocaleId("en_US")
@@ -28,6 +29,7 @@ internal fun StyleFactory(
     localizations: NonEmptyMap<LocaleId, LocalizationDictionary> = dummyLocalizations,
     colorAliases: Map<ColorAlias, ColorScheme> = emptyMap(),
     fontAliases: Map<FontAlias, FontSpec> = emptyMap(),
+    downloadedFonts: Map<FontSpec.Downloadable, File?> = emptyMap(),
     variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>> =
         defaultVariableLocalizations,
     offering: Offering = Offering(
@@ -41,6 +43,7 @@ internal fun StyleFactory(
         localizations = localizations,
         colorAliases = colorAliases,
         fontAliases = fontAliases,
+        downloadedFonts = downloadedFonts,
         variableLocalizations = variableLocalizations,
         offering = offering,
     )

@@ -50,6 +50,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
@@ -71,6 +72,7 @@ class StyleFactoryTests {
     )
     private val colorAliases = emptyMap<ColorAlias, ColorScheme>()
     private val fontAliases = emptyMap<FontAlias, FontSpec>()
+    private val downloadedFonts = emptyMap<FontSpec.Downloadable, File?>()
     private val variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs())
     private val offering = Offering(
         identifier = "identifier",
@@ -88,6 +90,7 @@ class StyleFactoryTests {
             localizations = localizations,
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            downloadedFonts = downloadedFonts,
             variableLocalizations = variableLocalizations,
             offering = offering
         )
@@ -214,6 +217,7 @@ class StyleFactoryTests {
             ),
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            downloadedFonts = downloadedFonts,
             variableLocalizations = variableLocalizations,
             offering = offering,
         )
@@ -259,6 +263,7 @@ class StyleFactoryTests {
             ),
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            downloadedFonts = downloadedFonts,
             variableLocalizations = variableLocalizations,
             offering = offering,
         )
@@ -298,6 +303,7 @@ class StyleFactoryTests {
                 fontAliasBase to FontSpec.Generic.Serif,
                 fontAliasOverride to FontSpec.Generic.Monospace,
             ),
+            downloadedFonts = downloadedFonts,
             variableLocalizations = variableLocalizations,
             offering = offering,
         )
@@ -330,6 +336,7 @@ class StyleFactoryTests {
             colorAliases = colorAliases,
             // Empty on purpose
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
             variableLocalizations = variableLocalizations,
             offering = offering,
         )
@@ -362,6 +369,7 @@ class StyleFactoryTests {
             colorAliases = colorAliases,
             // Empty on purpose
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
             variableLocalizations = variableLocalizations,
             offering = offering,
         )
@@ -406,6 +414,7 @@ class StyleFactoryTests {
             ),
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            downloadedFonts = downloadedFonts,
             variableLocalizations = variableLocalizations,
             offering = offering,
         )
@@ -477,6 +486,7 @@ class StyleFactoryTests {
             ),
             colorAliases = colorAliases,
             fontAliases = fontAliases,
+            downloadedFonts = downloadedFonts,
             variableLocalizations = variableLocalizations,
             offering = offering,
         )

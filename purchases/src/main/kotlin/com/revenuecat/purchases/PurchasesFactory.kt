@@ -354,6 +354,7 @@ internal class PurchasesFactory(
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
                 fontSpecProvider = fontSpecProvider,
+                fontLoader = fontLoader,
             )
 
             return Purchases(purchasesOrchestrator)

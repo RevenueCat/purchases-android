@@ -21,6 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import dev.drewhamilton.poko.Poko
+import java.io.File
 
 @Poko
 internal class LocalizedTextPartial private constructor(
@@ -28,6 +29,7 @@ internal class LocalizedTextPartial private constructor(
     @get:JvmSynthetic val color: ColorStyles?,
     @get:JvmSynthetic val backgroundColor: ColorStyles?,
     @get:JvmSynthetic val fontSpec: FontSpec?,
+    @get:JvmSynthetic val downloadedFont: File?,
     @get:JvmSynthetic val partial: PartialTextComponent,
 ) : PresentedPartial<LocalizedTextPartial> {
 
@@ -43,6 +45,7 @@ internal class LocalizedTextPartial private constructor(
             using: NonEmptyMap<LocaleId, LocalizationDictionary>,
             aliases: Map<ColorAlias, ColorScheme>,
             fontAliases: Map<FontAlias, FontSpec>,
+            downloadedFonts: Map<FontSpec.Downloadable, File?>,
         ): Result<LocalizedTextPartial, NonEmptyList<PaywallValidationError>> =
             zipOrAccumulate(
                 first = from.text
@@ -61,6 +64,7 @@ internal class LocalizedTextPartial private constructor(
                     color = color,
                     backgroundColor = backgroundColor,
                     fontSpec = fontSpec,
+                    downloadedFont = fontSpec?.let { downloadedFonts[it] },
                     partial = from,
                 )
             }
@@ -76,6 +80,7 @@ internal class LocalizedTextPartial private constructor(
             color = with?.color ?: color,
             backgroundColor = with?.backgroundColor ?: backgroundColor,
             fontSpec = with?.fontSpec ?: fontSpec,
+            downloadedFont = with?.downloadedFont ?: downloadedFont,
             partial = PartialTextComponent(
                 visible = otherPartial?.visible ?: partial.visible,
                 text = otherPartial?.text ?: partial.text,

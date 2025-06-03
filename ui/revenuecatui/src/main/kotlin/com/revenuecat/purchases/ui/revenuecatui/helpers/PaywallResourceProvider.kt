@@ -8,7 +8,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.FontSpec
 import java.io.File
 import java.util.Locale
-import java.util.concurrent.CompletableFuture
 
 /**
  * Abstraction around [Context]
@@ -18,7 +17,7 @@ internal interface ResourceProvider {
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
     fun getCachedFontSpecs(): Map<FontAlias, FontSpec>
-    fun getOrDownloadFontFile(fontSpec: FontSpec.Downloadable): CompletableFuture<File>
+    fun getCachedFontFileOrStartDownload(fontSpec: FontSpec.Downloadable): File?
 }
 
 internal class PaywallResourceProvider(
@@ -51,12 +50,12 @@ internal class PaywallResourceProvider(
         }
     }
 
-    override fun getOrDownloadFontFile(fontSpec: FontSpec.Downloadable): CompletableFuture<File> {
+    override fun getCachedFontFileOrStartDownload(fontSpec: FontSpec.Downloadable): File? {
         return if (Purchases.isConfigured) {
-            Purchases.sharedInstance.getOrDownloadFontFile(fontSpec)
+            Purchases.sharedInstance.getCachedFontFileOrStartDownload(fontSpec)
         } else {
             Logger.e("getDownloadableFontFile called before Purchases is configured. Returning empty future.")
-            CompletableFuture.completedFuture(File(""))
+            return null
         }
     }
 }

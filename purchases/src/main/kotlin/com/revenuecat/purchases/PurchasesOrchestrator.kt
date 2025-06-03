@@ -91,7 +91,6 @@ import java.io.File
 import java.net.URL
 import java.util.Collections
 import java.util.Date
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -921,15 +920,8 @@ internal class PurchasesOrchestrator(
 
     @OptIn(InternalRevenueCatAPI::class)
     @RequiresApi(Build.VERSION_CODES.N)
-    fun getOrDownloadFontFile(fontSpec: FontSpec.Downloadable): CompletableFuture<File> {
-        val fontLoader = fontLoader ?: run {
-            val completableFuture = CompletableFuture<File>()
-            completableFuture.completeExceptionally(
-                IllegalStateException("Font loading only available in Android 24+"),
-            )
-            return completableFuture
-        }
-        return fontLoader.getOrDownloadFont(fontSpec.url, fontSpec.hash)
+    fun getCachedFontFileOrStartDownload(fontSpec: FontSpec.Downloadable): File? {
+        return fontLoader?.getCachedFontFileOrStartDownload(fontSpec.url, fontSpec.hash)
     }
 
     // endregion Paywall Fonts

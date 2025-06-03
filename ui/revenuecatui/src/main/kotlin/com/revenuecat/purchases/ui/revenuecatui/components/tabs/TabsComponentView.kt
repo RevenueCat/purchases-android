@@ -122,6 +122,7 @@ private fun TabsComponentView_Preview() {
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
         ).getOrThrow(),
     )
 

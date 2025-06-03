@@ -74,12 +74,14 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
+import java.io.File
 
 @Suppress("TooManyFunctions")
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
     private val colorAliases: Map<ColorAlias, ColorScheme>,
     private val fontAliases: Map<FontAlias, FontSpec>,
+    private val downloadedFonts: Map<FontSpec.Downloadable, File?>,
     private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     private val offering: Offering,
 ) {
@@ -579,6 +581,7 @@ internal class StyleFactory(
                     using = localizations,
                     aliases = colorAliases,
                     fontAliases = fontAliases,
+                    downloadedFonts = downloadedFonts,
                 )
             }
             .mapError { nonEmptyListOf(it) },
@@ -597,6 +600,7 @@ internal class StyleFactory(
             fontSize = component.fontSize,
             fontWeight = weight,
             fontSpec = fontSpec,
+            downloadedFont = downloadedFonts[fontSpec],
             textAlign = component.horizontalAlignment.toTextAlign(),
             horizontalAlignment = component.horizontalAlignment.toAlignment(),
             backgroundColor = backgroundColor,

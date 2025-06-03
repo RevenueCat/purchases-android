@@ -14,6 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import java.io.File
 
 @Suppress("LongParameterList")
 @Immutable
@@ -28,6 +29,8 @@ internal class TextComponentStyle(
     val fontWeight: FontWeight?,
     @get:JvmSynthetic
     val fontSpec: FontSpec?,
+    @get:JvmSynthetic
+    val downloadedFont: File?,
     @get:JvmSynthetic
     val textAlign: TextAlign?,
     @get:JvmSynthetic

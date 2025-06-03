@@ -40,7 +40,7 @@ sealed interface FontSpec {
         @get:JvmSynthetic val weight: FontWeight,
         @get:JvmSynthetic val fontStyle: FontStyle,
         @get:JvmSynthetic val hash: String,
-    ): FontSpec
+    ) : FontSpec
 
     data class System(@get:JvmSynthetic val name: String) : FontSpec
 }
@@ -62,39 +62,70 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(context: Context): M
 }
 
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("ReturnCount")
 private fun Context.determineFontSpec(fontsConfig: FontsConfig): FontSpec {
     val androidInfo = fontsConfig.android
     val androidInfoValue = androidInfo.value
-    val bundledFont = if (androidInfoValue.isNotEmpty()) {
+    val bundledFont = getBundledFontSpec(this, fontsConfig)
+    if (bundledFont != null) {
+        return bundledFont
+    }
+
+    val webFont = getDownloadableFontSpec(fontsConfig)
+    if (webFont != null) {
+        return webFont
+    }
+
+    return FontSpec.System(name = androidInfoValue).also {
+        debugLog(
+            "Could not find a font resource named `$androidInfoValue`. Assuming it's an OEM system font. " +
+                "If it isn't, make sure the font exists in the `res/font` folder. See for more info: " +
+                "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
+        )
+    }
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+@Suppress("NestedBlockDepth")
+private fun getBundledFontSpec(
+    context: Context,
+    fontsConfig: FontsConfig,
+): FontSpec? {
+    val androidInfo = fontsConfig.android
+    val androidInfoValue = androidInfo.value
+    return if (androidInfoValue.isNotEmpty()) {
         when (androidInfo) {
             is FontInfo.GoogleFonts -> FontSpec.Google(name = androidInfoValue)
             is FontInfo.Name -> when (androidInfoValue) {
                 SANS_SERIF_FONT_NAME -> FontSpec.Generic.SansSerif
                 SERIF_FONT_NAME -> FontSpec.Generic.Serif
                 MONOSPACE_FONT_NAME -> FontSpec.Generic.Monospace
-                else -> getResourceIdentifier(name = androidInfoValue, type = "font")
-                    .takeUnless { it == 0 }
+                else -> context.getResourceIdentifier(name = androidInfoValue, type = "font")
+                    .takeIf { it != 0 }
                     ?.let { fontId -> FontSpec.Resource(id = fontId) }
-                    ?: getAssetFontPath(name = androidInfoValue)
+                    ?: context.getAssetFontPath(name = androidInfoValue)
                         ?.let { path -> FontSpec.Asset(path = path) }
             }
         }
     } else {
         null
     }
-    if (bundledFont != null) {
-        return bundledFont
-    }
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+private fun getDownloadableFontSpec(fontsConfig: FontsConfig): FontSpec.Downloadable? {
     val webUrl = fontsConfig.web?.value?.takeIf { it.isNotEmpty() }
     val webHash = fontsConfig.web?.hash?.takeIf { it.isNotEmpty() }
-    val webFont = if (webUrl != null && webHash != null) {
+    return if (webUrl != null && webHash != null) {
         val url = try {
+            // Attempt to parse the URL to ensure it's valid.
             URL(webUrl)
         } catch (e: MalformedURLException) {
             errorLog("Error parsing web font URL: $webUrl", e)
             null
         }
         url?.let {
+            debugLog("Creating Downloadable FontSpec for URL: $webUrl")
             FontSpec.Downloadable(
                 url = webUrl,
                 family = fontsConfig.family ?: "default",
@@ -106,20 +137,7 @@ private fun Context.determineFontSpec(fontsConfig: FontsConfig): FontSpec {
     } else {
         null
     }
-
-    if (webFont != null) {
-        return webFont
-    }
-
-    return FontSpec.System(name = androidInfoValue).also {
-        debugLog(
-            "Could not find a font resource named `${androidInfoValue}`. Assuming it's an OEM system font. " +
-                "If it isn't, make sure the font exists in the `res/font` folder. See for more info: " +
-                "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
-        )
-    }
 }
-
 
 /**
  * Use sparingly. The underlying platform API is discouraged because

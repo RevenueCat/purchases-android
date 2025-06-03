@@ -26,7 +26,7 @@ internal class FontSpecProvider internal constructor(
 
             for ((_, fontConfig) in newFontSpecs) {
                 if (fontConfig is FontSpec.Downloadable) {
-                    fontLoader.getOrDownloadFont(fontConfig.url, fontConfig.hash)
+                    fontLoader.getCachedFontFileOrStartDownload(fontConfig.url, fontConfig.hash)
                 }
             }
 
@@ -34,7 +34,6 @@ internal class FontSpecProvider internal constructor(
                 fontSpecs.putAll(newFontSpecs)
             }
         }
-
     }
 
     @Synchronized

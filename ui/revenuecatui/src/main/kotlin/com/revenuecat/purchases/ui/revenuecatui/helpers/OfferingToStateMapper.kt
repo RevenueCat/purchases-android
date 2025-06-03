@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
+import java.io.File
 import java.util.Date
 import kotlin.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
@@ -144,12 +145,19 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     val colorAliases = paywallComponents.uiConfig.app.colors
 
     val fontAliases: Map<FontAlias, FontSpec> = resourceProvider.getCachedFontSpecs()
+    val downloadedFonts: MutableMap<FontSpec.Downloadable, File?> = mutableMapOf()
+    for ((_, fontSpec) in fontAliases) {
+        if (fontSpec is FontSpec.Downloadable && fontSpec !in downloadedFonts) {
+            downloadedFonts[fontSpec] = resourceProvider.getCachedFontFileOrStartDownload(fontSpec)
+        }
+    }
 
     // Create the StyleFactory to recursively create and validate all ComponentStyles.
     val styleFactory = StyleFactory(
         localizations = localizations,
         colorAliases = colorAliases,
         fontAliases = fontAliases,
+        downloadedFonts = downloadedFonts,
         variableLocalizations = variableLocalizations,
         offering = this,
     )

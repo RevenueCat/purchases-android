@@ -73,6 +73,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
+import java.io.File
 import java.net.URL
 import java.util.Date
 
@@ -186,6 +187,7 @@ internal fun previewTextComponentStyle(
     fontSize: Int = 15,
     fontWeight: FontWeight = FontWeight.REGULAR,
     fontSpec: FontSpec? = null,
+    downloadedFont: File? = null,
     textAlign: HorizontalAlignment = HorizontalAlignment.CENTER,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
@@ -204,6 +206,7 @@ internal fun previewTextComponentStyle(
         fontSize = fontSize,
         fontWeight = weight,
         fontSpec = fontSpec,
+        downloadedFont = downloadedFont,
         textAlign = textAlign.toTextAlign(),
         horizontalAlignment = horizontalAlignment.toAlignment(),
         backgroundColor = backgroundColor,

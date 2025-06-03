@@ -6,7 +6,10 @@ import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -21,8 +24,7 @@ internal class RemoteFontLoader(
     private val context: Context,
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val cacheDir: File = File(context.cacheDir, "rc_paywall_fonts"),
-    private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + backgroundDispatcher),
+    private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
     private val ongoingDownloads = mutableMapOf<String, CompletableFuture<File>>()
@@ -37,57 +39,43 @@ internal class RemoteFontLoader(
         }
     }
 
-    fun getOrDownloadFont(url: String, expectedMd5: String): CompletableFuture<File> {
+    fun getCachedFontFileOrStartDownload(url: String, expectedMd5: String): File? {
         val urlHash = md5Hex(url.toByteArray(Charsets.UTF_8))
         val extension = url.substringAfterLast('.', missingDelimiterValue = "bin")
         val cachedFile = File(cacheDir, "$urlHash.$extension")
-        val resultFuture = CompletableFuture<File>()
+
+        if (cachedFile.exists()) {
+            return cachedFile
+        }
 
         ioScope.launch {
-            try {
-                if (cachedFile.exists()) {
-                    resultFuture.complete(cachedFile)
+            synchronized(this) {
+                if (ongoingDownloads.containsKey(urlHash)) {
+                    verboseLog("Font download already in progress for $url")
                     return@launch
                 }
+            }
 
-                val ongoing: CompletableFuture<File> = synchronized(this) {
-                    ongoingDownloads[urlHash]?.let { return@synchronized it }
+            val newFuture = CompletableFuture<File>()
+            ongoingDownloads[urlHash] = newFuture
 
-                    val newFuture = CompletableFuture<File>()
-                    ongoingDownloads[urlHash] = newFuture
-                    newFuture
+            try {
+                performDownloadAndCache(
+                    url = url,
+                    expectedMd5 = expectedMd5,
+                    urlHash = urlHash,
+                    extension = extension,
+                )
+            } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                errorLog("Error downloading remote font from $url: ${t.message}")
+            } finally {
+                synchronized(this) {
+                    ongoingDownloads.remove(urlHash)
                 }
-
-                if (!ongoing.isDone && !ongoing.isCancelled) {
-                    try {
-                        val downloadedFile = performDownloadAndCache(
-                            url = url,
-                            expectedMd5 = expectedMd5,
-                            urlHash = urlHash,
-                            extension = extension
-                        )
-                        ongoing.complete(downloadedFile)
-                    } catch (t: Throwable) {
-                        ongoing.completeExceptionally(t)
-                    } finally {
-                        synchronized(this) {
-                            ongoingDownloads.remove(urlHash)
-                        }
-                    }
-                }
-
-                try {
-                    val file = ongoing.get() // blocks inside IO thread, but not on caller thread
-                    resultFuture.complete(file)
-                } catch (e: Exception) {
-                    resultFuture.completeExceptionally(e.cause ?: e)
-                }
-            } catch (exception: Throwable) {
-                resultFuture.completeExceptionally(exception)
             }
         }
 
-        return resultFuture
+        return null
     }
 
     @Throws(IOException::class)
@@ -95,7 +83,7 @@ internal class RemoteFontLoader(
         url: String,
         expectedMd5: String,
         urlHash: String,
-        extension: String
+        extension: String,
     ): File {
         val cachedFile = File(cacheDir, "$urlHash.$extension")
 

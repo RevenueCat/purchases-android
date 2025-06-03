@@ -81,6 +81,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("baseFont") to FontSpec.System("baseFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -108,6 +109,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("overrideFont") to FontSpec.System("overrideFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -134,7 +136,8 @@ internal class LocalizedTextPartialTests {
                             ),
                             fontAliases = mapOf(
                                 FontAlias("overrideFont") to FontSpec.System("overrideFont"),
-                            )
+                            ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -158,6 +161,7 @@ internal class LocalizedTextPartialTests {
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -176,6 +180,7 @@ internal class LocalizedTextPartialTests {
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -194,6 +199,7 @@ internal class LocalizedTextPartialTests {
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -226,6 +232,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("baseFont") to FontSpec.System("baseFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         override = null,
                         expected = LocalizedTextPartial(
@@ -254,6 +261,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("baseFont") to FontSpec.System("baseFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -286,6 +294,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("baseFont") to FontSpec.System("baseFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -313,6 +322,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("overrideFont") to FontSpec.System("overrideFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -340,6 +350,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("overrideFont") to FontSpec.System("overrideFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -362,6 +373,7 @@ internal class LocalizedTextPartialTests {
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -389,6 +401,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("overrideFont") to FontSpec.System("overrideFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -416,6 +429,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("overrideFont") to FontSpec.System("overrideFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -448,6 +462,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("baseFont") to FontSpec.System("baseFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -466,6 +481,7 @@ internal class LocalizedTextPartialTests {
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -493,6 +509,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("baseFont") to FontSpec.System("baseFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -525,6 +542,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("baseFont") to FontSpec.System("baseFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         override = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -543,6 +561,7 @@ internal class LocalizedTextPartialTests {
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         expected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -570,6 +589,7 @@ internal class LocalizedTextPartialTests {
                             fontAliases = mapOf(
                                 FontAlias("baseFont") to FontSpec.System("baseFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     )
                 ),
@@ -610,6 +630,7 @@ internal class LocalizedTextPartialTests {
                 ),
                 aliases = emptyMap(),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -630,6 +651,7 @@ internal class LocalizedTextPartialTests {
                 ),
                 aliases = emptyMap(),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -650,6 +672,7 @@ internal class LocalizedTextPartialTests {
                 ),
                 aliases = emptyMap(),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -667,6 +690,7 @@ internal class LocalizedTextPartialTests {
                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                 aliases = emptyMap(),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -695,6 +719,7 @@ internal class LocalizedTextPartialTests {
                     ColorAlias("existing-background-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
                 ),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -727,6 +752,7 @@ internal class LocalizedTextPartialTests {
                     firstBackgroundKey to ColorScheme(light = ColorInfo.Alias(secondBackgroundKey)),
                 ),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -755,6 +781,7 @@ internal class LocalizedTextPartialTests {
                     existingBackgroundKey to ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb()))
                 ),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -783,6 +810,7 @@ internal class LocalizedTextPartialTests {
                     ColorAlias("existing-color-key") to ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))
                 ),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -801,6 +829,7 @@ internal class LocalizedTextPartialTests {
                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                 aliases = emptyMap(),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -825,6 +854,7 @@ internal class LocalizedTextPartialTests {
                 fontAliases = mapOf(
                     FontAlias("existing-font-key") to FontSpec.System("existing-font")
                 ),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -849,6 +879,7 @@ internal class LocalizedTextPartialTests {
                 fontAliases = mapOf(
                     existingFontKey to expectedFont
                 ),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -869,6 +900,7 @@ internal class LocalizedTextPartialTests {
                 fontAliases = mapOf(
                     FontAlias("existing-font-key") to FontSpec.System("existing-font")
                 ),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert
@@ -885,6 +917,7 @@ internal class LocalizedTextPartialTests {
                 using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                 aliases = emptyMap(),
                 fontAliases = emptyMap(),
+                downloadedFonts = emptyMap(),
             )
 
             // Assert

@@ -103,6 +103,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = allFontAliases,
+                            downloadedFonts = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("introOffer"))
@@ -120,6 +121,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = allFontAliases,
+                            downloadedFonts = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("multipleIntroOffers"))
@@ -137,6 +139,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = allFontAliases,
+                            downloadedFonts = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("selected"))
@@ -154,6 +157,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = allFontAliases,
+                            downloadedFonts = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("compact"))
@@ -171,6 +175,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = allFontAliases,
+                            downloadedFonts = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("medium"))
@@ -188,6 +193,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = allFontAliases,
+                            downloadedFonts = emptyMap(),
                         )
                     },
                     expected = Result.Error(InvalidTemplate("expanded"))
@@ -202,6 +208,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                         using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                         aliases = emptyMap(),
                         fontAliases = allFontAliases,
+                        downloadedFonts = emptyMap(),
                     ) },
                     expected = Result.Success(
                         listOf(
@@ -212,6 +219,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
                                     fontAliases = allFontAliases,
+                                    downloadedFonts = emptyMap(),
                                 ).getOrThrow(),
                             ),
                             PresentedOverride(
@@ -221,6 +229,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
                                     fontAliases = allFontAliases,
+                                    downloadedFonts = emptyMap(),
                                 ).getOrThrow(),
                             ),
                             PresentedOverride(
@@ -230,6 +239,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
                                     fontAliases = allFontAliases,
+                                    downloadedFonts = emptyMap(),
                                 ).getOrThrow(),
                             ),
                             PresentedOverride(
@@ -239,6 +249,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
                                     fontAliases = allFontAliases,
+                                    downloadedFonts = emptyMap(),
                                 ).getOrThrow(),
                             ),
                             PresentedOverride(
@@ -248,6 +259,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
                                     fontAliases = allFontAliases,
+                                    downloadedFonts = emptyMap(),
                                 ).getOrThrow(),
                             ),
                             PresentedOverride(
@@ -257,6 +269,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                                     aliases = emptyMap(),
                                     fontAliases = allFontAliases,
+                                    downloadedFonts = emptyMap(),
                                 ).getOrThrow(),
                             ),
                         )

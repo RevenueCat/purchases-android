@@ -56,6 +56,7 @@ class UiConfig(
             @get:JvmSynthetic
             val weight: FontWeight? = FontWeight.REGULAR,
             @get:JvmSynthetic
+            @SerialName("style")
             val fontStyle: FontStyle? = FontStyle.NORMAL,
         ) {
 

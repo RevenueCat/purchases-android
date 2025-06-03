@@ -60,6 +60,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
         ).getOrThrow()
         private val introOfferPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -70,6 +71,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
         ).getOrThrow()
         private val multipleIntroOffersPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -80,6 +82,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
         ).getOrThrow()
         private val compactPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -90,6 +93,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
         ).getOrThrow()
         private val mediumPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -100,6 +104,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
         ).getOrThrow()
         private val expandedPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -110,6 +115,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
         ).getOrThrow()
         private val introOfferAndSelectedPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
@@ -120,6 +126,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
+            downloadedFonts = emptyMap(),
         ).getOrThrow()
 
         @JvmStatic
@@ -486,6 +493,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             ),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         medium = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -506,6 +514,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             fontAliases = mapOf(
                                 FontAlias("mediumFont") to FontSpec.System("mediumFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         compact = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -530,6 +539,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             fontAliases = mapOf(
                                 FontAlias("compactFont") to FontSpec.System("compactFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     ),
                     windowSize = EXPANDED,
@@ -561,6 +571,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         fontAliases = mapOf(
                             FontAlias("mediumFont") to FontSpec.System("mediumFont"),
                         ),
+                        downloadedFonts = emptyMap(),
                     ).getOrThrow(),
                 ),
             ),
@@ -585,6 +596,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         multipleIntroOffers = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -603,6 +615,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         selected = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -621,6 +634,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
                             aliases = emptyMap(),
                             fontAliases = emptyMap(),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         compact = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -645,6 +659,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             fontAliases = mapOf(
                                 FontAlias("compactFont") to FontSpec.System("compactFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         medium = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -665,6 +680,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             fontAliases = mapOf(
                                 FontAlias("mediumFont") to FontSpec.System("mediumFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                         expanded = LocalizedTextPartial(
                             from = PartialTextComponent(
@@ -685,6 +701,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             fontAliases = mapOf(
                                 FontAlias("expandedFont") to FontSpec.System("expandedFont"),
                             ),
+                            downloadedFonts = emptyMap(),
                         ).getOrThrow(),
                     ),
                     windowSize = EXPANDED,
@@ -713,6 +730,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         fontAliases = mapOf(
                             FontAlias("expandedFont") to FontSpec.System("expandedFont"),
                         ),
+                        downloadedFonts = emptyMap(),
                     ).getOrThrow(),
                 ),
             ),

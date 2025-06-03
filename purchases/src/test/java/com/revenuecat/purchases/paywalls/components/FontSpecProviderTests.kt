@@ -17,7 +17,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 import java.util.concurrent.CompletableFuture
 
 @RunWith(AndroidJUnit4::class)
@@ -39,7 +38,7 @@ class FontSpecProviderTests {
             every { packageName } returns mockPackageName
         }
         mockFontLoader = mockk<RemoteFontLoader>().apply {
-            every { getOrDownloadFont(any(), any()) } returns CompletableFuture()
+            every { getCachedFontFileOrStartDownload(any(), any()) } returns null
         }
 
 
