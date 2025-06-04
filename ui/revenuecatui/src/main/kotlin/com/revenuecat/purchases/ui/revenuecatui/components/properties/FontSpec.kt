@@ -170,6 +170,12 @@ private fun ResourceProvider.getBundledFontSpec(
 private fun ResourceProvider.getDownloadedFontSpec(fontsConfig: FontsConfig): FontSpec.Downloaded? {
     val webUrl = fontsConfig.web?.value?.takeIf { it.isNotEmpty() }
     val webHash = fontsConfig.web?.hash?.takeIf { it.isNotEmpty() }
+    if (webUrl != null && webHash == null) {
+        Logger.w(
+            "Font `$webUrl` does not have a validation hash. " +
+                "Please try to re-upload the font in the RevenueCat dashboard.",
+        )
+    }
     return if (webUrl != null && webHash != null) {
         val url = try {
             // Attempt to parse the URL to ensure it's valid.

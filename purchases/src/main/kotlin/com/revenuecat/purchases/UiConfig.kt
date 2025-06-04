@@ -56,6 +56,8 @@ class UiConfig(
             data class WebFontInfo(
                 @get:JvmSynthetic
                 val value: String,
+                // This should not be null, but we keep it nullable for backwards compatibility and handle
+                // nullability through code later, ignoring web fonts that do not have a hash.
                 @get:JvmSynthetic
                 val hash: String? = null,
             )

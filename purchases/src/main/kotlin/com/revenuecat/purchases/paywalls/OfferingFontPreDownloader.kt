@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.warnLog
 import java.net.MalformedURLException
 import java.net.URL
 
@@ -41,6 +42,11 @@ internal class OfferingFontPreDownloader(
         for (fontToDownload in fontInfosToDownload) {
             fontToDownload.hash?.takeIf { it.isNotEmpty() }?.let { hash ->
                 remoteFontLoader.getCachedFontFileOrStartDownload(fontToDownload.value, hash)
+            } ?: run {
+                warnLog(
+                    "Font ${fontToDownload.value} does not have a validation hash. Skipping download. " +
+                        "Pleases try to re-upload the font in the RevenueCat dashboard.",
+                )
             }
         }
     }
