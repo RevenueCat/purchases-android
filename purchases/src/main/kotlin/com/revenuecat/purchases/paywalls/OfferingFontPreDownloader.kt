@@ -16,6 +16,8 @@ internal class OfferingFontPreDownloader(
 ) {
 
     private val assetsFontsDir = "fonts"
+
+    // GenericFontFamily names as defined by Compose. Restated here because we don't include any Compose dependencies.
     private val genericFonts = setOf(
         "sans-serif",
         "serif",
@@ -29,8 +31,9 @@ internal class OfferingFontPreDownloader(
             ?.filterNot { isBundled(it.android) }
             ?.filter {
                 if (it.web != null && it.web.hash == null) {
+                    val androidValue = (it.android as? FontInfo.Name)?.value ?: "(Unknown android font)"
                     errorLog(
-                        "Font ${it.android.value} does not have a validation hash. Skipping download. " +
+                        "Font $androidValue does not have a validation hash. Skipping download. " +
                             "Pleases try to re-upload the font in the RevenueCat dashboard.",
                     )
                     false

@@ -65,19 +65,17 @@ class UiConfig(
             @InternalRevenueCatAPI
             @Serializable
             sealed interface FontInfo {
-                val value: String
-
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("name")
-                class Name(@get:JvmSynthetic override val value: String) : FontInfo
+                class Name(@get:JvmSynthetic val value: String) : FontInfo
 
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("google_fonts")
-                class GoogleFonts(@get:JvmSynthetic override val value: String) : FontInfo
+                class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
             }
         }
     }

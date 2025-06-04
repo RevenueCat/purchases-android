@@ -17,6 +17,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class RemoteFontLoader(
     private val context: Context,
@@ -24,35 +25,40 @@ internal class RemoteFontLoader(
     private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
 ) {
+    private var hasCheckedFoldersExist: AtomicBoolean = AtomicBoolean(false)
 
-    private val ongoingDownloads = mutableSetOf<String>()
-
-    init {
-        if (!cacheDir.exists()) {
-            if (!cacheDir.mkdirs()) {
-                errorLog("Unable to create cache directory for remote fonts: ${cacheDir.absolutePath}")
-            }
-        } else if (!cacheDir.isDirectory) {
-            errorLog("Remote fonts cache path exists but is not a directory: ${cacheDir.absolutePath}")
-        }
+    private val md: MessageDigest by lazy {
+        MessageDigest.getInstance("MD5")
     }
 
-    fun getCachedFontFileOrStartDownload(url: String, expectedMd5: String): File? {
-        val urlHash = md5Hex(url.toByteArray(Charsets.UTF_8))
-        val extension = url.substringAfterLast('.')
-        val cachedFile = File(cacheDir, "$urlHash.$extension")
+    private val ongoingDownloads = mutableSetOf<String>()
+    private val cachedFontFiles: MutableMap<String, File> = mutableMapOf()
 
-        if (cachedFile.exists()) {
-            return cachedFile
+    fun getCachedFontFileOrStartDownload(url: String, expectedMd5: String): File? {
+        if (cachedFontFiles.containsKey(url)) {
+            return cachedFontFiles[url]
         }
 
         ioScope.launch {
+            initializeIfNeeded()
+
+            val urlHash = md5Hex(url.toByteArray(Charsets.UTF_8))
+            val extension = url.substringAfterLast('.', missingDelimiterValue = "")
+            val cachedFile = File(cacheDir, "$urlHash.$extension")
+
+            if (cachedFile.exists()) {
+                synchronized(this) {
+                    cachedFontFiles[url] = cachedFile
+                }
+                return@launch
+            }
+
             synchronized(this) {
                 if (ongoingDownloads.contains(urlHash)) {
                     verboseLog("Font download already in progress for $url")
                     return@launch
                 }
-                ongoingDownloads.remove(urlHash)
+                ongoingDownloads.add(urlHash)
             }
 
             try {
@@ -64,6 +70,7 @@ internal class RemoteFontLoader(
                 )
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 errorLog("Error downloading remote font from $url: ${t.message}")
+                t.printStackTrace()
             } finally {
                 synchronized(this) {
                     ongoingDownloads.remove(urlHash)
@@ -74,13 +81,23 @@ internal class RemoteFontLoader(
         return null
     }
 
+    private fun initializeIfNeeded() {
+        if (hasCheckedFoldersExist.getAndSet(true)) return
+
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            errorLog("Unable to create cache directory for remote fonts: ${cacheDir.absolutePath}")
+        } else if (!cacheDir.isDirectory) {
+            errorLog("Remote fonts cache path exists but is not a directory: ${cacheDir.absolutePath}")
+        }
+    }
+
     @Throws(IOException::class)
     private fun performDownloadAndCache(
         url: String,
         expectedMd5: String,
         urlHash: String,
         extension: String,
-    ): File {
+    ) {
         val cachedFile = File(cacheDir, "$urlHash.$extension")
 
         val tempFile = File.createTempFile("rc_paywall_font_download_", ".$extension", cacheDir)
@@ -90,19 +107,21 @@ internal class RemoteFontLoader(
             val actualMd5 = md5Hex(tempFile.readBytes())
             if (!actualMd5.equals(expectedMd5, ignoreCase = true)) {
                 tempFile.delete()
-                errorLog("Font download MD5 mismatch for $url: expected=$expectedMd5, actual=$actualMd5")
-                throw IOException("MD5 mismatch for $url: expected=$expectedMd5, actual=$actualMd5")
+                errorLog("Downloaded font file is corrupt for $url. expected=$expectedMd5, actual=$actualMd5")
+                return
             }
 
             if (!tempFile.renameTo(cachedFile)) {
                 tempFile.copyTo(cachedFile, overwrite = true)
                 tempFile.delete()
             }
-            debugLog("Font downloaded successfully and cached: $url")
-            return cachedFile
+            debugLog("Font downloaded successfully from $url")
+            synchronized(this) {
+                cachedFontFiles[url] = cachedFile
+            }
         } catch (e: IOException) {
             if (tempFile.exists()) tempFile.delete()
-            throw e
+            errorLog("Error downloading font from $url: ${e.message}")
         }
     }
 
@@ -139,7 +158,6 @@ internal class RemoteFontLoader(
     }
 
     private fun md5Hex(bytes: ByteArray): String {
-        val md = MessageDigest.getInstance("MD5")
         val digest = md.digest(bytes)
         return digest.joinToString("") { "%02x".format(it) }
     }

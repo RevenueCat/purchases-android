@@ -60,9 +60,10 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
     resourceProvider: ResourceProvider,
 ): Map<FontAlias, FontSpec> {
     // Get unique FontsConfigs, and determine their FontSpec.
+    @Suppress("UNCHECKED_CAST")
     val configToSpec: Map<FontsConfig, FontSpec> = values.toSet().associateWith { fontsConfig ->
         resourceProvider.determineFontSpec(fontsConfig)
-    }
+    }.filter { it.value != null } as Map<FontsConfig, FontSpec>
     // Create a map of FontAliases to FontSpecs.
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
 }
@@ -121,49 +122,38 @@ internal fun FontSpec.resolve(
     )
 }
 
-@Suppress("ReturnCount")
-private fun ResourceProvider.determineFontSpec(fontsConfig: FontsConfig): FontSpec {
-    val bundledFont = getBundledFontSpec(fontsConfig)
-    if (bundledFont != null) {
-        return bundledFont
-    }
-
-    val webFont = getDownloadedFontSpec(fontsConfig)
-    if (webFont != null) {
-        return webFont
-    }
-
-    return FontSpec.System(name = fontsConfig.android.value).also {
-        Logger.d(
-            "Could not find a font resource named `${fontsConfig.android.value}`. Assuming it's an OEM system font. " +
-                "If it isn't, make sure the font exists in the `res/font` folder. See for more info: " +
-                "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
-        )
-    }
+private fun ResourceProvider.determineFontSpec(fontsConfig: FontsConfig): FontSpec? {
+    return getBundledFontSpec(fontsConfig)
+        ?: getDownloadedFontSpec(fontsConfig)
+        ?: (fontsConfig.android as? FontInfo.Name)?.let { androidFontInfoName ->
+            FontSpec.System(name = androidFontInfoName.value).also {
+                Logger.d(
+                    "Could not find a font resource named `${androidFontInfoName.value}`. " +
+                        "Assuming it's an OEM system font. If it isn't, make sure the font exists in the " +
+                        "`res/font` folder. See for more info: " +
+                        "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
+                )
+            }
+        }
 }
 
 @Suppress("NestedBlockDepth")
 private fun ResourceProvider.getBundledFontSpec(
     fontsConfig: FontsConfig,
 ): FontSpec? {
-    val androidInfo = fontsConfig.android
-    val androidInfoValue = androidInfo.value
-    return if (androidInfoValue.isNotEmpty()) {
-        when (androidInfo) {
-            is FontInfo.GoogleFonts -> FontSpec.Google(name = androidInfoValue)
-            is FontInfo.Name -> when (androidInfoValue) {
-                FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
-                FontFamily.Serif.name -> FontSpec.Generic.Serif
-                FontFamily.Monospace.name -> FontSpec.Generic.Monospace
-                else -> getResourceIdentifier(name = androidInfoValue, type = "font")
-                    .takeIf { it != 0 }
-                    ?.let { fontId -> FontSpec.Resource(id = fontId) }
-                    ?: getAssetFontPath(name = androidInfoValue)
-                        ?.let { path -> FontSpec.Asset(path = path) }
-            }
+    return when (val androidInfo = fontsConfig.android) {
+        is FontInfo.GoogleFonts -> FontSpec.Google(name = androidInfo.value)
+        is FontInfo.Name -> when (val androidInfoValue = androidInfo.value.takeIf { it.isNotEmpty() }) {
+            null -> null // No font specified, return null.
+            FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
+            FontFamily.Serif.name -> FontSpec.Generic.Serif
+            FontFamily.Monospace.name -> FontSpec.Generic.Monospace
+            else -> getResourceIdentifier(name = androidInfoValue, type = "font")
+                .takeIf { it != 0 }
+                ?.let { fontId -> FontSpec.Resource(id = fontId) }
+                ?: getAssetFontPath(name = androidInfoValue)
+                    ?.let { path -> FontSpec.Asset(path = path) }
         }
-    } else {
-        null
     }
 }
 
@@ -171,9 +161,10 @@ private fun ResourceProvider.getDownloadedFontSpec(fontsConfig: FontsConfig): Fo
     val webFontInfo = fontsConfig.web ?: return null
     val webUrl = webFontInfo.value.takeIf { it.isNotEmpty() }
     val webHash = webFontInfo.hash?.takeIf { it.isNotEmpty() }
+    val androidName = ((fontsConfig.android as? FontInfo.Name)?.value) ?: "(No Android Font Name)"
     if (webUrl != null && webHash == null) {
         Logger.e(
-            "Font `${fontsConfig.android.value}` does not have a validation hash. " +
+            "Font `$androidName` does not have a validation hash. " +
                 "Please try to re-upload the font in the RevenueCat dashboard.",
         )
     }

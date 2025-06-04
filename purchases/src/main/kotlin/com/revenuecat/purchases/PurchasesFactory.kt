@@ -294,11 +294,11 @@ internal class PurchasesFactory(
             )
 
             val fontLoader = RemoteFontLoader(
-                context = context,
+                context = contextForStorage,
             )
 
             val offeringFontPreDownloader = OfferingFontPreDownloader(
-                context = application,
+                context = contextForStorage,
                 remoteFontLoader = fontLoader,
             )
 
