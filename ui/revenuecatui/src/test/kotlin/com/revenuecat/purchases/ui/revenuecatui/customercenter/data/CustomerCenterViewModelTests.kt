@@ -7,6 +7,7 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -1139,6 +1140,54 @@ class CustomerCenterViewModelTests {
         // Verify the purchase was attempted and loadCustomerCenter was called
         coVerify(exactly = 1) { purchases.awaitPurchase(any()) }
         coVerify(exactly = 2) { purchases.awaitCustomerCenterConfigData() } // Once for initial load, once for reload
+    }
+
+    @Test
+    fun `loadCustomerCenter uses base plan from active subscription when entitlements are empty`() = runTest {
+        setupPurchasesMock()
+
+        val subscription = SubscriptionInfo(
+            productIdentifier = "product_identifier",
+            purchaseDate = Date(),
+            originalPurchaseDate = null,
+            expiresDate = null,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = null,
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "monthly",
+            requestDate = Date(),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "product_identifier" to subscription
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("product_identifier")
+
+        val product = createGoogleStoreProduct(
+            productId = "product_identifier",
+            basePlanId = "monthly",
+        )
+        coEvery { purchases.awaitGetProduct("product_identifier", "monthly") } returns product
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+        )
+
+        model.state.first { it is CustomerCenterState.Success }
+
+        coVerify(exactly = 1) { purchases.awaitGetProduct("product_identifier", "monthly") }
     }
 
     // Helper method to setup common mocks
