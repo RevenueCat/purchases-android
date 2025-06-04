@@ -47,6 +47,7 @@ internal class FontLoader(
     private val fontInfosListeningToSameHashUrl = mutableMapOf<String, MutableSet<DownloadableFontInfo>>()
 
     private val cachedFontFamilyByFontInfo: MutableMap<DownloadableFontInfo, DownloadedFontFamily> = mutableMapOf()
+    private val cachedFontFamilyByFamily: MutableMap<String, DownloadedFontFamily> = mutableMapOf()
 
     fun getCachedFontFamilyOrStartDownload(fontInfo: FontInfo.Name): DownloadedFontFamily? {
         val fontInfoToDownload = validateFontInfo(fontInfo) ?: return null
@@ -112,7 +113,7 @@ internal class FontLoader(
     private fun addFileToCache(urlHash: String, file: File) {
         synchronized(this) {
             for (fontInfo in fontInfosListeningToSameHashUrl[urlHash] ?: emptySet()) {
-                val downloadedFontFamily = cachedFontFamilyByFontInfo[fontInfo]
+                val downloadedFontFamily = cachedFontFamilyByFamily[fontInfo.family]
                 if (downloadedFontFamily != null) {
                     downloadedFontFamily.addFont(
                         DownloadedFont(
@@ -122,7 +123,7 @@ internal class FontLoader(
                         ),
                     )
                 } else {
-                    cachedFontFamilyByFontInfo[fontInfo] = DownloadedFontFamily(
+                    val fontFamily = DownloadedFontFamily(
                         family = fontInfo.family,
                         fonts = mutableListOf(
                             DownloadedFont(
@@ -132,6 +133,8 @@ internal class FontLoader(
                             ),
                         ),
                     )
+                    cachedFontFamilyByFontInfo[fontInfo] = fontFamily
+                    cachedFontFamilyByFamily[fontInfo.family] = fontFamily
                 }
             }
             fontInfosListeningToSameHashUrl.remove(urlHash)
