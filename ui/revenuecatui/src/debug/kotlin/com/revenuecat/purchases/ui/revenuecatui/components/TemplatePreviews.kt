@@ -29,10 +29,15 @@ import java.util.Date
 
 private const val MILLIS_2025_04_23 = 1745366400000
 
+internal data class PaywallResources(
+    val offering: Offering,
+    val parentFolder: String,
+)
+
 /**
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
  */
-internal class OfferingProvider : PreviewParameterProvider<Offering> {
+internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResources> {
     private val offeringParser = Class.forName("com.revenuecat.purchases.utils.PreviewOfferingParser")
         .getDeclaredConstructor()
         .apply { isAccessible = true }
@@ -44,7 +49,7 @@ internal class OfferingProvider : PreviewParameterProvider<Offering> {
 
     override val values = offeringJsonFiles
         .asSequence()
-        .flatMap { (_, file) ->
+        .flatMap { (folder, file) ->
             val uiConfig = JSONObject(file.inputStream().readUiConfig())
             val packagesArray = JSONObject(getResourceStream("packages.json").readBytes().decodeToString())
                 .getJSONArray("packages")
@@ -66,6 +71,12 @@ internal class OfferingProvider : PreviewParameterProvider<Offering> {
                 createOfferings(offeringsJsonObject)
                     .current
                     ?.takeUnless { it.paywallComponents == null }
+                    ?.let { offering ->
+                        PaywallResources(
+                            offering = offering,
+                            parentFolder = folder,
+                        )
+                    }
             }
         }
 
@@ -150,8 +161,10 @@ internal class OfferingProvider : PreviewParameterProvider<Offering> {
 @Preview
 @Composable
 internal fun PaywallComponentsTemplate_Preview(
-    @PreviewParameter(OfferingProvider::class) offering: Offering,
+    @PreviewParameter(PaywallResourcesProvider::class) paywall: PaywallResources,
 ) {
+    val offering = paywall.offering
+    val parentFolder = paywall.parentFolder
     val validationResult = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     val state = offering.toComponentsPaywallState(
         validationResult = validationResult,
@@ -161,7 +174,7 @@ internal fun PaywallComponentsTemplate_Preview(
         dateProvider = { Date(MILLIS_2025_04_23) },
     )
 
-    ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current)) {
+    ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current, parentFolder)) {
         LoadedPaywallComponents(
             state = state,
             clickHandler = { },
@@ -172,20 +185,17 @@ internal fun PaywallComponentsTemplate_Preview(
 @Suppress("FunctionName")
 private fun PaywallTemplateImageLoader(
     context: Context,
+    parentFolder: String,
 ): ImageLoader {
     return ImageLoader.Builder(context)
         .components {
             add { chain ->
                 val url = URI(chain.request.data as String)
-                val relativePath = url.path.removePrefix("/")
-
-                // Look for a matching file in all subdirectories
-                val matchingFile = getResourcesBaseDir().walkTopDown()
-                    .firstOrNull { it.isFile && it.name == relativePath.substringAfterLast("/") }
-
-                val bitmap = matchingFile?.inputStream()?.use {
-                    BitmapFactory.decodeStream(it)
-                } ?: error("Image not found for path: $relativePath")
+                // Create the resourcePath by dropping the TLD, reversing the host, and appending the path.
+                val resourcePath = parentFolder + "/" +
+                    url.host.split('.').dropLast(1).reversed().joinToString("/") +
+                    url.path
+                val bitmap = BitmapFactory.decodeStream(getResourceStream(resourcePath))
 
                 SuccessResult(
                     drawable = bitmap.toDrawable(context.resources),
