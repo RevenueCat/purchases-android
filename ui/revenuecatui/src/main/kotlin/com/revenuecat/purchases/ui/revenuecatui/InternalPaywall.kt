@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -63,8 +64,12 @@ internal fun InternalPaywall(
         viewModel.closePaywall()
     }
 
-    viewModel.refreshStateIfLocaleChanged()
-    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+    val colorScheme = MaterialTheme.colorScheme
+    val isDark = isSystemInDarkTheme()
+    SideEffect {
+        viewModel.refreshStateIfLocaleChanged()
+        viewModel.refreshStateIfColorsChanged(colorScheme = colorScheme, isDark = isDark)
+    }
 
     val state = viewModel.state.collectAsState().value
 

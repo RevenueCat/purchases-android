@@ -100,9 +100,7 @@ internal fun InternalCustomerCenter(
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
-                    coroutineScope.launch {
-                        viewModel.pathButtonPressed(context, action.path, action.product)
-                    }
+                    viewModel.pathButtonPressed(context, action.path, action.product)
                 }
 
                 is CustomerCenterAction.PerformRestore -> {

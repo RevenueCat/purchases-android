@@ -25,6 +25,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -58,7 +59,8 @@ internal class LoadedPaywallComponentsLocaleTests {
                             TextComponent(
                                 text = localizationKey,
                                 color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
-                            )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
                         )
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
@@ -79,7 +81,7 @@ internal class LoadedPaywallComponentsLocaleTests {
             identifier = "identifier",
             serverDescription = "serverDescription",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), paywallComponents),
         )
     }
