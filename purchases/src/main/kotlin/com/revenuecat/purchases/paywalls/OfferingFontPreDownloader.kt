@@ -6,7 +6,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.warnLog
 import java.net.MalformedURLException
 import java.net.URL
 
@@ -28,6 +27,17 @@ internal class OfferingFontPreDownloader(
         // All offerings are expected to have the same fonts.
         val fontInfosToDownload = offerings.all.values.firstOrNull()?.paywallComponents?.uiConfig?.app?.fonts?.values
             ?.filterNot { isBundled(it.android) }
+            ?.filter {
+                if (it.web != null && it.web.hash == null) {
+                    errorLog(
+                        "Font ${it.android.value} does not have a validation hash. Skipping download. " +
+                            "Pleases try to re-upload the font in the RevenueCat dashboard.",
+                    )
+                    false
+                } else {
+                    true
+                }
+            }
             ?.mapNotNull { it.web }
             ?.filter {
                 try {
@@ -42,11 +52,6 @@ internal class OfferingFontPreDownloader(
         for (fontToDownload in fontInfosToDownload) {
             fontToDownload.hash?.takeIf { it.isNotEmpty() }?.let { hash ->
                 remoteFontLoader.getCachedFontFileOrStartDownload(fontToDownload.value, hash)
-            } ?: run {
-                warnLog(
-                    "Font ${fontToDownload.value} does not have a validation hash. Skipping download. " +
-                        "Pleases try to re-upload the font in the RevenueCat dashboard.",
-                )
             }
         }
     }
