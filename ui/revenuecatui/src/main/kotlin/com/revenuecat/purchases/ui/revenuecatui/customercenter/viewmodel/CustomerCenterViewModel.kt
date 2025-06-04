@@ -367,7 +367,7 @@ internal class CustomerCenterViewModelImpl(
         val product = if (transaction.store == Store.PLAY_STORE) {
             purchases.awaitGetProduct(
                 transaction.productIdentifier,
-                 (transaction as? TransactionDetails.Subscription)?.productPlanIdentifier,
+                (transaction as? TransactionDetails.Subscription)?.productPlanIdentifier,
             ).also {
                 if (it == null) {
                     Logger.w(
