@@ -729,14 +729,16 @@ class PurchaseInformationTest {
         willRenew: Boolean,
         store: Store,
         productIdentifier: String,
-        expiresDate: Date?
+        expiresDate: Date?,
+        productPlanIdentifier: String? = null,
     ): TransactionDetails.Subscription {
         return TransactionDetails.Subscription(
             productIdentifier = productIdentifier,
             store = store,
             isActive = isActive,
             willRenew = willRenew,
-            expiresDate = expiresDate
+            expiresDate = expiresDate,
+            productPlanIdentifier = productPlanIdentifier,
         )
     }
 
