@@ -59,8 +59,9 @@ internal class OfferingFontPreDownloader(
     private fun isBundled(info: FontInfo): Boolean {
         return when (info) {
             is FontInfo.GoogleFonts -> true
-            is FontInfo.Name -> when (info.value) {
+            is FontInfo.Name -> when (info.value.takeIf { it.isNotEmpty() }) {
                 in genericFonts -> true
+                null -> false
                 else -> context.getResourceIdentifier(info.value, "font") != 0 ||
                     context.getAssetFontPath(info.value) != null
             }
