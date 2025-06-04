@@ -30,10 +30,10 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
-import java.io.File
 import java.net.URL
 
 /**
@@ -773,11 +773,10 @@ class Purchases internal constructor(
     // region Paywall fonts
 
     @InternalRevenueCatAPI
-    fun getCachedFontFileOrStartDownload(
-        url: String,
-        hash: String,
-    ): File? {
-        return purchasesOrchestrator.getCachedFontFileOrStartDownload(url, hash)
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return purchasesOrchestrator.getCachedFontFamilyOrStartDownload(fontInfo)
     }
 
     // endregion Paywall Fonts

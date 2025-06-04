@@ -4,6 +4,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import com.revenuecat.purchases.paywalls.parseRGBAColor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -72,12 +73,12 @@ internal class UiConfigTests {
                     },
                     "android": {
                       "type": "name",
-                      "value": "Roboto"
-                    },
-                    "web": {
-                      "type": "name",
-                      "value": "https://example.com/testfont123.ttf",
-                      "hash": "123abc"
+                      "value": "Roboto",
+                      "url": "https://example.com/testfont123.ttf",
+                      "hash": "123abc",
+                      "weight": "400",
+                      "style": "italic",
+                      "family": "custom-family"
                     },
                     "family": "custom-family",
                     "weight": "bold",
@@ -91,11 +92,6 @@ internal class UiConfigTests {
                     "android": {
                       "type": "google_fonts",
                       "value": "Gothic"
-                    },
-                    "web": {
-                      "type": "name",
-                      "value": "https://example.com/testfont456.ttf",
-                      "hash": "456def"
                     },
                     "family": "custom-family2",
                     "weight": "regular",
@@ -167,18 +163,17 @@ internal class UiConfigTests {
                 ),
                 fonts = mapOf(
                     FontAlias("primary") to UiConfig.AppConfig.FontsConfig(
-                        android = UiConfig.AppConfig.FontsConfig.FontInfo.Name("Roboto"),
-                        web = UiConfig.AppConfig.FontsConfig.WebFontInfo(
-                            value = "https://example.com/testfont123.ttf",
+                        android = UiConfig.AppConfig.FontsConfig.FontInfo.Name(
+                            value = "Roboto",
+                            url = "https://example.com/testfont123.ttf",
                             hash = "123abc",
+                            family = "custom-family",
+                            weight = "400",
+                            style = FontStyle.ITALIC,
                         ),
                     ),
                     FontAlias("secondary") to UiConfig.AppConfig.FontsConfig(
                         android = UiConfig.AppConfig.FontsConfig.FontInfo.GoogleFonts("Gothic"),
-                        web = UiConfig.AppConfig.FontsConfig.WebFontInfo(
-                            value = "https://example.com/testfont456.ttf",
-                            hash = "456def",
-                        )
                     ),
                 )
             ),

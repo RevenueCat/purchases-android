@@ -28,23 +28,19 @@ internal class OfferingFontPreDownloader(
         // Getting the first offering's paywall components to check for fonts.
         // All offerings are expected to have the same fonts.
         val fontInfosToDownload = offerings.all.values.firstOrNull()?.paywallComponents?.uiConfig?.app?.fonts?.values
-            ?.filterNot { isBundled(it.android) }
+            ?.map { it.android }
+            ?.filterIsInstance<FontInfo.Name>()
             ?.filter {
-                if (it.web != null && it.web.hash == null) {
-                    val androidValue = (it.android as? FontInfo.Name)?.value ?: "(Unknown android font)"
-                    errorLog(
-                        "Font $androidValue does not have a validation hash. Skipping download. " +
-                            "Pleases try to re-upload the font in the RevenueCat dashboard.",
-                    )
-                    false
-                } else {
-                    true
-                }
+                it.url?.isNotEmpty() == true &&
+                    it.hash?.isNotEmpty() == true &&
+                    it.family?.isNotEmpty() == true &&
+                    it.weight != null &&
+                    it.style != null &&
+                    !isBundled(it)
             }
-            ?.mapNotNull { it.web }
             ?.filter {
                 try {
-                    URL(it.value)
+                    URL(it.url)
                     true
                 } catch (e: MalformedURLException) {
                     errorLog("Malformed URL for font: ${it.value}. Skipping download.", e)
@@ -53,21 +49,16 @@ internal class OfferingFontPreDownloader(
             } ?: emptyList()
 
         for (fontToDownload in fontInfosToDownload) {
-            fontToDownload.hash?.takeIf { it.isNotEmpty() }?.let { hash ->
-                fontLoader.getCachedFontFileOrStartDownload(fontToDownload.value, hash)
-            }
+            fontLoader.getCachedFontFamilyOrStartDownload(fontToDownload)
         }
     }
 
-    private fun isBundled(info: FontInfo): Boolean {
-        return when (info) {
-            is FontInfo.GoogleFonts -> true
-            is FontInfo.Name -> when (info.value.takeIf { it.isNotEmpty() }) {
-                in genericFonts -> true
-                null -> false
-                else -> context.getResourceIdentifier(info.value, "font") != 0 ||
-                    context.getAssetFontPath(info.value) != null
-            }
+    private fun isBundled(info: FontInfo.Name): Boolean {
+        if (info.value.isEmpty()) return false
+        return when (info.value) {
+            in genericFonts -> true
+            else -> context.getResourceIdentifier(info.value, "font") != 0 ||
+                context.getAssetFontPath(info.value) != null
         }
     }
 

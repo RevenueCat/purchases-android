@@ -11,8 +11,6 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.createCustomerInfo
-import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -26,6 +24,7 @@ import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
@@ -1632,14 +1631,16 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `getCachedFontFileOrStartDownload returns correct file if found`() {
-        val url = "https://example.com/font.ttf"
-        val expectedMd5 = "hash456"
-        val expectedFile = mockk<File>()
-        every { mockFontLoader.getCachedFontFileOrStartDownload(url, expectedMd5) } returns expectedFile
+        val expectedFontFamily = DownloadedFontFamily(
+            family = "test-family",
+            fonts = emptyList(),
+        )
+        val fontInfo = UiConfig.AppConfig.FontsConfig.FontInfo.Name(value = "test-value")
+        every { mockFontLoader.getCachedFontFamilyOrStartDownload(fontInfo) } returns expectedFontFamily
 
-        val result = purchases.getCachedFontFileOrStartDownload(url, expectedMd5)
+        val result = purchases.getCachedFontFamilyOrStartDownload(fontInfo)
 
-        assertThat(result).isEqualTo(expectedFile)
+        assertThat(result).isEqualTo(expectedFontFamily)
     }
 
     // endregion Paywall fonts

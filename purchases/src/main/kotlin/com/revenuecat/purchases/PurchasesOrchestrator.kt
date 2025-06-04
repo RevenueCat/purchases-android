@@ -68,6 +68,7 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -83,7 +84,6 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
-import java.io.File
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -922,8 +922,11 @@ internal class PurchasesOrchestrator(
 
     // region Paywall fonts
 
-    fun getCachedFontFileOrStartDownload(url: String, hash: String): File? {
-        return fontLoader.getCachedFontFileOrStartDownload(url, hash)
+    @InternalRevenueCatAPI
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
     }
 
     // endregion Paywall fonts

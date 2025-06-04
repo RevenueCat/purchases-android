@@ -1,9 +1,12 @@
 package com.revenuecat.purchases.paywalls
 
 import android.content.Context
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -19,6 +22,16 @@ import java.net.HttpURLConnection
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 
+@OptIn(InternalRevenueCatAPI::class)
+private data class DownloadableFontInfo(
+    val url: String,
+    val expectedMd5: String,
+    val family: String,
+    val weight: Int,
+    val style: FontStyle,
+)
+
+@OptIn(InternalRevenueCatAPI::class)
 internal class FontLoader(
     private val context: Context,
     private val cacheDir: File = File(context.cacheDir, "rc_paywall_fonts"),
@@ -31,13 +44,24 @@ internal class FontLoader(
         MessageDigest.getInstance("MD5")
     }
 
-    private val ongoingDownloads = mutableSetOf<String>()
-    private val cachedFontFiles: MutableMap<String, File> = mutableMapOf()
+    private val fontInfosListeningToSameHashUrl = mutableMapOf<String, MutableSet<DownloadableFontInfo>>()
 
-    fun getCachedFontFileOrStartDownload(url: String, expectedMd5: String): File? {
-        if (cachedFontFiles.containsKey(url)) {
-            return cachedFontFiles[url]
+    private val cachedFontFamilyByFontInfo: MutableMap<DownloadableFontInfo, DownloadedFontFamily> = mutableMapOf()
+
+    fun getCachedFontFamilyOrStartDownload(fontInfo: FontInfo.Name): DownloadedFontFamily? {
+        val fontInfoToDownload = validateFontInfo(fontInfo) ?: return null
+
+        return if (cachedFontFamilyByFontInfo.containsKey(fontInfoToDownload)) {
+            cachedFontFamilyByFontInfo[fontInfoToDownload]
+        } else {
+            startFontDownload(fontInfoToDownload)
+            null
         }
+    }
+
+    private fun startFontDownload(fontInfo: DownloadableFontInfo) {
+        val url = fontInfo.url
+        val expectedMd5 = fontInfo.expectedMd5
 
         ioScope.launch {
             ensureFoldersExist()
@@ -46,39 +70,103 @@ internal class FontLoader(
             val extension = url.substringAfterLast('.', missingDelimiterValue = "")
             val cachedFile = File(cacheDir, "$urlHash.$extension")
 
-            if (cachedFile.exists()) {
-                synchronized(this) {
-                    cachedFontFiles[url] = cachedFile
+            synchronized(this) {
+                val fontInfosListeningToHash = fontInfosListeningToSameHashUrl[urlHash]
+                if (fontInfosListeningToHash == null) {
+                    fontInfosListeningToSameHashUrl[urlHash] = mutableSetOf(fontInfo)
+                } else {
+                    verboseLog("Font download already in progress for $url")
+                    fontInfosListeningToHash.add(fontInfo)
+                    return@launch
                 }
+            }
+
+            if (cachedFile.exists()) {
+                addFileToCache(urlHash, cachedFile)
                 return@launch
             }
 
-            synchronized(this) {
-                if (ongoingDownloads.contains(urlHash)) {
-                    verboseLog("Font download already in progress for $url")
-                    return@launch
-                }
-                ongoingDownloads.add(urlHash)
-            }
-
             try {
-                performDownloadAndCache(
+                val result = performDownloadAndCache(
                     url = url,
                     expectedMd5 = expectedMd5,
                     urlHash = urlHash,
                     extension = extension,
                 )
+                result
+                    .onSuccess { file ->
+                        addFileToCache(urlHash, file)
+                    }.onFailure {
+                        errorLog("Failed to download font for ${fontInfo.family}")
+                    }
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 errorLog("Error downloading remote font from $url", t)
-                t.printStackTrace()
             } finally {
                 synchronized(this) {
-                    ongoingDownloads.remove(urlHash)
+                    fontInfosListeningToSameHashUrl.remove(urlHash)
                 }
             }
         }
+    }
 
-        return null
+    private fun addFileToCache(urlHash: String, file: File) {
+        synchronized(this) {
+            for (fontInfo in fontInfosListeningToSameHashUrl[urlHash] ?: emptySet()) {
+                val downloadedFontFamily = cachedFontFamilyByFontInfo[fontInfo]
+                if (downloadedFontFamily != null) {
+                    downloadedFontFamily.addFont(
+                        DownloadedFont(
+                            weight = fontInfo.weight,
+                            style = fontInfo.style,
+                            file = file,
+                        ),
+                    )
+                } else {
+                    cachedFontFamilyByFontInfo[fontInfo] = DownloadedFontFamily(
+                        family = fontInfo.family,
+                        fonts = mutableListOf(
+                            DownloadedFont(
+                                weight = fontInfo.weight,
+                                style = fontInfo.style,
+                                file = file,
+                            ),
+                        ),
+                    )
+                }
+            }
+            fontInfosListeningToSameHashUrl.remove(urlHash)
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private fun validateFontInfo(fontInfo: FontInfo.Name): DownloadableFontInfo? {
+        if (fontInfo.url.isNullOrEmpty()) {
+            errorLog("Font URL is empty for ${fontInfo.value}. Cannot download font.")
+            return null
+        }
+        if (fontInfo.hash.isNullOrEmpty()) {
+            errorLog("Font hash is empty for ${fontInfo.value}. Cannot validate downloaded font.")
+            return null
+        }
+        if (fontInfo.family.isNullOrEmpty()) {
+            errorLog("Font family is empty for ${fontInfo.value}. Cannot download font.")
+            return null
+        }
+        if (fontInfo.weight == null) {
+            errorLog("Font weight is null for ${fontInfo.value}.")
+            return null
+        }
+        if (fontInfo.style == null) {
+            errorLog("Font style is empty for ${fontInfo.value}.")
+            return null
+        }
+        return DownloadableFontInfo(
+            url = fontInfo.url,
+            expectedMd5 = fontInfo.hash,
+            family = fontInfo.family,
+            weight = fontInfo.weight.toInt(),
+            style = fontInfo.style,
+        )
     }
 
     private fun ensureFoldersExist() {
@@ -92,12 +180,13 @@ internal class FontLoader(
     }
 
     @Throws(IOException::class)
+    @Suppress("ReturnCount")
     private fun performDownloadAndCache(
         url: String,
         expectedMd5: String,
         urlHash: String,
         extension: String,
-    ) {
+    ): Result<File> {
         val cachedFile = File(cacheDir, "$urlHash.$extension")
 
         val tempFile = File.createTempFile("rc_paywall_font_download_", ".$extension", cacheDir)
@@ -108,7 +197,7 @@ internal class FontLoader(
             if (!actualMd5.equals(expectedMd5, ignoreCase = true)) {
                 tempFile.delete()
                 errorLog("Downloaded font file is corrupt for $url. expected=$expectedMd5, actual=$actualMd5")
-                return
+                return Result.failure(IOException("Downloaded font file is corrupt for $url"))
             }
 
             if (!tempFile.renameTo(cachedFile)) {
@@ -116,12 +205,11 @@ internal class FontLoader(
                 tempFile.delete()
             }
             debugLog("Font downloaded successfully from $url")
-            synchronized(this) {
-                cachedFontFiles[url] = cachedFile
-            }
+            return Result.success(cachedFile)
         } catch (e: IOException) {
             if (tempFile.exists()) tempFile.delete()
             errorLog("Error downloading font from $url: ${e.message}")
+            return Result.failure(e)
         }
     }
 

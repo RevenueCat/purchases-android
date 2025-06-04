@@ -13,6 +13,7 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -20,8 +21,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMapError
 import java.io.File
-import java.net.MalformedURLException
-import java.net.URL
 
 @get:JvmSynthetic
 private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
@@ -50,7 +49,7 @@ internal sealed interface FontSpec {
         object Serif : Generic
         object Monospace : Generic
     }
-    data class Downloaded(@get:JvmSynthetic val file: File) : FontSpec
+    data class Downloaded(@get:JvmSynthetic val downloadedFontFamily: DownloadedFontFamily) : FontSpec
 
     data class System(@get:JvmSynthetic val name: String) : FontSpec
 }
@@ -115,7 +114,15 @@ internal fun FontSpec.resolve(
         FontSpec.Generic.Monospace -> FontFamily.Monospace
     }
 
-    is FontSpec.Downloaded -> FontFamily(Font(file = file, weight = weight, style = style))
+    is FontSpec.Downloaded -> FontFamily(
+        fonts = downloadedFontFamily.fonts.map { font ->
+            Font(
+                file = File(font.file.path),
+                weight = FontWeight(font.weight),
+                style = font.style.toComposeFontStyle(),
+            )
+        },
+    )
 
     is FontSpec.System -> FontFamily(
         Font(familyName = DeviceFontFamilyName(name), weight = weight, style = style),
@@ -157,36 +164,17 @@ private fun ResourceProvider.getBundledFontSpec(
     }
 }
 
-private fun ResourceProvider.getDownloadedFontSpec(fontsConfig: FontsConfig): FontSpec.Downloaded? {
-    val webFontInfo = fontsConfig.web ?: return null
-    val webUrl = webFontInfo.value.takeIf { it.isNotEmpty() }
-    val webHash = webFontInfo.hash?.takeIf { it.isNotEmpty() }
-    val androidName = ((fontsConfig.android as? FontInfo.Name)?.value) ?: "(No Android Font Name)"
-    if (webUrl != null && webHash == null) {
-        Logger.e(
-            "Font `$androidName` does not have a validation hash. " +
-                "Please try to re-upload the font in the RevenueCat dashboard.",
-        )
+private fun com.revenuecat.purchases.paywalls.components.properties.FontStyle.toComposeFontStyle(): FontStyle {
+    return when (this) {
+        com.revenuecat.purchases.paywalls.components.properties.FontStyle.NORMAL -> FontStyle.Normal
+        com.revenuecat.purchases.paywalls.components.properties.FontStyle.ITALIC -> FontStyle.Italic
     }
-    return if (webUrl != null && webHash != null) {
-        val url = try {
-            // Attempt to parse the URL to ensure it's valid.
-            URL(webUrl)
-        } catch (e: MalformedURLException) {
-            Logger.e("Error parsing web font URL: $webUrl. Error: ${e.message}")
-            null
-        }
+}
 
-        url?.let {
-            val fontFile = getCachedFontFileOrStartDownload(webUrl, webHash)
-            fontFile?.let {
-                FontSpec.Downloaded(file = it)
-            } ?: run {
-                Logger.d("Font file for URL $webUrl is not cached yet. Download in progress in the background.")
-                null
-            }
+private fun ResourceProvider.getDownloadedFontSpec(fontsConfig: FontsConfig): FontSpec.Downloaded? {
+    return (fontsConfig.android as? FontInfo.Name)?.let { fontInfo ->
+        getCachedFontFamilyOrStartDownload(fontInfo)?.let {
+            FontSpec.Downloaded(it)
         }
-    } else {
-        null
     }
 }

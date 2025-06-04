@@ -9,6 +9,7 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -36,7 +37,7 @@ class OfferingFontPreDownloaderTest {
         }
         fontLoader = mockk<FontLoader>().apply {
             every {
-                getCachedFontFileOrStartDownload(any(), any())
+                getCachedFontFamilyOrStartDownload(any())
             } returns null
         }
         preDownloader = OfferingFontPreDownloader(context, fontLoader)
@@ -47,7 +48,7 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(current = null, all = emptyMap()))
 
         verify(exactly = 0) {
-            fontLoader.getCachedFontFileOrStartDownload(any(), any())
+            fontLoader.getCachedFontFamilyOrStartDownload(any())
         }
     }
 
@@ -63,7 +64,7 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering-id" to offering)))
 
         verify(exactly = 0) {
-            fontLoader.getCachedFontFileOrStartDownload(any(), any())
+            fontLoader.getCachedFontFamilyOrStartDownload(any())
         }
     }
 
@@ -86,27 +87,51 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering-id" to offering)))
 
         verify(exactly = 0) {
-            fontLoader.getCachedFontFileOrStartDownload(any(), any())
+            fontLoader.getCachedFontFamilyOrStartDownload(any())
         }
     }
 
     @Test
     fun `preDownloadOfferingFontsIfNeeded skips bundled fonts and downloads web fonts`() {
         val genericFont = FontsConfig(
-            android = FontInfo.Name("sans-serif"),
-            web = FontsConfig.WebFontInfo("https://example.com/shouldnotdownloadfont.ttf", "hash123"),
+            android = FontInfo.Name(
+                value = "sans-serif",
+                family = "test-family",
+                weight = "400",
+                style = FontStyle.NORMAL,
+                url = "https://example.com/shouldnotdownloadfont.ttf",
+                hash = "hash123",
+            ),
         )
         val resourceFont = FontsConfig(
-            android = FontInfo.Name("testFontInResources"),
-            web = FontsConfig.WebFontInfo("https://example.com/shouldnotdownloadfont.ttf", "hash123"),
+            android = FontInfo.Name(
+                value = "testFontInResources",
+                family = "test-family",
+                weight = "400",
+                style = FontStyle.NORMAL,
+                url = "https://example.com/shouldnotdownloadfont.ttf",
+                hash = "hash123",
+            ),
         )
         val assetFont = FontsConfig(
-            android = FontInfo.Name("testFontInAssets"),
-            web = FontsConfig.WebFontInfo("https://example.com/shouldnotdownloadfont.ttf", "hash123"),
+            android = FontInfo.Name(
+                value = "testFontInAssets",
+                family = "test-family",
+                weight = "400",
+                style = FontStyle.NORMAL,
+                url = "https://example.com/shouldnotdownloadfont.ttf",
+                hash = "hash123",
+            ),
         )
         val downloadableFont = FontsConfig(
-            android = FontInfo.Name("notbundledFont"),
-            web = FontsConfig.WebFontInfo("https://example.com/downloadable-font.ttf", "hash456"),
+            android = FontInfo.Name(
+                value = "notbundledFont",
+                family = "test-family",
+                weight = "400",
+                style = FontStyle.NORMAL,
+                url = "https://example.com/shoulddownload.ttf",
+                hash = "hash123",
+            ),
         )
 
         every {
@@ -136,9 +161,15 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering" to offering)))
 
         verify(exactly = 1) {
-            fontLoader.getCachedFontFileOrStartDownload(
-                url = "https://example.com/downloadable-font.ttf",
-                expectedMd5 = "hash456",
+            fontLoader.getCachedFontFamilyOrStartDownload(
+                fontInfo = FontInfo.Name(
+                    value = "notbundledFont",
+                    family = "test-family",
+                    weight = "400",
+                    style = FontStyle.NORMAL,
+                    url = "https://example.com/shoulddownload.ttf",
+                    hash = "hash123",
+                )
             )
         }
     }
@@ -146,8 +177,14 @@ class OfferingFontPreDownloaderTest {
     @Test
     fun `preDownloadOfferingFontsIfNeeded skips malformed URLs`() {
         val downloadableFont = FontsConfig(
-            android = FontInfo.Name("notbundledFont"),
-            web = FontsConfig.WebFontInfo("malformed-url", "hash456"),
+            FontInfo.Name(
+                value = "notbundledFont",
+                family = "test-family",
+                weight = "400",
+                style = FontStyle.NORMAL,
+                url = "invalid-url", // Malformed URL
+                hash = "hash123",
+            )
         )
 
         val offering = Offering(
@@ -169,7 +206,7 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering" to offering)))
 
         verify(exactly = 0) {
-            fontLoader.getCachedFontFileOrStartDownload(any(), any())
+            fontLoader.getCachedFontFamilyOrStartDownload(any())
         }
     }
 } 

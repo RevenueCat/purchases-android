@@ -11,9 +11,11 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -41,7 +43,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
 import java.net.URL
 import java.util.Date
 import java.util.Locale
@@ -415,7 +416,7 @@ internal class MockResourceProvider(
      */
     private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
     private val assetPaths: List<String> = emptyList(),
-    private val downloadedFiles: Map<String, File> = emptyMap(),
+    private val downloadedFilesByUrl: Map<String, DownloadedFontFamily> = emptyMap(),
 ) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
@@ -456,8 +457,10 @@ internal class MockResourceProvider(
         return assetPaths.find { it == filePath }
     }
 
-    override fun getCachedFontFileOrStartDownload(url: String, expectedMd5: String): File? {
-        return downloadedFiles[url]
+    override fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return downloadedFilesByUrl[fontInfo.url]
     }
 }
 

@@ -4,6 +4,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizedVariableLocalizationKeyMapSerializer
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -47,20 +48,7 @@ class UiConfig(
         class FontsConfig(
             @get:JvmSynthetic
             val android: FontInfo,
-            @get:JvmSynthetic
-            val web: WebFontInfo? = null,
         ) {
-
-            @InternalRevenueCatAPI
-            @Serializable
-            data class WebFontInfo(
-                @get:JvmSynthetic
-                val value: String,
-                // This should not be null, but we keep it nullable for backwards compatibility and handle
-                // nullability through code later, ignoring web fonts that do not have a hash.
-                @get:JvmSynthetic
-                val hash: String? = null,
-            )
 
             @InternalRevenueCatAPI
             @Serializable
@@ -69,7 +57,14 @@ class UiConfig(
                 @Poko
                 @Serializable
                 @SerialName("name")
-                class Name(@get:JvmSynthetic val value: String) : FontInfo
+                class Name(
+                    @get:JvmSynthetic val value: String,
+                    @get:JvmSynthetic val url: String? = null,
+                    @get:JvmSynthetic val hash: String? = null,
+                    @get:JvmSynthetic val family: String? = null,
+                    @get:JvmSynthetic val weight: String? = null,
+                    @get:JvmSynthetic val style: FontStyle? = null,
+                ) : FontInfo
 
                 @InternalRevenueCatAPI
                 @Poko
