@@ -12,7 +12,7 @@ import java.net.URL
 @OptIn(InternalRevenueCatAPI::class)
 internal class OfferingFontPreDownloader(
     private val context: Context,
-    private val remoteFontLoader: RemoteFontLoader,
+    private val fontLoader: FontLoader,
 ) {
 
     private val assetsFontsDir = "fonts"
@@ -54,7 +54,7 @@ internal class OfferingFontPreDownloader(
 
         for (fontToDownload in fontInfosToDownload) {
             fontToDownload.hash?.takeIf { it.isNotEmpty() }?.let { hash ->
-                remoteFontLoader.getCachedFontFileOrStartDownload(fontToDownload.value, hash)
+                fontLoader.getCachedFontFileOrStartDownload(fontToDownload.value, hash)
             }
         }
     }

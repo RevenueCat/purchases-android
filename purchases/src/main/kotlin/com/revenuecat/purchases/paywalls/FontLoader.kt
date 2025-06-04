@@ -19,7 +19,7 @@ import java.net.HttpURLConnection
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal class RemoteFontLoader(
+internal class FontLoader(
     private val context: Context,
     private val cacheDir: File = File(context.cacheDir, "rc_paywall_fonts"),
     private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -40,7 +40,7 @@ internal class RemoteFontLoader(
         }
 
         ioScope.launch {
-            initializeIfNeeded()
+            ensureFoldersExist()
 
             val urlHash = md5Hex(url.toByteArray(Charsets.UTF_8))
             val extension = url.substringAfterLast('.', missingDelimiterValue = "")
@@ -69,7 +69,7 @@ internal class RemoteFontLoader(
                     extension = extension,
                 )
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                errorLog("Error downloading remote font from $url: ${t.message}")
+                errorLog("Error downloading remote font from $url", t)
                 t.printStackTrace()
             } finally {
                 synchronized(this) {
@@ -81,7 +81,7 @@ internal class RemoteFontLoader(
         return null
     }
 
-    private fun initializeIfNeeded() {
+    private fun ensureFoldersExist() {
         if (hasCheckedFoldersExist.getAndSet(true)) return
 
         if (!cacheDir.exists() && !cacheDir.mkdirs()) {

@@ -37,9 +37,9 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
-import com.revenuecat.purchases.paywalls.RemoteFontLoader
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -293,13 +293,13 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val fontLoader = RemoteFontLoader(
+            val fontLoader = FontLoader(
                 context = contextForStorage,
             )
 
             val offeringFontPreDownloader = OfferingFontPreDownloader(
                 context = contextForStorage,
-                remoteFontLoader = fontLoader,
+                fontLoader = fontLoader,
             )
 
             val offeringsManager = OfferingsManager(

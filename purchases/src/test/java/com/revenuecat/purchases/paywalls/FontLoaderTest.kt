@@ -23,7 +23,7 @@ import java.security.MessageDigest
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class RemoteFontLoaderTest {
+class FontLoaderTest {
 
     companion object {
         private const val FONT_URL = "https://example.com/font.ttf"
@@ -36,12 +36,12 @@ class RemoteFontLoaderTest {
     private lateinit var mockCacheDir: File
     private lateinit var urlConnectionFactory: TestUrlConnectionFactory
     private lateinit var testScope: TestScope
-    private lateinit var fontLoader: RemoteFontLoader
+    private lateinit var fontLoader: FontLoader
 
     @Before
     fun setUp() {
         mockContext = mockk<Context>()
-        mockCacheDir = File("test_remote_font_loader_cache").apply { mkdirs() }
+        mockCacheDir = File("test_font_loader_cache").apply { mkdirs() }
         testScope = TestScope()
 
         val mockConnection = TestUrlConnection(
@@ -123,7 +123,7 @@ class RemoteFontLoaderTest {
             mockedConnections = mapOf(FONT_URL to testUrlConnection)
         )
 
-        fontLoader = RemoteFontLoader(
+        fontLoader = FontLoader(
             context = mockContext,
             cacheDir = mockCacheDir,
             ioScope = testScope,

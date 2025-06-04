@@ -9,13 +9,9 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,7 +24,7 @@ class OfferingFontPreDownloaderTest {
     private val testPackageName = "com.test.app"
 
     private lateinit var context: Context
-    private lateinit var remoteFontLoader: RemoteFontLoader
+    private lateinit var fontLoader: FontLoader
     private lateinit var preDownloader: OfferingFontPreDownloader
 
     @Before
@@ -38,12 +34,12 @@ class OfferingFontPreDownloaderTest {
             every { resources.getIdentifier(any(), "font", testPackageName) } returns 0
             every { resources.assets.list(any()) } returns emptyArray()
         }
-        remoteFontLoader = mockk<RemoteFontLoader>().apply {
+        fontLoader = mockk<FontLoader>().apply {
             every {
                 getCachedFontFileOrStartDownload(any(), any())
             } returns null
         }
-        preDownloader = OfferingFontPreDownloader(context, remoteFontLoader)
+        preDownloader = OfferingFontPreDownloader(context, fontLoader)
     }
 
     @Test
@@ -51,7 +47,7 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(current = null, all = emptyMap()))
 
         verify(exactly = 0) {
-            remoteFontLoader.getCachedFontFileOrStartDownload(any(), any())
+            fontLoader.getCachedFontFileOrStartDownload(any(), any())
         }
     }
 
@@ -67,7 +63,7 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering-id" to offering)))
 
         verify(exactly = 0) {
-            remoteFontLoader.getCachedFontFileOrStartDownload(any(), any())
+            fontLoader.getCachedFontFileOrStartDownload(any(), any())
         }
     }
 
@@ -90,7 +86,7 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering-id" to offering)))
 
         verify(exactly = 0) {
-            remoteFontLoader.getCachedFontFileOrStartDownload(any(), any())
+            fontLoader.getCachedFontFileOrStartDownload(any(), any())
         }
     }
 
@@ -140,7 +136,7 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering" to offering)))
 
         verify(exactly = 1) {
-            remoteFontLoader.getCachedFontFileOrStartDownload(
+            fontLoader.getCachedFontFileOrStartDownload(
                 url = "https://example.com/downloadable-font.ttf",
                 expectedMd5 = "hash456",
             )
@@ -173,7 +169,7 @@ class OfferingFontPreDownloaderTest {
         preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering" to offering)))
 
         verify(exactly = 0) {
-            remoteFontLoader.getCachedFontFileOrStartDownload(any(), any())
+            fontLoader.getCachedFontFileOrStartDownload(any(), any())
         }
     }
 } 
