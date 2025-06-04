@@ -28,6 +28,8 @@ import java.net.URI
 import java.util.Date
 
 private const val MILLIS_2025_04_23 = 1745366400000
+private const val INDEX_FILE_NAME = "offerings_folders.index"
+private const val OFFERINGS_JSON_FILE_NAME = "offerings.json"
 
 internal data class PaywallResources(
     val offering: Offering,
@@ -50,13 +52,14 @@ internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResour
     override val values = offeringJsonFiles
         .asSequence()
         .flatMap { (folder, file) ->
-            val uiConfig = JSONObject(file.inputStream().readUiConfig())
+            val offeringsJsonFilePath = "$folder/$file"
+            val uiConfig = JSONObject(getResourceStream(offeringsJsonFilePath).readUiConfig())
             val packagesArray = JSONObject(getResourceStream("packages.json").readBytes().decodeToString())
                 .getJSONArray("packages")
-            val indices = file.inputStream().indexOfferings()
+            val indices = getResourceStream(offeringsJsonFilePath).indexOfferings()
 
             indices.mapNotNull { (start, end) ->
-                val offeringJsonString = file.inputStream().readOfferingAt(start, end)
+                val offeringJsonString = getResourceStream(offeringsJsonFilePath).readOfferingAt(start, end)
                 val offeringJsonObject = JSONObject(offeringJsonString)
                 val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
                 if (!hasPaywall) return@mapNotNull null
@@ -207,20 +210,18 @@ private fun PaywallTemplateImageLoader(
         .build()
 }
 
-private fun getResourcesBaseDir(): File {
-    return File(BuildConfig.PROJECT_DIR)
-        .resolve("../../upstream/paywall-preview-resources/resources")
-}
-
-private fun getAllOfferingsJsonFiles(): List<Pair<String, File>> {
-    return getResourcesBaseDir()
-        .listFiles { file -> file.isDirectory }
-        ?.mapNotNull { dir ->
-            val file = dir.resolve("offerings.json")
-            if (file.exists()) dir.name to file else null
-        }
-        ?: emptyList()
-}
+/**
+ * Reads from the index file to determine all parent folders containing offerings.json files.
+ */
+private fun getAllOfferingsJsonFiles(): List<Pair<String, String>> =
+    getResourceStream(INDEX_FILE_NAME)
+        .readBytes()
+        .decodeToString()
+        .lineSequence()
+        .filterNot { it.startsWith("#") }
+        .filterNot { it.isBlank() }
+        .map { parentFolder -> parentFolder to OFFERINGS_JSON_FILE_NAME }
+        .toList()
 
 /**
  *  Reads from the `resources` directory. It uses the ClassLoader on Android, e.g. when the preview is shown on a
