@@ -2,31 +2,25 @@ package com.revenuecat.purchases.paywalls
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.FontStyle
+import dev.drewhamilton.poko.Poko
 import java.io.File
 
 @InternalRevenueCatAPI
-data class DownloadedFont(
+@Poko
+class DownloadedFont(
+    @get:JvmSynthetic
     val weight: Int,
+    @get:JvmSynthetic
     val style: FontStyle,
+    @get:JvmSynthetic
     val file: File,
 )
 
 @InternalRevenueCatAPI
-data class DownloadedFontFamily(
+@Poko
+class DownloadedFontFamily(
+    @get:JvmSynthetic
     val family: String,
-) {
-    private val _fonts: MutableList<DownloadedFont> = mutableListOf()
-    val fonts: List<DownloadedFont>
-        get() = _fonts.toList()
-
-    constructor(
-        family: String,
-        fonts: Collection<DownloadedFont>,
-    ) : this(family) {
-        _fonts.addAll(fonts)
-    }
-
-    internal fun addFont(font: DownloadedFont) {
-        _fonts.add(font)
-    }
-}
+    @get:JvmSynthetic
+    val fonts: List<DownloadedFont> = emptyList(),
+)

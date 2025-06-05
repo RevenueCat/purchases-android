@@ -46,18 +46,23 @@ internal class FontLoader(
 
     private val fontInfosForHash = mutableMapOf<String, MutableSet<DownloadableFontInfo>>()
 
-    private val cachedFontFamilyByFontInfo: MutableMap<DownloadableFontInfo, DownloadedFontFamily> = mutableMapOf()
-    private val cachedFontFamilyByFamily: MutableMap<String, DownloadedFontFamily> = mutableMapOf()
+    private val cachedFontFamilyByFontInfo: MutableMap<DownloadableFontInfo, String> = mutableMapOf()
+    private val cachedFontFamilyByFamilyName: MutableMap<String, DownloadedFontFamily> = mutableMapOf()
 
+    @Suppress("ReturnCount")
     fun getCachedFontFamilyOrStartDownload(fontInfo: FontInfo.Name): DownloadedFontFamily? {
         val fontInfoToDownload = validateFontInfo(fontInfo) ?: return null
 
-        return if (cachedFontFamilyByFontInfo.containsKey(fontInfoToDownload)) {
-            cachedFontFamilyByFontInfo[fontInfoToDownload]
-        } else {
-            startFontDownload(fontInfoToDownload)
-            null
+        synchronized(this) {
+            val cachedFontFamilyName = cachedFontFamilyByFontInfo[fontInfoToDownload]
+            val cachedFontFamily = cachedFontFamilyByFamilyName[cachedFontFamilyName]
+            if (cachedFontFamily != null) {
+                return cachedFontFamily
+            }
         }
+
+        startFontDownload(fontInfoToDownload)
+        return null
     }
 
     private fun startFontDownload(fontInfo: DownloadableFontInfo) {
@@ -113,24 +118,27 @@ internal class FontLoader(
     private fun addFileToCache(urlHash: String, file: File) {
         synchronized(this) {
             for (fontInfo in fontInfosForHash[urlHash] ?: emptySet()) {
+                val familyName = fontInfo.family
                 if (cachedFontFamilyByFontInfo[fontInfo] != null) {
-                    verboseLog("Font already cached for ${fontInfo.family}. Skipping download.")
+                    verboseLog("Font already cached for $familyName. Skipping download.")
                     continue
                 }
-                val downloadedFontFamily = cachedFontFamilyByFamily[fontInfo.family]
+                val downloadedFontFamily = cachedFontFamilyByFamilyName[familyName]
                 if (downloadedFontFamily != null) {
-                    downloadedFontFamily.addFont(
-                        DownloadedFont(
+                    val newDownloadedFontFamily = DownloadedFontFamily(
+                        family = downloadedFontFamily.family,
+                        fonts = downloadedFontFamily.fonts + DownloadedFont(
                             weight = fontInfo.weight,
                             style = fontInfo.style,
                             file = file,
                         ),
                     )
-                    cachedFontFamilyByFontInfo[fontInfo] = downloadedFontFamily
+                    cachedFontFamilyByFamilyName[familyName] = newDownloadedFontFamily
+                    cachedFontFamilyByFontInfo[fontInfo] = familyName
                 } else {
                     val fontFamily = DownloadedFontFamily(
-                        family = fontInfo.family,
-                        fonts = mutableListOf(
+                        family = familyName,
+                        fonts = listOf(
                             DownloadedFont(
                                 weight = fontInfo.weight,
                                 style = fontInfo.style,
@@ -138,8 +146,8 @@ internal class FontLoader(
                             ),
                         ),
                     )
-                    cachedFontFamilyByFontInfo[fontInfo] = fontFamily
-                    cachedFontFamilyByFamily[fontInfo.family] = fontFamily
+                    cachedFontFamilyByFontInfo[fontInfo] = familyName
+                    cachedFontFamilyByFamilyName[familyName] = fontFamily
                 }
             }
             fontInfosForHash.remove(urlHash)
