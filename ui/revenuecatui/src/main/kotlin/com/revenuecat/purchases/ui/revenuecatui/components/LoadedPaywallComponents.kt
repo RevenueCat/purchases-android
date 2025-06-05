@@ -3,16 +3,25 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -65,23 +74,32 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
 
-    Column(modifier = modifier.background(background)) {
+    Box(
+        modifier = modifier
+            .background(background),
+    ) {
+        var footerHeight by remember { mutableIntStateOf(0) }
+        val footerHeightDp = with(LocalDensity.current) { footerHeight.toDp() }
+
         ComponentView(
             style = style,
             state = state,
             onClick = clickHandler,
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = footerHeightDp),
         )
+
         footerComponentStyle?.let {
             ComponentView(
                 style = it,
                 state = state,
                 onClick = clickHandler,
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .onSizeChanged { size -> footerHeight = size.height },
             )
         }
     }
