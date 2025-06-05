@@ -49,7 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.recoverFromBlankFontAlias
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.recoverFromFontAliasError
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
@@ -586,7 +586,7 @@ internal class StyleFactory(
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
         fifth = component.fontName
             ?.let { fontAlias -> fontAliases.getFontSpec(fontAlias) }
-            ?.recoverFromBlankFontAlias()
+            ?.recoverFromFontAliasError()
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
     ) { texts, presentedOverrides, color, backgroundColor, fontSpec ->

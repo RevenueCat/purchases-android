@@ -65,7 +65,7 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
 
 /**
  * Retrieves a [FontSpec] from this map, and returns a [PaywallValidationError.MissingFontAlias] if it doesn't exist.
- * If you want to treat blank [FontAlias]es as a null [FontSpec], chain it with [recoverFromBlankFontAlias].
+ * If you want to treat blank [FontAlias]es as a null [FontSpec], chain it with [recoverFromFontAliasError].
  */
 @JvmSynthetic
 internal fun Map<FontAlias, FontSpec>.getFontSpec(
@@ -77,15 +77,25 @@ internal fun Map<FontAlias, FontSpec>.getFontSpec(
         } ?: Result.Error(PaywallValidationError.MissingFontAlias(alias))
 
 /**
- * Returns a successful Result containing `null` if this is an error Result caused by a blank [FontAlias]. This
- * scenario should not happen, as our dashboard should not allow devs to publish a paywall containing a blank Font
- * Family field, but this is defensive in case it does happen.
+ * Returns a successful Result containing `null` if this is an error Result caused by a
+ * [PaywallValidationError.MissingFontAlias] error. We still want to show the Paywall in this scenario, but we'll let
+ * the developer know through a log message that something's wrong.
+ *
+ * There's a special case for a blank [FontAlias], in which case we don't log anything. This scenario should not happen,
+ * as our dashboard should not allow devs to publish a paywall containing a blank Font Family field, but this is
+ * defensive in case it does happen.
  */
 @Suppress("MaxLineLength")
 @JvmSynthetic
-internal fun Result<FontSpec, PaywallValidationError>.recoverFromBlankFontAlias(): Result<FontSpec?, PaywallValidationError> =
+internal fun Result<FontSpec, PaywallValidationError>.recoverFromFontAliasError(): Result<FontSpec?, PaywallValidationError> =
     flatMapError { error ->
         if (error is PaywallValidationError.MissingFontAlias && error.alias.value.isBlank()) {
+            // Treating this as a dashboard error and just ignoring it. No need to log.
+            Result.Success(null)
+        } else if (error is PaywallValidationError.MissingFontAlias) {
+            Logger.e(
+                "Font named '${error.alias}' was not found in the font config. Try re-adding it in the Paywall editor.",
+            )
             Result.Success(null)
         } else {
             Result.Error(error)

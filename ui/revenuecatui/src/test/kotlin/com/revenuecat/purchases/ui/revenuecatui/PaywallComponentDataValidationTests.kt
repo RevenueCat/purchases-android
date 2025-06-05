@@ -444,7 +444,7 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
-    fun `Should accumulate errors if FontAliases are missing`() {
+    fun `Should ignore MissingFontAliases errors`() {
         // Arrange
         val missingFontAlias1 = FontAlias("missing-font-1")
         val missingFontAlias2 = FontAlias("missing-font-2")
@@ -514,11 +514,7 @@ class PaywallComponentDataValidationTests {
         val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, resourceProvider)
 
         // Assert
-        assertNotNull(validated.errors)
-        assertEquals(3, validated.errors!!.size)
-        assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias1)))
-        assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias2)))
-        assertTrue(validated.errors!!.contains(PaywallValidationError.MissingFontAlias(missingFontAlias3)))
+        assertNull(validated.errors)
     }
 
     @Test
