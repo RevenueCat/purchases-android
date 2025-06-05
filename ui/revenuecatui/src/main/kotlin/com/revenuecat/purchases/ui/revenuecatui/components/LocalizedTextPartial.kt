@@ -83,6 +83,7 @@ internal class LocalizedTextPartial private constructor(
                 backgroundColor = otherPartial?.backgroundColor ?: partial.backgroundColor,
                 fontName = otherPartial?.fontName ?: partial.fontName,
                 fontWeight = otherPartial?.fontWeight ?: partial.fontWeight,
+                fontWeightInt = otherPartial?.fontWeightInt ?: partial.fontWeightInt,
                 fontSize = otherPartial?.fontSize ?: partial.fontSize,
                 horizontalAlignment = otherPartial?.horizontalAlignment ?: partial.horizontalAlignment,
                 size = otherPartial?.size ?: partial.size,
