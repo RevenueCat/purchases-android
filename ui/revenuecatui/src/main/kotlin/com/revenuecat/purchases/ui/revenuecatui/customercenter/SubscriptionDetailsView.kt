@@ -7,23 +7,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.DateRange
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -31,22 +31,11 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localiza
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SettingsRowMainTextAlpha
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SettingsRowMainTextSize
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SettingsRowSupportingTextAlpha
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SettingsRowSupportingTextSize
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SubscriptionViewHorizontalSpace
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SubscriptionViewIconSize
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.SubscriptionViewRowHeight
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.Explanation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
-import com.revenuecat.purchases.ui.revenuecatui.icons.CalendarMonth
-import com.revenuecat.purchases.ui.revenuecatui.icons.CurrencyExchange
-import com.revenuecat.purchases.ui.revenuecatui.icons.UniversalCurrencyAlt
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
@@ -55,41 +44,96 @@ internal fun SubscriptionDetailsView(
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Surface(
         modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
+        ),
+        color = MaterialTheme.colorScheme.surface,
     ) {
-        val explanation = remember { getSubscriptionExplanation(details, localization) }
-        SubscriptionDetailsRow(
-            title = details.title ?: details.product?.title ?: "",
-            subtitle = explanation,
-            prominentSubtitle = false,
-        )
+        Row(
+            modifier = Modifier.padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Left column with details
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+            ) {
+                val explanation = remember { getSubscriptionExplanation(details, localization) }
+                Text(
+                    text = details.title ?: details.product?.title ?: "",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal,
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.alpha(0.87f),
+                )
+                Text(
+                    text = explanation,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal,
+                    ),
+                    modifier = Modifier.alpha(0.6f),
+                )
 
-        details.durationTitle?.let {
-            SubscriptionDetailsRow(
-                title = localization.commonLocalizedString(CommonLocalizedString.BILLING_CYCLE),
-                subtitle = it,
-                icon = CurrencyExchange,
-            )
-        }
+                details.durationTitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                        ),
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .alpha(0.6f),
+                    )
+                }
 
-        val price = remember { getPrice(details, localization) }
-        price?.let {
-            SubscriptionDetailsRow(
-                title = localization.commonLocalizedString(CommonLocalizedString.CURRENT_PRICE),
-                subtitle = it,
-                icon = UniversalCurrencyAlt,
-            )
-        }
-        details.expirationOrRenewal?.let { expirationOrRenewal ->
-            val expirationValue = remember { getExpirationValue(expirationOrRenewal, localization) }
-            val expirationOverline = remember { labelForExpirationOrRenewal(expirationOrRenewal, localization) }
+                details.expirationOrRenewal?.let { expirationOrRenewal ->
+                    val expirationValue = remember { getExpirationValue(expirationOrRenewal, localization) }
+                    val expirationOverline = remember { labelForExpirationOrRenewal(expirationOrRenewal, localization) }
 
-            SubscriptionDetailsRow(
-                icon = Icons.Rounded.DateRange,
-                title = expirationOverline,
-                subtitle = expirationValue,
-            )
+                    Text(
+                        text = expirationOverline,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                        ),
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .alpha(0.6f),
+                    )
+                    Text(
+                        text = expirationValue,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                        modifier = Modifier.alpha(0.87f),
+                    )
+                }
+            }
+
+            // Right column with price
+            val price = remember { getPrice(details, localization) }
+            price?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
         }
     }
 }
@@ -100,49 +144,54 @@ internal fun SubscriptionDetailsRow(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    rightAlignedText: String? = null,
     prominentSubtitle: Boolean = true,
 ) {
-    val titleTextStyle = TextStyle(
-        fontSize = if (prominentSubtitle) SettingsRowSupportingTextSize else SettingsRowMainTextSize,
-        fontWeight = FontWeight.Normal,
-    )
-
-    val subtitleTextStyle = TextStyle(
-        fontSize = if (prominentSubtitle) SettingsRowMainTextSize else SettingsRowSupportingTextSize,
-        fontWeight = FontWeight.Normal,
-    )
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .defaultMinSize(minHeight = SubscriptionViewRowHeight)
+            .defaultMinSize(minHeight = 48.dp)
             .fillMaxWidth()
-            .padding(ManagementViewHorizontalPadding),
-        horizontalArrangement = Arrangement.spacedBy(SubscriptionViewHorizontalSpace),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        icon?.let {
-            Icon(
-                imageVector = it,
-                contentDescription = null,
-                modifier = Modifier.size(SubscriptionViewIconSize),
-            )
-        }
-        Column {
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
             Text(
                 text = title,
-                style = titleTextStyle,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = if (prominentSubtitle) 14.sp else 16.sp,
+                    fontWeight = FontWeight.Normal,
+                ),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.alpha(
-                    if (prominentSubtitle) SettingsRowSupportingTextAlpha else SettingsRowMainTextAlpha,
+                    if (prominentSubtitle) 0.6f else 0.87f,
                 ),
             )
+            if (subtitle.isNotEmpty()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = if (prominentSubtitle) 16.sp else 14.sp,
+                        fontWeight = if (prominentSubtitle) FontWeight.Medium else FontWeight.Normal,
+                    ),
+                    modifier = Modifier.alpha(
+                        if (prominentSubtitle) 0.87f else 0.6f,
+                    ),
+                )
+            }
+        }
+        rightAlignedText?.let {
             Text(
-                text = subtitle,
-                style = subtitleTextStyle,
-                modifier = Modifier.alpha(
-                    if (prominentSubtitle) SettingsRowMainTextAlpha else SettingsRowSupportingTextAlpha,
+                text = it,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
                 ),
+                textAlign = TextAlign.End,
+                modifier = Modifier.padding(start = 16.dp),
             )
         }
     }
@@ -335,7 +384,6 @@ private fun SubscriptionDetailsRowIcon_Preview() {
         "Next Billing Date",
         "June 1st, 2024",
         Modifier,
-        CalendarMonth,
     )
 }
 

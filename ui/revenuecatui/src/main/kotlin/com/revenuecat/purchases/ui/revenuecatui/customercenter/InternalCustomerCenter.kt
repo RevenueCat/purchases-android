@@ -48,9 +48,9 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SubscriptionDetailView
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
@@ -316,7 +316,7 @@ private fun MainScreen(
                     purchaseInformation = state.purchaseInformation,
                     onPurchaseSelected = { onAction(CustomerCenterAction.SelectPurchase(it)) },
                     onAction = onAction,
-                    screenType = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT
+                    screenType = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT,
                 )
             } else {
                 SubscriptionDetailView(
@@ -342,7 +342,7 @@ private fun MainScreen(
                 localization = configuration.localization,
                 onPurchaseSelected = {},
                 onAction = onAction,
-                screenType = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE
+                screenType = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
             )
         } ?: run {
             // Fallback with a restore button

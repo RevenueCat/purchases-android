@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -54,11 +57,23 @@ internal fun SubscriptionDetailView(
 
         Spacer(modifier = Modifier.size(ManagementViewSpacer))
 
-        SubscriptionDetailsView(
-            details = purchaseInformation,
-            localization = localization,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 1.dp,
+            ),
+        ) {
+            SubscriptionDetailsView(
+                details = purchaseInformation,
+                localization = localization,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         val pathsForPurchase = if (purchaseInformation.isLifetime) {
             supportedPaths.filter { it.type != HelpPath.PathType.CANCEL }
