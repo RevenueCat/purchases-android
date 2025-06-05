@@ -16,7 +16,11 @@ internal class TestUrlConnection(
 internal class TestUrlConnectionFactory(
     private val mockedConnections: Map<String, TestUrlConnection>
 ): UrlConnectionFactory {
+    private val _createdConnections = mutableListOf<String>()
+    val createdConnections: List<String>
+        get() = _createdConnections.toList()
     override fun createConnection(url: String, requestMethod: String): UrlConnection {
+        _createdConnections.add(url)
         return mockedConnections[url] ?: throw IllegalArgumentException("No mocked connection for URL: $url")
     }
 }

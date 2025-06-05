@@ -113,6 +113,10 @@ internal class FontLoader(
     private fun addFileToCache(urlHash: String, file: File) {
         synchronized(this) {
             for (fontInfo in fontInfosListeningToSameHashUrl[urlHash] ?: emptySet()) {
+                if (cachedFontFamilyByFontInfo[fontInfo] != null) {
+                    verboseLog("Font already cached for ${fontInfo.family}. Skipping download.")
+                    continue
+                }
                 val downloadedFontFamily = cachedFontFamilyByFamily[fontInfo.family]
                 if (downloadedFontFamily != null) {
                     downloadedFontFamily.addFont(
