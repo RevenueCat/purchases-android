@@ -678,7 +678,8 @@ DESC
     gradle_args = {
       task: "#{gradle_module}:recordPaparazziDebug",
     }
-    gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
+    # TODO Remove --info
+    gradle_args[:flags] = "--info --tests=\"#{options[:tests]}\"" if options[:tests]
     # This is not yet supported in the Paparazzi version we're using.
     # gradle_args[:system_properties] = { "paparazzi.snapshot.dir" => options[:output_dir] } if options[:output_dir]
     gradle(gradle_args)
