@@ -1,9 +1,10 @@
 ## 8.19.1
-## RevenueCat SDK
-### 🐞 Bugfixes
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
 * Fix display of wrong product information when not using entitlements (#2415) via Cesar de la Vega (@vegaro)
 
-### 🔄 Other Changes
+## 🔄 Other Changes
 * Update Java in .sdkmanrc to 21.0.6 (#2395) via Cesar de la Vega (@vegaro)
 
 ## 8.19.0
