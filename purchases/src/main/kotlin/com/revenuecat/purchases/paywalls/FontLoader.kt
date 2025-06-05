@@ -6,7 +6,8 @@ import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
-import com.revenuecat.purchases.paywalls.components.properties.FontStyle
+import com.revenuecat.purchases.paywalls.fonts.DownloadableFontInfo
+import com.revenuecat.purchases.paywalls.fonts.toDownloadableFontInfo
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -21,15 +22,6 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
-
-@OptIn(InternalRevenueCatAPI::class)
-private data class DownloadableFontInfo(
-    val url: String,
-    val expectedMd5: String,
-    val family: String,
-    val weight: Int,
-    val style: FontStyle,
-)
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class FontLoader(
@@ -51,7 +43,10 @@ internal class FontLoader(
 
     @Suppress("ReturnCount")
     fun getCachedFontFamilyOrStartDownload(fontInfo: FontInfo.Name): DownloadedFontFamily? {
-        val fontInfoToDownload = validateFontInfo(fontInfo) ?: return null
+        val fontInfoToDownload = fontInfo.toDownloadableFontInfo().getOrElse {
+            errorLog("Error validating font info for download", it)
+            return null
+        }
 
         synchronized(this) {
             val cachedFontFamilyName = cachedFontFamilyByFontInfo[fontInfoToDownload]
@@ -152,52 +147,6 @@ internal class FontLoader(
             }
             fontInfosForHash.remove(urlHash)
         }
-    }
-
-    @Suppress("ReturnCount")
-    private fun validateFontInfo(fontInfo: FontInfo.Name): DownloadableFontInfo? {
-        if (fontInfo.url.isNullOrBlank()) {
-            errorLog(
-                "Font URL is empty for ${fontInfo.value}. Cannot download font. " +
-                    "Please try to re-upload your font in the RevenueCat dashboard.",
-            )
-            return null
-        }
-        if (fontInfo.hash.isNullOrBlank()) {
-            errorLog(
-                "Font hash is empty for ${fontInfo.value}. Cannot validate downloaded font. " +
-                    "Please try to re-upload your font in the RevenueCat dashboard.",
-            )
-            return null
-        }
-        if (fontInfo.family.isNullOrBlank()) {
-            errorLog(
-                "Font family is empty for ${fontInfo.value}. Cannot download font. " +
-                    "Please try to re-upload your font in the RevenueCat dashboard.",
-            )
-            return null
-        }
-        if (fontInfo.weight == null) {
-            errorLog(
-                "Font weight is null for ${fontInfo.value}. " +
-                    "Please try to re-upload your font in the RevenueCat dashboard.",
-            )
-            return null
-        }
-        if (fontInfo.style == null) {
-            errorLog(
-                "Font style is empty for ${fontInfo.value}." +
-                    "Please try to re-upload your font in the RevenueCat dashboard.",
-            )
-            return null
-        }
-        return DownloadableFontInfo(
-            url = fontInfo.url,
-            expectedMd5 = fontInfo.hash,
-            family = fontInfo.family,
-            weight = fontInfo.weight,
-            style = fontInfo.style,
-        )
     }
 
     private fun ensureFoldersExist() {

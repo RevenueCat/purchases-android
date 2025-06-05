@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.paywalls.fonts.toDownloadableFontInfo
 import java.net.MalformedURLException
 import java.net.URL
 
@@ -31,11 +32,7 @@ internal class OfferingFontPreDownloader(
             ?.map { it.android }
             ?.filterIsInstance<FontInfo.Name>()
             ?.filter {
-                it.url?.isNotBlank() == true &&
-                    it.hash?.isNotBlank() == true &&
-                    it.family?.isNotBlank() == true &&
-                    it.weight != null &&
-                    it.style != null &&
+                it.toDownloadableFontInfo().getOrNull() != null &&
                     !isBundled(it)
             }
             ?.filter {
