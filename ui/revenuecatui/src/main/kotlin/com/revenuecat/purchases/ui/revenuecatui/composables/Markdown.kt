@@ -185,7 +185,7 @@ private fun MDHeading(
     val padding = if (heading.parent is Document) 8.dp else 0.dp
     Box(modifier = modifier.padding(bottom = padding)) {
         val text = buildAnnotatedString {
-            appendMarkdownChildren(heading, color, allowLinks)
+            appendMarkdownChildren(heading, color, allowLinks, baseFontWeight = fontWeight)
         }
         MarkdownText(
             text,
@@ -226,7 +226,7 @@ private fun MDParagraph(
                     )
                     .toSpanStyle(),
             )
-            appendMarkdownChildren(paragraph as Node, color, allowLinks)
+            appendMarkdownChildren(paragraph as Node, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
         MarkdownText(
@@ -270,7 +270,7 @@ private fun MDBulletList(
         val text = buildAnnotatedString {
             pushStyle(MaterialTheme.typography.bodyLarge.toSpanStyle())
             append("$marker ")
-            appendMarkdownChildren(it, color, allowLinks)
+            appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
         MarkdownText(
@@ -315,7 +315,7 @@ private fun MDOrderedList(
         val text = buildAnnotatedString {
             pushStyle(style.toSpanStyle())
             append("${number++}$delimiter ")
-            appendMarkdownChildren(it, color, allowLinks)
+            appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
         MarkdownText(
@@ -388,7 +388,13 @@ private fun MDListItems(
 }
 
 @Composable
-private fun MDBlockQuote(blockQuote: BlockQuote, color: Color, allowLinks: Boolean, modifier: Modifier = Modifier) {
+private fun MDBlockQuote(
+    blockQuote: BlockQuote,
+    color: Color,
+    allowLinks: Boolean,
+    baseFontWeight: FontWeight?,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .drawBehind {
@@ -406,7 +412,7 @@ private fun MDBlockQuote(blockQuote: BlockQuote, color: Color, allowLinks: Boole
                 MaterialTheme.typography.bodyLarge.toSpanStyle()
                     .plus(SpanStyle(fontStyle = FontStyle.Italic)),
             )
-            appendMarkdownChildren(blockQuote, color, allowLinks)
+            appendMarkdownChildren(blockQuote, color, allowLinks, baseFontWeight)
             pop()
         }
         Text(text, modifier)
@@ -442,7 +448,7 @@ private fun MDBlockChildren(
     var child = parent.firstChild
     while (child != null) {
         when (child) {
-            is BlockQuote -> MDBlockQuote(child, color, allowLinks)
+            is BlockQuote -> MDBlockQuote(child, color, allowLinks, baseFontWeight = fontWeight)
             is Heading -> MDHeading(
                 child,
                 color,
@@ -499,20 +505,26 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     parent: Node,
     color: Color,
     allowLinks: Boolean,
+    baseFontWeight: FontWeight?,
 ) {
     var child = parent.firstChild
     while (child != null) {
         when (child) {
-            is Paragraph -> appendMarkdownChildren(child, color, allowLinks)
+            is Paragraph -> appendMarkdownChildren(child, color, allowLinks, baseFontWeight)
             is Text -> append(child.literal)
             is Emphasis -> {
                 pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
-                appendMarkdownChildren(child, color, allowLinks)
+                appendMarkdownChildren(child, color, allowLinks, baseFontWeight)
                 pop()
             }
             is StrongEmphasis -> {
-                pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-                appendMarkdownChildren(child, color, allowLinks)
+                val biggerWeight = if ((baseFontWeight?.weight ?: 0) > FontWeight.Bold.weight) {
+                    baseFontWeight
+                } else {
+                    FontWeight.Bold
+                }
+                pushStyle(SpanStyle(fontWeight = biggerWeight))
+                appendMarkdownChildren(child, color, allowLinks, biggerWeight)
                 pop()
             }
             is Code -> {
@@ -527,15 +539,15 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
                 if (allowLinks) {
                     val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
                     withLink(LinkAnnotation.Url(child.destination, TextLinkStyles(underline))) {
-                        appendMarkdownChildren(child, color, allowLinks = true)
+                        appendMarkdownChildren(child, color, allowLinks = true, baseFontWeight = baseFontWeight)
                     }
                 } else {
-                    appendMarkdownChildren(child, color, allowLinks = false)
+                    appendMarkdownChildren(child, color, allowLinks = false, baseFontWeight = baseFontWeight)
                 }
             }
             is Strikethrough -> {
                 pushStyle(TextStyle(textDecoration = TextDecoration.LineThrough).toSpanStyle())
-                appendMarkdownChildren(child, color, allowLinks)
+                appendMarkdownChildren(child, color, allowLinks, baseFontWeight = baseFontWeight)
                 pop()
             }
         }
