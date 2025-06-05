@@ -13,12 +13,14 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMapError
+import java.io.File
 
 @get:JvmSynthetic
 private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
@@ -47,6 +49,7 @@ internal sealed interface FontSpec {
         object Serif : Generic
         object Monospace : Generic
     }
+    data class Downloaded(@get:JvmSynthetic val downloadedFontFamily: DownloadedFontFamily) : FontSpec
 
     data class System(@get:JvmSynthetic val name: String) : FontSpec
 }
@@ -57,7 +60,7 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
 ): Map<FontAlias, FontSpec> {
     // Get unique FontsConfigs, and determine their FontSpec.
     val configToSpec: Map<FontsConfig, FontSpec> = values.toSet().associateWith { fontsConfig ->
-        resourceProvider.determineFontSpec(fontsConfig.android)
+        resourceProvider.determineFontSpec(fontsConfig)
     }
     // Create a map of FontAliases to FontSpecs.
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
@@ -120,29 +123,63 @@ internal fun FontSpec.resolve(
         FontSpec.Generic.Monospace -> FontFamily.Monospace
     }
 
+    is FontSpec.Downloaded -> FontFamily(
+        fonts = downloadedFontFamily.fonts.map { font ->
+            Font(
+                file = File(font.file.path),
+                weight = FontWeight(font.weight),
+                style = font.style.toComposeFontStyle(),
+            )
+        },
+    )
+
     is FontSpec.System -> FontFamily(
         Font(familyName = DeviceFontFamilyName(name), weight = weight, style = style),
     )
 }
 
-private fun ResourceProvider.determineFontSpec(info: FontInfo): FontSpec =
-    when (info) {
-        is FontInfo.GoogleFonts -> FontSpec.Google(name = info.value)
-        is FontInfo.Name -> when (info.value) {
-            FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
-            FontFamily.Serif.name -> FontSpec.Generic.Serif
-            FontFamily.Monospace.name -> FontSpec.Generic.Monospace
-            else -> getResourceIdentifier(name = info.value, type = "font")
-                .takeUnless { it == 0 }
-                ?.let { fontId -> FontSpec.Resource(id = fontId) }
-                ?: getAssetFontPath(name = info.value)
-                    ?.let { path -> FontSpec.Asset(path = path) }
-                ?: FontSpec.System(name = info.value).also {
-                    Logger.d(
-                        "Could not find a font resource named `${info.value}`. Assuming it's an OEM system font. " +
-                            "If it isn't, make sure the font exists in the `res/font` folder. See for more info: " +
-                            "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
-                    )
-                }
-        }
+private fun ResourceProvider.determineFontSpec(fontsConfig: FontsConfig): FontSpec {
+    return when (val fontInfo = fontsConfig.android) {
+        is FontInfo.GoogleFonts -> FontSpec.Google(name = fontInfo.value)
+        is FontInfo.Name -> getBundledFontSpec(fontInfo)
+            ?: getDownloadedFontSpec(fontInfo)
+            ?: FontSpec.System(name = fontInfo.value).also {
+                Logger.d(
+                    "Could not find a font resource named `${fontInfo.value}`. " +
+                        "Assuming it's an OEM system font. If it isn't, make sure the font exists in the " +
+                        "`res/font` folder. See for more info: " +
+                        "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
+                )
+            }
     }
+}
+
+@Suppress("NestedBlockDepth")
+private fun ResourceProvider.getBundledFontSpec(
+    fontInfo: FontInfo.Name,
+): FontSpec? {
+    return when (fontInfo.value.takeIf { it.isNotEmpty() }) {
+        null -> null // No font specified, return null.
+        FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
+        FontFamily.Serif.name -> FontSpec.Generic.Serif
+        FontFamily.Monospace.name -> FontSpec.Generic.Monospace
+        else -> getResourceIdentifier(name = fontInfo.value, type = "font")
+            .takeIf { it != 0 }
+            ?.let { fontId -> FontSpec.Resource(id = fontId) }
+            ?: getAssetFontPath(name = fontInfo.value)
+                ?.let { path -> FontSpec.Asset(path = path) }
+    }
+}
+
+private fun com.revenuecat.purchases.paywalls.components.properties.FontStyle.toComposeFontStyle(): FontStyle {
+    return when (this) {
+        com.revenuecat.purchases.paywalls.components.properties.FontStyle.NORMAL -> FontStyle.Normal
+        com.revenuecat.purchases.paywalls.components.properties.FontStyle.ITALIC -> FontStyle.Italic
+    }
+}
+
+private fun ResourceProvider.getDownloadedFontSpec(fontInfo: FontInfo.Name): FontSpec.Downloaded? {
+    return getCachedFontFamilyOrStartDownload(fontInfo)?.let {
+        FontSpec.Downloaded(it)
+    }
+}

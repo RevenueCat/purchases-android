@@ -68,6 +68,8 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -118,6 +120,7 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
+    private val fontLoader: FontLoader,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -916,6 +919,17 @@ internal class PurchasesOrchestrator(
     //endregion
 
     //endregion
+
+    // region Paywall fonts
+
+    @InternalRevenueCatAPI
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
+    }
+
+    // endregion Paywall fonts
 
     // region Private Methods
     private fun enqueue(command: () -> Unit) {

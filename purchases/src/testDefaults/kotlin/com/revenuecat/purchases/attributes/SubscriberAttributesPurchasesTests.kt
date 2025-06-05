@@ -9,13 +9,11 @@ import com.revenuecat.purchases.PostPendingTransactionsHelper
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesOrchestrator
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
-import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -27,6 +25,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.Runs
@@ -54,6 +53,7 @@ class SubscriberAttributesPurchasesTests {
     private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
+    private val fontLoaderMock = mockk<FontLoader>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -112,6 +112,7 @@ class SubscriberAttributesPurchasesTests {
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
+            fontLoader = fontLoaderMock,
         )
 
         underTest = Purchases(purchasesOrchestrator)
@@ -119,7 +120,7 @@ class SubscriberAttributesPurchasesTests {
 
     @After
     fun tearDown() {
-        clearMocks(customerInfoHelperMock, customerInfoUpdateHandlerMock, offeringsManagerMock)
+        clearMocks(customerInfoHelperMock, customerInfoUpdateHandlerMock, offeringsManagerMock, fontLoaderMock)
     }
 
     @Test

@@ -30,6 +30,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
@@ -768,6 +769,17 @@ class Purchases internal constructor(
     //endregion
     //endregion
     //endregion
+
+    // region Paywall fonts
+
+    @InternalRevenueCatAPI
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return purchasesOrchestrator.getCachedFontFamilyOrStartDownload(fontInfo)
+    }
+
+    // endregion Paywall Fonts
 
     // region Deprecated
 

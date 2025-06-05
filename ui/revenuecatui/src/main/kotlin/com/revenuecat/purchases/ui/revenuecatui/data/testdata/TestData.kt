@@ -11,9 +11,11 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -414,6 +416,7 @@ internal class MockResourceProvider(
      */
     private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
     private val assetPaths: List<String> = emptyList(),
+    private val downloadedFilesByUrl: Map<String, DownloadedFontFamily> = emptyMap(),
 ) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
@@ -452,6 +455,12 @@ internal class MockResourceProvider(
         val filePath = "${ResourceProvider.ASSETS_FONTS_DIR}/$nameWithExtension"
 
         return assetPaths.find { it == filePath }
+    }
+
+    override fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return downloadedFilesByUrl[fontInfo.url]
     }
 }
 

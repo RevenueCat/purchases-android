@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import androidx.annotation.StringRes
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import java.util.Locale
 
 /**
@@ -19,6 +22,9 @@ internal interface ResourceProvider {
     fun getLocale(): Locale
     fun getResourceIdentifier(name: String, type: String): Int
     fun getAssetFontPath(name: String): String?
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily?
 }
 
 internal class PaywallResourceProvider(
@@ -56,6 +62,17 @@ internal class PaywallResourceProvider(
         return resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
             ?.find { it == nameWithExtension }
             ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+    }
+
+    override fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return if (Purchases.isConfigured) {
+            Purchases.sharedInstance.getCachedFontFamilyOrStartDownload(fontInfo)
+        } else {
+            Logger.e("getCachedFontFileOrStartDownload called before Purchases is configured. Returning null.")
+            null
+        }
     }
 }
 
