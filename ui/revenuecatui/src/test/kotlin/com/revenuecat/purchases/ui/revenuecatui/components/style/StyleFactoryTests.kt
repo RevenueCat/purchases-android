@@ -42,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
@@ -317,13 +318,13 @@ class StyleFactoryTests {
     }
 
     @Test
-    fun `Should fail to create a TextComponentStyle if font is missing`() {
+    fun `Should not fail to create a TextComponentStyle if font is missing`() {
         // Arrange
-        val expectedMissingFontAlias = FontAlias("does-not-exist")
+        val missingFontAlias = FontAlias("does-not-exist")
         val component = TextComponent(
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            fontName = expectedMissingFontAlias
+            fontName = missingFontAlias
         )
         val incorrectStyleFactory = StyleFactory(
             localizations = localizations,
@@ -338,23 +339,21 @@ class StyleFactoryTests {
         val result = incorrectStyleFactory.create(component)
 
         // Assert
-        assertThat(result.isError).isTrue()
-        val errors = result.errorOrNull()!!
-        assertThat(errors.size).isEqualTo(1)
-        val error = errors[0] as PaywallValidationError.MissingFontAlias
-        assertThat(error.alias).isEqualTo(expectedMissingFontAlias)
+        assertThat(result.isSuccess).isTrue()
+        val actualStyle = result.getOrNull()?.componentStyle as TextComponentStyle
+        assertThat(actualStyle.fontSpec).isNull()
     }
 
     @Test
-    fun `Should fail to create a TextComponentStyle if font is missing from an override`() {
+    fun `Should not fail to create a TextComponentStyle if font is missing from an override`() {
         // Arrange
-        val expectedMissingFontAlias = FontAlias("does-not-exist")
+        val missingFontAlias = FontAlias("does-not-exist")
         val component = TextComponent(
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             overrides = listOf(ComponentOverride(
                 conditions = listOf(ComponentOverride.Condition.IntroOffer),
-                properties = PartialTextComponent(fontName = expectedMissingFontAlias)
+                properties = PartialTextComponent(fontName = missingFontAlias)
             ))
         )
         val incorrectStyleFactory = StyleFactory(
@@ -370,11 +369,10 @@ class StyleFactoryTests {
         val result = incorrectStyleFactory.create(component)
 
         // Assert
-        assertThat(result.isError).isTrue()
-        val errors = result.errorOrNull()!!
-        assertThat(errors.size).isEqualTo(1)
-        val error = errors[0] as PaywallValidationError.MissingFontAlias
-        assertThat(error.alias).isEqualTo(expectedMissingFontAlias)
+        assertThat(result.isSuccess).isTrue()
+        val actualStyle = result.getOrNull()?.componentStyle as TextComponentStyle
+        assertThat(actualStyle.overrides.size).isEqualTo(1)
+        assertThat(actualStyle.overrides[0].properties.fontSpec).isNull()
     }
 
     @Test
