@@ -44,7 +44,7 @@ internal class FontLoader(
         MessageDigest.getInstance("MD5")
     }
 
-    private val fontInfosListeningToSameHashUrl = mutableMapOf<String, MutableSet<DownloadableFontInfo>>()
+    private val fontInfosForHash = mutableMapOf<String, MutableSet<DownloadableFontInfo>>()
 
     private val cachedFontFamilyByFontInfo: MutableMap<DownloadableFontInfo, DownloadedFontFamily> = mutableMapOf()
     private val cachedFontFamilyByFamily: MutableMap<String, DownloadedFontFamily> = mutableMapOf()
@@ -72,9 +72,9 @@ internal class FontLoader(
             val cachedFile = File(cacheDir, "$urlHash.$extension")
 
             synchronized(this) {
-                val fontInfosListeningToHash = fontInfosListeningToSameHashUrl[urlHash]
+                val fontInfosListeningToHash = fontInfosForHash[urlHash]
                 if (fontInfosListeningToHash == null) {
-                    fontInfosListeningToSameHashUrl[urlHash] = mutableSetOf(fontInfo)
+                    fontInfosForHash[urlHash] = mutableSetOf(fontInfo)
                 } else {
                     verboseLog("Font download already in progress for $url")
                     fontInfosListeningToHash.add(fontInfo)
@@ -104,7 +104,7 @@ internal class FontLoader(
                 errorLog("Error downloading remote font from $url", t)
             } finally {
                 synchronized(this) {
-                    fontInfosListeningToSameHashUrl.remove(urlHash)
+                    fontInfosForHash.remove(urlHash)
                 }
             }
         }
@@ -112,7 +112,7 @@ internal class FontLoader(
 
     private fun addFileToCache(urlHash: String, file: File) {
         synchronized(this) {
-            for (fontInfo in fontInfosListeningToSameHashUrl[urlHash] ?: emptySet()) {
+            for (fontInfo in fontInfosForHash[urlHash] ?: emptySet()) {
                 if (cachedFontFamilyByFontInfo[fontInfo] != null) {
                     verboseLog("Font already cached for ${fontInfo.family}. Skipping download.")
                     continue
@@ -142,30 +142,45 @@ internal class FontLoader(
                     cachedFontFamilyByFamily[fontInfo.family] = fontFamily
                 }
             }
-            fontInfosListeningToSameHashUrl.remove(urlHash)
+            fontInfosForHash.remove(urlHash)
         }
     }
 
     @Suppress("ReturnCount")
     private fun validateFontInfo(fontInfo: FontInfo.Name): DownloadableFontInfo? {
-        if (fontInfo.url.isNullOrEmpty()) {
-            errorLog("Font URL is empty for ${fontInfo.value}. Cannot download font.")
+        if (fontInfo.url.isNullOrBlank()) {
+            errorLog(
+                "Font URL is empty for ${fontInfo.value}. Cannot download font. " +
+                    "Please try to re-upload your font in the RevenueCat dashboard.",
+            )
             return null
         }
-        if (fontInfo.hash.isNullOrEmpty()) {
-            errorLog("Font hash is empty for ${fontInfo.value}. Cannot validate downloaded font.")
+        if (fontInfo.hash.isNullOrBlank()) {
+            errorLog(
+                "Font hash is empty for ${fontInfo.value}. Cannot validate downloaded font. " +
+                    "Please try to re-upload your font in the RevenueCat dashboard.",
+            )
             return null
         }
-        if (fontInfo.family.isNullOrEmpty()) {
-            errorLog("Font family is empty for ${fontInfo.value}. Cannot download font.")
+        if (fontInfo.family.isNullOrBlank()) {
+            errorLog(
+                "Font family is empty for ${fontInfo.value}. Cannot download font. " +
+                    "Please try to re-upload your font in the RevenueCat dashboard.",
+            )
             return null
         }
         if (fontInfo.weight == null) {
-            errorLog("Font weight is null for ${fontInfo.value}.")
+            errorLog(
+                "Font weight is null for ${fontInfo.value}. " +
+                    "Please try to re-upload your font in the RevenueCat dashboard.",
+            )
             return null
         }
         if (fontInfo.style == null) {
-            errorLog("Font style is empty for ${fontInfo.value}.")
+            errorLog(
+                "Font style is empty for ${fontInfo.value}." +
+                    "Please try to re-upload your font in the RevenueCat dashboard.",
+            )
             return null
         }
         return DownloadableFontInfo(

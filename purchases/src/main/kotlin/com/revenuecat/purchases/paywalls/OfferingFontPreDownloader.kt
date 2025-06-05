@@ -31,9 +31,9 @@ internal class OfferingFontPreDownloader(
             ?.map { it.android }
             ?.filterIsInstance<FontInfo.Name>()
             ?.filter {
-                it.url?.isNotEmpty() == true &&
-                    it.hash?.isNotEmpty() == true &&
-                    it.family?.isNotEmpty() == true &&
+                it.url?.isNotBlank() == true &&
+                    it.hash?.isNotBlank() == true &&
+                    it.family?.isNotBlank() == true &&
                     it.weight != null &&
                     it.style != null &&
                     !isBundled(it)

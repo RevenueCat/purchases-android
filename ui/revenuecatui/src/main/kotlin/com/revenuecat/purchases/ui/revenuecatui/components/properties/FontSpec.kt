@@ -59,10 +59,9 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
     resourceProvider: ResourceProvider,
 ): Map<FontAlias, FontSpec> {
     // Get unique FontsConfigs, and determine their FontSpec.
-    @Suppress("UNCHECKED_CAST")
     val configToSpec: Map<FontsConfig, FontSpec> = values.toSet().associateWith { fontsConfig ->
         resourceProvider.determineFontSpec(fontsConfig)
-    }.filter { it.value != null } as Map<FontsConfig, FontSpec>
+    }
     // Create a map of FontAliases to FontSpecs.
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
 }
@@ -129,38 +128,36 @@ internal fun FontSpec.resolve(
     )
 }
 
-private fun ResourceProvider.determineFontSpec(fontsConfig: FontsConfig): FontSpec? {
-    return getBundledFontSpec(fontsConfig)
-        ?: getDownloadedFontSpec(fontsConfig)
-        ?: (fontsConfig.android as? FontInfo.Name)?.let { androidFontInfoName ->
-            FontSpec.System(name = androidFontInfoName.value).also {
+private fun ResourceProvider.determineFontSpec(fontsConfig: FontsConfig): FontSpec {
+    return when (val fontInfo = fontsConfig.android) {
+        is FontInfo.GoogleFonts -> FontSpec.Google(name = fontInfo.value)
+        is FontInfo.Name -> getBundledFontSpec(fontInfo)
+            ?: getDownloadedFontSpec(fontInfo)
+            ?: FontSpec.System(name = fontInfo.value).also {
                 Logger.d(
-                    "Could not find a font resource named `${androidFontInfoName.value}`. " +
+                    "Could not find a font resource named `${fontInfo.value}`. " +
                         "Assuming it's an OEM system font. If it isn't, make sure the font exists in the " +
                         "`res/font` folder. See for more info: " +
                         "https://developer.android.com/develop/ui/views/text-and-emoji/fonts-in-xml",
                 )
             }
-        }
+    }
 }
 
 @Suppress("NestedBlockDepth")
 private fun ResourceProvider.getBundledFontSpec(
-    fontsConfig: FontsConfig,
+    fontInfo: FontInfo.Name,
 ): FontSpec? {
-    return when (val androidInfo = fontsConfig.android) {
-        is FontInfo.GoogleFonts -> FontSpec.Google(name = androidInfo.value)
-        is FontInfo.Name -> when (val androidInfoValue = androidInfo.value.takeIf { it.isNotEmpty() }) {
-            null -> null // No font specified, return null.
-            FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
-            FontFamily.Serif.name -> FontSpec.Generic.Serif
-            FontFamily.Monospace.name -> FontSpec.Generic.Monospace
-            else -> getResourceIdentifier(name = androidInfoValue, type = "font")
-                .takeIf { it != 0 }
-                ?.let { fontId -> FontSpec.Resource(id = fontId) }
-                ?: getAssetFontPath(name = androidInfoValue)
-                    ?.let { path -> FontSpec.Asset(path = path) }
-        }
+    return when (fontInfo.value.takeIf { it.isNotEmpty() }) {
+        null -> null // No font specified, return null.
+        FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
+        FontFamily.Serif.name -> FontSpec.Generic.Serif
+        FontFamily.Monospace.name -> FontSpec.Generic.Monospace
+        else -> getResourceIdentifier(name = fontInfo.value, type = "font")
+            .takeIf { it != 0 }
+            ?.let { fontId -> FontSpec.Resource(id = fontId) }
+            ?: getAssetFontPath(name = fontInfo.value)
+                ?.let { path -> FontSpec.Asset(path = path) }
     }
 }
 
@@ -171,10 +168,8 @@ private fun com.revenuecat.purchases.paywalls.components.properties.FontStyle.to
     }
 }
 
-private fun ResourceProvider.getDownloadedFontSpec(fontsConfig: FontsConfig): FontSpec.Downloaded? {
-    return (fontsConfig.android as? FontInfo.Name)?.let { fontInfo ->
-        getCachedFontFamilyOrStartDownload(fontInfo)?.let {
-            FontSpec.Downloaded(it)
-        }
+private fun ResourceProvider.getDownloadedFontSpec(fontInfo: FontInfo.Name): FontSpec.Downloaded? {
+    return getCachedFontFamilyOrStartDownload(fontInfo)?.let {
+        FontSpec.Downloaded(it)
     }
 }
