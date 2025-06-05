@@ -16,6 +16,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.text.font.FontWeight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -37,11 +38,13 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RCFontWeight
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextLayoutResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
@@ -300,6 +303,59 @@ class TextComponentViewTests {
 
         assertThat(largeSize.height).isGreaterThan(smallSize.height)
         assertThat(largeSize.width).isGreaterThan(smallSize.width)
+    }
+
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(shadows = [ShadowPixelCopy::class], sdk = [34])
+    @Test
+    fun `Should properly set the font weight`(): Unit = with(composeTestRule) {
+        // Arrange
+        val color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
+        val size = Size(Fit, Fit)
+        val blackWeightComponent = TextComponent(text = selectedLocalizationKey, color = color, fontWeightInt = 900, fontWeight = RCFontWeight.LIGHT, size = size)
+        val lightWeightComponent = TextComponent(text = unselectedLocalizationKey, color = color, fontWeightInt = null, fontWeight = RCFontWeight.LIGHT, size = size)
+        val state = FakePaywallState(
+            localizations = localizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+            packages = listOf(TestData.Packages.monthly),
+            components = listOf(blackWeightComponent, lightWeightComponent),
+        )
+        setContent {
+            val blackWeightTextStyle =
+                styleFactory.create(blackWeightComponent).getOrThrow().componentStyle as TextComponentStyle
+            val lightWeightTextStyle =
+                styleFactory.create(lightWeightComponent).getOrThrow().componentStyle as TextComponentStyle
+
+            assertThat(blackWeightTextStyle.fontWeight).isEqualTo(FontWeight.Black)
+            assertThat(lightWeightTextStyle.fontWeight).isEqualTo(FontWeight.Light)
+
+            // Act
+            MaterialTheme {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    TextComponentView(
+                        style = blackWeightTextStyle,
+                        state = state,
+                        modifier = Modifier.testTag("blackWeight")
+                    )
+                    TextComponentView(
+                        style = lightWeightTextStyle,
+                        state = state,
+                        modifier = Modifier.testTag("lightWeight")
+                    )
+                }
+            }
+        }
+
+        // Assert
+        onNodeWithText(expectedTextSelected)
+            .assertTextLayoutResult("Text has FontWeight.Black") {
+                it.layoutInput.style.fontWeight == FontWeight.Black
+            }
+
+        onNodeWithText(expectedTextUnselected)
+            .assertTextLayoutResult("Text has FontWeight.Light") {
+                it.layoutInput.style.fontWeight == FontWeight.Light
+            }
     }
 
     @GraphicsMode(GraphicsMode.Mode.NATIVE)

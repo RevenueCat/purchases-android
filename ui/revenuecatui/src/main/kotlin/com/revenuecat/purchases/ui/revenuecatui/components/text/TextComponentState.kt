@@ -131,7 +131,11 @@ internal class TextComponentState(
     val fontSize by derivedStateOf { presentedPartial?.partial?.fontSize ?: style.fontSize }
 
     @get:JvmSynthetic
-    val fontWeight by derivedStateOf { presentedPartial?.partial?.fontWeight?.toFontWeight() ?: style.fontWeight }
+    val fontWeight by derivedStateOf {
+        presentedPartial?.partial?.let { partial ->
+            partial.fontWeightInt?.let { FontWeight(it) } ?: partial.fontWeight?.toFontWeight()
+        } ?: style.fontWeight
+    }
 
     private val fontSpec by derivedStateOf {
         presentedPartial?.fontSpec ?: style.fontSpec

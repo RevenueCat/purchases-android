@@ -56,6 +56,7 @@ internal class TextComponentTests {
                           "font_name": "some font",
                           "font_size": 17,
                           "font_weight": "bold",
+                          "font_weight_int": 400,
                           "horizontal_alignment": "leading",
                           "id": "xmpgCrN9Rb",
                           "margin": {
@@ -97,6 +98,7 @@ internal class TextComponentTests {
                             ),
                             fontName = FontAlias("some font"),
                             fontWeight = FontWeight.BOLD,
+                            fontWeightInt = 400,
                             fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
                             size = Size(height = SizeConstraint.Fill, width = SizeConstraint.Fill),
@@ -250,6 +252,7 @@ internal class TextComponentTests {
                           "font_name": "some font",
                           "font_size": 17,
                           "font_weight": "bold",
+                          "font_weight_int": 400,
                           "horizontal_alignment": "leading",
                           "margin": {
                             "top": 4,
@@ -287,6 +290,7 @@ internal class TextComponentTests {
                             ),
                             fontName = FontAlias("some font"),
                             fontWeight = FontWeight.BOLD,
+                            fontWeightInt = 400,
                             fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
                             size = Size(height = SizeConstraint.Fill, width = SizeConstraint.Fill),

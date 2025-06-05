@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
@@ -590,7 +591,8 @@ internal class StyleFactory(
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
     ) { texts, presentedOverrides, color, backgroundColor, fontSpec ->
-        val weight = component.fontWeight.toFontWeight()
+        val weight = component.fontWeightInt?.let { FontWeight(it) }
+            ?: component.fontWeight.toFontWeight()
         TextComponentStyle(
             texts = texts,
             color = color,

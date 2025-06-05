@@ -52,6 +52,9 @@ constructor(
     @SerialName("font_weight")
     val fontWeight: FontWeight = REGULAR,
     @get:JvmSynthetic
+    @SerialName("font_weight_int")
+    val fontWeightInt: Int? = null,
+    @get:JvmSynthetic
     @SerialName("font_size")
     @Serializable(with = FontSizeSerializer::class)
     val fontSize: Int = 15,
@@ -89,7 +92,10 @@ constructor(
     val fontName: FontAlias? = null,
     @get:JvmSynthetic
     @SerialName("font_weight")
-    val fontWeight: FontWeight? = null,
+    val fontWeight: FontWeight? = null, // Kept for backwards compatibility, but should use fontWeightInt instead.
+    @get:JvmSynthetic
+    @SerialName("font_weight_int")
+    val fontWeightInt: Int? = null,
     @get:JvmSynthetic
     @SerialName("font_size")
     @Serializable(with = FontSizeSerializer::class)
