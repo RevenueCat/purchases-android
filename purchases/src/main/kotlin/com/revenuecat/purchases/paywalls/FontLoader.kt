@@ -122,6 +122,7 @@ internal class FontLoader(
                             file = file,
                         ),
                     )
+                    cachedFontFamilyByFontInfo[fontInfo] = downloadedFontFamily
                 } else {
                     val fontFamily = DownloadedFontFamily(
                         family = fontInfo.family,
