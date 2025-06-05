@@ -22,6 +22,7 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
+import com.revenuecat.purchases.utils.Result as RCResult
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class FontLoader(
@@ -43,9 +44,12 @@ internal class FontLoader(
 
     @Suppress("ReturnCount")
     fun getCachedFontFamilyOrStartDownload(fontInfo: FontInfo.Name): DownloadedFontFamily? {
-        val fontInfoToDownload = fontInfo.toDownloadableFontInfo().getOrElse {
-            errorLog("Error validating font info for download", it)
-            return null
+        val fontInfoToDownload = when (val downloadableFontInfoResult = fontInfo.toDownloadableFontInfo()) {
+            is RCResult.Success -> downloadableFontInfoResult.value
+            is RCResult.Error -> {
+                errorLog(downloadableFontInfoResult.value)
+                return null
+            }
         }
 
         synchronized(this) {
