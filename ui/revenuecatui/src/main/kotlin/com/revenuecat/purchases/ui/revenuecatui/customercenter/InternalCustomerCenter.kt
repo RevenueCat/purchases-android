@@ -48,7 +48,8 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SubscriptionDetailView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -129,6 +130,7 @@ internal fun InternalCustomerCenter(
                         viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
                 }
+                is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
             }
         },
     )
@@ -280,6 +282,16 @@ private fun CustomerCenterLoaded(
                 }
             },
         )
+    } else if (state.selectedPurchase != null) {
+        val managementScreen = state.customerCenterConfigData.getManagementScreen()
+        SubscriptionDetailView(
+            screenTitle = managementScreen?.title ?: "",
+            contactEmail = state.customerCenterConfigData.support.email,
+            localization = state.customerCenterConfigData.localization,
+            purchaseInformation = state.selectedPurchase,
+            supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+            onAction = onAction,
+        )
     } else {
         val configuration = state.customerCenterConfigData
         MainScreen(state, configuration, onAction)
@@ -292,32 +304,45 @@ private fun MainScreen(
     configuration: CustomerCenterConfigData,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    if (state.purchaseInformation != null) {
+    if (state.purchaseInformation.isNotEmpty()) {
         configuration.getManagementScreen()?.let { managementScreen ->
-            ManageSubscriptionsView(
-                screenTitle = managementScreen.title,
-                screenSubtitle = managementScreen.subtitle,
-                screenType = managementScreen.type,
-                supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
-                contactEmail = configuration.support.email,
-                localization = configuration.localization,
-                purchaseInformation = state.purchaseInformation,
-                onAction = onAction,
-            )
+            if (state.purchaseInformation.size > 1) {
+                RelevantPurchasesListView(
+                    screenTitle = managementScreen.title,
+                    screenSubtitle = managementScreen.subtitle,
+                    supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                    contactEmail = configuration.support.email,
+                    localization = configuration.localization,
+                    purchaseInformation = state.purchaseInformation,
+                    onPurchaseSelected = { onAction(CustomerCenterAction.SelectPurchase(it)) },
+                    onAction = onAction,
+                    screenType = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT
+                )
+            } else {
+                SubscriptionDetailView(
+                    screenTitle = managementScreen.title,
+                    contactEmail = configuration.support.email,
+                    localization = configuration.localization,
+                    purchaseInformation = state.purchaseInformation.first(),
+                    supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                    onAction = onAction,
+                )
+            }
         } ?: run {
             // Handle missing management screen
             // WrongPlatformView
         }
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
-            ManageSubscriptionsView(
+            RelevantPurchasesListView(
                 screenTitle = noActiveScreen.title,
                 screenSubtitle = noActiveScreen.subtitle,
-                screenType = noActiveScreen.type,
                 supportedPaths = noActiveScreen.paths,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
+                onPurchaseSelected = {},
                 onAction = onAction,
+                screenType = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE
             )
         } ?: run {
             // Fallback with a restore button
@@ -400,7 +425,7 @@ internal fun CustomerCenterNoActiveScreenPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
-            purchaseInformation = null,
+            purchaseInformation = emptyList(),
             supportedPathsForManagementScreen = listOf(),
         ),
         modifier = Modifier
@@ -440,7 +465,7 @@ internal fun CustomerCenterLoadedPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
-            purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+            purchaseInformation = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
             supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
         ),
         modifier = Modifier

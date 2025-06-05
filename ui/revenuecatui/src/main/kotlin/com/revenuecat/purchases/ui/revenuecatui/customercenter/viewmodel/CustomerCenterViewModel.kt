@@ -70,6 +70,8 @@ internal interface CustomerCenterViewModel {
         product: PurchaseInformation?,
     )
 
+    fun selectPurchase(purchase: PurchaseInformation)
+
     suspend fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
@@ -182,7 +184,7 @@ internal class CustomerCenterViewModelImpl(
 
     private fun handleCancelPath(context: Context) {
         val currentState = _state.value as? CustomerCenterState.Success ?: return
-        val purchaseInfo = currentState.purchaseInformation
+        val purchaseInfo = currentState.selectedPurchase
 
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
@@ -206,9 +208,24 @@ internal class CustomerCenterViewModelImpl(
         )
     }
 
+    override fun selectPurchase(purchase: PurchaseInformation) {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    selectedPurchase = purchase,
+                    title = currentState.customerCenterConfigData.getManagementScreen()?.title,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
     private fun mainPathAction(
         path: CustomerCenterConfigData.HelpPath,
         context: Context,
+        product: StoreProduct? = null,
     ) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
@@ -295,16 +312,23 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun supportedPaths(
-        purchaseInformation: PurchaseInformation?,
+        selectedPurchaseInformation: PurchaseInformation?,
         screen: CustomerCenterConfigData.Screen,
-    ): List<CustomerCenterConfigData.HelpPath> {
+    ): List<HelpPath> {
+        if (selectedPurchaseInformation == null) {
+            return screen.paths
+                .filter { it.type == CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST }
+                .filter { it.type == CustomerCenterConfigData.HelpPath.PathType.CHANGE_PLANS }
+                .filter { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }
+                .filter { it.type == CustomerCenterConfigData.HelpPath.PathType.UNKNOWN }
+        }
         return screen.paths
-            .filter { isPathAllowedForStore(it, purchaseInformation) }
-            .filter { isPathAllowedForLifetimeSubscription(it, purchaseInformation) }
+            .filter { isPathAllowedForStore(it, selectedPurchaseInformation) }
+            .filter { isPathAllowedForLifetimeSubscription(it, selectedPurchaseInformation) }
     }
 
     private fun isPathAllowedForLifetimeSubscription(
-        path: CustomerCenterConfigData.HelpPath,
+        path: HelpPath,
         purchaseInformation: PurchaseInformation?,
     ): Boolean {
         if (purchaseInformation?.isLifetime != true) return true
@@ -331,35 +355,37 @@ internal class CustomerCenterViewModelImpl(
     private suspend fun loadPurchaseInformation(
         dateFormatter: DateFormatter,
         locale: Locale,
-    ): PurchaseInformation? {
+    ): List<PurchaseInformation> {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
         if (hasActiveSubscriptions || hasNonSubscriptionTransactions) {
-            val activeTransactionDetails = findActiveTransaction(customerInfo)
+            val activeTransactions = findActiveTransactions(customerInfo)
 
-            if (activeTransactionDetails != null) {
-                val entitlement = customerInfo.entitlements.all.values
-                    .firstOrNull { it.productIdentifier == activeTransactionDetails.productIdentifier }
+            if (activeTransactions.isNotEmpty()) {
+                return activeTransactions.map { transaction ->
+                    val entitlement = customerInfo.entitlements.all.values
+                        .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
-                return createPurchaseInformation(
-                    activeTransactionDetails,
-                    entitlement,
-                    customerInfo.managementURL,
-                    dateFormatter,
-                    locale,
-                )
+                    createPurchaseInformation(
+                        transaction,
+                        entitlement,
+                        customerInfo.managementURL,
+                        dateFormatter,
+                        locale,
+                    )
+                }
             } else {
                 Logger.w("Could not find subscription information")
             }
         }
 
-        return null
+        return emptyList()
     }
 
-    private fun findActiveTransaction(customerInfo: CustomerInfo): TransactionDetails? {
+    private fun findActiveTransactions(customerInfo: CustomerInfo): List<TransactionDetails> {
         val activeSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
             .filter { it.isActive }
             .sortedBy { it.expiresDate }
@@ -369,12 +395,9 @@ internal class CustomerCenterViewModelImpl(
         val otherActiveSubscriptions = activeSubscriptions.filter { it.store != Store.PLAY_STORE }
         val otherNonSubscriptions = customerInfo.nonSubscriptionTransactions.filter { it.store != Store.PLAY_STORE }
 
-        val transaction = activeGoogleSubscriptions.firstOrNull()
-            ?: googleNonSubscriptions.firstOrNull()
-            ?: otherActiveSubscriptions.firstOrNull()
-            ?: otherNonSubscriptions.firstOrNull()
+        val prioritized = activeGoogleSubscriptions + googleNonSubscriptions + otherActiveSubscriptions + otherNonSubscriptions
 
-        return transaction?.let {
+        return prioritized.mapNotNull {
             when (it) {
                 is SubscriptionInfo -> TransactionDetails.Subscription(
                     productIdentifier = it.productIdentifier,
@@ -575,8 +598,8 @@ internal class CustomerCenterViewModelImpl(
                 CustomerCenterState.Success(
                     customerCenterConfigData,
                     purchaseInformation,
-                    supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
-                        supportedPaths(purchaseInformation, it)
+                    supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let { screen ->
+                        supportedPaths(null, screen)
                     },
                 )
             }
@@ -739,10 +762,10 @@ internal class CustomerCenterViewModelImpl(
                 path,
             )
             if (!loaded) {
-                mainPathAction(path, context)
+                mainPathAction(path, context, product)
             }
         } else {
-            mainPathAction(path, context)
+            mainPathAction(path, context, product)
         }
     }
 
@@ -760,6 +783,7 @@ internal class CustomerCenterViewModelImpl(
             feedbackSurveyData = null,
             promotionalOfferData = null,
             restorePurchasesState = null,
+            selectedPurchase = null,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
         )
