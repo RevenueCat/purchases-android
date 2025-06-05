@@ -62,7 +62,7 @@ class UiConfig(
                     @get:JvmSynthetic val url: String? = null,
                     @get:JvmSynthetic val hash: String? = null,
                     @get:JvmSynthetic val family: String? = null,
-                    @get:JvmSynthetic val weight: String? = null,
+                    @get:JvmSynthetic val weight: Int? = null,
                     @get:JvmSynthetic val style: FontStyle? = null,
                 ) : FontInfo
 

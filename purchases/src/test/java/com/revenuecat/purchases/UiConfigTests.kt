@@ -76,13 +76,10 @@ internal class UiConfigTests {
                       "value": "Roboto",
                       "url": "https://example.com/testfont123.ttf",
                       "hash": "123abc",
-                      "weight": "400",
+                      "weight": 400,
                       "style": "italic",
                       "family": "custom-family"
-                    },
-                    "family": "custom-family",
-                    "weight": "bold",
-                    "style": "italic"
+                    }
                   },
                   "secondary": {
                     "ios": {
@@ -168,7 +165,7 @@ internal class UiConfigTests {
                             url = "https://example.com/testfont123.ttf",
                             hash = "123abc",
                             family = "custom-family",
-                            weight = "400",
+                            weight = 400,
                             style = FontStyle.ITALIC,
                         ),
                     ),

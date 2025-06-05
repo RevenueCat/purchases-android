@@ -172,7 +172,7 @@ internal class FontLoader(
             url = fontInfo.url,
             expectedMd5 = fontInfo.hash,
             family = fontInfo.family,
-            weight = fontInfo.weight.toInt(),
+            weight = fontInfo.weight,
             style = fontInfo.style,
         )
     }

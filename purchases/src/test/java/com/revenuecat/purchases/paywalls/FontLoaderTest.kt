@@ -145,7 +145,7 @@ class FontLoaderTest {
         val fontToAdd = createFontInfo(
             url = "https://example.com/font2.ttf",
             hash = calculateMd5(font2Content),
-            weight = "700",
+            weight = 700,
             style = FontStyle.NORMAL,
         )
         assertNull(fontLoader.getCachedFontFamilyOrStartDownload(fontInfo))
@@ -191,7 +191,7 @@ class FontLoaderTest {
             family = "DifferentFontFamily",
             url = "https://example.com/font2.ttf",
             hash = calculateMd5(font2Content),
-            weight = "700",
+            weight = 700,
             style = FontStyle.NORMAL,
         )
         assertNull(fontLoader.getCachedFontFamilyOrStartDownload(fontInfo))
@@ -214,7 +214,7 @@ class FontLoaderTest {
         url: String = FONT_URL,
         hash: String = calculateMd5(),
         family: String = "TestFontFamily",
-        weight: String = "400",
+        weight: Int = 400,
         style: FontStyle = FontStyle.ITALIC,
     ): FontInfo.Name = FontInfo.Name(
         value = value,

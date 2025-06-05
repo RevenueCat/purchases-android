@@ -97,7 +97,7 @@ class OfferingFontPreDownloaderTest {
             android = FontInfo.Name(
                 value = "sans-serif",
                 family = "test-family",
-                weight = "400",
+                weight = 400,
                 style = FontStyle.NORMAL,
                 url = "https://example.com/shouldnotdownloadfont.ttf",
                 hash = "hash123",
@@ -107,7 +107,7 @@ class OfferingFontPreDownloaderTest {
             android = FontInfo.Name(
                 value = "testFontInResources",
                 family = "test-family",
-                weight = "400",
+                weight = 400,
                 style = FontStyle.NORMAL,
                 url = "https://example.com/shouldnotdownloadfont.ttf",
                 hash = "hash123",
@@ -117,7 +117,7 @@ class OfferingFontPreDownloaderTest {
             android = FontInfo.Name(
                 value = "testFontInAssets",
                 family = "test-family",
-                weight = "400",
+                weight = 400,
                 style = FontStyle.NORMAL,
                 url = "https://example.com/shouldnotdownloadfont.ttf",
                 hash = "hash123",
@@ -127,7 +127,7 @@ class OfferingFontPreDownloaderTest {
             android = FontInfo.Name(
                 value = "notbundledFont",
                 family = "test-family",
-                weight = "400",
+                weight = 400,
                 style = FontStyle.NORMAL,
                 url = "https://example.com/shoulddownload.ttf",
                 hash = "hash123",
@@ -165,7 +165,7 @@ class OfferingFontPreDownloaderTest {
                 fontInfo = FontInfo.Name(
                     value = "notbundledFont",
                     family = "test-family",
-                    weight = "400",
+                    weight = 400,
                     style = FontStyle.NORMAL,
                     url = "https://example.com/shoulddownload.ttf",
                     hash = "hash123",
@@ -180,7 +180,7 @@ class OfferingFontPreDownloaderTest {
             FontInfo.Name(
                 value = "notbundledFont",
                 family = "test-family",
-                weight = "400",
+                weight = 400,
                 style = FontStyle.NORMAL,
                 url = "invalid-url", // Malformed URL
                 hash = "hash123",
