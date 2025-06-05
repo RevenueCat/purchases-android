@@ -4,6 +4,8 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,7 +20,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import org.json.JSONArray
 import org.json.JSONObject
@@ -168,20 +170,32 @@ internal fun PaywallComponentsTemplate_Preview(
 ) {
     val offering = paywall.offering
     val parentFolder = paywall.parentFolder
-    val validationResult = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
-    val state = offering.toComponentsPaywallState(
-        validationResult = validationResult,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
-        storefrontCountryCode = "US",
-        dateProvider = { Date(MILLIS_2025_04_23) },
-    )
+    // validatePaywallComponentsDataOrNullForPreviews should only return null if the Offering has no paywallComponents,
+    // but we filter those out in the PaywallResourcesProvider.
+    when (val result = offering.validatePaywallComponentsDataOrNullForPreviews()!!) {
+        is Result.Success -> {
+            val validationResult = result.value
+            val state = offering.toComponentsPaywallState(
+                validationResult = validationResult,
+                activelySubscribedProductIds = emptySet(),
+                purchasedNonSubscriptionProductIds = emptySet(),
+                storefrontCountryCode = "US",
+                dateProvider = { Date(MILLIS_2025_04_23) },
+            )
 
-    ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current, parentFolder)) {
-        LoadedPaywallComponents(
-            state = state,
-            clickHandler = { },
-        )
+            ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current, parentFolder)) {
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = { },
+                )
+            }
+        }
+        is Result.Error -> {
+            Column {
+                Text("Encountered validation errors:")
+                result.value.forEach { error -> Text(error.toString()) }
+            }
+        }
     }
 }
 
