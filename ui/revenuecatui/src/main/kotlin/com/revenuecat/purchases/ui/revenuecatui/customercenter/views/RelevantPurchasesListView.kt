@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.net.Uri
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 @SuppressWarnings("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
-internal fun ManageSubscriptionsView(
+internal fun RelevantPurchasesListView(
     screenTitle: String,
     screenSubtitle: String?,
     screenType: CustomerCenterConfigData.Screen.ScreenType,
@@ -48,7 +49,8 @@ internal fun ManageSubscriptionsView(
     contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
-    purchaseInformation: PurchaseInformation? = null,
+    purchaseInformation: List<PurchaseInformation> = emptyList(),
+    onPurchaseSelected: (PurchaseInformation) -> Unit,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(
@@ -57,15 +59,23 @@ internal fun ManageSubscriptionsView(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (screenType == CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT && purchaseInformation != null) {
+        if (screenType == CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT && purchaseInformation.isNotEmpty()) {
+            val restorePath = supportedPaths.firstOrNull { it.type == HelpPath.PathType.MISSING_PURCHASE }
+
             ActiveUserManagementView(
                 screenTitle,
-                contactEmail,
                 localization,
                 purchaseInformation,
-                supportedPaths,
-                onAction,
+                onPurchaseSelected,
             )
+
+            if (purchaseInformation.size > 1 && restorePath != null) {
+                HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
+                ManageSubscriptionsButtonsView(
+                    supportedPaths = listOf(restorePath),
+                    onButtonPress = { onAction(CustomerCenterAction.PathButtonPressed(it, product = null)) },
+                )
+            }
         } else {
             NoActiveUserManagementView(
                 screenTitle,
@@ -84,11 +94,9 @@ internal fun ManageSubscriptionsView(
 @Composable
 private fun ActiveUserManagementView(
     screenTitle: String,
-    contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
-    purchaseInformation: PurchaseInformation,
-    supportedPaths: List<HelpPath>,
-    onAction: (CustomerCenterAction) -> Unit,
+    purchaseInformation: List<PurchaseInformation>,
+    onPurchaseSelected: (PurchaseInformation) -> Unit,
 ) {
     Column {
         Text(
@@ -103,18 +111,17 @@ private fun ActiveUserManagementView(
 
         Spacer(modifier = Modifier.size(ManagementViewSpacer))
 
-        SubscriptionDetailsView(details = purchaseInformation, localization = localization)
+        purchaseInformation.forEachIndexed { index, info ->
+            if (index > 0) {
+                HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
+            }
 
-        if (purchaseInformation.store == Store.PLAY_STORE) {
-            ManageSubscriptionsButtonsView(supportedPaths, onButtonPress = {
-                onAction(CustomerCenterAction.PathButtonPressed(it, purchaseInformation.product))
-            })
-        } else {
-            OtherPlatformSubscriptionButtonsView(
+            SubscriptionDetailsView(
+                details = info,
                 localization = localization,
-                contactEmail = contactEmail,
-                managementURL = purchaseInformation.managementURL,
-                onAction = onAction,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onPurchaseSelected(info) },
             )
         }
     }
@@ -179,7 +186,7 @@ private fun ContentUnavailableView(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
-private fun ManageSubscriptionsButtonsView(
+internal fun ManageSubscriptionsButtonsView(
     supportedPaths: List<HelpPath>,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
@@ -196,7 +203,7 @@ private fun ManageSubscriptionsButtonsView(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
-private fun OtherPlatformSubscriptionButtonsView(
+internal fun OtherPlatformSubscriptionButtonsView(
     localization: CustomerCenterConfigData.Localization,
     contactEmail: String?,
     managementURL: Uri?,
@@ -227,17 +234,18 @@ private fun OtherPlatformSubscriptionButtonsView(
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true, device = "spec:width=412dp,height=915dp", group = "scale = 1", fontScale = 1F)
 @Composable
-private fun ManageSubscriptionsViewPreview() {
+private fun RelevantPurchasesListViewPreview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
-    ManageSubscriptionsView(
+    RelevantPurchasesListView(
         screenTitle = managementScreen.title,
         screenSubtitle = managementScreen.subtitle,
         screenType = managementScreen.type,
         supportedPaths = managementScreen.supportedPaths,
         contactEmail = testData.support.email,
         localization = testData.localization,
-        purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+        purchaseInformation = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+        onPurchaseSelected = {},
         onAction = {},
     )
 }
@@ -249,14 +257,15 @@ private fun NoActiveSubscriptionsViewPreview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
 
-    ManageSubscriptionsView(
+    RelevantPurchasesListView(
         screenTitle = noActiveScreen.title,
         screenSubtitle = noActiveScreen.subtitle,
         screenType = noActiveScreen.type,
         supportedPaths = noActiveScreen.supportedPaths,
         contactEmail = testData.support.email,
         localization = testData.localization,
-        purchaseInformation = null,
+        purchaseInformation = emptyList(),
+        onPurchaseSelected = {},
         onAction = {},
     )
 }
@@ -268,14 +277,15 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!.copy(subtitle = null)
 
-    ManageSubscriptionsView(
+    RelevantPurchasesListView(
         screenTitle = noActiveScreen.title,
         screenSubtitle = noActiveScreen.subtitle,
         screenType = noActiveScreen.type,
         supportedPaths = noActiveScreen.supportedPaths,
         contactEmail = testData.support.email,
         localization = testData.localization,
-        purchaseInformation = null,
+        purchaseInformation = emptyList(),
+        onPurchaseSelected = {},
         onAction = {},
     )
 }
