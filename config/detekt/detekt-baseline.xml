@@ -2,10 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ArgumentListWrapping:build.gradle.kts$("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java")</ID>
-    <ID>ArgumentListWrapping:build.gradle.kts$("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin")</ID>
-    <ID>ArgumentListWrapping:build.gradle.kts$(uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL())</ID>
-    <ID>ArgumentListWrapping:build.gradle.kts$(uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL())</ID>
     <ID>ComposableNaming:PaywallAPI.kt$PaywallAPI$check</ID>
     <ID>ComposableNaming:PaywallAPI.kt$PaywallAPI$checkDialog</ID>
     <ID>ComposableNaming:PaywallAPI.kt$PaywallAPI$checkFooter</ID>
@@ -57,9 +53,6 @@
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$91</ID>
     <ID>MagicNumber:storeProductConversions.kt$3</ID>
     <ID>MaxLineLength:Constants.kt$Constants$/* The entitlement ID from the RevenueCat dashboard that is activated upon successful in-app purchase for the duration of the purchase. Modify this property to reflect your app's entitlement identifier. */</ID>
-    <ID>MaxLineLength:build.gradle.kts$remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL())</ID>
-    <ID>MaxLineLength:build.gradle.kts$remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL())</ID>
-    <ID>MaximumLineLength:build.gradle.kts$ </ID>
     <ID>ModifierComposed:Placeholder.kt$placeholder</ID>
     <ID>ModifierMissing:AppInfoScreen.kt$AppInfoScreen</ID>
     <ID>ModifierMissing:CloseButton.kt$CloseButton</ID>
@@ -97,7 +90,7 @@
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(horizontal = 32.dp)</ID>
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier.padding(16.dp)</ID>
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier.padding(8.dp)</ID>
-    <ID>ModifierReused:Markdown.kt$Box( modifier = modifier .drawBehind { drawLine( color = color, strokeWidth = 2f, start = Offset(12.dp.value, 0f), end = Offset(12.dp.value, size.height), ) } .padding(start = 16.dp, top = 4.dp, bottom = 4.dp), ) { val text = buildAnnotatedString { pushStyle( MaterialTheme.typography.bodyLarge.toSpanStyle() .plus(SpanStyle(fontStyle = FontStyle.Italic)), ) appendMarkdownChildren(blockQuote, color, allowLinks) pop() } Text(text, modifier) }</ID>
+    <ID>ModifierReused:Markdown.kt$Box( modifier = modifier .drawBehind { drawLine( color = color, strokeWidth = 2f, start = Offset(12.dp.value, 0f), end = Offset(12.dp.value, size.height), ) } .padding(start = 16.dp, top = 4.dp, bottom = 4.dp), ) { val text = buildAnnotatedString { pushStyle( MaterialTheme.typography.bodyLarge.toSpanStyle() .plus(SpanStyle(fontStyle = FontStyle.Italic)), ) appendMarkdownChildren(blockQuote, color, allowLinks, baseFontWeight) pop() } Text(text, modifier) }</ID>
     <ID>ModifierReused:Markdown.kt$Box(modifier = modifier.padding(start = 8.dp, bottom = padding)) { Text( text = fencedCodeBlock.literal, style = TextStyle(fontFamily = FontFamily.Monospace), modifier = modifier, ) }</ID>
     <ID>ModifierReused:Markdown.kt$Text( text = fencedCodeBlock.literal, style = TextStyle(fontFamily = FontFamily.Monospace), modifier = modifier, )</ID>
     <ID>ModifierReused:Markdown.kt$Text(text, modifier)</ID>
@@ -173,7 +166,6 @@
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
-    <ID>TrailingCommaOnCallSite:build.gradle.kts$( listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md") )</ID>
     <ID>UnusedParameter:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>
     <ID>ViewModelForwarding:AppInfoScreen.kt$LoginDialog(viewModel) { showLogInDialog = false }</ID>
     <ID>ViewModelForwarding:Footer.kt$Footer( mode = templateConfiguration.mode, configuration = templateConfiguration.configuration, colors = colors, viewModel = viewModel, childModifier = childModifier, allPlansTapped = allPlansTapped, )</ID>

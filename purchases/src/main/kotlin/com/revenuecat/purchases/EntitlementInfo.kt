@@ -231,6 +231,12 @@ enum class Store {
     @SerialName("external")
     EXTERNAL,
 
+    /**
+     * For entitlements granted via Paddle.
+     */
+    @SerialName("paddle")
+    PADDLE,
+
     ;
 
     internal companion object {

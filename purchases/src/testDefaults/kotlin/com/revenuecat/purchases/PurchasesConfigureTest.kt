@@ -19,6 +19,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.File
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
@@ -189,6 +190,7 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
             every { getSharedPreferences(any(), any()) } returns
                 mockContext.getSharedPreferences("test", Context.MODE_PRIVATE)
             every { isDeviceProtectedStorageCompat } returns true
+            every { cacheDir } returns File("test_cache_folder")
         }
 
         // Act

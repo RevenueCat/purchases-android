@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
@@ -587,6 +589,8 @@ internal class LocalizedTextPartialTests {
         }
     }
 
+    // Some of the code under test calls Android Log functions.
+    @RunWith(AndroidJUnit4::class)
     class CreateLocalizedTextPartialTests {
 
         companion object {
@@ -808,12 +812,9 @@ internal class LocalizedTextPartialTests {
         }
 
         @Test
-        fun `Should fail if the FontAlias is not found`() {
+        fun `Should not fail if the FontAlias is not found`() {
             // Arrange
             val missingFontKey = FontAlias("missing-font-key")
-            val expected = nonEmptyListOf(
-                PaywallValidationError.MissingFontAlias(missingFontKey),
-            )
 
             // Act
             val actualResult = LocalizedTextPartial(
@@ -828,9 +829,9 @@ internal class LocalizedTextPartialTests {
             )
 
             // Assert
-            assert(actualResult.isError)
-            val actual = actualResult.errorOrNull()!!
-            assert(actual == expected)
+            assert(actualResult.isSuccess)
+            val actual = actualResult.getOrNull()
+            assert(actual != null)
         }
 
         @Test

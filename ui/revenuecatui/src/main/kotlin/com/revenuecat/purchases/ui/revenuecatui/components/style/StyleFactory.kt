@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
@@ -49,7 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.recoverFromBlankFontAlias
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.recoverFromFontAliasError
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
@@ -59,6 +60,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Compone
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -163,6 +165,7 @@ internal class StyleFactory(
                                 topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderImage == true
                                 topWindowInsetsApplied
                             }
+
                             is Dimension.Horizontal,
                             is Dimension.Vertical,
                             -> false
@@ -324,6 +327,7 @@ internal class StyleFactory(
                     is StickyFooterComponentStyle -> copy(
                         stackComponentStyle = stackComponentStyle.copy(applyBottomWindowInsets = true),
                     )
+
                     else -> this
                 } as T
             } else {
@@ -423,17 +427,18 @@ internal class StyleFactory(
 
     private fun StyleFactoryScope.createPackageComponentStyle(
         component: PackageComponent,
-    ): Result<PackageComponentStyle, NonEmptyList<PaywallValidationError>> =
-        offering.getPackageOrNull(component.packageId)
-            .errorIfNull(
-                nonEmptyListOf(
-                    PaywallValidationError.MissingPackage(
+    ): Result<PackageComponentStyle?, NonEmptyList<PaywallValidationError>> =
+        Result.Success(offering.getPackageOrNull(component.packageId))
+            .flatMap { rcPackage ->
+                if (rcPackage == null) {
+                    val error = PaywallValidationError.MissingPackage(
                         offeringId = offering.identifier,
                         missingPackageId = component.packageId,
                         allPackageIds = offering.availablePackages.map { it.identifier },
-                    ),
-                ),
-            ).flatMap { rcPackage ->
+                    )
+                    Logger.w(error.message)
+                    return Result.Success(null)
+                }
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
@@ -582,11 +587,12 @@ internal class StyleFactory(
         fourth = component.backgroundColor?.toColorStyles(colorAliases).orSuccessfullyNull(),
         fifth = component.fontName
             ?.let { fontAlias -> fontAliases.getFontSpec(fontAlias) }
-            ?.recoverFromBlankFontAlias()
+            ?.recoverFromFontAliasError()
             .orSuccessfullyNull()
             .mapError { nonEmptyListOf(it) },
     ) { texts, presentedOverrides, color, backgroundColor, fontSpec ->
-        val weight = component.fontWeight.toFontWeight()
+        val weight = component.fontWeightInt?.let { FontWeight(it) }
+            ?: component.fontWeight.toFontWeight()
         TextComponentStyle(
             texts = texts,
             color = color,

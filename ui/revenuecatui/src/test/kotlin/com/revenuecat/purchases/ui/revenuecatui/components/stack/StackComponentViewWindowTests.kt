@@ -35,6 +35,7 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertApproximatePixe
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertRectangularBorderColor
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
@@ -130,7 +131,7 @@ internal class StackComponentViewWindowTests {
                 ),
             )
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(packages = listOf(TestData.Packages.monthly), components = listOf(component))
         val styleFactory = StyleFactory()
         val style = styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
         val content = @Composable {

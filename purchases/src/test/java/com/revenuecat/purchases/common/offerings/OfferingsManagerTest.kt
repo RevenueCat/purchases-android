@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
@@ -39,6 +40,7 @@ class OfferingsManagerTest {
     private lateinit var offeringsFactory: OfferingsFactory
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
+    private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -51,6 +53,9 @@ class OfferingsManagerTest {
             every { preDownloadOfferingImages(any()) } just Runs
         }
         mockDiagnosticsTracker = mockk()
+        mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
+            every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
+        }
 
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
@@ -61,6 +66,7 @@ class OfferingsManagerTest {
             offeringsFactory,
             offeringImagePreDownloader,
             mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
         )
     }
 
@@ -491,6 +497,28 @@ class OfferingsManagerTest {
     }
 
     // endregion pre download offering images
+
+    // region pre download font files
+
+    @Test
+    fun `getOfferings pre downloads font files for offerings`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {}
+        )
+
+        verify(exactly = 1) {
+            mockOfferingFontPreDownloader.preDownloadOfferingFontsIfNeeded(testOfferings)
+        }
+    }
+
+    // endregion pre download font files
 
     // region Get Offerings diagnostics
 

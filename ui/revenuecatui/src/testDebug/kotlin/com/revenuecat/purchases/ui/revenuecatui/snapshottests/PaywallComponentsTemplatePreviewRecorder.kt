@@ -2,10 +2,10 @@ package com.revenuecat.purchases.ui.revenuecatui.snapshottests
 
 import app.cash.paparazzi.DeviceConfig
 import com.revenuecat.purchases.LogHandler
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.ui.revenuecatui.components.OfferingProvider
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallComponentsTemplate_Preview
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallResources
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallResourcesProvider
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,9 +26,9 @@ import org.junit.runners.Parameterized.Parameters
  */
 @OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
 @RunWith(Parameterized::class)
-class PaywallComponentsTemplatePreviewRecorder(
+class PaywallComponentsTemplatePreviewRecorder internal constructor(
     @Suppress("UNUSED_PARAMETER") name: String,
-    private val offering: Offering,
+    private val paywall: PaywallResources,
 ) : BasePaparazziTest(
     testConfig = TestConfig(
         name = "pixel6",
@@ -41,13 +41,13 @@ class PaywallComponentsTemplatePreviewRecorder(
         // Placing the offering ID in inverted double diamond brackets so we can easily parse it later.
         @Parameters(name = ">>{0}<<")
         fun data(): List<Array<Any>> {
-            // The OfferingProvider uses an OfferingParser under the hood, which logs.
+            // The PaywallResourcesProvider uses an OfferingParser under the hood, which logs.
             // We have to replace the log handler, as the default one uses android.util.Log, which gives an
             // UnsatisfiedLinkError on Paparazzi.
             Purchases.logHandler = PrintLnLogHandler
-            return OfferingProvider()
+            return PaywallResourcesProvider()
                 .values
-                .map { offering -> arrayOf(offering.identifier, offering) }
+                .map { paywall -> arrayOf(paywall.offering.identifier, paywall) }
                 .toList()
         }
 
@@ -68,7 +68,7 @@ class PaywallComponentsTemplatePreviewRecorder(
     @Test
     fun PaywallComponentsTemplate_Test() {
         screenshotTest {
-            PaywallComponentsTemplate_Preview(offering = offering)
+            PaywallComponentsTemplate_Preview(paywall = paywall)
         }
     }
 

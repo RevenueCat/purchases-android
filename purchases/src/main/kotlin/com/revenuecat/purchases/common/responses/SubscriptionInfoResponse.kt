@@ -1,9 +1,10 @@
 package com.revenuecat.purchases.common.responses
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.common.Constants.MICRO_MULTIPLIER
+import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.serializers.ISO8601DateSerializer
 import kotlinx.serialization.SerialName
@@ -58,6 +59,7 @@ internal data class SubscriptionInfoResponse(
         val currencyCode: String,
     ) {
 
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmSynthetic
         fun toPrice(locale: Locale): Price {
             val numberFormat = NumberFormat.getCurrencyInstance(locale)
