@@ -129,6 +129,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
+    implementation(libs.coroutines.core)
     api(libs.billing)
 
     compileOnly(libs.amazon.appstore.sdk)
