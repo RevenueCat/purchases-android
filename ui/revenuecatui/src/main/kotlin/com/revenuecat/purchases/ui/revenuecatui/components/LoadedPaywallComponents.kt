@@ -3,12 +3,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -65,14 +66,18 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
 
-    Column(modifier = modifier.background(background)) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(background),
+    ) {
         ComponentView(
             style = style,
             state = state,
             onClick = clickHandler,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .align(Alignment.TopCenter)
                 .verticalScroll(rememberScrollState()),
         )
         footerComponentStyle?.let {
@@ -81,7 +86,8 @@ internal fun LoadedPaywallComponents(
                 state = state,
                 onClick = clickHandler,
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter),
             )
         }
     }

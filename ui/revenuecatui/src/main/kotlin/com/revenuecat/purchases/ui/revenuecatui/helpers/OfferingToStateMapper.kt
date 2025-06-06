@@ -10,14 +10,11 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
-import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -165,8 +162,8 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             ?.let { styleFactory.create(it, applyBottomWindowInsets = true) }
             .orSuccessfullyNull(),
         third = config.background.toBackgroundStyles(aliases = colorAliases),
-    ) { backendRootComponentResult, stickyFooterResult, background ->
-        val hasAnyPackages = backendRootComponentResult.availablePackages.hasAnyPackages ||
+    ) { rootResult, stickyFooterResult, background ->
+        val hasAnyPackages = rootResult.availablePackages.hasAnyPackages ||
             stickyFooterResult?.availablePackages?.hasAnyPackages ?: false
         // Check if there are any packages available in the offering
         if (!hasAnyPackages) {
@@ -180,25 +177,19 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             )
         }
 
-        val backendRootComponent = backendRootComponentResult.componentStyle
+        val root = rootResult.componentStyle
         val stickyFooter = stickyFooterResult?.componentStyle
-        // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
-        // definite solution for positioning the root component.
-        val rootComponent = (backendRootComponent as? StackComponentStyle)
-            ?.takeIf { it.size.height == SizeConstraint.Fit }
-            ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
-            ?: backendRootComponent
 
         PaywallValidationResult.Components(
-            stack = rootComponent,
+            stack = root,
             stickyFooter = stickyFooter,
             background = background,
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
             variableConfig = paywallComponents.uiConfig.variableConfig,
             variableDataProvider = VariableDataProvider(resourceProvider),
-            packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
-            initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
+            packages = rootResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
+            initialSelectedTabIndex = rootResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
         )
     }
 }
