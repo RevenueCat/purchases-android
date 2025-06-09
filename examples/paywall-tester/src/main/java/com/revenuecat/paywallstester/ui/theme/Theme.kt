@@ -15,27 +15,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
-    surface = PurpleGrey80,
+private val LightColorScheme = lightColorScheme(
+    primary = deep_purple_primary,
+    secondary = muted_purple_secondary,
+    tertiary = dusty_rose_tertiary,
+    background = warm_beige_background,
+    surface = off_white_surface,
+    onBackground = charcoal_text,
+    onSurface = charcoal_text,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-    surface = PurpleGrey80,
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-     */
+private val DarkColorScheme = darkColorScheme(
+    primary = light_purple_primary,
+    secondary = muted_purple_dark,
+    tertiary = dusty_rose_dark,
+    background = rich_dark_background,
+    surface = elevated_dark_surface,
+    onBackground = pure_white_text,
+    onSurface = pure_white_text,
 )
 
 @Composable
@@ -50,7 +47,6 @@ fun PaywallTesterAndroidTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
@@ -58,8 +54,15 @@ fun PaywallTesterAndroidTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            // Set both status bar and navigation bar colors
+            window.statusBarColor = colorScheme.background.toArgb()
+            window.navigationBarColor = colorScheme.background.toArgb()
+
+            // Configure system bars' content color
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
         }
     }
 
