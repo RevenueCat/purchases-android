@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -37,7 +39,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.Setti
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
-@SuppressWarnings("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun ManageSubscriptionsView(
@@ -183,9 +184,13 @@ private fun ManageSubscriptionsButtonsView(
     supportedPaths: List<HelpPath>,
     onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
 ) {
-    Column {
-        HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
-        supportedPaths.forEach { path ->
+    Column(
+        modifier = Modifier
+            .padding(horizontal = ManagementViewHorizontalPadding)
+            .padding(top = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        supportedPaths.forEachIndexed { index, path ->
             SettingsButton(
                 onClick = { onButtonPress(path) },
                 title = path.title,
@@ -202,7 +207,10 @@ private fun OtherPlatformSubscriptionButtonsView(
     managementURL: Uri?,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    Column {
+    Column(
+        modifier = Modifier.padding(horizontal = ManagementViewHorizontalPadding),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
 
         managementURL?.let {

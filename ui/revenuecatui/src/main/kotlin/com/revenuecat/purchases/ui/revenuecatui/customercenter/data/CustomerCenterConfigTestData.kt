@@ -126,13 +126,10 @@ internal object CustomerCenterConfigTestData {
     val purchaseInformationMonthlyRenewing = PurchaseInformation(
         title = "Basic",
         durationTitle = "1 Month",
-        price = PriceDetails.Paid("$4.99"),
+        pricePaid = PriceDetails.Paid("$4.99"),
         explanation = Explanation.EARLIEST_RENEWAL,
-        expirationOrRenewal =
-        ExpirationOrRenewal(
-            ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
-            ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
-        ),
+        expirationDate = null,
+        renewalDate = "June 1st, 2024",
         store = Store.PLAY_STORE,
         managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         product = TestStoreProduct(
@@ -144,18 +141,18 @@ internal object CustomerCenterConfigTestData {
             Period(1, Period.Unit.MONTH, "P1M"),
         ),
         isLifetime = false,
+        isActive = true,
+        isTrial = false,
+        isCancelled = false,
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
         title = "Basic",
         durationTitle = "1 Year",
-        price = PriceDetails.Paid("$40.99"),
+        pricePaid = PriceDetails.Paid("$40.99"),
         explanation = Explanation.EARLIEST_EXPIRATION,
-        expirationOrRenewal =
-        ExpirationOrRenewal(
-            ExpirationOrRenewal.Label.EXPIRES,
-            ExpirationOrRenewal.Date.DateString("June 1st, 2025"),
-        ),
+        expirationDate = "June 1st, 2024",
+        renewalDate = null,
         store = Store.PLAY_STORE,
         managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         product = TestStoreProduct(
@@ -167,5 +164,8 @@ internal object CustomerCenterConfigTestData {
             Period(1, Period.Unit.YEAR, "P1Y"),
         ),
         isLifetime = false,
+        isActive = false,
+        isTrial = false,
+        isCancelled = true,
     )
 }

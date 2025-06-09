@@ -8,7 +8,6 @@ import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -684,7 +683,7 @@ class PurchaseInformationTest {
         assertThat(purchaseInformation.title).isEqualTo(title)
         assertThat(purchaseInformation.durationTitle).isEqualTo(durationTitle)
         assertThat(purchaseInformation.explanation).isEqualTo(explanation)
-        assertThat(purchaseInformation.price).isEqualTo(price)
+        assertThat(purchaseInformation.pricePaid).isEqualTo(price)
         assertThat(purchaseInformation.isLifetime).isEqualTo(isLifetime)
 
         assertThat(purchaseInformation.expirationOrRenewal).isNotNull
