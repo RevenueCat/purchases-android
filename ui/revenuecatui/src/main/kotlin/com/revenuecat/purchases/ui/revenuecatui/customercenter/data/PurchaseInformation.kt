@@ -150,7 +150,7 @@ private fun EntitlementInfo.explanationForPlayStore(): Explanation {
 }
 
 private fun EntitlementInfo.expirationDate(dateFormatter: DateFormatter, locale: Locale): String? {
-    if (!productIdentifier.isPromotionalLifetime(store) && (!willRenew || !isActive)) {
+    if (!isPromotionalLifetime() && (!willRenew || !isActive)) {
         expirationDate?.let { expirationDate ->
             return dateFormatter.format(expirationDate, locale)
         }
@@ -166,7 +166,7 @@ private fun TransactionDetails.expirationDate(dateFormatter: DateFormatter, loca
 }
 
 private fun EntitlementInfo.renewalDate(dateFormatter: DateFormatter, locale: Locale): String? {
-    if (willRenew && !productIdentifier.isPromotionalLifetime(store)) {
+    if (willRenew && !isPromotionalLifetime()) {
         expirationDate?.let { expirationDate ->
             return dateFormatter.format(expirationDate, locale)
         }
@@ -181,8 +181,8 @@ private fun TransactionDetails.renewalDate(dateFormatter: DateFormatter, locale:
     return null
 }
 
-private fun String.isPromotionalLifetime(store: Store): Boolean {
-    return store == Store.PROMOTIONAL && this.endsWith("_lifetime")
+private fun EntitlementInfo.isPromotionalLifetime(): Boolean {
+    return store == Store.PROMOTIONAL && productIdentifier.endsWith("_lifetime")
 }
 
 internal sealed class PriceDetails {
