@@ -13,14 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
@@ -42,22 +39,14 @@ internal fun SubscriptionDetailView(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = screenTitle,
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(
-                start = ManagementViewHorizontalPadding,
-                end = ManagementViewHorizontalPadding,
-                top = ManagementViewTitleTopPadding,
-            ),
-        )
-
-        Spacer(modifier = Modifier.size(ManagementViewSpacer))
-
-        SubscriptionDetailsView(
-            details = purchaseInformation,
+        PurchaseInformationCardView(
+            purchaseInformation = purchaseInformation,
             localization = localization,
-            modifier = Modifier.fillMaxWidth(),
+            position = ButtonPosition.SINGLE,
+            onCardClick = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
         )
 
         val pathsForPurchase = if (purchaseInformation.isLifetime) {

@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,7 +33,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
@@ -72,7 +70,6 @@ internal fun RelevantPurchasesListView(
             )
 
             if (purchaseInformation.size > 1 && restorePath != null) {
-                HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
                 ManageSubscriptionsButtonsView(
                     supportedPaths = listOf(restorePath),
                     onButtonPress = { onAction(CustomerCenterAction.PathButtonPressed(it, product = null)) },
@@ -115,15 +112,23 @@ private fun ActiveUserManagementView(
 
         purchaseInformation.forEachIndexed { index, info ->
             if (index > 0) {
-                HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
+                Spacer(modifier = Modifier.size(2.dp))
             }
 
-            SubscriptionDetailsView(
-                details = info,
+            val position = when {
+                purchaseInformation.size == 1 -> ButtonPosition.SINGLE
+                index == 0 -> ButtonPosition.FIRST
+                index == purchaseInformation.size - 1 -> ButtonPosition.LAST
+                else -> ButtonPosition.MIDDLE
+            }
+            PurchaseInformationCardView(
+                purchaseInformation = info,
                 localization = localization,
+                position = position,
+                onCardClick = { onPurchaseSelected(info) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onPurchaseSelected(info) },
+                    .padding(horizontal = 16.dp),
             )
         }
     }
@@ -219,8 +224,6 @@ internal fun OtherPlatformSubscriptionButtonsView(
         modifier = Modifier.padding(horizontal = ManagementViewHorizontalPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
-
         managementURL?.let {
             SettingsButton(
                 onClick = { onAction(CustomerCenterAction.OpenURL(it.toString())) },
@@ -294,6 +297,29 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
         contactEmail = testData.support.email,
         localization = testData.localization,
         purchaseInformation = emptyList(),
+        onPurchaseSelected = {},
+        onAction = {},
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Preview(showBackground = true, device = "spec:width=412dp,height=915dp", group = "scale = 1", fontScale = 1F)
+@Composable
+private fun RelevantPurchasesListViewWithMultiplePurchasesPreview() {
+    val testData = CustomerCenterConfigTestData.customerCenterData()
+    val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
+    RelevantPurchasesListView(
+        screenTitle = managementScreen.title,
+        screenSubtitle = managementScreen.subtitle,
+        screenType = managementScreen.type,
+        supportedPaths = managementScreen.supportedPaths,
+        contactEmail = testData.support.email,
+        localization = testData.localization,
+        purchaseInformation = listOf(
+            CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+            CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
+            CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+        ),
         onPurchaseSelected = {},
         onAction = {},
     )
