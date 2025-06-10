@@ -168,4 +168,20 @@ internal object CustomerCenterConfigTestData {
         isTrial = false,
         isCancelled = true,
     )
+
+    val purchaseInformationLifetime = PurchaseInformation(
+        title = "Lifetime",
+        durationTitle = null,
+        pricePaid = PriceDetails.Paid("$100.99"),
+        explanation = Explanation.LIFETIME,
+        expirationDate = null,
+        renewalDate = null,
+        store = Store.APP_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        product = null,
+        isLifetime = true,
+        isActive = true,
+        isTrial = false,
+        isCancelled = false,
+    )
 }
