@@ -80,7 +80,7 @@ internal class PurchaseInformation(
         managementURL = managementURL,
         isActive = entitlementInfo?.isActive ?: when (transaction) {
             is TransactionDetails.Subscription -> transaction.isActive
-            is TransactionDetails.NonSubscription -> false
+            is TransactionDetails.NonSubscription -> true
         },
         isTrial = entitlementInfo?.periodType == PeriodType.TRIAL ||
             (transaction as? TransactionDetails.Subscription)?.isTrial == true,
