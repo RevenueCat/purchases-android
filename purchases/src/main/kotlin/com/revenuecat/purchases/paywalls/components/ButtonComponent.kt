@@ -4,7 +4,9 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
@@ -69,6 +71,16 @@ class ButtonComponent(
             @get:JvmSynthetic val urlLid: LocalizationKey,
             @get:JvmSynthetic val method: UrlMethod,
         ) : Destination
+
+        @Serializable
+        data class Sheet(
+            @get:JvmSynthetic val id: String,
+            @get:JvmSynthetic val name: String?,
+            @get:JvmSynthetic val stack: StackComponent,
+            @get:JvmSynthetic val background: Background?,
+            @get:JvmSynthetic @SerialName("background_blur") val backgroundBlur: Boolean,
+            @get:JvmSynthetic val size: Size?,
+        ) : Destination
     }
 
     @InternalRevenueCatAPI
@@ -114,6 +126,7 @@ private class ActionSurrogate(
     val type: ActionTypeSurrogate,
     val destination: DestinationSurrogate? = null,
     val url: UrlSurrogate? = null,
+    val sheet: Destination.Sheet? = null,
 ) {
     constructor(action: Action) : this(
         type = when (action) {
@@ -133,6 +146,7 @@ private class ActionSurrogate(
                 is Destination.PrivacyPolicy -> DestinationSurrogate.privacy_policy
                 is Destination.Terms -> DestinationSurrogate.terms
                 is Destination.Url -> DestinationSurrogate.url
+                is Destination.Sheet -> DestinationSurrogate.sheet
                 is Destination.Unknown -> DestinationSurrogate.unknown
             }
         },
@@ -145,6 +159,7 @@ private class ActionSurrogate(
             is Action.NavigateTo -> when (action.destination) {
                 is Destination.Unknown,
                 is Destination.CustomerCenter,
+                is Destination.Sheet,
                 -> null
                 is Destination.PrivacyPolicy -> UrlSurrogate(
                     url_lid = action.destination.urlLid,
@@ -160,6 +175,21 @@ private class ActionSurrogate(
                     url_lid = action.destination.urlLid,
                     method = action.destination.method,
                 )
+            }
+        },
+        sheet = when (action) {
+            is Action.Unknown,
+            is Action.NavigateBack,
+            is Action.RestorePurchases,
+            -> null
+            is Action.NavigateTo -> when (action.destination) {
+                is Destination.CustomerCenter,
+                is Destination.PrivacyPolicy,
+                is Destination.Terms,
+                is Destination.Unknown,
+                is Destination.Url,
+                -> null
+                is Destination.Sheet -> action.destination
             }
         },
     )
@@ -196,6 +226,11 @@ private class ActionSurrogate(
                         )
                     }
 
+                    DestinationSurrogate.sheet -> {
+                        checkNotNull(sheet) { "`sheet` cannot be null when `destination` is `sheet`." }
+                        sheet
+                    }
+
                     DestinationSurrogate.unknown -> Destination.Unknown
 
                     null -> error("`destination` cannot be null when `action` is `navigate_to`.")
@@ -220,6 +255,7 @@ private enum class DestinationSurrogate {
     privacy_policy,
     terms,
     url,
+    sheet,
     unknown,
 }
 

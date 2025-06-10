@@ -2,9 +2,13 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import org.assertj.core.api.Assertions
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -301,6 +305,112 @@ internal class ButtonComponentTests {
                                 destination = ButtonComponent.Destination.Url(
                                     urlLid = LocalizationKey("ef74"),
                                     method = ButtonComponent.UrlMethod.DEEP_LINK
+                                )
+                            ),
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "navigate_to - sheet",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_to",
+                            "destination": "sheet",
+                            "sheet": {
+                              "id": "ef74",
+                              "name": "my sheet",
+                              "stack": {
+                                "type": "stack",
+                                "components": [
+                                  {
+                                    "color": {
+                                      "light": {
+                                        "type": "alias",
+                                        "value": "primary"
+                                      }
+                                    },
+                                    "components": [],
+                                    "id": "xmpgCrN9Rb",
+                                    "name": "Text",
+                                    "text_lid": "7bkohQjzIE",
+                                    "type": "text"
+                                  }
+                                ]
+                              },
+                              "background": {
+                                "type": "color",
+                                "value": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                }
+                              },
+                              "background_blur": true,
+                              "size": {
+                                "width": {
+                                  "type": "fill",
+                                  "value": null
+                                },
+                                "height": {
+                                  "type": "fit",
+                                  "value": null
+                                }
+                              }
+                            }
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateTo(
+                                destination = ButtonComponent.Destination.Sheet(
+                                    id = "ef74",
+                                    name = "my sheet",
+                                    stack = StackComponent(
+                                        components = listOf(
+                                            TextComponent(
+                                                text = LocalizationKey("7bkohQjzIE"),
+                                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                            )
+                                        ),
+                                    ),
+                                    background = Background.Color(
+                                        ColorScheme(ColorInfo.Alias(ColorAlias("primary")))
+                                    ),
+                                    backgroundBlur = true,
+                                    size = Size(
+                                        width = SizeConstraint.Fill,
+                                        height = SizeConstraint.Fit,
+                                    )
                                 )
                             ),
                             stack = StackComponent(
@@ -629,6 +739,81 @@ internal class ButtonComponentTests {
                     ),
                 ),
                 arrayOf(
+                    "navigate_to - sheet",
+                    Args(
+                        serialized = """
+                        {
+                          "type": "navigate_to",
+                          "destination": "sheet",
+                          "sheet": {
+                            "id": "ef74",
+                            "name": "my sheet",
+                            "stack": {
+                              "type": "stack",
+                              "components": [
+                                {
+                                  "color": {
+                                    "light": {
+                                      "type": "alias",
+                                      "value": "primary"
+                                    }
+                                  },
+                                  "components": [],
+                                  "id": "xmpgCrN9Rb",
+                                  "name": "Text",
+                                  "text_lid": "7bkohQjzIE",
+                                  "type": "text"
+                                }
+                              ]
+                            },
+                            "background": {
+                              "type": "color",
+                              "value": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "primary"
+                                }
+                              }
+                            },
+                            "background_blur": true,
+                            "size": {
+                              "width": {
+                                "type": "fill",
+                                "value": null
+                              },
+                              "height": {
+                                "type": "fit",
+                                "value": null
+                              }
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                        deserialized = ButtonComponent.Action.NavigateTo(
+                            destination = ButtonComponent.Destination.Sheet(
+                                id = "ef74",
+                                name = "my sheet",
+                                stack = StackComponent(
+                                    components = listOf(
+                                        TextComponent(
+                                            text = LocalizationKey("7bkohQjzIE"),
+                                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        )
+                                    ),
+                                ),
+                                background = Background.Color(
+                                    ColorScheme(ColorInfo.Alias(ColorAlias("primary")))
+                                ),
+                                backgroundBlur = true,
+                                size = Size(
+                                    width = SizeConstraint.Fill,
+                                    height = SizeConstraint.Fit,
+                                )
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
                     "unknown",
                     Args(
                         serialized = """
@@ -649,6 +834,7 @@ internal class ButtonComponentTests {
             val actual = JsonTools.json.decodeFromString<ButtonComponent.Action>(args.serialized)
 
             // Assert
+            Assertions.assertThat(actual).isEqualTo(args.deserialized)
             assert(actual == args.deserialized)
         }
     }
