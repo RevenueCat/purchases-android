@@ -9,12 +9,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.constants.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -42,7 +42,7 @@ internal fun SubscriptionDetailView(
             isDetailedView = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
         )
 
         val pathsForPurchase = if (purchaseInformation.isLifetime) {

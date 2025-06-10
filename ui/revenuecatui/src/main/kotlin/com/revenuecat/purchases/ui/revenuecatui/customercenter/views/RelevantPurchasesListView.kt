@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableIconSize
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingTopDescription
@@ -87,7 +88,7 @@ internal fun RelevantPurchasesListView(
     }
 }
 
-@SuppressWarnings("LongParameterList")
+@SuppressWarnings("LongParameterList", "LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun ActiveUserManagementView(
@@ -116,7 +117,7 @@ private fun ActiveUserManagementView(
         if (subscriptions.isNotEmpty()) {
             subscriptions.forEachIndexed { index, info ->
                 if (index > 0) {
-                    Spacer(modifier = Modifier.size(2.dp))
+                    Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
                 }
 
                 val position = when {
@@ -133,13 +134,13 @@ private fun ActiveUserManagementView(
                     isDetailedView = false,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
                 )
             }
         }
 
         if (nonSubscriptions.isNotEmpty()) {
-            Spacer(modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.SECTION_SPACING))
 
             if (subscriptions.isNotEmpty()) {
                 Text(
@@ -148,14 +149,14 @@ private fun ActiveUserManagementView(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(
                         start = ManagementViewHorizontalPadding,
-                        bottom = 8.dp,
+                        bottom = CustomerCenterConstants.Layout.SECTION_TITLE_BOTTOM_PADDING,
                     ),
                 )
             }
 
             nonSubscriptions.forEachIndexed { index, info ->
                 if (index > 0) {
-                    Spacer(modifier = Modifier.size(2.dp))
+                    Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
                 }
 
                 val position = when {
@@ -172,7 +173,7 @@ private fun ActiveUserManagementView(
                     isDetailedView = false,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
                 )
             }
         }

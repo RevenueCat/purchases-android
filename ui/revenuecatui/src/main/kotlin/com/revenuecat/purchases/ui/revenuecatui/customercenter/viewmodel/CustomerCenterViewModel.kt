@@ -395,7 +395,8 @@ internal class CustomerCenterViewModelImpl(
         val otherActiveSubscriptions = activeSubscriptions.filter { it.store != Store.PLAY_STORE }
         val otherNonSubscriptions = customerInfo.nonSubscriptionTransactions.filter { it.store != Store.PLAY_STORE }
 
-        val prioritized = activeGoogleSubscriptions + googleNonSubscriptions + otherActiveSubscriptions + otherNonSubscriptions
+        val prioritized =
+            activeGoogleSubscriptions + googleNonSubscriptions + otherActiveSubscriptions + otherNonSubscriptions
 
         return prioritized.mapNotNull {
             when (it) {
