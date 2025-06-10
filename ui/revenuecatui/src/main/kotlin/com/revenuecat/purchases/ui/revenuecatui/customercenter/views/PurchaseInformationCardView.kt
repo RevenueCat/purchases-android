@@ -1,12 +1,16 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,7 +30,6 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
-import androidx.compose.foundation.clickable
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 private val roundedCornerShapeSize = 24.dp
@@ -39,6 +42,7 @@ internal fun PurchaseInformationCardView(
     modifier: Modifier = Modifier,
     position: ButtonPosition = ButtonPosition.SINGLE,
     onCardClick: (() -> Unit)?,
+    isDetailedView: Boolean = false,
 ) {
     val shape = when (position) {
         ButtonPosition.SINGLE -> RoundedCornerShape(roundedCornerShapeSize)
@@ -80,6 +84,11 @@ internal fun PurchaseInformationCardView(
                     modifier = Modifier.weight(1f),
                 )
                 when {
+                    purchaseInformation.isLifetime && !isDetailedView -> Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
                     purchaseInformation.isCancelled -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_CANCELLED,
@@ -92,7 +101,7 @@ internal fun PurchaseInformationCardView(
                         ),
                         backgroundColor = Color(0x5BF5CA5C),
                     )
-                    purchaseInformation.isActive -> StatusBadge(
+                    !purchaseInformation.isLifetime && purchaseInformation.isActive -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.ACTIVE,
                         ),
@@ -251,6 +260,7 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
             isTrial = false,
             isCancelled = false,
         ),
+        CustomerCenterConfigTestData.purchaseInformationLifetime,
         PurchaseInformation(
             title = "Monthly long subscription name that overflows",
             pricePaid = PriceDetails.Paid("$1.99"),

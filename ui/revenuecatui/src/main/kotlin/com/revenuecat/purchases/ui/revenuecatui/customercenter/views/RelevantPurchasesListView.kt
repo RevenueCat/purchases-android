@@ -2,8 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +23,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableIconSize
@@ -37,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
 @Suppress("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -46,7 +46,6 @@ internal fun RelevantPurchasesListView(
     screenSubtitle: String?,
     screenType: CustomerCenterConfigData.Screen.ScreenType,
     supportedPaths: List<HelpPath>,
-    contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     purchaseInformation: List<PurchaseInformation> = emptyList(),
@@ -110,26 +109,72 @@ private fun ActiveUserManagementView(
 
         Spacer(modifier = Modifier.size(ManagementViewSpacer))
 
-        purchaseInformation.forEachIndexed { index, info ->
-            if (index > 0) {
-                Spacer(modifier = Modifier.size(2.dp))
+        // Split purchases into subscriptions and non-subscriptions
+        val subscriptions = purchaseInformation.filter { it.product?.period != null }
+        val nonSubscriptions = purchaseInformation.filter { it.product?.period == null }
+
+        if (subscriptions.isNotEmpty()) {
+            subscriptions.forEachIndexed { index, info ->
+                if (index > 0) {
+                    Spacer(modifier = Modifier.size(2.dp))
+                }
+
+                val position = when {
+                    subscriptions.size == 1 -> ButtonPosition.SINGLE
+                    index == 0 -> ButtonPosition.FIRST
+                    index == subscriptions.size - 1 -> ButtonPosition.LAST
+                    else -> ButtonPosition.MIDDLE
+                }
+                PurchaseInformationCardView(
+                    purchaseInformation = info,
+                    localization = localization,
+                    position = position,
+                    onCardClick = { onPurchaseSelected(info) },
+                    isDetailedView = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                )
+            }
+        }
+
+        if (nonSubscriptions.isNotEmpty()) {
+            Spacer(modifier = Modifier.size(24.dp))
+
+            if (subscriptions.isNotEmpty()) {
+                Text(
+                    text = "Purchases",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(
+                        start = ManagementViewHorizontalPadding,
+                        bottom = 8.dp,
+                    ),
+                )
             }
 
-            val position = when {
-                purchaseInformation.size == 1 -> ButtonPosition.SINGLE
-                index == 0 -> ButtonPosition.FIRST
-                index == purchaseInformation.size - 1 -> ButtonPosition.LAST
-                else -> ButtonPosition.MIDDLE
+            nonSubscriptions.forEachIndexed { index, info ->
+                if (index > 0) {
+                    Spacer(modifier = Modifier.size(2.dp))
+                }
+
+                val position = when {
+                    nonSubscriptions.size == 1 -> ButtonPosition.SINGLE
+                    index == 0 -> ButtonPosition.FIRST
+                    index == nonSubscriptions.size - 1 -> ButtonPosition.LAST
+                    else -> ButtonPosition.MIDDLE
+                }
+                PurchaseInformationCardView(
+                    purchaseInformation = info,
+                    localization = localization,
+                    position = position,
+                    onCardClick = { onPurchaseSelected(info) },
+                    isDetailedView = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                )
             }
-            PurchaseInformationCardView(
-                purchaseInformation = info,
-                localization = localization,
-                position = position,
-                onCardClick = { onPurchaseSelected(info) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            )
         }
     }
 }
@@ -249,17 +294,20 @@ internal fun OtherPlatformSubscriptionButtonsView(
 private fun RelevantPurchasesListViewPreview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
-    RelevantPurchasesListView(
-        screenTitle = managementScreen.title,
-        screenSubtitle = managementScreen.subtitle,
-        screenType = managementScreen.type,
-        supportedPaths = managementScreen.supportedPaths,
-        contactEmail = testData.support.email,
-        localization = testData.localization,
-        purchaseInformation = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
-        onPurchaseSelected = {},
-        onAction = {},
-    )
+    CustomerCenterPreviewTheme {
+        Box(modifier = Modifier.fillMaxSize()) {
+            RelevantPurchasesListView(
+                screenTitle = managementScreen.title,
+                screenSubtitle = managementScreen.subtitle,
+                screenType = managementScreen.type,
+                supportedPaths = managementScreen.supportedPaths,
+                localization = testData.localization,
+                purchaseInformation = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+                onPurchaseSelected = {},
+                onAction = {},
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -268,18 +316,70 @@ private fun RelevantPurchasesListViewPreview() {
 private fun NoActiveSubscriptionsViewPreview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
+    CustomerCenterPreviewTheme {
+        Column {
+            RelevantPurchasesListView(
+                screenTitle = noActiveScreen.title,
+                screenSubtitle = noActiveScreen.subtitle,
+                screenType = noActiveScreen.type,
+                supportedPaths = noActiveScreen.supportedPaths,
+                localization = testData.localization,
+                purchaseInformation = emptyList(),
+                onPurchaseSelected = {},
+                onAction = {},
+            )
+        }
+    }
+}
 
-    RelevantPurchasesListView(
-        screenTitle = noActiveScreen.title,
-        screenSubtitle = noActiveScreen.subtitle,
-        screenType = noActiveScreen.type,
-        supportedPaths = noActiveScreen.supportedPaths,
-        contactEmail = testData.support.email,
-        localization = testData.localization,
-        purchaseInformation = emptyList(),
-        onPurchaseSelected = {},
-        onAction = {},
-    )
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun RelevantPurchasesListViewWithLifetimePurchasePreview() {
+    val testData = CustomerCenterConfigTestData.customerCenterData()
+    val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
+    CustomerCenterPreviewTheme {
+        Column {
+            RelevantPurchasesListView(
+                screenTitle = managementScreen.title,
+                screenSubtitle = managementScreen.subtitle,
+                screenType = managementScreen.type,
+                supportedPaths = managementScreen.supportedPaths,
+                localization = testData.localization,
+                purchaseInformation = listOf(
+                    CustomerCenterConfigTestData.purchaseInformationLifetime,
+                ),
+                onPurchaseSelected = {},
+                onAction = {},
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun RelevantPurchasesListViewWithSubscriptionsAndLifetimePurchasePreview() {
+    val testData = CustomerCenterConfigTestData.customerCenterData()
+    val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
+    CustomerCenterPreviewTheme {
+        Column {
+            RelevantPurchasesListView(
+                screenTitle = managementScreen.title,
+                screenSubtitle = managementScreen.subtitle,
+                screenType = managementScreen.type,
+                supportedPaths = managementScreen.supportedPaths,
+                localization = testData.localization,
+                purchaseInformation = listOf(
+                    CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+                    CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
+                    CustomerCenterConfigTestData.purchaseInformationLifetime,
+                ),
+                onPurchaseSelected = {},
+                onAction = {},
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -289,17 +389,20 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!.copy(subtitle = null)
 
-    RelevantPurchasesListView(
-        screenTitle = noActiveScreen.title,
-        screenSubtitle = noActiveScreen.subtitle,
-        screenType = noActiveScreen.type,
-        supportedPaths = noActiveScreen.supportedPaths,
-        contactEmail = testData.support.email,
-        localization = testData.localization,
-        purchaseInformation = emptyList(),
-        onPurchaseSelected = {},
-        onAction = {},
-    )
+    CustomerCenterPreviewTheme {
+        Column {
+            RelevantPurchasesListView(
+                screenTitle = noActiveScreen.title,
+                screenSubtitle = noActiveScreen.subtitle,
+                screenType = noActiveScreen.type,
+                supportedPaths = noActiveScreen.supportedPaths,
+                localization = testData.localization,
+                purchaseInformation = emptyList(),
+                onPurchaseSelected = {},
+                onAction = {},
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -308,19 +411,21 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
 private fun RelevantPurchasesListViewWithMultiplePurchasesPreview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
-    RelevantPurchasesListView(
-        screenTitle = managementScreen.title,
-        screenSubtitle = managementScreen.subtitle,
-        screenType = managementScreen.type,
-        supportedPaths = managementScreen.supportedPaths,
-        contactEmail = testData.support.email,
-        localization = testData.localization,
-        purchaseInformation = listOf(
-            CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
-            CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
-            CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
-        ),
-        onPurchaseSelected = {},
-        onAction = {},
-    )
+    CustomerCenterPreviewTheme {
+        Column {
+            RelevantPurchasesListView(
+                screenTitle = managementScreen.title,
+                screenSubtitle = managementScreen.subtitle,
+                screenType = managementScreen.type,
+                supportedPaths = managementScreen.supportedPaths,
+                localization = testData.localization,
+                purchaseInformation = listOf(
+                    CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+                    CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
+                ),
+                onPurchaseSelected = {},
+                onAction = {},
+            )
+        }
+    }
 }
