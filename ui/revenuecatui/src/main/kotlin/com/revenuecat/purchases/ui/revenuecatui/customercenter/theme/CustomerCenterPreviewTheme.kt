@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+@SuppressWarnings("MagicNumber")
 private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF0F67FF),
     onPrimary = Color.White,

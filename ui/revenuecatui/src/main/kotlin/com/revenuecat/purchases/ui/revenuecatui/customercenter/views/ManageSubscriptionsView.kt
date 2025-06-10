@@ -38,6 +38,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.Setti
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
+@Suppress("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun ManageSubscriptionsView(

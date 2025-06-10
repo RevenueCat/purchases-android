@@ -24,20 +24,13 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.Explanation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
-internal enum class ButtonPosition {
-    SINGLE,
-    FIRST,
-    MIDDLE,
-    LAST,
-}
-
-private val roundedCornerShapeSize = 24.dp
-
+@SuppressWarnings("LongParameterList", "LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun PurchaseInformationCardView(
@@ -47,20 +40,20 @@ internal fun PurchaseInformationCardView(
     position: ButtonPosition = ButtonPosition.SINGLE,
 ) {
     val shape = when (position) {
-        ButtonPosition.SINGLE -> RoundedCornerShape(roundedCornerShapeSize)
+        ButtonPosition.SINGLE -> RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE)
         ButtonPosition.FIRST -> RoundedCornerShape(
-            topStart = roundedCornerShapeSize,
-            topEnd = roundedCornerShapeSize,
-            bottomStart = 4.dp,
-            bottomEnd = 4.dp,
+            topStart = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+            topEnd = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+            bottomStart = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            bottomEnd = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
         )
         ButtonPosition.LAST -> RoundedCornerShape(
-            topStart = 4.dp,
-            topEnd = 4.dp,
-            bottomStart = roundedCornerShapeSize,
-            bottomEnd = roundedCornerShapeSize,
+            topStart = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            topEnd = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            bottomStart = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+            bottomEnd = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
         )
-        ButtonPosition.MIDDLE -> RoundedCornerShape(4.dp)
+        ButtonPosition.MIDDLE -> RoundedCornerShape(CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE)
     }
 
     Surface(
@@ -69,14 +62,14 @@ internal fun PurchaseInformationCardView(
         color = MaterialTheme.colorScheme.surface,
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(CustomerCenterConstants.Card.CARD_PADDING),
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 4.dp),
+                    .padding(bottom = CustomerCenterConstants.Card.TITLE_ROW_BOTTOM_PADDING),
             ) {
                 Text(
                     text = purchaseInformation.title ?: purchaseInformation.product?.title ?: "",
@@ -88,19 +81,19 @@ internal fun PurchaseInformationCardView(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_CANCELLED,
                         ),
-                        backgroundColor = Color(0x33F2545B),
+                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_CANCELLED),
                     )
                     purchaseInformation.isTrial -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_FREE_TRIAL,
                         ),
-                        backgroundColor = Color(0x5BF5CA5C),
+                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_FREE_TRIAL),
                     )
                     purchaseInformation.isActive -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.ACTIVE,
                         ),
-                        backgroundColor = Color(0x9911D483),
+                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_ACTIVE),
                     )
                 }
             }
@@ -130,12 +123,12 @@ private fun getSubtitle(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
 ): String? {
-    if (purchaseInformation.renewalDate != null) {
-        return purchaseInformation.renewalString(purchaseInformation.renewalDate, localization)
+    return if (purchaseInformation.renewalDate != null) {
+        purchaseInformation.renewalString(purchaseInformation.renewalDate, localization)
     } else if (purchaseInformation.expirationDate != null) {
-        return purchaseInformation.expirationString(purchaseInformation.expirationDate, localization)
+        purchaseInformation.expirationString(purchaseInformation.expirationDate, localization)
     } else {
-        return getPrice(purchaseInformation, localization)
+        getPrice(purchaseInformation, localization)
     }
 }
 
@@ -145,13 +138,16 @@ private fun StatusBadge(
     backgroundColor: Color,
 ) {
     Surface(
-        shape = RoundedCornerShape(4.dp),
+        shape = RoundedCornerShape(CustomerCenterConstants.Card.BADGE_CORNER_SIZE),
         color = backgroundColor,
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            modifier = Modifier.padding(
+                horizontal = CustomerCenterConstants.Card.BADGE_HORIZONTAL_PADDING,
+                vertical = CustomerCenterConstants.Card.BADGE_VERTICAL_PADDING,
+            ),
         )
     }
 }
@@ -183,6 +179,25 @@ private fun getPrice(
             localization.commonLocalizedString(CustomerCenterConfigData.Localization.CommonLocalizedString.FREE)
         PriceDetails.Unknown -> null
     }
+}
+internal enum class ButtonPosition {
+    SINGLE,
+    FIRST,
+    MIDDLE,
+    LAST,
+}
+
+private object PurchaseInformationCardConstants {
+    val ROUNDED_CORNER_SIZE = 24.dp
+    val MIDDLE_CORNER_SIZE = 4.dp
+    val BADGE_CORNER_SIZE = 4.dp
+    val CARD_PADDING = 24.dp
+    val TITLE_ROW_BOTTOM_PADDING = 4.dp
+    val BADGE_HORIZONTAL_PADDING = 8.dp
+    val BADGE_VERTICAL_PADDING = 2.dp
+    const val BADGE_CANCELLED = 0x33F2545B
+    const val BADGE_FREE_TRIAL = 0x5BF5CA5C
+    const val BADGE_ACTIVE = 0x9911D483
 }
 
 private const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"

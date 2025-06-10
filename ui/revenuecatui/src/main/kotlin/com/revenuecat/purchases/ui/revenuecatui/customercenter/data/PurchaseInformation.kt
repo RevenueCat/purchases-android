@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.net.Uri
@@ -13,7 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import java.util.Locale
 
-@SuppressWarnings("LongParameterList")
+@Suppress("LongParameterList")
 internal class PurchaseInformation(
     val title: String?,
     val durationTitle: String?,
@@ -57,9 +59,10 @@ internal class PurchaseInformation(
 
             is TransactionDetails.NonSubscription -> Explanation.LIFETIME
         },
-        renewalDate =
-        entitlementInfo?.renewalDate(dateFormatter, locale) ?: transaction.renewalDate(dateFormatter, locale),
-        expirationDate = entitlementInfo?.expirationDate(dateFormatter, locale) ?: transaction.expirationDate(dateFormatter, locale),
+        renewalDate = entitlementInfo?.renewalDate(dateFormatter, locale)
+            ?: transaction.renewalDate(dateFormatter, locale),
+        expirationDate = entitlementInfo?.expirationDate(dateFormatter, locale)
+            ?: transaction.expirationDate(dateFormatter, locale),
         product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
         pricePaid = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
@@ -82,10 +85,8 @@ internal class PurchaseInformation(
             is TransactionDetails.Subscription -> transaction.isActive
             is TransactionDetails.NonSubscription -> true
         },
-        isTrial = entitlementInfo?.periodType == PeriodType.TRIAL ||
-            (transaction as? TransactionDetails.Subscription)?.isTrial == true,
-        isCancelled = (entitlementInfo?.unsubscribeDetectedAt != null && !entitlementInfo.willRenew) ||
-            (transaction as? TransactionDetails.Subscription)?.let { !it.willRenew } == true,
+        isTrial = determineTrialStatus(entitlementInfo, transaction),
+        isCancelled = determineCancellationStatus(entitlementInfo, transaction),
     )
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -159,10 +160,19 @@ private fun EntitlementInfo.expirationDate(dateFormatter: DateFormatter, locale:
 }
 
 private fun TransactionDetails.expirationDate(dateFormatter: DateFormatter, locale: Locale): String? {
-    if (this is TransactionDetails.Subscription && expiresDate != null && (!willRenew || !isActive)) {
-        return dateFormatter.format(expiresDate, locale)
+    val hasAnExpiration = this is TransactionDetails.Subscription && expiresDate != null
+    val isGoingToExpireOrHasExpired = hasAnExpiration &&
+        (this as TransactionDetails.Subscription).isGoingToExpireOrHasExpired()
+
+    return if (isGoingToExpireOrHasExpired) {
+        dateFormatter.format((this as TransactionDetails.Subscription).expiresDate!!, locale)
+    } else {
+        null
     }
-    return null
+}
+
+private fun TransactionDetails.Subscription.isGoingToExpireOrHasExpired(): Boolean {
+    return !willRenew || !isActive
 }
 
 private fun EntitlementInfo.renewalDate(dateFormatter: DateFormatter, locale: Locale): String? {
@@ -183,6 +193,29 @@ private fun TransactionDetails.renewalDate(dateFormatter: DateFormatter, locale:
 
 private fun EntitlementInfo.isPromotionalLifetime(): Boolean {
     return store == Store.PROMOTIONAL && productIdentifier.endsWith("_lifetime")
+}
+
+private fun determineTrialStatus(
+    entitlementInfo: EntitlementInfo?,
+    transaction: TransactionDetails,
+): Boolean {
+    return entitlementInfo?.periodType == PeriodType.TRIAL ||
+        (transaction as? TransactionDetails.Subscription)?.isTrial == true
+}
+
+private fun determineCancellationStatus(
+    entitlementInfo: EntitlementInfo?,
+    transaction: TransactionDetails,
+): Boolean {
+    val entitlementCancelled = entitlementInfo?.let {
+        it.unsubscribeDetectedAt != null && !it.willRenew
+    } ?: false
+
+    val transactionCancelled = (transaction as? TransactionDetails.Subscription)?.let {
+        !it.willRenew
+    } ?: false
+
+    return entitlementCancelled || transactionCancelled
 }
 
 internal sealed class PriceDetails {
