@@ -8,7 +8,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
-import org.assertj.core.api.Assertions
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -834,7 +833,6 @@ internal class ButtonComponentTests {
             val actual = JsonTools.json.decodeFromString<ButtonComponent.Action>(args.serialized)
 
             // Assert
-            Assertions.assertThat(actual).isEqualTo(args.deserialized)
             assert(actual == args.deserialized)
         }
     }
