@@ -338,7 +338,8 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.PROMOTIONAL,
             productIdentifier = "rc_promo_pro_cat_yearly",
-            expirationDate = expiresDate
+            expirationDate = expiresDate,
+            ownershipType = OwnershipType.UNKNOWN
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -352,9 +353,9 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
+            managementURL = null,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
         )
 
         assertPurchaseInformation(
@@ -374,21 +375,22 @@ class PurchaseInformationTest {
 
     @Test
     fun `test PurchaseInformation with promotional lifetime entitlement`() {
-        val expiresDate = null
-        setupDateFormatter(expiresDate, "")
+        val expiresDate = 1_000_000_000.days.fromNow()
+        setupDateFormatter(expiresDate, "3 Oct 2222")
 
         val entitlementInfo = createEntitlementInfo(
             isActive = true,
             willRenew = false,
             store = Store.PROMOTIONAL,
-            productIdentifier = "rc_promo_pro_cat_yearly",
-            expirationDate = expiresDate
+            productIdentifier = "rc_promo_pro_cat_lifetime",
+            expirationDate = expiresDate,
+            ownershipType = OwnershipType.UNKNOWN
         )
         val transaction = createTransactionDetails(
             isActive = true,
             willRenew = false,
             store = Store.PROMOTIONAL,
-            productIdentifier = "rc_promo_pro_cat_yearly",
+            productIdentifier = "rc_promo_pro_cat_lifetime",
             expiresDate = expiresDate
         )
 
@@ -396,23 +398,23 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
+            managementURL = null,
             dateFormatter = dateFormatter,
             locale = locale
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "rc_promo_pro_cat_yearly",
+            title = "rc_promo_pro_cat_lifetime",
             price = PriceDetails.Free,
             store = Store.PROMOTIONAL,
             product = null,
-            isLifetime = true,
+            isLifetime = false,
             isActive = true,
             isTrial = false,
             isCancelled = true,
             renewalDate = null,
-            expirationDate = null
+            expirationDate = "3 Oct 2222"
         )
     }
 
@@ -690,7 +692,8 @@ class PurchaseInformationTest {
             willRenew = true,
             store = Store.PLAY_STORE,
             productIdentifier = "test_product",
-            expirationDate = expiresDate
+            expirationDate = expiresDate,
+            ownershipType = OwnershipType.PURCHASED
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -765,7 +768,8 @@ class PurchaseInformationTest {
         willRenew: Boolean,
         store: Store,
         productIdentifier: String,
-        expirationDate: Date?
+        expirationDate: Date?,
+        ownershipType: OwnershipType = OwnershipType.PURCHASED,
     ): EntitlementInfo {
         return EntitlementInfo(
             identifier = "test_entitlement",
@@ -781,7 +785,7 @@ class PurchaseInformationTest {
             isSandbox = false,
             unsubscribeDetectedAt = null,
             billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
+            ownershipType = ownershipType,
             jsonObject = mockk(),
             verification = VerificationResult.NOT_REQUESTED
         )
