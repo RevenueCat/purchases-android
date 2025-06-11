@@ -2,10 +2,18 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -15,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,12 +53,15 @@ internal fun SimpleBottomSheetScaffold(
             onClick = { sheetState.hide() },
         ) { content() }
 
-        if (sheetState.visible) {
+        AnimatedVisibility(
+            visible = sheetState.visible,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically(initialOffsetY = { it }),
+            exit = slideOutVertically(targetOffsetY = { it }),
+        ) {
             BackHandler { sheetState.hide() }
 
-            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-                sheetState.content(this)
-            }
+            sheetState.content()
         }
     }
 }
@@ -61,14 +73,14 @@ internal class SimpleSheetState {
         private set
 
     @get:JvmSynthetic
-    var content: @Composable BoxScope.() -> Unit by mutableStateOf({})
+    var content: @Composable () -> Unit by mutableStateOf({})
         private set
 
     @get:JvmSynthetic
     var visible by mutableStateOf(false)
         private set
 
-    fun show(backgroundBlur: Boolean, content: @Composable BoxScope.() -> Unit) {
+    fun show(backgroundBlur: Boolean, content: @Composable () -> Unit) {
         this.backgroundBlur = backgroundBlur
         this.content = content
         visible = true
@@ -88,17 +100,29 @@ private fun Scrim(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Box(
-        modifier = modifier
-            .conditional(show) { blur(radius) },
-    ) {
+    val targetRadius by animateDpAsState(
+        targetValue = if (show) radius else 0.dp,
+        animationSpec = blurAnimationSpec(),
+    )
+
+    Box(modifier = modifier.blur(targetRadius)) {
         content()
 
-        if (show) {
+        AnimatedVisibility(
+            visible = show,
+            modifier = Modifier.matchParentSize(),
+            enter = fadeIn(animationSpec = blurAnimationSpec()),
+            exit = fadeOut(animationSpec = blurAnimationSpec()),
+        ) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .clickable(onClick = onClick)
+                    // We don't want the entire screen to show a click indication.
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onClick,
+                    )
                     // Show a translucent scrim on versions older than 12, where performant blur is not supported.
                     .conditional(Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
                         background(Color.Black.copy(alpha = ALPHA_SCRIM))
@@ -108,16 +132,20 @@ private fun Scrim(
     }
 }
 
+private fun <T> blurAnimationSpec(): TweenSpec<T> = tween()
+
 @Preview
 @Composable
 private fun SimpleBottomSheetScaffold_Preview() {
     val sheetState = SimpleSheetState().apply {
         show(backgroundBlur = true) {
             Column(
-                Modifier.background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                ).padding(all = 16.dp),
+                Modifier
+                    .background(
+                        color = Color.White,
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                    )
+                    .padding(all = 16.dp),
             ) {
                 Text(
                     text = "Hello from my bottom sheet",
@@ -131,7 +159,9 @@ private fun SimpleBottomSheetScaffold_Preview() {
 
     SimpleBottomSheetScaffold(
         sheetState = sheetState,
-        modifier = Modifier.fillMaxSize().background(Color.Gray),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Gray),
         content = {
             Box(
                 modifier = Modifier
