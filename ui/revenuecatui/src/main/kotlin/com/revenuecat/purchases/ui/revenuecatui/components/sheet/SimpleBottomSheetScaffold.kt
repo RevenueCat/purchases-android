@@ -34,7 +34,12 @@ internal fun SimpleBottomSheetScaffold(
                 ComponentView(
                     style = sheet.stack,
                     state = state,
-                    onClick = onClick,
+                    onClick = { action ->
+                        when (action) {
+                            is PaywallAction.External.NavigateBack -> sheetState.hide()
+                            else -> onClick(action)
+                        }
+                    },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .applyIfNotNull(sheet.size) { size(it) }
