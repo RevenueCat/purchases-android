@@ -1,24 +1,21 @@
-package com.revenuecat.purchases.ui.revenuecatui.components.sheet
+package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 private const val ALPHA_SCRIM = 0.6f
@@ -30,40 +27,47 @@ private const val ALPHA_SCRIM = 0.6f
 @Composable
 internal fun SimpleBottomSheetScaffold(
     sheetState: SimpleSheetState,
-    state: PaywallState.Loaded.Components,
-    onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     Box(modifier = modifier) {
         Scrim(
-            show = sheetState.visible && sheetState.sheet?.backgroundBlur == true,
+            show = sheetState.backgroundBlur,
             radius = 10.dp,
             onClick = { sheetState.hide() },
         ) { content() }
 
         if (sheetState.visible) {
-            sheetState.sheet?.also { sheet ->
-                BackHandler { sheetState.hide() }
+            BackHandler { sheetState.hide() }
 
-                val backgroundStyle = sheet.background?.let { rememberBackgroundStyle(background = it) }
-
-                ComponentView(
-                    style = sheet.stack,
-                    state = state,
-                    onClick = { action ->
-                        when (action) {
-                            is PaywallAction.External.NavigateBack -> sheetState.hide()
-                            else -> onClick(action)
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .applyIfNotNull(sheet.size) { size(it) }
-                        .applyIfNotNull(backgroundStyle) { background(it) },
-                )
-            }
+            sheetState.content(this)
         }
+    }
+}
+
+@Stable
+internal class SimpleSheetState {
+    @get:JvmSynthetic
+    var backgroundBlur by mutableStateOf(false)
+        private set
+
+    @get:JvmSynthetic
+    var content: @Composable BoxScope.() -> Unit by mutableStateOf({})
+        private set
+
+    @get:JvmSynthetic
+    var visible by mutableStateOf(false)
+        private set
+
+    fun show(backgroundBlur: Boolean, content: @Composable BoxScope.() -> Unit) {
+        this.backgroundBlur = backgroundBlur
+        this.content = content
+        visible = true
+    }
+
+    fun hide() {
+        backgroundBlur = false
+        visible = false
     }
 }
 

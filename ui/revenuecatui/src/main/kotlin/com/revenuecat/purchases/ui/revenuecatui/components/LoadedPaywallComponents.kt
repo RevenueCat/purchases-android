@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -44,14 +45,17 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.sheet.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
+import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
@@ -69,22 +73,10 @@ internal fun LoadedPaywallComponents(
     val style = state.stack
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
-
-    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
-        when (action) {
-            is PaywallAction.External -> clickHandler(action)
-            is PaywallAction.Internal -> when (action) {
-                is PaywallAction.Internal.NavigateTo -> when (action.destination) {
-                    is PaywallAction.Internal.NavigateTo.Destination.Sheet -> state.sheet.show(action.destination.sheet)
-                }
-            }
-        }
-    }
+    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
 
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
-        state = state,
-        onClick = onClick,
         modifier = modifier.background(background),
     ) {
         Column {
@@ -107,6 +99,52 @@ internal fun LoadedPaywallComponents(
                 )
             }
         }
+    }
+}
+
+private suspend fun handleClick(
+    action: PaywallAction,
+    state: PaywallState.Loaded.Components,
+    externalClickHandler: suspend (PaywallAction.External) -> Unit,
+) {
+    when (action) {
+        is PaywallAction.External -> externalClickHandler(action)
+        is PaywallAction.Internal -> when (action) {
+            is PaywallAction.Internal.NavigateTo -> when (action.destination) {
+                is PaywallAction.Internal.NavigateTo.Destination.Sheet ->
+                    state.sheet.show(action.destination.sheet, state) { handleClick(it, state, externalClickHandler) }
+            }
+        }
+    }
+}
+
+/**
+ * Shows the provided [sheet] as this [SimpleSheetState]'s sheet content.
+ */
+private fun SimpleSheetState.show(
+    sheet: ButtonComponentStyle.Action.NavigateTo.Destination.Sheet,
+    state: PaywallState.Loaded.Components,
+    onClick: suspend (PaywallAction) -> Unit,
+) {
+    show(
+        backgroundBlur = sheet.backgroundBlur,
+    ) {
+        val backgroundStyle = sheet.background?.let { rememberBackgroundStyle(background = it) }
+
+        ComponentView(
+            style = sheet.stack,
+            state = state,
+            onClick = { action ->
+                when (action) {
+                    is PaywallAction.External.NavigateBack -> hide()
+                    else -> onClick(action)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .applyIfNotNull(sheet.size) { size(it) }
+                .applyIfNotNull(backgroundStyle) { background(it) },
+        )
     }
 }
 
@@ -193,7 +231,7 @@ private fun LoadedPaywallComponents_Preview() {
     )
 
     state.sheet.show(
-        ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
+        sheet = ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
             id = "",
             name = "",
             stack = previewStackComponentStyle(
@@ -229,6 +267,8 @@ private fun LoadedPaywallComponents_Preview() {
             backgroundBlur = true,
             size = null,
         ),
+        state = state,
+        onClick = { },
     )
 
     LoadedPaywallComponents(
