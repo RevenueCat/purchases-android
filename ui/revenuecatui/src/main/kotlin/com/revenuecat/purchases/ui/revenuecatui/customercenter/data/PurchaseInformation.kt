@@ -19,7 +19,6 @@ import java.util.Locale
 internal class PurchaseInformation(
     val title: String?,
     val durationTitle: String?,
-    val explanation: Explanation,
     val pricePaid: PriceDetails,
     val renewalDate: String?,
     val expirationDate: String?,
@@ -43,21 +42,6 @@ internal class PurchaseInformation(
         title = subscribedProduct?.title ?: transaction.productIdentifier,
         durationTitle = subscribedProduct?.period?.localizedUnitPeriod(locale)?.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(locale) else it.toString()
-        },
-        explanation = entitlementInfo?.explanation() ?: when (transaction) {
-            is TransactionDetails.Subscription -> {
-                if (transaction.expiresDate != null) {
-                    if (transaction.isActive) {
-                        if (transaction.willRenew) Explanation.EARLIEST_RENEWAL else Explanation.EARLIEST_EXPIRATION
-                    } else {
-                        Explanation.EXPIRED
-                    }
-                } else {
-                    Explanation.LIFETIME
-                }
-            }
-
-            is TransactionDetails.NonSubscription -> Explanation.LIFETIME
         },
         renewalDate = entitlementInfo?.renewalDate(dateFormatter, locale)
             ?: transaction.renewalDate(dateFormatter, locale),
@@ -128,25 +112,6 @@ private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): P
         PriceDetails.Free
     } else {
         PriceDetails.Unknown
-    }
-}
-
-private fun EntitlementInfo.explanation(): Explanation {
-    return when (store) {
-        Store.APP_STORE, Store.MAC_APP_STORE -> Explanation.APPLE
-        Store.PLAY_STORE -> explanationForPlayStore()
-        Store.STRIPE, Store.RC_BILLING, Store.PADDLE -> Explanation.WEB
-        Store.PROMOTIONAL -> Explanation.PROMOTIONAL
-        Store.EXTERNAL, Store.UNKNOWN_STORE -> Explanation.OTHER_STORE_PURCHASE
-        Store.AMAZON -> Explanation.AMAZON
-    }
-}
-
-private fun EntitlementInfo.explanationForPlayStore(): Explanation {
-    return when {
-        expirationDate == null -> Explanation.LIFETIME
-        isActive -> if (willRenew) Explanation.EARLIEST_RENEWAL else Explanation.EARLIEST_EXPIRATION
-        else -> Explanation.EXPIRED
     }
 }
 
@@ -222,16 +187,4 @@ internal sealed class PriceDetails {
     object Free : PriceDetails()
     data class Paid(val price: String) : PriceDetails()
     object Unknown : PriceDetails()
-}
-
-internal enum class Explanation {
-    APPLE,
-    PROMOTIONAL,
-    WEB,
-    OTHER_STORE_PURCHASE,
-    AMAZON,
-    EARLIEST_RENEWAL,
-    EARLIEST_EXPIRATION,
-    EXPIRED,
-    LIFETIME,
 }
