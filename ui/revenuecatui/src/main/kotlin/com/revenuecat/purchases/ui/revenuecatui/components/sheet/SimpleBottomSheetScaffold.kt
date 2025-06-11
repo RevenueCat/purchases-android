@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.sheet
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,6 +30,8 @@ internal fun SimpleBottomSheetScaffold(
 
         if (sheetState.visible) {
             sheetState.sheet?.also { sheet ->
+                BackHandler { sheetState.hide() }
+
                 val backgroundStyle = sheet.background?.let { rememberBackgroundStyle(background = it) }
 
                 ComponentView(
