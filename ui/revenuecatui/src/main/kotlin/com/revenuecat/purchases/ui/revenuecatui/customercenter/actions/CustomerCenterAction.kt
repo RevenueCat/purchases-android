@@ -1,11 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.actions
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal sealed class CustomerCenterAction {
     data class PathButtonPressed(
         val path: CustomerCenterConfigData.HelpPath,

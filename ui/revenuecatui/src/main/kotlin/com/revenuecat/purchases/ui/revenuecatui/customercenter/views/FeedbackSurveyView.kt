@@ -70,7 +70,6 @@ internal fun FeedbackSurveyButtonsView(
 }
 
 @JvmSynthetic
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true)
 @Composable
 internal fun FeedbackSurveyPreview() {

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -22,7 +21,6 @@ internal sealed class CustomerCenterState(
         val error: PurchasesError,
     ) : CustomerCenterState()
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     data class Success(
         @get:JvmSynthetic val customerCenterConfigData: CustomerCenterConfigData,
         @get:JvmSynthetic val purchaseInformation: PurchaseInformation? = null,
@@ -35,7 +33,6 @@ internal sealed class CustomerCenterState(
     ) : CustomerCenterState(navigationButtonType)
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class FeedbackSurveyData(
     @get:JvmSynthetic val feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
     @get:JvmSynthetic val onAnswerSubmitted: (
@@ -43,7 +40,6 @@ internal data class FeedbackSurveyData(
     ) -> Unit,
 )
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class PromotionalOfferData(
     @get:JvmSynthetic val configuredPromotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
     @get:JvmSynthetic val subscriptionOption: SubscriptionOption,

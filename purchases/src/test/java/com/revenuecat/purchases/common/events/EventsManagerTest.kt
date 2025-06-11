@@ -33,7 +33,6 @@ import java.io.File
 import java.util.Date
 import java.util.UUID
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class EventsManagerTest {
 
