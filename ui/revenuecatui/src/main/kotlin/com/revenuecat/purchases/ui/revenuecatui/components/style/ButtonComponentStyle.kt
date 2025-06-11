@@ -36,6 +36,8 @@ internal data class ButtonComponentStyle(
                     @get:JvmSynthetic val urls: NonEmptyMap<LocaleId, String>,
                     @get:JvmSynthetic val method: ButtonComponent.UrlMethod,
                 ) : Destination
+
+                @Immutable
                 data class Sheet(
                     @get:JvmSynthetic val id: String,
                     @get:JvmSynthetic val name: String?,

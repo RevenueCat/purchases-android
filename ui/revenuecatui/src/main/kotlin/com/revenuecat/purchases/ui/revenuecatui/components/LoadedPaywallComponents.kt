@@ -44,7 +44,12 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.sheet.SimpleBottomSheetScaffold
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
@@ -68,28 +73,39 @@ internal fun LoadedPaywallComponents(
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
         when (action) {
             is PaywallAction.External -> clickHandler(action)
-            is PaywallAction.Internal -> TODO()
+            is PaywallAction.Internal -> when (action) {
+                is PaywallAction.Internal.NavigateTo -> when (action.destination) {
+                    is PaywallAction.Internal.NavigateTo.Destination.Sheet -> state.sheet.show(action.destination.sheet)
+                }
+            }
         }
     }
 
-    Column(modifier = modifier.background(background)) {
-        ComponentView(
-            style = style,
-            state = state,
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
-        )
-        footerComponentStyle?.let {
+    SimpleBottomSheetScaffold(
+        sheetState = state.sheet,
+        state = state,
+        onClick = onClick,
+        modifier = modifier.background(background),
+    ) {
+        Column {
             ComponentView(
-                style = it,
+                style = style,
                 state = state,
                 onClick = onClick,
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
             )
+            footerComponentStyle?.let {
+                ComponentView(
+                    style = it,
+                    state = state,
+                    onClick = onClick,
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -175,6 +191,46 @@ private fun LoadedPaywallComponents_Preview() {
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
     )
+
+    state.sheet.show(
+        ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
+            id = "",
+            name = "",
+            stack = previewStackComponentStyle(
+                children = listOf(
+                    previewTextComponentStyle(
+                        text = "This is a bottom sheet.",
+                    ),
+                    previewTextComponentStyle(
+                        text = "This is a bottom sheet.",
+                    ),
+                    previewTextComponentStyle(
+                        text = "This is a bottom sheet.",
+                    ),
+                ),
+                background = BackgroundStyles.Color(
+                    color = ColorStyles(light = ColorStyle.Solid(Color.White)),
+                ),
+                border = null,
+                shape = Shape.Rectangle(
+                    corners = CornerRadiuses.Dp(
+                        topLeading = 16.0,
+                        topTrailing = 16.0,
+                        bottomLeading = 0.0,
+                        bottomTrailing = 0.0,
+                    ),
+                ),
+            ),
+            background = BackgroundStyles.Color(
+                ColorStyles(
+                    light = ColorStyle.Solid(Color.Transparent),
+                ),
+            ),
+            backgroundBlur = true,
+            size = null,
+        ),
+    )
+
     LoadedPaywallComponents(
         state = state,
         clickHandler = { },

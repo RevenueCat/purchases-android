@@ -19,6 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.sheet.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
@@ -91,6 +92,7 @@ internal sealed interface PaywallState {
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
+            initialSheetState: SimpleSheetState = SimpleSheetState(),
         ) : Loaded {
 
             data class AvailablePackages(
@@ -179,6 +181,8 @@ internal sealed interface PaywallState {
 
             var actionInProgress by mutableStateOf(false)
                 private set
+
+            val sheet = initialSheetState
 
             fun update(
                 localeList: FrameworkLocaleList? = null,
