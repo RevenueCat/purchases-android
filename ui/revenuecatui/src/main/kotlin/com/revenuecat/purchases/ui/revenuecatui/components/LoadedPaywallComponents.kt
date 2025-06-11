@@ -55,7 +55,7 @@ import java.util.Date
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
-    clickHandler: suspend (PaywallAction) -> Unit,
+    clickHandler: suspend (PaywallAction.External) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
@@ -65,11 +65,18 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
 
+    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
+        when (action) {
+            is PaywallAction.External -> clickHandler(action)
+            is PaywallAction.Internal -> TODO()
+        }
+    }
+
     Column(modifier = modifier.background(background)) {
         ComponentView(
             style = style,
             state = state,
-            onClick = clickHandler,
+            onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -79,7 +86,7 @@ internal fun LoadedPaywallComponents(
             ComponentView(
                 style = it,
                 state = state,
-                onClick = clickHandler,
+                onClick = onClick,
                 modifier = Modifier
                     .fillMaxWidth(),
             )
