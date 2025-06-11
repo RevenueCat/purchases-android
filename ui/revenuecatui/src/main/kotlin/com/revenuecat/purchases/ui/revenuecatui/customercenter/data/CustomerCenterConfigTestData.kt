@@ -125,7 +125,6 @@ internal object CustomerCenterConfigTestData {
 
     val purchaseInformationMonthlyRenewing = PurchaseInformation(
         title = "Basic",
-        durationTitle = "1 Month",
         pricePaid = PriceDetails.Paid("$4.99"),
         expirationDate = null,
         renewalDate = "June 1st, 2024",
@@ -147,7 +146,6 @@ internal object CustomerCenterConfigTestData {
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
         title = "Basic",
-        durationTitle = "1 Year",
         pricePaid = PriceDetails.Paid("$40.99"),
         expirationDate = "June 1st, 2024",
         renewalDate = null,
@@ -169,7 +167,6 @@ internal object CustomerCenterConfigTestData {
 
     val purchaseInformationLifetime = PurchaseInformation(
         title = "Lifetime",
-        durationTitle = null,
         pricePaid = PriceDetails.Paid("$100.99"),
         expirationDate = null,
         renewalDate = null,

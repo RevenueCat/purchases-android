@@ -190,7 +190,6 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
     override val values: Sequence<PurchaseInformation> = sequenceOf(
         PurchaseInformation(
             title = "Basic",
-            durationTitle = "Monthly",
             pricePaid = PriceDetails.Paid("$4.99"),
             expirationDate = null,
             renewalDate = "June 1st, 2024",
@@ -211,7 +210,6 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
         ),
         PurchaseInformation(
             title = "Basic",
-            durationTitle = "Yearly",
             pricePaid = PriceDetails.Paid("$49.99"),
             expirationDate = "June 1st, 2024",
             renewalDate = null,
@@ -232,7 +230,6 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
         ),
         PurchaseInformation(
             title = "Basic",
-            durationTitle = "Weekly",
             pricePaid = PriceDetails.Paid("$1.99"),
             expirationDate = "June 1st, 2024",
             renewalDate = null,
@@ -253,7 +250,6 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
         ),
         PurchaseInformation(
             title = "Monthly long subscription name that overflows",
-            durationTitle = "Weekly",
             pricePaid = PriceDetails.Paid("$1.99"),
             expirationDate = "June 1st, 2024",
             renewalDate = null,

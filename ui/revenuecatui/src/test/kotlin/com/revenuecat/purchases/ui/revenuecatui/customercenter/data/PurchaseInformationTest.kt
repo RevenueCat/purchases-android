@@ -78,7 +78,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "Monthly Product",
-            durationTitle = "Month",
             price = PriceDetails.Paid("$1.99"),
 //            expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
@@ -133,7 +132,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "Monthly Product",
-            durationTitle = "Month",
             price = PriceDetails.Paid("$1.99"),
 //            expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
@@ -188,7 +186,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "Monthly Product",
-            durationTitle = "Month",
             price = PriceDetails.Paid("$1.99"),
 ////            expirationDateString = "2 Oct 2063",
             store = Store.PLAY_STORE,
@@ -234,7 +231,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "test_product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -279,7 +275,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "test_product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -324,7 +319,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "test_product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -369,7 +363,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "rc_promo_pro_cat_yearly",
-            durationTitle = null,
             price = PriceDetails.Free,
             store = Store.PROMOTIONAL,
             product = null,
@@ -414,7 +407,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "rc_promo_pro_cat_yearly",
-            durationTitle = null,
             price = PriceDetails.Free,
             store = Store.PROMOTIONAL,
             product = null,
@@ -459,7 +451,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "com.revenuecat.product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
@@ -504,7 +495,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "com.revenuecat.product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
@@ -549,7 +539,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "com.revenuecat.product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
 //            expirationDateString = "3 Oct 2063",
             store = Store.STRIPE,
@@ -595,7 +584,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "com.revenuecat.product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
@@ -640,7 +628,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "com.revenuecat.product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
 //            expirationDateString = "3 Oct 2063",
             store = Store.PADDLE,
@@ -686,7 +673,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "com.revenuecat.product",
-            durationTitle = null,
             price = PriceDetails.Unknown,
 //            expirationDateString = "3 Oct 2063",
             store = Store.PADDLE,
@@ -742,7 +728,6 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "Monthly Product",
-            durationTitle = "Month",
             price = PriceDetails.Paid("$1.99"),
 //            expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
@@ -760,7 +745,6 @@ class PurchaseInformationTest {
     private fun assertPurchaseInformation(
         purchaseInformation: PurchaseInformation,
         title: String?,
-        durationTitle: String?,
         price: PriceDetails,
         product: StoreProduct?,
         store: Store,
@@ -772,7 +756,6 @@ class PurchaseInformationTest {
         expirationDate: String? = null,
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
-        assertThat(purchaseInformation.durationTitle).isEqualTo(durationTitle)
         assertThat(purchaseInformation.pricePaid).isEqualTo(price)
         assertThat(purchaseInformation.isLifetime).isEqualTo(isLifetime)
         assertThat(purchaseInformation.product).isEqualTo(product)

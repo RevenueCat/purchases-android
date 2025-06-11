@@ -10,7 +10,6 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
-import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import java.util.Locale
@@ -18,7 +17,6 @@ import java.util.Locale
 @Suppress("LongParameterList")
 internal class PurchaseInformation(
     val title: String?,
-    val durationTitle: String?,
     val pricePaid: PriceDetails,
     val renewalDate: String?,
     val expirationDate: String?,
@@ -40,9 +38,6 @@ internal class PurchaseInformation(
         locale: Locale,
     ) : this(
         title = subscribedProduct?.title ?: transaction.productIdentifier,
-        durationTitle = subscribedProduct?.period?.localizedUnitPeriod(locale)?.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(locale) else it.toString()
-        },
         renewalDate = entitlementInfo?.renewalDate(dateFormatter, locale)
             ?: transaction.renewalDate(dateFormatter, locale),
         expirationDate = entitlementInfo?.expirationDate(dateFormatter, locale)
