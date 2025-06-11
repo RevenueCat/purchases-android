@@ -6,7 +6,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import dev.drewhamilton.poko.Poko
 
 /**
- * An action that can be performed by the paywall. It is split in
+ * An action that can be performed by the paywall. It is split in Internal and External, which indicates whether the
+ * action can be performed by the paywall itself, or whether it needs some other component to do it.
  */
 internal sealed interface PaywallAction {
     sealed interface Internal : PaywallAction {
