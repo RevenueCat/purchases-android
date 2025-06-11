@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -26,7 +25,6 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.Explanation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
@@ -187,21 +185,6 @@ internal enum class ButtonPosition {
     LAST,
 }
 
-private object PurchaseInformationCardConstants {
-    val ROUNDED_CORNER_SIZE = 24.dp
-    val MIDDLE_CORNER_SIZE = 4.dp
-    val BADGE_CORNER_SIZE = 4.dp
-    val CARD_PADDING = 24.dp
-    val TITLE_ROW_BOTTOM_PADDING = 4.dp
-    val BADGE_HORIZONTAL_PADDING = 8.dp
-    val BADGE_VERTICAL_PADDING = 2.dp
-    const val BADGE_CANCELLED = 0x33F2545B
-    const val BADGE_FREE_TRIAL = 0x5BF5CA5C
-    const val BADGE_ACTIVE = 0x9911D483
-}
-
-private const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
-
 @Suppress("MagicNumber")
 private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInformation> {
     override val values: Sequence<PurchaseInformation> = sequenceOf(
@@ -209,11 +192,10 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
             title = "Basic",
             durationTitle = "Monthly",
             pricePaid = PriceDetails.Paid("$4.99"),
-            explanation = Explanation.EARLIEST_RENEWAL,
             expirationDate = null,
             renewalDate = "June 1st, 2024",
             store = Store.PLAY_STORE,
-            managementURL = Uri.parse(MANAGEMENT_URL),
+            managementURL = Uri.parse(CustomerCenterConstants.Management.MANAGEMENT_URL),
             product = TestStoreProduct(
                 "basic_monthly",
                 "name",
@@ -231,11 +213,10 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
             title = "Basic",
             durationTitle = "Yearly",
             pricePaid = PriceDetails.Paid("$49.99"),
-            explanation = Explanation.EARLIEST_EXPIRATION,
             expirationDate = "June 1st, 2024",
             renewalDate = null,
             store = Store.PLAY_STORE,
-            managementURL = Uri.parse(MANAGEMENT_URL),
+            managementURL = Uri.parse(CustomerCenterConstants.Management.MANAGEMENT_URL),
             product = TestStoreProduct(
                 "basic_yearly",
                 "name",
@@ -253,11 +234,10 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
             title = "Basic",
             durationTitle = "Weekly",
             pricePaid = PriceDetails.Paid("$1.99"),
-            explanation = Explanation.EXPIRED,
             expirationDate = "June 1st, 2024",
             renewalDate = null,
             store = Store.PLAY_STORE,
-            managementURL = Uri.parse(MANAGEMENT_URL),
+            managementURL = Uri.parse(CustomerCenterConstants.Management.MANAGEMENT_URL),
             product = TestStoreProduct(
                 "basic_weekly",
                 "name",
@@ -275,11 +255,10 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
             title = "Monthly long subscription name that overflows",
             durationTitle = "Weekly",
             pricePaid = PriceDetails.Paid("$1.99"),
-            explanation = Explanation.EXPIRED,
             expirationDate = "June 1st, 2024",
             renewalDate = null,
             store = Store.PLAY_STORE,
-            managementURL = Uri.parse(MANAGEMENT_URL),
+            managementURL = Uri.parse(CustomerCenterConstants.Management.MANAGEMENT_URL),
             product = TestStoreProduct(
                 "basic_weekly",
                 "name",
