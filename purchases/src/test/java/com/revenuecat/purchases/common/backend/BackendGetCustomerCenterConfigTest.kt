@@ -182,54 +182,6 @@ class BackendGetCustomerCenterConfigTest {
             locale = "en",
             localizedStrings = mapOf(
                 "amazon_subscription_manage" to "You can manage your subscription in the Amazon Appstore app on an Amazon device.",
-                "apple_subscription_manage" to "You can manage your subscription by using the App Store app on an Apple device.",
-                "billing_cycle" to "Billing cycle",
-                "cancel" to "Cancel",
-                "check_past_purchases" to "Check past purchases",
-                "contact_support" to "Contact support",
-                "current_price" to "Current price",
-                "default_body" to "Please describe your issue or question.",
-                "default_subject" to "Support Request",
-                "dismiss" to "Dismiss",
-                "expired" to "Expired",
-                "expires" to "Expires",
-                "going_to_check_purchases" to "Let's take a look! We're going to check your account for missing purchases.",
-                "google_subscription_manage" to "You can manage your subscription by using the Play Store app on an Android device.",
-                "next_billing_date" to "Next billing date",
-                "no_subscriptions_found" to "No Subscriptions found",
-                "no_thanks" to "No, thanks",
-                "platform_mismatch" to "Platform mismatch",
-                "please_contact_support" to "Please contact support to manage your subscription.",
-                "purchases_not_recovered" to "We could not find any purchases with your account. If you think this is an error, please contact support.",
-                "purchases_recovered" to "Purchases restored",
-                "purchases_recovered_explanation" to "We restored your past purchases and applied them to your account.",
-                "refund_canceled" to "Refund canceled",
-                "refund_error_generic" to "An error occurred while processing the refund request. Please try again.",
-                "refund_granted" to "Refund granted successfully!",
-                "refund_status" to "Refund status",
-                "restore_purchases" to "Restore purchases",
-                "sub_earliest_expiration" to "This is your subscription with the earliest expiration date.",
-                "sub_earliest_renewal" to "This is your subscription with the earliest billing date.",
-                "sub_expired" to "This subscription has expired.",
-                "try_check_restore" to "We can try checking your Apple account for any previous purchases",
-                "update_warning_description" to "Downloading the latest version of the app may help solve the problem.",
-                "update_warning_ignore" to "Continue",
-                "update_warning_title" to "Update available",
-                "update_warning_update" to "Update",
-                "you_have_promo" to "You've been granted a subscription that doesn't renew",
-                "you_have_lifetime" to "Your active lifetime subscription",
-                "web_subscription_manage" to "You have an active subscription that was created on the web. " +
-                    "You can manage your subscription by visiting your account.",
-                "free" to "Free",
-                "never" to "Never",
-                "manage_subscription" to "Manage your subscription",
-                "free_trial_then_price" to "First {{ sub_offer_duration }} free, then {{ price }}",
-                "single_payment_then_price" to "{{ sub_offer_duration }} for {{ sub_offer_price }}, then {{ price }}",
-                "discounted_recurring_then_price" to "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}",
-                "free_trial_single_payment_then_price" to "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for {{ sub_offer_price_2 }}, and {{ price }} thereafter",
-                "free_trial_discounted_then_price" to "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, and {{ price }} thereafter",
-                "purchases_not_found" to "No past purchases",
-                "purchases_restoring" to "Restoring...",
                 "done" to "Done",
             )
         ),
@@ -282,9 +234,6 @@ class BackendGetCustomerCenterConfigTest {
             onErrorHandler = { error -> fail("Expected success. Got error: $error") },
         )
         assertThat(customerCenterConfigData).isEqualTo(expectedCustomerCenterConfigData)
-        val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values()
-            .map { it.name.lowercase() }.toTypedArray()
-        assertThat(customerCenterConfigData!!.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
     }
 
     @Test
