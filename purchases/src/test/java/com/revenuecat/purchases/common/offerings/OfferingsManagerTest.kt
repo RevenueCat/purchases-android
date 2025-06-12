@@ -333,7 +333,7 @@ class OfferingsManagerTest {
 
         assertThat(purchasesError).isNotNull
         verify(exactly = 1) {
-            cache.clearOfferingsCacheTimestamp()
+            cache.forceCacheStale()
         }
     }
 
@@ -395,7 +395,7 @@ class OfferingsManagerTest {
         )
 
         assertThat(receivedError).isEqualTo(expectedError)
-        verify(exactly = 1) { cache.clearOfferingsCacheTimestamp() }
+        verify(exactly = 1) { cache.forceCacheStale() }
     }
 
     // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
@@ -426,7 +426,7 @@ class OfferingsManagerTest {
 
         assertThat(receivedError).isEqualTo(expectedError)
 
-        verify(exactly = 1) { cache.clearOfferingsCacheTimestamp() }
+        verify(exactly = 1) { cache.forceCacheStale() }
     }
 
     // endregion getOfferings
@@ -781,7 +781,7 @@ class OfferingsManagerTest {
         if (wasSuccessful) {
             every { cache.cacheOfferings(any(), any()) } just Runs
         } else {
-            every { cache.clearOfferingsCacheTimestamp() } just Runs
+            every { cache.forceCacheStale() } just Runs
         }
     }
 
