@@ -55,7 +55,7 @@ data class CustomerInfo(
 
     @IgnoredOnParcel
     @ExperimentalPreviewRevenueCatPurchasesAPI
-    var virtualCurrencies: Map<String, VirtualCurrencyInfo> = emptyMap()
+    var virtualCurrencies: Map<String, VirtualCurrency> = emptyMap()
         private set
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -69,7 +69,7 @@ data class CustomerInfo(
         originalAppUserId: String,
         managementURL: Uri?,
         originalPurchaseDate: Date?,
-        virtualCurrencies: Map<String, VirtualCurrencyInfo>,
+        virtualCurrencies: Map<String, VirtualCurrency>,
         jsonObject: JSONObject,
     ) : this(
         entitlements = entitlements,

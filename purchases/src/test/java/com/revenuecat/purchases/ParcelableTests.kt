@@ -49,7 +49,7 @@ class ParcelableTests {
             managementURL = Uri.parse("https://management.com"),
             originalPurchaseDate = Date(System.currentTimeMillis()),
             virtualCurrencies =  mapOf(
-                Pair("COIN", VirtualCurrencyInfo(balance = 100))
+                Pair("COIN", VirtualCurrency(balance = 100))
             )
         )
     )
@@ -99,9 +99,9 @@ class ParcelableTests {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `VirtualCurrencyInfo is Parcelable`() {
+    fun `VirtualCurrency is Parcelable`() {
         testParcelization(
-            VirtualCurrencyInfo(
+            VirtualCurrency(
                 balance = 100
             )
         )

@@ -5,7 +5,7 @@ import android.net.Uri;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementInfos;
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
-import com.revenuecat.purchases.VirtualCurrencyInfo;
+import com.revenuecat.purchases.VirtualCurrency;
 import com.revenuecat.purchases.models.Transaction;
 
 import java.util.Date;
@@ -41,6 +41,6 @@ final class CustomerInfoAPI {
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
     static void checkExperimental(final CustomerInfo customerInfo) {
-        final Map<String, VirtualCurrencyInfo> vcs = customerInfo.getVirtualCurrencies();
+        final Map<String, VirtualCurrency> vcs = customerInfo.getVirtualCurrencies();
     }
 }

@@ -4,7 +4,7 @@ import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.VirtualCurrencyInfo
+import com.revenuecat.purchases.VirtualCurrency
 import com.revenuecat.purchases.models.Transaction
 import java.util.Date
 
@@ -37,7 +37,7 @@ private class CustomerInfoAPI {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun checkExperimental(customerInfo: CustomerInfo) {
         with(customerInfo) {
-            val virtualCurrencies: Map<String, VirtualCurrencyInfo> = virtualCurrencies
+            val virtualCurrencies: Map<String, VirtualCurrency> = virtualCurrencies
         }
     }
 }

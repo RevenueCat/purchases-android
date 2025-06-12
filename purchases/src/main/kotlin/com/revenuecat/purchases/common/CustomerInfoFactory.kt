@@ -6,7 +6,7 @@ import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.VirtualCurrencyInfo
+import com.revenuecat.purchases.VirtualCurrency
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
@@ -87,10 +87,10 @@ internal object CustomerInfoFactory {
             CustomerInfoResponseJsonKeys.VIRTUAL_CURRENCIES,
         ) ?: JSONObject()
 
-        val virtualCurrencies = buildMap<String, VirtualCurrencyInfo> {
+        val virtualCurrencies = buildMap<String, VirtualCurrency> {
             virtualCurrenciesObject.keys().forEach { currencyId ->
                 val currencyJson = virtualCurrenciesObject.getJSONObject(currencyId)
-                put(currencyId, VirtualCurrencyInfo.fromJson(currencyJson))
+                put(currencyId, VirtualCurrency.fromJson(currencyJson))
             }
         }
 
