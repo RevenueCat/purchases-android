@@ -245,27 +245,27 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
 }
 
 @Composable
-private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction) -> Unit {
+private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
     return remember(viewModel) {
         {
                 action ->
             when (action) {
-                is PaywallAction.RestorePurchases -> viewModel.handleRestorePurchases()
-                is PaywallAction.PurchasePackage ->
+                is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
+                is PaywallAction.External.PurchasePackage ->
                     if (activity == null) {
                         Logger.e("Activity is null, not initiating package purchase")
                     } else {
                         viewModel.handlePackagePurchase(activity)
                     }
 
-                is PaywallAction.NavigateBack -> viewModel.closePaywall()
-                is PaywallAction.NavigateTo -> when (val destination = action.destination) {
-                    is PaywallAction.NavigateTo.Destination.CustomerCenter ->
+                is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
+                is PaywallAction.External.NavigateTo -> when (val destination = action.destination) {
+                    is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
                         Logger.w("Customer Center is not yet implemented on Android.")
 
-                    is PaywallAction.NavigateTo.Destination.Url -> context.handleUrlDestination(
+                    is PaywallAction.External.NavigateTo.Destination.Url -> context.handleUrlDestination(
                         url = destination.url,
                         method = destination.method,
                     )

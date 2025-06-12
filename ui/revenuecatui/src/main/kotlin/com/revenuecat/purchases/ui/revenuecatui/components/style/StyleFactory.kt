@@ -415,7 +415,7 @@ internal class StyleFactory(
         component: ButtonComponent,
     ): Result<ButtonComponentStyle?, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = createStackComponentStyle(component.stack),
-        second = component.action.toButtonComponentStyleAction(),
+        second = convertAction(component.action),
     ) { stack, action ->
         action?.let {
             ButtonComponentStyle(
@@ -477,11 +477,13 @@ internal class StyleFactory(
     }
 
     @Suppress("MaxLineLength")
-    private fun ButtonComponent.Action.toButtonComponentStyleAction(): Result<ButtonComponentStyle.Action?, NonEmptyList<PaywallValidationError>> {
-        return when (this) {
+    private fun StyleFactoryScope.convertAction(
+        action: ButtonComponent.Action,
+    ): Result<ButtonComponentStyle.Action?, NonEmptyList<PaywallValidationError>> {
+        return when (action) {
             is ButtonComponent.Action.NavigateBack -> Result.Success(ButtonComponentStyle.Action.NavigateBack)
             is ButtonComponent.Action.RestorePurchases -> Result.Success(ButtonComponentStyle.Action.RestorePurchases)
-            is ButtonComponent.Action.NavigateTo -> destination.toPaywallDestination()
+            is ButtonComponent.Action.NavigateTo -> convertDestination(action.destination)
                 .map { destination -> destination?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Action.Unknown -> Result.Success(null)
@@ -489,16 +491,43 @@ internal class StyleFactory(
     }
 
     @Suppress("MaxLineLength")
-    private fun ButtonComponent.Destination.toPaywallDestination(): Result<ButtonComponentStyle.Action.NavigateTo.Destination?, NonEmptyList<PaywallValidationError>> =
+    private fun StyleFactoryScope.convertDestination(
+        destination: ButtonComponent.Destination,
+    ): Result<ButtonComponentStyle.Action.NavigateTo.Destination?, NonEmptyList<PaywallValidationError>> =
 
-        when (this) {
+        when (destination) {
             is ButtonComponent.Destination.CustomerCenter -> Result.Success(
                 ButtonComponentStyle.Action.NavigateTo.Destination.CustomerCenter,
             )
 
-            is ButtonComponent.Destination.PrivacyPolicy -> buttonComponentStyleUrlDestination(urlLid, method)
-            is ButtonComponent.Destination.Terms -> buttonComponentStyleUrlDestination(urlLid, method)
-            is ButtonComponent.Destination.Url -> buttonComponentStyleUrlDestination(urlLid, method)
+            is ButtonComponent.Destination.PrivacyPolicy -> buttonComponentStyleUrlDestination(
+                destination.urlLid,
+                destination.method,
+            )
+            is ButtonComponent.Destination.Terms -> buttonComponentStyleUrlDestination(
+                destination.urlLid,
+                destination.method,
+            )
+            is ButtonComponent.Destination.Url -> buttonComponentStyleUrlDestination(
+                destination.urlLid,
+                destination.method,
+            )
+            is ButtonComponent.Destination.Sheet ->
+                zipOrAccumulate(
+                    first = createStackComponentStyle(destination.stack),
+                    second = destination.background
+                        ?.toBackgroundStyles(colorAliases)
+                        .orSuccessfullyNull(),
+                ) { stackComponentStyle, background ->
+                    ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
+                        id = destination.id,
+                        name = destination.name,
+                        stack = stackComponentStyle,
+                        background = background,
+                        backgroundBlur = destination.backgroundBlur,
+                        size = destination.size,
+                    )
+                }
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Destination.Unknown,
             is ButtonComponent.Destination.Sheet,
