@@ -425,15 +425,6 @@ data class CustomerCenterConfigData(
             NO_ACTIVE,
             UNKNOWN,
         }
-
-        val supportedPaths: List<HelpPath> by lazy {
-            val androidSupportedPathTypes = setOf(
-                HelpPath.PathType.MISSING_PURCHASE,
-                HelpPath.PathType.CANCEL,
-                HelpPath.PathType.CUSTOM_URL,
-            )
-            paths.filter { it.type in androidSupportedPathTypes }
-        }
     }
 
     @Serializable
