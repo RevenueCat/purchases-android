@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.revenuecat.paywallstester.ui.screens.main.paywalls
 
 import android.app.Activity
@@ -21,7 +23,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -48,7 +54,9 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 private class TestAppPurchaseLogicSuspend : PurchaseLogic {
 
-    companion object { private const val TAG = "PaywallTester" }
+    companion object {
+        private const val TAG = "PaywallTester"
+    }
 
     override suspend fun performPurchase(
         activity: Activity,
@@ -72,7 +80,9 @@ private class TestAppPurchaseLogicSuspend : PurchaseLogic {
 
 private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
 
-    companion object { private const val TAG = "PaywallTester" }
+    companion object {
+        private const val TAG = "PaywallTester"
+    }
 
     override fun performPurchaseWithCompletion(
         activity: Activity,
@@ -115,7 +125,11 @@ fun PaywallsScreen(
         }
     }
 
-    LazyColumn {
+    LazyColumn(
+        modifier = Modifier.semantics {
+            testTagsAsResourceId = true
+        },
+    ) {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -125,6 +139,7 @@ fun PaywallsScreen(
                     modifier = Modifier.padding(8.dp),
                 )
                 ButtonWithEmoji(
+                    modifier = Modifier.testTag("full_screen"),
                     onClick = {
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
@@ -231,6 +246,7 @@ private sealed class DisplayPaywallState {
         val fontProvider: FontProvider? = null,
         var purchaseLogic: PurchaseLogic? = null,
     ) : DisplayPaywallState()
+
     data class Footer(
         val offering: Offering? = null,
         val condensed: Boolean = false,
@@ -243,10 +259,11 @@ private fun ButtonWithEmoji(
     emoji: String,
     label: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
     Button(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
         onClick = onClick,

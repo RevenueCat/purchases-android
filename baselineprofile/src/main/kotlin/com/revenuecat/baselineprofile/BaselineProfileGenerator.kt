@@ -3,9 +3,16 @@ package com.revenuecat.baselineprofile
 import androidx.benchmark.macro.junit4.BaselineProfileRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.Until
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+
+internal const val TIMEOUT = 15_000L
 
 /**
  * This test class generates a basic startup baseline profile for the target package.
@@ -47,10 +54,26 @@ class BaselineProfileGenerator {
         ) {
             // This block defines the app's critical user journey. Here we are interested in
             // optimizing for app startup. But you can also navigate and scroll through your most important UI.
+            device.apply {
+                waitAndFindObject(By.res("full_screen"), TIMEOUT).click()
+                waitForIdle()
+            }
 
             // Start default activity for your app
             pressHome()
             startActivityAndWait()
         }
+    }
+
+    /**
+     * Waits until an object with [selector] if visible on screen and returns the object.
+     * If the element is not available in [timeout], throws [AssertionError]
+     */
+    internal fun UiDevice.waitAndFindObject(selector: BySelector, timeout: Long = TIMEOUT): UiObject2 {
+        if (!wait(Until.hasObject(selector), timeout)) {
+            throw AssertionError("Element not found on screen in ${timeout}ms (selector=$selector)")
+        }
+
+        return findObject(selector)
     }
 }

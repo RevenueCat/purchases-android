@@ -234,6 +234,7 @@ tasks.dokkaHtmlPartial.configure {
 }
 
 baselineProfile {
+    mergeIntoMain = true
     baselineProfileOutputDir = "."
     filter {
         include("com.revenuecat.purchases.**")
