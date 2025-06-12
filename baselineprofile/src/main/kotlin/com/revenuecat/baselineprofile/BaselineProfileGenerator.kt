@@ -40,7 +40,7 @@ class BaselineProfileGenerator {
     @Test
     fun generate() {
         baselineProfileRule.collect(
-            packageName = "com.revenuecat.paywallstester",
+            packageName = Constants.PACKAGE_NAME,
             stableIterations = 2,
             maxIterations = 8,
             includeInStartupProfile = true,

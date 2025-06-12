@@ -25,13 +25,14 @@ android {
         minSdk = 28
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        missingDimensionStrategy("apis", "defaults")
     }
 
     buildTypes {
         // This benchmark buildType is used for benchmarking, and should function like your
         // release build (for example, with minification on). It's signed with a debug key
         // for easy local/CI testing.
-        create("benchmark") {
+        create("release") {
             // Keep the build type debuggable so we can attach a debugger if needed.
             isDebuggable = true
             isMinifyEnabled = false
@@ -74,14 +75,4 @@ dependencies {
     implementation(libs.androidx.test.espresso.core)
     implementation(libs.androidx.uiautomator)
     implementation(libs.androidx.benchmark.macro.junit4)
-}
-
-androidComponents {
-    onVariants { v ->
-        val artifactsLoader = v.artifacts.getBuiltArtifactsLoader()
-        v.instrumentationRunnerArguments.put(
-            "targetAppId",
-            v.testedApks.map { artifactsLoader.load(it)?.applicationId },
-        )
-    }
 }

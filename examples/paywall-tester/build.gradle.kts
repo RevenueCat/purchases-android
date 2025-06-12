@@ -34,20 +34,11 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
-            baselineProfile.automaticGenerationDuringBuild = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
             signingConfig = signingConfigs.getByName("release")
-        }
-        create("benchmark") {
-            isDebuggable = true
-            isMinifyEnabled = false
-            isShrinkResources = false
-            signingConfig = signingConfigs.getByName("debug")
-            matchingFallbacks += listOf("release")
-            proguardFiles("benchmark-rules.pro")
         }
     }
 
@@ -106,10 +97,16 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.compose.ui.google.fonts)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.profileinstaller)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
 
-    baselineProfile(project(":baselineprofile"))
+    baselineProfile(project(":baselineprofile")) {
+        attributes {
+            attribute(
+                Attribute.of("com.android.build.api.attributes.ProductFlavor:apis", String::class.java),
+                "defaults",
+            )
+        }
+    }
 }

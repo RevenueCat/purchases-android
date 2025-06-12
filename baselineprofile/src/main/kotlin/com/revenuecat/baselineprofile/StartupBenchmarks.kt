@@ -47,7 +47,7 @@ class StartupBenchmarks {
     private fun benchmark(compilationMode: CompilationMode) {
         // The application id for the running build variant is read from the instrumentation arguments.
         rule.measureRepeated(
-            packageName = InstrumentationRegistry.getArguments().getString("com.revenuecat.paywallstester")
+            packageName = InstrumentationRegistry.getArguments().getString(Constants.PACKAGE_NAME)
                 ?: throw IllegalArgumentException("targetAppId not passed as instrumentation runner arg"),
             metrics = listOf(StartupTimingMetric()),
             compilationMode = compilationMode,
