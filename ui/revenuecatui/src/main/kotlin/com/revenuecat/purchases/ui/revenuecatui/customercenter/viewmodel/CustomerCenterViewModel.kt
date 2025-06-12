@@ -66,7 +66,7 @@ internal interface CustomerCenterViewModel {
     fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
-        product: StoreProduct?,
+        product: PurchaseInformation?,
     )
 
     suspend fun dismissRestoreDialog()
@@ -154,7 +154,7 @@ internal class CustomerCenterViewModelImpl(
     override fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
-        product: StoreProduct?,
+        purchaseInformation: PurchaseInformation?,
     ) {
         notifyListenersForManagementOptionSelected(path)
         path.feedbackSurvey?.let { feedbackSurvey ->
@@ -168,14 +168,14 @@ internal class CustomerCenterViewModelImpl(
                     )
                     notifyListenersForFeedbackSurveyCompleted(it.id)
                     viewModelScope.launch {
-                        handlePromotionalOffer(context, product, it.promotionalOffer, path)
+                        handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path)
                     }
                 }
             })
             return
         }
         viewModelScope.launch {
-            handlePromotionalOffer(context, product, path.promotionalOffer, path)
+            handlePromotionalOffer(context, purchaseInformation?.product, path.promotionalOffer, path)
         }
     }
 
