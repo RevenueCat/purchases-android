@@ -200,9 +200,18 @@ internal class CustomerCenterViewModelImpl(
             CustomerCenterConfigData.HelpPath.PathType.CANCEL -> {
                 when (val currentState = _state.value) {
                     is CustomerCenterState.Success -> {
-                        currentState.purchaseInformation?.product?.let {
+                        if (currentState.purchaseInformation?.product != null) {
                             notifyListenersForManageSubscription()
-                            showManageSubscriptions(context, it.id)
+                            showManageSubscriptions(context, currentState.purchaseInformation.product.id)
+                        } else if (currentState.purchaseInformation?.managementURL != null) {
+                            notifyListenersForManageSubscription()
+                            openURL(
+                                context,
+                                currentState.purchaseInformation.managementURL.toString(),
+                                CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
+                            )
+                        } else {
+                            Logger.e("No product or management URL available for cancel path")
                         }
                     }
 
