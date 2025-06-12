@@ -1,38 +1,33 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = FontWeightDeserializer::class)
 enum class FontWeight {
-    @SerialName("extra_light")
+    // SerialNames are handled by the FontWeightDeserializer.
+
     EXTRA_LIGHT,
-
-    @SerialName("thin")
     THIN,
-
-    @SerialName("light")
     LIGHT,
-
-    @SerialName("regular")
     REGULAR,
-
-    @SerialName("medium")
     MEDIUM,
-
-    @SerialName("semibold")
     SEMI_BOLD,
-
-    @SerialName("bold")
     BOLD,
-
-    @SerialName("extra_bold")
     EXTRA_BOLD,
-
-    @SerialName("black")
     BLACK,
+}
+
+@InternalRevenueCatAPI
+@Serializable(with = FontStyleDeserializer::class)
+enum class FontStyle {
+    // SerialNames are handled by the FontStyleDeserializer.
+
+    NORMAL,
+    ITALIC,
 }
 
 @Deprecated(
@@ -72,3 +67,32 @@ enum class FontSize {
     @SerialName("body_s")
     BODY_S,
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object FontWeightDeserializer : EnumDeserializerWithDefault<FontWeight>(
+    defaultValue = FontWeight.REGULAR,
+    typeForValue = { value ->
+        when (value) {
+            FontWeight.EXTRA_LIGHT -> "extra_light"
+            FontWeight.THIN -> "thin"
+            FontWeight.LIGHT -> "light"
+            FontWeight.REGULAR -> "regular"
+            FontWeight.MEDIUM -> "medium"
+            FontWeight.SEMI_BOLD -> "semibold"
+            FontWeight.BOLD -> "bold"
+            FontWeight.EXTRA_BOLD -> "extra_bold"
+            FontWeight.BLACK -> "black"
+        }
+    },
+)
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object FontStyleDeserializer : EnumDeserializerWithDefault<FontStyle>(
+    defaultValue = FontStyle.NORMAL,
+    typeForValue = { value ->
+        when (value) {
+            FontStyle.NORMAL -> "normal"
+            FontStyle.ITALIC -> "italic"
+        }
+    },
+)

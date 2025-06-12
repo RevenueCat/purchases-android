@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
@@ -23,13 +23,15 @@ internal class AlignmentTests {
                     HorizontalAlignment.TRAILING -> "\"trailing\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_future_unknown_horizontal_alignment\"", HorizontalAlignment.LEADING)
+            )
         }
 
         @Test
         fun `Should properly deserialize HorizontalAlignment`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<HorizontalAlignment>(serialized)
+            val actual = JsonTools.json.decodeFromString<HorizontalAlignment>(serialized)
 
             // Assert
             assert(actual == expected)
@@ -50,13 +52,15 @@ internal class AlignmentTests {
                     VerticalAlignment.BOTTOM -> "\"bottom\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_future_unknown_vertical_alignment\"", VerticalAlignment.TOP)
+            )
         }
 
         @Test
         fun `Should properly deserialize VerticalAlignment`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<VerticalAlignment>(serialized)
+            val actual = JsonTools.json.decodeFromString<VerticalAlignment>(serialized)
 
             // Assert
             assert(actual == expected)
@@ -83,13 +87,15 @@ internal class AlignmentTests {
                     TwoDimensionalAlignment.BOTTOM_TRAILING -> "\"bottom_trailing\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_future_unknown_two_dimensional_alignment\"", TwoDimensionalAlignment.TOP)
+            )
         }
 
         @Test
         fun `Should properly deserialize TwoDimensionalAlignment`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<TwoDimensionalAlignment>(serialized)
+            val actual = JsonTools.json.decodeFromString<TwoDimensionalAlignment>(serialized)
 
             // Assert
             assert(actual == expected)

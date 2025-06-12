@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import org.json.JSONObject
@@ -26,6 +27,7 @@ internal class OfferingsManager(
     private val offeringsFactory: OfferingsFactory,
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val offeringFontPreDownloader: OfferingFontPreDownloader,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
@@ -148,6 +150,7 @@ internal class OfferingsManager(
                 offeringsResultData.offerings.current?.let {
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
                 }
+                offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
                 dispatch {
                     onSuccess?.invoke(offeringsResultData)
@@ -171,7 +174,7 @@ internal class OfferingsManager(
             OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error),
         )
 
-        offeringsCache.clearOfferingsCacheTimestamp()
+        offeringsCache.forceCacheStale()
         dispatch {
             onError?.invoke(error)
         }

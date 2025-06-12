@@ -182,8 +182,18 @@ class PackageComponentViewTests {
         // Act
         setContent {
             Column {
-                PackageComponentView(style = styleYearly, state = state, modifier = Modifier.testTag("yearly"))
-                PackageComponentView(style = styleMonthly, state = state, modifier = Modifier.testTag("monthly"))
+                PackageComponentView(
+                    style = styleYearly,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("yearly")
+                )
+                PackageComponentView(
+                    style = styleMonthly,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("monthly")
+                )
             }
         }
 
@@ -302,8 +312,18 @@ class PackageComponentViewTests {
         // Act
         setContent {
             Column {
-                PackageComponentView(style = styleYearly, state = state, modifier = Modifier.testTag("yearly"))
-                PackageComponentView(style = styleMonthly, state = state, modifier = Modifier.testTag("monthly"))
+                PackageComponentView(
+                    style = styleYearly,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("yearly")
+                )
+                PackageComponentView(
+                    style = styleMonthly,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("monthly")
+                )
             }
         }
 

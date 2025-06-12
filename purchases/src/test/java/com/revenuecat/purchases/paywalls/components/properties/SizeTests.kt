@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -99,13 +99,25 @@ internal class SizeTests {
                         )
                     )
                 ),
+                arrayOf(
+                    "unknown",
+                    Args(
+                        json = """
+                            {
+                              "unknown_property": "some_value",
+                              "type": "some_unknown_type"
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fit
+                    )
+                )
             )
         }
 
         @Test
         fun `Should properly deserialize SizeConstraint`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<SizeConstraint>(args.json)
+            val actual = JsonTools.json.decodeFromString<SizeConstraint>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -177,7 +189,7 @@ internal class SizeTests {
         @Test
         fun `Should properly deserialize Size`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<Size>(args.json)
+            val actual = JsonTools.json.decodeFromString<Size>(args.json)
 
             // Assert
             assert(actual == args.expected)

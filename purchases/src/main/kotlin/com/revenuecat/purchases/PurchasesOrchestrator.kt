@@ -51,6 +51,7 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -67,6 +68,8 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -117,6 +120,7 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
+    private val fontLoader: FontLoader,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -275,6 +279,23 @@ internal class PurchasesOrchestrator(
     }
 
     // region Public Methods
+
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        storefrontCountryCode?.let {
+            callback.onReceived(it)
+        } ?: run {
+            billing.getStorefront(
+                onSuccess = { countryCode ->
+                    storefrontCountryCode = countryCode
+                    callback.onReceived(countryCode)
+                },
+                onError = { error ->
+                    errorLog(error)
+                    callback.onError(error)
+                },
+            )
+        }
+    }
 
     fun syncAttributesAndOfferingsIfNeeded(
         callback: SyncAttributesAndOfferingsCallback,
@@ -898,6 +919,17 @@ internal class PurchasesOrchestrator(
     //endregion
 
     //endregion
+
+    // region Paywall fonts
+
+    @InternalRevenueCatAPI
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
+    }
+
+    // endregion Paywall fonts
 
     // region Private Methods
     private fun enqueue(command: () -> Unit) {

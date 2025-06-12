@@ -27,8 +27,7 @@ internal sealed class CustomerCenterState(
         @get:JvmSynthetic val customerCenterConfigData: CustomerCenterConfigData,
         @get:JvmSynthetic val purchaseInformation: PurchaseInformation? = null,
         @get:JvmSynthetic val supportedPathsForManagementScreen: List<CustomerCenterConfigData.HelpPath>? = null,
-        @get:JvmSynthetic val showRestoreDialog: Boolean = false,
-        @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState = RestorePurchasesState.INITIAL,
+        @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState? = null,
         @get:JvmSynthetic val feedbackSurveyData: FeedbackSurveyData? = null,
         @get:JvmSynthetic val promotionalOfferData: PromotionalOfferData? = null,
         @get:JvmSynthetic val title: String? = null,
@@ -39,7 +38,7 @@ internal sealed class CustomerCenterState(
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal data class FeedbackSurveyData(
     @get:JvmSynthetic val feedbackSurvey: CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey,
-    @get:JvmSynthetic val onOptionSelected: (
+    @get:JvmSynthetic val onAnswerSubmitted: (
         CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option?,
     ) -> Unit,
 )

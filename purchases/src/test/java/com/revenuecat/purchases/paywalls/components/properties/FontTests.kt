@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
@@ -29,13 +29,15 @@ internal class FontTests {
                     FontWeight.BLACK -> "\"black\""
                 }
                 arrayOf(serialized, expected)
-            }
+            } + listOf(
+                arrayOf("\"some_future_unknown_font_weight\"", FontWeight.REGULAR)
+            )
         }
 
         @Test
         fun `Should properly deserialize FontWeight`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<FontWeight>(serialized)
+            val actual = JsonTools.json.decodeFromString<FontWeight>(serialized)
 
             // Assert
             assert(actual == expected)
@@ -69,7 +71,7 @@ internal class FontTests {
         @Test
         fun `Should properly deserialize FontSize`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<FontSize>(serialized)
+            val actual = JsonTools.json.decodeFromString<FontSize>(serialized)
 
             // Assert
             assert(actual == expected)

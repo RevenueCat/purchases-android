@@ -4,6 +4,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizedVariableLocalizationKeyMapSerializer
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -56,7 +57,14 @@ class UiConfig(
                 @Poko
                 @Serializable
                 @SerialName("name")
-                class Name(@get:JvmSynthetic val value: String) : FontInfo
+                class Name(
+                    @get:JvmSynthetic val value: String,
+                    @get:JvmSynthetic val url: String? = null,
+                    @get:JvmSynthetic val hash: String? = null,
+                    @get:JvmSynthetic val family: String? = null,
+                    @get:JvmSynthetic val weight: Int? = null,
+                    @get:JvmSynthetic val style: FontStyle? = null,
+                ) : FontInfo
 
                 @InternalRevenueCatAPI
                 @Poko

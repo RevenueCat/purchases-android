@@ -69,6 +69,7 @@ class BackendPaywallEventTest {
     @Before
     fun setUp() {
         appConfig = mockk()
+        every { appConfig.fallbackBaseURLs } returns emptyList()
         httpClient = mockk()
         unmockkObject(JsonProvider)
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
@@ -288,6 +289,7 @@ class BackendPaywallEventTest {
                 any(),
                 any(),
                 any(),
+                fallbackBaseURLs = any(),
             )
         } answers {
             if (delayMs != null) {

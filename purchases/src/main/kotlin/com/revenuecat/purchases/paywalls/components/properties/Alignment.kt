@@ -1,62 +1,56 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import kotlinx.serialization.SerialName
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = HorizontalAlignmentDeserializer::class)
 enum class HorizontalAlignment {
-    @SerialName("leading")
+    // SerialNames are handled by the HorizontalAlignmentDeserializer.
+
     LEADING,
-
-    @SerialName("center")
     CENTER,
-
-    @SerialName("trailing")
     TRAILING,
 }
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = VerticalAlignmentDeserializer::class)
 enum class VerticalAlignment {
-    @SerialName("top")
+    // SerialNames are handled by the VerticalAlignmentDeserializer.
+
     TOP,
-
-    @SerialName("center")
     CENTER,
-
-    @SerialName("bottom")
     BOTTOM,
 }
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = TwoDimensionalAlignmentDeserializer::class)
 enum class TwoDimensionalAlignment {
-    @SerialName("center")
+    // SerialNames are handled by the TwoDimensionalAlignmentDeserializer.
+
     CENTER,
-
-    @SerialName("leading")
     LEADING,
-
-    @SerialName("trailing")
     TRAILING,
-
-    @SerialName("top")
     TOP,
-
-    @SerialName("bottom")
     BOTTOM,
-
-    @SerialName("top_leading")
     TOP_LEADING,
-
-    @SerialName("top_trailing")
     TOP_TRAILING,
-
-    @SerialName("bottom_leading")
     BOTTOM_LEADING,
-
-    @SerialName("bottom_trailing")
     BOTTOM_TRAILING,
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object HorizontalAlignmentDeserializer : EnumDeserializerWithDefault<HorizontalAlignment>(
+    defaultValue = HorizontalAlignment.LEADING,
+)
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object VerticalAlignmentDeserializer : EnumDeserializerWithDefault<VerticalAlignment>(
+    defaultValue = VerticalAlignment.TOP,
+)
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object TwoDimensionalAlignmentDeserializer : EnumDeserializerWithDefault<TwoDimensionalAlignment>(
+    defaultValue = TwoDimensionalAlignment.TOP,
+)

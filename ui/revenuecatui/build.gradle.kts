@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.paparazzi)
     alias(libs.plugins.poko)
+    alias(libs.plugins.metalava)
 }
 
 // Conditional Maven Publish plugin application
@@ -74,8 +75,21 @@ android {
     }
 }
 
+metalava {
+    hiddenAnnotations.add("com.revenuecat.purchases.InternalRevenueCatAPI")
+    arguments.addAll(listOf("--hide", "ReferencesHidden"))
+    excludedSourceSets.setFrom(
+        "src/test",
+        "src/testDefaults",
+        "src/testCustomEntitlementComputation",
+        "src/androidTest",
+        "src/androidTestDefaults",
+        "src/androidTestCustomEntitlementComputation",
+    )
+}
+
 dependencies {
-    implementation(project(":purchases"))
+    api(project(":purchases"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

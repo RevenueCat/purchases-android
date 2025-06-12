@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -186,7 +186,8 @@ internal class CarouselComponentTests {
                           "loop": true,
                           "auto_advance": {
                             "ms_time_per_page": 1000,
-                            "ms_transition_time": 500
+                            "ms_transition_time": 500,
+                            "transition_type": "fade"
                           },
                           "pages": [
                             {
@@ -288,7 +289,8 @@ internal class CarouselComponentTests {
                             loop = true,
                             autoAdvance = CarouselComponent.AutoAdvancePages(
                                 msTimePerPage = 1000,
-                                msTransitionTime = 500
+                                msTransitionTime = 500,
+                                transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
                             )
                         )
                     ),
@@ -318,13 +320,88 @@ internal class CarouselComponentTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "unknown page_control position",
+                    Args(
+                        json = """
+                        {
+                          "type": "carousel",
+                          "page_alignment": "center",
+                          "pages": [
+                            {
+                              "type": "stack",
+                              "components": []
+                            }
+                          ],
+                          "page_control": {
+                            "position": "some_unknown_value",
+                            "active": {
+                              "width": 10,
+                              "height": 20,
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "primary"
+                                },
+                                "dark": {
+                                  "type": "alias",
+                                  "value": "secondary"
+                                }
+                              }
+                            },
+                            "default": {
+                              "width": 30,
+                              "height": 40,
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "tertiary"
+                                },
+                                "dark": {
+                                  "type": "alias",
+                                  "value": "another_alias"
+                                }
+                              }
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = CarouselComponent(
+                            pages = listOf(
+                                StackComponent(
+                                    components = emptyList()
+                                )
+                            ),
+                            pageAlignment = VerticalAlignment.CENTER,
+                            pageControl = CarouselComponent.PageControl(
+                                position = CarouselComponent.PageControl.Position.BOTTOM,
+                                active = CarouselComponent.PageControl.Indicator(
+                                    width = 10u,
+                                    height = 20u,
+                                    color = ColorScheme(
+                                        light = ColorInfo.Alias(ColorAlias("primary")),
+                                        dark = ColorInfo.Alias(ColorAlias("secondary"))
+                                    ),
+                                ),
+                                default = CarouselComponent.PageControl.Indicator(
+                                    width = 30u,
+                                    height = 40u,
+                                    color = ColorScheme(
+                                        light = ColorInfo.Alias(ColorAlias("tertiary")),
+                                        dark = ColorInfo.Alias(ColorAlias("another_alias"))
+                                    ),
+                                )
+                            )
+                        )
+                    ),
+                ),
             )
         }
 
         @Test
         fun `Should properly deserialize CarouselComponent as CarouselComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<CarouselComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<CarouselComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -333,7 +410,7 @@ internal class CarouselComponentTests {
         @Test
         fun `Should properly deserialize CarouselComponent as PaywallComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<CarouselComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<CarouselComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)
@@ -508,7 +585,8 @@ internal class CarouselComponentTests {
                           "loop": true,
                           "auto_advance": {
                             "ms_time_per_page": 1000,
-                            "ms_transition_time": 500
+                            "ms_transition_time": 500,
+                            "transition_type": "fade"
                           }
                         }
                         """.trimIndent(),
@@ -598,7 +676,8 @@ internal class CarouselComponentTests {
                             loop = true,
                             autoAdvance = CarouselComponent.AutoAdvancePages(
                                 msTimePerPage = 1000,
-                                msTransitionTime = 500
+                                msTransitionTime = 500,
+                                transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
                             )
                         )
                     )
@@ -618,7 +697,7 @@ internal class CarouselComponentTests {
         @Test
         fun `Should properly deserialize PartialCarouselComponent`() {
             // Arrange, Act
-            val actual = OfferingParser.json.decodeFromString<PartialCarouselComponent>(args.json)
+            val actual = JsonTools.json.decodeFromString<PartialCarouselComponent>(args.json)
 
             // Assert
             assert(actual == args.expected)

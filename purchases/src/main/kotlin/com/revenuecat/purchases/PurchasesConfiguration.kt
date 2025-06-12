@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.content.Context
 import com.revenuecat.purchases.PurchasesConfiguration.Builder
+import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import java.util.concurrent.ExecutorService
 
 /**
@@ -36,7 +37,12 @@ open class PurchasesConfiguration(builder: Builder) {
     val pendingTransactionsForPrepaidPlansEnabled: Boolean
 
     init {
-        this.context = builder.context.applicationContext
+        this.context =
+            if (builder.context.isDeviceProtectedStorageCompat) {
+                builder.context
+            } else {
+                builder.context.applicationContext
+            }
         this.apiKey = builder.apiKey.trim()
         this.appUserID = builder.appUserID
         this.purchasesAreCompletedBy = builder.purchasesAreCompletedBy
@@ -180,8 +186,6 @@ open class PurchasesConfiguration(builder: Builder) {
          * Examples of this information include response times, cache hits or error codes.
          * No personal identifiable information will be collected.
          * The default value is false.
-         *
-         * Diagnostics is only available in Android API 24+
          */
         fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
             this.diagnosticsEnabled = diagnosticsEnabled

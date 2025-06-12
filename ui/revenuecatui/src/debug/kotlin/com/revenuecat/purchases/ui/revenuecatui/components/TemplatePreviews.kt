@@ -1,7 +1,11 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,7 +20,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import org.json.JSONArray
 import org.json.JSONObject
@@ -25,19 +29,19 @@ import java.io.InputStream
 import java.net.URI
 import java.util.Date
 
-private const val DIR_TEMPLATES = "paywall-templates"
+private const val MILLIS_2025_04_23 = 1745366400000
+private const val INDEX_FILE_NAME = "offerings_folders.index"
+private const val OFFERINGS_JSON_FILE_NAME = "offerings.json"
+
+internal data class PaywallResources(
+    val offering: Offering,
+    val parentFolder: String,
+)
 
 /**
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
  */
-private class OfferingProvider : PreviewParameterProvider<Offering> {
-    private val offeringsJsonFilePath = "$DIR_TEMPLATES/offerings_paywalls_v2_templates.json"
-    private val packagesJsonFilePath = "packages.json"
-
-    private val packagesJsonArray = JSONObject(getResourceStream(packagesJsonFilePath).readBytes().decodeToString())
-        .getJSONArray("packages")
-    private val uiConfigJsonObject = JSONObject(getResourceStream(offeringsJsonFilePath).readUiConfig())
-
+internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResources> {
     private val offeringParser = Class.forName("com.revenuecat.purchases.utils.PreviewOfferingParser")
         .getDeclaredConstructor()
         .apply { isAccessible = true }
@@ -45,31 +49,40 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
     private val createOfferingsMethod = offeringParser::class.java
         .getMethod("createOfferings", JSONObject::class.java, Map::class.java)
 
-    // Find all start (inclusive) and end (exclusive) indices of each offering in the JSON.
-    private val offeringIndices = getResourceStream(offeringsJsonFilePath).indexOfferings()
+    private val offeringJsonFiles = getAllOfferingsJsonFiles()
 
-    override val values = offeringIndices
+    override val values = offeringJsonFiles
         .asSequence()
-        .mapNotNull { (start, end) ->
-            // Re-open the stream and read only the current offering. While we could keep the stream open for the
-            // entirety of the sequence and yield offerings as we encounter them, we found that Emerge Snapshots closes
-            // the stream prematurely in this case. To avoid that, we reopen the stream for each offering.
-            val offeringJsonString = getResourceStream(offeringsJsonFilePath).readOfferingAt(start, end)
-            val offeringJsonObject = JSONObject(offeringJsonString)
-            val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
-            if (!hasPaywall) return@mapNotNull null
+        .flatMap { (folder, file) ->
+            val offeringsJsonFilePath = "$folder/$file"
+            val uiConfig = JSONObject(getResourceStream(offeringsJsonFilePath).readUiConfig())
+            val packagesArray = JSONObject(getResourceStream("packages.json").readBytes().decodeToString())
+                .getJSONArray("packages")
+            val indices = getResourceStream(offeringsJsonFilePath).indexOfferings()
 
-            // Ensure that the offering has all packages.
-            offeringJsonObject.put("packages", packagesJsonArray)
-            val offeringId = offeringJsonObject.getString("identifier")
-            val offeringsJsonObject = JSONObject()
-                .put("current_offering_id", offeringId)
-                .put("offerings", JSONArray().put(offeringJsonObject))
-                .put("ui_config", uiConfigJsonObject)
+            indices.mapNotNull { (start, end) ->
+                val offeringJsonString = getResourceStream(offeringsJsonFilePath).readOfferingAt(start, end)
+                val offeringJsonObject = JSONObject(offeringJsonString)
+                val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
+                if (!hasPaywall) return@mapNotNull null
 
-            createOfferings(offeringsJsonObject)
-                .current
-                ?.takeUnless { it.paywallComponents == null }
+                offeringJsonObject.put("packages", packagesArray)
+                val offeringId = offeringJsonObject.getString("identifier")
+                val offeringsJsonObject = JSONObject()
+                    .put("current_offering_id", offeringId)
+                    .put("offerings", JSONArray().put(offeringJsonObject))
+                    .put("ui_config", uiConfig)
+
+                createOfferings(offeringsJsonObject)
+                    .current
+                    ?.takeUnless { it.paywallComponents == null }
+                    ?.let { offering ->
+                        PaywallResources(
+                            offering = offering,
+                            parentFolder = folder,
+                        )
+                    }
+            }
         }
 
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
@@ -152,36 +165,51 @@ private class OfferingProvider : PreviewParameterProvider<Offering> {
  */
 @Preview
 @Composable
-private fun PaywallComponentsTemplate_Preview(
-    @PreviewParameter(OfferingProvider::class) offering: Offering,
+internal fun PaywallComponentsTemplate_Preview(
+    @PreviewParameter(PaywallResourcesProvider::class) paywall: PaywallResources,
 ) {
-    val validationResult = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
-    val state = offering.toComponentsPaywallState(
-        validationResult = validationResult,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
-        storefrontCountryCode = "US",
-        dateProvider = { Date() },
-    )
+    val offering = paywall.offering
+    val parentFolder = paywall.parentFolder
+    // validatePaywallComponentsDataOrNullForPreviews should only return null if the Offering has no paywallComponents,
+    // but we filter those out in the PaywallResourcesProvider.
+    when (val result = offering.validatePaywallComponentsDataOrNullForPreviews()!!) {
+        is Result.Success -> {
+            val validationResult = result.value
+            val state = offering.toComponentsPaywallState(
+                validationResult = validationResult,
+                activelySubscribedProductIds = emptySet(),
+                purchasedNonSubscriptionProductIds = emptySet(),
+                storefrontCountryCode = "US",
+                dateProvider = { Date(MILLIS_2025_04_23) },
+            )
 
-    ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current)) {
-        LoadedPaywallComponents(
-            state = state,
-            clickHandler = { },
-        )
+            ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current, parentFolder)) {
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = { },
+                )
+            }
+        }
+        is Result.Error -> {
+            Column {
+                Text("Encountered validation errors:")
+                result.value.forEach { error -> Text(error.toString()) }
+            }
+        }
     }
 }
 
 @Suppress("FunctionName")
 private fun PaywallTemplateImageLoader(
     context: Context,
+    parentFolder: String,
 ): ImageLoader {
     return ImageLoader.Builder(context)
         .components {
             add { chain ->
                 val url = URI(chain.request.data as String)
                 // Create the resourcePath by dropping the TLD, reversing the host, and appending the path.
-                val resourcePath = DIR_TEMPLATES + "/" +
+                val resourcePath = parentFolder + "/" +
                     url.host.split('.').dropLast(1).reversed().joinToString("/") +
                     url.path
                 val bitmap = BitmapFactory.decodeStream(getResourceStream(resourcePath))
@@ -195,6 +223,19 @@ private fun PaywallTemplateImageLoader(
         }
         .build()
 }
+
+/**
+ * Reads from the index file to determine all parent folders containing offerings.json files.
+ */
+private fun getAllOfferingsJsonFiles(): List<Pair<String, String>> =
+    getResourceStream(INDEX_FILE_NAME)
+        .readBytes()
+        .decodeToString()
+        .lineSequence()
+        .filterNot { it.startsWith("#") }
+        .filterNot { it.isBlank() }
+        .map { parentFolder -> parentFolder to OFFERINGS_JSON_FILE_NAME }
+        .toList()
 
 /**
  *  Reads from the `resources` directory. It uses the ClassLoader on Android, e.g. when the preview is shown on a

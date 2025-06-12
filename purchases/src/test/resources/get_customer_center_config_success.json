@@ -31,16 +31,16 @@
         "dismiss":"Dismiss",
         "expired":"Expired",
         "expires":"Expires",
-        "going_to_check_purchases":"Let\u2019s take a look! We\u2019re going to check your account for missing purchases.",
+        "going_to_check_purchases":"Let's take a look! We're going to check your account for missing purchases.",
         "google_subscription_manage":"You can manage your subscription by using the Play Store app on an Android device.",
         "next_billing_date":"Next billing date",
         "no_subscriptions_found":"No Subscriptions found",
         "no_thanks":"No, thanks",
         "platform_mismatch":"Platform mismatch",
         "please_contact_support":"Please contact support to manage your subscription.",
-        "purchases_not_recovered":"We couldn't find any additional purchases under this account. Contact support for assistance if you think this is an error.",
-        "purchases_recovered":"Purchases recovered!",
-        "purchases_recovered_explanation":"We applied the previously purchased items to your account. Sorry for the inconvenience.",
+        "purchases_not_recovered":"We could not find any purchases with your account. If you think this is an error, please contact support.",
+        "purchases_recovered":"Purchases restored",
+        "purchases_recovered_explanation":"We restored your past purchases and applied them to your account.",
         "refund_canceled":"Refund canceled",
         "refund_error_generic":"An error occurred while processing the refund request. Please try again.",
         "refund_granted":"Refund granted successfully!",
@@ -54,7 +54,7 @@
         "update_warning_ignore":"Continue",
         "update_warning_title":"Update available",
         "update_warning_update":"Update",
-        "you_have_promo": "You've been granted a subscription that doesn’t renew",
+        "you_have_promo": "You've been granted a subscription that doesn't renew",
         "you_have_lifetime": "Your active lifetime subscription",
         "web_subscription_manage": "You have an active subscription that was created on the web. You can manage your subscription by visiting your account.",
         "free": "Free",
@@ -65,8 +65,9 @@
         "discounted_recurring_then_price": "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}",
         "free_trial_single_payment_then_price": "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for {{ sub_offer_price_2 }}, and {{ price }} thereafter",
         "free_trial_discounted_then_price": "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, and {{ price }} thereafter",
-        "purchases_not_found": "Purchases not found",
-        "purchases_restoring": "Restoring purchases..."
+        "purchases_not_found": "No past purchases",
+        "purchases_restoring": "Restoring...",
+        "done": "Done"
       }
     },
     "screens":{
@@ -86,6 +87,12 @@
               "title":"Wait!",
               "product_mapping":{
                 "monthly_subscription":"rc-refund-offer"
+              },
+              "cross_product_promotions": {
+                "monthly_subscription": {
+                  "target_product_id": "yearly_subscription",
+                  "store_offer_identifier": "rc-refund-offer"
+                }
               }
             },
             "title":"Request a refund",
@@ -108,6 +115,12 @@
                     "title":"Wait!",
                     "product_mapping":{
                       "monthly_subscription":"rc-cancel-offer"
+                    },
+                    "cross_product_promotions": {
+                      "monthly_subscription": {
+                        "target_product_id": "yearly_subscription",
+                        "store_offer_identifier": "rc-cancel-offer"
+                      }
                     }
                   },
                   "title":"Too expensive"
@@ -121,6 +134,12 @@
                     "title":"Wait!",
                     "product_mapping":{
                       "monthly_subscription":"rc-cancel-offer"
+                    },
+                    "cross_product_promotions": {
+                      "monthly_subscription": {
+                        "target_product_id": "yearly_subscription",
+                        "store_offer_identifier": "rc-cancel-offer"
+                      }
                     }
                   },
                   "title":"Don't use the app"

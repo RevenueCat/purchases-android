@@ -10,6 +10,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptySetOrNull
@@ -80,13 +82,21 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
-                "device locale only matches language, not region",
+                "device locale only matches language, not region, en-IE -> en-US",
                 Args(
                     paywallLocales = nonEmptyListOf("en_US", "es_ES"),
                     deviceLocales = nonEmptyListOf("en-IE", "es-ES"),
                     // Even though there's an exact language and region match for Spanish, we pick English as that has
                     // higher priority.
-                    expected = "en",
+                    expected = "en-US",
+                ),
+            ),
+            arrayOf(
+                "device locale only matches language, not region, es-AR -> es-ES",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "es_ES"),
+                    deviceLocales = nonEmptyListOf("es-AR",),
+                    expected = "es-ES",
                 ),
             ),
             arrayOf(
@@ -170,13 +180,13 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
-                "simplified Chinese zh-Hans-MY -> zh-Hans",
+                "simplified Chinese zh-Hans-MY -> zh-Hans-CN",
                 Args(
                     paywallLocales = nonEmptyListOf("zh_Hant_TW", "zh_Hans_CN"),
                     deviceLocales = nonEmptyListOf("zh-Hans-MY", "zh-Hant-TW"),
                     // Even though there's an exact language and region match for traditional Chinese, we pick
                     // simplified Chinese as that has higher device priority.
-                    expected = "zh-Hans",
+                    expected = "zh-Hans-CN",
                 ),
             ),
             arrayOf(
@@ -260,13 +270,62 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 ),
             ),
             arrayOf(
-                "simplified Chinese zh-Hant-TW -> zh-Hant",
+                "traditional Chinese zh-Hant-TW -> zh-Hant-HK",
                 Args(
                     paywallLocales = nonEmptyListOf("zh_Hans_MY", "zh_Hant_HK"),
                     deviceLocales = nonEmptyListOf("zh-Hant-TW", "zh-Hans-MY"),
                     // Even though there's an exact language and region match for simplified Chinese, we pick
                     // traditional Chinese as that has higher device priority.
-                    expected = "zh-Hant",
+                    expected = "zh-Hant-HK",
+                ),
+            ),
+            arrayOf(
+                "no-NO -> no-NO",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no_NO"),
+                    deviceLocales = nonEmptyListOf("no-NO", "en-US"),
+                    expected = "no-NO",
+                ),
+            ),
+            arrayOf(
+                "no-NO -> no",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no"),
+                    deviceLocales = nonEmptyListOf("no-NO", "en-US"),
+                    expected = "no",
+                ),
+            ),
+            // Norwegian macro language
+            arrayOf(
+                "nb-NO -> no-NO",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no_NO"),
+                    deviceLocales = nonEmptyListOf("nb-NO", "en-US"),
+                    expected = "no-NO",
+                ),
+            ),
+            arrayOf(
+                "nb-NO -> no",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no"),
+                    deviceLocales = nonEmptyListOf("nb-NO", "en-US"),
+                    expected = "no",
+                ),
+            ),
+            arrayOf(
+                "nn-NO -> no-NO",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no_NO"),
+                    deviceLocales = nonEmptyListOf("nn-NO", "en-US"),
+                    expected = "no-NO",
+                ),
+            ),
+            arrayOf(
+                "nn-NO -> no",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "no"),
+                    deviceLocales = nonEmptyListOf("nn-NO", "en-US"),
+                    expected = "no",
                 ),
             ),
         )
@@ -296,6 +355,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.White))),
         showPricesWithDecimals = true,
         variableConfig = UiConfig.VariableConfig(),
+        variableDataProvider = VariableDataProvider(MockResourceProvider()),
         offering = Offering(
             identifier = "id",
             serverDescription = "description",

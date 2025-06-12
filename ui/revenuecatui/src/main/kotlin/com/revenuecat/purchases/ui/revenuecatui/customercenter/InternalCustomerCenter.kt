@@ -100,9 +100,7 @@ internal fun InternalCustomerCenter(
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
-                    coroutineScope.launch {
-                        viewModel.pathButtonPressed(context, action.path, action.product)
-                    }
+                    viewModel.pathButtonPressed(context, action.path, action.product)
                 }
 
                 is CustomerCenterAction.PerformRestore -> {
@@ -270,7 +268,7 @@ private fun CustomerCenterLoaded(
                 onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
             },
         )
-    } else if (state.showRestoreDialog) {
+    } else if (state.restorePurchasesState != null) {
         RestorePurchasesDialog(
             state = state.restorePurchasesState,
             localization = state.customerCenterConfigData.localization,

@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.poko)
+    alias(libs.plugins.metalava)
 }
 
 apply(from = "${rootProject.projectDir}/library.gradle")
@@ -51,6 +52,46 @@ android {
     }
 }
 
+androidComponents {
+    onVariants { variant ->
+        if (variant.productFlavors.any { it.second == "free" }) {
+            tasks.register("customTaskForFree${variant.name.capitalize()}") {
+                doLast {
+                    println("Running for FREE flavor: ${variant.name}")
+                }
+            }
+        }
+    }
+}
+
+val variantName = project.gradle.startParameter.taskNames.joinToString(" ")
+
+metalava {
+    val excludeSourceSets = mutableListOf(
+        "src/test",
+        "src/testDefaults",
+        "src/testCustomEntitlementComputation",
+        "src/androidTest",
+        "src/androidTestDefaults",
+        "src/androidTestCustomEntitlementComputation",
+    )
+
+    val name = if (variantName.lowercase().contains("defaults")) {
+        excludeSourceSets.add("src/customEntitlementComputation/kotlin")
+        "api-defauts.txt"
+    } else if (variantName.lowercase().contains("entitlement")) {
+        excludeSourceSets.add("src/defaults/kotlin")
+        "api-entitlement.txt"
+    } else {
+        "unknown.txt"
+    }
+
+    filename.set(name)
+    hiddenAnnotations.add("com.revenuecat.purchases.InternalRevenueCatAPI")
+    arguments.addAll(listOf("--hide", "ReferencesHidden"))
+    excludedSourceSets.setFrom(excludeSourceSets)
+}
+
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
     compilerOptions {
         freeCompilerArgs.add("-Xjvm-default=all-compatibility")
@@ -88,6 +129,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
+    implementation(libs.coroutines.core)
     api(libs.billing)
 
     compileOnly(libs.amazon.appstore.sdk)

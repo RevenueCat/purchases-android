@@ -1,10 +1,10 @@
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import com.revenuecat.purchases.paywalls.parseRGBAColor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -73,11 +73,12 @@ internal class UiConfigTests {
                     },
                     "android": {
                       "type": "name",
-                      "value": "Roboto"
-                    },
-                    "web": {
-                      "type": "google_fonts",
-                      "value": "Gothic"
+                      "value": "Roboto",
+                      "url": "https://example.com/testfont123.ttf",
+                      "hash": "123abc",
+                      "weight": 400,
+                      "style": "italic",
+                      "family": "custom-family"
                     }
                   },
                   "secondary": {
@@ -89,10 +90,9 @@ internal class UiConfigTests {
                       "type": "google_fonts",
                       "value": "Gothic"
                     },
-                    "web": {
-                      "type": "name",
-                      "value": "SF Pro"
-                    }
+                    "family": "custom-family2",
+                    "weight": "regular",
+                    "style": "normal"
                   }
                 }
               },
@@ -160,7 +160,14 @@ internal class UiConfigTests {
                 ),
                 fonts = mapOf(
                     FontAlias("primary") to UiConfig.AppConfig.FontsConfig(
-                        android = UiConfig.AppConfig.FontsConfig.FontInfo.Name("Roboto"),
+                        android = UiConfig.AppConfig.FontsConfig.FontInfo.Name(
+                            value = "Roboto",
+                            url = "https://example.com/testfont123.ttf",
+                            hash = "123abc",
+                            family = "custom-family",
+                            weight = 400,
+                            style = FontStyle.ITALIC,
+                        ),
                     ),
                     FontAlias("secondary") to UiConfig.AppConfig.FontsConfig(
                         android = UiConfig.AppConfig.FontsConfig.FontInfo.GoogleFonts("Gothic"),
@@ -186,7 +193,7 @@ internal class UiConfigTests {
         )
 
         // Act
-        val actual = OfferingParser.json.decodeFromString<UiConfig>(serialized)
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -222,7 +229,7 @@ internal class UiConfigTests {
         )
 
         // Act
-        val actual = OfferingParser.json.decodeFromString<UiConfig>(serialized)
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -295,7 +302,7 @@ internal class UiConfigTests {
         )
 
         // Act
-        val actual = OfferingParser.json.decodeFromString<UiConfig>(serialized)
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
 
         // Assert
         assertThat(actual).isEqualTo(expected)

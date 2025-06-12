@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.diagnostics
 
-import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -11,14 +10,12 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
-import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
 import java.util.UUID
 import kotlin.time.Duration
@@ -40,6 +37,7 @@ internal class DiagnosticsTracker(
     private val appSessionID: UUID = EventsManager.appSessionID,
 ) {
     private companion object {
+        const val HOST_KEY = "host"
         const val ENDPOINT_NAME_KEY = "endpoint_name"
         const val SUCCESSFUL_KEY = "successful"
         const val RESPONSE_CODE_KEY = "response_code"
@@ -83,6 +81,7 @@ internal class DiagnosticsTracker(
 
     @Suppress("LongParameterList")
     fun trackHttpRequestPerformed(
+        host: String,
         endpoint: Endpoint,
         responseTime: Duration,
         wasSuccessful: Boolean,
@@ -96,6 +95,7 @@ internal class DiagnosticsTracker(
         trackEvent(
             eventName = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
             properties = mapOf(
+                HOST_KEY to host,
                 ENDPOINT_NAME_KEY to endpoint.name,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 SUCCESSFUL_KEY to wasSuccessful,
@@ -583,28 +583,21 @@ internal class DiagnosticsTracker(
     }
 
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
-        if (isAndroidNOrNewer()) {
-            verboseLog("Tracking diagnostics entry: $diagnosticsEntry")
-            try {
-                diagnosticsFileHelper.appendEvent(diagnosticsEntry)
-                listener?.onEventTracked()
-            } catch (e: IOException) {
-                verboseLog("Error tracking diagnostics entry: $e")
-            }
+        verboseLog("Tracking diagnostics entry: $diagnosticsEntry")
+        try {
+            diagnosticsFileHelper.appendEvent(diagnosticsEntry)
+            listener?.onEventTracked()
+        } catch (e: IOException) {
+            verboseLog("Error tracking diagnostics entry: $e")
         }
     }
 
     private fun checkAndClearDiagnosticsFileIfTooBig(completion: () -> Unit) {
         enqueue {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
-                    verboseLog("Diagnostics file is too big. Deleting it.")
-                    diagnosticsHelper.resetDiagnosticsStatus()
-                    trackMaxEventsStoredLimitReached()
-                }
-            } else {
-                // This should never happen since we create this class only if diagnostics is supported
-                errorLog("Diagnostics only supported in Android 24+")
+            if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+                verboseLog("Diagnostics file is too big. Deleting it.")
+                diagnosticsHelper.resetDiagnosticsStatus()
+                trackMaxEventsStoredLimitReached()
             }
             completion()
         }

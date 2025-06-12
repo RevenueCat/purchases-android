@@ -3,6 +3,7 @@ package com.revenuecat.purchases.customercenter
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.paywalls.EmptyStringToNullSerializer
 import com.revenuecat.purchases.paywalls.PaywallColor
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -194,6 +195,9 @@ data class CustomerCenterConfigData(
 
             @SerialName("free_trial_discounted_then_price")
             FREE_TRIAL_DISCOUNTED_THEN_PRICE,
+
+            @SerialName("done")
+            DONE,
             ;
 
             val defaultValue: String
@@ -234,20 +238,18 @@ data class CustomerCenterConfigData(
                         "You have an active subscription from the Amazon Appstore. " +
                             "You can manage your subscription in the Amazon Appstore app."
                     GOING_TO_CHECK_PURCHASES ->
-                        "Let’s take a look! We’re going to check your account for missing purchases."
+                        "Let's take a look! We're going to check your account for missing purchases."
                     CHECK_PAST_PURCHASES -> "Check past purchases"
-                    PURCHASES_RECOVERED -> "Purchases recovered!"
+                    PURCHASES_RECOVERED -> "Purchases restored"
                     PURCHASES_RECOVERED_EXPLANATION ->
-                        "We applied the previously purchased items to your account. Sorry for the inconvenience."
+                        "We restored your past purchases and applied them to your account."
                     PURCHASES_NOT_RECOVERED ->
-                        "We couldn't find any additional purchases under this account. " +
-                            "Contact support for assistance if you think this is an error."
-                    PURCHASES_NOT_FOUND ->
-                        "Purchases not found"
-                    PURCHASES_RESTORING ->
-                        "Restoring purchases..."
+                        "We could not find any purchases with your account. " +
+                            "If you think this is an error, please contact support."
+                    PURCHASES_NOT_FOUND -> "No past purchases"
+                    PURCHASES_RESTORING -> "Restoring..."
                     MANAGE_SUBSCRIPTION -> "Manage your subscription"
-                    YOU_HAVE_PROMO -> "You've been granted a subscription that doesn’t renew"
+                    YOU_HAVE_PROMO -> "You've been granted a subscription that doesn't renew"
                     YOU_HAVE_LIFETIME -> "Your active lifetime subscription"
                     WEB_SUBSCRIPTION_MANAGE ->
                         "You have an active subscription that was purchased on the web. " +
@@ -264,6 +266,7 @@ data class CustomerCenterConfigData(
                     FREE_TRIAL_DISCOUNTED_THEN_PRICE ->
                         "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} " +
                             "during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
+                    DONE -> "Done"
                 }
         }
 
@@ -291,7 +294,44 @@ data class CustomerCenterConfigData(
                 val title: String,
                 val subtitle: String,
                 @SerialName("product_mapping") val productMapping: Map<String, String>,
-            ) : PathDetail()
+                @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion> =
+                    emptyMap(),
+            ) : PathDetail() {
+                @Deprecated(
+                    "Use constructor with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
+                    ),
+                )
+                constructor(
+                    androidOfferId: String,
+                    eligible: Boolean,
+                    title: String,
+                    subtitle: String,
+                    productMapping: Map<String, String>,
+                ) : this(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+
+                @Deprecated(
+                    "Use copy with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
+                    ),
+                )
+                fun copy(
+                    androidOfferId: String = this.androidOfferId,
+                    eligible: Boolean = this.eligible,
+                    title: String = this.title,
+                    subtitle: String = this.subtitle,
+                    productMapping: Map<String, String> = this.productMapping,
+                ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+
+                @Serializable
+                @Poko
+                class CrossProductPromotion(
+                    @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
+                    @SerialName("target_product_id") val targetProductId: String,
+                )
+            }
 
             @Serializable
             data class FeedbackSurvey(

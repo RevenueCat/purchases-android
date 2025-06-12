@@ -539,6 +539,135 @@ class PurchaseInformationTest {
         )
     }
 
+    @Test
+    fun `test PurchaseInformation with paddle entitlement`() {
+        val expiresDate = oneDayAgo
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = true,
+            store = Store.PADDLE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.PADDLE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = entitlementInfo,
+            subscribedProduct = null,
+            transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
+            dateFormatter = dateFormatter,
+            locale = locale
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.WEB,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
+            expirationDateString = "3 Oct 2063",
+            store = Store.PADDLE,
+            product = null,
+            isLifetime = false
+        )
+    }
+
+    @Test
+    fun `test PurchaseInformation with non-renewing paddle entitlement`() {
+        val expiresDate = oneDayAgo
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = false,
+            store = Store.PADDLE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
+            store = Store.PADDLE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = entitlementInfo,
+            subscribedProduct = null,
+            transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
+            dateFormatter = dateFormatter,
+            locale = locale
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.WEB,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
+            expirationDateString = "3 Oct 2063",
+            store = Store.PADDLE,
+            product = null,
+            isLifetime = false
+        )
+    }
+
+    @Test
+    fun `test PurchaseInformation with expired paddle entitlement`() {
+        val expiresDate = oneDayAgo
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = false,
+            willRenew = false,
+            store = Store.PADDLE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+        val transaction = createTransactionDetails(
+            isActive = false,
+            willRenew = false,
+            store = Store.PADDLE,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = entitlementInfo,
+            subscribedProduct = null,
+            transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
+            dateFormatter = dateFormatter,
+            locale = locale
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = null,
+            durationTitle = null,
+            explanation = Explanation.WEB,
+            price = PriceDetails.Unknown,
+            expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
+            expirationDateString = "3 Oct 2063",
+            product = null,
+            store = Store.PADDLE,
+            isLifetime = false
+        )
+    }
+
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun assertPurchaseInformation(
         purchaseInformation: PurchaseInformation,
@@ -600,14 +729,16 @@ class PurchaseInformationTest {
         willRenew: Boolean,
         store: Store,
         productIdentifier: String,
-        expiresDate: Date?
+        expiresDate: Date?,
+        productPlanIdentifier: String? = null,
     ): TransactionDetails.Subscription {
         return TransactionDetails.Subscription(
             productIdentifier = productIdentifier,
             store = store,
             isActive = isActive,
             willRenew = willRenew,
-            expiresDate = expiresDate
+            expiresDate = expiresDate,
+            productPlanIdentifier = productPlanIdentifier,
         )
     }
 

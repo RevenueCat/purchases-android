@@ -67,7 +67,13 @@ class BackendGetCustomerCenterConfigTest {
                             eligible = true,
                             title = "Wait!",
                             subtitle = "Before you go, here's a one-time offer to continue at a discount.",
-                            productMapping = mapOf("monthly_subscription" to "rc-refund-offer")
+                            productMapping = mapOf("monthly_subscription" to "rc-refund-offer"),
+                            crossProductPromotions = mapOf(
+                                "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                    storeOfferIdentifier = "rc-refund-offer",
+                                    targetProductId = "yearly_subscription",
+                                )
+                            )
                         )
                     ),
                     HelpPath(
@@ -90,7 +96,13 @@ class BackendGetCustomerCenterConfigTest {
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
-                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer")
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer"),
+                                        crossProductPromotions = mapOf(
+                                            "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                                storeOfferIdentifier = "rc-cancel-offer",
+                                                targetProductId = "yearly_subscription",
+                                            )
+                                        )
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -101,7 +113,13 @@ class BackendGetCustomerCenterConfigTest {
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
-                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer")
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer"),
+                                        crossProductPromotions = mapOf(
+                                            "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                                storeOfferIdentifier = "rc-cancel-offer",
+                                                targetProductId = "yearly_subscription",
+                                            )
+                                        )
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -175,16 +193,16 @@ class BackendGetCustomerCenterConfigTest {
                 "dismiss" to "Dismiss",
                 "expired" to "Expired",
                 "expires" to "Expires",
-                "going_to_check_purchases" to "Let\u2019s take a look! We\u2019re going to check your account for missing purchases.",
+                "going_to_check_purchases" to "Let's take a look! We're going to check your account for missing purchases.",
                 "google_subscription_manage" to "You can manage your subscription by using the Play Store app on an Android device.",
                 "next_billing_date" to "Next billing date",
                 "no_subscriptions_found" to "No Subscriptions found",
                 "no_thanks" to "No, thanks",
                 "platform_mismatch" to "Platform mismatch",
                 "please_contact_support" to "Please contact support to manage your subscription.",
-                "purchases_not_recovered" to "We couldn't find any additional purchases under this account. Contact support for assistance if you think this is an error.",
-                "purchases_recovered" to "Purchases recovered!",
-                "purchases_recovered_explanation" to "We applied the previously purchased items to your account. Sorry for the inconvenience.",
+                "purchases_not_recovered" to "We could not find any purchases with your account. If you think this is an error, please contact support.",
+                "purchases_recovered" to "Purchases restored",
+                "purchases_recovered_explanation" to "We restored your past purchases and applied them to your account.",
                 "refund_canceled" to "Refund canceled",
                 "refund_error_generic" to "An error occurred while processing the refund request. Please try again.",
                 "refund_granted" to "Refund granted successfully!",
@@ -198,7 +216,7 @@ class BackendGetCustomerCenterConfigTest {
                 "update_warning_ignore" to "Continue",
                 "update_warning_title" to "Update available",
                 "update_warning_update" to "Update",
-                "you_have_promo" to "You've been granted a subscription that doesn’t renew",
+                "you_have_promo" to "You've been granted a subscription that doesn't renew",
                 "you_have_lifetime" to "Your active lifetime subscription",
                 "web_subscription_manage" to "You have an active subscription that was created on the web. " +
                     "You can manage your subscription by visiting your account.",
@@ -210,8 +228,9 @@ class BackendGetCustomerCenterConfigTest {
                 "discounted_recurring_then_price" to "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}",
                 "free_trial_single_payment_then_price" to "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for {{ sub_offer_price_2 }}, and {{ price }} thereafter",
                 "free_trial_discounted_then_price" to "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, and {{ price }} thereafter",
-                "purchases_not_found" to "Purchases not found",
-                "purchases_restoring" to "Restoring purchases...",
+                "purchases_not_found" to "No past purchases",
+                "purchases_restoring" to "Restoring...",
+                "done" to "Done",
             )
         ),
         support = CustomerCenterConfigData.Support(
@@ -226,6 +245,7 @@ class BackendGetCustomerCenterConfigTest {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns mockBaseURL
             every { customEntitlementComputation } returns false
+            every { fallbackBaseURLs } returns emptyList()
         }
         httpClient = mockk()
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
@@ -325,6 +345,7 @@ class BackendGetCustomerCenterConfigTest {
                 any(),
                 any(),
                 any(),
+                fallbackBaseURLs = any(),
             )
         } answers {
             if (delayMs != null) {

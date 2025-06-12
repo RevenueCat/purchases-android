@@ -20,6 +20,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -118,7 +119,9 @@ internal class TextComponentState(
 
     @get:JvmSynthetic
     val localizedVariableKeys by derivedStateOf {
-        style.variableLocalizations.run { getOrDefault(localeId, entry.value) }
+        // We use getBestMatch here, because the localeId in `texts` might be different from the one in
+        // `variableLocalizations`. For instance, `texts` might have `de_DE` while `variableLocalizations` has `de`.
+        style.variableLocalizations.run { getBestMatch(localeId) ?: entry.value }
     }
 
     @get:JvmSynthetic
@@ -128,7 +131,11 @@ internal class TextComponentState(
     val fontSize by derivedStateOf { presentedPartial?.partial?.fontSize ?: style.fontSize }
 
     @get:JvmSynthetic
-    val fontWeight by derivedStateOf { presentedPartial?.partial?.fontWeight?.toFontWeight() ?: style.fontWeight }
+    val fontWeight by derivedStateOf {
+        presentedPartial?.partial?.let { partial ->
+            partial.fontWeightInt?.let { FontWeight(it) } ?: partial.fontWeight?.toFontWeight()
+        } ?: style.fontWeight
+    }
 
     private val fontSpec by derivedStateOf {
         presentedPartial?.fontSpec ?: style.fontSpec

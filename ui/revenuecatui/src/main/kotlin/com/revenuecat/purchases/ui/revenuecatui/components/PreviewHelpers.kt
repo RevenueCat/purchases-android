@@ -61,16 +61,17 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponentsDataOrNull
 import java.net.URL
 import java.util.Date
@@ -86,7 +87,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         componentsConfig = ComponentsConfig(
             base = PaywallComponentsConfig(
                 // This would normally contain at least one TextComponent, but that's not needed for previews.
-                stack = StackComponent(components = emptyList()),
+                stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 stickyFooter = null,
             ),
@@ -102,7 +103,7 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
         identifier = "identifier",
         serverDescription = "serverDescription",
         metadata = emptyMap(),
-        availablePackages = emptyList(),
+        availablePackages = listOf(TestData.Packages.monthly),
         paywallComponents = Offering.PaywallComponents(
             uiConfig = UiConfig(
                 localizations = nonEmptyMapOf(LocaleId("en_US") to variableLocalizationKeysForEnUs()),
@@ -286,7 +287,13 @@ internal fun previewImageLoader(
 @JvmSynthetic
 @Suppress("MaxLineLength")
 internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? =
-    validatePaywallComponentsDataOrNull(LocalContext.current.toResourceProvider())
+    validatePaywallComponentsDataOrNull(
+        PaywallResourceProvider(
+            applicationName = "RevenueCatUI Previews",
+            packageName = "com.revenuecat.purchases.ui.revenuecatui",
+            resources = LocalContext.current.resources,
+        ),
+    )
 
 /**
  * This is only VisibleForTesting because we could use the same convenience when writing tests. We're not actually

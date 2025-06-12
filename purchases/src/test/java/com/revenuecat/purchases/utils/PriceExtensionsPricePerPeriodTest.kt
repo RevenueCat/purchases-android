@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.utils
 
 import com.revenuecat.purchases.amazon.createPrice
-import com.revenuecat.purchases.common.MICROS_MULTIPLIER
+import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import org.assertj.core.api.Assertions.assertThat
@@ -27,7 +27,7 @@ abstract class PriceExtensionsPricePerPeriodTest {
         assertThat(result.amountMicros).isCloseTo(
             expected.amountMicros,
             // Ignore precision errors so we can compare "$3.99" without extra decimals
-            Offset.offset((MICROS_MULTIPLIER / 100).toLong())
+            Offset.offset((MICRO_MULTIPLIER / 100).toLong())
         )
     }
 

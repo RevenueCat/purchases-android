@@ -26,7 +26,7 @@ aliases:
   android-executor: &android-executor
     executor:
       name: android/android-docker
-      resource-class: large
+      resource-class: xlarge
       tag: 2024.04.1
     environment:
       JVM_OPTS: -Xmx6g
@@ -35,7 +35,7 @@ aliases:
   android-machine-emulator: &android-machine-emulator
     executor:
       name: android/android-machine
-      resource-class: large
+      resource-class: xlarge
       tag: 2024.04.1
 
 version: 2.1
@@ -229,6 +229,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
       - android/accept-licenses
       - android-dependencies
@@ -279,6 +281,21 @@ jobs:
           command: ./gradlew detektAll
       - android/save-gradle-cache
 
+  metalava:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - install-sdkman
+      - android/restore-gradle-cache
+      - run:
+          name: Validate binary compatibility (Defaults)
+          command: ./gradlew metalavaCheckCompatibilityDefaultsRelease
+      - run:
+          name: Validate binary compatibility (CustomEntitlementComputation)
+          command: ./gradlew metalavaCheckCompatibilityCustomEntitlementComputationRelease
+      - android/save-gradle-cache
+
   docs-deploy:
     <<: *android-executor
     steps:
@@ -299,7 +316,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.16.0-SNAPSHOT s3://purchases-docs/android/8.16.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/8.20.0-SNAPSHOT s3://purchases-docs/android/8.20.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -608,6 +625,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
       # Required by Emerge CLI
       - install-ruby:
@@ -621,10 +640,10 @@ jobs:
       - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
-          command: ./gradlew ui:revenuecatui:recordPaparazziDebug
+          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui
       - run:
           name: Records new debug view snapshots to become the new golden
-          command: ./gradlew ui:debugview:recordPaparazziDebug
+          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:debugview
       - run:
           name: Upload snapshots to Emerge
           command: |
@@ -658,6 +677,31 @@ jobs:
               --project-root .
       - android/save-build-cache
 
+  record-and-push-paywall-template-screenshots:
+    description: "Record new paywall template screenshots with Paparazzi and push them to the paywall-rendering-validation repository"
+    <<: *android-executor
+    steps:
+      - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
+      - run:
+          name: Clone paywall-rendering-validation repository
+          command: git clone git@github.com:RevenueCat/paywall-rendering-validation.git ../paywall-rendering-validation
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore-build-cache
+      - revenuecat/setup-git-credentials
+      - run:
+          name: Set GitHub token environment variable
+          command: |
+            echo "export GITHUB_TOKEN=$GH_TOKEN_PAYWALL_RENDERING_VALIDATION_PR_RW" >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: Record and push new paywall template screenshots
+          command: bundle exec fastlane android record_and_push_paywall_template_screenshots target_repository_path:../paywall-rendering-validation
+      - android/save-build-cache
+
   run-revenuecatui-ui-tests:
     description: "Run RevenueCatUI UI tests for Android in CircleCI"
     <<: *android-machine-emulator
@@ -680,6 +724,8 @@ jobs:
       - image: cimg/ruby:3.2.0
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - revenuecat/setup-git-credentials
@@ -729,6 +775,7 @@ workflows:
     jobs:
       - test
       - detekt
+      - metalava
       - assemble-purchase-tester
       - assemble-paywall-tester-release
       - run-backend-integration-tests
@@ -780,7 +827,7 @@ workflows:
               - docs-deploy
           <<: *release-tags
 
-  snapshot-bump:
+  on-main-branch:
     when:
       and:
         - not:
@@ -789,17 +836,11 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-next-version
-
-  publish-paywall-tester-to-internal-track:
-    when:
-      and:
-        - not:
-            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "main", << pipeline.git.branch >> ]
-        - equal: [ "default", << pipeline.parameters.action >> ]
-    jobs:
       - publish-paywall-tester-release:
           track: "internal"
+      - record-and-push-paywall-template-screenshots:
+          context:
+            - paywall-rendering-validation-pr-rw
 
   daily-load-shedder-integration-tests:
     when:
