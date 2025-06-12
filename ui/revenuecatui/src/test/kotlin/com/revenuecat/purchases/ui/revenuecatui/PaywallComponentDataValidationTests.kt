@@ -43,10 +43,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.AllLocalizationsMissing
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingStringLocalization
-import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -584,14 +582,6 @@ class PaywallComponentDataValidationTests {
         assertNull(text.fontSpec)
         assertNotNull(text.overrides[0])
         assertNull(text.overrides[0].properties.fontSpec)
-    }
-
-    // This tests a temporal hack to make the root component fill the screen. This will be removed once we have a
-    // definite solution for positioning the root component.
-    @Test
-    fun `Should use Fill size in root component even if given Fit`() {
-        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-        assert((validated.stack as StackComponentStyle).size.height == SizeConstraint.Fill)
     }
 
     @Test
