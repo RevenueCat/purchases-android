@@ -98,10 +98,10 @@ class OfferingsCacheTest {
     }
 
     @Test
-    fun `cache is stale if cached value removes update time`() {
+    fun `cache is stale if forced to be stale`() {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk(), mockk())
-        offeringsCache.clearOfferingsCacheTimestamp()
+        offeringsCache.forceCacheStale()
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
     }
 

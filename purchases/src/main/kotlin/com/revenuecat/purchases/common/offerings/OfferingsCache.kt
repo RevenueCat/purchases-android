@@ -50,8 +50,9 @@ internal class OfferingsCache(
             cachedLanguageTags != localeProvider.currentLocalesLanguageTags
 
     @Synchronized
-    fun clearOfferingsCacheTimestamp() {
+    fun forceCacheStale() {
         offeringsCachedObject.clearCacheTimestamp()
+        cachedLanguageTags = null
     }
 
     // endregion Offerings cache

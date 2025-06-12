@@ -174,7 +174,7 @@ internal class OfferingsManager(
             OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error),
         )
 
-        offeringsCache.clearOfferingsCacheTimestamp()
+        offeringsCache.forceCacheStale()
         dispatch {
             onError?.invoke(error)
         }
