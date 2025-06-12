@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -70,10 +69,11 @@ internal fun ManageSubscriptionsView(
             NoActiveUserManagementView(
                 screenTitle,
                 screenSubtitle,
+                contactEmail,
+                localization,
+                purchaseInformation,
                 supportedPaths,
-                onButtonPress = {
-                    onAction(CustomerCenterAction.PathButtonPressed(it, product = null))
-                },
+                onAction,
             )
         }
     }
@@ -111,28 +111,28 @@ private fun ActiveUserManagementView(
                 .padding(horizontal = 16.dp),
         )
 
-        if (purchaseInformation.store == Store.PLAY_STORE) {
-            ManageSubscriptionsButtonsView(supportedPaths, onButtonPress = {
-                onAction(CustomerCenterAction.PathButtonPressed(it, purchaseInformation.product))
-            })
-        } else {
-            OtherPlatformSubscriptionButtonsView(
-                localization = localization,
-                contactEmail = contactEmail,
-                managementURL = purchaseInformation.managementURL,
-                onAction = onAction,
-            )
-        }
+        ManageSubscriptionsButtonsView(
+            purchaseInformation = purchaseInformation,
+            supportedPaths = supportedPaths,
+            localization = localization,
+            addContactButton = purchaseInformation.store != Store.PLAY_STORE,
+            contactEmail = contactEmail,
+            onAction = onAction,
+        )
     }
 }
 
+@Suppress("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun NoActiveUserManagementView(
     screenTitle: String,
     screenSubtitle: String?,
+    contactEmail: String?,
+    localization: CustomerCenterConfigData.Localization,
+    purchaseInformation: PurchaseInformation?,
     supportedPaths: List<HelpPath>,
-    onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
+    onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         ContentUnavailableView(
@@ -142,8 +142,12 @@ private fun NoActiveUserManagementView(
         )
 
         ManageSubscriptionsButtonsView(
-            supportedPaths,
-            onButtonPress,
+            purchaseInformation = purchaseInformation,
+            supportedPaths = supportedPaths,
+            localization = localization,
+            addContactButton = purchaseInformation?.store != Store.PLAY_STORE,
+            contactEmail = contactEmail,
+            onAction = onAction,
         )
     }
 }
@@ -183,11 +187,16 @@ private fun ContentUnavailableView(
     }
 }
 
+@Suppress("LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun ManageSubscriptionsButtonsView(
+    purchaseInformation: PurchaseInformation?,
     supportedPaths: List<HelpPath>,
-    onButtonPress: (CustomerCenterConfigData.HelpPath) -> Unit,
+    localization: CustomerCenterConfigData.Localization,
+    contactEmail: String?,
+    addContactButton: Boolean = false,
+    onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -195,39 +204,17 @@ private fun ManageSubscriptionsButtonsView(
             .padding(top = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        supportedPaths.forEachIndexed { index, path ->
+        supportedPaths.forEachIndexed { _, path ->
+            val pathButtonPressed =
+                CustomerCenterAction.PathButtonPressed(path, purchaseInformation)
             SettingsButton(
-                onClick = { onButtonPress(path) },
+                onClick = { onAction(pathButtonPressed) },
                 title = path.title,
             )
         }
-    }
-}
-
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@Composable
-private fun OtherPlatformSubscriptionButtonsView(
-    localization: CustomerCenterConfigData.Localization,
-    contactEmail: String?,
-    managementURL: Uri?,
-    onAction: (CustomerCenterAction) -> Unit,
-) {
-    Column(
-        modifier = Modifier.padding(horizontal = ManagementViewHorizontalPadding),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        // TODO: Add restore??
-        managementURL?.let {
+        if (addContactButton && contactEmail != null) {
             SettingsButton(
-                onClick = { onAction(CustomerCenterAction.OpenURL(it.toString())) },
-                title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.MANAGE_SUBSCRIPTION,
-                ),
-            )
-        }
-        contactEmail?.let {
-            SettingsButton(
-                onClick = { onAction(CustomerCenterAction.ContactSupport(it)) },
+                onClick = { onAction(CustomerCenterAction.ContactSupport(contactEmail)) },
                 title = localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
                 ),
@@ -246,7 +233,7 @@ private fun ManageSubscriptionsViewPreview() {
         screenTitle = managementScreen.title,
         screenSubtitle = managementScreen.subtitle,
         screenType = managementScreen.type,
-        supportedPaths = managementScreen.supportedPaths,
+        supportedPaths = managementScreen.paths,
         contactEmail = testData.support.email,
         localization = testData.localization,
         purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
@@ -265,7 +252,7 @@ private fun NoActiveSubscriptionsViewPreview() {
         screenTitle = noActiveScreen.title,
         screenSubtitle = noActiveScreen.subtitle,
         screenType = noActiveScreen.type,
-        supportedPaths = noActiveScreen.supportedPaths,
+        supportedPaths = noActiveScreen.paths,
         contactEmail = testData.support.email,
         localization = testData.localization,
         purchaseInformation = null,
@@ -284,7 +271,7 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
         screenTitle = noActiveScreen.title,
         screenSubtitle = noActiveScreen.subtitle,
         screenType = noActiveScreen.type,
-        supportedPaths = noActiveScreen.supportedPaths,
+        supportedPaths = noActiveScreen.paths,
         contactEmail = testData.support.email,
         localization = testData.localization,
         purchaseInformation = null,
