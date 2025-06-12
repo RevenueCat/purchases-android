@@ -121,7 +121,7 @@ internal sealed class TransactionDetails(
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
     private val dateFormatter: DateFormatter = DefaultDateFormatter(),
@@ -180,6 +180,31 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    private fun handleCancelPath(context: Context) {
+        val currentState = _state.value as? CustomerCenterState.Success ?: return
+        val purchaseInfo = currentState.purchaseInformation
+
+        when {
+            purchaseInfo?.product != null -> startGoogleProductCancellation(context, purchaseInfo.product.id)
+            purchaseInfo?.managementURL != null -> startManagementUrlCancellation(context, purchaseInfo.managementURL)
+            else -> Logger.e("No product or management URL available for cancel path")
+        }
+    }
+
+    private fun startGoogleProductCancellation(context: Context, productId: String) {
+        notifyListenersForManageSubscription()
+        showManageSubscriptions(context, productId)
+    }
+
+    private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {
+        notifyListenersForManageSubscription()
+        openURL(
+            context,
+            managementURL.toString(),
+            CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
+        )
+    }
+
     private fun mainPathAction(
         path: CustomerCenterConfigData.HelpPath,
         context: Context,
@@ -191,33 +216,12 @@ internal class CustomerCenterViewModelImpl(
                         is CustomerCenterState.Success -> {
                             currentState.copy(restorePurchasesState = RestorePurchasesState.RESTORING)
                         }
-
                         else -> currentState
                     }
                 }
             }
 
-            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> {
-                when (val currentState = _state.value) {
-                    is CustomerCenterState.Success -> {
-                        if (currentState.purchaseInformation?.product != null) {
-                            notifyListenersForManageSubscription()
-                            showManageSubscriptions(context, currentState.purchaseInformation.product.id)
-                        } else if (currentState.purchaseInformation?.managementURL != null) {
-                            notifyListenersForManageSubscription()
-                            openURL(
-                                context,
-                                currentState.purchaseInformation.managementURL.toString(),
-                                CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
-                            )
-                        } else {
-                            Logger.e("No product or management URL available for cancel path")
-                        }
-                    }
-
-                    else -> {}
-                }
-            }
+            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> handleCancelPath(context)
 
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL -> {
                 path.url?.let {
