@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -31,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
@@ -103,13 +103,7 @@ private fun ActiveUserManagementView(
 
         Spacer(modifier = Modifier.size(ManagementViewSpacer))
 
-        PurchaseInformationCardView(
-            purchaseInformation = purchaseInformation,
-            localization = localization,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-        )
+        SubscriptionDetailsView(details = purchaseInformation, localization = localization)
 
         ManageSubscriptionsButtonsView(
             purchaseInformation = purchaseInformation,
@@ -198,13 +192,9 @@ private fun ManageSubscriptionsButtonsView(
     addContactButton: Boolean = false,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .padding(horizontal = ManagementViewHorizontalPadding)
-            .padding(top = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        supportedPaths.forEachIndexed { _, path ->
+    Column {
+        HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
+        supportedPaths.forEach { path ->
             val pathButtonPressed =
                 CustomerCenterAction.PathButtonPressed(path, purchaseInformation)
             SettingsButton(
