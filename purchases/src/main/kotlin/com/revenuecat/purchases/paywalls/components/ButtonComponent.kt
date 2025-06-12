@@ -182,6 +182,7 @@ private class ActionSurrogate(
             is Action.NavigateBack,
             is Action.RestorePurchases,
             -> null
+
             is Action.NavigateTo -> when (action.destination) {
                 is Destination.CustomerCenter,
                 is Destination.PrivacyPolicy,
