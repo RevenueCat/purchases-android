@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.baselineprofile)
 }
 
 apply(from = "$rootDir/base-application.gradle")
@@ -33,11 +34,20 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
+            baselineProfile.automaticGenerationDuringBuild = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
             signingConfig = signingConfigs.getByName("release")
+        }
+        create("benchmark") {
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            proguardFiles("benchmark-rules.pro")
         }
     }
 
@@ -66,6 +76,17 @@ android {
     }
 }
 
+baselineProfile {
+    mergeIntoMain = true
+
+    // Don't build on every iteration of a full assemble.
+    // Instead enable generation directly for the release build variant.
+    automaticGenerationDuringBuild = false
+
+    // Make use of Dex Layout Optimizations via Startup Profiles
+    dexLayoutOptimization = true
+}
+
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
@@ -85,6 +106,10 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.compose.ui.google.fonts)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.profileinstaller)
+
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
+
+    baselineProfile(project(":baselineprofile"))
 }

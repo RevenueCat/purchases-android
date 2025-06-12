@@ -1,5 +1,5 @@
 [versions]
-agp = "8.8.0"
+agp = "8.10.1"
 activityCompose = "1.9.3"
 # Note that version 18.0.1 adds the AD_ID permission to the SDK.
 # We should not add that permission ourselves, so keeping it at 17.0.1 for now.
@@ -51,6 +51,11 @@ testLibraries = "1.4.0"
 tink = "1.8.0"
 viewmodelCompose = "2.4.0"
 window = "1.1.0"
+junit = "1.2.1"
+uiautomator = "2.3.0"
+benchmarkMacroJunit4 = "1.3.4"
+baselineprofile = "1.4.0-beta02"
+profileinstaller = "1.4.1"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -138,6 +143,10 @@ testJUnitParams = { module = "pl.pragmatists:JUnitParams", version.ref = "testJU
 tink = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 window = { module = "androidx.window:window", version.ref = "window" }
 window-core = { module = "androidx.window:window-core", version.ref = "window" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junit" }
+androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
+androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmarkMacroJunit4" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -156,6 +165,8 @@ mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublis
 metalava = { id = "me.tylerbwong.gradle.metalava", version.ref = "metalava" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
 poko = { id = "dev.drewhamilton.poko", version.ref = "poko" }
+android-test = { id = "com.android.test", version.ref = "agp" }
+baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineprofile" }
 
 [bundles]
 test = ["androidx-test-core", "androidx-core-testing", "androidx-test-runner", "androidx-test-rules", "androidx-test-junit", "robolectric", "mockk", "assertJ"]
