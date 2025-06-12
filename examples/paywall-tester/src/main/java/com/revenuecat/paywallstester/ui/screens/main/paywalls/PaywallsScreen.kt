@@ -26,8 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -126,9 +124,7 @@ fun PaywallsScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.semantics {
-            testTagsAsResourceId = true
-        },
+        modifier = Modifier.testTag("paywall_screen"),
     ) {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)
@@ -139,7 +135,7 @@ fun PaywallsScreen(
                     modifier = Modifier.padding(8.dp),
                 )
                 ButtonWithEmoji(
-                    modifier = Modifier.testTag("full_screen"),
+                    modifier = Modifier.testTag("full_screen_button"),
                     onClick = {
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
@@ -151,6 +147,7 @@ fun PaywallsScreen(
                 )
                 if (offering.paywallComponents == null) {
                     ButtonWithEmoji(
+                        modifier = Modifier.testTag("full_screen_footer"),
                         onClick = {
                             displayPaywallState = DisplayPaywallState.Footer(
                                 offering,
