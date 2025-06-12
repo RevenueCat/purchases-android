@@ -25,6 +25,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
@@ -281,13 +282,34 @@ internal class CustomerCenterViewModelImpl(
         purchaseInformation: PurchaseInformation?,
         screen: CustomerCenterConfigData.Screen,
     ): List<CustomerCenterConfigData.HelpPath> {
-        return purchaseInformation?.let { info ->
-            if (info.isLifetime) {
-                screen.supportedPaths.filter { it.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL }
-            } else {
-                screen.supportedPaths
-            }
-        } ?: emptyList()
+        return screen.paths
+            .filter { isPathAllowedForStore(it, purchaseInformation) }
+            .filter { isPathAllowedForLifetimeSubscription(it, purchaseInformation) }
+    }
+
+    private fun isPathAllowedForLifetimeSubscription(
+        path: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation?,
+    ): Boolean {
+        if (purchaseInformation?.isLifetime != true) return true
+        return path.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL
+    }
+
+    private fun isPathAllowedForStore(
+        path: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation?,
+    ): Boolean {
+        return when (path.type) {
+            HelpPath.PathType.MISSING_PURCHASE,
+            HelpPath.PathType.CUSTOM_URL,
+            -> true
+            HelpPath.PathType.CANCEL ->
+                purchaseInformation?.store == Store.PLAY_STORE || purchaseInformation?.managementURL != null
+            HelpPath.PathType.REFUND_REQUEST,
+            HelpPath.PathType.CHANGE_PLANS,
+            HelpPath.PathType.UNKNOWN,
+            -> false
+        }
     }
 
     private suspend fun loadPurchaseInformation(
