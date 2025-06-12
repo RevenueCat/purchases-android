@@ -529,7 +529,9 @@ internal class StyleFactory(
                     )
                 }
             // Returning null here, which will result in this button being hidden.
-            is ButtonComponent.Destination.Unknown -> Result.Success(null)
+            is ButtonComponent.Destination.Unknown,
+            is ButtonComponent.Destination.Sheet,
+            -> Result.Success(null)
         }
 
     private fun buttonComponentStyleUrlDestination(
