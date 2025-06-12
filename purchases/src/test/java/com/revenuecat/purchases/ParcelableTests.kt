@@ -48,9 +48,6 @@ class ParcelableTests {
             originalAppUserId = "original_app_user_id",
             managementURL = Uri.parse("https://management.com"),
             originalPurchaseDate = Date(System.currentTimeMillis()),
-            virtualCurrencies =  mapOf(
-                Pair("COIN", VirtualCurrency(balance = 100))
-            )
         )
     )
 

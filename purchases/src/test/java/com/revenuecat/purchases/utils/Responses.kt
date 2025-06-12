@@ -100,14 +100,6 @@ object Responses {
                         }
                       ]
                     },
-                    "virtual_currencies": {
-                        "GLD": {
-                            "balance": 100
-                        },
-                        "SLV": {
-                            "balance": 1000
-                        }
-                    },
                     "subscriptions": {
                       "pro": {
                         "billing_issues_detected_at": null,
