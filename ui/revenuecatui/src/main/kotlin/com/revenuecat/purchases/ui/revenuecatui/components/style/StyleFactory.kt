@@ -514,7 +514,8 @@ internal class StyleFactory(
             )
             is ButtonComponent.Destination.Sheet ->
                 zipOrAccumulate(
-                    first = createStackComponentStyle(destination.stack),
+                    first = createStackComponentStyle(destination.stack)
+                        .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) },
                     second = destination.background
                         ?.toBackgroundStyles(colorAliases)
                         .orSuccessfullyNull(),
