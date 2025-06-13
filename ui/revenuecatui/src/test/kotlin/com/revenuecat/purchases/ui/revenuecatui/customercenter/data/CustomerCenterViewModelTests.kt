@@ -517,7 +517,7 @@ class CustomerCenterViewModelTests {
                 purchaseDate = Date(),
                 originalPurchaseDate = null,
                 expiresDate = null,
-                store = Store.APP_STORE,
+                store = Store.PLAY_STORE,
                 unsubscribeDetectedAt = null,
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
@@ -542,7 +542,9 @@ class CustomerCenterViewModelTests {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
                     val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths.size).isEqualTo(2)
+                    assertThat(paths)
+                        .withFailMessage("Expected 2 paths but got ${paths.size}. Paths: $paths")
+                        .hasSize(2)
                     cancel()
                 }
             }
@@ -935,7 +937,7 @@ class CustomerCenterViewModelTests {
                 title = "Cancel",
                 type = HelpPath.PathType.CANCEL
             ),
-            mockProduct
+            CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
         )
 
         // Then both listeners should be notified
