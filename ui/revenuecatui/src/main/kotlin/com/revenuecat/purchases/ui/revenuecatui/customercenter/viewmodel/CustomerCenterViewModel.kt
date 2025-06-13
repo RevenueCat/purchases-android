@@ -211,11 +211,23 @@ internal class CustomerCenterViewModelImpl(
     override fun selectPurchase(purchase: PurchaseInformation) {
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    selectedPurchase = purchase,
-                    title = currentState.customerCenterConfigData.getManagementScreen()?.title,
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
-                )
+                val screen = currentState.customerCenterConfigData.getManagementScreen()
+                if (screen != null) {
+                    currentState.copy(
+                        selectedPurchase = purchase,
+                        title = screen.title,
+                        navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                        supportedPathsForManagementScreen = supportedPaths(purchase, screen),
+                    )
+                } else {
+                    Logger.e("No management screen available in the customer center config data")
+                    CustomerCenterState.Error(
+                        PurchasesError(
+                            PurchasesErrorCode.UnknownError,
+                            "No management screen available in the customer center config data",
+                        ),
+                    )
+                }
             } else {
                 currentState
             }
@@ -225,7 +237,6 @@ internal class CustomerCenterViewModelImpl(
     private fun mainPathAction(
         path: CustomerCenterConfigData.HelpPath,
         context: Context,
-        product: StoreProduct? = null,
     ) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
@@ -763,10 +774,10 @@ internal class CustomerCenterViewModelImpl(
                 path,
             )
             if (!loaded) {
-                mainPathAction(path, context, product)
+                mainPathAction(path, context)
             }
         } else {
-            mainPathAction(path, context, product)
+            mainPathAction(path, context)
         }
     }
 

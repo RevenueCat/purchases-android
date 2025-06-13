@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -313,33 +315,40 @@ private fun MainScreen(
                 RelevantPurchasesListView(
                     screenTitle = managementScreen.title,
                     screenSubtitle = managementScreen.subtitle,
+                    screenType = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT,
                     supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
                     localization = configuration.localization,
-                    purchaseInformation = state.purchaseInformation,
-                    onPurchaseSelected = { onAction(CustomerCenterAction.SelectPurchase(it)) },
+                    onPurchaseSelect = { onAction(CustomerCenterAction.SelectPurchase(it)) },
                     onAction = onAction,
-                    screenType = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT,
+                    purchaseInformation = state.purchaseInformation,
                 )
             } else {
-                Text(
-                    text = managementScreen.title,
-                    style = MaterialTheme.typography.headlineLarge,
-                    modifier = Modifier.padding(
-                        start = ManagementViewHorizontalPadding,
-                        end = ManagementViewHorizontalPadding,
-                        top = ManagementViewTitleTopPadding,
-                    ),
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = managementScreen.title,
+                        style = MaterialTheme.typography.headlineLarge,
+                        modifier = Modifier.padding(
+                            start = ManagementViewHorizontalPadding,
+                            end = ManagementViewHorizontalPadding,
+                            top = ManagementViewTitleTopPadding,
+                        ),
+                    )
 
-                Spacer(modifier = Modifier.size(ManagementViewSpacer))
+                    Spacer(modifier = Modifier.size(ManagementViewSpacer))
 
-                SubscriptionDetailView(
-                    contactEmail = configuration.support.email,
-                    localization = configuration.localization,
-                    purchaseInformation = state.purchaseInformation.first(),
-                    supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
-                    onAction = onAction,
-                )
+                    SubscriptionDetailView(
+                        contactEmail = configuration.support.email,
+                        localization = configuration.localization,
+                        purchaseInformation = state.purchaseInformation.first(),
+                        supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                        onAction = onAction,
+                    )
+                }
             }
         } ?: run {
             // Handle missing management screen
@@ -350,11 +359,11 @@ private fun MainScreen(
             RelevantPurchasesListView(
                 screenTitle = noActiveScreen.title,
                 screenSubtitle = noActiveScreen.subtitle,
+                screenType = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
                 supportedPaths = noActiveScreen.paths,
                 localization = configuration.localization,
-                onPurchaseSelected = {},
+                onPurchaseSelect = {},
                 onAction = onAction,
-                screenType = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
             )
         } ?: run {
             // Fallback with a restore button

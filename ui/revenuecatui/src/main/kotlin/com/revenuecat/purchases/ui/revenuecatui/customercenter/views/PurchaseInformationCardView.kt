@@ -41,8 +41,8 @@ internal fun PurchaseInformationCardView(
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     position: ButtonPosition = ButtonPosition.SINGLE,
-    onCardClick: (() -> Unit)?,
     isDetailedView: Boolean = false,
+    onCardClick: (() -> Unit)?,
 ) {
     val shape = when (position) {
         ButtonPosition.SINGLE -> RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE)

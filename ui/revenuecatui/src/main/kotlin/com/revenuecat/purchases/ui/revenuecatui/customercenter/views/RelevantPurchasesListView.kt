@@ -48,10 +48,10 @@ internal fun RelevantPurchasesListView(
     screenType: CustomerCenterConfigData.Screen.ScreenType,
     supportedPaths: List<HelpPath>,
     localization: CustomerCenterConfigData.Localization,
+    onPurchaseSelect: (PurchaseInformation) -> Unit,
+    onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
     purchaseInformation: List<PurchaseInformation> = emptyList(),
-    onPurchaseSelected: (PurchaseInformation) -> Unit,
-    onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -66,13 +66,17 @@ internal fun RelevantPurchasesListView(
                 screenTitle,
                 localization,
                 purchaseInformation,
-                onPurchaseSelected,
+                onPurchaseSelect,
             )
 
             if (purchaseInformation.size > 1 && restorePath != null) {
                 ManageSubscriptionsButtonsView(
                     supportedPaths = listOf(restorePath),
-                    onButtonPress = { onAction(CustomerCenterAction.PathButtonPressed(it, product = null)) },
+                    onButtonPress = {
+                        onAction(
+                            CustomerCenterAction.PathButtonPressed(it, purchaseInformation = null),
+                        )
+                    },
                 )
             }
         } else {
@@ -81,7 +85,7 @@ internal fun RelevantPurchasesListView(
                 screenSubtitle,
                 supportedPaths,
                 onButtonPress = {
-                    onAction(CustomerCenterAction.PathButtonPressed(it, product = null))
+                    onAction(CustomerCenterAction.PathButtonPressed(it, purchaseInformation = null))
                 },
             )
         }
@@ -95,7 +99,7 @@ private fun ActiveUserManagementView(
     screenTitle: String,
     localization: CustomerCenterConfigData.Localization,
     purchaseInformation: List<PurchaseInformation>,
-    onPurchaseSelected: (PurchaseInformation) -> Unit,
+    onPurchaseSelect: (PurchaseInformation) -> Unit,
 ) {
     Column {
         Text(
@@ -129,12 +133,12 @@ private fun ActiveUserManagementView(
                 PurchaseInformationCardView(
                     purchaseInformation = info,
                     localization = localization,
-                    position = position,
-                    onCardClick = { onPurchaseSelected(info) },
-                    isDetailedView = false,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
+                    position = position,
+                    isDetailedView = false,
+                    onCardClick = { onPurchaseSelect(info) },
                 )
             }
         }
@@ -168,12 +172,12 @@ private fun ActiveUserManagementView(
                 PurchaseInformationCardView(
                     purchaseInformation = info,
                     localization = localization,
-                    position = position,
-                    onCardClick = { onPurchaseSelected(info) },
-                    isDetailedView = false,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
+                    position = position,
+                    isDetailedView = false,
+                    onCardClick = { onPurchaseSelect(info) },
                 )
             }
         }
@@ -301,11 +305,11 @@ private fun RelevantPurchasesListViewPreview() {
                 screenTitle = managementScreen.title,
                 screenSubtitle = managementScreen.subtitle,
                 screenType = managementScreen.type,
-                supportedPaths = managementScreen.supportedPaths,
+                supportedPaths = managementScreen.paths,
                 localization = testData.localization,
-                purchaseInformation = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
-                onPurchaseSelected = {},
+                onPurchaseSelect = {},
                 onAction = {},
+                purchaseInformation = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
             )
         }
     }
@@ -323,11 +327,11 @@ private fun NoActiveSubscriptionsViewPreview() {
                 screenTitle = noActiveScreen.title,
                 screenSubtitle = noActiveScreen.subtitle,
                 screenType = noActiveScreen.type,
-                supportedPaths = noActiveScreen.supportedPaths,
+                supportedPaths = noActiveScreen.paths,
                 localization = testData.localization,
-                purchaseInformation = emptyList(),
-                onPurchaseSelected = {},
+                onPurchaseSelect = {},
                 onAction = {},
+                purchaseInformation = emptyList(),
             )
         }
     }
@@ -345,13 +349,13 @@ private fun RelevantPurchasesListViewWithLifetimePurchasePreview() {
                 screenTitle = managementScreen.title,
                 screenSubtitle = managementScreen.subtitle,
                 screenType = managementScreen.type,
-                supportedPaths = managementScreen.supportedPaths,
+                supportedPaths = managementScreen.paths,
                 localization = testData.localization,
+                onPurchaseSelect = {},
+                onAction = {},
                 purchaseInformation = listOf(
                     CustomerCenterConfigTestData.purchaseInformationLifetime,
                 ),
-                onPurchaseSelected = {},
-                onAction = {},
             )
         }
     }
@@ -369,15 +373,15 @@ private fun RelevantPurchasesListViewWithSubscriptionsAndLifetimePurchasePreview
                 screenTitle = managementScreen.title,
                 screenSubtitle = managementScreen.subtitle,
                 screenType = managementScreen.type,
-                supportedPaths = managementScreen.supportedPaths,
+                supportedPaths = managementScreen.paths,
                 localization = testData.localization,
+                onPurchaseSelect = {},
+                onAction = {},
                 purchaseInformation = listOf(
                     CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
                     CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
                     CustomerCenterConfigTestData.purchaseInformationLifetime,
                 ),
-                onPurchaseSelected = {},
-                onAction = {},
             )
         }
     }
@@ -396,11 +400,11 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
                 screenTitle = noActiveScreen.title,
                 screenSubtitle = noActiveScreen.subtitle,
                 screenType = noActiveScreen.type,
-                supportedPaths = noActiveScreen.supportedPaths,
+                supportedPaths = noActiveScreen.paths,
                 localization = testData.localization,
-                purchaseInformation = emptyList(),
-                onPurchaseSelected = {},
+                onPurchaseSelect = {},
                 onAction = {},
+                purchaseInformation = emptyList(),
             )
         }
     }
@@ -418,14 +422,14 @@ private fun RelevantPurchasesListViewWithMultiplePurchasesPreview() {
                 screenTitle = managementScreen.title,
                 screenSubtitle = managementScreen.subtitle,
                 screenType = managementScreen.type,
-                supportedPaths = managementScreen.supportedPaths,
+                supportedPaths = managementScreen.paths,
                 localization = testData.localization,
+                onPurchaseSelect = {},
+                onAction = {},
                 purchaseInformation = listOf(
                     CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
                     CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
                 ),
-                onPurchaseSelected = {},
-                onAction = {},
             )
         }
     }

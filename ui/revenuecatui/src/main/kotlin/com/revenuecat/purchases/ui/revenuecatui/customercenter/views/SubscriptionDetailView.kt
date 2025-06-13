@@ -13,8 +13,8 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.constants.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -37,12 +37,12 @@ internal fun SubscriptionDetailView(
         PurchaseInformationCardView(
             purchaseInformation = purchaseInformation,
             localization = localization,
-            position = ButtonPosition.SINGLE,
-            onCardClick = null,
-            isDetailedView = true,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
+            position = ButtonPosition.SINGLE,
+            isDetailedView = true,
+            onCardClick = null,
         )
 
         val pathsForPurchase = if (purchaseInformation.isLifetime) {
@@ -53,7 +53,7 @@ internal fun SubscriptionDetailView(
 
         if (purchaseInformation.store == Store.PLAY_STORE) {
             ManageSubscriptionsButtonsView(pathsForPurchase) { path ->
-                onAction(CustomerCenterAction.PathButtonPressed(path, purchaseInformation.product))
+                onAction(CustomerCenterAction.PathButtonPressed(path, purchaseInformation))
             }
         } else {
             OtherPlatformSubscriptionButtonsView(
