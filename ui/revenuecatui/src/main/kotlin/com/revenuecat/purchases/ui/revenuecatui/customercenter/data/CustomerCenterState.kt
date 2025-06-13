@@ -25,7 +25,8 @@ internal sealed class CustomerCenterState(
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     data class Success(
         @get:JvmSynthetic val customerCenterConfigData: CustomerCenterConfigData,
-        @get:JvmSynthetic val purchaseInformation: PurchaseInformation? = null,
+        @get:JvmSynthetic val purchaseInformation: List<PurchaseInformation> = emptyList(),
+        @get:JvmSynthetic val selectedPurchase: PurchaseInformation? = null,
         @get:JvmSynthetic val supportedPathsForManagementScreen: List<CustomerCenterConfigData.HelpPath>? = null,
         @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState? = null,
         @get:JvmSynthetic val feedbackSurveyData: FeedbackSurveyData? = null,

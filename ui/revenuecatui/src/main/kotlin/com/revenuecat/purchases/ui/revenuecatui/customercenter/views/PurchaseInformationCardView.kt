@@ -1,12 +1,16 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterCon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @SuppressWarnings("LongParameterList", "LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -36,6 +41,8 @@ internal fun PurchaseInformationCardView(
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     position: ButtonPosition = ButtonPosition.SINGLE,
+    isDetailedView: Boolean = false,
+    onCardClick: (() -> Unit)?,
 ) {
     val shape = when (position) {
         ButtonPosition.SINGLE -> RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE)
@@ -60,7 +67,9 @@ internal fun PurchaseInformationCardView(
         color = MaterialTheme.colorScheme.surface,
     ) {
         Column(
-            modifier = Modifier.padding(CustomerCenterConstants.Card.CARD_PADDING),
+            modifier = Modifier
+                .applyIfNotNull(onCardClick) { clickable { onCardClick?.invoke() } }
+                .padding(CustomerCenterConstants.Card.CARD_PADDING),
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -75,6 +84,11 @@ internal fun PurchaseInformationCardView(
                     modifier = Modifier.weight(1f),
                 )
                 when {
+                    purchaseInformation.isLifetime && !isDetailedView -> Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
                     purchaseInformation.isCancelled -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_CANCELLED,
@@ -87,7 +101,7 @@ internal fun PurchaseInformationCardView(
                         ),
                         backgroundColor = Color(CustomerCenterConstants.Card.BADGE_FREE_TRIAL),
                     )
-                    purchaseInformation.isActive -> StatusBadge(
+                    !purchaseInformation.isLifetime && purchaseInformation.isActive -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.ACTIVE,
                         ),
@@ -178,6 +192,7 @@ private fun getPrice(
         PriceDetails.Unknown -> null
     }
 }
+
 internal enum class ButtonPosition {
     SINGLE,
     FIRST,
@@ -248,6 +263,7 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
             isTrial = false,
             isCancelled = false,
         ),
+        CustomerCenterConfigTestData.purchaseInformationLifetime,
         PurchaseInformation(
             title = "Monthly long subscription name that overflows",
             pricePaid = PriceDetails.Paid("$1.99"),
@@ -285,6 +301,7 @@ private fun PurchaseInformationCardView_Preview(
             localization = CustomerCenterConfigTestData.customerCenterData(
                 shouldWarnCustomerToUpdate = false,
             ).localization,
+            onCardClick = { },
         )
     }
 }
@@ -303,6 +320,7 @@ private fun PurchaseInformationCardView_Preview_Scale2(
             localization = CustomerCenterConfigTestData.customerCenterData(
                 shouldWarnCustomerToUpdate = false,
             ).localization,
+            onCardClick = { },
         )
     }
 }
