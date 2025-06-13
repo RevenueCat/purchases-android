@@ -196,8 +196,8 @@ class ButtonComponentViewTests {
                 style = style,
                 onClick = { action ->
                     clickedUrl = action
-                        .let { it as? PaywallAction.NavigateTo }
-                        ?.let { it.destination as PaywallAction.NavigateTo.Destination.Url }
+                        .let { it as? PaywallAction.External.NavigateTo }
+                        ?.let { it.destination as PaywallAction.External.NavigateTo.Destination.Url }
                         ?.url
                 },
                 state = state
@@ -290,7 +290,7 @@ class ButtonComponentViewTests {
                     style = style,
                     state = state,
                     clickHandler = { action ->
-                        val purchaseAction = action as PaywallAction.PurchasePackage
+                        val purchaseAction = action as PaywallAction.External.PurchasePackage
                         assertThat(purchaseAction.rcPackage).isNotNull
                         assertThat(purchaseAction.rcPackage?.identifier).isEqualTo(expectedPackageId)
                     },
@@ -380,7 +380,7 @@ class ButtonComponentViewTests {
                     style = style,
                     state = state,
                     clickHandler = { action ->
-                        val purchaseAction = action as PaywallAction.PurchasePackage
+                        val purchaseAction = action as PaywallAction.External.PurchasePackage
                         assertThat(purchaseAction.rcPackage).isNull()
                     },
                 )
