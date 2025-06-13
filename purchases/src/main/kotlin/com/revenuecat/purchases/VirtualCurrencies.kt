@@ -28,6 +28,14 @@ class VirtualCurrencies internal constructor(
         return all.hashCode()
     }
 
+    /**
+     * Returns the virtual currency for the given key, or null if it doesn't exist.
+     *
+     * @param key The key of the virtual currency to retrieve
+     * @return The virtual currency, or null if not found
+     */
+    operator fun get(key: String): VirtualCurrency? = all[key]
+
     companion object {
         internal fun fromJson(json: JSONObject): VirtualCurrencies {
             val vcsJson = json.optJSONObject("virtual_currencies") ?: json
