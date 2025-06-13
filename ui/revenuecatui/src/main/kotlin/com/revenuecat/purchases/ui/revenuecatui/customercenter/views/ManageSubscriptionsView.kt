@@ -139,7 +139,7 @@ private fun NoActiveUserManagementView(
             purchaseInformation = purchaseInformation,
             supportedPaths = supportedPaths,
             localization = localization,
-            addContactButton = purchaseInformation?.store != Store.PLAY_STORE,
+            addContactButton = true,
             contactEmail = contactEmail,
             onAction = onAction,
         )
