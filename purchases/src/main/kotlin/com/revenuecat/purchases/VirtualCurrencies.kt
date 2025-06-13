@@ -47,10 +47,10 @@ class VirtualCurrencies internal constructor(
     /**
      * Returns the virtual currency for the given key, or null if it doesn't exist.
      *
-     * @param key The key of the virtual currency to retrieve
+     * @param code The code of the virtual currency to retrieve
      * @return The virtual currency, or null if not found
      */
-    operator fun get(key: String): VirtualCurrency? = all[key]
+    operator fun get(code: String): VirtualCurrency? = all[code]
 
     companion object {
         internal fun fromJson(json: JSONObject): VirtualCurrencies {
