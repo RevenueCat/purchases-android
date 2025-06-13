@@ -8,7 +8,6 @@ import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -48,7 +47,7 @@ class PurchaseInformationTest {
             willRenew = true,
             store = Store.PLAY_STORE,
             productIdentifier = "test_product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -79,14 +78,15 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "Monthly Product",
-            durationTitle = "Month",
-            explanation = Explanation.EARLIEST_RENEWAL,
             price = PriceDetails.Paid("$1.99"),
-            expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
-            expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
             product = storeProduct,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = false,
+            renewalDate = "3 Oct 2063",
+            expirationDate = null
         )
     }
 
@@ -100,7 +100,7 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.PLAY_STORE,
             productIdentifier = "test_product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -131,14 +131,15 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "Monthly Product",
-            durationTitle = "Month",
-            explanation = Explanation.EARLIEST_EXPIRATION,
             price = PriceDetails.Paid("$1.99"),
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
-            expirationDateString = "3 Oct 2063",
             store = Store.PLAY_STORE,
             product = storeProduct,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2063"
         )
     }
 
@@ -152,7 +153,7 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.PLAY_STORE,
             productIdentifier = "test_product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = false,
@@ -183,14 +184,15 @@ class PurchaseInformationTest {
         assertPurchaseInformation(
             purchaseInformation,
             title = "Monthly Product",
-            durationTitle = "Month",
-            explanation = Explanation.EXPIRED,
             price = PriceDetails.Paid("$1.99"),
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
-            expirationDateString = "2 Oct 2063",
             store = Store.PLAY_STORE,
             product = storeProduct,
-            isLifetime = false
+            isLifetime = false,
+            isActive = false,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "2 Oct 2063"
         )
     }
 
@@ -204,7 +206,7 @@ class PurchaseInformationTest {
             willRenew = true,
             store = Store.APP_STORE,
             productIdentifier = "test_product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -225,15 +227,16 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.APPLE,
+            title = "test_product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
-            expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = false,
+            renewalDate = "3 Oct 2063",
+            expirationDate = null
         )
     }
 
@@ -247,7 +250,7 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.APP_STORE,
             productIdentifier = "test_product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -268,15 +271,16 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.APPLE,
+            title = "test_product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
-            expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2063"
         )
     }
 
@@ -290,7 +294,7 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.APP_STORE,
             productIdentifier = "test_product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = false,
@@ -311,15 +315,16 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.APPLE,
+            title = "test_product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
-            expirationDateString = "3 Oct 2063",
             store = Store.APP_STORE,
             product = null,
-            isLifetime = false
+            isLifetime = false,
+            isActive = false,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2063"
         )
     }
 
@@ -333,7 +338,8 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.PROMOTIONAL,
             productIdentifier = "rc_promo_pro_cat_yearly",
-            expiresDate = expiresDate
+            expirationDate = expiresDate,
+            ownershipType = OwnershipType.UNKNOWN
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -347,42 +353,44 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
+            managementURL = null,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.PROMOTIONAL,
+            title = "rc_promo_pro_cat_yearly",
             price = PriceDetails.Free,
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
-            expirationDateString = "3 Oct 2063",
             store = Store.PROMOTIONAL,
             product = null,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2063"
         )
     }
 
     @Test
     fun `test PurchaseInformation with promotional lifetime entitlement`() {
-        val expiresDate = null
-        setupDateFormatter(expiresDate, "")
+        val expiresDate = 1_000_000_000.days.fromNow()
+        setupDateFormatter(expiresDate, "3 Oct 2222")
 
         val entitlementInfo = createEntitlementInfo(
             isActive = true,
             willRenew = false,
             store = Store.PROMOTIONAL,
-            productIdentifier = "rc_promo_pro_cat_yearly",
-            expiresDate = expiresDate
+            productIdentifier = "rc_promo_pro_cat_lifetime",
+            expirationDate = expiresDate,
+            ownershipType = OwnershipType.UNKNOWN
         )
         val transaction = createTransactionDetails(
             isActive = true,
             willRenew = false,
             store = Store.PROMOTIONAL,
-            productIdentifier = "rc_promo_pro_cat_yearly",
+            productIdentifier = "rc_promo_pro_cat_lifetime",
             expiresDate = expiresDate
         )
 
@@ -390,24 +398,24 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
+            managementURL = null,
             dateFormatter = dateFormatter,
             locale = locale
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.PROMOTIONAL,
+            title = "rc_promo_pro_cat_lifetime",
             price = PriceDetails.Free,
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
-            expirationDateString = "",
             store = Store.PROMOTIONAL,
             product = null,
-            isLifetime = true
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2222"
         )
-        assertThat(purchaseInformation.expirationOrRenewal!!.date).isEqualTo(ExpirationOrRenewal.Date.Never)
     }
 
     @Test
@@ -420,7 +428,7 @@ class PurchaseInformationTest {
             willRenew = true,
             store = Store.STRIPE,
             productIdentifier = "com.revenuecat.product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -441,15 +449,16 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.WEB,
+            title = "com.revenuecat.product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
-            expirationDateString = "3 Oct 2063",
             store = Store.STRIPE,
             product = null,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = false,
+            renewalDate = "3 Oct 2063",
+            expirationDate = null
         )
     }
 
@@ -463,7 +472,7 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.STRIPE,
             productIdentifier = "com.revenuecat.product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -484,15 +493,16 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.WEB,
+            title = "com.revenuecat.product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
-            expirationDateString = "3 Oct 2063",
             store = Store.STRIPE,
             product = null,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2063"
         )
     }
 
@@ -506,7 +516,7 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.STRIPE,
             productIdentifier = "com.revenuecat.product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = false,
@@ -527,15 +537,16 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.WEB,
+            title = "com.revenuecat.product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
-            expirationDateString = "3 Oct 2063",
-            product = null,
             store = Store.STRIPE,
-            isLifetime = false
+            product = null,
+            isLifetime = false,
+            isActive = false,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2063"
         )
     }
 
@@ -549,7 +560,7 @@ class PurchaseInformationTest {
             willRenew = true,
             store = Store.PADDLE,
             productIdentifier = "com.revenuecat.product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -570,15 +581,16 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.WEB,
+            title = "com.revenuecat.product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
-            expirationDateString = "3 Oct 2063",
             store = Store.PADDLE,
             product = null,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = false,
+            renewalDate = "3 Oct 2063",
+            expirationDate = null
         )
     }
 
@@ -592,7 +604,7 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.PADDLE,
             productIdentifier = "com.revenuecat.product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
@@ -613,15 +625,16 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.WEB,
+            title = "com.revenuecat.product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRES,
-            expirationDateString = "3 Oct 2063",
             store = Store.PADDLE,
             product = null,
-            isLifetime = false
+            isLifetime = false,
+            isActive = true,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2063"
         )
     }
 
@@ -635,7 +648,7 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.PADDLE,
             productIdentifier = "com.revenuecat.product",
-            expiresDate = expiresDate
+            expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = false,
@@ -656,15 +669,71 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = null,
-            durationTitle = null,
-            explanation = Explanation.WEB,
+            title = "com.revenuecat.product",
             price = PriceDetails.Unknown,
-            expirationLabel = ExpirationOrRenewal.Label.EXPIRED,
-            expirationDateString = "3 Oct 2063",
-            product = null,
             store = Store.PADDLE,
-            isLifetime = false
+            product = null,
+            isLifetime = false,
+            isActive = false,
+            isTrial = false,
+            isCancelled = true,
+            renewalDate = null,
+            expirationDate = "3 Oct 2063"
+        )
+    }
+
+    @Test
+    fun `test PurchaseInformation with trial subscription`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = true,
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            expirationDate = expiresDate,
+            ownershipType = OwnershipType.PURCHASED
+        )
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            expiresDate = expiresDate,
+            isTrial = true
+        )
+
+        val storeProduct = TestStoreProduct(
+            "test_product",
+            "name",
+            "Monthly Product",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M")
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = entitlementInfo,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            managementURL = Uri.parse(MANAGEMENT_URL),
+            dateFormatter = dateFormatter,
+            locale = locale
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Monthly Product",
+            price = PriceDetails.Paid("$1.99"),
+            store = Store.PLAY_STORE,
+            product = storeProduct,
+            isLifetime = false,
+            isActive = true,
+            isTrial = true,
+            isCancelled = false,
+            renewalDate = "3 Oct 2063",
+            expirationDate = null
         )
     }
 
@@ -672,29 +741,26 @@ class PurchaseInformationTest {
     private fun assertPurchaseInformation(
         purchaseInformation: PurchaseInformation,
         title: String?,
-        durationTitle: String?,
-        explanation: Explanation,
         price: PriceDetails,
-        expirationLabel: ExpirationOrRenewal.Label,
-        expirationDateString: String,
         product: StoreProduct?,
         store: Store,
-        isLifetime: Boolean
+        isLifetime: Boolean,
+        isActive: Boolean = true,
+        isTrial: Boolean = false,
+        isCancelled: Boolean = false,
+        renewalDate: String? = null,
+        expirationDate: String? = null,
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
-        assertThat(purchaseInformation.durationTitle).isEqualTo(durationTitle)
-        assertThat(purchaseInformation.explanation).isEqualTo(explanation)
-        assertThat(purchaseInformation.price).isEqualTo(price)
+        assertThat(purchaseInformation.pricePaid).isEqualTo(price)
         assertThat(purchaseInformation.isLifetime).isEqualTo(isLifetime)
-
-        assertThat(purchaseInformation.expirationOrRenewal).isNotNull
-        assertThat(purchaseInformation.expirationOrRenewal!!.label).isEqualTo(expirationLabel)
-        if (expirationDateString.isNotEmpty()) {
-            assertThat((purchaseInformation.expirationOrRenewal.date as ExpirationOrRenewal.Date.DateString).date)
-                .isEqualTo(expirationDateString)
-        }
         assertThat(purchaseInformation.product).isEqualTo(product)
         assertThat(purchaseInformation.store).isEqualTo(store)
+        assertThat(purchaseInformation.isActive).isEqualTo(isActive)
+        assertThat(purchaseInformation.isTrial).isEqualTo(isTrial)
+        assertThat(purchaseInformation.isCancelled).isEqualTo(isCancelled)
+        assertThat(purchaseInformation.renewalDate).isEqualTo(renewalDate)
+        assertThat(purchaseInformation.expirationDate).isEqualTo(expirationDate)
     }
 
     private fun createEntitlementInfo(
@@ -702,7 +768,8 @@ class PurchaseInformationTest {
         willRenew: Boolean,
         store: Store,
         productIdentifier: String,
-        expiresDate: Date?
+        expirationDate: Date?,
+        ownershipType: OwnershipType = OwnershipType.PURCHASED,
     ): EntitlementInfo {
         return EntitlementInfo(
             identifier = "test_entitlement",
@@ -711,14 +778,14 @@ class PurchaseInformationTest {
             periodType = PeriodType.NORMAL,
             latestPurchaseDate = twoDaysAgo,
             originalPurchaseDate = twoDaysAgo,
-            expirationDate = expiresDate,
+            expirationDate = expirationDate,
             store = store,
             productIdentifier = productIdentifier,
             productPlanIdentifier = null,
             isSandbox = false,
             unsubscribeDetectedAt = null,
             billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.PURCHASED,
+            ownershipType = ownershipType,
             jsonObject = mockk(),
             verification = VerificationResult.NOT_REQUESTED
         )
@@ -731,6 +798,7 @@ class PurchaseInformationTest {
         productIdentifier: String,
         expiresDate: Date?,
         productPlanIdentifier: String? = null,
+        isTrial: Boolean = false,
     ): TransactionDetails.Subscription {
         return TransactionDetails.Subscription(
             productIdentifier = productIdentifier,
@@ -739,6 +807,7 @@ class PurchaseInformationTest {
             willRenew = willRenew,
             expiresDate = expiresDate,
             productPlanIdentifier = productPlanIdentifier,
+            isTrial = isTrial,
         )
     }
 

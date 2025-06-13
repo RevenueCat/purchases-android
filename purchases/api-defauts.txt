@@ -1013,8 +1013,11 @@ package com.revenuecat.purchases.customercenter {
   @kotlinx.serialization.Serializable public enum CustomerCenterConfigData.Localization.CommonLocalizedString {
     method public String getDefaultValue();
     property public final String defaultValue;
+    enum_constant @kotlinx.serialization.SerialName("active") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString ACTIVE;
     enum_constant @kotlinx.serialization.SerialName("amazon_subscription_manage") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString AMAZON_SUBSCRIPTION_MANAGE;
     enum_constant @kotlinx.serialization.SerialName("apple_subscription_manage") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString APPLE_SUBSCRIPTION_MANAGE;
+    enum_constant @kotlinx.serialization.SerialName("badge_cancelled") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString BADGE_CANCELLED;
+    enum_constant @kotlinx.serialization.SerialName("badge_free_trial") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString BADGE_FREE_TRIAL;
     enum_constant @kotlinx.serialization.SerialName("billing_cycle") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString BILLING_CYCLE;
     enum_constant @kotlinx.serialization.SerialName("cancel") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString CANCEL;
     enum_constant @kotlinx.serialization.SerialName("check_past_purchases") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString CHECK_PAST_PURCHASES;
@@ -1045,10 +1048,14 @@ package com.revenuecat.purchases.customercenter {
     enum_constant @kotlinx.serialization.SerialName("purchases_recovered") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString PURCHASES_RECOVERED;
     enum_constant @kotlinx.serialization.SerialName("purchases_recovered_explanation") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString PURCHASES_RECOVERED_EXPLANATION;
     enum_constant @kotlinx.serialization.SerialName("purchases_restoring") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString PURCHASES_RESTORING;
+    enum_constant @kotlinx.serialization.SerialName("purchase_info_expired_on_date") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString PURCHASE_INFO_EXPIRED_ON_DATE;
+    enum_constant @kotlinx.serialization.SerialName("purchase_info_expires_on_date") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString PURCHASE_INFO_EXPIRES_ON_DATE;
     enum_constant @kotlinx.serialization.SerialName("refund_canceled") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString REFUND_CANCELED;
     enum_constant @kotlinx.serialization.SerialName("refund_error_generic") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString REFUND_ERROR_GENERIC;
     enum_constant @kotlinx.serialization.SerialName("refund_granted") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString REFUND_GRANTED;
     enum_constant @kotlinx.serialization.SerialName("refund_status") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString REFUND_STATUS;
+    enum_constant @kotlinx.serialization.SerialName("renews_on_date") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString RENEWS_ON_DATE;
+    enum_constant @kotlinx.serialization.SerialName("renews_on_date_for_price") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString RENEWS_ON_DATE_FOR_PRICE;
     enum_constant @kotlinx.serialization.SerialName("restore_purchases") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString RESTORE_PURCHASES;
     enum_constant @kotlinx.serialization.SerialName("single_payment_then_price") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString SINGLE_PAYMENT_THEN_PRICE;
     enum_constant @kotlinx.serialization.SerialName("sub_earliest_expiration") public static final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString SUB_EARLIEST_EXPIRATION;

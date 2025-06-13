@@ -17,6 +17,7 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -110,6 +111,7 @@ internal sealed class TransactionDetails(
         val isActive: Boolean,
         val willRenew: Boolean,
         val expiresDate: Date?,
+        val isTrial: Boolean,
     ) : TransactionDetails(productIdentifier, store)
 
     data class NonSubscription(
@@ -381,6 +383,7 @@ internal class CustomerCenterViewModelImpl(
                     isActive = it.isActive,
                     willRenew = it.willRenew,
                     expiresDate = it.expiresDate,
+                    isTrial = it.periodType == PeriodType.TRIAL,
                 )
 
                 is Transaction -> TransactionDetails.NonSubscription(
