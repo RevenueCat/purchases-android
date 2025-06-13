@@ -752,9 +752,6 @@ package com.revenuecat.purchases.common.events {
     property public final java.util.List<java.lang.String> cacheKey;
   }
 
-  public interface FeatureEvent {
-  }
-
 }
 
 package com.revenuecat.purchases.customercenter {
@@ -785,14 +782,6 @@ package com.revenuecat.purchases.customercenter {
 
   public static final class CustomerCenterManagementOption.MissingPurchase implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
     field public static final com.revenuecat.purchases.customercenter.CustomerCenterManagementOption.MissingPurchase INSTANCE;
-  }
-
-}
-
-package com.revenuecat.purchases.customercenter.events {
-
-  @kotlinx.serialization.Serializable public enum CustomerCenterDisplayMode {
-    enum_constant @kotlinx.serialization.SerialName("full_screen") public static final com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode FULL_SCREEN;
   }
 
 }
