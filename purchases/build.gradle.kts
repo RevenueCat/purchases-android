@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.poko)
     alias(libs.plugins.metalava)
+    alias(libs.plugins.baselineprofile)
 }
 
 apply(from = "${rootProject.projectDir}/library.gradle")
@@ -155,6 +156,8 @@ dependencies {
     androidTestImplementation(libs.assertJ)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
+
+    baselineProfile(project(":baselineprofile"))
 }
 
 tasks.dokkaHtmlPartial.configure {
@@ -227,6 +230,15 @@ tasks.dokkaHtmlPartial.configure {
                 remoteLineSuffix.set("#L")
             }
         }
+    }
+}
+
+baselineProfile {
+    mergeIntoMain = true
+    baselineProfileOutputDir = "."
+    filter {
+        include("com.revenuecat.purchases.**")
+        exclude("com.revenuecat.purchases.ui.revenuecatui.**")
     }
 }
 
