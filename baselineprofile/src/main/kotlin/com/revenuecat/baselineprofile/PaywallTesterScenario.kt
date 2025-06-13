@@ -17,7 +17,7 @@ fun MacrobenchmarkScope.explorePaywallScreen() = device.apply {
     pressBack()
     waitForIdle()
 
-    waitAndFindObject(By.res("full_screen_footer"), TIMEOUT).click()
+    waitAndFindObject(By.res("footer_button"), TIMEOUT).click()
     waitForIdle()
 }
 

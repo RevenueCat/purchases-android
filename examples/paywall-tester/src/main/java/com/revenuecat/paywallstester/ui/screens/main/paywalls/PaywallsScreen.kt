@@ -147,7 +147,7 @@ fun PaywallsScreen(
                 )
                 if (offering.paywallComponents == null) {
                     ButtonWithEmoji(
-                        modifier = Modifier.testTag("full_screen_footer"),
+                        modifier = Modifier.testTag("footer_button"),
                         onClick = {
                             displayPaywallState = DisplayPaywallState.Footer(
                                 offering,
