@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.paywalls.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.Serializable
@@ -8,7 +8,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @Serializable
 internal data class PaywallStoredEvent(
     val event: PaywallEvent,

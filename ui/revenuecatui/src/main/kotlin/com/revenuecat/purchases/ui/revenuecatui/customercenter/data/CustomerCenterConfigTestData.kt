@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.net.Uri
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.RCColor
@@ -9,7 +8,6 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("MagicNumber")
 internal object CustomerCenterConfigTestData {
 

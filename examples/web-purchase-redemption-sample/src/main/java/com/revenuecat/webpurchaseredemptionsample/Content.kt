@@ -30,7 +30,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
@@ -105,7 +104,6 @@ fun Content(modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 fun WebRedemption(onSuccess: (CustomerInfo) -> Unit) {
     var dialogMessage: String? by remember { mutableStateOf(null) }

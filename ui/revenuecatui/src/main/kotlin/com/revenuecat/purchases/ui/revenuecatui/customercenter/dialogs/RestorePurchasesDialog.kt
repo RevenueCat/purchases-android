@@ -15,11 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.emergetools.snapshots.annotations.IgnoreEmergeSnapshot
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 @Composable
 internal fun RestorePurchasesDialog(
@@ -47,7 +45,6 @@ internal fun RestorePurchasesDialog(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun RestoringDialog(
     localization: Localization,
@@ -75,7 +72,6 @@ private fun RestoringDialog(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun PurchasesRecoveredDialog(
     localization: Localization,
@@ -111,7 +107,6 @@ private fun PurchasesRecoveredDialog(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun PurchasesNotFoundDialog(
     localization: Localization,
@@ -159,7 +154,6 @@ private fun PurchasesNotFoundDialog(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true)
 @IgnoreEmergeSnapshot
 @Composable
@@ -173,7 +167,6 @@ private fun RestorePurchasesDialogRestoringPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true)
 @IgnoreEmergeSnapshot
 @Composable
@@ -187,7 +180,6 @@ private fun RestorePurchasesDialogRecoveredPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true)
 @IgnoreEmergeSnapshot
 @Composable

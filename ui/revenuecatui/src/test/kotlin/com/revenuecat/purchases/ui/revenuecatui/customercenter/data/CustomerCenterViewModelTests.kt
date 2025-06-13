@@ -62,7 +62,6 @@ import org.junit.runners.Parameterized
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class CustomerCenterViewModelTests {
 

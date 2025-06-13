@@ -20,7 +20,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.transition.MaterialElevationScale
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
@@ -115,7 +114,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun onResume() {
         super.onResume()
 

@@ -8,7 +8,6 @@ import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -668,7 +667,6 @@ class PurchaseInformationTest {
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun assertPurchaseInformation(
         purchaseInformation: PurchaseInformation,
         title: String?,

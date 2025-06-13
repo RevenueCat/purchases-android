@@ -70,7 +70,6 @@ import java.net.URL
 import java.util.Date
 import java.util.UUID
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering

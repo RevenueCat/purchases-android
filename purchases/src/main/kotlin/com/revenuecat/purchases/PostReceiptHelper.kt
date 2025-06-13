@@ -135,7 +135,7 @@ internal class PostReceiptHelper(
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     private fun postReceiptAndSubscriberAttributes(
         appUserID: String,
         purchaseToken: String,
