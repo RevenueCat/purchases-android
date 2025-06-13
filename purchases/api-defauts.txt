@@ -1095,12 +1095,10 @@ package com.revenuecat.purchases.customercenter {
     method public com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen copy(com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType type, String title, String? subtitle, java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> paths);
     method public java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> getPaths();
     method public String? getSubtitle();
-    method public java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> getSupportedPaths();
     method public String getTitle();
     method public com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType getType();
     property public final java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> paths;
     property public final String? subtitle;
-    property public final java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> supportedPaths;
     property public final String title;
     property public final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType type;
   }
