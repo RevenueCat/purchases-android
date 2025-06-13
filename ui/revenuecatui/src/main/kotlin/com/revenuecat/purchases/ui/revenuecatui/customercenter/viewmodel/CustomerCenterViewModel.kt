@@ -185,7 +185,8 @@ internal class CustomerCenterViewModelImpl(
         val purchaseInfo = currentState.purchaseInformation
 
         when {
-            purchaseInfo?.product != null -> startGoogleProductCancellation(context, purchaseInfo.product.id)
+            purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
+                startGoogleProductCancellation(context, purchaseInfo.product.id)
             purchaseInfo?.managementURL != null -> startManagementUrlCancellation(context, purchaseInfo.managementURL)
             else -> Logger.e("No product or management URL available for cancel path")
         }
