@@ -20,9 +20,13 @@ package com.revenuecat.purchases {
 
   public final class CoroutinesExtensionsCommonKt {
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitGetProducts(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, kotlin.coroutines.Continuation<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>>);
+    method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitGetProductsResult(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, kotlin.coroutines.Continuation<? super kotlin.Result<? extends java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>>>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitOfferings(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
+    method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitOfferingsResult(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super kotlin.Result<? extends com.revenuecat.purchases.Offerings>>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitPurchase(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.PurchaseParams purchaseParams, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.PurchaseResult>);
+    method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitPurchaseResult(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.PurchaseParams purchaseParams, kotlin.coroutines.Continuation<? super kotlin.Result<? extends com.revenuecat.purchases.PurchaseResult>>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitRestore(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
+    method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitRestoreResult(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super kotlin.Result<? extends com.revenuecat.purchases.CustomerInfo>>);
   }
 
   public final class CoroutinesExtensionsKt {
@@ -667,6 +671,7 @@ package com.revenuecat.purchases {
     enum_constant @kotlinx.serialization.SerialName("app_store") public static final com.revenuecat.purchases.Store APP_STORE;
     enum_constant @kotlinx.serialization.SerialName("external") public static final com.revenuecat.purchases.Store EXTERNAL;
     enum_constant @kotlinx.serialization.SerialName("mac_app_store") public static final com.revenuecat.purchases.Store MAC_APP_STORE;
+    enum_constant @kotlinx.serialization.SerialName("paddle") public static final com.revenuecat.purchases.Store PADDLE;
     enum_constant @kotlinx.serialization.SerialName("play_store") public static final com.revenuecat.purchases.Store PLAY_STORE;
     enum_constant @kotlinx.serialization.SerialName("promotional") public static final com.revenuecat.purchases.Store PROMOTIONAL;
     enum_constant @kotlinx.serialization.SerialName("rc_billing") public static final com.revenuecat.purchases.Store RC_BILLING;
@@ -952,23 +957,36 @@ package com.revenuecat.purchases.customercenter {
   }
 
   @kotlinx.serialization.Serializable public static final class CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer extends com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail {
-    ctor public CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(@kotlinx.serialization.SerialName("android_offer_id") String androidOfferId, boolean eligible, String title, String subtitle, @kotlinx.serialization.SerialName("product_mapping") java.util.Map<java.lang.String,java.lang.String> productMapping);
+    ctor @Deprecated public CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(String androidOfferId, boolean eligible, String title, String subtitle, java.util.Map<java.lang.String,java.lang.String> productMapping);
+    ctor public CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(@kotlinx.serialization.SerialName("android_offer_id") String androidOfferId, boolean eligible, String title, String subtitle, @kotlinx.serialization.SerialName("product_mapping") java.util.Map<java.lang.String,java.lang.String> productMapping, optional @kotlinx.serialization.SerialName("cross_product_promotions") java.util.Map<java.lang.String,com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion> crossProductPromotions);
     method public String component1();
     method public boolean component2();
     method public String component3();
     method public String component4();
     method public java.util.Map<java.lang.String,java.lang.String> component5();
-    method public com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer copy(String androidOfferId, boolean eligible, String title, String subtitle, java.util.Map<java.lang.String,java.lang.String> productMapping);
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion> component6();
+    method @Deprecated public com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer copy(optional String androidOfferId, optional boolean eligible, optional String title, optional String subtitle, optional java.util.Map<java.lang.String,java.lang.String> productMapping);
+    method public com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer copy(String androidOfferId, boolean eligible, String title, String subtitle, java.util.Map<java.lang.String,java.lang.String> productMapping, java.util.Map<java.lang.String,com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion> crossProductPromotions);
     method public String getAndroidOfferId();
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion> getCrossProductPromotions();
     method public boolean getEligible();
     method public java.util.Map<java.lang.String,java.lang.String> getProductMapping();
     method public String getSubtitle();
     method public String getTitle();
     property public final String androidOfferId;
+    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion> crossProductPromotions;
     property public final boolean eligible;
     property public final java.util.Map<java.lang.String,java.lang.String> productMapping;
     property public final String subtitle;
     property public final String title;
+  }
+
+  @dev.drewhamilton.poko.Poko @kotlinx.serialization.Serializable public static final class CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion {
+    ctor public CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(@kotlinx.serialization.SerialName("store_offer_identifier") String storeOfferIdentifier, @kotlinx.serialization.SerialName("target_product_id") String targetProductId);
+    method public String getStoreOfferIdentifier();
+    method public String getTargetProductId();
+    property public final String storeOfferIdentifier;
+    property public final String targetProductId;
   }
 
   @kotlinx.serialization.Serializable public enum CustomerCenterConfigData.HelpPath.PathType {
@@ -1070,12 +1088,10 @@ package com.revenuecat.purchases.customercenter {
     method public com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen copy(com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType type, String title, String? subtitle, java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> paths);
     method public java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> getPaths();
     method public String? getSubtitle();
-    method public java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> getSupportedPaths();
     method public String getTitle();
     method public com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType getType();
     property public final java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> paths;
     property public final String? subtitle;
-    property public final java.util.List<com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath> supportedPaths;
     property public final String title;
     property public final com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType type;
   }
