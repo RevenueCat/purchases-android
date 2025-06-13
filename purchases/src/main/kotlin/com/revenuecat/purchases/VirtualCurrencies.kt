@@ -29,6 +29,22 @@ class VirtualCurrencies internal constructor(
     }
 
     /**
+     * Returns a map containing only the virtual currencies that have a balance greater than zero.
+     * @return A map of virtual currency codes to their corresponding info objects,
+     *     filtered to only include those with non-zero balances.
+     */
+    val withNonZeroBalance: Map<String, VirtualCurrency>
+        get() = all.filterValues { it.balance > 0 }
+
+    /**
+     * Returns a map containing only the virtual currencies that have a balance of zero.
+     * @return A map of virtual currency codes to their corresponding info objects,
+     *     filtered to only include those with zero balances.
+     */
+    val withZeroBalance: Map<String, VirtualCurrency>
+        get() = all.filterValues { it.balance == 0 }
+
+    /**
      * Returns the virtual currency for the given key, or null if it doesn't exist.
      *
      * @param key The key of the virtual currency to retrieve

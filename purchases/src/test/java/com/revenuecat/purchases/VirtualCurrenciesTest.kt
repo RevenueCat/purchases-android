@@ -11,7 +11,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class VirtualCurrenciesTest {
 
-    // ----- fromJSON() Tests -----
+    // ----- fromJSON Tests -----
     @Test
     fun `fromJson with empty JSON returns empty map`() {
         val json = JSONObject()
@@ -183,5 +183,143 @@ class VirtualCurrenciesTest {
         val virtualCurrencies = VirtualCurrencies(all = mapOf(code to currency))
         
         assertNull(virtualCurrencies["NON_EXISTENT"])
+    }
+
+    // ----- withNonZeroBalance Tests -----
+    @Test
+    fun `withNonZeroBalance returns only currencies with positive balance`() {
+        val coin = VirtualCurrency(
+            balance = 100,
+            name = "Coins",
+            code = "COIN",
+            serverDescription = "Coin currency"
+        )
+        val gem = VirtualCurrency(
+            balance = 0,
+            name = "Gems",
+            code = "GEM",
+            serverDescription = "Gem currency"
+        )
+        val diamond = VirtualCurrency(
+            balance = 50,
+            name = "Diamonds",
+            code = "DMND",
+            serverDescription = "Diamond currency"
+        )
+
+        val virtualCurrencies = VirtualCurrencies(
+            all = mapOf(
+                "COIN" to coin,
+                "GEM" to gem,
+                "DMND" to diamond
+            )
+        )
+
+        val nonZeroBalances = virtualCurrencies.withNonZeroBalance
+        assertEquals(2, nonZeroBalances.size)
+        assertEquals(coin, nonZeroBalances["COIN"])
+        assertEquals(diamond, nonZeroBalances["DMND"])
+        assertNull(nonZeroBalances["GEM"])
+    }
+
+    @Test
+    fun `withNonZeroBalance returns empty map when all balances are zero`() {
+        val coin = VirtualCurrency(
+            balance = 0,
+            name = "Coins",
+            code = "COIN",
+            serverDescription = "Coin currency"
+        )
+        val gem = VirtualCurrency(
+            balance = 0,
+            name = "Gems",
+            code = "GEM",
+            serverDescription = "Gem currency"
+        )
+
+        val virtualCurrencies = VirtualCurrencies(
+            all = mapOf(
+                "COIN" to coin,
+                "GEM" to gem
+            )
+        )
+
+        val nonZeroBalances = virtualCurrencies.withNonZeroBalance
+        assertTrue(nonZeroBalances.isEmpty())
+    }
+
+    fun `withNonZeroBalance returns empty map when there are no virtual currencies`() {
+        val virtualCurrencies = VirtualCurrencies(all = mapOf())
+        val nonZeroBalances = virtualCurrencies.withNonZeroBalance
+        assertTrue(nonZeroBalances.isEmpty())
+    }
+
+    // ----- withZeroBalance Tests -----
+    @Test
+    fun `withZeroBalance returns only currencies with zero balance`() {
+        val coin = VirtualCurrency(
+            balance = 100,
+            name = "Coins",
+            code = "COIN",
+            serverDescription = "Coin currency"
+        )
+        val gem = VirtualCurrency(
+            balance = 0,
+            name = "Gems",
+            code = "GEM",
+            serverDescription = "Gem currency"
+        )
+        val diamond = VirtualCurrency(
+            balance = 50,
+            name = "Diamonds",
+            code = "DMND",
+            serverDescription = "Diamond currency"
+        )
+
+        val virtualCurrencies = VirtualCurrencies(
+            all = mapOf(
+                "COIN" to coin,
+                "GEM" to gem,
+                "DMND" to diamond
+            )
+        )
+
+        val zeroBalances = virtualCurrencies.withZeroBalance
+        assertEquals(1, zeroBalances.size)
+        assertEquals(gem, zeroBalances["GEM"])
+        assertNull(zeroBalances["COIN"])
+        assertNull(zeroBalances["DMND"])
+    }
+
+    @Test
+    fun `withZeroBalance returns empty map when all balances are non-zero`() {
+        val coin = VirtualCurrency(
+            balance = 100,
+            name = "Coins",
+            code = "COIN",
+            serverDescription = "Coin currency"
+        )
+        val gem = VirtualCurrency(
+            balance = 50,
+            name = "Gems",
+            code = "GEM",
+            serverDescription = "Gem currency"
+        )
+
+        val virtualCurrencies = VirtualCurrencies(
+            all = mapOf(
+                "COIN" to coin,
+                "GEM" to gem
+            )
+        )
+
+        val zeroBalances = virtualCurrencies.withZeroBalance
+        assertTrue(zeroBalances.isEmpty())
+    }
+
+    fun `withZeroBalance returns empty map when there are no virtual currencies`() {
+        val virtualCurrencies = VirtualCurrencies(all = mapOf())
+        val nonZeroBalances = virtualCurrencies.withZeroBalance
+        assertTrue(nonZeroBalances.isEmpty())
     }
 }
