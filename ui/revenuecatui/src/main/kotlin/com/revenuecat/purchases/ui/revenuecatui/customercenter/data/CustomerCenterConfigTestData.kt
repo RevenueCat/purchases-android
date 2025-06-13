@@ -74,6 +74,12 @@ internal object CustomerCenterConfigTestData {
                                 ),
                             ),
                         ),
+                        CustomerCenterConfigData.HelpPath(
+                            id = "5",
+                            title = "FAQ",
+                            type = CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
+                            url = "https://www.revenuecat.com/docs/customer-center-faq",
+                        ),
                     ),
                 ),
                 CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE to CustomerCenterConfigData.Screen(

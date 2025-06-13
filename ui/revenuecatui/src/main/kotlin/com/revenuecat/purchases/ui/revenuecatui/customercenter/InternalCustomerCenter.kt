@@ -100,7 +100,7 @@ internal fun InternalCustomerCenter(
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
-                    viewModel.pathButtonPressed(context, action.path, action.product)
+                    viewModel.pathButtonPressed(context, action.path, action.purchaseInformation)
                 }
 
                 is CustomerCenterAction.PerformRestore -> {

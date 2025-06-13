@@ -1,13 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.actions
 
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
 internal sealed class CustomerCenterAction {
     data class PathButtonPressed(
         val path: CustomerCenterConfigData.HelpPath,
-        val product: StoreProduct?,
+        val purchaseInformation: PurchaseInformation?,
     ) : CustomerCenterAction()
     object PerformRestore : CustomerCenterAction()
     object DismissRestoreDialog : CustomerCenterAction()
