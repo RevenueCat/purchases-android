@@ -121,10 +121,10 @@ private fun EntitlementInfo.expirationDate(dateFormatter: DateFormatter, locale:
 
 private fun TransactionDetails.expirationDate(dateFormatter: DateFormatter, locale: Locale): String? {
     val hasAnExpiration = this is TransactionDetails.Subscription && expiresDate != null
-    val isGoingToExpireOrHasExpired = hasAnExpiration &&
+    val isExpiringOrExpired = hasAnExpiration &&
         (this as TransactionDetails.Subscription).isExpiringOrExpired()
 
-    return if (isGoingToExpireOrHasExpired) {
+    return if (isExpiringOrExpired) {
         dateFormatter.format((this as TransactionDetails.Subscription).expiresDate!!, locale)
     } else {
         null
