@@ -4,7 +4,6 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.net.Uri
 import com.revenuecat.purchases.EntitlementInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -15,11 +14,10 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import java.util.Locale
 
 @Suppress("LongParameterList")
-internal class PurchaseInformation(
+internal data class PurchaseInformation(
     val title: String?,
     val pricePaid: PriceDetails,
-    val renewalDate: String?,
-    val expirationDate: String?,
+    val expirationOrRenewal: ExpirationOrRenewal?,
     val product: StoreProduct?,
     val store: Store,
     var isLifetime: Boolean,
@@ -38,10 +36,7 @@ internal class PurchaseInformation(
         locale: Locale,
     ) : this(
         title = subscribedProduct?.title ?: transaction.productIdentifier,
-        renewalDate = entitlementInfo?.renewalDate(dateFormatter, locale)
-            ?: transaction.renewalDate(dateFormatter, locale),
-        expirationDate = entitlementInfo?.expirationDate(dateFormatter, locale)
-            ?: transaction.expirationDate(dateFormatter, locale),
+        expirationOrRenewal = determineExpirationOrRenewal(entitlementInfo, transaction, dateFormatter, locale),
         product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
         pricePaid = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
@@ -68,7 +63,6 @@ internal class PurchaseInformation(
         isCancelled = determineCancellationStatus(entitlementInfo, transaction),
     )
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun renewalString(
         renewalDate: String,
         localization: CustomerCenterConfigData.Localization,
@@ -83,7 +77,6 @@ internal class PurchaseInformation(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun expirationString(
         expirationDate: String,
         localization: CustomerCenterConfigData.Localization,
@@ -182,4 +175,29 @@ internal sealed class PriceDetails {
     object Free : PriceDetails()
     data class Paid(val price: String) : PriceDetails()
     object Unknown : PriceDetails()
+}
+
+internal sealed class ExpirationOrRenewal {
+    data class Expiration(val date: String) : ExpirationOrRenewal()
+    data class Renewal(val date: String) : ExpirationOrRenewal()
+}
+
+private fun determineExpirationOrRenewal(
+    entitlementInfo: EntitlementInfo?,
+    transaction: TransactionDetails,
+    dateFormatter: DateFormatter,
+    locale: Locale,
+): ExpirationOrRenewal? {
+    // First try to get a date from entitlement info
+    val entitlementDate =
+        entitlementInfo?.renewalDate(dateFormatter, locale)?.let { ExpirationOrRenewal.Renewal(it) }
+            ?: entitlementInfo?.expirationDate(dateFormatter, locale)?.let { ExpirationOrRenewal.Expiration(it) }
+
+    // If no entitlement date, try to get a date from transaction
+    val transactionDate = transaction.let { tx ->
+        tx.renewalDate(dateFormatter, locale)?.let { ExpirationOrRenewal.Renewal(it) }
+            ?: tx.expirationDate(dateFormatter, locale)?.let { ExpirationOrRenewal.Expiration(it) }
+    }
+
+    return entitlementDate ?: transactionDate
 }
