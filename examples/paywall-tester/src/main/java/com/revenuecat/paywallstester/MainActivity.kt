@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import com.revenuecat.paywallstester.ui.theme.PaywallTesterAndroidTheme
@@ -28,10 +27,11 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         enableEdgeToEdge()
         setContent {
             PaywallTesterAndroidTheme(dynamicColor = false) {
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .navigationBarsPadding()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .navigationBarsPadding(),
                 ) {
                     PaywallTesterApp()
                 }

@@ -7,12 +7,12 @@ import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
 import androidx.annotation.VisibleForTesting
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import coil.size.Size
 import coil.transform.Transformation
 import kotlin.math.min
 import kotlin.math.roundToInt
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.scale
 
 /**
  * BlurTransformation class applies a blur on a given Bitmap image.
