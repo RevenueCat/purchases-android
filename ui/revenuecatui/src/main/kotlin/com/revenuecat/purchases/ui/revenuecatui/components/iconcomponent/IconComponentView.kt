@@ -66,7 +66,7 @@ internal fun IconComponentView(
 
     Box(
         modifier = modifier
-            .size(iconState.marginAdjustedSize)
+            .size(iconState.sizePlusMargin)
             .padding(iconState.margin),
     ) {
         RemoteImage(

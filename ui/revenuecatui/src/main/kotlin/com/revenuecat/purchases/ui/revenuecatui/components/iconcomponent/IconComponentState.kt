@@ -18,7 +18,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.adjustForMargin
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
@@ -125,8 +125,8 @@ internal class IconComponentState(
     val margin by derivedStateOf { presentedPartial?.partial?.margin?.toPaddingValues() ?: style.margin }
 
     @get:JvmSynthetic
-    val marginAdjustedSize: Size by derivedStateOf {
-        size.adjustForMargin(margin, layoutDirection)
+    val sizePlusMargin: Size by derivedStateOf {
+        size.addMargin(margin, layoutDirection)
     }
 
     @get:JvmSynthetic

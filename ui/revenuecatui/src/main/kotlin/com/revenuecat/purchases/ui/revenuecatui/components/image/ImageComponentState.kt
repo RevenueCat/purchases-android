@@ -30,7 +30,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.adjustForMargin
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -193,13 +193,13 @@ internal class ImageComponentState(
     val margin by derivedStateOf { presentedPartial?.partial?.margin?.toPaddingValues() ?: style.margin }
 
     @get:JvmSynthetic
-    val marginAdjustedSize: Size by derivedStateOf {
-        size.adjustForMargin(margin, layoutDirection)
+    val sizePlusMargin: Size by derivedStateOf {
+        size.addMargin(margin, layoutDirection)
     }
 
     @get:JvmSynthetic
     val marginAdjustedAspectRatio: AspectRatio? by derivedStateOf {
-        with(marginAdjustedSize) {
+        with(sizePlusMargin) {
             when (val height = height) {
                 is Fixed -> when (val width = width) {
                     is Fit,

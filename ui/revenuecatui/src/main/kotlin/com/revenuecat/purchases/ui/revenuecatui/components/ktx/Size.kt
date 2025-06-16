@@ -13,13 +13,13 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateHorizontalPa
 import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateVerticalPadding
 
 @JvmSynthetic
-internal fun Size.adjustForMargin(margin: PaddingValues, layoutDirection: LayoutDirection): Size =
+internal fun Size.addMargin(margin: PaddingValues, layoutDirection: LayoutDirection): Size =
     Size(
-        width = width.adjustDimensionForMargin(margin.calculateHorizontalPadding(layoutDirection).value.toUInt()),
-        height = height.adjustDimensionForMargin(margin.calculateVerticalPadding().value.toUInt()),
+        width = width.addMargin(margin.calculateHorizontalPadding(layoutDirection).value.toUInt()),
+        height = height.addMargin(margin.calculateVerticalPadding().value.toUInt()),
     )
 
-private fun SizeConstraint.adjustDimensionForMargin(
+private fun SizeConstraint.addMargin(
     margin: UInt,
 ): SizeConstraint = when (this) {
     is Fixed -> Fixed(value + margin)
