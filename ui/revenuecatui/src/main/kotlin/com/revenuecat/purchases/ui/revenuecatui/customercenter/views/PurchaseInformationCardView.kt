@@ -59,7 +59,7 @@ internal fun PurchaseInformationCardView(
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = CustomerCenterConstants.Card.TITLE_ROW_BOTTOM_PADDING),
