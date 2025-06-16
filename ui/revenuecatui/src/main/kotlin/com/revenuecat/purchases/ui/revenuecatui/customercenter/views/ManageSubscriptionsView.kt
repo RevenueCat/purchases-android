@@ -30,7 +30,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.SubscriptionDetailsView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
@@ -103,7 +102,10 @@ private fun ActiveUserManagementView(
 
         Spacer(modifier = Modifier.size(ManagementViewSpacer))
 
-        SubscriptionDetailsView(details = purchaseInformation, localization = localization)
+        PurchaseInformationCardView(
+            purchaseInformation = purchaseInformation,
+            localization = localization,
+        )
 
         ManageSubscriptionsButtonsView(
             purchaseInformation = purchaseInformation,
