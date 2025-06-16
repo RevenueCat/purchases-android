@@ -12,7 +12,6 @@ import org.assertj.core.api.Assertions
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallEventsRequestSerializationTest {
 

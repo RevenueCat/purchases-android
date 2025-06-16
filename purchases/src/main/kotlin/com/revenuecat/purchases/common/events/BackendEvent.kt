@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
@@ -29,8 +29,8 @@ internal sealed class BackendEvent : Event {
      * @property isSandbox Whether the event originated from a sandbox environment.
      * @property displayMode The display mode of the Customer Center.
      */
+    @OptIn(InternalRevenueCatAPI::class)
     @Serializable
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SerialName("customer_center")
     data class CustomerCenter constructor(
         val id: String,

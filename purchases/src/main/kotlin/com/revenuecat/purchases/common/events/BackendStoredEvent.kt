@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -39,7 +39,6 @@ internal sealed class BackendStoredEvent : Event {
  * @receiver The stored backend event to be converted.
  * @return A `BackendEvent` instance.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
     return when (this) {
         is BackendStoredEvent.Paywalls -> { this.event }
@@ -54,7 +53,7 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
  * @param appUserID The user ID associated with the event.
  * @return A `BackendStoredEvent.Paywalls` containing a `BackendEvent.Paywalls`.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun PaywallEvent.toBackendStoredEvent(
     appUserID: String,
@@ -83,7 +82,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
  * @param appUserID The user ID associated with the event.
  * @return A `BackendStoredEvent.CustomerCenter` containing a `BackendEvent.CustomerCenter`.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun CustomerCenterImpressionEvent.toBackendStoredEvent(
     appUserID: String,
@@ -114,7 +113,7 @@ internal fun CustomerCenterImpressionEvent.toBackendStoredEvent(
  * @param appUserID The user ID associated with the event.
  * @return A `BackendStoredEvent.CustomerCenter` containing a `BackendEvent.CustomerCenter`.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
     appUserID: String,

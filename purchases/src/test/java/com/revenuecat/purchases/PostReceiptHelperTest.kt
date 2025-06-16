@@ -44,7 +44,6 @@ import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.UUID
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class PostReceiptHelperTest {

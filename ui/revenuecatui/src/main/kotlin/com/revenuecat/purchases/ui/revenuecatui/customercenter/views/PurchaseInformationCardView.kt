@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,20 +20,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @SuppressWarnings("LongParameterList", "LongMethod")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun PurchaseInformationCardView(
     purchaseInformation: PurchaseInformation,
@@ -73,7 +68,7 @@ internal fun PurchaseInformationCardView(
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = CustomerCenterConstants.Card.TITLE_ROW_BOTTOM_PADDING),
@@ -93,19 +88,19 @@ internal fun PurchaseInformationCardView(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_CANCELLED,
                         ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_CANCELLED),
+                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_CANCELLED),
                     )
                     purchaseInformation.isTrial -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_FREE_TRIAL,
                         ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_FREE_TRIAL),
+                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_FREE_TRIAL),
                     )
                     !purchaseInformation.isLifetime && purchaseInformation.isActive -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.ACTIVE,
                         ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_ACTIVE),
+                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_ACTIVE),
                     )
                 }
             }
@@ -130,17 +125,16 @@ internal fun PurchaseInformationCardView(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun getSubtitle(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
 ): String? {
-    return if (purchaseInformation.renewalDate != null) {
-        purchaseInformation.renewalString(purchaseInformation.renewalDate, localization)
-    } else if (purchaseInformation.expirationDate != null) {
-        purchaseInformation.expirationString(purchaseInformation.expirationDate, localization)
-    } else {
-        getPrice(purchaseInformation, localization)
+    return when (purchaseInformation.expirationOrRenewal) {
+        is ExpirationOrRenewal.Expiration ->
+            purchaseInformation.expirationString(purchaseInformation.expirationOrRenewal.date, localization)
+        is ExpirationOrRenewal.Renewal ->
+            purchaseInformation.renewalString(purchaseInformation.expirationOrRenewal.date, localization)
+        null -> getPrice(purchaseInformation, localization) // Can return null if price is unknown
     }
 }
 
@@ -179,7 +173,6 @@ private fun getStoreText(store: Store): String {
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun getPrice(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
@@ -203,91 +196,15 @@ internal enum class ButtonPosition {
 @Suppress("MagicNumber")
 private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInformation> {
     override val values: Sequence<PurchaseInformation> = sequenceOf(
-        PurchaseInformation(
-            title = "Basic",
-            pricePaid = PriceDetails.Paid("$4.99"),
-            expirationDate = null,
-            renewalDate = "June 1st, 2024",
-            store = Store.PLAY_STORE,
-            managementURL = Uri.parse(CustomerCenterConstants.Management.MANAGEMENT_URL),
-            product = TestStoreProduct(
-                "basic_monthly",
-                "name",
-                "title",
-                "description",
-                Price("$1.99", 1_990_000, "US"),
-                Period(1, Period.Unit.MONTH, "P1M"),
-            ),
-            isLifetime = false,
-            isActive = true,
-            isTrial = false,
-            isCancelled = false,
-        ),
-        PurchaseInformation(
-            title = "Basic",
-            pricePaid = PriceDetails.Paid("$49.99"),
-            expirationDate = "June 1st, 2024",
-            renewalDate = null,
-            store = Store.PLAY_STORE,
-            managementURL = Uri.parse(CustomerCenterConstants.Management.MANAGEMENT_URL),
-            product = TestStoreProduct(
-                "basic_yearly",
-                "name",
-                "title",
-                "description",
-                Price("$1.99", 1_990_000, "US"),
-                Period(1, Period.Unit.YEAR, "P1Y"),
-            ),
-            isLifetime = false,
-            isActive = false,
-            isTrial = false,
-            isCancelled = true,
-        ),
-        PurchaseInformation(
-            title = "Basic",
-            pricePaid = PriceDetails.Paid("$1.99"),
-            expirationDate = "June 1st, 2024",
-            renewalDate = null,
-            store = Store.PLAY_STORE,
-            managementURL = Uri.parse(CustomerCenterConstants.Management.MANAGEMENT_URL),
-            product = TestStoreProduct(
-                "basic_weekly",
-                "name",
-                "title",
-                "description",
-                Price("$0.99", 990_000, "US"),
-                Period(1, Period.Unit.WEEK, "P1W"),
-            ),
-            isLifetime = false,
-            isActive = false,
-            isTrial = false,
-            isCancelled = false,
-        ),
+        CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+        CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
         CustomerCenterConfigTestData.purchaseInformationLifetime,
-        PurchaseInformation(
+        CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
             title = "Monthly long subscription name that overflows",
-            pricePaid = PriceDetails.Paid("$1.99"),
-            expirationDate = "June 1st, 2024",
-            renewalDate = null,
-            store = Store.PLAY_STORE,
-            managementURL = Uri.parse(CustomerCenterConstants.Management.MANAGEMENT_URL),
-            product = TestStoreProduct(
-                "basic_weekly",
-                "name",
-                "title",
-                "description",
-                Price("$0.99", 990_000, "US"),
-                Period(1, Period.Unit.WEEK, "P1W"),
-            ),
-            isLifetime = false,
-            isActive = false,
-            isTrial = false,
-            isCancelled = false,
         ),
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(group = "scale = 1", fontScale = 1F)
 @Composable
 private fun PurchaseInformationCardView_Preview(
@@ -306,7 +223,6 @@ private fun PurchaseInformationCardView_Preview(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(group = "scale = 2", fontScale = 2F)
 @Composable
 private fun PurchaseInformationCardView_Preview_Scale2(

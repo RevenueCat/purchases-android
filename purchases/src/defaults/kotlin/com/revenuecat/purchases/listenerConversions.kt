@@ -78,7 +78,7 @@ internal fun getAmazonLWAConsentStatusListener(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal fun getCustomerCenterConfigDataListener(
     onSuccess: (CustomerCenterConfigData) -> Unit,
     onError: (PurchasesError) -> Unit,

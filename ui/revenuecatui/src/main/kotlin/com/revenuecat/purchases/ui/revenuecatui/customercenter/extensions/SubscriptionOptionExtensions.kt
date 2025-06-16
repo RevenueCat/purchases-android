@@ -1,11 +1,9 @@
 @file:JvmSynthetic
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions
 
 import android.icu.text.MeasureFormat
 import android.icu.util.Measure
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.OfferPaymentMode
 import com.revenuecat.purchases.models.PricingPhase

@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
@@ -103,7 +103,7 @@ internal class EventsManager(
      *
      * @param event The event to be tracked.
      */
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
         enqueue {
