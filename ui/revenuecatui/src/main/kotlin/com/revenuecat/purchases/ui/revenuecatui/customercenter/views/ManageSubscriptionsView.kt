@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
@@ -36,7 +35,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
 @Suppress("LongParameterList")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun ManageSubscriptionsView(
     screenTitle: String,
@@ -79,7 +77,6 @@ internal fun ManageSubscriptionsView(
 }
 
 @SuppressWarnings("LongParameterList")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun ActiveUserManagementView(
     screenTitle: String,
@@ -119,7 +116,6 @@ private fun ActiveUserManagementView(
 }
 
 @Suppress("LongParameterList")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun NoActiveUserManagementView(
     screenTitle: String,
@@ -184,7 +180,6 @@ private fun ContentUnavailableView(
 }
 
 @Suppress("LongParameterList")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun ManageSubscriptionsButtonsView(
     purchaseInformation: PurchaseInformation?,
@@ -215,7 +210,6 @@ private fun ManageSubscriptionsButtonsView(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true, device = "spec:width=412dp,height=915dp", group = "scale = 1", fontScale = 1F)
 @Composable
 private fun ManageSubscriptionsViewPreview() {
@@ -233,7 +227,6 @@ private fun ManageSubscriptionsViewPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 private fun NoActiveSubscriptionsViewPreview() {
@@ -252,7 +245,6 @@ private fun NoActiveSubscriptionsViewPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 private fun NoActiveSubscriptionsViewNoDescription_Preview() {

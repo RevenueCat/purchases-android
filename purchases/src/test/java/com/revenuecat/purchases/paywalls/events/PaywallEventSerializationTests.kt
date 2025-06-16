@@ -9,7 +9,6 @@ import org.junit.runner.RunWith
 import java.util.Date
 import java.util.UUID
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallEventSerializationTests {
 

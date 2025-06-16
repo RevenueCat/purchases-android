@@ -7,7 +7,7 @@ package com.revenuecat.purchases.common
 
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -72,10 +72,9 @@ internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boo
 /** @suppress */
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
 
 internal enum class PostReceiptErrorHandlingBehavior {
@@ -84,7 +83,7 @@ internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_NOT_CONSUME,
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
 internal class Backend(
     private val appConfig: AppConfig,

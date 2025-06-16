@@ -737,7 +737,6 @@ class PurchaseInformationTest {
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun assertPurchaseInformation(
         purchaseInformation: PurchaseInformation,
         title: String?,

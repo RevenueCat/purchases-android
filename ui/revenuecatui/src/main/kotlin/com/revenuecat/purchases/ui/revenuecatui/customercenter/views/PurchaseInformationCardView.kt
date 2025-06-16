@@ -29,7 +29,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
 @SuppressWarnings("LongParameterList", "LongMethod")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun PurchaseInformationCardView(
     purchaseInformation: PurchaseInformation,
