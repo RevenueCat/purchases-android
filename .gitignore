@@ -40,6 +40,9 @@ Icon
 bin/
 gen/
 
+# Baseline Profiles
+examples/paywall-tester/src/main/generated/baselineProfiles/
+
 # Gradle files
 .gradle/
 .gradletasknamecache
