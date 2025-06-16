@@ -11,9 +11,9 @@ internal object CustomerCenterConstants {
         val TITLE_ROW_BOTTOM_PADDING = 4.dp
         val BADGE_HORIZONTAL_PADDING = 8.dp
         val BADGE_VERTICAL_PADDING = 2.dp
-        const val BADGE_CANCELLED = 0x33F2545B
-        const val BADGE_FREE_TRIAL = 0x5BF5CA5C
-        const val BADGE_ACTIVE = 0x9911D483
+        const val COLOR_BADGE_CANCELLED = 0x33F2545B
+        const val COLOR_BADGE_FREE_TRIAL = 0x5BF5CA5C
+        const val COLOR_BADGE_ACTIVE = 0x9911D483
     }
 
     object Layout {

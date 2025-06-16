@@ -79,19 +79,19 @@ internal fun PurchaseInformationCardView(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_CANCELLED,
                         ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_CANCELLED),
+                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_CANCELLED),
                     )
                     purchaseInformation.isTrial -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_FREE_TRIAL,
                         ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_FREE_TRIAL),
+                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_FREE_TRIAL),
                     )
                     purchaseInformation.isActive -> StatusBadge(
                         text = localization.commonLocalizedString(
                             CustomerCenterConfigData.Localization.CommonLocalizedString.ACTIVE,
                         ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.BADGE_ACTIVE),
+                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_ACTIVE),
                     )
                 }
             }
