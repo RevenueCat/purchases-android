@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import kotlin.coroutines.resume
@@ -233,6 +234,62 @@ suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
             onError = {
                 continuation.resume(Result.failure(PurchasesException(it)))
             },
+        )
+    }
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * Coroutine friendly version of [Purchases.getVirtualCurrencies].
+ *
+ * @param forceRefresh Whether or not the SDK must refresh virtual currencies from the backend,
+ * bypassing the SDK's cache. Pass in `true` to force the SDK to fetch the most recent value
+ * from the RevenueCat backend.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if an error occurred while fetching
+ * the virtual currencies.
+ *
+ * @return The [VirtualCurrencies] with the subscriber's virtual currencies.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+suspend fun Purchases.awaitGetVirtualCurrencies(
+    forceRefresh: Boolean = false
+): VirtualCurrencies {
+    return suspendCoroutine { continuation ->
+        getVirtualCurrenciesWith(
+            forceRefresh = forceRefresh,
+            onSuccess = { continuation.resume(it) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) }
+        )
+    }
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * Coroutine friendly version of [Purchases.getVirtualCurrencies].
+ *
+ * @param forceRefresh Whether or not the SDK must refresh virtual currencies from the backend,
+ * bypassing the SDK's cache. Pass in `true` to force the SDK to fetch the most recent value
+ * from the RevenueCat backend.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if an error occurred while fetching
+ * the virtual currencies.
+ *
+ * @return The [Result] of [VirtualCurrencies] with the subscriber's virtual currencies if
+ * the execution succeeds, or a [Result] containing [PurchasesException] if it fails.
+ */
+@JvmSynthetic
+suspend fun Purchases.awaitGetVirtualCurrenciesResult(
+    forceRefresh: Boolean = false
+): Result<VirtualCurrencies> {
+    return suspendCoroutine { continuation ->
+        getVirtualCurrenciesWith(
+            forceRefresh = forceRefresh,
+            onSuccess = { continuation.resume(Result.success(it)) },
+            onError = { continuation.resume(Result.failure(PurchasesException(it))) },
         )
     }
 }

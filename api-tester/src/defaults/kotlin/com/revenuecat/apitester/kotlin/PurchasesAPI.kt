@@ -15,6 +15,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VirtualCurrencies
 import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
@@ -36,6 +37,7 @@ import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getStorefrontCountryCodeWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -82,6 +84,11 @@ private class PurchasesAPI {
             override fun onError(error: PurchasesError) {}
         }
 
+        val getVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
+            override fun onReceived(virtualCurrencies: VirtualCurrencies) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback)
         purchases.getAmazonLWAConsentStatus(getAmazonLWAConsentStatusCallback)
 
@@ -115,6 +122,9 @@ private class PurchasesAPI {
         purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
         val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
+
+        purchases.getVirtualCurrencies(forceRefresh = true, callback = getVirtualCurrenciesCallback)
+        purchases.getVirtualCurrencies(callback = getVirtualCurrenciesCallback)
     }
 
     @Suppress("LongMethod", "LongParameterList")

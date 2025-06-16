@@ -19,6 +19,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -460,6 +461,22 @@ class Purchases internal constructor(
         callback: ReceiveCustomerInfoCallback,
     ) {
         purchasesOrchestrator.getCustomerInfo(fetchPolicy, true, callback)
+    }
+
+    /**
+     * Fetches the virtual currencies for the current subscriber.
+     *
+     * @param forceRefresh Whether or not the SDK must refresh virtual currencies from the backend,
+     * bypassing the SDK's cache. Pass in `true` to force the SDK to fetch the most recent value
+     * from the RevenueCat backend.
+     * @param callback A listener called when the virtual currencies are available.
+     */
+    @JvmOverloads
+    fun getVirtualCurrencies(
+        forceRefresh: Boolean = false,
+        callback: GetVirtualCurrenciesCallback
+    ) {
+        // TODO: Implement function
     }
 
     /**

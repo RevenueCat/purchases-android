@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -59,6 +60,19 @@ internal fun receiveCustomerInfoCallback(
 
     override fun onError(error: PurchasesError) {
         onError?.invoke(error)
+    }
+}
+
+internal fun getVirtualCurrenciesCallback(
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
+    onError: (error: PurchasesError) -> Unit
+) = object : GetVirtualCurrenciesCallback {
+    override fun onReceived(virtualCurrencies: VirtualCurrencies) {
+        onSuccess(virtualCurrencies)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
     }
 }
 
@@ -140,4 +154,26 @@ fun Purchases.restorePurchasesWith(
     onSuccess: (customerInfo: CustomerInfo) -> Unit,
 ) {
     restorePurchases(receiveCustomerInfoCallback(onSuccess, onError))
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * @param forceRefresh Whether or not the SDK must refresh virtual currencies from the backend,
+ * bypassing the SDK's cache. Pass in `true` to force the SDK to fetch the most recent value
+ * from the RevenueCat backend.
+ *
+ * @param [onSuccess] Will be called after the call has completed successfully
+ * with a [VirtualCurrencies] object.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+fun Purchases.getVirtualCurrenciesWith(
+    forceRefresh: Boolean = false,
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit
+) {
+    getVirtualCurrencies(
+        forceRefresh = forceRefresh,
+        callback = getVirtualCurrenciesCallback(onSuccess, onError)
+    )
 }
