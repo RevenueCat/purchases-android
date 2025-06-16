@@ -24,7 +24,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization.CommonLocalizedString
@@ -48,7 +47,6 @@ import com.revenuecat.purchases.ui.revenuecatui.icons.CalendarMonth
 import com.revenuecat.purchases.ui.revenuecatui.icons.CurrencyExchange
 import com.revenuecat.purchases.ui.revenuecatui.icons.UniversalCurrencyAlt
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun SubscriptionDetailsView(
     details: PurchaseInformation,
@@ -148,7 +146,6 @@ internal fun SubscriptionDetailsRow(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun getExpirationValue(
     expirationOrRenewal: ExpirationOrRenewal,
     localization: CustomerCenterConfigData.Localization,
@@ -163,7 +160,6 @@ private fun getExpirationValue(
     return expirationValue
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun labelForExpirationOrRenewal(
     expirationOrRenewal: ExpirationOrRenewal,
     localization: CustomerCenterConfigData.Localization,
@@ -176,7 +172,6 @@ private fun labelForExpirationOrRenewal(
     return localization.commonLocalizedString(stringKey)
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun getPrice(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
@@ -188,7 +183,6 @@ private fun getPrice(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun getSubscriptionExplanation(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
@@ -304,7 +298,6 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Purchas
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(group = "scale = 1", fontScale = 1F, device = "spec:width=1080px,height=2720px,dpi=440")
 @Composable
 internal fun SubscriptionDetailsView_Preview(
@@ -316,7 +309,6 @@ internal fun SubscriptionDetailsView_Preview(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(group = "scale = 2", fontScale = 2F, device = "spec:width=1080px,height=2720px,dpi=440")
 @Composable
 internal fun SubscriptionDetailsView_Preview_Scale2(

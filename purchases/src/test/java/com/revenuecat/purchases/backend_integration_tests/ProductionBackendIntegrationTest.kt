@@ -165,7 +165,6 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         assertSigningPerformed()
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can postPaywallEvents backend request`() {
         val request = EventsRequest(listOf(
@@ -205,7 +204,6 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         assertSigningNotPerformed()
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can get customer center config data`() {
         var customerCenterConfigData: CustomerCenterConfigData? = null
