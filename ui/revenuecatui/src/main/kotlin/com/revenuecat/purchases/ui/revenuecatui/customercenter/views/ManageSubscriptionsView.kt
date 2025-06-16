@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,7 +29,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
@@ -86,7 +84,9 @@ private fun ActiveUserManagementView(
     supportedPaths: List<HelpPath>,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    Column {
+    Column(
+        modifier = Modifier.padding(horizontal = ManagementViewHorizontalPadding),
+    ) {
         Text(
             text = screenTitle,
             style = MaterialTheme.typography.headlineLarge,
@@ -126,7 +126,10 @@ private fun NoActiveUserManagementView(
     supportedPaths: List<HelpPath>,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier.padding(horizontal = ManagementViewHorizontalPadding),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         ContentUnavailableView(
             title = screenTitle,
             description = screenSubtitle,
@@ -174,37 +177,6 @@ private fun ContentUnavailableView(
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = ContentUnavailableViewPaddingTopDescription),
-            )
-        }
-    }
-}
-
-@Suppress("LongParameterList")
-@Composable
-private fun ManageSubscriptionsButtonsView(
-    purchaseInformation: PurchaseInformation?,
-    supportedPaths: List<HelpPath>,
-    localization: CustomerCenterConfigData.Localization,
-    contactEmail: String?,
-    addContactButton: Boolean = false,
-    onAction: (CustomerCenterAction) -> Unit,
-) {
-    Column {
-        HorizontalDivider(Modifier.padding(horizontal = ManagementViewHorizontalPadding))
-        supportedPaths.forEach { path ->
-            val pathButtonPressed =
-                CustomerCenterAction.PathButtonPressed(path, purchaseInformation)
-            SettingsButton(
-                onClick = { onAction(pathButtonPressed) },
-                title = path.title,
-            )
-        }
-        if (addContactButton && contactEmail != null) {
-            SettingsButton(
-                onClick = { onAction(CustomerCenterAction.ContactSupport(contactEmail)) },
-                title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
-                ),
             )
         }
     }
