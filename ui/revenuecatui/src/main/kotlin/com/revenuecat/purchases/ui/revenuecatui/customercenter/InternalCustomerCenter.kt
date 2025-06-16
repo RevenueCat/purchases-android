@@ -9,15 +9,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -41,9 +37,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
@@ -53,9 +46,10 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SubscriptionDetailView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
@@ -288,7 +282,7 @@ private fun CustomerCenterLoaded(
             },
         )
     } else if (state.selectedPurchase != null) {
-        SubscriptionDetailView(
+        SelectedPurchaseDetailView(
             contactEmail = state.customerCenterConfigData.support.email,
             localization = state.customerCenterConfigData.localization,
             purchaseInformation = state.selectedPurchase,
@@ -307,61 +301,30 @@ private fun MainScreen(
     configuration: CustomerCenterConfigData,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    if (state.purchaseInformation.isNotEmpty()) {
+    if (state.purchases.isNotEmpty()) {
         configuration.getManagementScreen()?.let { managementScreen ->
-            if (state.purchaseInformation.size > 1) {
-                RelevantPurchasesListView(
-                    screenTitle = managementScreen.title,
-                    screenSubtitle = managementScreen.subtitle,
-                    screenType = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT,
-                    supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
-                    localization = configuration.localization,
-                    onPurchaseSelect = { onAction(CustomerCenterAction.SelectPurchase(it)) },
-                    onAction = onAction,
-                    purchaseInformation = state.purchaseInformation,
-                )
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = managementScreen.title,
-                        style = MaterialTheme.typography.headlineLarge,
-                        modifier = Modifier.padding(
-                            start = ManagementViewHorizontalPadding,
-                            end = ManagementViewHorizontalPadding,
-                            top = ManagementViewTitleTopPadding,
-                        ),
-                    )
-
-                    Spacer(modifier = Modifier.size(ManagementViewSpacer))
-
-                    SubscriptionDetailView(
-                        contactEmail = configuration.support.email,
-                        localization = configuration.localization,
-                        purchaseInformation = state.purchaseInformation.first(),
-                        supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
-                        onAction = onAction,
-                    )
-                }
-            }
+            RelevantPurchasesListView(
+                screenTitle = managementScreen.title,
+                supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                contactEmail = configuration.support.email,
+                localization = configuration.localization,
+                onPurchaseSelect = { onAction(CustomerCenterAction.SelectPurchase(it)) },
+                onAction = onAction,
+                purchaseInformation = state.purchases,
+            )
         } ?: run {
             // Handle missing management screen
             // WrongPlatformView
         }
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
-            RelevantPurchasesListView(
+            NoActiveUserManagementView(
                 screenTitle = noActiveScreen.title,
                 screenSubtitle = noActiveScreen.subtitle,
-                screenType = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
-                supportedPaths = noActiveScreen.paths,
+                contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                onPurchaseSelect = {},
-                onAction = onAction,
+                noActiveScreen.paths,
+                onAction,
             )
         } ?: run {
             // Fallback with a restore button
@@ -444,7 +407,7 @@ internal fun CustomerCenterNoActiveScreenPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
-            purchaseInformation = emptyList(),
+            purchases = emptyList(),
             supportedPathsForManagementScreen = listOf(),
         ),
         modifier = Modifier
@@ -484,7 +447,7 @@ internal fun CustomerCenterLoadedPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
-            purchaseInformation = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+            purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
             supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
         ),
         modifier = Modifier

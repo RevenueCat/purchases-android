@@ -325,10 +325,10 @@ internal class CustomerCenterViewModelImpl(
     ): List<HelpPath> {
         if (selectedPurchaseInformation == null) {
             return screen.paths
-                .filter { it.type == CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST }
-                .filter { it.type == CustomerCenterConfigData.HelpPath.PathType.CHANGE_PLANS }
-                .filter { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }
-                .filter { it.type == CustomerCenterConfigData.HelpPath.PathType.UNKNOWN }
+                .filter {
+                    it.type == CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE ||
+                        it.type == CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL
+                }
         }
         return screen.paths
             .filter { isPathAllowedForStore(it, selectedPurchaseInformation) }
