@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.revenuecat.sample"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.revenuecat.purchases_sample"

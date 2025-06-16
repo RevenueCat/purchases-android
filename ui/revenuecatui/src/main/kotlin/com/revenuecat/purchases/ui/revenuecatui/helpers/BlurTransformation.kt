@@ -1,3 +1,5 @@
+package com.revenuecat.purchases.ui.revenuecatui.helpers
+
 import android.content.Context
 import android.graphics.Bitmap
 import android.renderscript.Allocation
@@ -9,6 +11,8 @@ import coil.size.Size
 import coil.transform.Transformation
 import kotlin.math.min
 import kotlin.math.roundToInt
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 
 /**
  * BlurTransformation class applies a blur on a given Bitmap image.
@@ -56,7 +60,7 @@ internal fun Bitmap.blur(context: Context, radius: Float, scaleDown: Boolean = t
     script.setInput(input)
     script.forEach(output)
 
-    val blurredBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, config)
+    val blurredBitmap = createBitmap(bitmap.width, bitmap.height, config ?: Bitmap.Config.ARGB_8888)
     output.copyTo(blurredBitmap)
 
     input.destroy()
@@ -75,5 +79,5 @@ private fun Bitmap.scaledDown(): Bitmap {
     val width = (ratio * width).roundToInt()
     val height = (ratio * height).roundToInt()
 
-    return Bitmap.createScaledBitmap(this, width, height, true)
+    return this.scale(width, height)
 }

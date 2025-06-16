@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import BlurTransformation
 import android.os.Build
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
@@ -17,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultBackgroundPlaceholder
+import com.revenuecat.purchases.ui.revenuecatui.helpers.BlurTransformation
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 
 // Current implementation uses a transformation on API level < 31, modifier on > 31.
