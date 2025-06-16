@@ -3,9 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.image
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -20,7 +17,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
@@ -34,6 +30,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.adjustForMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -298,25 +295,4 @@ internal class ImageComponentState(
         is Fixed,
         -> this
     }
-
-    private fun Size.adjustForMargin(margin: PaddingValues, layoutDirection: LayoutDirection): Size =
-        Size(
-            width = width.adjustDimensionForMargin(margin.calculateHorizontalPadding(layoutDirection).value.toUInt()),
-            height = height.adjustDimensionForMargin(margin.calculateVerticalPadding().value.toUInt()),
-        )
-
-    private fun SizeConstraint.adjustDimensionForMargin(
-        margin: UInt,
-    ): SizeConstraint = when (this) {
-        is Fixed -> Fixed(value + margin)
-        is Fill,
-        is Fit,
-        -> this
-    }
-
-    private fun PaddingValues.calculateHorizontalPadding(layoutDirection: LayoutDirection): Dp =
-        calculateStartPadding(layoutDirection) + calculateEndPadding(layoutDirection)
-
-    private fun PaddingValues.calculateVerticalPadding(): Dp =
-        calculateTopPadding() + calculateBottomPadding()
 }
