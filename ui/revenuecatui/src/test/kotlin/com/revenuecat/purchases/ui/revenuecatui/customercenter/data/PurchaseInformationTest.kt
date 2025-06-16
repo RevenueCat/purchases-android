@@ -85,8 +85,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = false,
-            renewalDate = "3 Oct 2063",
-            expirationDate = null
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
         )
     }
 
@@ -138,8 +137,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
         )
     }
 
@@ -191,8 +189,7 @@ class PurchaseInformationTest {
             isActive = false,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "2 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("2 Oct 2063"),
         )
     }
 
@@ -235,8 +232,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = false,
-            renewalDate = "3 Oct 2063",
-            expirationDate = null
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
         )
     }
 
@@ -279,8 +275,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
         )
     }
 
@@ -323,8 +318,7 @@ class PurchaseInformationTest {
             isActive = false,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
         )
     }
 
@@ -368,8 +362,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
         )
     }
 
@@ -413,8 +406,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2222"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2222"),
         )
     }
 
@@ -457,8 +449,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = false,
-            renewalDate = "3 Oct 2063",
-            expirationDate = null
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
         )
     }
 
@@ -501,8 +492,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
         )
     }
 
@@ -545,8 +535,7 @@ class PurchaseInformationTest {
             isActive = false,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
         )
     }
 
@@ -589,8 +578,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = false,
-            renewalDate = "3 Oct 2063",
-            expirationDate = null
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
         )
     }
 
@@ -633,8 +621,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
         )
     }
 
@@ -677,8 +664,7 @@ class PurchaseInformationTest {
             isActive = false,
             isTrial = false,
             isCancelled = true,
-            renewalDate = null,
-            expirationDate = "3 Oct 2063"
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
         )
     }
 
@@ -732,8 +718,7 @@ class PurchaseInformationTest {
             isActive = true,
             isTrial = true,
             isCancelled = false,
-            renewalDate = "3 Oct 2063",
-            expirationDate = null
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
         )
     }
 
@@ -747,8 +732,7 @@ class PurchaseInformationTest {
         isActive: Boolean = true,
         isTrial: Boolean = false,
         isCancelled: Boolean = false,
-        renewalDate: String? = null,
-        expirationDate: String? = null,
+        expirationOrRenewal: ExpirationOrRenewal? = null,
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
         assertThat(purchaseInformation.pricePaid).isEqualTo(price)
@@ -758,8 +742,7 @@ class PurchaseInformationTest {
         assertThat(purchaseInformation.isActive).isEqualTo(isActive)
         assertThat(purchaseInformation.isTrial).isEqualTo(isTrial)
         assertThat(purchaseInformation.isCancelled).isEqualTo(isCancelled)
-        assertThat(purchaseInformation.renewalDate).isEqualTo(renewalDate)
-        assertThat(purchaseInformation.expirationDate).isEqualTo(expirationDate)
+        assertThat(purchaseInformation.expirationOrRenewal).isEqualTo(expirationOrRenewal)
     }
 
     private fun createEntitlementInfo(
