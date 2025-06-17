@@ -21,6 +21,8 @@ internal object CustomerCenterConstants {
         val ITEMS_SPACING = 2.dp
         val SECTION_SPACING = 24.dp
         val SECTION_TITLE_BOTTOM_PADDING = 8.dp
+        val BUTTONS_TOP_PADDING = 24.dp
+        val BUTTONS_SPACING = 12.dp
     }
 
     object Management {

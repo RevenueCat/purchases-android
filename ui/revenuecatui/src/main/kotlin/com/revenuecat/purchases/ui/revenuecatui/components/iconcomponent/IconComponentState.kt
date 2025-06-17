@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.IconComponent
@@ -16,6 +18,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
@@ -43,10 +46,12 @@ private fun rememberUpdatedIconComponentState(
     selectedTabIndexProvider: () -> Int,
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
         IconComponentState(
             initialWindowSize = windowSize,
+            initialLayoutDirection = layoutDirection,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
@@ -61,11 +66,13 @@ private fun rememberUpdatedIconComponentState(
 @Stable
 internal class IconComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialLayoutDirection: LayoutDirection,
     private val style: IconComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var layoutDirection by mutableStateOf(initialLayoutDirection)
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
@@ -116,6 +123,11 @@ internal class IconComponentState(
 
     @get:JvmSynthetic
     val margin by derivedStateOf { presentedPartial?.partial?.margin?.toPaddingValues() ?: style.margin }
+
+    @get:JvmSynthetic
+    val sizePlusMargin: Size by derivedStateOf {
+        size.addMargin(margin, layoutDirection)
+    }
 
     @get:JvmSynthetic
     val shape: Shape? by derivedStateOf { iconBackground?.shape?.toShape() }

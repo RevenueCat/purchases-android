@@ -22,6 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 
+@Suppress("LongParameterList")
 @Composable
 internal fun NoActiveUserManagementView(
     screenTitle: String,

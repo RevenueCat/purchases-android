@@ -83,7 +83,7 @@ internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResour
                         )
                     }
             }
-        }
+        }.sortedBy { it.offering.identifier }
 
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
         createOfferingsMethod(offeringParser, offeringsJsonObject, emptyMap<String, List<StoreProduct>>()) as Offerings
