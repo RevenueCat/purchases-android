@@ -304,8 +304,10 @@ internal class CustomerCenterViewModelImpl(
         path: CustomerCenterConfigData.HelpPath,
         purchaseInformation: PurchaseInformation?,
     ): Boolean {
-        if (purchaseInformation?.isLifetime != true) return true
-        return path.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL
+        if (path.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL) {
+            return purchaseInformation?.isSubscription == true
+        }
+        return true
     }
 
     private fun isPathAllowedForStore(

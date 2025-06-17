@@ -20,10 +20,21 @@ internal data class PurchaseInformation(
     val expirationOrRenewal: ExpirationOrRenewal?,
     val product: StoreProduct?,
     val store: Store,
-    var isLifetime: Boolean,
+    /**
+     * Indicates whether the purchase is a subscription.
+     * This is false por non-subscription products, such as one-time purchases.
+     * This is false for promotionals, as they are not considered subscriptions.
+     */
+    var isSubscription: Boolean,
     val managementURL: Uri?,
-    val isActive: Boolean,
+    val isExpired: Boolean,
     val isTrial: Boolean,
+    /**
+     * Indicates whether the subscription has been cancelled.
+     * This is true if the user has unsubscribed. This is always true for promotional products.
+     * This does not mean that the subscription is expired yet, as the user may still have access
+     * until the end of the billing period.
+     */
     val isCancelled: Boolean,
 ) {
 
@@ -35,7 +46,7 @@ internal data class PurchaseInformation(
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
     ) : this(
-        title = subscribedProduct?.title ?: transaction.productIdentifier,
+        title = determineTitle(entitlementInfo, subscribedProduct, transaction),
         expirationOrRenewal = determineExpirationOrRenewal(entitlementInfo, transaction, dateFormatter, locale),
         product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
@@ -44,21 +55,13 @@ internal data class PurchaseInformation(
         } else {
             subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
         },
-        isLifetime = entitlementInfo?.let {
-            it.expirationDate == null
-        } ?: when (transaction) {
-            is TransactionDetails.Subscription -> {
-                false
-            }
-
-            is TransactionDetails.NonSubscription ->
-                true
-        },
+        isSubscription = transaction is TransactionDetails.Subscription && transaction.store != Store.PROMOTIONAL,
         managementURL = managementURL,
-        isActive = entitlementInfo?.isActive ?: when (transaction) {
-            is TransactionDetails.Subscription -> transaction.isActive
-            is TransactionDetails.NonSubscription -> true
-        },
+        isExpired = entitlementInfo?.isActive?.let { !it }
+            ?: when (transaction) {
+                is TransactionDetails.Subscription -> !transaction.isActive
+                is TransactionDetails.NonSubscription -> false
+            },
         isTrial = determineTrialStatus(entitlementInfo, transaction),
         isCancelled = determineCancellationStatus(entitlementInfo, transaction),
     )
@@ -81,16 +84,27 @@ internal data class PurchaseInformation(
         expirationDate: String,
         localization: CustomerCenterConfigData.Localization,
     ): String {
-        return if (isActive) {
-            localization.commonLocalizedString(
-                CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_INFO_EXPIRES_ON_DATE,
-            ).replace("{{ date }}", expirationDate)
-        } else {
+        return if (isExpired) {
             localization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_INFO_EXPIRED_ON_DATE,
             ).replace("{{ date }}", expirationDate)
+        } else {
+            localization.commonLocalizedString(
+                CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_INFO_EXPIRES_ON_DATE,
+            ).replace("{{ date }}", expirationDate)
         }
     }
+}
+
+private fun determineTitle(
+    entitlementInfo: EntitlementInfo?,
+    subscribedProduct: StoreProduct?,
+    transaction: TransactionDetails,
+): String {
+    if (transaction.store == Store.PROMOTIONAL && entitlementInfo != null) {
+        return entitlementInfo.identifier
+    }
+    return subscribedProduct?.title ?: transaction.productIdentifier
 }
 
 private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): PriceDetails {

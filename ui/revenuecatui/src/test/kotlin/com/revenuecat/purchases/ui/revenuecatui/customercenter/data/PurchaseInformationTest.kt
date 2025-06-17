@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -81,8 +80,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             store = Store.PLAY_STORE,
             product = storeProduct,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = false,
             isCancelled = false,
             expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
@@ -133,8 +132,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             store = Store.PLAY_STORE,
             product = storeProduct,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
@@ -185,8 +184,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             store = Store.PLAY_STORE,
             product = storeProduct,
-            isLifetime = false,
-            isActive = false,
+            isSubscription = true,
+            isExpired = true,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("2 Oct 2063"),
@@ -228,8 +227,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = false,
             isCancelled = false,
             expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
@@ -271,8 +270,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
@@ -314,8 +313,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
-            isLifetime = false,
-            isActive = false,
+            isSubscription = true,
+            isExpired = true,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
@@ -354,12 +353,12 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "rc_promo_pro_cat_yearly",
+            title = "test_entitlement",
             price = PriceDetails.Free,
             store = Store.PROMOTIONAL,
             product = null,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = false,
+            isExpired = false,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
@@ -398,12 +397,12 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "rc_promo_pro_cat_lifetime",
+            title = "test_entitlement",
             price = PriceDetails.Free,
             store = Store.PROMOTIONAL,
             product = null,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = false,
+            isExpired = false,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2222"),
@@ -445,8 +444,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = false,
             isCancelled = false,
             expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
@@ -488,8 +487,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
@@ -531,8 +530,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
-            isLifetime = false,
-            isActive = false,
+            isSubscription = true,
+            isExpired = true,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
@@ -574,8 +573,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = false,
             isCancelled = false,
             expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
@@ -617,8 +616,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
@@ -660,8 +659,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
-            isLifetime = false,
-            isActive = false,
+            isSubscription = true,
+            isExpired = true,
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
@@ -714,8 +713,8 @@ class PurchaseInformationTest {
             price = PriceDetails.Paid("$1.99"),
             store = Store.PLAY_STORE,
             product = storeProduct,
-            isLifetime = false,
-            isActive = true,
+            isSubscription = true,
+            isExpired = false,
             isTrial = true,
             isCancelled = false,
             expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
@@ -728,18 +727,18 @@ class PurchaseInformationTest {
         price: PriceDetails,
         product: StoreProduct?,
         store: Store,
-        isLifetime: Boolean,
-        isActive: Boolean = true,
+        isSubscription: Boolean,
+        isExpired: Boolean = false,
         isTrial: Boolean = false,
         isCancelled: Boolean = false,
         expirationOrRenewal: ExpirationOrRenewal? = null,
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
         assertThat(purchaseInformation.pricePaid).isEqualTo(price)
-        assertThat(purchaseInformation.isLifetime).isEqualTo(isLifetime)
+        assertThat(purchaseInformation.isSubscription).isEqualTo(isSubscription)
         assertThat(purchaseInformation.product).isEqualTo(product)
         assertThat(purchaseInformation.store).isEqualTo(store)
-        assertThat(purchaseInformation.isActive).isEqualTo(isActive)
+        assertThat(purchaseInformation.isExpired).isEqualTo(isExpired)
         assertThat(purchaseInformation.isTrial).isEqualTo(isTrial)
         assertThat(purchaseInformation.isCancelled).isEqualTo(isCancelled)
         assertThat(purchaseInformation.expirationOrRenewal).isEqualTo(expirationOrRenewal)

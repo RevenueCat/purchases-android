@@ -219,6 +219,9 @@ data class CustomerCenterConfigData(
 
             @SerialName("badge_free_trial")
             BADGE_FREE_TRIAL,
+
+            @SerialName("badge_free_trial_cancelled")
+            BADGE_FREE_TRIAL_CANCELLED,
             ;
 
             val defaultValue: String
@@ -295,6 +298,7 @@ data class CustomerCenterConfigData(
                     ACTIVE -> "Active"
                     BADGE_CANCELLED -> "Cancelled"
                     BADGE_FREE_TRIAL -> "Free Trial"
+                    BADGE_FREE_TRIAL_CANCELLED -> "Cancelled Trial"
                 }
         }
 

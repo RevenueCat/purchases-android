@@ -141,8 +141,8 @@ internal object CustomerCenterConfigTestData {
             Price("$4.99", 4_990_000, "US"),
             Period(1, Period.Unit.MONTH, "P1M"),
         ),
-        isLifetime = false,
-        isActive = true,
+        isSubscription = true,
+        isExpired = false,
         isTrial = false,
         isCancelled = false,
     )
@@ -161,8 +161,28 @@ internal object CustomerCenterConfigTestData {
             Price("$40.99", 40_990_000, "US"),
             Period(1, Period.Unit.YEAR, "P1Y"),
         ),
-        isLifetime = false,
-        isActive = false,
+        isSubscription = true,
+        isExpired = false,
+        isTrial = false,
+        isCancelled = true,
+    )
+
+    val purchaseInformationYearlyExpired = PurchaseInformation(
+        title = "Basic",
+        pricePaid = PriceDetails.Paid("$40.99"),
+        expirationOrRenewal = ExpirationOrRenewal.Expiration("June 1st, 2024"),
+        store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        product = TestStoreProduct(
+            "yearly_product_id",
+            "Basic",
+            "title",
+            "description",
+            Price("$40.99", 40_990_000, "US"),
+            Period(1, Period.Unit.YEAR, "P1Y"),
+        ),
+        isSubscription = true,
+        isExpired = true,
         isTrial = false,
         isCancelled = true,
     )
@@ -174,9 +194,22 @@ internal object CustomerCenterConfigTestData {
         store = Store.APP_STORE,
         managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         product = null,
-        isLifetime = true,
-        isActive = true,
+        isSubscription = true,
+        isExpired = false,
         isTrial = false,
         isCancelled = false,
+    )
+
+    val purchaseInformationPromotional = PurchaseInformation(
+        title = "rc_promo_Test1_lifetime",
+        pricePaid = PriceDetails.Free,
+        expirationOrRenewal = ExpirationOrRenewal.Expiration("April 24th, 2225"),
+        store = Store.PROMOTIONAL,
+        managementURL = null,
+        product = null,
+        isSubscription = false,
+        isExpired = false,
+        isTrial = false,
+        isCancelled = true,
     )
 }

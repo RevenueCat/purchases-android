@@ -24,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOr
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
-@SuppressWarnings("LongParameterList", "LongMethod")
 @Composable
 internal fun PurchaseInformationCardView(
     purchaseInformation: PurchaseInformation,
@@ -69,26 +68,7 @@ internal fun PurchaseInformationCardView(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
-                when {
-                    purchaseInformation.isCancelled -> StatusBadge(
-                        text = localization.commonLocalizedString(
-                            CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_CANCELLED,
-                        ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_CANCELLED),
-                    )
-                    purchaseInformation.isTrial -> StatusBadge(
-                        text = localization.commonLocalizedString(
-                            CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_FREE_TRIAL,
-                        ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_FREE_TRIAL),
-                    )
-                    purchaseInformation.isActive -> StatusBadge(
-                        text = localization.commonLocalizedString(
-                            CustomerCenterConfigData.Localization.CommonLocalizedString.ACTIVE,
-                        ),
-                        backgroundColor = Color(CustomerCenterConstants.Card.COLOR_BADGE_ACTIVE),
-                    )
-                }
+                PurchaseStatusBadge(purchaseInformation, localization)
             }
 
             getSubtitle(
@@ -124,32 +104,12 @@ private fun getSubtitle(
     }
 }
 
-@Composable
-private fun StatusBadge(
-    text: String,
-    backgroundColor: Color,
-) {
-    Surface(
-        shape = RoundedCornerShape(CustomerCenterConstants.Card.BADGE_CORNER_SIZE),
-        color = backgroundColor,
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(
-                horizontal = CustomerCenterConstants.Card.BADGE_HORIZONTAL_PADDING,
-                vertical = CustomerCenterConstants.Card.BADGE_VERTICAL_PADDING,
-            ),
-        )
-    }
-}
-
 private fun getStoreText(store: Store): String {
     return when (store) {
         Store.APP_STORE -> "Apple App Store"
         Store.PLAY_STORE -> "Google Play Store"
         Store.STRIPE -> "Web"
-        Store.PROMOTIONAL -> "Promotional"
+        Store.PROMOTIONAL -> "Via Support"
         Store.AMAZON -> "Amazon Store"
         Store.RC_BILLING -> "RevenueCat"
         Store.MAC_APP_STORE -> "Mac App Store"
@@ -183,6 +143,8 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
     override val values: Sequence<PurchaseInformation> = sequenceOf(
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
         CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
+        CustomerCenterConfigTestData.purchaseInformationYearlyExpired,
+        CustomerCenterConfigTestData.purchaseInformationPromotional,
         CustomerCenterConfigTestData.purchaseInformationLifetime,
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
             title = "Monthly long subscription name that overflows",
