@@ -649,7 +649,7 @@ DESC
         if file_path =~ /\>\>(.*?)\<\</
           offering_id = $1
           target_dir = "#{target_repository_path}/screenshots/templates/#{offering_id}"
-          sh("mkdir -p #{target_dir}")
+          sh("mkdir -p \"#{target_dir}\"")
           sh("mv \"#{file_path}\" \"#{target_dir}/android.png\"")
         else
           UI.user_error!("No offering ID found in file: #{File.basename(file_path)}")
