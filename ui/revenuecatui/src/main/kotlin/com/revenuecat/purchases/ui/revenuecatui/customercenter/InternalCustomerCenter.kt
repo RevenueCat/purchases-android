@@ -46,8 +46,10 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
@@ -127,6 +129,7 @@ internal fun InternalCustomerCenter(
                         viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
                 }
+                is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
             }
         },
     )
@@ -278,6 +281,14 @@ private fun CustomerCenterLoaded(
                 }
             },
         )
+    } else if (state.selectedPurchase != null) {
+        SelectedPurchaseDetailView(
+            contactEmail = state.customerCenterConfigData.support.email,
+            localization = state.customerCenterConfigData.localization,
+            purchaseInformation = state.selectedPurchase,
+            supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+            onAction = onAction,
+        )
     } else {
         val configuration = state.customerCenterConfigData
         MainScreen(state, configuration, onAction)
@@ -290,17 +301,16 @@ private fun MainScreen(
     configuration: CustomerCenterConfigData,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    if (state.purchaseInformation != null) {
+    if (state.purchases.isNotEmpty()) {
         configuration.getManagementScreen()?.let { managementScreen ->
-            ManageSubscriptionsView(
+            RelevantPurchasesListView(
                 screenTitle = managementScreen.title,
-                screenSubtitle = managementScreen.subtitle,
-                screenType = managementScreen.type,
                 supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                purchaseInformation = state.purchaseInformation,
+                onPurchaseSelect = { onAction(CustomerCenterAction.SelectPurchase(it)) },
                 onAction = onAction,
+                purchaseInformation = state.purchases,
             )
         } ?: run {
             // Handle missing management screen
@@ -308,14 +318,13 @@ private fun MainScreen(
         }
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
-            ManageSubscriptionsView(
+            NoActiveUserManagementView(
                 screenTitle = noActiveScreen.title,
                 screenSubtitle = noActiveScreen.subtitle,
-                screenType = noActiveScreen.type,
-                supportedPaths = noActiveScreen.paths,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                onAction = onAction,
+                noActiveScreen.paths,
+                onAction,
             )
         } ?: run {
             // Fallback with a restore button
@@ -398,7 +407,7 @@ internal fun CustomerCenterNoActiveScreenPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
-            purchaseInformation = null,
+            purchases = emptyList(),
             supportedPathsForManagementScreen = listOf(),
         ),
         modifier = Modifier
@@ -438,7 +447,7 @@ internal fun CustomerCenterLoadedPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
-            purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+            purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
             supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
         ),
         modifier = Modifier

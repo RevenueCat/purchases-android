@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
@@ -15,7 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 @Suppress("LongParameterList")
 @Composable
 internal fun ManageSubscriptionsButtonsView(
-    purchaseInformation: PurchaseInformation?,
+    associatedPurchaseInformation: PurchaseInformation?,
     supportedPaths: List<HelpPath>,
     localization: CustomerCenterConfigData.Localization,
     contactEmail: String?,
@@ -24,12 +25,13 @@ internal fun ManageSubscriptionsButtonsView(
 ) {
     Column(
         modifier = Modifier
+            .padding(horizontal = ManagementViewHorizontalPadding)
             .padding(top = CustomerCenterConstants.Layout.BUTTONS_TOP_PADDING),
         verticalArrangement = Arrangement.spacedBy(CustomerCenterConstants.Layout.BUTTONS_SPACING),
     ) {
         supportedPaths.forEach { path ->
             val pathButtonPressed =
-                CustomerCenterAction.PathButtonPressed(path, purchaseInformation)
+                CustomerCenterAction.PathButtonPressed(path, associatedPurchaseInformation)
             SettingsButton(
                 onClick = { onAction(pathButtonPressed) },
                 title = path.title,
