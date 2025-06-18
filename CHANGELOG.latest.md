@@ -1,11 +1,25 @@
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fixes `OutOfMemoryError` caused by printing large `Offerings` objects. (#2452) via JayShortway (@JayShortway)
+* [Paywalls] Margin no longer decreases icon size (#2447) via JayShortway (@JayShortway)
+* `getOfferings()` returns fresh Offerings and Products when the locale has changed (#2438) via JayShortway (@JayShortway)
+
 ## RevenueCatUI SDK
-### Paywallv2
+### Customer Center
 #### 🐞 Bugfixes
-* [Paywalls] Fix Bold text in Markdown on higher Weights Text composables (#2421) via Toni Rico (@tonidero)
+* Clean up paths logic in Customer Center (#2439) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Add coroutines dependency to core SDK (#2423) via Toni Rico (@tonidero)
-* [Paywalls] Add `font_weight_int` to `TextComponent` (#2419) via Toni Rico (@tonidero)
-* [Paywalls V2] Downloadable fonts (#2414) via Toni Rico (@tonidero)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2412) via RevenueCat Git Bot (@RCGitBot)
-* Use new resource format for cross validation screenshots and fix lint (#2413) via Josh Holtz (@joshdholtz)
+* Support spaces in template IDs when recording Paywall screenshots (#2449) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2444) via RevenueCat Git Bot (@RCGitBot)
+* Use script instead of gradle for metalava apiDump and apiCheck (#2445) via Cesar de la Vega (@vegaro)
+* Clean up `ExperimentalPreviewRevenueCatPurchasesAPI` (#2434) via Cesar de la Vega (@vegaro)
+* Remove assertion on strings in Customer Center test (#2433) via Cesar de la Vega (@vegaro)
+* Some Metalava updates (#2442) via JayShortway (@JayShortway)
+* [Paywalls] Ensures bottom window insets are applied to the sheet. (#2441) via JayShortway (@JayShortway)
+* [Paywalls] Buttons can now open sheets (#2436) via JayShortway (@JayShortway)
+* [Paywalls] Correctly deserializes the `Sheet` destination in Button components (#2435) via JayShortway (@JayShortway)
+* Include commit hash in commit message for paywall-rendering-validation (#2432) via Antonio Pallares (@ajpallares)
+* Update `PaywallTester` colors (#2429) via Cesar de la Vega (@vegaro)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2426) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane from 2.227.1 to 2.227.2 (#2392) via dependabot[bot] (@dependabot[bot])
