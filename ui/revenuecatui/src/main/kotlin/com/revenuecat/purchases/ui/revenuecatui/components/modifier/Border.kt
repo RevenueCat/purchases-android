@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
@@ -26,10 +27,14 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorSty
 internal fun Modifier.border(
     border: BorderStyle,
     shape: Shape = RectangleShape,
-): Modifier =
-    when (border.color) {
-        is ColorStyle.Solid -> this.border(width = border.width, color = border.color.color, shape = shape)
-        is ColorStyle.Gradient -> this.border(width = border.width, brush = border.color.brush, shape = shape)
+): Modifier = border(width = border.width, colorStyle = border.color, shape = shape)
+
+@JvmSynthetic
+@Stable
+internal fun Modifier.border(width: Dp, colorStyle: ColorStyle, shape: Shape): Modifier =
+    when (colorStyle) {
+        is ColorStyle.Solid -> this.border(width = width, color = colorStyle.color, shape = shape)
+        is ColorStyle.Gradient -> this.border(width = width, brush = colorStyle.brush, shape = shape)
     }
 
 @Suppress("MagicNumber")
