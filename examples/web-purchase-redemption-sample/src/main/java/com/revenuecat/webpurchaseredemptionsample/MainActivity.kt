@@ -12,12 +12,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.asWebPurchaseRedemption
 import com.revenuecat.webpurchaseredemptionsample.ui.theme.PurchasesTheme
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class MainActivity : ComponentActivity() {
 
     internal var webPurchaseRedemption: WebPurchaseRedemption? by mutableStateOf(null)

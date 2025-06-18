@@ -655,7 +655,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @OptIn(InternalRevenueCatAPI::class)
     fun track(event: FeatureEvent) {
         when (event) {
             is PaywallEvent ->
@@ -667,7 +667,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     fun getCustomerCenterConfig(callback: GetCustomerCenterConfigCallback) {
         backend.getCustomerCenterConfig(
             identityManager.currentAppUserID,

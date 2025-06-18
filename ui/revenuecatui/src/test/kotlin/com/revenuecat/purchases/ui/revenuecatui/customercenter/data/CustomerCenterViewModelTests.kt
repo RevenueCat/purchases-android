@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CustomerInfo
@@ -31,6 +32,7 @@ import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateLoadedComponentsLocaleTests.Args
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createGoogleStoreProduct
@@ -56,10 +58,10 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class CustomerCenterViewModelTests {
 
@@ -92,6 +94,22 @@ class CustomerCenterViewModelTests {
                         id = "id2",
                         title = "title2",
                         type = HelpPath.PathType.CANCEL,
+                    ),
+                    HelpPath(
+                        id = "id3",
+                        title = "title3",
+                        type = HelpPath.PathType.CUSTOM_URL,
+                        url = "https://example.com"
+                    ),
+                    HelpPath(
+                        id = "id4",
+                        title = "title1",
+                        type = HelpPath.PathType.CHANGE_PLANS
+                    ),
+                    HelpPath(
+                        id = "id4",
+                        title = "title1",
+                        type = HelpPath.PathType.REFUND_REQUEST
                     )
                 )
             )
@@ -508,91 +526,6 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `isSupportedPaths does not filter CANCEL when purchase is not lifetime`() = runTest {
-        setupPurchasesMock()
-        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
-        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
-            "productIdentifier" to SubscriptionInfo(
-                productIdentifier = "productIdentifier",
-                purchaseDate = Date(),
-                originalPurchaseDate = null,
-                expiresDate = null,
-                store = Store.APP_STORE,
-                unsubscribeDetectedAt = null,
-                isSandbox = false,
-                billingIssuesDetectedAt = null,
-                gracePeriodExpiresDate = null,
-                periodType = PeriodType.NORMAL,
-                refundedAt = null,
-                storeTransactionId = null,
-                requestDate = Date()
-            )
-        )
-
-        every { customerInfo.nonSubscriptionTransactions } returns listOf()
-
-        val model = CustomerCenterViewModelImpl(
-            purchases = purchases,
-            locale = Locale.US,
-            colorScheme = TestData.Constants.currentColorScheme,
-            isDarkMode = false
-        )
-
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths.size).isEqualTo(2)
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
-    }
-
-    @Test
-    fun `isSupportedPaths does filter CANCEL when purchase is lifetime`() = runTest {
-        setupPurchasesMock()
-        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
-        every { customerInfo.nonSubscriptionTransactions } returns listOf(
-            Transaction(
-                transactionIdentifier = "transactionIdentifier",
-                revenuecatId = "revenuecatId",
-                productIdentifier = "productIdentifier",
-                productId = "productId",
-                purchaseDate = Date(),
-                storeTransactionId = null,
-                store = Store.PLAY_STORE
-            )
-        )
-
-        val model = CustomerCenterViewModelImpl(
-            purchases = purchases,
-            locale = Locale.US,
-            colorScheme = TestData.Constants.currentColorScheme,
-            isDarkMode = false
-        )
-
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths.size).isEqualTo(1)
-                    assertThat(paths.first()).isEqualTo(HelpPath(
-                        id = "id1",
-                        title = "title1",
-                        type = HelpPath.PathType.MISSING_PURCHASE
-                    ))
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
-    }
-
-    @Test
     fun `onNavigationButtonPressed handles CLOSE and BACK buttons correctly`() = runTest {
         setupPurchasesMock()
 
@@ -935,7 +868,7 @@ class CustomerCenterViewModelTests {
                 title = "Cancel",
                 type = HelpPath.PathType.CANCEL
             ),
-            mockProduct
+            CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
         )
 
         // Then both listeners should be notified
@@ -1188,6 +1121,491 @@ class CustomerCenterViewModelTests {
         model.state.first { it is CustomerCenterState.Success }
 
         coVerify(exactly = 1) { purchases.awaitGetProduct("product_identifier", "monthly") }
+    }
+
+    @Test
+    fun `isSupportedPaths allows CANCEL when purchase is not lifetime`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.PLAY_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        every { customerInfo.nonSubscriptionTransactions } returns listOf()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Expected CANCEL path to be present for non-lifetime purchases. Paths: $paths")
+                        .anyMatch { it.type == HelpPath.PathType.CANCEL }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths filters CANCEL when management URL is not present and not Google Play Store`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.APP_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        every { customerInfo.nonSubscriptionTransactions } returns listOf()
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage(
+                            "Expected CANCEL path to not be present when there are no management URL. Paths: $paths")
+                        .noneMatch { it.type == HelpPath.PathType.CANCEL }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths filters CANCEL when purchase is lifetime`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.nonSubscriptionTransactions } returns listOf(
+            Transaction(
+                transactionIdentifier = "transactionIdentifier",
+                revenuecatId = "revenuecatId",
+                productIdentifier = "productIdentifier",
+                productId = "productId",
+                purchaseDate = Date(),
+                storeTransactionId = null,
+                store = Store.PLAY_STORE
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Expected CANCEL path to not be present for lifetime purchases. Paths: $paths")
+                        .noneMatch { it.type == HelpPath.PathType.CANCEL }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths filters CANCEL when purchase is non Play Store lifetime and management URL`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.managementURL } returns Uri.parse("https://apple.com/")
+        every { customerInfo.nonSubscriptionTransactions } returns listOf(
+            Transaction(
+                transactionIdentifier = "transactionIdentifier",
+                revenuecatId = "revenuecatId",
+                productIdentifier = "productIdentifier",
+                productId = "productId",
+                purchaseDate = Date(),
+                storeTransactionId = null,
+                store = Store.APP_STORE
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Expected CANCEL path to not be present for lifetime purchases. Paths: $paths")
+                        .noneMatch { it.type == HelpPath.PathType.CANCEL }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths filters CANCEL for non-Play Store without management URL`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.managementURL } returns null
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.APP_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Expected CANCEL path to not be present for non-PLAY_STORE without management URL. Paths: $paths")
+                        .noneMatch { it.type == HelpPath.PathType.CANCEL }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths allows CUSTOM_URL for Play store`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.PLAY_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Expected CUSTOM_URL path to be present. Paths: $paths")
+                        .anyMatch { it.type == HelpPath.PathType.CUSTOM_URL }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths allows CUSTOM_URL for App store`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.APP_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Expected CUSTOM_URL path to be present. Paths: $paths")
+                        .anyMatch { it.type == HelpPath.PathType.CUSTOM_URL }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths allows MISSING_PURCHASE for App store`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.APP_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Expected MISSING_PURCHASE path for APP_STORE. Paths: $paths")
+                        .anyMatch { it.type == HelpPath.PathType.MISSING_PURCHASE }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths allows MISSING_PURCHASE for Play store`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.PLAY_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Expected MISSING_PURCHASE path for PLAY_STORE. Paths: $paths")
+                        .anyMatch { it.type == HelpPath.PathType.MISSING_PURCHASE }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths filters non compatible paths for App store`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.APP_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Not expected REFUND_REQUEST path for APP_STORE. Paths: $paths")
+                        .noneMatch { it.type == HelpPath.PathType.REFUND_REQUEST }
+                    assertThat(paths)
+                        .withFailMessage("Not expected CHANGE_PLANS path for APP_STORE. Paths: $paths")
+                        .noneMatch { it.type == HelpPath.PathType.CHANGE_PLANS }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
+    }
+
+    @Test
+    fun `isSupportedPaths filters non compatible paths for Play store`() = runTest {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.PLAY_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date()
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        val job = launch {
+            model.state.collect { state ->
+                if (state is CustomerCenterState.Success) {
+                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    assertThat(paths)
+                        .withFailMessage("Not expected REFUND_REQUEST path for APP_STORE. Paths: $paths")
+                        .noneMatch { it.type == HelpPath.PathType.REFUND_REQUEST }
+                    assertThat(paths)
+                        .withFailMessage("Not expected CHANGE_PLANS path for APP_STORE. Paths: $paths")
+                        .noneMatch { it.type == HelpPath.PathType.CHANGE_PLANS }
+                    cancel()
+                }
+            }
+        }
+
+        job.join()
     }
 
     // Helper method to setup common mocks

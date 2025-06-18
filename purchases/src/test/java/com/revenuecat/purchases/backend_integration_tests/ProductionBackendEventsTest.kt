@@ -20,7 +20,6 @@ internal class ProductionBackendEventsTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
 
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can post events without errors`() {
         ensureBlockFinishes { latch ->

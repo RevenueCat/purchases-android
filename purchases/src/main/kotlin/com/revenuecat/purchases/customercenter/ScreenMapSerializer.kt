@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.customercenter
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType
@@ -12,7 +12,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.jsonObject
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal object ScreenMapSerializer : KSerializer<Map<ScreenType, Screen>> {
     override val descriptor: SerialDescriptor = MapSerializer(ScreenType.serializer(), Screen.serializer()).descriptor
 

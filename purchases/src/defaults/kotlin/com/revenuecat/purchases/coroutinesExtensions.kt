@@ -176,7 +176,7 @@ suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-@ExperimentalPreviewRevenueCatPurchasesAPI
+@InternalRevenueCatAPI
 suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
     return suspendCoroutine { continuation ->
         getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
