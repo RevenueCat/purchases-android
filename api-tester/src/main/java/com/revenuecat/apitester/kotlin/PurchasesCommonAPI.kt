@@ -17,7 +17,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitGetProductsResult
 import com.revenuecat.purchases.awaitGetVirtualCurrencies

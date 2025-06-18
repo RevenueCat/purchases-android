@@ -1,7 +1,7 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.VirtualCurrencies
-import com.revenuecat.purchases.VirtualCurrency
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class VirtualCurrenciesAPI {

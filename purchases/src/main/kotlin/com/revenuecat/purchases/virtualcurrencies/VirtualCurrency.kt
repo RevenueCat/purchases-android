@@ -1,4 +1,4 @@
-package com.revenuecat.purchases
+package com.revenuecat.purchases.virtualcurrencies
 
 import android.os.Parcelable
 import com.revenuecat.purchases.utils.getNullableString

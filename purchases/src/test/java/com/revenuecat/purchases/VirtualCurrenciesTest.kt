@@ -1,6 +1,6 @@
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.VirtualCurrencies
-import com.revenuecat.purchases.VirtualCurrency
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

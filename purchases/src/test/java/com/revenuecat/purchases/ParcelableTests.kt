@@ -11,6 +11,7 @@ import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.testParcelization
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import org.assertj.core.api.Assertions
 import org.json.JSONObject
 import org.junit.Test

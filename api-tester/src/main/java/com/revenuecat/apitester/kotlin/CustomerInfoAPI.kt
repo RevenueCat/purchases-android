@@ -4,7 +4,7 @@ import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.VirtualCurrency
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import com.revenuecat.purchases.models.Transaction
 import java.util.Date
 

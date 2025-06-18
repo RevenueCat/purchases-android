@@ -31,7 +31,6 @@ internal object CustomerInfoFactory {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod")
     @Throws(JSONException::class)
     fun buildCustomerInfo(

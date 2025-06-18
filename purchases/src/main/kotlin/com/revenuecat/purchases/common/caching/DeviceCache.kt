@@ -23,6 +23,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -60,6 +63,14 @@ internal open class DeviceCache(
 
     private val customerInfoCachesLastUpdatedCacheBaseKey: String by lazy {
         "$apiKeyPrefix.purchaserInfoLastUpdated"
+    }
+
+    private val virtualCurrenciesCacheBaseKey: String by lazy {
+        "$apiKeyPrefix.virtualCurrencies"
+    }
+
+    private val virtualCurrenciesLastUpdatedCacheBaseKey: String by lazy {
+        "$apiKeyPrefix.virtualCurrenciesLastUpdated"
     }
 
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
@@ -225,6 +236,81 @@ internal open class DeviceCache(
         return Date(preferences.getLong(customerInfoLastUpdatedCacheKey(appUserID), 0))
     }
 
+    // endregion
+
+    // region virtual currencies
+    private fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
+
+    private fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
+
+    @Synchronized
+    fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
+        return preferences.getString(virtualCurrenciesCacheKey(appUserID), null)
+            ?.let { json ->
+                try {
+                    val cachedJSONObject = JSONObject(json)
+                    return VirtualCurrenciesFactory.buildVirtualCurrencies(body = cachedJSONObject)
+                } catch (e: JSONException) {
+                    null
+                }
+            }
+    }
+
+    @Synchronized
+    fun cacheVirtualCurrencies(appUserID: String, virtualCurrencies: VirtualCurrencies) {
+        preferences.edit()
+            .putString(
+                virtualCurrenciesCacheKey(appUserID),
+                virtualCurrencies.rawData.toString(),
+            ).apply()
+
+        setVirtualCurrenciesCacheTimestampToNow(appUserID)
+    }
+
+    @Synchronized
+    fun isVirtualCurrenciesCacheStale(appUserID: String, appInBackground: Boolean) =
+        getVirtualCurrenciesCacheLastUpdated(appUserID).isCacheStale(appInBackground, dateProvider)
+
+    @Synchronized
+    fun clearVirtualCurrenciesCacheTimestamp(appUserID: String) {
+        preferences.edit().clearVirtualCurrenciesCacheTimestamp(appUserID).apply()
+    }
+
+    @Synchronized
+    fun clearVirtualCurrenciesCache(appUserID: String) {
+        val editor = preferences.edit()
+        clearVirtualCurrenciesCache(appUserID, editor)
+        editor.apply()
+    }
+
+    @Synchronized
+    fun clearVirtualCurrenciesCache(
+        appUserID: String,
+        editor: SharedPreferences.Editor,
+    ) {
+        editor.clearVirtualCurrenciesCacheTimestamp(appUserID)
+        editor.remove(virtualCurrenciesCacheKey(appUserID))
+    }
+
+    @Synchronized
+    fun setVirtualCurrenciesCacheTimestampToNow(appUserID: String) {
+        setVirtualCurrenciesCacheTimestamp(appUserID, dateProvider.now)
+    }
+
+    @Synchronized
+    fun setVirtualCurrenciesCacheTimestamp(appUserID: String, date: Date) {
+        preferences.edit().putLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), date.time).apply()
+    }
+
+    @Synchronized
+    private fun getVirtualCurrenciesCacheLastUpdated(appUserID: String): Date {
+        return Date(preferences.getLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), 0))
+    }
+
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCacheTimestamp(appUserID: String): SharedPreferences.Editor {
+        remove(virtualCurrenciesLastUpdatedCacheKey(appUserID))
+        return this
+    }
     // endregion
 
     // region attribution data

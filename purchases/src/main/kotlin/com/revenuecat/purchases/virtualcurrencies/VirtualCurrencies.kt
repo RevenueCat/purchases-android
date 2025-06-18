@@ -1,9 +1,12 @@
-package com.revenuecat.purchases
+package com.revenuecat.purchases.virtualcurrencies
 
 import android.os.Parcelable
-import com.revenuecat.purchases.utils.getNullableString
+import com.revenuecat.purchases.models.RawDataContainer
+import com.revenuecat.purchases.utils.JSONObjectParceler
 import dev.drewhamilton.poko.Poko
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 
 /**
@@ -13,9 +16,11 @@ import org.json.JSONObject
  */
 @Poko
 @Parcelize
+@TypeParceler<JSONObject, JSONObjectParceler>()
 class VirtualCurrencies internal constructor(
-    val all: Map<String, VirtualCurrency>
-) : Parcelable {
+    val all: Map<String, VirtualCurrency>,
+    private val jsonObject: JSONObject,
+) : Parcelable, RawDataContainer<JSONObject> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -52,18 +57,22 @@ class VirtualCurrencies internal constructor(
      */
     operator fun get(code: String): VirtualCurrency? = all[code]
 
-    companion object {
-        internal fun fromJson(json: JSONObject): VirtualCurrencies {
-            val vcsJson = json.optJSONObject("virtual_currencies") ?: json
-            val all = mutableMapOf<String, VirtualCurrency>()
-            val keys = vcsJson.keys()
-            while (keys.hasNext()) {
-                val key = keys.next()
-                val currencyJson = vcsJson.getJSONObject(key)
-                val currency = VirtualCurrency.fromJson(currencyJson)
-                all[key] = currency
-            }
-            return VirtualCurrencies(all = all)
-        }
-    }
+//    companion object {
+//        internal fun fromJson(json: JSONObject): VirtualCurrencies {
+//            val vcsJson = json.optJSONObject("virtual_currencies") ?: json
+//            val all = mutableMapOf<String, VirtualCurrency>()
+//            val keys = vcsJson.keys()
+//            while (keys.hasNext()) {
+//                val key = keys.next()
+//                val currencyJson = vcsJson.getJSONObject(key)
+//                val currency = VirtualCurrency.fromJson(currencyJson)
+//                all[key] = currency
+//            }
+//            return VirtualCurrencies(all = all)
+//        }
+//    }
+
+    @IgnoredOnParcel
+    override val rawData: JSONObject
+        get() = jsonObject
 }

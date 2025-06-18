@@ -1,7 +1,7 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.VirtualCurrencies;
-import com.revenuecat.purchases.VirtualCurrency;
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency;
 
 import java.util.Map;
 

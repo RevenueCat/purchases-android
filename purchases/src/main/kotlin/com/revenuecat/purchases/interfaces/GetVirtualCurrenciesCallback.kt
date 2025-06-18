@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.interfaces
 
-import com.revenuecat.purchases.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.PurchasesError
 
 /**

@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.VirtualCurrency;
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency;
 
 final class VirtualCurrencyAPI {
     static void check(final VirtualCurrency virtualCurrency) {
