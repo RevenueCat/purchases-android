@@ -260,10 +260,14 @@ internal open class DeviceCache(
 
     @Synchronized
     fun cacheVirtualCurrencies(appUserID: String, virtualCurrencies: VirtualCurrencies) {
+        val virtualCurrenciesData = JSONObject().apply {
+            put("virtual_currencies", virtualCurrencies.rawData)
+        }.toString()
+        
         preferences.edit()
             .putString(
                 virtualCurrenciesCacheKey(appUserID),
-                virtualCurrencies.rawData.toString(),
+                virtualCurrenciesData,
             ).apply()
 
         setVirtualCurrenciesCacheTimestampToNow(appUserID)

@@ -16,6 +16,8 @@ import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlem
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.subtract
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -688,6 +690,112 @@ class DeviceCacheTest {
     }
 
     // endregion storefront
+
+    // region virtualCurrencies
+    @Test
+    fun `given no cached virtual currencies, cached virtual currencies is null`() {
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), null)
+        val info = cache.getCachedVirtualCurrencies(appUserID)
+        assertThat(info).`as`("info is null").isNull()
+    }
+
+    @Test
+    fun `given a virtual currencies, the key in the cache is correct`() {
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), Responses.validFullVirtualCurrenciesResponse)
+        cache.getCachedVirtualCurrencies(appUserID)
+        verify {
+            mockPrefs.getString(cache.virtualCurrenciesCacheKey(appUserID), isNull())
+        }
+    }
+
+    @Test
+    fun `given a valid VirtualCurrencies, the JSON is parsed correctly`() {
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), Responses.validFullVirtualCurrenciesResponse)
+        val vcs = cache.getCachedVirtualCurrencies(appUserID)
+        assertThat(vcs).`as`("vcs is not null").isNotNull
+        assertThat(vcs?.all?.size).isEqualTo(2)
+    }
+
+    @Test
+    fun `given a invalid VirtualCurrencies, the information is null`() {
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), "not json")
+        val vcs = cache.getCachedVirtualCurrencies(appUserID)
+        assertThat(vcs).`as`("vcs is null").isNull()
+    }
+
+    @Test
+    fun `given a VirtualCurrencies, the VirtualCurrencies is cached`() {
+        val vcs = VirtualCurrenciesFactory.buildVirtualCurrencies(
+            JSONObject(Responses.validFullVirtualCurrenciesResponse)
+        )
+
+        cache.cacheVirtualCurrencies(appUserID, vcs)
+        assertThat(slotForPutLong.captured).isNotNull
+        verifyAll {
+            mockEditor.putString(cache.virtualCurrenciesCacheKey(appUserID), Responses.validFullVirtualCurrenciesResponse)
+            mockEditor.putLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), slotForPutLong.captured)
+            mockEditor.apply()
+        }
+    }
+
+    @Test
+    fun `invalidating VirtualCurrencies caches`() {
+        mockLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), Date(0).time)
+        assertThat(cache.isVirtualCurrenciesCacheStale(appUserID, appInBackground = false)).isTrue
+
+        mockLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), Date().time)
+        assertThat(cache.isVirtualCurrenciesCacheStale(appUserID, appInBackground = false)).isFalse
+
+        mockString(cache.appUserIDCacheKey, appUserID)
+        mockString(cache.legacyAppUserIDCacheKey, null)
+
+        cache.clearVirtualCurrenciesCache(appUserID)
+        verify {
+            mockEditor.remove(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID))
+            mockEditor.remove(cache.virtualCurrenciesCacheKey(appUserID))
+        }
+
+        mockLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), 0L)
+        assertThat(cache.isVirtualCurrenciesCacheStale(appUserID, appInBackground = false)).isTrue
+    }
+
+    @Test
+    fun `isVirtualCurrenciesCacheStale returns true if the cached object is stale`() {
+        val mockVirtualCurrencies = mockk<VirtualCurrencies>(relaxed = true)
+        every { mockVirtualCurrencies.rawData } returns JSONObject()
+        
+        cache.cacheVirtualCurrencies(appUserID, mockVirtualCurrencies)
+
+        mockLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), Date(0).time)
+        assertThat(cache.isVirtualCurrenciesCacheStale(appUserID, appInBackground = false)).isTrue
+
+        mockLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), Date().time)
+        assertThat(cache.isVirtualCurrenciesCacheStale(appUserID, appInBackground = false)).isFalse
+    }
+
+    @Test
+    fun `cached VirtualCurrencies are equal to provided value`() {
+        val expectedVirtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(
+            JSONObject(Responses.validFullVirtualCurrenciesResponse)
+        )
+        mockLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), Date().time)
+        mockString(cache.appUserIDCacheKey, appUserID)
+        mockString(cache.legacyAppUserIDCacheKey, null)
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), Responses.validFullVirtualCurrenciesResponse)
+
+        cache.cacheVirtualCurrencies(appUserID, expectedVirtualCurrencies)
+        val cachedVirtualCurrencies = cache.getCachedVirtualCurrencies(appUserID)
+        assertThat(cachedVirtualCurrencies).isEqualTo(expectedVirtualCurrencies)
+
+        verify {
+            mockEditor.putString(
+                cache.virtualCurrenciesCacheKey(appUserID),
+                Responses.validFullVirtualCurrenciesResponse
+            )
+        }
+    }
+
+    // endregion virtualCurrencies
 
     private fun mockString(key: String, value: String?) {
         every {
