@@ -47,7 +47,7 @@ internal class FontLoader(
         val fontInfoToDownload = when (val downloadableFontInfoResult = fontInfo.toDownloadableFontInfo()) {
             is RCResult.Success -> downloadableFontInfoResult.value
             is RCResult.Error -> {
-                errorLog(downloadableFontInfoResult.value)
+                errorLog { downloadableFontInfoResult.value }
                 return null
             }
         }
@@ -80,7 +80,7 @@ internal class FontLoader(
                 if (fontInfosListeningToHash == null) {
                     fontInfosForHash[urlHash] = mutableSetOf(fontInfo)
                 } else {
-                    verboseLog("Font download already in progress for $url")
+                    verboseLog { "Font download already in progress for $url" }
                     fontInfosListeningToHash.add(fontInfo)
                     return@launch
                 }
@@ -102,10 +102,10 @@ internal class FontLoader(
                     .onSuccess { file ->
                         addFileToCache(urlHash, file)
                     }.onFailure {
-                        errorLog("Failed to download font for ${fontInfo.family}")
+                        errorLog { "Failed to download font for ${fontInfo.family}" }
                     }
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                errorLog("Error downloading remote font from $url", t)
+                errorLog(t) { "Error downloading remote font from $url" }
             } finally {
                 synchronized(this) {
                     fontInfosForHash.remove(urlHash)
@@ -119,7 +119,7 @@ internal class FontLoader(
             for (fontInfo in fontInfosForHash[urlHash] ?: emptySet()) {
                 val familyName = fontInfo.family
                 if (cachedFontFamilyByFontInfo[fontInfo] != null) {
-                    verboseLog("Font already cached for $familyName. Skipping download.")
+                    verboseLog { "Font already cached for $familyName. Skipping download." }
                     continue
                 }
                 val downloadedFontFamily = cachedFontFamilyByFamilyName[familyName]
@@ -157,9 +157,9 @@ internal class FontLoader(
         if (hasCheckedFoldersExist.getAndSet(true)) return
 
         if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            errorLog("Unable to create cache directory for remote fonts: ${cacheDir.absolutePath}")
+            errorLog { "Unable to create cache directory for remote fonts: ${cacheDir.absolutePath}" }
         } else if (!cacheDir.isDirectory) {
-            errorLog("Remote fonts cache path exists but is not a directory: ${cacheDir.absolutePath}")
+            errorLog { "Remote fonts cache path exists but is not a directory: ${cacheDir.absolutePath}" }
         }
     }
 
@@ -180,7 +180,7 @@ internal class FontLoader(
             val actualMd5 = md5Hex(tempFile.readBytes())
             if (!actualMd5.equals(expectedMd5, ignoreCase = true)) {
                 tempFile.delete()
-                errorLog("Downloaded font file is corrupt for $url. expected=$expectedMd5, actual=$actualMd5")
+                errorLog { "Downloaded font file is corrupt for $url. expected=$expectedMd5, actual=$actualMd5" }
                 return Result.failure(IOException("Downloaded font file is corrupt for $url"))
             }
 
@@ -188,18 +188,18 @@ internal class FontLoader(
                 tempFile.copyTo(cachedFile, overwrite = true)
                 tempFile.delete()
             }
-            debugLog("Font downloaded successfully from $url")
+            debugLog { "Font downloaded successfully from $url" }
             return Result.success(cachedFile)
         } catch (e: IOException) {
             if (tempFile.exists()) tempFile.delete()
-            errorLog("Error downloading font from $url: ${e.message}")
+            errorLog { "Error downloading font from $url: ${e.message}" }
             return Result.failure(e)
         }
     }
 
     @Throws(IOException::class)
     private fun downloadToFile(url: String, outputFile: File) {
-        verboseLog("Downloading remote font from $url")
+        verboseLog { "Downloading remote font from $url" }
         var connection: UrlConnection? = null
         try {
             connection = urlConnectionFactory.createConnection(url)

@@ -18,30 +18,37 @@ internal fun LogLevel.Companion.debugLogsEnabled(enabled: Boolean): LogLevel {
     }
 }
 
-internal fun verboseLog(message: String) {
-    logIfEnabled(LogLevel.VERBOSE, currentLogHandler::v, message)
+internal fun verboseLog(messageBuilder: () -> String) {
+    logIfEnabled(LogLevel.VERBOSE, currentLogHandler::v, messageBuilder)
 }
 
-internal fun debugLog(message: String) {
-    logIfEnabled(LogLevel.DEBUG, currentLogHandler::d, message)
+internal fun debugLog(messageBuilder: () -> String) {
+    logIfEnabled(LogLevel.DEBUG, currentLogHandler::d, messageBuilder)
 }
 
-internal fun infoLog(message: String) {
-    logIfEnabled(LogLevel.INFO, currentLogHandler::i, message)
+internal fun infoLog(messageBuilder: () -> String) {
+    logIfEnabled(LogLevel.INFO, currentLogHandler::i, messageBuilder)
 }
 
-// Public because it's been used in the hybrids
-internal fun warnLog(message: String) {
-    logIfEnabled(LogLevel.WARN, currentLogHandler::w, message)
+internal fun warnLog(messageBuilder: () -> String) {
+    logIfEnabled(LogLevel.WARN, currentLogHandler::w, messageBuilder)
+}
+
+internal fun errorLog(throwable: Throwable? = null, messageBuilder: () -> String) {
+    currentLogHandler.e("$PURCHASES_LOG_TAG - ${LogLevel.ERROR.name}", messageBuilder(), throwable)
 }
 
 internal fun errorLog(message: String, throwable: Throwable? = null) {
     currentLogHandler.e("$PURCHASES_LOG_TAG - ${LogLevel.ERROR.name}", message, throwable)
 }
 
-private fun logIfEnabled(level: LogLevel, logger: (tag: String, message: String) -> Unit, message: String) {
+private fun logIfEnabled(
+    level: LogLevel,
+    logger: (tag: String, message: String) -> Unit,
+    messageBuilder: () -> String,
+) {
     if (Config.logLevel <= level) {
-        logger("$PURCHASES_LOG_TAG - ${level.name}", message)
+        logger("$PURCHASES_LOG_TAG - ${level.name}", messageBuilder())
     }
 }
 
@@ -63,7 +70,8 @@ internal fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.CustomerInfoError,
         PurchasesErrorCode.SignatureVerificationError,
         PurchasesErrorCode.InvalidSubscriberAttributesError,
-        -> log(LogIntent.RC_ERROR, error.toString())
+        -> log(LogIntent.RC_ERROR) { error.toString() }
+
         PurchasesErrorCode.PurchaseCancelledError,
         PurchasesErrorCode.StoreProblemError,
         PurchasesErrorCode.PurchaseNotAllowedError,
@@ -77,6 +85,6 @@ internal fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.InsufficientPermissionsError,
         PurchasesErrorCode.PaymentPendingError,
         PurchasesErrorCode.InvalidCredentialsError,
-        -> log(LogIntent.GOOGLE_ERROR, error.toString())
+        -> log(LogIntent.GOOGLE_ERROR) { error.toString() }
     }
 }

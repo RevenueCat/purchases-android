@@ -311,7 +311,7 @@ class Purchases internal constructor(
             configuration: PurchasesConfigurationForCustomEntitlementsComputationMode,
         ): Purchases {
             if (isConfigured) {
-                infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS }
             }
             val purchasesConfiguration = with(configuration) {
                 PurchasesConfiguration.Builder(context, apiKey)
@@ -354,7 +354,7 @@ class Purchases internal constructor(
         ) {
             val currentStore = sharedInstance.purchasesOrchestrator.appConfig.store
             if (currentStore != Store.PLAY_STORE) {
-                log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
+                log(LogIntent.RC_ERROR) { BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS }
                 callback.onReceived(true)
                 return
             }

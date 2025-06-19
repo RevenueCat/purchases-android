@@ -26,7 +26,7 @@ internal object ScreenMapSerializer : KSerializer<Map<ScreenType, Screen>> {
                 val enumKey = ScreenType.valueOf(key)
                 map[enumKey] = jsonInput.json.decodeFromJsonElement(Screen.serializer(), value)
             } catch (_: IllegalArgumentException) {
-                debugLog("Unknown CustomerCenter ScreenType: $key. Ignoring.")
+                debugLog { "Unknown CustomerCenter ScreenType: $key. Ignoring." }
             }
         }
 
