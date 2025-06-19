@@ -521,7 +521,7 @@ class Purchases internal constructor(
     /**
      * Used by `RevenueCatUI` to keep track of [FeatureEvent]s.
      */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @InternalRevenueCatAPI
     @JvmSynthetic
     fun track(event: FeatureEvent) {
         purchasesOrchestrator.track(event)

@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.customercenter.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  * Types of events that can be tracked in the Customer Center. Meant for RevenueCatUI use.
  */
 @Serializable
-@ExperimentalPreviewRevenueCatPurchasesAPI
+@InternalRevenueCatAPI
 enum class CustomerCenterEventType {
     /**
      * The customer center was shown to the user.
