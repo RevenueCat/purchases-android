@@ -28,6 +28,7 @@ import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.SyncDispatcher
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
 import io.mockk.clearMocks
 import io.mockk.every
@@ -114,8 +115,17 @@ class SubscriberAttributesPurchasesTests {
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
             fontLoader = fontLoaderMock,
         )
+        val virtualCurrencyManager = VirtualCurrencyManager(
+            identityManager = identityManager,
+            deviceCache = cache,
+            backend = backendMock,
+            appConfig = appConfig
+        )
 
-        underTest = Purchases(purchasesOrchestrator)
+        underTest = Purchases(
+            purchasesOrchestrator = purchasesOrchestrator,
+            virtualCurrencyManager = virtualCurrencyManager
+        )
     }
 
     @After

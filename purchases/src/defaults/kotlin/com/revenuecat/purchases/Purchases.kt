@@ -35,6 +35,7 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 
 /**
@@ -47,6 +48,7 @@ import java.net.URL
  */
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
+    @get:JvmSynthetic internal val virtualCurrencyManager: VirtualCurrencyManager,
 ) : LifecycleDelegate {
     /**
      * The current configuration parameters of the Purchases SDK.
@@ -471,7 +473,7 @@ class Purchases internal constructor(
     fun getVirtualCurrencies(
         callback: GetVirtualCurrenciesCallback
     ) {
-        // TODO: Implement function
+        virtualCurrencyManager.virtualCurrencies(callback = callback)
     }
 
     /**
@@ -484,7 +486,7 @@ class Purchases internal constructor(
      * For more info, see our [virtual currency docs](https://www.revenuecat.com/docs/offerings/virtual-currency)
      */
     fun invalidateVirtualCurrenciesCache() {
-        // TODO: Implement function
+        virtualCurrencyManager.invalidateVirtualCurrenciesCache()
     }
 
     /**

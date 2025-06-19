@@ -45,6 +45,7 @@ import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
 import io.mockk.clearMocks
 import io.mockk.every
@@ -451,10 +452,20 @@ internal open class BasePurchasesTest {
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
         )
-        purchases = Purchases(purchasesOrchestrator)
+        val virtualCurrencyManager = VirtualCurrencyManager(
+            identityManager = mockIdentityManager,
+            deviceCache = mockCache,
+            backend = mockBackend,
+            appConfig = appConfig
+        )
+        purchases = Purchases(
+            purchasesOrchestrator = purchasesOrchestrator,
+            virtualCurrencyManager = virtualCurrencyManager
+        )
         Purchases.sharedInstance = purchases
         purchasesOrchestrator.state = purchasesOrchestrator.state.copy(appInBackground = false)
     }
+
 
     protected fun anonymousSetup(anonymous: Boolean) {
         val userIdToUse = if (anonymous) randomAppUserId else appUserId
