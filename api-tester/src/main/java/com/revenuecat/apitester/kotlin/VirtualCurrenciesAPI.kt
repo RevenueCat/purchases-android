@@ -7,8 +7,6 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 private class VirtualCurrenciesAPI {
     fun check(virtualCurrencies: VirtualCurrencies) {
         val all: Map<String, VirtualCurrency> = virtualCurrencies.all
-        val withZeroBalance: Map<String, VirtualCurrency> = virtualCurrencies.withZeroBalance
-        val withNonZeroBalance: Map<String, VirtualCurrency> = virtualCurrencies.withNonZeroBalance
         val subscriptTest: VirtualCurrency? = virtualCurrencies["COIN"]
         val getTest: VirtualCurrency? = virtualCurrencies.get(code = "COIN")
     }
