@@ -8,7 +8,7 @@ internal object OfferingStrings {
     const val FETCHING_PRODUCTS = "Requesting products from the store with identifiers: %s"
     const val FETCHING_PRODUCTS_FINISHED = "Products request finished for %s"
     const val BUILDING_OFFERINGS = "Building offerings response with %d products"
-    const val CREATED_OFFERINGS = "Offerings object created with %d offerings"
+    const val CREATED_OFFERINGS = "Offerings object created: %s"
     const val JSON_EXCEPTION_ERROR = "JSONException when building Offerings object. Message: %s"
     const val LIST_PRODUCTS = "%s - %s"
     const val EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE = "BillingClient queryProductDetails has returned more than once, " +

@@ -62,7 +62,7 @@ internal class OfferingsFactory(
                                     ),
                                 )
                             } else {
-                                verboseLog { OfferingStrings.CREATED_OFFERINGS.format(offerings.all.size) }
+                                verboseLog { OfferingStrings.CREATED_OFFERINGS.format(offerings) }
                                 onSuccess(
                                     OfferingsResultData(offerings, allRequestedProductIdentifiers, notFoundProductIds),
                                 )
