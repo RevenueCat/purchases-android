@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.virtualcurrencies
 
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
 import org.json.JSONException
 import org.json.JSONObject
@@ -19,6 +18,7 @@ internal object VirtualCurrenciesFactory {
         )
     }
 
+    @Throws(JSONException::class)
     fun buildVirtualCurrencies(
         body: JSONObject
     ): VirtualCurrencies {
@@ -31,7 +31,7 @@ internal fun JSONObject.buildVirtualCurrencies(): VirtualCurrencies {
     val all = HashMap<String, VirtualCurrency>()
     keys().forEach { vcCode ->
         val vcObject = getJSONObject(vcCode)
-        val vc = vcObject.buildVirtualCurrency()
+        val vc = VirtualCurrencyFactory.buildVirtualCurrency(vcObject)
         all[vcCode] = vc
     }
 

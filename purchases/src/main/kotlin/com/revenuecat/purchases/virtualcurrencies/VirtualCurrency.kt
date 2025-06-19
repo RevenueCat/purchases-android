@@ -33,19 +33,4 @@ class VirtualCurrency internal constructor(
     override fun hashCode(): Int {
         return balance.hashCode()
     }
-
-    companion object {
-        internal fun fromJson(json: JSONObject): VirtualCurrency {
-            val balance = json.getInt("balance")
-            val name = json.getString("name")
-            val code = json.getString("code")
-            val serverDescription = json.getNullableString("description")
-            return VirtualCurrency(
-                balance = balance,
-                name = name,
-                code = code,
-                serverDescription = serverDescription
-            )
-        }
-    }
 }
