@@ -124,7 +124,6 @@ private class PurchasesAPI {
         val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
 
-        purchases.getVirtualCurrencies(forceRefresh = true, callback = getVirtualCurrenciesCallback)
         purchases.getVirtualCurrencies(callback = getVirtualCurrenciesCallback)
     }
 

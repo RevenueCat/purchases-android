@@ -466,16 +466,24 @@ class Purchases internal constructor(
     /**
      * Fetches the virtual currencies for the current subscriber.
      *
-     * @param forceRefresh Whether or not the SDK must refresh virtual currencies from the backend,
-     * bypassing the SDK's cache. Pass in `true` to force the SDK to fetch the most recent value
-     * from the RevenueCat backend.
      * @param callback A listener called when the virtual currencies are available.
      */
-    @JvmOverloads
     fun getVirtualCurrencies(
-        forceRefresh: Boolean = false,
         callback: GetVirtualCurrenciesCallback
     ) {
+        // TODO: Implement function
+    }
+
+    /**
+     * Invalidates the cache for virtual currencies.
+     *
+     * This is useful for cases where a virtual currency's balance might have been updated
+     * outside of the app, like if you decreased a user's balance from the user spending a virtual currency,
+     * or if you increased the balance from your backend using the server APIs.
+     *
+     * For more info, see our [virtual currency docs](https://www.revenuecat.com/docs/offerings/virtual-currency)
+     */
+    fun invalidateVirtualCurrenciesCache() {
         // TODO: Implement function
     }
 

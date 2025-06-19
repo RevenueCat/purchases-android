@@ -160,21 +160,15 @@ fun Purchases.restorePurchasesWith(
 /**
  * Fetches the virtual currencies for the current subscriber.
  *
- * @param forceRefresh Whether or not the SDK must refresh virtual currencies from the backend,
- * bypassing the SDK's cache. Pass in `true` to force the SDK to fetch the most recent value
- * from the RevenueCat backend.
- *
  * @param [onSuccess] Will be called after the call has completed successfully
  * with a [VirtualCurrencies] object.
  * @param [onError] Will be called after the call has completed with an error.
  */
 fun Purchases.getVirtualCurrenciesWith(
-    forceRefresh: Boolean = false,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit
 ) {
     getVirtualCurrencies(
-        forceRefresh = forceRefresh,
         callback = getVirtualCurrenciesCallback(onSuccess, onError)
     )
 }

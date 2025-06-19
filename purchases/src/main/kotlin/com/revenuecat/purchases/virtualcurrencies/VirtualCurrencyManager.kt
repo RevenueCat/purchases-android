@@ -29,21 +29,18 @@ internal class VirtualCurrencyManager(
 
     @Synchronized
     fun virtualCurrencies(
-        forceRefresh: Boolean,
         callback: GetVirtualCurrenciesCallback
     ) {
         val appUserID = identityManager.currentAppUserID
         val isAppBackgrounded = appConfig.isAppBackgrounded
 
-        if (!forceRefresh) {
-            val cachedVirtualCurrencies = fetchCachedVirtualCurrencies(
-                appUserID = appUserID,
-                isAppBackgrounded = isAppBackgrounded
-            )
-            if (cachedVirtualCurrencies != null) {
-                callback.onReceived(cachedVirtualCurrencies)
-                return
-            }
+        val cachedVirtualCurrencies = fetchCachedVirtualCurrencies(
+            appUserID = appUserID,
+            isAppBackgrounded = isAppBackgrounded
+        )
+        if (cachedVirtualCurrencies != null) {
+            callback.onReceived(cachedVirtualCurrencies)
+            return
         }
 
         fetchVirtualCurrenciesFromBackend(

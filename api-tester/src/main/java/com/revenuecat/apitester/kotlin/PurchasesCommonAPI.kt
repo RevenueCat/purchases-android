@@ -164,11 +164,6 @@ private class PurchasesCommonAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: VirtualCurrencies -> }
         )
-        purchases.getVirtualCurrenciesWith(
-            forceRefresh = true,
-            onError = { _: PurchasesError -> },
-            onSuccess = { _: VirtualCurrencies -> }
-        )
     }
 
     suspend fun checkCoroutines(
@@ -183,9 +178,6 @@ private class PurchasesCommonAPI {
         val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
         val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
         val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
-        val getVirtualCurrenciesResultForceRefresh: VirtualCurrencies = purchases.awaitGetVirtualCurrencies(
-            forceRefresh = true
-        )
     }
 
     suspend fun checkCoroutinesResult(
@@ -199,9 +191,6 @@ private class PurchasesCommonAPI {
         val purchaseResult: Result<PurchaseResult> = purchases.awaitPurchaseResult(purchasePackageBuilder.build())
         val getProductsResult: Result<List<StoreProduct>> = purchases.awaitGetProductsResult(listOf("product"))
         val getVirtualCurrenciesResult: Result<VirtualCurrencies> = purchases.awaitGetVirtualCurrenciesResult()
-        val getVirtualCurrenciesResultForceRefresh: Result<VirtualCurrencies> = purchases.awaitGetVirtualCurrenciesResult(
-            forceRefresh = true
-        )
     }
 
     @Suppress("ForbiddenComment")
