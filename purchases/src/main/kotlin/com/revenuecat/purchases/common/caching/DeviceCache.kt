@@ -106,6 +106,8 @@ internal open class DeviceCache(
             .clearCustomerInfo()
             .clearAppUserID()
             .clearCustomerInfoCacheTimestamp(appUserID)
+            .clearVirtualCurrenciesCacheTimestamp(appUserID)
+            .clearVirtualCurrenciesCache(appUserID)
             .apply()
     }
 
@@ -239,9 +241,9 @@ internal open class DeviceCache(
     // endregion
 
     // region virtual currencies
-    private fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
+    fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
 
-    private fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
+    fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
 
     @Synchronized
     fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
@@ -272,11 +274,6 @@ internal open class DeviceCache(
         getVirtualCurrenciesCacheLastUpdated(appUserID).isCacheStale(appInBackground, dateProvider)
 
     @Synchronized
-    fun clearVirtualCurrenciesCacheTimestamp(appUserID: String) {
-        preferences.edit().clearVirtualCurrenciesCacheTimestamp(appUserID).apply()
-    }
-
-    @Synchronized
     fun clearVirtualCurrenciesCache(appUserID: String) {
         val editor = preferences.edit()
         clearVirtualCurrenciesCache(appUserID, editor)
@@ -288,8 +285,8 @@ internal open class DeviceCache(
         appUserID: String,
         editor: SharedPreferences.Editor,
     ) {
-        editor.clearVirtualCurrenciesCacheTimestamp(appUserID)
-        editor.remove(virtualCurrenciesCacheKey(appUserID))
+        editor.clearVirtualCurrenciesCacheTimestamp(appUserID = appUserID)
+        editor.clearVirtualCurrenciesCache(appUserID = appUserID)
     }
 
     @Synchronized
@@ -309,6 +306,25 @@ internal open class DeviceCache(
 
     private fun SharedPreferences.Editor.clearVirtualCurrenciesCacheTimestamp(appUserID: String): SharedPreferences.Editor {
         remove(virtualCurrenciesLastUpdatedCacheKey(appUserID))
+
+        getCachedAppUserID()?.let {
+            remove(virtualCurrenciesLastUpdatedCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(virtualCurrenciesLastUpdatedCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCache(appUserID: String): SharedPreferences.Editor {
+        remove(virtualCurrenciesCacheKey(appUserID))
+
+        getCachedAppUserID()?.let {
+            remove(virtualCurrenciesCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(virtualCurrenciesCacheKey(it))
+        }
         return this
     }
     // endregion

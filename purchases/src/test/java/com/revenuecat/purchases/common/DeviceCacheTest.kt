@@ -394,9 +394,13 @@ class DeviceCacheTest {
         every {
             mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey("appUserID"), capture(slot()))
         } returns mockEditor
+        every {
+            mockEditor.putLong(cache.virtualCurrenciesLastUpdatedCacheKey("appUserID"), capture(slot()))
+        } returns mockEditor
         mockString(cache.appUserIDCacheKey, "appUserID")
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
         mockString(cache.customerInfoCacheKey(appUserID), null)
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), null)
 
         cache.clearCachesForAppUserID("appUserID")
 
@@ -404,6 +408,10 @@ class DeviceCacheTest {
         verify { mockEditor.remove(cache.legacyAppUserIDCacheKey) }
         verify { mockEditor.remove(cache.customerInfoCacheKey("appUserID")) }
         verify { mockEditor.remove(cache.customerInfoCacheKey("legacyAppUserID")) }
+        verify { mockEditor.remove(cache.virtualCurrenciesCacheKey("appUserID")) }
+        verify { mockEditor.remove(cache.virtualCurrenciesCacheKey("legacyAppUserID")) }
+        verify { mockEditor.remove(cache.virtualCurrenciesLastUpdatedCacheKey("appUserID")) }
+        verify { mockEditor.remove(cache.virtualCurrenciesLastUpdatedCacheKey("legacyAppUserID")) }
     }
 
     @Test
