@@ -83,7 +83,7 @@ internal fun PurchaseInformationCardView(
             }
 
             Text(
-                text = getStoreText(purchaseInformation.store),
+                text = getStoreText(purchaseInformation.store, localization),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -104,19 +104,21 @@ private fun getSubtitle(
     }
 }
 
-private fun getStoreText(store: Store): String {
-    return when (store) {
-        Store.APP_STORE -> "Apple App Store"
-        Store.PLAY_STORE -> "Google Play Store"
-        Store.STRIPE -> "Web"
-        Store.PROMOTIONAL -> "Via Support"
-        Store.AMAZON -> "Amazon Store"
-        Store.RC_BILLING -> "RevenueCat"
-        Store.MAC_APP_STORE -> "Mac App Store"
-        Store.UNKNOWN_STORE -> "Unknown Store"
-        Store.EXTERNAL -> "External purchase"
-        Store.PADDLE -> "Paddle"
+private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Localization): String {
+    val key = when (store) {
+        Store.APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_APP_STORE
+        Store.MAC_APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_MAC_APP_STORE
+        Store.PLAY_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_PLAY_STORE
+        Store.AMAZON -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_AMAZON
+        Store.PROMOTIONAL -> CustomerCenterConfigData.Localization.CommonLocalizedString.CARD_STORE_PROMOTIONAL
+        Store.STRIPE,
+        Store.EXTERNAL,
+        Store.PADDLE,
+        Store.RC_BILLING,
+        -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_WEB
+        Store.UNKNOWN_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_UNKNOWN
     }
+    return localization.commonLocalizedString(key)
 }
 
 private fun getPrice(
