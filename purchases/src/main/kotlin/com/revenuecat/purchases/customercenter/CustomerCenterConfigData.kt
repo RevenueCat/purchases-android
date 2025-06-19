@@ -224,31 +224,22 @@ data class CustomerCenterConfigData(
             BADGE_FREE_TRIAL_CANCELLED,
 
             @SerialName("app_store")
-            STORE_APP_STORE,
+            APP_STORE,
 
             @SerialName("mac_app_store")
-            STORE_MAC_APP_STORE,
+            MAC_APP_STORE,
 
             @SerialName("google_play_store")
-            STORE_PLAY_STORE,
-
-            @SerialName("stripe")
-            STORE_STRIPE,
-
-            @SerialName("promotional")
-            STORE_PROMOTIONAL,
+            GOOGLE_PLAY_STORE,
 
             @SerialName("amazon_store")
-            STORE_AMAZON,
+            AMAZON_STORE,
 
             @SerialName("web_store")
-            STORE_WEB,
-
-            @SerialName("external_store")
-            STORE_EXTERNAL,
+            WEB_STORE,
 
             @SerialName("unknown_store")
-            STORE_UNKNOWN,
+            UNKNOWN_STORE,
 
             @SerialName("card_store_promotional")
             CARD_STORE_PROMOTIONAL,
@@ -329,15 +320,12 @@ data class CustomerCenterConfigData(
                     BADGE_CANCELLED -> "Cancelled"
                     BADGE_FREE_TRIAL -> "Free Trial"
                     BADGE_FREE_TRIAL_CANCELLED -> "Cancelled Trial"
-                    STORE_APP_STORE -> "App Store"
-                    STORE_MAC_APP_STORE -> "Mac App Store"
-                    STORE_PLAY_STORE -> "Google Play Store"
-                    STORE_STRIPE -> "Stripe"
-                    STORE_PROMOTIONAL -> "Via Support"
-                    STORE_AMAZON -> "Amazon Store"
-                    STORE_WEB -> "Web"
-                    STORE_EXTERNAL -> "External"
-                    STORE_UNKNOWN -> "Unknown"
+                    APP_STORE -> "App Store"
+                    MAC_APP_STORE -> "Mac App Store"
+                    GOOGLE_PLAY_STORE -> "Google Play Store"
+                    AMAZON_STORE -> "Amazon Store"
+                    WEB_STORE -> "Web"
+                    UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                 }
         }

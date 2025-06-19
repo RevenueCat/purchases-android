@@ -106,17 +106,17 @@ private fun getSubtitle(
 
 private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Localization): String {
     val key = when (store) {
-        Store.APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_APP_STORE
-        Store.MAC_APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_MAC_APP_STORE
-        Store.PLAY_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_PLAY_STORE
-        Store.AMAZON -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_AMAZON
+        Store.APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.APP_STORE
+        Store.MAC_APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.MAC_APP_STORE
+        Store.PLAY_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.GOOGLE_PLAY_STORE
+        Store.AMAZON -> CustomerCenterConfigData.Localization.CommonLocalizedString.AMAZON_STORE
         Store.PROMOTIONAL -> CustomerCenterConfigData.Localization.CommonLocalizedString.CARD_STORE_PROMOTIONAL
         Store.STRIPE,
         Store.EXTERNAL,
         Store.PADDLE,
         Store.RC_BILLING,
-        -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_WEB
-        Store.UNKNOWN_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.STORE_UNKNOWN
+        -> CustomerCenterConfigData.Localization.CommonLocalizedString.WEB_STORE
+        Store.UNKNOWN_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.UNKNOWN_STORE
     }
     return localization.commonLocalizedString(key)
 }
