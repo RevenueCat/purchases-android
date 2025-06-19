@@ -22,7 +22,6 @@ internal class VirtualCurrencyManager(
     private val deviceCache: DeviceCache,
     private val backend: Backend,
     private val appConfig: AppConfig,
-    private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
 
     // region Public functions
@@ -50,6 +49,12 @@ internal class VirtualCurrencyManager(
         )
     }
 
+    @Synchronized
+    fun invalidateVirtualCurrenciesCache() {
+        val appUserID = identityManager.currentAppUserID
+        deviceCache.clearVirtualCurrenciesCache(appUserID = appUserID)
+    }
+
     private fun cacheVirtualCurrencies(
         virtualCurrencies: VirtualCurrencies,
         appUserID: String
@@ -68,21 +73,11 @@ internal class VirtualCurrencyManager(
         appUserID: String,
         isAppBackgrounded: Boolean
     ): VirtualCurrencies? {
-        // TODO: Implement device caching
-        return null
-//        if (deviceCache.isVirtualCurrenciesCacheStale(appUserID, isAppBackgrounded)) {
-//            return null
-//        }
-//
-//        val cachedVirtualCurrenciesData = deviceCache.cachedVirtualCurrenciesData(appUserID)
-//            ?: return null
-//
-//        return try {
-//            val json = JSONObject(cachedVirtualCurrenciesData)
-//            VirtualCurrencies.fromJson(json)
-//        } catch (e: Exception) {
-//            null
-//        }
+        if (deviceCache.isVirtualCurrenciesCacheStale(appUserID, isAppBackgrounded)) {
+            return null
+        }
+
+        return deviceCache.getCachedVirtualCurrencies(appUserID = appUserID)
     }
 
     private fun fetchVirtualCurrenciesFromBackend(
