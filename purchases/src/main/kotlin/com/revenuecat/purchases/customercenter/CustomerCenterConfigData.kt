@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.customercenter
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.EmptyStringToNullSerializer
 import com.revenuecat.purchases.paywalls.PaywallColor
 import dev.drewhamilton.poko.Poko
@@ -9,13 +9,13 @@ import kotlinx.serialization.Serializable
 
 typealias RCColor = PaywallColor
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @Serializable
 internal class CustomerCenterRoot(
     @SerialName("customer_center") val customerCenter: CustomerCenterConfigData,
 )
 
-@ExperimentalPreviewRevenueCatPurchasesAPI
+@InternalRevenueCatAPI
 @Serializable
 data class CustomerCenterConfigData(
     @Serializable(with = ScreenMapSerializer::class) val screens: Map<Screen.ScreenType, Screen>,
@@ -396,15 +396,6 @@ data class CustomerCenterConfigData(
             MANAGEMENT,
             NO_ACTIVE,
             UNKNOWN,
-        }
-
-        val supportedPaths: List<HelpPath> by lazy {
-            val androidSupportedPathTypes = setOf(
-                HelpPath.PathType.MISSING_PURCHASE,
-                HelpPath.PathType.CANCEL,
-                HelpPath.PathType.CUSTOM_URL,
-            )
-            paths.filter { it.type in androidSupportedPathTypes }
         }
     }
 

@@ -1,6 +1,5 @@
 @file:Suppress("TooManyFunctions")
 @file:JvmSynthetic
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
@@ -33,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -100,7 +98,7 @@ internal fun InternalCustomerCenter(
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
-                    viewModel.pathButtonPressed(context, action.path, action.product)
+                    viewModel.pathButtonPressed(context, action.path, action.purchaseInformation)
                 }
 
                 is CustomerCenterAction.PerformRestore -> {

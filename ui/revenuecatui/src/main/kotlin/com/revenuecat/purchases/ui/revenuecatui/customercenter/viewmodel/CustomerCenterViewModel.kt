@@ -16,7 +16,6 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -25,6 +24,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
@@ -56,7 +56,6 @@ import java.util.Date
 import java.util.Locale
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
@@ -65,7 +64,7 @@ internal interface CustomerCenterViewModel {
     fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
-        product: StoreProduct?,
+        product: PurchaseInformation?,
     )
 
     suspend fun dismissRestoreDialog()
@@ -117,8 +116,7 @@ internal sealed class TransactionDetails(
     ) : TransactionDetails(productIdentifier, store)
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
     private val dateFormatter: DateFormatter = DefaultDateFormatter(),
@@ -152,7 +150,7 @@ internal class CustomerCenterViewModelImpl(
     override fun pathButtonPressed(
         context: Context,
         path: CustomerCenterConfigData.HelpPath,
-        product: StoreProduct?,
+        purchaseInformation: PurchaseInformation?,
     ) {
         notifyListenersForManagementOptionSelected(path)
         path.feedbackSurvey?.let { feedbackSurvey ->
@@ -166,15 +164,41 @@ internal class CustomerCenterViewModelImpl(
                     )
                     notifyListenersForFeedbackSurveyCompleted(it.id)
                     viewModelScope.launch {
-                        handlePromotionalOffer(context, product, it.promotionalOffer, path)
+                        handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path)
                     }
                 }
             })
             return
         }
         viewModelScope.launch {
-            handlePromotionalOffer(context, product, path.promotionalOffer, path)
+            handlePromotionalOffer(context, purchaseInformation?.product, path.promotionalOffer, path)
         }
+    }
+
+    private fun handleCancelPath(context: Context) {
+        val currentState = _state.value as? CustomerCenterState.Success ?: return
+        val purchaseInfo = currentState.purchaseInformation
+
+        when {
+            purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
+                startGoogleProductCancellation(context, purchaseInfo.product.id)
+            purchaseInfo?.managementURL != null -> startManagementUrlCancellation(context, purchaseInfo.managementURL)
+            else -> Logger.e("No product or management URL available for cancel path")
+        }
+    }
+
+    private fun startGoogleProductCancellation(context: Context, productId: String) {
+        notifyListenersForManageSubscription()
+        showManageSubscriptions(context, productId)
+    }
+
+    private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {
+        notifyListenersForManageSubscription()
+        openURL(
+            context,
+            managementURL.toString(),
+            CustomerCenterConfigData.HelpPath.OpenMethod.EXTERNAL,
+        )
     }
 
     private fun mainPathAction(
@@ -188,24 +212,12 @@ internal class CustomerCenterViewModelImpl(
                         is CustomerCenterState.Success -> {
                             currentState.copy(restorePurchasesState = RestorePurchasesState.RESTORING)
                         }
-
                         else -> currentState
                     }
                 }
             }
 
-            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> {
-                when (val currentState = _state.value) {
-                    is CustomerCenterState.Success -> {
-                        currentState.purchaseInformation?.product?.let {
-                            notifyListenersForManageSubscription()
-                            showManageSubscriptions(context, it.id)
-                        }
-                    }
-
-                    else -> {}
-                }
-            }
+            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> handleCancelPath(context)
 
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL -> {
                 path.url?.let {
@@ -281,13 +293,34 @@ internal class CustomerCenterViewModelImpl(
         purchaseInformation: PurchaseInformation?,
         screen: CustomerCenterConfigData.Screen,
     ): List<CustomerCenterConfigData.HelpPath> {
-        return purchaseInformation?.let { info ->
-            if (info.isLifetime) {
-                screen.supportedPaths.filter { it.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL }
-            } else {
-                screen.supportedPaths
-            }
-        } ?: emptyList()
+        return screen.paths
+            .filter { isPathAllowedForStore(it, purchaseInformation) }
+            .filter { isPathAllowedForLifetimeSubscription(it, purchaseInformation) }
+    }
+
+    private fun isPathAllowedForLifetimeSubscription(
+        path: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation?,
+    ): Boolean {
+        if (purchaseInformation?.isLifetime != true) return true
+        return path.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL
+    }
+
+    private fun isPathAllowedForStore(
+        path: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation?,
+    ): Boolean {
+        return when (path.type) {
+            HelpPath.PathType.MISSING_PURCHASE,
+            HelpPath.PathType.CUSTOM_URL,
+            -> true
+            HelpPath.PathType.CANCEL ->
+                purchaseInformation?.store == Store.PLAY_STORE || purchaseInformation?.managementURL != null
+            HelpPath.PathType.REFUND_REQUEST,
+            HelpPath.PathType.CHANGE_PLANS,
+            HelpPath.PathType.UNKNOWN,
+            -> false
+        }
     }
 
     private suspend fun loadPurchaseInformation(
