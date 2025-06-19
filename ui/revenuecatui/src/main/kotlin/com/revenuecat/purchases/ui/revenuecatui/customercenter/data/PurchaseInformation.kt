@@ -22,7 +22,7 @@ internal data class PurchaseInformation(
     val store: Store,
     /**
      * Indicates whether the purchase is a subscription.
-     * This is false por non-subscription products, such as one-time purchases.
+     * This is false for non-subscription products, such as one-time purchases.
      * This is false for promotionals, as they are not considered subscriptions.
      */
     var isSubscription: Boolean,
