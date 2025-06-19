@@ -20,6 +20,8 @@ plugins {
     //    The request for this plugin could not be satisfied because the plugin is already on the classpath with an
     //    unknown version, so compatibility cannot be checked.
     alias(libs.plugins.kotlin.parcelize) apply false
+    alias(libs.plugins.android.test) apply false
+    alias(libs.plugins.baselineprofile) apply false
 }
 
 dependencies {
