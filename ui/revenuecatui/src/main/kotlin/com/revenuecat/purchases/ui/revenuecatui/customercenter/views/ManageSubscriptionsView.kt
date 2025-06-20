@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,8 +25,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingTopDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingTopTitle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
@@ -75,6 +72,7 @@ internal fun ManageSubscriptionsView(
 }
 
 @SuppressWarnings("LongParameterList")
+@Suppress("UnusedParameter")
 @Composable
 private fun ActiveUserManagementView(
     screenTitle: String,
@@ -87,18 +85,6 @@ private fun ActiveUserManagementView(
     Column(
         modifier = Modifier.padding(horizontal = ManagementViewHorizontalPadding),
     ) {
-        Text(
-            text = screenTitle,
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(
-                start = ManagementViewHorizontalPadding,
-                end = ManagementViewHorizontalPadding,
-                top = ManagementViewTitleTopPadding,
-            ),
-        )
-
-        Spacer(modifier = Modifier.size(ManagementViewSpacer))
-
         PurchaseInformationCardView(
             purchaseInformation = purchaseInformation,
             localization = localization,

@@ -4,23 +4,29 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -42,6 +49,9 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterAnimationType
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -52,6 +62,13 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
+
+private sealed class NavigationAction {
+    data class NavigateTo(val destination: CustomerCenterDestination) : NavigationAction()
+    data class ReplaceCurrentDestination(val destination: CustomerCenterDestination) : NavigationAction()
+    object NavigateBack : NavigationAction()
+    object NavigateToMain : NavigationAction()
+}
 
 @Suppress("LongMethod")
 @JvmSynthetic
@@ -138,7 +155,12 @@ private fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    val title = getTitleForState(state)
+    // Create navigation ViewModel at the top level
+    val navigationViewModel = if (state is CustomerCenterState.Success) {
+        viewModel<CustomerCenterNavigationViewModel>()
+    } else {
+        null
+    }
 
     val colorScheme = if (state is CustomerCenterState.Success) {
         val isDark = isSystemInDarkTheme()
@@ -163,31 +185,55 @@ private fun InternalCustomerCenter(
     MaterialTheme(
         colorScheme = colorScheme,
     ) {
-        CustomerCenterScaffold(
-            modifier = modifier
-                .background(MaterialTheme.colorScheme.background),
-            title = title,
-            onAction = onAction,
-            navigationButtonType =
-            if (state is CustomerCenterState.Success) {
-                state.navigationButtonType
-            } else {
-                CustomerCenterState.NavigationButtonType.CLOSE
-            },
-        ) {
-            when (state) {
-                is CustomerCenterState.NotLoaded -> {}
-                is CustomerCenterState.Loading -> CustomerCenterLoading()
-                is CustomerCenterState.Error -> CustomerCenterError(state)
-                is CustomerCenterState.Success -> CustomerCenterLoaded(
-                    state,
-                    onAction,
-                )
+        when (state) {
+            is CustomerCenterState.NotLoaded -> {
+                CustomerCenterScaffold(
+                    modifier = modifier,
+                    title = null,
+                    onAction = onAction,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                ) { }
+            }
+            is CustomerCenterState.Loading -> {
+                CustomerCenterScaffold(
+                    modifier = modifier,
+                    title = null,
+                    onAction = onAction,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                ) { CustomerCenterLoading() }
+            }
+            is CustomerCenterState.Error -> {
+                CustomerCenterScaffold(
+                    modifier = modifier,
+                    title = null,
+                    onAction = onAction,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                ) { CustomerCenterError(state) }
+            }
+            is CustomerCenterState.Success -> {
+                navigationViewModel?.let { navViewModel ->
+                    val navigationState by navViewModel.navigationState.collectAsState()
+                    val title = getTitleForDestination(navigationState.currentDestination, state)
+
+                    CustomerCenterScaffold(
+                        modifier = modifier,
+                        title = title,
+                        onAction = onAction,
+                        navigationButtonType = state.navigationButtonType,
+                    ) {
+                        CustomerCenterLoaded(
+                            state = state,
+                            onAction = onAction,
+                            navigationViewModel = navViewModel,
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomerCenterScaffold(
     onAction: (CustomerCenterAction) -> Unit,
@@ -196,53 +242,90 @@ private fun CustomerCenterScaffold(
     navigationButtonType: CustomerCenterState.NavigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
     mainContent: @Composable () -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .systemBarsPadding(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp)
-                .statusBarsPadding(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
-        ) {
-            IconButton(onClick = {
-                onAction(CustomerCenterAction.NavigationButtonPressed)
-            }) {
-                Icon(
-                    imageVector = when (navigationButtonType) {
-                        CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
-                        CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+    val scrollBehavior = if (title != null) {
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    } else {
+        null
+    }
+
+    Scaffold(
+        modifier = if (scrollBehavior != null) {
+            modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        } else {
+            modifier
+        },
+        topBar = {
+            if (title != null && scrollBehavior != null) {
+                LargeTopAppBar(
+                    title = {
+                        Text(text = title)
                     },
-                    contentDescription = null,
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            onAction(CustomerCenterAction.NavigationButtonPressed)
+                        }) {
+                            Icon(
+                                imageVector = when (navigationButtonType) {
+                                    CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
+                                    CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+                                },
+                                contentDescription = null,
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    ),
+                    scrollBehavior = scrollBehavior,
+                )
+            } else {
+                // Simple TopAppBar for cases without title
+                androidx.compose.material3.TopAppBar(
+                    title = { },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            onAction(CustomerCenterAction.NavigationButtonPressed)
+                        }) {
+                            Icon(
+                                imageVector = when (navigationButtonType) {
+                                    CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
+                                    CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+                                },
+                                contentDescription = null,
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    ),
                 )
             }
-            title?.let {
-                Text(
-                    text = title,
-                    modifier = Modifier.padding(start = 4.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            }
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
+        ) {
+            mainContent()
         }
-        mainContent()
     }
 }
 
 @Composable
 private fun CustomerCenterLoading() {
-    // CustomerCenter WIP: Add proper loading UI
     Text("Loading...")
 }
 
 @Composable
 private fun CustomerCenterError(state: CustomerCenterState.Error) {
-    // CustomerCenter WIP: Add proper error UI
     Text("Error: ${state.error}")
 }
 
@@ -250,46 +333,140 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
+    navigationViewModel: CustomerCenterNavigationViewModel,
 ) {
-    if (state.feedbackSurveyData != null) {
-        FeedbackSurveyView(state.feedbackSurveyData)
-    } else if (state.promotionalOfferData != null) {
-        val promotionalOfferData = state.promotionalOfferData
-        PromotionalOfferScreen(
-            promotionalOfferData = promotionalOfferData,
-            appearance = state.customerCenterConfigData.appearance,
-            localization = state.customerCenterConfigData.localization,
-            onAccept = { subscriptionOption ->
-                onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
-            },
-            onDismiss = {
-                onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
-            },
-        )
-    } else if (state.restorePurchasesState != null) {
-        RestorePurchasesDialog(
-            state = state.restorePurchasesState,
-            localization = state.customerCenterConfigData.localization,
-            onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
-            onRestore = { onAction(CustomerCenterAction.PerformRestore) },
-            onContactSupport = state.customerCenterConfigData.support.email?.let { email ->
-                {
-                    onAction(CustomerCenterAction.ContactSupport(email))
+    val navigationState by navigationViewModel.navigationState.collectAsState()
+
+    LaunchedEffect(state.feedbackSurveyData, state.promotionalOfferData, state.restorePurchasesState) {
+        updateNavigationFromState(
+            state = state,
+            currentDestination = navigationState.currentDestination,
+            onNavigationAction = { action ->
+                when (action) {
+                    is NavigationAction.NavigateTo -> navigationViewModel.navigateTo(action.destination)
+                    is NavigationAction.NavigateBack -> navigationViewModel.navigateBack()
+                    is NavigationAction.NavigateToMain -> navigationViewModel.navigateToMain()
+                    is NavigationAction.ReplaceCurrentDestination -> navigationViewModel.replaceCurrentDestination(
+                        action.destination,
+                    )
                 }
             },
         )
-    } else {
-        val configuration = state.customerCenterConfigData
-        MainScreen(state, configuration, onAction)
+    }
+
+    CustomerCenterNavigationHost(
+        currentDestination = navigationState.currentDestination,
+        customerCenterState = state,
+        onAction = onAction,
+    )
+}
+
+private fun getTitleForDestination(
+    destination: CustomerCenterDestination,
+    state: CustomerCenterState.Success,
+): String? {
+    return when (destination) {
+        is CustomerCenterDestination.Main -> {
+            val configuration = state.customerCenterConfigData
+            if (state.purchaseInformation != null) {
+                // Show title in TopAppBar for active users
+                configuration.getManagementScreen()?.title
+            } else {
+                // Don't show title in TopAppBar for no active screen - it's shown in content
+                null
+            }
+        }
+        is CustomerCenterDestination.FeedbackSurvey -> destination.title
+        is CustomerCenterDestination.PromotionalOffer -> null // No title for promotional offers
+        is CustomerCenterDestination.RestorePurchases -> null // No title for restore dialog
+    }
+}
+
+private fun getAnimationForTransition(
+    fromType: CustomerCenterAnimationType,
+    toType: CustomerCenterAnimationType,
+) = when {
+    // If either side is a dialog, use dialog animation
+    fromType == CustomerCenterAnimationType.FADE_DIALOG ||
+        toType == CustomerCenterAnimationType.FADE_DIALOG -> {
+        fadeIn() togetherWith fadeOut()
+    }
+
+    // Default horizontal slide for regular navigation
+    else -> {
+        slideInHorizontally(initialOffsetX = { it }) togetherWith
+            slideOutHorizontally(targetOffsetX = { -it })
     }
 }
 
 @Composable
-private fun MainScreen(
+private fun CustomerCenterNavigationHost(
+    currentDestination: CustomerCenterDestination,
+    customerCenterState: CustomerCenterState.Success,
+    onAction: (CustomerCenterAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedContent(
+        targetState = currentDestination,
+        transitionSpec = {
+            getAnimationForTransition(
+                fromType = initialState.animationType,
+                toType = targetState.animationType,
+            )
+        },
+        modifier = modifier,
+        label = "CustomerCenterNavigation",
+    ) { destination ->
+        when (destination) {
+            is CustomerCenterDestination.Main -> {
+                MainScreenContent(
+                    state = customerCenterState,
+                    onAction = onAction,
+                )
+            }
+
+            is CustomerCenterDestination.FeedbackSurvey -> {
+                FeedbackSurveyView(destination.data)
+            }
+
+            is CustomerCenterDestination.PromotionalOffer -> {
+                PromotionalOfferScreen(
+                    promotionalOfferData = destination.data,
+                    appearance = customerCenterState.customerCenterConfigData.appearance,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                    onAccept = { subscriptionOption ->
+                        onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
+                    },
+                    onDismiss = {
+                        onAction(CustomerCenterAction.DismissPromotionalOffer(destination.data.originalPath))
+                    },
+                )
+            }
+
+            is CustomerCenterDestination.RestorePurchases -> {
+                RestorePurchasesDialog(
+                    state = destination.state,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                    onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
+                    onRestore = { onAction(CustomerCenterAction.PerformRestore) },
+                    onContactSupport = customerCenterState.customerCenterConfigData.support.email?.let { email ->
+                        {
+                            onAction(CustomerCenterAction.ContactSupport(email))
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MainScreenContent(
     state: CustomerCenterState.Success,
-    configuration: CustomerCenterConfigData,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
+    val configuration = state.customerCenterConfigData
+
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
@@ -324,13 +501,57 @@ private fun MainScreen(
     }
 }
 
-private fun getTitleForState(state: CustomerCenterState): String? {
-    return when (state) {
-        is CustomerCenterState.Success -> {
-            state.title
+private fun updateNavigationFromState(
+    state: CustomerCenterState.Success,
+    currentDestination: CustomerCenterDestination,
+    onNavigationAction: (NavigationAction) -> Unit,
+) {
+    when {
+        state.feedbackSurveyData != null -> {
+            if (currentDestination !is CustomerCenterDestination.FeedbackSurvey) {
+                onNavigationAction(
+                    NavigationAction.NavigateTo(
+                        CustomerCenterDestination.FeedbackSurvey(
+                            data = state.feedbackSurveyData,
+                            title = state.title ?: "",
+                        ),
+                    ),
+                )
+            }
         }
 
-        else -> null
+        state.promotionalOfferData != null -> {
+            if (currentDestination !is CustomerCenterDestination.PromotionalOffer) {
+                val promotionalOfferDestination = CustomerCenterDestination.PromotionalOffer(
+                    data = state.promotionalOfferData,
+                )
+
+                // If coming from FeedbackSurvey, replace it to prevent going back to completed survey
+                if (currentDestination is CustomerCenterDestination.FeedbackSurvey) {
+                    onNavigationAction(NavigationAction.ReplaceCurrentDestination(promotionalOfferDestination))
+                } else {
+                    onNavigationAction(NavigationAction.NavigateTo(promotionalOfferDestination))
+                }
+            }
+        }
+
+        state.restorePurchasesState != null -> {
+            if (currentDestination !is CustomerCenterDestination.RestorePurchases) {
+                onNavigationAction(
+                    NavigationAction.NavigateTo(
+                        CustomerCenterDestination.RestorePurchases(
+                            state = state.restorePurchasesState,
+                        ),
+                    ),
+                )
+            }
+        }
+
+        else -> {
+            if (currentDestination !is CustomerCenterDestination.Main) {
+                onNavigationAction(NavigationAction.NavigateToMain)
+            }
+        }
     }
 }
 
