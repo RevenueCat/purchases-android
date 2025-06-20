@@ -2,7 +2,6 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
-import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -402,9 +401,6 @@ internal class ButtonComponentTests {
                                             )
                                         ),
                                     ),
-                                    background = Background.Color(
-                                        ColorScheme(ColorInfo.Alias(ColorAlias("primary")))
-                                    ),
                                     backgroundBlur = true,
                                     size = Size(
                                         width = SizeConstraint.Fill,
@@ -799,9 +795,6 @@ internal class ButtonComponentTests {
                                             color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                         )
                                     ),
-                                ),
-                                background = Background.Color(
-                                    ColorScheme(ColorInfo.Alias(ColorAlias("primary")))
                                 ),
                                 backgroundBlur = true,
                                 size = Size(

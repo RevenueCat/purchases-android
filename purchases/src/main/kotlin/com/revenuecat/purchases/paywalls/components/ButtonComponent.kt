@@ -4,7 +4,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
-import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
@@ -77,7 +76,6 @@ class ButtonComponent(
             @get:JvmSynthetic val id: String,
             @get:JvmSynthetic val name: String?,
             @get:JvmSynthetic val stack: StackComponent,
-            @get:JvmSynthetic val background: Background?,
             @get:JvmSynthetic @SerialName("background_blur") val backgroundBlur: Boolean,
             @get:JvmSynthetic val size: Size?,
         ) : Destination
