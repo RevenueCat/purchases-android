@@ -10,23 +10,23 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -154,8 +155,6 @@ private fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    val title = getTitleForState(state)
-
     // Create navigation ViewModel at the top level
     val navigationViewModel = if (state is CustomerCenterState.Success) {
         viewModel<CustomerCenterNavigationViewModel>()
@@ -186,24 +185,42 @@ private fun InternalCustomerCenter(
     MaterialTheme(
         colorScheme = colorScheme,
     ) {
-        CustomerCenterScaffold(
-            modifier = modifier
-                .background(MaterialTheme.colorScheme.background),
-            title = title,
-            onAction = onAction,
-            navigationButtonType =
-            if (state is CustomerCenterState.Success) {
-                state.navigationButtonType
-            } else {
-                CustomerCenterState.NavigationButtonType.CLOSE
-            },
-        ) {
-            when (state) {
-                is CustomerCenterState.NotLoaded -> {}
-                is CustomerCenterState.Loading -> CustomerCenterLoading()
-                is CustomerCenterState.Error -> CustomerCenterError(state)
-                is CustomerCenterState.Success -> {
-                    navigationViewModel?.let { navViewModel ->
+        when (state) {
+            is CustomerCenterState.NotLoaded -> {
+                CustomerCenterScaffold(
+                    modifier = modifier,
+                    title = null,
+                    onAction = onAction,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                ) { }
+            }
+            is CustomerCenterState.Loading -> {
+                CustomerCenterScaffold(
+                    modifier = modifier,
+                    title = null,
+                    onAction = onAction,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                ) { CustomerCenterLoading() }
+            }
+            is CustomerCenterState.Error -> {
+                CustomerCenterScaffold(
+                    modifier = modifier,
+                    title = null,
+                    onAction = onAction,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                ) { CustomerCenterError(state) }
+            }
+            is CustomerCenterState.Success -> {
+                navigationViewModel?.let { navViewModel ->
+                    val navigationState by navViewModel.navigationState.collectAsState()
+                    val title = getTitleForDestination(navigationState.currentDestination, state)
+
+                    CustomerCenterScaffold(
+                        modifier = modifier,
+                        title = title,
+                        onAction = onAction,
+                        navigationButtonType = state.navigationButtonType,
+                    ) {
                         CustomerCenterLoaded(
                             state = state,
                             onAction = onAction,
@@ -216,6 +233,7 @@ private fun InternalCustomerCenter(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomerCenterScaffold(
     onAction: (CustomerCenterAction) -> Unit,
@@ -224,41 +242,80 @@ private fun CustomerCenterScaffold(
     navigationButtonType: CustomerCenterState.NavigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
     mainContent: @Composable () -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .systemBarsPadding(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp)
-                .statusBarsPadding(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
-        ) {
-            IconButton(onClick = {
-                onAction(CustomerCenterAction.NavigationButtonPressed)
-            }) {
-                Icon(
-                    imageVector = when (navigationButtonType) {
-                        CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
-                        CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+    val scrollBehavior = if (title != null) {
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    } else {
+        null
+    }
+
+    Scaffold(
+        modifier = if (scrollBehavior != null) {
+            modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        } else {
+            modifier
+        },
+        topBar = {
+            if (title != null && scrollBehavior != null) {
+                LargeTopAppBar(
+                    title = {
+                        Text(text = title)
                     },
-                    contentDescription = null,
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            onAction(CustomerCenterAction.NavigationButtonPressed)
+                        }) {
+                            Icon(
+                                imageVector = when (navigationButtonType) {
+                                    CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
+                                    CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+                                },
+                                contentDescription = null,
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    ),
+                    scrollBehavior = scrollBehavior,
+                )
+            } else {
+                // Simple TopAppBar for cases without title
+                androidx.compose.material3.TopAppBar(
+                    title = { },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            onAction(CustomerCenterAction.NavigationButtonPressed)
+                        }) {
+                            Icon(
+                                imageVector = when (navigationButtonType) {
+                                    CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
+                                    CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+                                },
+                                contentDescription = null,
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    ),
                 )
             }
-            title?.let {
-                Text(
-                    text = title,
-                    modifier = Modifier.padding(start = 4.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            }
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
+        ) {
+            mainContent()
         }
-        mainContent()
     }
 }
 
@@ -304,13 +361,24 @@ private fun CustomerCenterLoaded(
     )
 }
 
-private fun getTitleForState(state: CustomerCenterState): String? {
-    return when (state) {
-        is CustomerCenterState.Success -> {
-            state.title
+private fun getTitleForDestination(
+    destination: CustomerCenterDestination,
+    state: CustomerCenterState.Success,
+): String? {
+    return when (destination) {
+        is CustomerCenterDestination.Main -> {
+            val configuration = state.customerCenterConfigData
+            if (state.purchaseInformation != null) {
+                // Show title in TopAppBar for active users
+                configuration.getManagementScreen()?.title
+            } else {
+                // Don't show title in TopAppBar for no active screen - it's shown in content
+                null
+            }
         }
-
-        else -> null
+        is CustomerCenterDestination.FeedbackSurvey -> destination.title
+        is CustomerCenterDestination.PromotionalOffer -> null // No title for promotional offers
+        is CustomerCenterDestination.RestorePurchases -> null // No title for restore dialog
     }
 }
 
