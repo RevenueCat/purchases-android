@@ -18,31 +18,27 @@ internal fun LogLevel.Companion.debugLogsEnabled(enabled: Boolean): LogLevel {
     }
 }
 
-internal fun verboseLog(messageBuilder: () -> String) {
+internal inline fun verboseLog(messageBuilder: () -> String) {
     logIfEnabled(LogLevel.VERBOSE, currentLogHandler::v, messageBuilder)
 }
 
-internal fun debugLog(messageBuilder: () -> String) {
+internal inline fun debugLog(messageBuilder: () -> String) {
     logIfEnabled(LogLevel.DEBUG, currentLogHandler::d, messageBuilder)
 }
 
-internal fun infoLog(messageBuilder: () -> String) {
+internal inline fun infoLog(messageBuilder: () -> String) {
     logIfEnabled(LogLevel.INFO, currentLogHandler::i, messageBuilder)
 }
 
-internal fun warnLog(messageBuilder: () -> String) {
+internal inline fun warnLog(messageBuilder: () -> String) {
     logIfEnabled(LogLevel.WARN, currentLogHandler::w, messageBuilder)
 }
 
-internal fun errorLog(throwable: Throwable? = null, messageBuilder: () -> String) {
+internal inline fun errorLog(throwable: Throwable? = null, messageBuilder: () -> String) {
     currentLogHandler.e("$PURCHASES_LOG_TAG - ${LogLevel.ERROR.name}", messageBuilder(), throwable)
 }
 
-internal fun errorLog(message: String, throwable: Throwable? = null) {
-    currentLogHandler.e("$PURCHASES_LOG_TAG - ${LogLevel.ERROR.name}", message, throwable)
-}
-
-private fun logIfEnabled(
+private inline fun logIfEnabled(
     level: LogLevel,
     logger: (tag: String, message: String) -> Unit,
     messageBuilder: () -> String,

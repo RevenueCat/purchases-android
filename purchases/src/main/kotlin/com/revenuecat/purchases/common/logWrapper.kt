@@ -32,7 +32,7 @@ private class DefaultLogHandler : LogHandler {
     }
 }
 
-internal fun log(intent: LogIntent, messageBuilder: () -> String) {
+internal inline fun log(intent: LogIntent, crossinline messageBuilder: () -> String) {
     val fullMessageBuilder = { "${intent.emojiList.joinToString("")} ${messageBuilder()}" }
 
     when (intent) {
