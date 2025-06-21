@@ -57,7 +57,7 @@ internal class QueryPurchasesByTypeUseCase(
                     )
                 }
             } ?: run {
-                errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchasesByType"))
+                errorLog { PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchasesByType") }
                 val devErrorResponseCode = BillingResult.newBuilder()
                     .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
                     .build()
@@ -80,10 +80,9 @@ internal class QueryPurchasesByTypeUseCase(
         val requestStartTime = useCaseParams.dateProvider.now
         billingClient.queryPurchasesAsync(queryParams) { billingResult, purchases ->
             if (hasResponded.getAndSet(true)) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_PURCHASES_RESPONSE.format(billingResult.responseCode),
-                )
+                log(LogIntent.GOOGLE_ERROR) {
+                    OfferingStrings.EXTRA_QUERY_PURCHASES_RESPONSE.format(billingResult.responseCode)
+                }
                 return@queryPurchasesAsync
             }
             val foundProductIds = purchases.flatMap { it.products }

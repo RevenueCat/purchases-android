@@ -45,10 +45,9 @@ internal class QueryPurchaseHistoryUseCase(
             useCaseParams.productType.buildQueryPurchaseHistoryParams()?.let { queryPurchaseHistoryParams ->
                 queryPurchaseHistoryAsync(queryPurchaseHistoryParams) { billingResult, purchaseHistory ->
                     if (hasResponded.getAndSet(true)) {
-                        log(
-                            LogIntent.GOOGLE_ERROR,
-                            RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode),
-                        )
+                        log(LogIntent.GOOGLE_ERROR) {
+                            RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode)
+                        }
                     } else {
                         trackGoogleQueryPurchaseHistoryRequestIfNeeded(
                             useCaseParams.productType,
@@ -59,7 +58,7 @@ internal class QueryPurchaseHistoryUseCase(
                     }
                 }
             } ?: run {
-                errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchaseHistory"))
+                errorLog { PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchaseHistory") }
                 val devErrorResponseCode = BillingResult.newBuilder()
                     .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
                     .build()
@@ -70,12 +69,11 @@ internal class QueryPurchaseHistoryUseCase(
 
     override fun onOk(received: List<PurchaseHistoryRecord>?) {
         received.takeUnless { it.isNullOrEmpty() }?.forEach {
-            log(
-                LogIntent.RC_PURCHASE_SUCCESS,
+            log(LogIntent.RC_PURCHASE_SUCCESS) {
                 RestoreStrings.PURCHASE_HISTORY_RETRIEVED
-                    .format(it.toHumanReadableDescription()),
-            )
-        } ?: log(LogIntent.DEBUG, RestoreStrings.PURCHASE_HISTORY_EMPTY)
+                    .format(it.toHumanReadableDescription())
+            }
+        } ?: log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_HISTORY_EMPTY }
         onReceive(received ?: emptyList())
     }
 

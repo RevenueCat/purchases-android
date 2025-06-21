@@ -45,7 +45,7 @@ internal class IdentityManager(
         appUserID: String?,
     ) {
         if (appUserID?.isBlank() == true) {
-            log(LogIntent.WARNING, IdentityStrings.EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS)
+            log(LogIntent.WARNING) { IdentityStrings.EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS }
         }
 
         val appUserIDToUse = appUserID
@@ -53,7 +53,7 @@ internal class IdentityManager(
             ?: deviceCache.getCachedAppUserID()
             ?: deviceCache.getLegacyCachedAppUserID()
             ?: generateRandomID()
-        log(LogIntent.USER, IdentityStrings.IDENTIFYING_APP_USER_ID.format(appUserIDToUse))
+        log(LogIntent.USER) { IdentityStrings.IDENTIFYING_APP_USER_ID.format(appUserIDToUse) }
 
         val cacheEditor = deviceCache.startEditing()
         deviceCache.cacheAppUserID(appUserIDToUse, cacheEditor)
@@ -81,7 +81,7 @@ internal class IdentityManager(
             return
         }
 
-        log(LogIntent.USER, IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID))
+        log(LogIntent.USER) { IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID) }
         val oldAppUserID = currentAppUserID
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(newAppUserID) {
             backend.logIn(
@@ -89,10 +89,9 @@ internal class IdentityManager(
                 newAppUserID,
                 { customerInfo, created ->
                     synchronized(this@IdentityManager) {
-                        log(
-                            LogIntent.USER,
-                            IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created),
-                        )
+                        log(LogIntent.USER) {
+                            IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
+                        }
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
                         offeringsCache.clearCache()
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
@@ -110,20 +109,20 @@ internal class IdentityManager(
     }
 
     fun switchUser(newAppUserID: String) {
-        debugLog(IdentityStrings.SWITCHING_USER.format(newAppUserID))
+        debugLog { IdentityStrings.SWITCHING_USER.format(newAppUserID) }
         resetAndSaveUserID(newAppUserID)
     }
 
     @Synchronized
     fun logOut(completion: ((PurchasesError?) -> Unit)) {
         if (currentUserIsAnonymous()) {
-            log(LogIntent.RC_ERROR, IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER)
+            log(LogIntent.RC_ERROR) { IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER }
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
             return
         }
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(currentAppUserID) {
             resetAndSaveUserID(generateRandomID())
-            log(LogIntent.USER, IdentityStrings.LOG_OUT_SUCCESSFUL)
+            log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
             completion(null)
         }
     }
@@ -154,7 +153,7 @@ internal class IdentityManager(
         }
         val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
         if (shouldInvalidateETagCache(cachedCustomerInfo)) {
-            infoLog(IdentityStrings.INVALIDATING_CACHED_ETAG_CACHE)
+            infoLog { IdentityStrings.INVALIDATING_CACHED_ETAG_CACHE }
             backend.clearCaches()
         }
     }
@@ -173,7 +172,7 @@ internal class IdentityManager(
     private fun generateRandomID(): String {
         return "\$RCAnonymousID:" + UUID.randomUUID().toString().toLowerCase(Locale.ROOT).replace("-", "")
             .also {
-                log(LogIntent.USER, IdentityStrings.SETTING_NEW_ANON_ID)
+                log(LogIntent.USER) { IdentityStrings.SETTING_NEW_ANON_ID }
             }
     }
 

@@ -96,7 +96,7 @@ internal class ETagManager(
                 }
                 return storedResult
                     ?: if (refreshETag) {
-                        log(LogIntent.WARNING, NetworkStrings.ETAG_CALL_ALREADY_RETRIED.format(resultFromBackend))
+                        log(LogIntent.WARNING) { NetworkStrings.ETAG_CALL_ALREADY_RETRIED.format(resultFromBackend) }
                         resultFromBackend
                     } else {
                         null

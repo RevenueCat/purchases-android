@@ -69,7 +69,7 @@ data class Period(
             Unit.MONTH -> value * PeriodConstants.DAYS_PER_MONTH
             Unit.YEAR -> value * PeriodConstants.DAYS_PER_YEAR
             Unit.UNKNOWN -> {
-                errorLog("Unknown period unit trying to get value in days: $unit")
+                errorLog { "Unknown period unit trying to get value in days: $unit" }
                 0.0
             }
         }
@@ -85,7 +85,7 @@ data class Period(
             Unit.MONTH -> value.toDouble() * PeriodConstants.WEEKS_PER_MONTH
             Unit.YEAR -> value * PeriodConstants.WEEKS_PER_YEAR
             Unit.UNKNOWN -> {
-                errorLog("Unknown period unit trying to get value in weeks: $unit")
+                errorLog { "Unknown period unit trying to get value in weeks: $unit" }
                 0.0
             }
         }
@@ -100,7 +100,7 @@ data class Period(
             Unit.MONTH -> value.toDouble()
             Unit.YEAR -> value * PeriodConstants.MONTHS_PER_YEAR
             Unit.UNKNOWN -> {
-                errorLog("Unknown period unit trying to get value in months: $unit")
+                errorLog { "Unknown period unit trying to get value in months: $unit" }
                 0.0
             }
         }
@@ -116,7 +116,7 @@ data class Period(
             Unit.MONTH -> value / PeriodConstants.MONTHS_PER_YEAR
             Unit.YEAR -> value.toDouble()
             Unit.UNKNOWN -> {
-                errorLog("Unknown period unit trying to get value in years: $unit")
+                errorLog { "Unknown period unit trying to get value in years: $unit" }
                 0.0
             }
         }

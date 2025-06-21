@@ -71,7 +71,7 @@ internal abstract class BillingClientUseCase<T>(
             }
 
             BillingResponse.ServiceDisconnected -> {
-                log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_SERVICE_DISCONNECTED)
+                log(LogIntent.GOOGLE_ERROR) { BillingStrings.BILLING_SERVICE_DISCONNECTED }
                 run()
             }
 
@@ -94,7 +94,7 @@ internal abstract class BillingClientUseCase<T>(
     protected fun BillingClient?.withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         this?.takeIf { it.isReady }?.let {
             it.receivingFunction()
-        } ?: log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()))
+        } ?: log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()) }
     }
 
     @Suppress("ThrowingExceptionsWithoutMessageOrCause")
@@ -107,7 +107,7 @@ internal abstract class BillingClientUseCase<T>(
 
     private fun forwardError(billingResult: BillingResult) {
         val underlyingErrorMessage = "$errorMessage - ${billingResult.toHumanReadableDescription()}"
-        log(LogIntent.GOOGLE_ERROR, underlyingErrorMessage)
+        log(LogIntent.GOOGLE_ERROR) { underlyingErrorMessage }
         onError(
             billingResult.responseCode.billingResponseToPurchasesError(
                 underlyingErrorMessage,
@@ -133,7 +133,9 @@ internal abstract class BillingClientUseCase<T>(
         onError: (BillingResult) -> Unit,
         billingResult: BillingResult,
     ) {
-        log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_SERVICE_UNAVAILABLE.format(useCaseParams.appInBackground))
+        log(LogIntent.GOOGLE_WARNING) {
+            BillingStrings.BILLING_SERVICE_UNAVAILABLE.format(useCaseParams.appInBackground)
+        }
         val maxBackoff = if (useCaseParams.appInBackground) {
             RETRY_TIMER_MAX_TIME
         } else {

@@ -26,7 +26,7 @@ internal fun Locale.sharedLanguageCodeWith(locale: Locale): Boolean {
         val sameScript = inferScript() == locale.inferScript()
         return sameLanguage && sameScript
     } catch (e: MissingResourceException) {
-        errorLog("Locale $this or $locale can't obtain ISO3 language code ($e). Falling back to language.")
+        errorLog { "Locale $this or $locale can't obtain ISO3 language code ($e). Falling back to language." }
         language == locale.language
     }
 }

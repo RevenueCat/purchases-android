@@ -125,9 +125,9 @@ private fun isDateActive(
 ): Boolean {
     val dateActive = DateHelper.isDateActive(expirationDate, requestDate)
     if (!dateActive.isActive && !dateActive.inGracePeriod) {
-        warnLog(
-            PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate),
-        )
+        warnLog {
+            PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate)
+        }
     }
     return dateActive.isActive
 }

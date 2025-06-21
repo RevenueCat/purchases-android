@@ -714,7 +714,7 @@ internal class Backend(
                                 val redemptionError = resultBody.optJSONObject("purchase_redemption_error_info")
                                 val obfuscatedEmail = redemptionError?.optString("obfuscated_email")
                                 if (obfuscatedEmail == null) {
-                                    errorLog("Error parsing expired redemption token response: $resultBody")
+                                    errorLog { "Error parsing expired redemption token response: $resultBody" }
                                     callback(RedeemWebPurchaseListener.Result.Error(result.toPurchasesError()))
                                 } else {
                                     callback(RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail))
@@ -768,7 +768,7 @@ internal class Backend(
         val foregroundCacheKey = cacheKey.copy(appInBackground = false)
         val foregroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
         val cacheKeyToUse = if (cacheKey.appInBackground && foregroundCallAlreadyInPlace) {
-            debugLog(NetworkStrings.SAME_CALL_SCHEDULED_WITHOUT_JITTER.format(foregroundCacheKey))
+            debugLog { NetworkStrings.SAME_CALL_SCHEDULED_WITHOUT_JITTER.format(foregroundCacheKey) }
             foregroundCacheKey
         } else {
             cacheKey
@@ -779,7 +779,7 @@ internal class Backend(
         val backgroundedCacheKey = cacheKey.copy(appInBackground = true)
         val backgroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
         if (!cacheKey.appInBackground && backgroundCallAlreadyInPlace) {
-            debugLog(NetworkStrings.SAME_CALL_SCHEDULED_WITH_JITTER.format(foregroundCacheKey))
+            debugLog { NetworkStrings.SAME_CALL_SCHEDULED_WITH_JITTER.format(foregroundCacheKey) }
             remove(backgroundedCacheKey)?.takeIf { it.isNotEmpty() }?.let { backgroundedCallbacks ->
                 if (containsKey(cacheKey)) {
                     this[cacheKey]?.addAll(backgroundedCallbacks)
@@ -801,7 +801,7 @@ internal class Backend(
             this[cacheKey] = mutableListOf(functions)
             backendHelper.enqueue(call, dispatcher, delay)
         } else {
-            debugLog(String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey))
+            debugLog { String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey) }
             this[cacheKey]!!.add(functions)
         }
     }

@@ -48,7 +48,7 @@ internal class PostTransactionWithProductDetailsHelper(
                                     product.id == transaction.productIds.firstOrNull()
                                 }
                             }
-                        debugLog("Store product found for transaction: $purchasedStoreProduct")
+                        debugLog { "Store product found for transaction: $purchasedStoreProduct" }
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = transaction,
                             storeProduct = purchasedStoreProduct,

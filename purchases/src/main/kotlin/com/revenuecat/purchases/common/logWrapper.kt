@@ -32,22 +32,22 @@ private class DefaultLogHandler : LogHandler {
     }
 }
 
-internal fun log(intent: LogIntent, message: String) {
-    val fullMessage = "${intent.emojiList.joinToString("")} $message"
+internal inline fun log(intent: LogIntent, crossinline messageBuilder: () -> String) {
+    val fullMessageBuilder = { "${intent.emojiList.joinToString("")} ${messageBuilder()}" }
 
     when (intent) {
-        LogIntent.DEBUG -> debugLog(fullMessage)
-        LogIntent.GOOGLE_ERROR -> errorLog(fullMessage)
-        LogIntent.GOOGLE_WARNING -> warnLog(fullMessage)
-        LogIntent.INFO -> infoLog(fullMessage)
-        LogIntent.PURCHASE -> debugLog(fullMessage)
-        LogIntent.RC_ERROR -> errorLog(fullMessage)
-        LogIntent.RC_PURCHASE_SUCCESS -> infoLog(fullMessage)
-        LogIntent.RC_SUCCESS -> debugLog(fullMessage)
-        LogIntent.USER -> debugLog(fullMessage)
-        LogIntent.WARNING -> warnLog(fullMessage)
-        LogIntent.AMAZON_WARNING -> warnLog(fullMessage)
-        LogIntent.AMAZON_ERROR -> errorLog(fullMessage)
+        LogIntent.DEBUG -> debugLog(fullMessageBuilder)
+        LogIntent.GOOGLE_ERROR -> errorLog { fullMessageBuilder() }
+        LogIntent.GOOGLE_WARNING -> warnLog(fullMessageBuilder)
+        LogIntent.INFO -> infoLog(fullMessageBuilder)
+        LogIntent.PURCHASE -> debugLog(fullMessageBuilder)
+        LogIntent.RC_ERROR -> errorLog { fullMessageBuilder() }
+        LogIntent.RC_PURCHASE_SUCCESS -> infoLog(fullMessageBuilder)
+        LogIntent.RC_SUCCESS -> debugLog(fullMessageBuilder)
+        LogIntent.USER -> debugLog(fullMessageBuilder)
+        LogIntent.WARNING -> warnLog(fullMessageBuilder)
+        LogIntent.AMAZON_WARNING -> warnLog(fullMessageBuilder)
+        LogIntent.AMAZON_ERROR -> errorLog { fullMessageBuilder() }
     }
 }
 

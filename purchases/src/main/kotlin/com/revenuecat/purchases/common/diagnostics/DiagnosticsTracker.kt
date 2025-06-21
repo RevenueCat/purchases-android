@@ -583,19 +583,19 @@ internal class DiagnosticsTracker(
     }
 
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
-        verboseLog("Tracking diagnostics entry: $diagnosticsEntry")
+        verboseLog { "Tracking diagnostics entry: $diagnosticsEntry" }
         try {
             diagnosticsFileHelper.appendEvent(diagnosticsEntry)
             listener?.onEventTracked()
         } catch (e: IOException) {
-            verboseLog("Error tracking diagnostics entry: $e")
+            verboseLog { "Error tracking diagnostics entry: $e" }
         }
     }
 
     private fun checkAndClearDiagnosticsFileIfTooBig(completion: () -> Unit) {
         enqueue {
             if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
-                verboseLog("Diagnostics file is too big. Deleting it.")
+                verboseLog { "Diagnostics file is too big. Deleting it." }
                 diagnosticsHelper.resetDiagnosticsStatus()
                 trackMaxEventsStoredLimitReached()
             }

@@ -28,10 +28,10 @@ internal class APIKeyValidator {
 
     fun validateAndLog(apiKey: String, configuredStore: Store) {
         when (validate(apiKey, configuredStore)) {
-            ValidationResult.AMAZON_KEY_GOOGLE_STORE -> errorLog(ConfigureStrings.AMAZON_API_KEY_GOOGLE_STORE)
-            ValidationResult.GOOGLE_KEY_AMAZON_STORE -> errorLog(ConfigureStrings.GOOGLE_API_KEY_AMAZON_STORE)
-            ValidationResult.LEGACY -> debugLog(ConfigureStrings.LEGACY_API_KEY)
-            ValidationResult.OTHER_PLATFORM -> errorLog(ConfigureStrings.INVALID_API_KEY)
+            ValidationResult.AMAZON_KEY_GOOGLE_STORE -> errorLog { ConfigureStrings.AMAZON_API_KEY_GOOGLE_STORE }
+            ValidationResult.GOOGLE_KEY_AMAZON_STORE -> errorLog { ConfigureStrings.GOOGLE_API_KEY_AMAZON_STORE }
+            ValidationResult.LEGACY -> debugLog { ConfigureStrings.LEGACY_API_KEY }
+            ValidationResult.OTHER_PLATFORM -> errorLog { ConfigureStrings.INVALID_API_KEY }
             ValidationResult.VALID -> {}
         }
     }

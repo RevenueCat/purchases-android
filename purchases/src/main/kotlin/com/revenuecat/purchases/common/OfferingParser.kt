@@ -33,7 +33,7 @@ internal abstract class OfferingParser {
      */
     @OptIn(InternalRevenueCatAPI::class)
     fun createOfferings(offeringsJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offerings {
-        log(LogIntent.DEBUG, OfferingStrings.BUILDING_OFFERINGS.format(productsById.size))
+        log(LogIntent.DEBUG) { OfferingStrings.BUILDING_OFFERINGS.format(productsById.size) }
 
         val jsonOfferings = offeringsJson.getJSONArray("offerings")
         val currentOfferingID = offeringsJson.getString("current_offering_id")
@@ -45,7 +45,7 @@ internal abstract class OfferingParser {
             try {
                 json.decodeFromString<UiConfig>(it.toString())
             } catch (e: Throwable) {
-                errorLog("Error deserializing ui_config", e)
+                errorLog(e) { "Error deserializing ui_config" }
                 null
             }
         }
@@ -57,7 +57,7 @@ internal abstract class OfferingParser {
                 offerings[it.identifier] = it
 
                 if (it.availablePackages.isEmpty()) {
-                    warnLog(OfferingStrings.OFFERING_EMPTY.format(it.identifier))
+                    warnLog { OfferingStrings.OFFERING_EMPTY.format(it.identifier) }
                 }
             }
         }
@@ -69,7 +69,7 @@ internal abstract class OfferingParser {
             return@let if (revision != null && ruleId != null) {
                 Offerings.Targeting(revision, ruleId)
             } else {
-                warnLog(OfferingStrings.TARGETING_ERROR)
+                warnLog { OfferingStrings.TARGETING_ERROR }
                 null
             }
         }
@@ -125,7 +125,7 @@ internal abstract class OfferingParser {
             try {
                 json.decodeFromString<PaywallData>(it.toString())
             } catch (e: Exception) {
-                errorLog("Error deserializing paywall data", e)
+                errorLog(e) { "Error deserializing paywall data" }
                 null
             }
         }
@@ -136,7 +136,7 @@ internal abstract class OfferingParser {
                 try {
                     json.decodeFromString<PaywallComponentsData>(it.toString())
                 } catch (e: Throwable) {
-                    errorLog("Error deserializing paywall components data", e)
+                    errorLog(e) { "Error deserializing paywall components data" }
                     null
                 }
             }

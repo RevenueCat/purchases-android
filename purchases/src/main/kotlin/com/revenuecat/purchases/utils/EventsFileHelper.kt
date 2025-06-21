@@ -57,7 +57,7 @@ internal open class EventsFileHelper<T : Event> (
     @Synchronized
     fun deleteFile() {
         if (!fileHelper.deleteFile(filePath)) {
-            verboseLog("Failed to delete events file in $filePath.")
+            verboseLog { "Failed to delete events file in $filePath." }
         }
     }
 
@@ -66,10 +66,10 @@ internal open class EventsFileHelper<T : Event> (
         return try {
             eventDeserializer(string)
         } catch (e: SerializationException) {
-            errorLog("Error parsing event from file: $string", e)
+            errorLog(e) { "Error parsing event from file: $string" }
             null
         } catch (e: IllegalArgumentException) {
-            errorLog("Error parsing event from file: $string", e)
+            errorLog(e) { "Error parsing event from file: $string" }
             null
         }
     }

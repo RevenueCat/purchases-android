@@ -44,44 +44,44 @@ internal class DiagnosticsSynchronizer(
         enqueue {
             try {
                 if (isSyncing.getAndSet(true)) {
-                    verboseLog("Already syncing diagnostics file.")
+                    verboseLog { "Already syncing diagnostics file." }
                     return@enqueue
                 }
                 val diagnosticsList = getEventsToSync()
                 val diagnosticsCount = diagnosticsList.size
                 if (diagnosticsCount == 0) {
-                    verboseLog("No diagnostics to sync.")
+                    verboseLog { "No diagnostics to sync." }
                     isSyncing.set(false)
                     return@enqueue
                 }
                 backend.postDiagnostics(
                     diagnosticsList = diagnosticsList,
                     onSuccessHandler = {
-                        verboseLog("Synced diagnostics file successfully.")
+                        verboseLog { "Synced diagnostics file successfully." }
                         diagnosticsHelper.clearConsecutiveNumberOfErrors()
                         diagnosticsFileHelper.clear(diagnosticsCount)
                         isSyncing.set(false)
                     },
                     onErrorHandler = { error, shouldRetry ->
                         if (shouldRetry) {
-                            verboseLog(
+                            verboseLog {
                                 "Error syncing diagnostics file: $error. " +
-                                    "Will retry the next time the SDK is initialized",
-                            )
+                                    "Will retry the next time the SDK is initialized"
+                            }
                             if (diagnosticsHelper.increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
-                                verboseLog(
+                                verboseLog {
                                     "Error syncing diagnostics file: $error. " +
                                         "This was the final attempt ($MAX_NUMBER_POST_RETRIES). " +
-                                        "Deleting diagnostics file without posting.",
-                                )
+                                        "Deleting diagnostics file without posting."
+                                }
                                 diagnosticsHelper.resetDiagnosticsStatus()
                                 diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached()
                             }
                         } else {
-                            verboseLog(
+                            verboseLog {
                                 "Error syncing diagnostics file: $error. " +
-                                    "Deleting diagnostics file without retrying.",
-                            )
+                                    "Deleting diagnostics file without retrying."
+                            }
                             diagnosticsHelper.resetDiagnosticsStatus()
                             diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync()
                         }
@@ -89,11 +89,11 @@ internal class DiagnosticsSynchronizer(
                     },
                 )
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                verboseLog("Error syncing diagnostics file: $e")
+                verboseLog { "Error syncing diagnostics file: $e" }
                 try {
                     diagnosticsHelper.resetDiagnosticsStatus()
                 } catch (e: IOException) {
-                    verboseLog("Error deleting diagnostics file: $e")
+                    verboseLog { "Error deleting diagnostics file: $e" }
                 }
                 isSyncing.set(false)
             }
@@ -107,7 +107,7 @@ internal class DiagnosticsSynchronizer(
     private fun syncDiagnosticsFileIfBigEnough() {
         enqueue {
             if (diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync()) {
-                verboseLog("Diagnostics file is big enough to sync. Syncing it.")
+                verboseLog { "Diagnostics file is big enough to sync. Syncing it." }
                 syncDiagnosticsFileIfNeeded()
             }
         }

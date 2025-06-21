@@ -48,7 +48,7 @@ internal class QueryProductDetailsUseCase(
         val nonEmptyProductIds = useCaseParams.productIds.filter { it.isNotEmpty() }.toSet()
 
         if (nonEmptyProductIds.isEmpty()) {
-            log(LogIntent.DEBUG, OfferingStrings.EMPTY_PRODUCT_ID_LIST)
+            log(LogIntent.DEBUG) { OfferingStrings.EMPTY_PRODUCT_ID_LIST }
             onReceive(emptyList())
             return
         }
@@ -65,17 +65,15 @@ internal class QueryProductDetailsUseCase(
     }
 
     override fun onOk(received: List<ProductDetails>) {
-        log(
-            LogIntent.DEBUG,
-            OfferingStrings.FETCHING_PRODUCTS_FINISHED.format(useCaseParams.productIds.joinToString()),
-        )
-        log(
-            LogIntent.PURCHASE,
-            OfferingStrings.RETRIEVED_PRODUCTS.format(received.joinToString { it.toString() }),
-        )
+        log(LogIntent.DEBUG) {
+            OfferingStrings.FETCHING_PRODUCTS_FINISHED.format(useCaseParams.productIds.joinToString())
+        }
+        log(LogIntent.PURCHASE) {
+            OfferingStrings.RETRIEVED_PRODUCTS.format(received.joinToString { it.toString() })
+        }
         logErrorIfIssueBuildingBillingParams(received)
         received.takeUnless { it.isEmpty() }?.forEach {
-            log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
+            log(LogIntent.PURCHASE) { OfferingStrings.LIST_PRODUCTS.format(it.productId, it) }
         }
 
         val storeProducts = received.toStoreProducts()
@@ -94,10 +92,9 @@ internal class QueryProductDetailsUseCase(
         val requestStartTime = useCaseParams.dateProvider.now
         billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
             if (hasResponded.getAndSet(true)) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
-                )
+                log(LogIntent.GOOGLE_ERROR) {
+                    OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode)
+                }
                 return@queryProductDetailsAsync
             }
             trackGoogleQueryProductDetailsRequestIfNeeded(productIds, productType, billingResult, requestStartTime)
@@ -142,10 +139,10 @@ internal class QueryProductDetailsUseCase(
                 try {
                     BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(productDetailsParams)).build()
                 } catch (e: NoClassDefFoundError) {
-                    errorLog(NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE, e)
+                    errorLog(e) { NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE }
                 }
             } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-                errorLog("Error building Params during safety check.", e)
+                errorLog(e) { "Error building Params during safety check." }
             }
         }
     }

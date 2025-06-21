@@ -44,7 +44,7 @@ internal class UserDataHandler(
     override fun onUserDataResponse(response: UserDataResponse) {
         // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
         try {
-            log(LogIntent.DEBUG, AmazonStrings.USER_DATA_REQUEST_FINISHED.format(response.requestStatus.name))
+            log(LogIntent.DEBUG) { AmazonStrings.USER_DATA_REQUEST_FINISHED.format(response.requestStatus.name) }
 
             val request = getRequest(response.requestId) ?: return
 
@@ -63,7 +63,7 @@ internal class UserDataHandler(
                 else -> request.onError.invokeWithStoreProblem(AmazonStrings.ERROR_USER_DATA_STORE_PROBLEM)
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            errorLog("Exception in onUserDataResponse", e)
+            errorLog(e) { "Exception in onUserDataResponse" }
             throw e
         }
     }
@@ -74,7 +74,7 @@ internal class UserDataHandler(
         onError: PurchasesErrorCallback,
     ) {
         getCachedUserDataIfAvailable()?.let { cachedUserData ->
-            log(LogIntent.DEBUG, AmazonStrings.USER_DATA_REQUEST_FROM_CACHE)
+            log(LogIntent.DEBUG) { AmazonStrings.USER_DATA_REQUEST_FROM_CACHE }
             onSuccess(cachedUserData)
             return
         }

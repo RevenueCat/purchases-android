@@ -31,7 +31,7 @@ internal class SyncPurchasesHelper(
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
+        log(LogIntent.DEBUG) { PurchaseStrings.SYNCING_PURCHASES }
 
         val startTime = dateProvider.now
         diagnosticsTrackerIfEnabled?.trackSyncPurchasesStarted()
@@ -57,10 +57,10 @@ internal class SyncPurchasesHelper(
                     fun handleLastPurchase(currentPurchase: StoreTransaction, lastPurchase: StoreTransaction) {
                         if (currentPurchase == lastPurchase) {
                             if (errors.isEmpty()) {
-                                debugLog(PurchaseStrings.SYNCED_PURCHASES_SUCCESSFULLY)
+                                debugLog { PurchaseStrings.SYNCED_PURCHASES_SUCCESSFULLY }
                                 retrieveCustomerInfo(appUserID, appInBackground, isRestore, handleSuccess, handleError)
                             } else {
-                                errorLog(PurchaseStrings.SYNCING_PURCHASES_ERROR.format(errors))
+                                errorLog { PurchaseStrings.SYNCING_PURCHASES_ERROR.format(errors) }
                                 handleError(errors.first())
                             }
                         }
@@ -76,15 +76,14 @@ internal class SyncPurchasesHelper(
                             purchase.marketplace,
                             PostReceiptInitiationSource.RESTORE,
                             {
-                                log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
+                                log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASE_SYNCED.format(purchase) }
                                 handleLastPurchase(purchase, lastPurchase)
                             },
                             { error ->
-                                log(
-                                    LogIntent.RC_ERROR,
+                                log(LogIntent.RC_ERROR) {
                                     PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error),
-                                )
+                                        .format(purchase, error)
+                                }
                                 errors.add(error)
                                 handleLastPurchase(purchase, lastPurchase)
                             },
@@ -95,7 +94,7 @@ internal class SyncPurchasesHelper(
                 }
             },
             onReceivePurchaseHistoryError = {
-                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
+                log(LogIntent.RC_ERROR) { PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it) }
                 handleError(it)
             },
         )

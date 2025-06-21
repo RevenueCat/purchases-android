@@ -16,7 +16,7 @@ private val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 25.hours
 
 internal fun Date?.isCacheStale(appInBackground: Boolean, dateProvider: DateProvider = DefaultDateProvider()): Boolean {
     return this?.let {
-        log(LogIntent.DEBUG, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground))
+        log(LogIntent.DEBUG) { ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground) }
         val cacheDuration = when {
             appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
             else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND

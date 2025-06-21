@@ -49,9 +49,9 @@ internal class CustomerInfoUpdateHandler(
                 }
                 if (listener != null && lastSentCustomerInfo != customerInfo) {
                     if (lastSentCustomerInfo != null) {
-                        log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER)
+                        log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER }
                     } else {
-                        log(LogIntent.DEBUG, CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER)
+                        log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
                     }
                     synchronized(this@CustomerInfoUpdateHandler) {
                         this.lastSentCustomerInfo = customerInfo
@@ -63,7 +63,7 @@ internal class CustomerInfoUpdateHandler(
 
     private fun afterSetListener(listener: UpdatedCustomerInfoListener?) {
         if (listener != null) {
-            log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
+            log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
             if (!appConfig.customEntitlementComputation) {
                 getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
                     notifyListeners(it)

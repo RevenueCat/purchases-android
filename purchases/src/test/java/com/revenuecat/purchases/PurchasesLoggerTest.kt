@@ -71,7 +71,7 @@ class PurchasesLoggerTest {
     @Test
     fun verboseWithDebugLogs() {
         withChangedLevel(LogLevel.DEBUG) {
-            verboseLog(message)
+            verboseLog { message }
             assertThat(handler.verboseMessage).isNull()
         }
     }
@@ -79,7 +79,7 @@ class PurchasesLoggerTest {
     @Test
     fun debugWithDebugLogsDisabled() {
         withChangedLevel(LogLevel.INFO) {
-            debugLog(message)
+            debugLog { message }
             assertThat(handler.debugMessage).isNull()
         }
     }
@@ -87,7 +87,7 @@ class PurchasesLoggerTest {
     @Test
     fun debugWithDebugLogsEnabled() {
         withChangedLevel(LogLevel.DEBUG) {
-            debugLog(message)
+            debugLog { message }
             assertThat(handler.debugMessage).isEqualTo(message)
         }
     }
@@ -95,7 +95,7 @@ class PurchasesLoggerTest {
     @Test
     fun debugWithVerboseLogs() {
         withChangedLevel(LogLevel.VERBOSE) {
-            debugLog(message)
+            debugLog { message }
             assertThat(handler.debugMessage).isEqualTo(message)
         }
     }
@@ -103,7 +103,7 @@ class PurchasesLoggerTest {
     @Test
     fun info() {
         withChangedLevel(LogLevel.INFO) {
-            infoLog(message)
+            infoLog { message }
             assertThat(handler.infoMessage).isEqualTo(message)
         }
     }
@@ -111,7 +111,7 @@ class PurchasesLoggerTest {
     @Test
     fun warning() {
         withChangedLevel(LogLevel.WARN) {
-            warnLog(message)
+            warnLog { message }
             assertThat(handler.warningMessage).isEqualTo(message)
         }
     }
@@ -119,7 +119,7 @@ class PurchasesLoggerTest {
     @Test
     fun errorWithNoThrowable() {
         withChangedLevel(LogLevel.ERROR) {
-            errorLog(message)
+            errorLog { message }
             assertThat(handler.errorMessage).isEqualTo(message)
             assertThat(handler.errorThrowable).isNull()
         }
@@ -130,7 +130,7 @@ class PurchasesLoggerTest {
         withChangedLevel(LogLevel.ERROR) {
             val throwable = ClassNotFoundException()
 
-            errorLog(message, throwable)
+            errorLog(throwable) { message }
             assertThat(handler.errorMessage).isEqualTo(message)
             assertThat(handler.errorThrowable).isSameAs(throwable)
         }
@@ -141,7 +141,7 @@ class PurchasesLoggerTest {
         withChangedLevel(LogLevel.DEBUG) {
             val throwable = ClassNotFoundException()
 
-            errorLog(message, throwable)
+            errorLog(throwable) { message }
             assertThat(handler.errorMessage).isEqualTo(message)
             assertThat(handler.errorThrowable).isSameAs(throwable)
         }

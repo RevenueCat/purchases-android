@@ -34,10 +34,9 @@ internal class GetBillingConfigUseCase(
 
             getBillingConfigAsync(GetBillingConfigParams.newBuilder().build()) { result, config ->
                 if (hasResponded.getAndSet(true)) {
-                    log(
-                        LogIntent.GOOGLE_ERROR,
-                        OfferingStrings.EXTRA_GET_BILLING_CONFIG_RESPONSE.format(result.responseCode),
-                    )
+                    log(LogIntent.GOOGLE_ERROR) {
+                        OfferingStrings.EXTRA_GET_BILLING_CONFIG_RESPONSE.format(result.responseCode)
+                    }
                     return@getBillingConfigAsync
                 }
                 processResult(result, config)
