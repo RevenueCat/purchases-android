@@ -55,7 +55,7 @@ internal class PurchaseHandler(
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.id))
+        log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.id) }
 
         startProxyActivity(mainHandler, activity, storeProduct, onSuccess, onError)
     }
@@ -98,7 +98,7 @@ internal class PurchaseHandler(
                     )
                     productTypes[storeProduct.id] = storeProduct.type
                 } else {
-                    errorLog("No RequestId coming from ProxyAmazonBillingActivity")
+                    errorLog { "No RequestId coming from ProxyAmazonBillingActivity" }
                 }
             }
         }
@@ -108,7 +108,9 @@ internal class PurchaseHandler(
     override fun onPurchaseResponse(response: PurchaseResponse) {
         // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
         try {
-            log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
+            log(LogIntent.DEBUG) {
+                AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1))
+            }
 
             val intent =
                 ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntent(applicationContext.packageName)
@@ -168,7 +170,7 @@ internal class PurchaseHandler(
                 }
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            errorLog("Exception in onPurchaseResponse", e)
+            errorLog(e) { "Exception in onPurchaseResponse" }
             throw e
         }
     }

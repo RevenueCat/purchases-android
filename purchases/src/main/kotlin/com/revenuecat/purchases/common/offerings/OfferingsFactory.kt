@@ -47,11 +47,10 @@ internal class OfferingsFactory(
                             notFoundProductIds
                                 .takeIf { it.isNotEmpty() }
                                 ?.let { missingProducts ->
-                                    log(
-                                        LogIntent.GOOGLE_WARNING,
+                                    log(LogIntent.GOOGLE_WARNING) {
                                         OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
-                                            .format(missingProducts.joinToString(", ")),
-                                    )
+                                            .format(missingProducts.joinToString(", "))
+                                    }
                                 }
 
                             val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
@@ -63,7 +62,7 @@ internal class OfferingsFactory(
                                     ),
                                 )
                             } else {
-                                verboseLog(OfferingStrings.CREATED_OFFERINGS.format(offerings))
+                                verboseLog { OfferingStrings.CREATED_OFFERINGS.format(offerings.all.size) }
                                 onSuccess(
                                     OfferingsResultData(offerings, allRequestedProductIdentifiers, notFoundProductIds),
                                 )
@@ -71,10 +70,9 @@ internal class OfferingsFactory(
                         } catch (error: Exception) {
                             when (error) {
                                 is JSONException, is SerializationException -> {
-                                    log(
-                                        LogIntent.RC_ERROR,
-                                        OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage),
-                                    )
+                                    log(LogIntent.RC_ERROR) {
+                                        OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage)
+                                    }
                                     onError(
                                         PurchasesError(
                                             PurchasesErrorCode.UnexpectedBackendResponseError,
@@ -93,7 +91,7 @@ internal class OfferingsFactory(
                 )
             }
         } catch (error: JSONException) {
-            log(LogIntent.RC_ERROR, OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage))
+            log(LogIntent.RC_ERROR) { OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage) }
             onError(
                 PurchasesError(
                     PurchasesErrorCode.UnexpectedBackendResponseError,
