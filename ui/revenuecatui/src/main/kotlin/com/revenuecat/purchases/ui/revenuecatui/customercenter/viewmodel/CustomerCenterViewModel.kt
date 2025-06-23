@@ -157,7 +157,6 @@ internal class CustomerCenterViewModelImpl(
         notifyListenersForManagementOptionSelected(path)
         path.feedbackSurvey?.let { feedbackSurvey ->
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
-                goBackToMain()
                 option?.let {
                     trackCustomerCenterEventOptionChosen(
                         path = path.type,
@@ -166,8 +165,14 @@ internal class CustomerCenterViewModelImpl(
                     )
                     notifyListenersForFeedbackSurveyCompleted(it.id)
                     viewModelScope.launch {
-                        handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path)
+                        val hasPromotionalOffer =
+                            handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path)
+                        if (!hasPromotionalOffer) {
+                            goBackToMain()
+                        }
                     }
+                } ?: run {
+                    goBackToMain()
                 }
             })
             return
@@ -476,12 +481,14 @@ internal class CustomerCenterViewModelImpl(
                 val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
                 loaded = true
                 currentState.copy(
+                    feedbackSurveyData = null,
                     promotionalOfferData = PromotionalOfferData(
                         promotionalOffer,
                         subscriptionOption,
                         originalPath,
                         pricingPhasesDescription,
                     ),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
                 currentState
@@ -729,7 +736,7 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct?,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer?,
         path: CustomerCenterConfigData.HelpPath,
-    ) {
+    ): Boolean {
         if (product != null && promotionalOffer != null) {
             val loaded = loadAndDisplayPromotionalOffer(
                 context,
@@ -740,8 +747,10 @@ internal class CustomerCenterViewModelImpl(
             if (!loaded) {
                 mainPathAction(path, context)
             }
+            return loaded
         } else {
             mainPathAction(path, context)
+            return false
         }
     }
 
