@@ -300,6 +300,7 @@ private fun CustomerCenterLoaded(
         currentDestination = navigationState.currentDestination,
         customerCenterState = state,
         onAction = onAction,
+        navigationViewModel = navigationViewModel,
     )
 }
 
@@ -313,21 +314,30 @@ private fun getTitleForState(state: CustomerCenterState): String? {
     }
 }
 
-private fun getAnimationForTransition() =
+private fun getAnimationForTransition(
+    navigationViewModel: CustomerCenterNavigationViewModel,
+) = if (navigationViewModel.isLastActionBackward()) {
+    slideInHorizontally(initialOffsetX = { -it }) togetherWith
+        slideOutHorizontally(targetOffsetX = { it })
+} else {
     slideInHorizontally(initialOffsetX = { it }) togetherWith
         slideOutHorizontally(targetOffsetX = { -it })
+}
 
 @Composable
 private fun CustomerCenterNavigationHost(
     currentDestination: CustomerCenterDestination,
     customerCenterState: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
+    navigationViewModel: CustomerCenterNavigationViewModel,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
         AnimatedContent(
             targetState = currentDestination,
-            transitionSpec = { getAnimationForTransition() },
+            transitionSpec = {
+                getAnimationForTransition(navigationViewModel)
+            },
             label = "CustomerCenterNavigation",
             modifier = Modifier
                 .fillMaxSize()
