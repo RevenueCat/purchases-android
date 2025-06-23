@@ -198,6 +198,51 @@ data class CustomerCenterConfigData(
 
             @SerialName("done")
             DONE,
+
+            @SerialName("renews_on_date_for_price")
+            RENEWS_ON_DATE_FOR_PRICE,
+
+            @SerialName("renews_on_date")
+            RENEWS_ON_DATE,
+
+            @SerialName("purchase_info_expired_on_date")
+            PURCHASE_INFO_EXPIRED_ON_DATE,
+
+            @SerialName("purchase_info_expires_on_date")
+            PURCHASE_INFO_EXPIRES_ON_DATE,
+
+            @SerialName("active")
+            ACTIVE,
+
+            @SerialName("badge_cancelled")
+            BADGE_CANCELLED,
+
+            @SerialName("badge_free_trial")
+            BADGE_FREE_TRIAL,
+
+            @SerialName("badge_free_trial_cancelled")
+            BADGE_FREE_TRIAL_CANCELLED,
+
+            @SerialName("app_store")
+            APP_STORE,
+
+            @SerialName("mac_app_store")
+            MAC_APP_STORE,
+
+            @SerialName("google_play_store")
+            GOOGLE_PLAY_STORE,
+
+            @SerialName("amazon_store")
+            AMAZON_STORE,
+
+            @SerialName("web_store")
+            WEB_STORE,
+
+            @SerialName("unknown_store")
+            UNKNOWN_STORE,
+
+            @SerialName("card_store_promotional")
+            CARD_STORE_PROMOTIONAL,
             ;
 
             val defaultValue: String
@@ -267,6 +312,21 @@ data class CustomerCenterConfigData(
                         "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} " +
                             "during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
                     DONE -> "Done"
+                    RENEWS_ON_DATE_FOR_PRICE -> "Your next charge is {{ price }} on {{ date }}."
+                    RENEWS_ON_DATE -> "Renews on {{ date }}"
+                    PURCHASE_INFO_EXPIRED_ON_DATE -> "Expired on {{ date }}"
+                    PURCHASE_INFO_EXPIRES_ON_DATE -> "Expires on {{ date }}"
+                    ACTIVE -> "Active"
+                    BADGE_CANCELLED -> "Cancelled"
+                    BADGE_FREE_TRIAL -> "Free Trial"
+                    BADGE_FREE_TRIAL_CANCELLED -> "Cancelled Trial"
+                    APP_STORE -> "App Store"
+                    MAC_APP_STORE -> "Mac App Store"
+                    GOOGLE_PLAY_STORE -> "Google Play Store"
+                    AMAZON_STORE -> "Amazon Store"
+                    WEB_STORE -> "Web"
+                    UNKNOWN_STORE -> "Unknown"
+                    CARD_STORE_PROMOTIONAL -> "Via Support"
                 }
         }
 

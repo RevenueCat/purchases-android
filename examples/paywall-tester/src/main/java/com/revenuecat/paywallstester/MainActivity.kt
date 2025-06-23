@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.revenuecat.paywallstester
 
 import android.content.Intent
@@ -9,7 +11,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.revenuecat.paywallstester.ui.theme.PaywallTesterAndroidTheme
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
@@ -24,7 +29,12 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         paywallActivityLauncher = PaywallActivityLauncher(this, this)
         setContent {
             PaywallTesterAndroidTheme(dynamicColor = false) {
-                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                Box(
+                    modifier = Modifier
+                        .semantics { testTagsAsResourceId = true }
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                ) {
                     PaywallTesterApp()
                 }
             }
