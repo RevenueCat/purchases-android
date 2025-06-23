@@ -110,7 +110,7 @@ internal class PaywallViewModelImpl(
     }
 
     fun updateOptions(options: PaywallOptions) {
-        if (this.options != options) {
+        if (this.options.dataHash != options.dataHash) {
             this.options = options
             updateState()
         }
