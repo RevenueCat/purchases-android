@@ -529,10 +529,13 @@ internal class CustomerCenterViewModelImpl(
         // Continue with the original action and remove the promotional offer data
         mainPathAction(originalPath, context)
 
-        _state.update {
-            val currentState = _state.value
+        _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
-                currentState.copy(promotionalOfferData = null)
+                currentState.copy(
+                    promotionalOfferData = null,
+                    title = null,
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                )
             } else {
                 currentState
             }

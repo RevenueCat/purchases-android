@@ -61,6 +61,13 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
 
+private fun getTitleForState(state: CustomerCenterState): String? {
+    return when (state) {
+        is CustomerCenterState.Success -> state.title
+        else -> null
+    }
+}
+
 private sealed class NavigationAction {
     data class NavigateTo(val destination: CustomerCenterDestination) : NavigationAction()
     data class ReplaceCurrentDestination(val destination: CustomerCenterDestination) : NavigationAction()
@@ -279,7 +286,7 @@ private fun CustomerCenterLoaded(
 ) {
     val navigationState by navigationViewModel.navigationState.collectAsState()
 
-    LaunchedEffect(state.feedbackSurveyData, state.promotionalOfferData, state.restorePurchasesState) {
+    LaunchedEffect(state.feedbackSurveyData, state.promotionalOfferData, navigationState.currentDestination) {
         updateNavigationFromState(
             state = state,
             currentDestination = navigationState.currentDestination,
@@ -300,30 +307,8 @@ private fun CustomerCenterLoaded(
         currentDestination = navigationState.currentDestination,
         customerCenterState = state,
         onAction = onAction,
+        navigationStack = navigationState.destinationStack,
     )
-}
-
-private fun getTitleForState(state: CustomerCenterState): String? {
-    return when (state) {
-        is CustomerCenterState.Success -> {
-            state.title
-        }
-
-        else -> null
-    }
-}
-
-private fun getAnimationForTransition(
-    from: CustomerCenterDestination,
-    to: CustomerCenterDestination,
-) = if (to.hierarchyLevel < from.hierarchyLevel) {
-    // Going to a higher level (backward) - slide in from left
-    slideInHorizontally(initialOffsetX = { -it }) togetherWith
-        slideOutHorizontally(targetOffsetX = { it })
-} else {
-    // Going to a lower level or same level (forward) - slide in from right
-    slideInHorizontally(initialOffsetX = { it }) togetherWith
-        slideOutHorizontally(targetOffsetX = { -it })
 }
 
 @Composable
@@ -331,6 +316,7 @@ private fun CustomerCenterNavigationHost(
     currentDestination: CustomerCenterDestination,
     customerCenterState: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
+    navigationStack: List<CustomerCenterDestination>,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -340,6 +326,7 @@ private fun CustomerCenterNavigationHost(
                 getAnimationForTransition(
                     from = initialState,
                     to = targetState,
+                    navigationStack = navigationStack,
                 )
             },
             label = "CustomerCenterNavigation",
@@ -433,6 +420,42 @@ private fun MainScreenContent(
     }
 }
 
+private fun getAnimationForTransition(
+    from: CustomerCenterDestination,
+    to: CustomerCenterDestination,
+    navigationStack: List<CustomerCenterDestination>,
+) = if (isBackwardTransition(from, to, navigationStack)) {
+    // Going backward in stack - slide in from left
+    slideInHorizontally(initialOffsetX = { -it }) togetherWith
+        slideOutHorizontally(targetOffsetX = { it })
+} else {
+    // Going forward in stack - slide in from right
+    slideInHorizontally(initialOffsetX = { it }) togetherWith
+        slideOutHorizontally(targetOffsetX = { -it })
+}
+
+private fun isBackwardTransition(
+    from: CustomerCenterDestination,
+    to: CustomerCenterDestination,
+    navigationStack: List<CustomerCenterDestination>,
+): Boolean {
+    // Find positions of from and to in the current stack
+    val fromIndex = navigationStack.indexOf(from)
+    val toIndex = navigationStack.indexOf(to)
+
+    // If 'to' destination is not in the stack, it's a forward transition (new destination)
+    if (toIndex == -1) return false
+
+    // If 'from' destination is not in the stack, determine based on 'to' position
+    if (fromIndex == -1) {
+        // If we're going to something that's not the current top of stack, it's likely backward
+        return toIndex < navigationStack.size - 1
+    }
+
+    // If both are in stack, backward means going to a lower index (closer to root)
+    return toIndex < fromIndex
+}
+
 private fun updateNavigationFromState(
     state: CustomerCenterState.Success,
     currentDestination: CustomerCenterDestination,
@@ -466,8 +489,6 @@ private fun updateNavigationFromState(
                 }
             }
         }
-
-        // Don't handle restorePurchasesState in navigation - it's now an overlay
 
         else -> {
             if (currentDestination !is CustomerCenterDestination.Main) {

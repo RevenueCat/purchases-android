@@ -11,11 +11,9 @@ internal enum class CustomerCenterAnimationType {
 @Immutable
 internal sealed class CustomerCenterDestination {
     abstract val animationType: CustomerCenterAnimationType
-    abstract val hierarchyLevel: Int
 
     object Main : CustomerCenterDestination() {
         override val animationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
-        override val hierarchyLevel = 0
     }
 
     data class FeedbackSurvey(
@@ -23,13 +21,11 @@ internal sealed class CustomerCenterDestination {
         val title: String,
     ) : CustomerCenterDestination() {
         override val animationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
-        override val hierarchyLevel = 1
     }
 
     data class PromotionalOffer(
         val data: PromotionalOfferData,
     ) : CustomerCenterDestination() {
         override val animationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
-        override val hierarchyLevel = 1
     }
 }
