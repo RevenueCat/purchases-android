@@ -22,20 +22,20 @@ internal class WebPurchaseRedemptionHelper(
         webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {
-        debugLog("Starting web purchase redemption.")
+        debugLog { "Starting web purchase redemption." }
         backend.postRedeemWebPurchase(
             identityManager.currentAppUserID,
             webPurchaseRedemption.redemptionToken,
             onResultHandler = { result ->
                 when (result) {
                     is RedeemWebPurchaseListener.Result.Success -> {
-                        debugLog("Successfully redeemed web purchase. Updating customer info.")
+                        debugLog { "Successfully redeemed web purchase. Updating customer info." }
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                         customerInfoUpdateHandler.cacheAndNotifyListeners(result.customerInfo)
                         dispatchResult(listener, result)
                     }
                     else -> {
-                        errorLog("Error redeeming web purchase: $result")
+                        errorLog { "Error redeeming web purchase: $result" }
                         dispatchResult(listener, result)
                     }
                 }

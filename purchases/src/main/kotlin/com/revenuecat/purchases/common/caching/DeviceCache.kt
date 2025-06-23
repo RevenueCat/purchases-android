@@ -207,7 +207,7 @@ internal open class DeviceCache(
 
     @Synchronized
     fun setStorefront(countryCode: String) {
-        verboseLog(BillingStrings.BILLING_STOREFRONT_CACHING.format(countryCode))
+        verboseLog { BillingStrings.BILLING_STOREFRONT_CACHING.format(countryCode) }
         preferences.edit().putString(storefrontCacheKey, countryCode).apply()
     }
 
@@ -215,7 +215,7 @@ internal open class DeviceCache(
     override fun getStorefront(): String? {
         val storefront = preferences.getString(storefrontCacheKey, null)
         if (storefront == null) {
-            debugLog(BillingStrings.BILLING_STOREFRONT_NULL_FROM_CACHE)
+            debugLog { BillingStrings.BILLING_STOREFRONT_NULL_FROM_CACHE }
         }
         return storefront
     }
@@ -248,7 +248,7 @@ internal open class DeviceCache(
     fun getPreviouslySentHashedTokens(): Set<String> {
         return try {
             (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-                log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
+                log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(it) }
             }
         } catch (e: ClassCastException) {
             emptySet()
@@ -257,16 +257,16 @@ internal open class DeviceCache(
 
     @Synchronized
     fun addSuccessfullyPostedToken(token: String) {
-        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()))
+        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()) }
         getPreviouslySentHashedTokens().let {
-            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(it))
+            log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_IN_CACHE.format(it) }
             setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
         }
     }
 
     @Synchronized
     private fun setSavedTokenHashes(newSet: Set<String>) {
-        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newSet))
+        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS.format(newSet) }
         preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
     }
 
@@ -278,7 +278,7 @@ internal open class DeviceCache(
     fun cleanPreviouslySentTokens(
         hashedTokens: Set<String>,
     ) {
-        log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
+        log(LogIntent.DEBUG) { ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN }
         setSavedTokenHashes(
             hashedTokens.intersect(getPreviouslySentHashedTokens()),
         )
@@ -360,7 +360,7 @@ internal open class DeviceCache(
             return try {
                 ProductEntitlementMapping.fromJson(JSONObject(jsonString))
             } catch (e: JSONException) {
-                errorLog(OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString), e)
+                errorLog(e) { OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString) }
                 preferences.edit().remove(productEntitlementMappingCacheKey).apply()
                 null
             }

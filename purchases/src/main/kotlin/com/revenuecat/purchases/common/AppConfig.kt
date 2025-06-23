@@ -48,7 +48,7 @@ internal class AppConfig(
     val packageName: String = context.packageName
     var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
     val baseURL: URL = proxyURL?.also {
-        log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
+        log(LogIntent.INFO) { ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET }
     } ?: URL("https://api.revenuecat.com/")
     val fallbackBaseURLs: List<URL> = if (proxyURL != null) {
         emptyList()
