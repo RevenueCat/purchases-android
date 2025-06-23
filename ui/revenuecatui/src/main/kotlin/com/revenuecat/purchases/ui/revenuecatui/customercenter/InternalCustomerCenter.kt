@@ -5,14 +5,13 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,7 +47,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterAnimationType
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
@@ -314,22 +312,9 @@ private fun getTitleForState(state: CustomerCenterState): String? {
     }
 }
 
-private fun getAnimationForTransition(
-    fromType: CustomerCenterAnimationType,
-    toType: CustomerCenterAnimationType,
-) = when {
-    // If either side is a dialog, use dialog animation
-    fromType == CustomerCenterAnimationType.FADE_DIALOG ||
-        toType == CustomerCenterAnimationType.FADE_DIALOG -> {
-        fadeIn() togetherWith fadeOut()
-    }
-
-    // Default horizontal slide for regular navigation
-    else -> {
-        slideInHorizontally(initialOffsetX = { it }) togetherWith
-            slideOutHorizontally(targetOffsetX = { -it })
-    }
-}
+private fun getAnimationForTransition() =
+    slideInHorizontally(initialOffsetX = { it }) togetherWith
+        slideOutHorizontally(targetOffsetX = { -it })
 
 @Composable
 private fun CustomerCenterNavigationHost(
@@ -338,56 +323,53 @@ private fun CustomerCenterNavigationHost(
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AnimatedContent(
-        targetState = currentDestination,
-        transitionSpec = {
-            getAnimationForTransition(
-                fromType = initialState.animationType,
-                toType = targetState.animationType,
+    Box(modifier = modifier) {
+        AnimatedContent(
+            targetState = currentDestination,
+            transitionSpec = { getAnimationForTransition() },
+            label = "CustomerCenterNavigation",
+        ) { destination ->
+            when (destination) {
+                is CustomerCenterDestination.Main -> {
+                    MainScreenContent(
+                        state = customerCenterState,
+                        onAction = onAction,
+                    )
+                }
+
+                is CustomerCenterDestination.FeedbackSurvey -> {
+                    FeedbackSurveyView(destination.data)
+                }
+
+                is CustomerCenterDestination.PromotionalOffer -> {
+                    PromotionalOfferScreen(
+                        promotionalOfferData = destination.data,
+                        appearance = customerCenterState.customerCenterConfigData.appearance,
+                        localization = customerCenterState.customerCenterConfigData.localization,
+                        onAccept = { subscriptionOption ->
+                            onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
+                        },
+                        onDismiss = {
+                            onAction(CustomerCenterAction.DismissPromotionalOffer(destination.data.originalPath))
+                        },
+                    )
+                }
+            }
+        }
+
+        // Show RestorePurchases dialog as overlay
+        if (customerCenterState.restorePurchasesState != null) {
+            RestorePurchasesDialog(
+                state = customerCenterState.restorePurchasesState,
+                localization = customerCenterState.customerCenterConfigData.localization,
+                onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
+                onRestore = { onAction(CustomerCenterAction.PerformRestore) },
+                onContactSupport = customerCenterState.customerCenterConfigData.support.email?.let { email ->
+                    {
+                        onAction(CustomerCenterAction.ContactSupport(email))
+                    }
+                },
             )
-        },
-        modifier = modifier,
-        label = "CustomerCenterNavigation",
-    ) { destination ->
-        when (destination) {
-            is CustomerCenterDestination.Main -> {
-                MainScreenContent(
-                    state = customerCenterState,
-                    onAction = onAction,
-                )
-            }
-
-            is CustomerCenterDestination.FeedbackSurvey -> {
-                FeedbackSurveyView(destination.data)
-            }
-
-            is CustomerCenterDestination.PromotionalOffer -> {
-                PromotionalOfferScreen(
-                    promotionalOfferData = destination.data,
-                    appearance = customerCenterState.customerCenterConfigData.appearance,
-                    localization = customerCenterState.customerCenterConfigData.localization,
-                    onAccept = { subscriptionOption ->
-                        onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
-                    },
-                    onDismiss = {
-                        onAction(CustomerCenterAction.DismissPromotionalOffer(destination.data.originalPath))
-                    },
-                )
-            }
-
-            is CustomerCenterDestination.RestorePurchases -> {
-                RestorePurchasesDialog(
-                    state = destination.state,
-                    localization = customerCenterState.customerCenterConfigData.localization,
-                    onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
-                    onRestore = { onAction(CustomerCenterAction.PerformRestore) },
-                    onContactSupport = customerCenterState.customerCenterConfigData.support.email?.let { email ->
-                        {
-                            onAction(CustomerCenterAction.ContactSupport(email))
-                        }
-                    },
-                )
-            }
         }
     }
 }
@@ -467,17 +449,7 @@ private fun updateNavigationFromState(
             }
         }
 
-        state.restorePurchasesState != null -> {
-            if (currentDestination !is CustomerCenterDestination.RestorePurchases) {
-                onNavigationAction(
-                    NavigationAction.NavigateTo(
-                        CustomerCenterDestination.RestorePurchases(
-                            state = state.restorePurchasesState,
-                        ),
-                    ),
-                )
-            }
-        }
+        // Don't handle restorePurchasesState in navigation - it's now an overlay
 
         else -> {
             if (currentDestination !is CustomerCenterDestination.Main) {
