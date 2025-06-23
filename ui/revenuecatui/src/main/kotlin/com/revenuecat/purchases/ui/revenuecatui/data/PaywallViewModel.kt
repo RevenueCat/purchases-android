@@ -405,9 +405,9 @@ internal class PaywallViewModelImpl(
 
         validationResult.errors?.let { validationErrors ->
             validationErrors.forEach { error ->
-                Logger.w(error.associatedErrorString(offering))
+                Logger.e(error.associatedErrorString(offering))
             }
-            Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
+            Logger.e(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
 
         val activelySubscribedProductIds = customerInfo.activeSubscriptions
