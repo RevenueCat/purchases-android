@@ -96,7 +96,7 @@ internal fun Result<FontSpec, PaywallValidationError>.recoverFromFontAliasError(
             // Treating this as a dashboard error and just ignoring it. No need to log.
             Result.Success(null)
         } else if (error is PaywallValidationError.MissingFontAlias) {
-            Logger.e(
+            Logger.w(
                 "Font named '${error.alias}' was not found in the font config. Try re-adding it in the Paywall editor.",
             )
             Result.Success(null)
