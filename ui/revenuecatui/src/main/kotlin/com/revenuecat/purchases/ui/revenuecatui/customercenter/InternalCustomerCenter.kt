@@ -300,7 +300,6 @@ private fun CustomerCenterLoaded(
         currentDestination = navigationState.currentDestination,
         customerCenterState = state,
         onAction = onAction,
-        navigationViewModel = navigationViewModel,
     )
 }
 
@@ -315,11 +314,14 @@ private fun getTitleForState(state: CustomerCenterState): String? {
 }
 
 private fun getAnimationForTransition(
-    navigationViewModel: CustomerCenterNavigationViewModel,
-) = if (navigationViewModel.isLastActionBackward()) {
+    from: CustomerCenterDestination,
+    to: CustomerCenterDestination,
+) = if (to.hierarchyLevel < from.hierarchyLevel) {
+    // Going to a higher level (backward) - slide in from left
     slideInHorizontally(initialOffsetX = { -it }) togetherWith
         slideOutHorizontally(targetOffsetX = { it })
 } else {
+    // Going to a lower level or same level (forward) - slide in from right
     slideInHorizontally(initialOffsetX = { it }) togetherWith
         slideOutHorizontally(targetOffsetX = { -it })
 }
@@ -329,14 +331,16 @@ private fun CustomerCenterNavigationHost(
     currentDestination: CustomerCenterDestination,
     customerCenterState: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
-    navigationViewModel: CustomerCenterNavigationViewModel,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
         AnimatedContent(
             targetState = currentDestination,
             transitionSpec = {
-                getAnimationForTransition(navigationViewModel)
+                getAnimationForTransition(
+                    from = initialState,
+                    to = targetState,
+                )
             },
             label = "CustomerCenterNavigation",
             modifier = Modifier

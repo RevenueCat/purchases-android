@@ -10,20 +10,13 @@ internal class CustomerCenterNavigationViewModel : ViewModel() {
     private val _navigationState = MutableStateFlow(CustomerCenterNavigationState())
     val navigationState: StateFlow<CustomerCenterNavigationState> = _navigationState.asStateFlow()
 
-    private var lastStackSize = 1 // Start with Main screen
-    private var isLastActionBackward = false
-
     fun navigateTo(destination: CustomerCenterDestination) {
-        val newState = _navigationState.value.push(destination)
-        updateStackTracking(newState)
-        _navigationState.value = newState
+        _navigationState.value = _navigationState.value.push(destination)
     }
 
     fun navigateBack(): Boolean {
         return if (_navigationState.value.canNavigateBack) {
-            val newState = _navigationState.value.pop()
-            updateStackTracking(newState)
-            _navigationState.value = newState
+            _navigationState.value = _navigationState.value.pop()
             true
         } else {
             false
@@ -31,15 +24,11 @@ internal class CustomerCenterNavigationViewModel : ViewModel() {
     }
 
     fun navigateToMain() {
-        val newState = _navigationState.value.popToMain()
-        updateStackTracking(newState)
-        _navigationState.value = newState
+        _navigationState.value = _navigationState.value.popToMain()
     }
 
     fun replaceCurrentDestination(destination: CustomerCenterDestination) {
-        val newState = _navigationState.value.replace(destination)
-        updateStackTracking(newState)
-        _navigationState.value = newState
+        _navigationState.value = _navigationState.value.replace(destination)
     }
 
     fun getCurrentDestination(): CustomerCenterDestination {
@@ -52,15 +41,5 @@ internal class CustomerCenterNavigationViewModel : ViewModel() {
 
     fun getDestinationStack(): List<CustomerCenterDestination> {
         return _navigationState.value.destinationStack
-    }
-
-    fun isLastActionBackward(): Boolean {
-        return isLastActionBackward
-    }
-
-    private fun updateStackTracking(newState: CustomerCenterNavigationState) {
-        val newStackSize = newState.destinationStack.size
-        isLastActionBackward = newStackSize < lastStackSize
-        lastStackSize = newStackSize
     }
 }
