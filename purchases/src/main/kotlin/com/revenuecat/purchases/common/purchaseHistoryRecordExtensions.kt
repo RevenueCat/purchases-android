@@ -17,7 +17,7 @@ internal fun PurchaseHistoryRecord.toHumanReadableDescription() =
 internal val PurchaseHistoryRecord.firstSku: String
     get() = skus[0].also {
         if (skus.size > 1) {
-            log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_PURCHASE_HISTORY_RECORD_MORE_THAN_ONE_SKU)
+            log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PURCHASE_HISTORY_RECORD_MORE_THAN_ONE_SKU }
         }
     }
 

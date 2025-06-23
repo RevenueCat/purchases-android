@@ -27,7 +27,7 @@ internal object HelpPathsSerializer : KSerializer<List<CustomerCenterConfigData.
                     jsonInput.json.decodeFromJsonElement(CustomerCenterConfigData.HelpPath.serializer(), jsonElement),
                 )
             } catch (e: IllegalArgumentException) {
-                debugLog("Issue deserializing CustomerCenter HelpPath. Ignoring. Error: $e")
+                debugLog { "Issue deserializing CustomerCenter HelpPath. Ignoring. Error: $e" }
             }
         }
 

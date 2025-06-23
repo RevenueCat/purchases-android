@@ -11,7 +11,7 @@ internal fun BillingFlowParams.Builder.setUpgradeInfo(replaceProductInfo: Replac
         replaceProductInfo.replacementMode?.let {
             val googleReplacementMode = it as? GoogleReplacementMode
             if (googleReplacementMode == null) {
-                errorLog("Got non-Google replacement mode")
+                errorLog { "Got non-Google replacement mode" }
             } else {
                 setSubscriptionReplacementMode(googleReplacementMode.playBillingClientMode)
             }
