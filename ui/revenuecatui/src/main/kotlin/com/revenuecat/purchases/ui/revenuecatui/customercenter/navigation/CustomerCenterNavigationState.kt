@@ -4,32 +4,32 @@ import androidx.compose.runtime.Immutable
 
 @Immutable
 internal data class CustomerCenterNavigationState(
-    val destinationStack: List<CustomerCenterDestination> = listOf(CustomerCenterDestination.Main),
+    val backStack: List<CustomerCenterDestination> = listOf(CustomerCenterDestination.Main),
 ) {
     val currentDestination: CustomerCenterDestination
-        get() = destinationStack.last()
+        get() = backStack.last()
 
     val canNavigateBack: Boolean
-        get() = destinationStack.size > 1
+        get() = backStack.size > 1
 
     fun push(destination: CustomerCenterDestination): CustomerCenterNavigationState {
-        return copy(destinationStack = destinationStack + destination)
+        return copy(backStack = backStack + destination)
     }
 
     fun pop(): CustomerCenterNavigationState {
         return if (canNavigateBack) {
-            copy(destinationStack = destinationStack.dropLast(1))
+            copy(backStack = backStack.dropLast(1))
         } else {
             this
         }
     }
 
     fun popToMain(): CustomerCenterNavigationState {
-        return copy(destinationStack = listOf(CustomerCenterDestination.Main))
+        return copy(backStack = listOf(CustomerCenterDestination.Main))
     }
 
     fun replace(destination: CustomerCenterDestination): CustomerCenterNavigationState {
-        return copy(destinationStack = destinationStack.dropLast(1) + destination)
+        return copy(backStack = backStack.dropLast(1) + destination)
     }
 
     fun isBackwardTransition(from: CustomerCenterDestination, to: CustomerCenterDestination): Boolean {
@@ -39,8 +39,8 @@ internal data class CustomerCenterNavigationState(
         }
 
         // For other cases, use the stack positions
-        val fromIndex = destinationStack.indexOf(from)
-        val toIndex = destinationStack.indexOf(to)
+        val fromIndex = backStack.indexOf(from)
+        val toIndex = backStack.indexOf(to)
 
         // If either destination is not in the stack, assume forward transition
         return when {

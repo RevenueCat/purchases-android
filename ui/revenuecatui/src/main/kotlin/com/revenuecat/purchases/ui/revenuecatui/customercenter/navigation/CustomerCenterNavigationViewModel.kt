@@ -40,6 +40,6 @@ internal class CustomerCenterNavigationViewModel : ViewModel() {
     }
 
     fun getDestinationStack(): List<CustomerCenterDestination> {
-        return _navigationState.value.destinationStack
+        return _navigationState.value.backStack
     }
 }
