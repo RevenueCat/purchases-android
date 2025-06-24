@@ -164,11 +164,14 @@ internal class CustomerCenterViewModelImpl(
                         surveyOptionID = it.id,
                     )
                     notifyListenersForFeedbackSurveyCompleted(it.id)
+
                     viewModelScope.launch {
-                        val hasPromotionalOffer =
+                        val promotionalOfferDisplayed =
                             handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path)
-                        if (!hasPromotionalOffer) {
+                        if (!promotionalOfferDisplayed) {
+                            // No promotional offer, close survey and execute main path action
                             goBackToMain()
+                            mainPathAction(path, context)
                         }
                     }
                 } ?: run {
@@ -741,18 +744,13 @@ internal class CustomerCenterViewModelImpl(
         path: CustomerCenterConfigData.HelpPath,
     ): Boolean {
         if (product != null && promotionalOffer != null) {
-            val loaded = loadAndDisplayPromotionalOffer(
+            return loadAndDisplayPromotionalOffer(
                 context,
                 product,
                 promotionalOffer,
                 path,
             )
-            if (!loaded) {
-                mainPathAction(path, context)
-            }
-            return loaded
         } else {
-            mainPathAction(path, context)
             return false
         }
     }
