@@ -5,9 +5,6 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterAnimations
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
@@ -285,10 +283,10 @@ private fun CustomerCenterScreenHost(
         AnimatedContent(
             targetState = currentDestination,
             transitionSpec = {
-                getAnimationForTransition(
+                CustomerCenterAnimations.getTransitionForNavigation(
                     from = initialState,
                     to = targetState,
-                    navigationStack = customerCenterState.navigationState.destinationStack,
+                    navigationState = customerCenterState.navigationState,
                 )
             },
             label = "CustomerCenterScreens",
@@ -380,44 +378,6 @@ private fun MainScreenContent(
             // NoSubscriptionsView(configuration = configuration)
         }
     }
-}
-
-private fun getAnimationForTransition(
-    from: CustomerCenterDestination,
-    to: CustomerCenterDestination,
-    navigationStack: List<CustomerCenterDestination>,
-) = if (isBackwardTransition(from, to, navigationStack)) {
-    // Going backward - slide in from left
-    slideInHorizontally(initialOffsetX = { -it }) togetherWith
-        slideOutHorizontally(targetOffsetX = { it })
-} else {
-    // Going forward - slide in from right
-    slideInHorizontally(initialOffsetX = { it }) togetherWith
-        slideOutHorizontally(targetOffsetX = { -it })
-}
-
-private fun isBackwardTransition(
-    from: CustomerCenterDestination,
-    to: CustomerCenterDestination,
-    navigationStack: List<CustomerCenterDestination>,
-): Boolean {
-    // Simple rule: going to Main from any other screen is always backward
-    if (to is CustomerCenterDestination.Main && from !is CustomerCenterDestination.Main) {
-        return true
-    }
-
-    // For other cases, use the stack positions
-    val fromIndex = navigationStack.indexOf(from)
-    val toIndex = navigationStack.indexOf(to)
-
-    // If 'to' destination is not in the stack, it's a forward transition (new destination)
-    if (toIndex == -1) return false
-
-    // If 'from' destination is not in the stack, assume forward
-    if (fromIndex == -1) return false
-
-    // If both are in stack, backward means going to a lower index (closer to root)
-    return toIndex < fromIndex
 }
 
 @Composable
