@@ -9,6 +9,7 @@ internal sealed class CustomerCenterAction {
         val path: CustomerCenterConfigData.HelpPath,
         val purchaseInformation: PurchaseInformation?,
     ) : CustomerCenterAction()
+    data class SelectPurchase(val purchase: PurchaseInformation) : CustomerCenterAction()
     object PerformRestore : CustomerCenterAction()
     object DismissRestoreDialog : CustomerCenterAction()
     data class ContactSupport(val email: String) : CustomerCenterAction()
