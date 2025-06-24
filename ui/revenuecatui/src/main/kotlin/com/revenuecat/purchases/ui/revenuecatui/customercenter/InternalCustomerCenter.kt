@@ -162,7 +162,6 @@ private fun InternalCustomerCenter(
 ) {
     val title = getTitleForState(state)
 
-    // Create navigation ViewModel at the top level
     val navigationViewModel = if (state is CustomerCenterState.Success) {
         viewModel<CustomerCenterNavigationViewModel>()
     } else {
@@ -270,11 +269,13 @@ private fun CustomerCenterScaffold(
 
 @Composable
 private fun CustomerCenterLoading() {
+    // CustomerCenter WIP: Add proper loading UI
     Text("Loading...")
 }
 
 @Composable
 private fun CustomerCenterError(state: CustomerCenterState.Error) {
+    // CustomerCenter WIP: Add proper error UI
     Text("Error: ${state.error}")
 }
 
