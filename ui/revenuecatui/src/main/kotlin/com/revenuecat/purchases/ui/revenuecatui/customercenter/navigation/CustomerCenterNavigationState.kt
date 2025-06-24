@@ -1,35 +1,50 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation
 
 import androidx.compose.runtime.Immutable
+import java.util.ArrayDeque
+import java.util.Deque
 
 @Immutable
 internal data class CustomerCenterNavigationState(
-    val backStack: List<CustomerCenterDestination> = listOf(CustomerCenterDestination.Main),
+    val backStack: Deque<CustomerCenterDestination> = ArrayDeque<CustomerCenterDestination>().apply {
+        push(CustomerCenterDestination.Main)
+    },
 ) {
     val currentDestination: CustomerCenterDestination
-        get() = backStack.last()
+        get() = backStack.peek() ?: CustomerCenterDestination.Main
 
     val canNavigateBack: Boolean
         get() = backStack.size > 1
 
     fun push(destination: CustomerCenterDestination): CustomerCenterNavigationState {
-        return copy(backStack = backStack + destination)
+        val newStack = ArrayDeque(backStack)
+        newStack.push(destination)
+        return copy(backStack = newStack)
     }
 
     fun pop(): CustomerCenterNavigationState {
         return if (canNavigateBack) {
-            copy(backStack = backStack.dropLast(1))
+            val newStack = ArrayDeque(backStack)
+            newStack.pop()
+            copy(backStack = newStack)
         } else {
             this
         }
     }
 
     fun popToMain(): CustomerCenterNavigationState {
-        return copy(backStack = listOf(CustomerCenterDestination.Main))
+        val newStack = ArrayDeque<CustomerCenterDestination>()
+        newStack.push(CustomerCenterDestination.Main)
+        return copy(backStack = newStack)
     }
 
     fun replace(destination: CustomerCenterDestination): CustomerCenterNavigationState {
-        return copy(backStack = backStack.dropLast(1) + destination)
+        val newStack = ArrayDeque(backStack)
+        if (newStack.isNotEmpty()) {
+            newStack.pop()
+        }
+        newStack.push(destination)
+        return copy(backStack = newStack)
     }
 
     fun isBackwardTransition(from: CustomerCenterDestination, to: CustomerCenterDestination): Boolean {
@@ -39,13 +54,15 @@ internal data class CustomerCenterNavigationState(
         }
 
         // For other cases, use the stack positions
-        val fromIndex = backStack.indexOf(from)
-        val toIndex = backStack.indexOf(to)
+        val stackList = backStack.toList()
+        // 0 will be the top of the backStack
+        val fromIndex = stackList.indexOf(from)
+        val toIndex = stackList.indexOf(to)
 
         // If either destination is not in the stack, assume forward transition
         return when {
             toIndex == -1 || fromIndex == -1 -> false
-            else -> toIndex < fromIndex // backward means going to a lower index (closer to root)
+            else -> toIndex > fromIndex // backward means going to a higher index
         }
     }
 }
