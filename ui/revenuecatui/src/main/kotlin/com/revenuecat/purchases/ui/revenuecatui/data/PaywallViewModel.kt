@@ -110,10 +110,11 @@ internal class PaywallViewModelImpl(
     }
 
     fun updateOptions(options: PaywallOptions) {
-        val prevOptionsDataHash = this.options.dataHash
-        val newOptionsDataHash = options.dataHash
+        val needsUpdateState = this.options != options
+        // Some properties not considered for equality (hashCode) may have changed
+        // (e.g. the listener may change in some re-renderers)
         this.options = options
-        if (prevOptionsDataHash != newOptionsDataHash) {
+        if (needsUpdateState) {
             updateState()
         }
     }

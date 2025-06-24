@@ -212,7 +212,7 @@ internal fun getPaywallViewModel(
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
     val viewModel = viewModel<PaywallViewModelImpl>(
-        key = options.dataHash,
+        key = options.hashCode().toString(),
         factory = PaywallViewModelFactory(
             applicationContext.toResourceProvider(),
             options,
