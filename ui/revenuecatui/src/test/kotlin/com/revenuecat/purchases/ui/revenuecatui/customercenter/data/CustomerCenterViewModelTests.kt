@@ -31,6 +31,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateLoadedComponentsLocaleTests.Args
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -52,6 +53,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -955,7 +957,7 @@ class CustomerCenterViewModelTests {
         var feedbackState: CustomerCenterState.Success? = null
         val feedbackJob = launch {
             model.state.collect { state ->
-                if (state is CustomerCenterState.Success && state.feedbackSurveyData != null) {
+                if (state is CustomerCenterState.Success && state.currentDestination is CustomerCenterDestination.FeedbackSurvey) {
                     feedbackState = state
                     cancel()
                 }
@@ -963,11 +965,12 @@ class CustomerCenterViewModelTests {
         }
         feedbackJob.join()
 
-        // Ensure we have a state with feedback survey data
+        // Ensure we have a state with feedback survey destination
         assertThat(feedbackState).isNotNull
-        assertThat(feedbackState?.feedbackSurveyData).isNotNull
+        assertThat(feedbackState?.currentDestination).isInstanceOf(CustomerCenterDestination.FeedbackSurvey::class.java)
 
-        feedbackState?.feedbackSurveyData?.onAnswerSubmitted?.invoke(feedbackSurveyOption)
+        val feedbackDestination = feedbackState?.currentDestination as? CustomerCenterDestination.FeedbackSurvey
+        feedbackDestination?.data?.onAnswerSubmitted?.invoke(feedbackSurveyOption)
 
         // Verify both listeners were called with the correct ID
         verify(exactly = 1) { directListener.onFeedbackSurveyCompleted(feedbackSurveyOptionId) }
@@ -1743,15 +1746,16 @@ class CustomerCenterViewModelTests {
         val successState = updatedState as CustomerCenterState.Success
 
         if (expectedResult) {
-            assertThat(successState.promotionalOfferData).isNotNull
-            successState.promotionalOfferData?.let { data ->
+            assertThat(successState.currentDestination).isInstanceOf(CustomerCenterDestination.PromotionalOffer::class.java)
+            val promotionalOfferDestination = successState.currentDestination as? CustomerCenterDestination.PromotionalOffer
+            promotionalOfferDestination?.data?.let { data ->
                 assertThat(data.configuredPromotionalOffer).isEqualTo(expectedPromotionalOffer)
                 assertThat(data.subscriptionOption).isEqualTo(expectedSubscriptionOption)
                 assertThat(data.originalPath).isEqualTo(expectedOriginalPath)
                 assertThat(data.localizedPricingPhasesDescription).isEqualTo(expectedPricingDescription)
             }
         } else {
-            assertThat(successState.promotionalOfferData).isNull()
+            assertThat(successState.currentDestination).isNotInstanceOf(CustomerCenterDestination.PromotionalOffer::class.java)
         }
     }
 

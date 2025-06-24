@@ -182,7 +182,11 @@ internal class CustomerCenterViewModelImpl(
             return
         }
         viewModelScope.launch {
-            handlePromotionalOffer(context, purchaseInformation?.product, path.promotionalOffer, path)
+            val promotionalOfferDisplayed =
+                handlePromotionalOffer(context, purchaseInformation?.product, path.promotionalOffer, path)
+            if (!promotionalOfferDisplayed) {
+                mainPathAction(path, context)
+            }
         }
     }
 
