@@ -40,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalO
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
@@ -483,14 +484,16 @@ internal class CustomerCenterViewModelImpl(
                 val localization = currentState.customerCenterConfigData.localization
                 val pricingPhasesDescription = subscriptionOption.getLocalizedDescription(localization, locale)
                 loaded = true
-                currentState.copy(
-                    feedbackSurveyData = null,
-                    promotionalOfferData = PromotionalOfferData(
+                val promotionalOfferDestination = CustomerCenterDestination.PromotionalOffer(
+                    data = PromotionalOfferData(
                         promotionalOffer,
                         subscriptionOption,
                         originalPath,
                         pricingPhasesDescription,
                     ),
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(promotionalOfferDestination),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
@@ -535,7 +538,7 @@ internal class CustomerCenterViewModelImpl(
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
-                    promotionalOfferData = null,
+                    navigationState = currentState.navigationState.popToMain(),
                     title = null,
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
@@ -548,8 +551,13 @@ internal class CustomerCenterViewModelImpl(
     override fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit) {
         val currentState = _state.value
         // Handle special case for promotional offers first
-        if (currentState is CustomerCenterState.Success && currentState.promotionalOfferData != null) {
-            dismissPromotionalOffer(context, currentState.promotionalOfferData.originalPath)
+        if (currentState is CustomerCenterState.Success &&
+            currentState.currentDestination is CustomerCenterDestination.PromotionalOffer
+        ) {
+            dismissPromotionalOffer(
+                context,
+                (currentState.currentDestination as CustomerCenterDestination.PromotionalOffer).data.originalPath,
+            )
             return
         }
 
@@ -557,10 +565,22 @@ internal class CustomerCenterViewModelImpl(
 
         _state.update { state ->
             when {
-                // For BACK button: Return to main screen without losing loaded data
+                // For BACK button: Navigate back in the stack
                 state is CustomerCenterState.Success &&
-                    navigationButtonType == CustomerCenterState.NavigationButtonType.BACK ->
-                    state.resetToMainScreen()
+                    navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
+                    if (state.navigationState.canNavigateBack) {
+                        state.copy(
+                            navigationState = state.navigationState.pop(),
+                            navigationButtonType = if (state.navigationState.pop().canNavigateBack) {
+                                CustomerCenterState.NavigationButtonType.BACK
+                            } else {
+                                CustomerCenterState.NavigationButtonType.CLOSE
+                            },
+                        )
+                    } else {
+                        CustomerCenterState.NotLoaded
+                    }
+                }
                 // For all other cases (including CLOSE): Reset to NotLoaded
                 else -> CustomerCenterState.NotLoaded
             }
@@ -661,8 +681,12 @@ internal class CustomerCenterViewModelImpl(
     ) {
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
+                val feedbackSurveyDestination = CustomerCenterDestination.FeedbackSurvey(
+                    data = FeedbackSurveyData(feedbackSurvey, onAnswerSubmitted),
+                    title = feedbackSurvey.title,
+                )
                 currentState.copy(
-                    feedbackSurveyData = FeedbackSurveyData(feedbackSurvey, onAnswerSubmitted),
+                    navigationState = currentState.navigationState.push(feedbackSurveyDestination),
                     title = feedbackSurvey.title,
                     navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                 )
@@ -766,8 +790,7 @@ internal class CustomerCenterViewModelImpl(
 
     private fun CustomerCenterState.Success.resetToMainScreen() =
         copy(
-            feedbackSurveyData = null,
-            promotionalOfferData = null,
+            navigationState = navigationState.popToMain(),
             restorePurchasesState = null,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,

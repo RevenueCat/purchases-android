@@ -49,7 +49,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -66,13 +65,6 @@ private fun getTitleForState(state: CustomerCenterState): String? {
         is CustomerCenterState.Success -> state.title
         else -> null
     }
-}
-
-private sealed class NavigationAction {
-    data class NavigateTo(val destination: CustomerCenterDestination) : NavigationAction()
-    data class ReplaceCurrentDestination(val destination: CustomerCenterDestination) : NavigationAction()
-    object NavigateBack : NavigationAction()
-    object NavigateToMain : NavigationAction()
 }
 
 @Suppress("LongMethod")
@@ -162,19 +154,13 @@ private fun InternalCustomerCenter(
 ) {
     val title = getTitleForState(state)
 
-    val navigationViewModel = if (state is CustomerCenterState.Success) {
-        viewModel<CustomerCenterNavigationViewModel>()
-    } else {
-        null
-    }
-
     val colorScheme = if (state is CustomerCenterState.Success) {
         val isDark = isSystemInDarkTheme()
         val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
         val accentColor = appearance.getColorForTheme(isDark) { it.accentColor }
 
         // Only change background when presenting a promotional offer
-        val backgroundColor = if (state.promotionalOfferData != null) {
+        val backgroundColor = if (state.currentDestination is CustomerCenterDestination.PromotionalOffer) {
             appearance.getColorForTheme(isDark) { it.backgroundColor }
         } else {
             null
@@ -208,13 +194,10 @@ private fun InternalCustomerCenter(
                 is CustomerCenterState.Loading -> CustomerCenterLoading()
                 is CustomerCenterState.Error -> CustomerCenterError(state)
                 is CustomerCenterState.Success -> {
-                    navigationViewModel?.let { navViewModel ->
-                        CustomerCenterLoaded(
-                            state = state,
-                            onAction = onAction,
-                            navigationViewModel = navViewModel,
-                        )
-                    }
+                    CustomerCenterLoaded(
+                        state = state,
+                        onAction = onAction,
+                    )
                 }
             }
         }
@@ -283,41 +266,19 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
-    navigationViewModel: CustomerCenterNavigationViewModel,
 ) {
-    val navigationState by navigationViewModel.navigationState.collectAsState()
-
-    LaunchedEffect(state.feedbackSurveyData, state.promotionalOfferData, navigationState.currentDestination) {
-        updateNavigationFromState(
-            state = state,
-            currentDestination = navigationState.currentDestination,
-            onNavigationAction = { action ->
-                when (action) {
-                    is NavigationAction.NavigateTo -> navigationViewModel.navigateTo(action.destination)
-                    is NavigationAction.NavigateBack -> navigationViewModel.navigateBack()
-                    is NavigationAction.NavigateToMain -> navigationViewModel.navigateToMain()
-                    is NavigationAction.ReplaceCurrentDestination -> navigationViewModel.replaceCurrentDestination(
-                        action.destination,
-                    )
-                }
-            },
-        )
-    }
-
-    CustomerCenterNavigationHost(
-        currentDestination = navigationState.currentDestination,
+    CustomerCenterScreenHost(
+        currentDestination = state.currentDestination,
         customerCenterState = state,
         onAction = onAction,
-        navigationStack = navigationState.destinationStack,
     )
 }
 
 @Composable
-private fun CustomerCenterNavigationHost(
+private fun CustomerCenterScreenHost(
     currentDestination: CustomerCenterDestination,
     customerCenterState: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
-    navigationStack: List<CustomerCenterDestination>,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -327,10 +288,10 @@ private fun CustomerCenterNavigationHost(
                 getAnimationForTransition(
                     from = initialState,
                     to = targetState,
-                    navigationStack = navigationStack,
+                    navigationStack = customerCenterState.navigationState.destinationStack,
                 )
             },
-            label = "CustomerCenterNavigation",
+            label = "CustomerCenterScreens",
             modifier = Modifier
                 .fillMaxSize()
                 .clipToBounds(),
@@ -426,11 +387,11 @@ private fun getAnimationForTransition(
     to: CustomerCenterDestination,
     navigationStack: List<CustomerCenterDestination>,
 ) = if (isBackwardTransition(from, to, navigationStack)) {
-    // Going backward in stack - slide in from left
+    // Going backward - slide in from left
     slideInHorizontally(initialOffsetX = { -it }) togetherWith
         slideOutHorizontally(targetOffsetX = { it })
 } else {
-    // Going forward in stack - slide in from right
+    // Going forward - slide in from right
     slideInHorizontally(initialOffsetX = { it }) togetherWith
         slideOutHorizontally(targetOffsetX = { -it })
 }
@@ -440,63 +401,23 @@ private fun isBackwardTransition(
     to: CustomerCenterDestination,
     navigationStack: List<CustomerCenterDestination>,
 ): Boolean {
-    // Find positions of from and to in the current stack
+    // Simple rule: going to Main from any other screen is always backward
+    if (to is CustomerCenterDestination.Main && from !is CustomerCenterDestination.Main) {
+        return true
+    }
+
+    // For other cases, use the stack positions
     val fromIndex = navigationStack.indexOf(from)
     val toIndex = navigationStack.indexOf(to)
 
     // If 'to' destination is not in the stack, it's a forward transition (new destination)
     if (toIndex == -1) return false
 
-    // If 'from' destination is not in the stack, determine based on 'to' position
-    if (fromIndex == -1) {
-        // If we're going to something that's not the current top of stack, it's likely backward
-        return toIndex < navigationStack.size - 1
-    }
+    // If 'from' destination is not in the stack, assume forward
+    if (fromIndex == -1) return false
 
     // If both are in stack, backward means going to a lower index (closer to root)
     return toIndex < fromIndex
-}
-
-private fun updateNavigationFromState(
-    state: CustomerCenterState.Success,
-    currentDestination: CustomerCenterDestination,
-    onNavigationAction: (NavigationAction) -> Unit,
-) {
-    when {
-        state.feedbackSurveyData != null -> {
-            if (currentDestination !is CustomerCenterDestination.FeedbackSurvey) {
-                onNavigationAction(
-                    NavigationAction.NavigateTo(
-                        CustomerCenterDestination.FeedbackSurvey(
-                            data = state.feedbackSurveyData,
-                            title = state.title ?: "",
-                        ),
-                    ),
-                )
-            }
-        }
-
-        state.promotionalOfferData != null -> {
-            if (currentDestination !is CustomerCenterDestination.PromotionalOffer) {
-                val promotionalOfferDestination = CustomerCenterDestination.PromotionalOffer(
-                    data = state.promotionalOfferData,
-                )
-
-                // If coming from FeedbackSurvey, replace it to prevent going back to completed survey
-                if (currentDestination is CustomerCenterDestination.FeedbackSurvey) {
-                    onNavigationAction(NavigationAction.ReplaceCurrentDestination(promotionalOfferDestination))
-                } else {
-                    onNavigationAction(NavigationAction.NavigateTo(promotionalOfferDestination))
-                }
-            }
-        }
-
-        else -> {
-            if (currentDestination !is CustomerCenterDestination.Main) {
-                onNavigationAction(NavigationAction.NavigateToMain)
-            }
-        }
-    }
 }
 
 @Composable

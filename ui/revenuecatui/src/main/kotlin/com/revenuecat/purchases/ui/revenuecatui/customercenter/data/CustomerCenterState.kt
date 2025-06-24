@@ -4,6 +4,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationState
 
 internal sealed class CustomerCenterState(
     @get:JvmSynthetic open val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
@@ -26,11 +28,13 @@ internal sealed class CustomerCenterState(
         @get:JvmSynthetic val purchaseInformation: PurchaseInformation? = null,
         @get:JvmSynthetic val supportedPathsForManagementScreen: List<CustomerCenterConfigData.HelpPath>? = null,
         @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState? = null,
-        @get:JvmSynthetic val feedbackSurveyData: FeedbackSurveyData? = null,
-        @get:JvmSynthetic val promotionalOfferData: PromotionalOfferData? = null,
+        @get:JvmSynthetic val navigationState: CustomerCenterNavigationState = CustomerCenterNavigationState(),
         @get:JvmSynthetic val title: String? = null,
         @get:JvmSynthetic override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
-    ) : CustomerCenterState(navigationButtonType)
+    ) : CustomerCenterState(navigationButtonType) {
+        val currentDestination: CustomerCenterDestination
+            get() = navigationState.currentDestination
+    }
 }
 
 internal data class FeedbackSurveyData(
