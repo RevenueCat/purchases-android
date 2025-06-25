@@ -463,7 +463,32 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `updateState does update if different state`() {
+    fun `updateState does update if paywallsOptions identity changes`() {
+        val options1 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .setMode(PaywallMode.FULL_SCREEN)
+            .build()
+        val options2 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .setMode(PaywallMode.FOOTER)
+            .build()
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            options1,
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options1)
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options2)
+        coVerify(exactly = 2) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `updateState does not update if paywallsOptions identity doesn't change`() {
         val options1 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
             .setListener(listener)
             .build()
@@ -482,7 +507,7 @@ class PaywallViewModelTest {
         model.updateOptions(options1)
         coVerify(exactly = 1) { purchases.awaitOfferings() }
         model.updateOptions(options2)
-        coVerify(exactly = 2) { purchases.awaitOfferings() }
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
     }
 
     @Test
