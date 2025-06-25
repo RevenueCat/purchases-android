@@ -6,7 +6,6 @@ import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.VirtualCurrencyInfo
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
@@ -32,7 +31,6 @@ internal object CustomerInfoFactory {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod")
     @Throws(JSONException::class)
     fun buildCustomerInfo(
@@ -83,17 +81,6 @@ internal object CustomerInfoFactory {
                 Iso8601Utils.parse(it) ?: null
             }
 
-        val virtualCurrenciesObject = subscriber.optJSONObject(
-            CustomerInfoResponseJsonKeys.VIRTUAL_CURRENCIES,
-        ) ?: JSONObject()
-
-        val virtualCurrencies = buildMap<String, VirtualCurrencyInfo> {
-            virtualCurrenciesObject.keys().forEach { currencyId ->
-                val currencyJson = virtualCurrenciesObject.getJSONObject(currencyId)
-                put(currencyId, VirtualCurrencyInfo.fromJson(currencyJson))
-            }
-        }
-
         return CustomerInfo(
             entitlements = entitlementInfos,
             allExpirationDatesByProduct = expirationDatesByProduct,
@@ -105,7 +92,6 @@ internal object CustomerInfoFactory {
             originalAppUserId = subscriber.optString(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID),
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate,
-            virtualCurrencies = virtualCurrencies,
         )
     }
 

@@ -53,39 +53,6 @@ data class CustomerInfo(
     private val jsonObject: JSONObject,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
-    @IgnoredOnParcel
-    @ExperimentalPreviewRevenueCatPurchasesAPI
-    var virtualCurrencies: Map<String, VirtualCurrencyInfo> = emptyMap()
-        private set
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    constructor(
-        entitlements: EntitlementInfos,
-        allExpirationDatesByProduct: Map<String, Date?>,
-        allPurchaseDatesByProduct: Map<String, Date?>,
-        requestDate: Date,
-        schemaVersion: Int,
-        firstSeen: Date,
-        originalAppUserId: String,
-        managementURL: Uri?,
-        originalPurchaseDate: Date?,
-        virtualCurrencies: Map<String, VirtualCurrencyInfo>,
-        jsonObject: JSONObject,
-    ) : this(
-        entitlements = entitlements,
-        allExpirationDatesByProduct = allExpirationDatesByProduct,
-        allPurchaseDatesByProduct = allPurchaseDatesByProduct,
-        requestDate = requestDate,
-        schemaVersion = schemaVersion,
-        firstSeen = firstSeen,
-        originalAppUserId = originalAppUserId,
-        managementURL = managementURL,
-        originalPurchaseDate = originalPurchaseDate,
-        jsonObject = jsonObject,
-    ) {
-        this.virtualCurrencies = virtualCurrencies
-    }
-
     /**
      * @return Set of active subscription productIds
      *
