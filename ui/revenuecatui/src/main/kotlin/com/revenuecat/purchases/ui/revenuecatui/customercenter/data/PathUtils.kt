@@ -66,4 +66,18 @@ internal object PathUtils {
             SettingsButtonStyle.OUTLINED
         }
     }
+
+    /**
+     * Sorts paths so that filled buttons (subscription-specific) appear before outlined buttons (general)
+     */
+    fun sortPathsByButtonPriority(
+        paths: List<CustomerCenterConfigData.HelpPath>,
+    ): List<CustomerCenterConfigData.HelpPath> {
+        return paths.sortedBy { path ->
+            when (getButtonStyleForPath(path)) {
+                SettingsButtonStyle.FILLED -> 0 // Primary actions first
+                SettingsButtonStyle.OUTLINED -> 1 // Secondary actions second
+            }
+        }
+    }
 }

@@ -31,7 +31,7 @@ internal fun ManageSubscriptionsButtonsView(
             .padding(top = CustomerCenterConstants.Layout.BUTTONS_TOP_PADDING),
         verticalArrangement = Arrangement.spacedBy(CustomerCenterConstants.Layout.BUTTONS_SPACING),
     ) {
-        supportedPaths.forEach { path ->
+        PathUtils.sortPathsByButtonPriority(supportedPaths).forEach { path ->
             val pathButtonPressed =
                 CustomerCenterAction.PathButtonPressed(path, associatedPurchaseInformation)
             SettingsButton(
