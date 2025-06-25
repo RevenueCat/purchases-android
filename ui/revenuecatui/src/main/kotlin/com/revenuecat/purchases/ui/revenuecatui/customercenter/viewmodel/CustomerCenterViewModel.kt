@@ -542,7 +542,7 @@ internal class CustomerCenterViewModelImpl(
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
-                    navigationState = currentState.navigationState.popToMain(),
+                    navigationState = currentState.navigationState.popTo(CustomerCenterDestination.Main),
                     title = null,
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
@@ -794,7 +794,7 @@ internal class CustomerCenterViewModelImpl(
 
     private fun CustomerCenterState.Success.resetToMainScreen() =
         copy(
-            navigationState = navigationState.popToMain(),
+            navigationState = navigationState.popTo(CustomerCenterDestination.Main),
             restorePurchasesState = null,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,

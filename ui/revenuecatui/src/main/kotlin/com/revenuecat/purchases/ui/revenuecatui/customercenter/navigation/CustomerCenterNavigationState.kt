@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation
 
 import androidx.compose.runtime.Immutable
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.ArrayDeque
 import java.util.Deque
 
@@ -32,18 +33,18 @@ internal data class CustomerCenterNavigationState(
         }
     }
 
-    fun popToMain(): CustomerCenterNavigationState {
-        val newStack = ArrayDeque<CustomerCenterDestination>()
-        newStack.push(CustomerCenterDestination.Main)
-        return copy(backStack = newStack)
-    }
-
-    fun replace(destination: CustomerCenterDestination): CustomerCenterNavigationState {
+    fun popTo(destination: CustomerCenterDestination): CustomerCenterNavigationState {
         val newStack = ArrayDeque(backStack)
-        if (newStack.isNotEmpty()) {
+
+        while (newStack.isNotEmpty() && newStack.peek() != destination) {
             newStack.pop()
         }
-        newStack.push(destination)
+
+        if (newStack.isEmpty()) {
+            Logger.e("Could not find destination $destination in the back stack. Returning unchanged state.")
+            return this
+        }
+
         return copy(backStack = newStack)
     }
 
