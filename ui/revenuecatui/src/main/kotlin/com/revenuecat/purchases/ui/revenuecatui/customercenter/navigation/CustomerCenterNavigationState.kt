@@ -7,7 +7,7 @@ import java.util.Deque
 
 @Immutable
 internal data class CustomerCenterNavigationState(
-    private val title: String?,
+    private val mainTitle: String?,
     val backStack: Deque<CustomerCenterDestination> = ArrayDeque<CustomerCenterDestination>().apply {
         // Setting this to null allows the Main destination to be displayed without a title until we have a top bar
         push(CustomerCenterDestination.Main(null))
