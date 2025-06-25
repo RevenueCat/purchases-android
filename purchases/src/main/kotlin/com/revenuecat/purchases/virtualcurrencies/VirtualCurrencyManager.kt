@@ -47,6 +47,8 @@ internal class VirtualCurrencyManager(
             isAppBackgrounded = isAppBackgrounded,
             callback = callback
         )
+
+        // TODO: Cache the VCs from the network
     }
 
     @Synchronized
@@ -59,14 +61,10 @@ internal class VirtualCurrencyManager(
         virtualCurrencies: VirtualCurrencies,
         appUserID: String
     ) {
-//        try {
-//            val virtualCurrenciesData = JSONObject().apply {
-//                put("virtual_currencies", virtualCurrencies.rawData)
-//            }.toString()
-//            deviceCache.cacheVirtualCurrencies(virtualCurrenciesData, appUserID)
-//        } catch (e: Exception) {
-//            log(LogIntent.DEBUG, VirtualCurrencyStrings.ERROR_CACHING_VIRTUAL_CURRENCIES)
-//        }
+        deviceCache.cacheVirtualCurrencies(
+            appUserID = appUserID,
+            virtualCurrencies = virtualCurrencies
+        )
     }
 
     private fun fetchCachedVirtualCurrencies(
@@ -86,16 +84,5 @@ internal class VirtualCurrencyManager(
         callback: GetVirtualCurrenciesCallback
     ) {
         // TODO: Implement this
-//        backend.getVirtualCurrencies(
-//            appUserID = appUserID,
-//            isAppBackgrounded = isAppBackgrounded,
-//            onSuccess = { virtualCurrencies ->
-//                cacheVirtualCurrencies(virtualCurrencies, appUserID)
-//                callback.onReceived(virtualCurrencies)
-//            },
-//            onError = { error, _ ->
-//                callback.onError(error)
-//            }
-//        )
     }
 }
