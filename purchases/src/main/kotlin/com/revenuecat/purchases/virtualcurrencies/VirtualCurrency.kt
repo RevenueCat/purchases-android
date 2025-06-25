@@ -27,10 +27,17 @@ class VirtualCurrency internal constructor(
         if (javaClass != other?.javaClass) return false
 
         other as VirtualCurrency
-        return balance == other.balance
+        return balance == other.balance &&
+                name == other.name &&
+                code == other.code &&
+                serverDescription == other.serverDescription
     }
 
     override fun hashCode(): Int {
-        return balance.hashCode()
+        var result = balance.hashCode()
+        result = 31 * result + name.hashCode()
+        result = 31 * result + code.hashCode()
+        result = 31 * result + (serverDescription?.hashCode() ?: 0)
+        return result
     }
 }
