@@ -48,20 +48,7 @@ internal fun SelectedPurchaseDetailView(
 
         ManageSubscriptionsButtonsView(
             associatedPurchaseInformation = purchaseInformation,
-            supportedPaths = supportedPaths.filter { path ->
-                // Only show subscription-specific actions in detail view
-                // General actions (restore purchases, custom URLs) are shown in the main screen
-                when (path.type) {
-                    CustomerCenterConfigData.HelpPath.PathType.CANCEL,
-                    CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST,
-                    CustomerCenterConfigData.HelpPath.PathType.CHANGE_PLANS,
-                    -> true
-                    CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
-                    CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
-                    CustomerCenterConfigData.HelpPath.PathType.UNKNOWN,
-                    -> false
-                }
-            },
+            supportedPaths = supportedPaths,
             localization = localization,
             addContactButton = purchaseInformation.store != Store.PLAY_STORE,
             contactEmail = contactEmail,

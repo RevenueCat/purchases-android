@@ -323,7 +323,7 @@ private fun CustomerCenterNavHost(
                     contactEmail = customerCenterState.customerCenterConfigData.support.email,
                     localization = customerCenterState.customerCenterConfigData.localization,
                     purchaseInformation = destination.purchaseInformation,
-                    supportedPaths = customerCenterState.supportedPathsForManagementScreen ?: emptyList(),
+                    supportedPaths = customerCenterState.detailScreenPaths,
                     onAction = onAction,
                 )
             }
@@ -356,7 +356,7 @@ private fun MainScreenContent(
         configuration.getManagementScreen()?.let { managementScreen ->
             RelevantPurchasesListView(
                 screenTitle = managementScreen.title,
-                supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                supportedPaths = state.mainScreenPaths,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
                 onPurchaseSelect = { purchase ->
@@ -454,7 +454,8 @@ internal fun CustomerCenterNoActiveScreenPreview() {
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
             purchases = emptyList(),
-            supportedPathsForManagementScreen = listOf(),
+            mainScreenPaths = listOf(),
+            detailScreenPaths = listOf(),
         ),
         modifier = Modifier
             .fillMaxSize()
@@ -494,7 +495,10 @@ internal fun CustomerCenterLoadedPreview() {
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
             purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
-            supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
+            mainScreenPaths = previewConfigData.getManagementScreen()?.paths ?: emptyList(),
+            detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
+            } ?: emptyList(),
         ),
         modifier = Modifier
             .fillMaxSize()
@@ -513,7 +517,13 @@ internal fun CustomerCenterMultiplePurchasesPreview() {
                 CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
                 CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
             ),
-            supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
+            mainScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE ||
+                    it.type == CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL
+            } ?: emptyList(),
+            detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
+            } ?: emptyList(),
         ),
         modifier = Modifier
             .fillMaxSize()

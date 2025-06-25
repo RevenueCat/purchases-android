@@ -138,26 +138,7 @@ internal fun RelevantPurchasesListView(
             } else {
                 null
             },
-            supportedPaths = if (purchaseInformation.size == 1) {
-                // Single purchase: show all actions (general + subscription-specific)
-                supportedPaths
-            } else {
-                // Multiple purchases: only show general actions (restore purchases, custom URLs)
-                // Subscription-specific actions (cancel, refund, change plans) are only shown
-                // in the SelectedPurchaseDetailView when a specific purchase is selected
-                supportedPaths.filter { path ->
-                    when (path.type) {
-                        CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
-                        CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
-                        CustomerCenterConfigData.HelpPath.PathType.UNKNOWN,
-                        -> true
-                        CustomerCenterConfigData.HelpPath.PathType.CANCEL,
-                        CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST,
-                        CustomerCenterConfigData.HelpPath.PathType.CHANGE_PLANS,
-                        -> false
-                    }
-                }
-            },
+            supportedPaths = supportedPaths,
             localization = localization,
             contactEmail = contactEmail,
             onAction = onAction,

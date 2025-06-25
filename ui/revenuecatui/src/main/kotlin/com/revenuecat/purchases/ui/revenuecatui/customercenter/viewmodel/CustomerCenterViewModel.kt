@@ -36,6 +36,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
@@ -197,13 +198,18 @@ internal class CustomerCenterViewModelImpl(
             if (currentState is CustomerCenterState.Success) {
                 val screen = currentState.customerCenterConfigData.getManagementScreen()
                 if (screen != null) {
+                    val baseSupportedPaths = supportedPaths(purchase, screen)
+
+                    // For detail screen: only show subscription-specific actions
+                    val detailSupportedPaths = PathUtils.filterSubscriptionSpecificPaths(baseSupportedPaths)
+
                     currentState.copy(
                         navigationState = currentState.navigationState.push(
                             CustomerCenterDestination.SelectedPurchaseDetail(purchase),
                         ),
                         title = screen.title,
                         navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
-                        supportedPathsForManagementScreen = supportedPaths(purchase, screen),
+                        detailScreenPaths = detailSupportedPaths,
                     )
                 } else {
                     Logger.e("No management screen available in the customer center config data")
@@ -341,13 +347,6 @@ internal class CustomerCenterViewModelImpl(
         selectedPurchaseInformation: PurchaseInformation?,
         screen: CustomerCenterConfigData.Screen,
     ): List<HelpPath> {
-        if (selectedPurchaseInformation == null) {
-            return screen.paths
-                .filter {
-                    it.type == CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE ||
-                        it.type == CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL
-                }
-        }
         return screen.paths
             .filter { isPathAllowedForStore(it, selectedPurchaseInformation) }
             .filter { isPathAllowedForLifetimeSubscription(it, selectedPurchaseInformation) }
@@ -377,6 +376,26 @@ internal class CustomerCenterViewModelImpl(
             HelpPath.PathType.CHANGE_PLANS,
             HelpPath.PathType.UNKNOWN,
             -> false
+        }
+    }
+
+    private fun computeMainScreenPaths(state: CustomerCenterState.Success): List<CustomerCenterConfigData.HelpPath> {
+        val managementScreen = state.customerCenterConfigData.getManagementScreen()
+        val baseSupportedPaths = managementScreen?.let { screen ->
+            val selectedPurchase = if (state.purchases.size == 1) {
+                state.purchases.first()
+            } else {
+                null
+            }
+            supportedPaths(selectedPurchase, screen)
+        } ?: emptyList()
+
+        // For main screen: if multiple purchases, show only general paths
+        // If single purchase or no purchases, show all available paths
+        return if (state.purchases.size > 1) {
+            PathUtils.filterGeneralPaths(baseSupportedPaths)
+        } else {
+            baseSupportedPaths
         }
     }
 
@@ -612,9 +631,11 @@ internal class CustomerCenterViewModelImpl(
                 state is CustomerCenterState.Success &&
                     navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
                     if (state.navigationState.canNavigateBack) {
+                        val newNavigationState = state.navigationState.pop()
+
                         state.copy(
-                            navigationState = state.navigationState.pop(),
-                            navigationButtonType = if (state.navigationState.pop().canNavigateBack) {
+                            navigationState = newNavigationState,
+                            navigationButtonType = if (newNavigationState.canNavigateBack) {
                                 CustomerCenterState.NavigationButtonType.BACK
                             } else {
                                 CustomerCenterState.NavigationButtonType.CLOSE
@@ -651,22 +672,18 @@ internal class CustomerCenterViewModelImpl(
             } else {
                 customerCenterConfigData.getNoActiveScreen()?.title
             }
+
+            val successState = CustomerCenterState.Success(
+                customerCenterConfigData,
+                purchaseInformation,
+                mainScreenPaths = emptyList(), // Will be computed below
+                detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
+                title = title,
+            )
+            val mainScreenPaths = computeMainScreenPaths(successState)
+
             _state.update {
-                CustomerCenterState.Success(
-                    customerCenterConfigData,
-                    purchaseInformation,
-                    supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let { screen ->
-                        // If there's only one purchase, filter paths for that specific purchase
-                        // If there are multiple purchases, use general filtering (null)
-                        val selectedPurchase = if (purchaseInformation.size == 1) {
-                            purchaseInformation.first()
-                        } else {
-                            null
-                        }
-                        supportedPaths(selectedPurchase, screen)
-                    },
-                    title = title,
-                )
+                successState.copy(mainScreenPaths = mainScreenPaths)
             }
         } catch (e: PurchasesException) {
             _state.update {
