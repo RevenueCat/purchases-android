@@ -1,26 +1,41 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.net.Uri
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
-import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import java.util.Locale
 
-@SuppressWarnings("LongParameterList")
-internal class PurchaseInformation(
+@Suppress("LongParameterList")
+internal data class PurchaseInformation(
     val title: String?,
-    val durationTitle: String?,
-    val explanation: Explanation,
-    val price: PriceDetails,
+    val pricePaid: PriceDetails,
     val expirationOrRenewal: ExpirationOrRenewal?,
     val product: StoreProduct?,
     val store: Store,
-    var isLifetime: Boolean,
+    /**
+     * Indicates whether the purchase is a subscription.
+     * This is false for non-subscription products, such as one-time purchases.
+     * This is false for promotionals, as they are not considered subscriptions.
+     */
+    var isSubscription: Boolean,
     val managementURL: Uri?,
+    val isExpired: Boolean,
+    val isTrial: Boolean,
+    /**
+     * Indicates whether the subscription has been cancelled.
+     * This is true if the user has unsubscribed. This is always true for promotional products.
+     * This does not mean that the subscription is expired yet, as the user may still have access
+     * until the end of the billing period.
+     */
+    val isCancelled: Boolean,
 ) {
 
     constructor(
@@ -31,64 +46,65 @@ internal class PurchaseInformation(
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
     ) : this(
-        title = subscribedProduct?.title,
-        durationTitle = subscribedProduct?.period?.localizedUnitPeriod(locale)?.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(locale) else it.toString()
-        },
-        explanation = entitlementInfo?.explanation() ?: when (transaction) {
-            is TransactionDetails.Subscription -> {
-                if (transaction.expiresDate != null) {
-                    if (transaction.isActive) {
-                        if (transaction.willRenew) Explanation.EARLIEST_RENEWAL else Explanation.EARLIEST_EXPIRATION
-                    } else {
-                        Explanation.EXPIRED
-                    }
-                } else {
-                    Explanation.LIFETIME
-                }
-            }
-
-            is TransactionDetails.NonSubscription -> Explanation.LIFETIME
-        },
-        expirationOrRenewal = entitlementInfo?.expirationOrRenewal(dateFormatter, locale) ?: when (transaction) {
-            is TransactionDetails.Subscription -> {
-                transaction.expiresDate?.let { date ->
-                    val dateString = dateFormatter.format(date, locale)
-                    val label = if (transaction.isActive) {
-                        if (transaction.willRenew) {
-                            ExpirationOrRenewal.Label.NEXT_BILLING_DATE
-                        } else {
-                            ExpirationOrRenewal.Label.EXPIRES
-                        }
-                    } else {
-                        ExpirationOrRenewal.Label.EXPIRED
-                    }
-                    ExpirationOrRenewal(label, ExpirationOrRenewal.Date.DateString(dateString))
-                }
-            }
-
-            is TransactionDetails.NonSubscription ->
-                ExpirationOrRenewal(ExpirationOrRenewal.Label.EXPIRES, ExpirationOrRenewal.Date.Never)
-        },
+        title = determineTitle(entitlementInfo, subscribedProduct, transaction),
+        expirationOrRenewal = determineExpirationOrRenewal(entitlementInfo, transaction, dateFormatter, locale),
         product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
-        price = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
+        pricePaid = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
             PriceDetails.Free
         } else {
             subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
         },
-        isLifetime = entitlementInfo?.let {
-            it.expirationDate == null
-        } ?: when (transaction) {
-            is TransactionDetails.Subscription -> {
-                false
-            }
-
-            is TransactionDetails.NonSubscription ->
-                true
-        },
+        isSubscription = transaction is TransactionDetails.Subscription && transaction.store != Store.PROMOTIONAL,
         managementURL = managementURL,
+        isExpired = entitlementInfo?.isActive?.let { !it }
+            ?: when (transaction) {
+                is TransactionDetails.Subscription -> !transaction.isActive
+                is TransactionDetails.NonSubscription -> false
+            },
+        isTrial = determineTrialStatus(entitlementInfo, transaction),
+        isCancelled = determineCancellationStatus(entitlementInfo, transaction),
     )
+
+    fun renewalString(
+        renewalDate: String,
+        localization: CustomerCenterConfigData.Localization,
+    ): String {
+        return when (pricePaid) {
+            PriceDetails.Free, PriceDetails.Unknown -> localization.commonLocalizedString(
+                CustomerCenterConfigData.Localization.CommonLocalizedString.RENEWS_ON_DATE,
+            ).replace("{{ date }}", renewalDate)
+            is PriceDetails.Paid -> localization.commonLocalizedString(
+                CustomerCenterConfigData.Localization.CommonLocalizedString.RENEWS_ON_DATE_FOR_PRICE,
+            ).replace("{{ date }}", renewalDate).replace("{{ price }}", pricePaid.price)
+        }
+    }
+
+    fun expirationString(
+        expirationDate: String,
+        localization: CustomerCenterConfigData.Localization,
+    ): String {
+        return if (isExpired) {
+            localization.commonLocalizedString(
+                CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_INFO_EXPIRED_ON_DATE,
+            ).replace("{{ date }}", expirationDate)
+        } else {
+            localization.commonLocalizedString(
+                CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_INFO_EXPIRES_ON_DATE,
+            ).replace("{{ date }}", expirationDate)
+        }
+    }
+}
+
+private fun determineTitle(
+    entitlementInfo: EntitlementInfo?,
+    subscribedProduct: StoreProduct?,
+    transaction: TransactionDetails,
+): String {
+    if (transaction.store == Store.PROMOTIONAL && entitlementInfo != null) {
+        return entitlementInfo.identifier
+    }
+    return subscribedProduct?.title ?: transaction.productIdentifier
 }
 
 private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): PriceDetails {
@@ -101,66 +117,72 @@ private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): P
     }
 }
 
-private fun EntitlementInfo.explanation(): Explanation {
-    return when (store) {
-        Store.APP_STORE, Store.MAC_APP_STORE -> Explanation.APPLE
-        Store.PLAY_STORE -> explanationForPlayStore()
-        Store.STRIPE, Store.RC_BILLING, Store.PADDLE -> Explanation.WEB
-        Store.PROMOTIONAL -> Explanation.PROMOTIONAL
-        Store.EXTERNAL, Store.UNKNOWN_STORE -> Explanation.OTHER_STORE_PURCHASE
-        Store.AMAZON -> Explanation.AMAZON
-    }
-}
-
-private fun EntitlementInfo.explanationForPlayStore(): Explanation {
-    return when {
-        expirationDate == null -> Explanation.LIFETIME
-        isActive -> if (willRenew) Explanation.EARLIEST_RENEWAL else Explanation.EARLIEST_EXPIRATION
-        else -> Explanation.EXPIRED
-    }
-}
-
-private fun EntitlementInfo.expirationOrRenewal(dateFormatter: DateFormatter, locale: Locale): ExpirationOrRenewal? {
-    val date = expirationDateBestEffort(dateFormatter, locale)
-    val label = if (isActive) {
-        if (willRenew) ExpirationOrRenewal.Label.NEXT_BILLING_DATE else ExpirationOrRenewal.Label.EXPIRES
-    } else {
-        ExpirationOrRenewal.Label.EXPIRED
-    }
-    return ExpirationOrRenewal(label, date)
-}
-
-private fun EntitlementInfo.expirationDateBestEffort(
-    dateFormatter: DateFormatter,
-    locale: Locale,
-): ExpirationOrRenewal.Date {
-    return expirationDate?.let { expirationDate ->
-        if (store == Store.PROMOTIONAL && productIdentifier.isPromotionalLifetime(store)) {
-            ExpirationOrRenewal.Date.Never
-        } else {
-            ExpirationOrRenewal.Date.DateString(dateFormatter.format(expirationDate, locale))
+private fun EntitlementInfo.expirationDate(dateFormatter: DateFormatter, locale: Locale): String? {
+    if (!isPromotionalLifetime() && (!willRenew || !isActive)) {
+        expirationDate?.let { expirationDate ->
+            return dateFormatter.format(expirationDate, locale)
         }
-    } ?: ExpirationOrRenewal.Date.Never
+    }
+    return null
 }
 
-private fun String.isPromotionalLifetime(store: Store): Boolean {
-    return store == Store.PROMOTIONAL && this.endsWith("_lifetime")
+private fun TransactionDetails.expirationDate(dateFormatter: DateFormatter, locale: Locale): String? {
+    val hasAnExpiration = this is TransactionDetails.Subscription && expiresDate != null
+    val isExpiringOrExpired = hasAnExpiration &&
+        (this as TransactionDetails.Subscription).isExpiringOrExpired()
+
+    return if (isExpiringOrExpired) {
+        dateFormatter.format((this as TransactionDetails.Subscription).expiresDate!!, locale)
+    } else {
+        null
+    }
 }
 
-internal data class ExpirationOrRenewal(
-    val label: Label,
-    val date: Date,
-) {
-    enum class Label {
-        NEXT_BILLING_DATE,
-        EXPIRES,
-        EXPIRED,
-    }
+private fun TransactionDetails.Subscription.isExpiringOrExpired(): Boolean {
+    return !willRenew || !isActive
+}
 
-    sealed class Date {
-        object Never : Date()
-        data class DateString(val date: String) : Date()
+private fun EntitlementInfo.renewalDate(dateFormatter: DateFormatter, locale: Locale): String? {
+    if (willRenew && !isPromotionalLifetime()) {
+        expirationDate?.let { expirationDate ->
+            return dateFormatter.format(expirationDate, locale)
+        }
     }
+    return null
+}
+
+private fun TransactionDetails.renewalDate(dateFormatter: DateFormatter, locale: Locale): String? {
+    if (this is TransactionDetails.Subscription && willRenew && expiresDate != null) {
+        return dateFormatter.format(expiresDate, locale)
+    }
+    return null
+}
+
+private fun EntitlementInfo.isPromotionalLifetime(): Boolean {
+    return store == Store.PROMOTIONAL && productIdentifier.endsWith("_lifetime")
+}
+
+private fun determineTrialStatus(
+    entitlementInfo: EntitlementInfo?,
+    transaction: TransactionDetails,
+): Boolean {
+    return entitlementInfo?.periodType == PeriodType.TRIAL ||
+        (transaction as? TransactionDetails.Subscription)?.isTrial == true
+}
+
+private fun determineCancellationStatus(
+    entitlementInfo: EntitlementInfo?,
+    transaction: TransactionDetails,
+): Boolean {
+    val entitlementCancelled = entitlementInfo?.let {
+        it.unsubscribeDetectedAt != null && !it.willRenew
+    } ?: false
+
+    val transactionCancelled = (transaction as? TransactionDetails.Subscription)?.let {
+        !it.willRenew
+    } ?: false
+
+    return entitlementCancelled || transactionCancelled
 }
 
 internal sealed class PriceDetails {
@@ -169,14 +191,27 @@ internal sealed class PriceDetails {
     object Unknown : PriceDetails()
 }
 
-internal enum class Explanation {
-    APPLE,
-    PROMOTIONAL,
-    WEB,
-    OTHER_STORE_PURCHASE,
-    AMAZON,
-    EARLIEST_RENEWAL,
-    EARLIEST_EXPIRATION,
-    EXPIRED,
-    LIFETIME,
+internal sealed class ExpirationOrRenewal {
+    data class Expiration(val date: String) : ExpirationOrRenewal()
+    data class Renewal(val date: String) : ExpirationOrRenewal()
+}
+
+private fun determineExpirationOrRenewal(
+    entitlementInfo: EntitlementInfo?,
+    transaction: TransactionDetails,
+    dateFormatter: DateFormatter,
+    locale: Locale,
+): ExpirationOrRenewal? {
+    // First try to get a date from entitlement info
+    val entitlementDate =
+        entitlementInfo?.renewalDate(dateFormatter, locale)?.let { ExpirationOrRenewal.Renewal(it) }
+            ?: entitlementInfo?.expirationDate(dateFormatter, locale)?.let { ExpirationOrRenewal.Expiration(it) }
+
+    // If no entitlement date, try to get a date from transaction
+    val transactionDate = transaction.let { tx ->
+        tx.renewalDate(dateFormatter, locale)?.let { ExpirationOrRenewal.Renewal(it) }
+            ?: tx.expirationDate(dateFormatter, locale)?.let { ExpirationOrRenewal.Expiration(it) }
+    }
+
+    return entitlementDate ?: transactionDate
 }

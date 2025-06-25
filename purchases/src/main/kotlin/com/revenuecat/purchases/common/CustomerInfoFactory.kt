@@ -107,10 +107,10 @@ internal object CustomerInfoFactory {
                 subscriptionMap[productId] = SubscriptionInfo(productId, requestDate, subscriptionInfoResponse)
             }
         } catch (s: SerializationException) {
-            errorLog("Error deserializing subscription information", s)
+            errorLog(s) { "Error deserializing subscription information" }
             emptyMap<String, SubscriptionInfo>()
         } catch (i: IllegalArgumentException) {
-            errorLog("Error deserializing subscription information. The input is not a SubscriptionInfo", i)
+            errorLog(i) { "Error deserializing subscription information. The input is not a SubscriptionInfo" }
             emptyMap<String, SubscriptionInfo>()
         }
         return subscriptionMap

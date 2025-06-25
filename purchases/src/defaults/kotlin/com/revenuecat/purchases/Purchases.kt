@@ -913,7 +913,7 @@ class Purchases internal constructor(
                 val uri = Uri.parse(string)
                 return DeepLinkParser.parseWebPurchaseRedemption(uri)
             } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-                errorLog("Error parsing URL: $string", e)
+                errorLog(e) { "Error parsing URL: $string" }
                 return null
             }
         }
@@ -1018,10 +1018,10 @@ class Purchases internal constructor(
         ): Purchases {
             if (isConfigured) {
                 if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
-                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG)
+                    infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG }
                     return sharedInstance
                 } else {
-                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                    infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS }
                 }
             }
             return PurchasesFactory(
@@ -1057,7 +1057,7 @@ class Purchases internal constructor(
         ) {
             val currentStore = sharedInstance.purchasesOrchestrator.appConfig.store
             if (currentStore != Store.PLAY_STORE) {
-                log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
+                log(LogIntent.RC_ERROR) { BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS }
                 callback.onReceived(true)
                 return
             }

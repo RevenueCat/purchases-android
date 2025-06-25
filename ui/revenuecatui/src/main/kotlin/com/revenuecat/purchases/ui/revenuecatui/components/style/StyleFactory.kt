@@ -513,25 +513,19 @@ internal class StyleFactory(
                 destination.method,
             )
             is ButtonComponent.Destination.Sheet ->
-                zipOrAccumulate(
-                    first = createStackComponentStyle(destination.stack)
-                        .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) },
-                    second = destination.background
-                        ?.toBackgroundStyles(colorAliases)
-                        .orSuccessfullyNull(),
-                ) { stackComponentStyle, background ->
-                    ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
-                        id = destination.id,
-                        name = destination.name,
-                        stack = stackComponentStyle,
-                        background = background,
-                        backgroundBlur = destination.backgroundBlur,
-                        size = destination.size,
-                    )
-                }
+                createStackComponentStyle(destination.stack)
+                    .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
+                    .map { stackComponentStyle ->
+                        ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
+                            id = destination.id,
+                            name = destination.name,
+                            stack = stackComponentStyle,
+                            backgroundBlur = destination.backgroundBlur,
+                            size = destination.size,
+                        )
+                    }
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Destination.Unknown,
-            is ButtonComponent.Destination.Sheet,
             -> Result.Success(null)
         }
 

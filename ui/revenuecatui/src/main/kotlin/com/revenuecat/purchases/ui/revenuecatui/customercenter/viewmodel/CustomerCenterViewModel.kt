@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -108,6 +109,7 @@ internal sealed class TransactionDetails(
         val isActive: Boolean,
         val willRenew: Boolean,
         val expiresDate: Date?,
+        val isTrial: Boolean,
     ) : TransactionDetails(productIdentifier, store)
 
     data class NonSubscription(
@@ -302,8 +304,10 @@ internal class CustomerCenterViewModelImpl(
         path: CustomerCenterConfigData.HelpPath,
         purchaseInformation: PurchaseInformation?,
     ): Boolean {
-        if (purchaseInformation?.isLifetime != true) return true
-        return path.type != CustomerCenterConfigData.HelpPath.PathType.CANCEL
+        if (path.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL) {
+            return purchaseInformation?.isSubscription == true
+        }
+        return true
     }
 
     private fun isPathAllowedForStore(
@@ -378,6 +382,7 @@ internal class CustomerCenterViewModelImpl(
                     isActive = it.isActive,
                     willRenew = it.willRenew,
                     expiresDate = it.expiresDate,
+                    isTrial = it.periodType == PeriodType.TRIAL,
                 )
 
                 is Transaction -> TransactionDetails.NonSubscription(
