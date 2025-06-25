@@ -77,6 +77,7 @@ internal class VirtualCurrencyManager(
         return deviceCache.getCachedVirtualCurrencies(appUserID = appUserID)
     }
 
+    // TODO: Make this throw and return VirtualCurrencies
     private fun fetchVirtualCurrenciesFromBackend(
         appUserID: String,
         isAppBackgrounded: Boolean,
