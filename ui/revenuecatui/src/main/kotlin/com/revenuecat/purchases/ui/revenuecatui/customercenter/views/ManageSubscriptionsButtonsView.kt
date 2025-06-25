@@ -11,6 +11,8 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterCon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
 @Suppress("LongParameterList")
@@ -35,6 +37,7 @@ internal fun ManageSubscriptionsButtonsView(
             SettingsButton(
                 onClick = { onAction(pathButtonPressed) },
                 title = path.title,
+                style = PathUtils.getButtonStyleForPath(path),
             )
         }
         if (addContactButton && contactEmail != null) {
@@ -43,6 +46,7 @@ internal fun ManageSubscriptionsButtonsView(
                 title = localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
                 ),
+                style = SettingsButtonStyle.OUTLINED,
             )
         }
     }

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 
 /**
  * Utility object for categorizing and filtering customer center help paths
@@ -53,5 +54,16 @@ internal object PathUtils {
         paths: List<CustomerCenterConfigData.HelpPath>,
     ): List<CustomerCenterConfigData.HelpPath> {
         return paths.filter { isSubscriptionSpecificPath(it) }
+    }
+
+    /**
+     * Determines the button style for a path based on whether it's general or subscription-specific
+     */
+    fun getButtonStyleForPath(path: CustomerCenterConfigData.HelpPath): SettingsButtonStyle {
+        return if (isSubscriptionSpecificPath(path)) {
+            SettingsButtonStyle.FILLED
+        } else {
+            SettingsButtonStyle.OUTLINED
+        }
     }
 }
