@@ -265,7 +265,7 @@ private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    CustomerCenterScreenHost(
+    CustomerCenterNavHost(
         currentDestination = state.currentDestination,
         customerCenterState = state,
         onAction = onAction,
@@ -273,7 +273,7 @@ private fun CustomerCenterLoaded(
 }
 
 @Composable
-private fun CustomerCenterScreenHost(
+private fun CustomerCenterNavHost(
     currentDestination: CustomerCenterDestination,
     customerCenterState: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
