@@ -80,6 +80,7 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation? = null,
     ): Boolean
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
@@ -171,11 +172,11 @@ internal class CustomerCenterViewModelImpl(
 
                     viewModelScope.launch {
                         val promotionalOfferDisplayed =
-                            handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path)
+                            handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path, purchaseInformation)
                         if (!promotionalOfferDisplayed) {
                             // No promotional offer, close survey and execute main path action
                             goBackToMain()
-                            mainPathAction(path, context)
+                            mainPathAction(path, context, purchaseInformation)
                         }
                     }
                 } ?: run {
@@ -186,9 +187,15 @@ internal class CustomerCenterViewModelImpl(
         }
         viewModelScope.launch {
             val promotionalOfferDisplayed =
-                handlePromotionalOffer(context, purchaseInformation?.product, path.promotionalOffer, path)
+                handlePromotionalOffer(
+                    context,
+                    purchaseInformation?.product,
+                    path.promotionalOffer,
+                    path,
+                    purchaseInformation,
+                )
             if (!promotionalOfferDisplayed) {
-                mainPathAction(path, context)
+                mainPathAction(path, context, purchaseInformation)
             }
         }
     }
@@ -226,11 +233,18 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    private fun handleCancelPath(context: Context) {
+    private fun handleCancelPath(context: Context, purchaseInformation: PurchaseInformation? = null) {
         val currentState = _state.value as? CustomerCenterState.Success ?: return
-        val purchaseInfo = when (val destination = currentState.currentDestination) {
+        val purchaseInfo = purchaseInformation ?: when (val destination = currentState.currentDestination) {
             is CustomerCenterDestination.SelectedPurchaseDetail -> destination.purchaseInformation
-            else -> null
+            else -> {
+                // If we're on the main screen and there's only one purchase, use that purchase
+                if (currentState.purchases.size == 1) {
+                    currentState.purchases.first()
+                } else {
+                    null
+                }
+            }
         }
 
         when {
@@ -258,6 +272,7 @@ internal class CustomerCenterViewModelImpl(
     private fun mainPathAction(
         path: CustomerCenterConfigData.HelpPath,
         context: Context,
+        purchaseInformation: PurchaseInformation? = null,
     ) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
@@ -271,7 +286,7 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
 
-            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> handleCancelPath(context)
+            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> handleCancelPath(context, purchaseInformation)
 
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL -> {
                 path.url?.let {
@@ -529,6 +544,7 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation?,
     ): Boolean {
         if (!promotionalOffer.eligible) {
             Logger.d(
@@ -554,6 +570,7 @@ internal class CustomerCenterViewModelImpl(
                         originalPath,
                         pricingPhasesDescription,
                     ),
+                    purchaseInformation = purchaseInformation,
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(promotionalOfferDestination),
@@ -595,8 +612,14 @@ internal class CustomerCenterViewModelImpl(
         context: Context,
         originalPath: CustomerCenterConfigData.HelpPath,
     ) {
+        val currentState = _state.value as? CustomerCenterState.Success
+        val purchaseInfo = when (val destination = currentState?.currentDestination) {
+            is CustomerCenterDestination.PromotionalOffer -> destination.purchaseInformation
+            else -> null
+        }
+
         // Continue with the original action and remove the promotional offer data
-        mainPathAction(originalPath, context)
+        mainPathAction(originalPath, context, purchaseInfo)
 
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
@@ -605,7 +628,7 @@ internal class CustomerCenterViewModelImpl(
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
-                currentState
+                state
             }
         }
     }
@@ -838,6 +861,7 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct?,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer?,
         path: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation?,
     ): Boolean {
         if (product != null && promotionalOffer != null) {
             return loadAndDisplayPromotionalOffer(
@@ -845,6 +869,7 @@ internal class CustomerCenterViewModelImpl(
                 product,
                 promotionalOffer,
                 path,
+                purchaseInformation,
             )
         } else {
             return false

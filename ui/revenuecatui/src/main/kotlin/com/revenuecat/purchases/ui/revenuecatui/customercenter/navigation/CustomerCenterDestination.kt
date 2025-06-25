@@ -25,6 +25,7 @@ internal sealed class CustomerCenterDestination {
 
     data class PromotionalOffer(
         val data: PromotionalOfferData,
+        val purchaseInformation: PurchaseInformation?,
     ) : CustomerCenterDestination() {
         override val title: String? = null
     }

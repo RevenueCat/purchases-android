@@ -1181,7 +1181,7 @@ class CustomerCenterViewModelTests {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success && 
                     state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected CANCEL path to be present for non-lifetime purchases. Paths: $paths")
                         .anyMatch { it.type == HelpPath.PathType.CANCEL }
@@ -1227,7 +1227,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage(
                             "Expected CANCEL path to not be present when there are no management URL. Paths: $paths")
@@ -1266,7 +1266,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected CANCEL path to not be present for lifetime purchases. Paths: $paths")
                         .noneMatch { it.type == HelpPath.PathType.CANCEL }
@@ -1305,7 +1305,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected CANCEL path to not be present for lifetime purchases. Paths: $paths")
                         .noneMatch { it.type == HelpPath.PathType.CANCEL }
@@ -1350,7 +1350,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected CANCEL path to not be present for non-PLAY_STORE without management URL. Paths: $paths")
                         .noneMatch { it.type == HelpPath.PathType.CANCEL }
@@ -1394,7 +1394,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected CUSTOM_URL path to be present. Paths: $paths")
                         .anyMatch { it.type == HelpPath.PathType.CUSTOM_URL }
@@ -1438,7 +1438,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected CUSTOM_URL path to be present. Paths: $paths")
                         .anyMatch { it.type == HelpPath.PathType.CUSTOM_URL }
@@ -1482,7 +1482,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected MISSING_PURCHASE path for APP_STORE. Paths: $paths")
                         .anyMatch { it.type == HelpPath.PathType.MISSING_PURCHASE }
@@ -1526,7 +1526,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected MISSING_PURCHASE path for PLAY_STORE. Paths: $paths")
                         .anyMatch { it.type == HelpPath.PathType.MISSING_PURCHASE }
@@ -1570,7 +1570,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Not expected REFUND_REQUEST path for APP_STORE. Paths: $paths")
                         .noneMatch { it.type == HelpPath.PathType.REFUND_REQUEST }
@@ -1617,7 +1617,7 @@ class CustomerCenterViewModelTests {
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Not expected REFUND_REQUEST path for APP_STORE. Paths: $paths")
                         .noneMatch { it.type == HelpPath.PathType.REFUND_REQUEST }
