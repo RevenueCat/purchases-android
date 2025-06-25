@@ -46,14 +46,14 @@ data class PaywallOptions internal constructor(
         dismissRequest = builder.dismissRequest,
     )
 
-    // This hash is used to determine if the paywall should use a different view model.
-    // Not using hashCode/equals because the listener may change in some rerenders and we don't want to change
-    // the view model in those cases.
-    internal val dataHash: String = run {
+    // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
+    // Fields like fontProvider, listener, purchaseLogic, and dismissRequest are excluded because
+    // they don't influence visual/structural uniqueness and may not be reliably hashable.
+    override fun hashCode(): Int {
         var result = offeringSelection.offeringIdentifier.hashCode()
         result = hashMultiplier * result + shouldDisplayDismissButton.hashCode()
         result = hashMultiplier * result + mode.hashCode()
-        result.toString()
+        return result
     }
 
     class Builder(
