@@ -11,6 +11,7 @@ import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.testParcelization
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import org.assertj.core.api.Assertions
 import org.json.JSONObject
@@ -102,6 +103,28 @@ class ParcelableTests {
                 name = "Coin",
                 code = "COIN",
                 serverDescription = "It's a coin"
+            )
+        )
+    }
+
+    @Test
+    fun `VirtualCurrencies is Parcelable`() {
+        testParcelization(
+            VirtualCurrencies(
+                all = mapOf(
+                    "COIN" to  VirtualCurrency(
+                        balance = 1,
+                        name = "Coin",
+                        code = "COIN",
+                        serverDescription = "It's a coin"
+                    ),
+                    "RC_COIN" to VirtualCurrency(
+                        balance = 0,
+                        name = "RC Coin",
+                        code = "RC_Coin",
+                        serverDescription = null
+                    )),
+                jsonObject = JSONObject(Responses.validFullVirtualCurrenciesResponse)
             )
         )
     }
