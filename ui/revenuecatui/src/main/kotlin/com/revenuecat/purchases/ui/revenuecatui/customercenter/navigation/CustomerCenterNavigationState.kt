@@ -60,9 +60,14 @@ internal data class CustomerCenterNavigationState(
         val fromIndex = stackList.indexOf(from)
         val toIndex = stackList.indexOf(to)
 
-        // If either destination is not in the stack, assume forward transition
         return when {
-            toIndex == -1 || fromIndex == -1 -> false
+            toIndex == -1 || fromIndex == -1 -> {
+                Logger.e(
+                    "One of the destinations ($from [$fromIndex], $to [$toIndex]) is not in the back stack. " +
+                        "Assuming forward transition.",
+                )
+                false
+            }
             else -> toIndex > fromIndex // backward means going to a higher index
         }
     }
