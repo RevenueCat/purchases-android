@@ -465,8 +465,7 @@ internal open class BasePurchasesTest {
         Purchases.sharedInstance = purchases
         purchasesOrchestrator.state = purchasesOrchestrator.state.copy(appInBackground = false)
     }
-
-
+    
     protected fun anonymousSetup(anonymous: Boolean) {
         val userIdToUse = if (anonymous) randomAppUserId else appUserId
 
