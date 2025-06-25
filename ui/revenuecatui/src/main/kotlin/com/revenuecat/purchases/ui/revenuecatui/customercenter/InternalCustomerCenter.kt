@@ -8,7 +8,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -279,63 +277,59 @@ private fun CustomerCenterNavHost(
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        AnimatedContent(
-            targetState = currentDestination,
-            transitionSpec = {
-                CustomerCenterAnimations.getTransitionForNavigation(
-                    from = initialState,
-                    to = targetState,
-                    navigationState = customerCenterState.navigationState,
+    AnimatedContent(
+        targetState = currentDestination,
+        transitionSpec = {
+            CustomerCenterAnimations.getTransitionForNavigation(
+                from = initialState,
+                to = targetState,
+                navigationState = customerCenterState.navigationState,
+            )
+        },
+        label = "CustomerCenterScreens",
+        modifier = modifier,
+    ) { destination ->
+        when (destination) {
+            is CustomerCenterDestination.Main -> {
+                MainScreenContent(
+                    state = customerCenterState,
+                    onAction = onAction,
                 )
-            },
-            label = "CustomerCenterScreens",
-            modifier = Modifier
-                .fillMaxSize()
-                .clipToBounds(),
-        ) { destination ->
-            when (destination) {
-                is CustomerCenterDestination.Main -> {
-                    MainScreenContent(
-                        state = customerCenterState,
-                        onAction = onAction,
-                    )
-                }
+            }
 
-                is CustomerCenterDestination.FeedbackSurvey -> {
-                    FeedbackSurveyView(destination.data)
-                }
+            is CustomerCenterDestination.FeedbackSurvey -> {
+                FeedbackSurveyView(destination.data)
+            }
 
-                is CustomerCenterDestination.PromotionalOffer -> {
-                    PromotionalOfferScreen(
-                        promotionalOfferData = destination.data,
-                        appearance = customerCenterState.customerCenterConfigData.appearance,
-                        localization = customerCenterState.customerCenterConfigData.localization,
-                        onAccept = { subscriptionOption ->
-                            onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
-                        },
-                        onDismiss = {
-                            onAction(CustomerCenterAction.DismissPromotionalOffer(destination.data.originalPath))
-                        },
-                    )
-                }
+            is CustomerCenterDestination.PromotionalOffer -> {
+                PromotionalOfferScreen(
+                    promotionalOfferData = destination.data,
+                    appearance = customerCenterState.customerCenterConfigData.appearance,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                    onAccept = { subscriptionOption ->
+                        onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
+                    },
+                    onDismiss = {
+                        onAction(CustomerCenterAction.DismissPromotionalOffer(destination.data.originalPath))
+                    },
+                )
             }
         }
+    }
 
-        // Show RestorePurchases dialog as overlay
-        if (customerCenterState.restorePurchasesState != null) {
-            RestorePurchasesDialog(
-                state = customerCenterState.restorePurchasesState,
-                localization = customerCenterState.customerCenterConfigData.localization,
-                onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
-                onRestore = { onAction(CustomerCenterAction.PerformRestore) },
-                onContactSupport = customerCenterState.customerCenterConfigData.support.email?.let { email ->
-                    {
-                        onAction(CustomerCenterAction.ContactSupport(email))
-                    }
-                },
-            )
-        }
+    // Show RestorePurchases dialog as overlay
+    if (customerCenterState.restorePurchasesState != null) {
+        RestorePurchasesDialog(
+            state = customerCenterState.restorePurchasesState,
+            localization = customerCenterState.customerCenterConfigData.localization,
+            onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
+            onRestore = { onAction(CustomerCenterAction.PerformRestore) },
+            onContactSupport = customerCenterState.customerCenterConfigData.support.email?.let { email ->
+                {
+                    onAction(CustomerCenterAction.ContactSupport(email))
+                }
+            },
+        )
     }
 }
 
