@@ -12,7 +12,7 @@ import org.json.JSONObject
 /**
  * This class contains all the virtual currencies associated to the user.
  *
- * @property all
+ * @property all - All of the virtual currencies associated to the user.
  */
 @Poko
 @Parcelize
