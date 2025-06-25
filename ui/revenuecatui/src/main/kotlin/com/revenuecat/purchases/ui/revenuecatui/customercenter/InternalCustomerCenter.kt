@@ -317,6 +317,16 @@ private fun CustomerCenterNavHost(
                     },
                 )
             }
+
+            is CustomerCenterDestination.SelectedPurchaseDetail -> {
+                SelectedPurchaseDetailView(
+                    contactEmail = customerCenterState.customerCenterConfigData.support.email,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                    purchaseInformation = destination.purchaseInformation,
+                    supportedPaths = customerCenterState.supportedPathsForManagementScreen ?: emptyList(),
+                    onAction = onAction,
+                )
+            }
         }
     }
 
@@ -349,7 +359,12 @@ private fun MainScreenContent(
                 supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                onPurchaseSelect = { onAction(CustomerCenterAction.SelectPurchase(it)) },
+                onPurchaseSelect = { purchase ->
+                    // Only allow selection if there are multiple purchases
+                    if (state.purchases.size > 1) {
+                        onAction(CustomerCenterAction.SelectPurchase(purchase))
+                    }
+                },
                 onAction = onAction,
                 purchaseInformation = state.purchases,
             )
@@ -479,6 +494,25 @@ internal fun CustomerCenterLoadedPreview() {
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
             purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+            supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
+        ),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        onAction = {},
+    )
+}
+
+@Preview
+@Composable
+internal fun CustomerCenterMultiplePurchasesPreview() {
+    InternalCustomerCenter(
+        state = CustomerCenterState.Success(
+            customerCenterConfigData = previewConfigData,
+            purchases = listOf(
+                CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+                CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
+            ),
             supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
         ),
         modifier = Modifier

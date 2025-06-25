@@ -198,7 +198,9 @@ internal class CustomerCenterViewModelImpl(
                 val screen = currentState.customerCenterConfigData.getManagementScreen()
                 if (screen != null) {
                     currentState.copy(
-                        selectedPurchase = purchase,
+                        navigationState = currentState.navigationState.push(
+                            CustomerCenterDestination.SelectedPurchaseDetail(purchase),
+                        ),
                         title = screen.title,
                         navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                         supportedPathsForManagementScreen = supportedPaths(purchase, screen),
@@ -220,7 +222,10 @@ internal class CustomerCenterViewModelImpl(
 
     private fun handleCancelPath(context: Context) {
         val currentState = _state.value as? CustomerCenterState.Success ?: return
-        val purchaseInfo = currentState.selectedPurchase
+        val purchaseInfo = when (val destination = currentState.currentDestination) {
+            is CustomerCenterDestination.SelectedPurchaseDetail -> destination.purchaseInformation
+            else -> null
+        }
 
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
@@ -651,7 +656,14 @@ internal class CustomerCenterViewModelImpl(
                     customerCenterConfigData,
                     purchaseInformation,
                     supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let { screen ->
-                        supportedPaths(null, screen)
+                        // If there's only one purchase, filter paths for that specific purchase
+                        // If there are multiple purchases, use general filtering (null)
+                        val selectedPurchase = if (purchaseInformation.size == 1) {
+                            purchaseInformation.first()
+                        } else {
+                            null
+                        }
+                        supportedPaths(selectedPurchase, screen)
                     },
                     title = title,
                 )
@@ -835,7 +847,6 @@ internal class CustomerCenterViewModelImpl(
         copy(
             navigationState = navigationState.popToMain(),
             restorePurchasesState = null,
-            selectedPurchase = null,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
         )

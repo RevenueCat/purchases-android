@@ -861,6 +861,19 @@ class CustomerCenterViewModelTests {
 
         // Load the customer center to get things initialized
         model.loadCustomerCenter()
+        
+        // Wait for the initial state to be loaded
+        val initialState = model.state.first { it is CustomerCenterState.Success } as CustomerCenterState.Success
+        
+        // First, select a purchase to navigate to the detail view
+        val purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+        model.selectPurchase(purchaseInformation)
+        
+        // Wait for the navigation to complete
+        model.state.first { state ->
+            state is CustomerCenterState.Success && 
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
 
         // When Cancel path is triggered
         model.pathButtonPressed(
@@ -870,7 +883,7 @@ class CustomerCenterViewModelTests {
                 title = "Cancel",
                 type = HelpPath.PathType.CANCEL
             ),
-            CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+            purchaseInformation
         )
 
         // Then both listeners should be notified
@@ -1157,9 +1170,17 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
+        // Wait for the initial load to complete
+        val initialState = model.state.first { it is CustomerCenterState.Success } as CustomerCenterState.Success
+        
+        // Select a purchase (the first one from the loaded purchases)
+        val purchaseInformation = initialState.purchases.first()
+        model.selectPurchase(purchaseInformation)
+
         val job = launch {
             model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
+                if (state is CustomerCenterState.Success && 
+                    state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail) {
                     val paths = state.supportedPathsForManagementScreen ?: emptyList()
                     assertThat(paths)
                         .withFailMessage("Expected CANCEL path to be present for non-lifetime purchases. Paths: $paths")

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
 internal enum class CustomerCenterAnimationType {
     SLIDE_HORIZONTAL,
@@ -26,5 +27,11 @@ internal sealed class CustomerCenterDestination {
         val data: PromotionalOfferData,
     ) : CustomerCenterDestination() {
         override val title: String? = null
+    }
+
+    data class SelectedPurchaseDetail(
+        val purchaseInformation: PurchaseInformation,
+    ) : CustomerCenterDestination() {
+        override val animationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
     }
 }

@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
-import android.net.Uri
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,16 +10,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
 @Suppress("LongParameterList")
 @Composable
@@ -52,7 +48,20 @@ internal fun SelectedPurchaseDetailView(
 
         ManageSubscriptionsButtonsView(
             associatedPurchaseInformation = purchaseInformation,
-            supportedPaths = supportedPaths,
+            supportedPaths = supportedPaths.filter { path ->
+                // Only show subscription-specific actions in detail view
+                // General actions (restore purchases, custom URLs) are shown in the main screen
+                when (path.type) {
+                    CustomerCenterConfigData.HelpPath.PathType.CANCEL,
+                    CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST,
+                    CustomerCenterConfigData.HelpPath.PathType.CHANGE_PLANS,
+                    -> true
+                    CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
+                    CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
+                    CustomerCenterConfigData.HelpPath.PathType.UNKNOWN,
+                    -> false
+                }
+            },
             localization = localization,
             addContactButton = purchaseInformation.store != Store.PLAY_STORE,
             contactEmail = contactEmail,
@@ -61,26 +70,25 @@ internal fun SelectedPurchaseDetailView(
     }
 }
 
-//@Preview(showBackground = true, device = "spec:width=412dp,height=915dp", group = "scale = 1", fontScale = 1F)
-//@Composable
-//private fun ManageSubscriptionsViewPreview() {
-//    val testData = CustomerCenterConfigTestData.customerCenterData()
-//    val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
-//    ManageSubscriptionsView(
-//        screenTitle = managementScreen.title,
-//        screenSubtitle = managementScreen.subtitle,
-//        screenType = managementScreen.type,
-//        supportedPaths = managementScreen.paths,
-//        contactEmail = testData.support.email,
-//        localization = testData.localization,
-//        purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
-//        onAction = {},
-//    )
-//}
-//
-//@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
-//@Composable
-//private fun NoActiveSubscriptionsViewPreview() {
+@Preview(showBackground = true, device = "spec:width=412dp,height=915dp", group = "scale = 1", fontScale = 1F)
+@Composable
+private fun SelectedPurchaseDetailViewPreview() {
+    val testData = CustomerCenterConfigTestData.customerCenterData()
+    val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
+    CustomerCenterPreviewTheme {
+        SelectedPurchaseDetailView(
+            contactEmail = testData.support.email,
+            localization = testData.localization,
+            purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+            supportedPaths = managementScreen.paths,
+            onAction = {},
+        )
+    }
+}
+
+// @Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+// @Composable
+// private fun NoActiveSubscriptionsViewPreview() {
 //    val testData = CustomerCenterConfigTestData.customerCenterData()
 //    val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
 //
@@ -94,11 +102,11 @@ internal fun SelectedPurchaseDetailView(
 //        purchaseInformation = null,
 //        onAction = {},
 //    )
-//}
+// }
 //
-//@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
-//@Composable
-//private fun NoActiveSubscriptionsViewNoDescription_Preview() {
+// @Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+// @Composable
+// private fun NoActiveSubscriptionsViewNoDescription_Preview() {
 //    val testData = CustomerCenterConfigTestData.customerCenterData()
 //    val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!.copy(subtitle = null)
 //
@@ -112,4 +120,4 @@ internal fun SelectedPurchaseDetailView(
 //        purchaseInformation = null,
 //        onAction = {},
 //    )
-//}
+// }

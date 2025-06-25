@@ -79,8 +79,12 @@ internal fun RelevantPurchasesListView(
                         .fillMaxWidth()
                         .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
                     position = position,
-                    isDetailedView = false,
-                    onCardClick = { onPurchaseSelect(info) },
+                    isDetailedView = purchaseInformation.size == 1,
+                    onCardClick = if (purchaseInformation.size > 1) {
+                        { onPurchaseSelect(info) }
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -118,15 +122,42 @@ internal fun RelevantPurchasesListView(
                         .fillMaxWidth()
                         .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
                     position = position,
-                    isDetailedView = false,
-                    onCardClick = { onPurchaseSelect(info) },
+                    isDetailedView = purchaseInformation.size == 1,
+                    onCardClick = if (purchaseInformation.size > 1) {
+                        { onPurchaseSelect(info) }
+                    } else {
+                        null
+                    },
                 )
             }
         }
 
         ManageSubscriptionsButtonsView(
-            associatedPurchaseInformation = null,
-            supportedPaths = supportedPaths,
+            associatedPurchaseInformation = if (purchaseInformation.size == 1) {
+                purchaseInformation.first()
+            } else {
+                null
+            },
+            supportedPaths = if (purchaseInformation.size == 1) {
+                // Single purchase: show all actions (general + subscription-specific)
+                supportedPaths
+            } else {
+                // Multiple purchases: only show general actions (restore purchases, custom URLs)
+                // Subscription-specific actions (cancel, refund, change plans) are only shown
+                // in the SelectedPurchaseDetailView when a specific purchase is selected
+                supportedPaths.filter { path ->
+                    when (path.type) {
+                        CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
+                        CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
+                        CustomerCenterConfigData.HelpPath.PathType.UNKNOWN,
+                        -> true
+                        CustomerCenterConfigData.HelpPath.PathType.CANCEL,
+                        CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST,
+                        CustomerCenterConfigData.HelpPath.PathType.CHANGE_PLANS,
+                        -> false
+                    }
+                }
+            },
             localization = localization,
             contactEmail = contactEmail,
             onAction = onAction,
