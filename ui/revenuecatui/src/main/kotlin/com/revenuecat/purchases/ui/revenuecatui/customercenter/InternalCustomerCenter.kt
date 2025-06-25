@@ -58,7 +58,7 @@ import kotlinx.coroutines.launch
 
 private fun getTitleForState(state: CustomerCenterState): String? {
     return when (state) {
-        is CustomerCenterState.Success -> state.title
+        is CustomerCenterState.Success -> state.currentDestination.title
         else -> null
     }
 }

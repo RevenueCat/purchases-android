@@ -7,12 +7,14 @@ import java.util.Deque
 
 @Immutable
 internal data class CustomerCenterNavigationState(
+    private val title: String?,
     val backStack: Deque<CustomerCenterDestination> = ArrayDeque<CustomerCenterDestination>().apply {
-        push(CustomerCenterDestination.Main)
+        // Setting this to null allows the Main destination to be displayed without a title until we have a top bar
+        push(CustomerCenterDestination.Main(null))
     },
 ) {
     val currentDestination: CustomerCenterDestination
-        get() = backStack.peek() ?: CustomerCenterDestination.Main
+        get() = backStack.peek() ?: CustomerCenterDestination.Main(title = null)
 
     val canNavigateBack: Boolean
         get() = backStack.size > 1
@@ -33,15 +35,15 @@ internal data class CustomerCenterNavigationState(
         }
     }
 
-    fun popTo(destination: CustomerCenterDestination): CustomerCenterNavigationState {
+    fun popToMain(): CustomerCenterNavigationState {
         val newStack = ArrayDeque(backStack)
 
-        while (newStack.isNotEmpty() && newStack.peek() != destination) {
+        while (newStack.isNotEmpty() && newStack.peek() !is CustomerCenterDestination.Main) {
             newStack.pop()
         }
 
         if (newStack.isEmpty()) {
-            Logger.e("Could not find destination $destination in the back stack. Returning unchanged state.")
+            Logger.e("Could not find Main destination in the back stack. Returning unchanged state.")
             return this
         }
 

@@ -10,22 +10,21 @@ internal enum class CustomerCenterAnimationType {
 
 @Immutable
 internal sealed class CustomerCenterDestination {
-    abstract val animationType: CustomerCenterAnimationType
+    val animationType: CustomerCenterAnimationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
+    abstract val title: String?
 
-    object Main : CustomerCenterDestination() {
-        override val animationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
-    }
+    data class Main(
+        override val title: String?,
+    ) : CustomerCenterDestination()
 
     data class FeedbackSurvey(
         val data: FeedbackSurveyData,
-        val title: String,
-    ) : CustomerCenterDestination() {
-        override val animationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
-    }
+        override val title: String,
+    ) : CustomerCenterDestination()
 
     data class PromotionalOffer(
         val data: PromotionalOfferData,
     ) : CustomerCenterDestination() {
-        override val animationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
+        override val title: String? = null
     }
 }

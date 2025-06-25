@@ -542,8 +542,7 @@ internal class CustomerCenterViewModelImpl(
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 currentState.copy(
-                    navigationState = currentState.navigationState.popTo(CustomerCenterDestination.Main),
-                    title = null,
+                    navigationState = currentState.navigationState.popToMain(),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
@@ -607,6 +606,11 @@ internal class CustomerCenterViewModelImpl(
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
+            val title = if (purchaseInformation != null) {
+                customerCenterConfigData.getManagementScreen()?.title
+            } else {
+                customerCenterConfigData.getNoActiveScreen()?.title
+            }
             _state.update {
                 CustomerCenterState.Success(
                     customerCenterConfigData,
@@ -614,6 +618,7 @@ internal class CustomerCenterViewModelImpl(
                     supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
                         supportedPaths(purchaseInformation, it)
                     },
+                    title = title,
                 )
             }
         } catch (e: PurchasesException) {
@@ -691,7 +696,6 @@ internal class CustomerCenterViewModelImpl(
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(feedbackSurveyDestination),
-                    title = feedbackSurvey.title,
                     navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                 )
             } else {
@@ -794,7 +798,7 @@ internal class CustomerCenterViewModelImpl(
 
     private fun CustomerCenterState.Success.resetToMainScreen() =
         copy(
-            navigationState = navigationState.popTo(CustomerCenterDestination.Main),
+            navigationState = navigationState.popToMain(),
             restorePurchasesState = null,
             title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
