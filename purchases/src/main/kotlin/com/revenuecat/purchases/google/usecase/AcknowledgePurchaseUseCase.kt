@@ -50,11 +50,11 @@ internal class AcknowledgePurchaseUseCase(
                             useCaseParams.initiationSource == PostReceiptInitiationSource.RESTORE
                         ) {
                             underlyingErrorMessage = PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR_RESTORE
-                            log(LogIntent.GOOGLE_WARNING, underlyingErrorMessage)
+                            log(LogIntent.GOOGLE_WARNING) { underlyingErrorMessage }
                         } else {
                             underlyingErrorMessage =
                                 "$errorMessage - ${errorBillingResult.toHumanReadableDescription()}"
-                            log(LogIntent.GOOGLE_ERROR, underlyingErrorMessage)
+                            log(LogIntent.GOOGLE_ERROR) { underlyingErrorMessage }
                         }
                         onError(
                             errorBillingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage),

@@ -129,8 +129,6 @@ private fun SimpleSheetState.show(
     show(
         backgroundBlur = sheet.backgroundBlur,
     ) {
-        val backgroundStyle = sheet.background?.let { rememberBackgroundStyle(background = it) }
-
         ComponentView(
             style = sheet.stack,
             state = state,
@@ -142,8 +140,7 @@ private fun SimpleSheetState.show(
             },
             modifier = Modifier
                 .applyIfNotNull(sheet.size) { size(it) }
-                .conditional(sheet.size == null) { fillMaxWidth() }
-                .applyIfNotNull(backgroundStyle) { background(it) },
+                .conditional(sheet.size == null) { fillMaxWidth() },
         )
     }
 }
@@ -491,11 +488,6 @@ private fun previewBottomSheet(
                     bottomLeading = 0.0,
                     bottomTrailing = 0.0,
                 ),
-            ),
-        ),
-        background = BackgroundStyles.Color(
-            ColorStyles(
-                light = ColorStyle.Solid(Color.Transparent),
             ),
         ),
         backgroundBlur = true,

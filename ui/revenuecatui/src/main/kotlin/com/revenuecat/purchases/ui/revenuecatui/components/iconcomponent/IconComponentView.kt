@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
@@ -101,6 +102,7 @@ private fun IconComponentView_Preview() {
     }
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun IconComponentView_Margin_Preview() {

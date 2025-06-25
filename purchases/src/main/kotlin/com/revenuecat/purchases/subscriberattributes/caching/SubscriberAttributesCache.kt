@@ -59,7 +59,7 @@ internal class SubscriberAttributesCache(
 
     @Synchronized
     fun clearAllSubscriberAttributesFromUser(appUserID: AppUserID) {
-        log(LogIntent.DEBUG, AttributionStrings.DELETING_ATTRIBUTES.format(appUserID))
+        log(LogIntent.DEBUG) { AttributionStrings.DELETING_ATTRIBUTES.format(appUserID) }
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
         val updatedStoredSubscriberAttributes =
             allStoredSubscriberAttributes.toMutableMap().also {
@@ -99,7 +99,7 @@ internal class SubscriberAttributesCache(
         currentAppUserID: String,
         cacheEditor: SharedPreferences.Editor,
     ) {
-        log(LogIntent.DEBUG, AttributionStrings.DELETING_ATTRIBUTES_OTHER_USERS.format(currentAppUserID))
+        log(LogIntent.DEBUG) { AttributionStrings.DELETING_ATTRIBUTES_OTHER_USERS.format(currentAppUserID) }
 
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
 
@@ -121,15 +121,14 @@ internal class SubscriberAttributesCache(
     private fun SubscriberAttributeMap.filterUnsynced(appUserID: AppUserID): SubscriberAttributeMap =
         this.filterValues { !it.isSynced }
             .also { unsyncedAttributesByKey ->
-                log(
-                    LogIntent.DEBUG,
+                log(LogIntent.DEBUG) {
                     AttributionStrings.UNSYNCED_ATTRIBUTES_COUNT
                         .format(unsyncedAttributesByKey.count(), appUserID) +
                         if (unsyncedAttributesByKey.isNotEmpty()) {
                             unsyncedAttributesByKey.values.joinToString("\n")
                         } else {
                             ""
-                        },
-                )
+                        }
+                }
             }
 }

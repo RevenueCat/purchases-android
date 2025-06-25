@@ -41,7 +41,7 @@ internal class OfferingFontPreDownloader(
                     URL(it.url)
                     true
                 } catch (e: MalformedURLException) {
-                    errorLog("Malformed URL for font: ${it.value}. Skipping download.", e)
+                    errorLog(e) { "Malformed URL for font: ${it.value}. Skipping download." }
                     false
                 }
             } ?: emptyList()
