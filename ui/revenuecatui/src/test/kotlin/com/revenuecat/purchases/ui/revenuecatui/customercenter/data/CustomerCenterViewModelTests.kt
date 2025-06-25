@@ -1644,6 +1644,13 @@ class CustomerCenterViewModelTests {
             paths = listOf(originalPath)
         )
 
+        val noActiveScreen = Screen(
+            type = Screen.ScreenType.NO_ACTIVE,
+            title = "No Active Subscription",
+            subtitle = "You don't have an active subscription.",
+            paths = emptyList()
+        )
+
         val mockScreens = mapOf(
             Screen.ScreenType.MANAGEMENT to managementScreen
         )
@@ -1655,6 +1662,7 @@ class CustomerCenterViewModelTests {
 
         every { configData.screens } returns mockScreens
         every { configData.getManagementScreen() } returns managementScreen
+        every { configData.getNoActiveScreen() } returns noActiveScreen
         every { configData.localization } returns localization
 
         // Wait for initial state to load
