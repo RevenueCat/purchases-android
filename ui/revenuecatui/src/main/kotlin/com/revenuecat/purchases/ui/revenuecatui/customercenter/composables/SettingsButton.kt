@@ -16,11 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-enum class SettingsButtonStyle {
-    FILLED,
-    OUTLINED,
-}
-
 @Composable
 @JvmSynthetic
 internal fun SettingsButton(
@@ -91,4 +86,9 @@ private fun SettingsButtonOutlined_Preview() {
         title = "Restore purchases",
         style = SettingsButtonStyle.OUTLINED,
     ) {}
+}
+
+internal enum class SettingsButtonStyle {
+    FILLED,
+    OUTLINED,
 }

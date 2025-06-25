@@ -172,7 +172,13 @@ internal class CustomerCenterViewModelImpl(
 
                     viewModelScope.launch {
                         val promotionalOfferDisplayed =
-                            handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path, purchaseInformation)
+                            handlePromotionalOffer(
+                                context,
+                                purchaseInformation?.product,
+                                it.promotionalOffer,
+                                path,
+                                purchaseInformation,
+                            )
                         if (!promotionalOfferDisplayed) {
                             // No promotional offer, close survey and execute main path action
                             goBackToMain()

@@ -60,34 +60,12 @@ internal fun RelevantPurchasesListView(
         val subscriptions = purchaseInformation.filter { it.product?.period != null }
         val nonSubscriptions = purchaseInformation.filter { it.product?.period == null }
 
-        if (subscriptions.isNotEmpty()) {
-            subscriptions.forEachIndexed { index, info ->
-                if (index > 0) {
-                    Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
-                }
-
-                val position = when {
-                    subscriptions.size == 1 -> ButtonPosition.SINGLE
-                    index == 0 -> ButtonPosition.FIRST
-                    index == subscriptions.size - 1 -> ButtonPosition.LAST
-                    else -> ButtonPosition.MIDDLE
-                }
-                PurchaseInformationCardView(
-                    purchaseInformation = info,
-                    localization = localization,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
-                    position = position,
-                    isDetailedView = purchaseInformation.size == 1,
-                    onCardClick = if (purchaseInformation.size > 1) {
-                        { onPurchaseSelect(info) }
-                    } else {
-                        null
-                    },
-                )
-            }
-        }
+        PurchaseListSection(
+            purchases = subscriptions,
+            localization = localization,
+            totalPurchaseCount = purchaseInformation.size,
+            onPurchaseSelect = onPurchaseSelect,
+        )
 
         if (nonSubscriptions.isNotEmpty()) {
             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.SECTION_SPACING))
@@ -104,32 +82,12 @@ internal fun RelevantPurchasesListView(
                 )
             }
 
-            nonSubscriptions.forEachIndexed { index, info ->
-                if (index > 0) {
-                    Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
-                }
-
-                val position = when {
-                    nonSubscriptions.size == 1 -> ButtonPosition.SINGLE
-                    index == 0 -> ButtonPosition.FIRST
-                    index == nonSubscriptions.size - 1 -> ButtonPosition.LAST
-                    else -> ButtonPosition.MIDDLE
-                }
-                PurchaseInformationCardView(
-                    purchaseInformation = info,
-                    localization = localization,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
-                    position = position,
-                    isDetailedView = purchaseInformation.size == 1,
-                    onCardClick = if (purchaseInformation.size > 1) {
-                        { onPurchaseSelect(info) }
-                    } else {
-                        null
-                    },
-                )
-            }
+            PurchaseListSection(
+                purchases = nonSubscriptions,
+                localization = localization,
+                totalPurchaseCount = purchaseInformation.size,
+                onPurchaseSelect = onPurchaseSelect,
+            )
         }
 
         ManageSubscriptionsButtonsView(
@@ -146,7 +104,49 @@ internal fun RelevantPurchasesListView(
     }
 }
 
-@Preview(showBackground = true, device = "spec:width=412dp,height=915dp", group = "scale = 1", fontScale = 1F)
+@Composable
+private fun PurchaseListSection(
+    purchases: List<PurchaseInformation>,
+    localization: CustomerCenterConfigData.Localization,
+    totalPurchaseCount: Int,
+    onPurchaseSelect: (PurchaseInformation) -> Unit,
+) {
+    if (purchases.isNotEmpty()) {
+        purchases.forEachIndexed { index, info ->
+            if (index > 0) {
+                Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
+            }
+
+            val position = when {
+                purchases.size == 1 -> ButtonPosition.SINGLE
+                index == 0 -> ButtonPosition.FIRST
+                index == purchases.size - 1 -> ButtonPosition.LAST
+                else -> ButtonPosition.MIDDLE
+            }
+            PurchaseInformationCardView(
+                purchaseInformation = info,
+                localization = localization,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
+                position = position,
+                isDetailedView = totalPurchaseCount == 1,
+                onCardClick = if (totalPurchaseCount > 1) {
+                    { onPurchaseSelect(info) }
+                } else {
+                    null
+                },
+            )
+        }
+    }
+}
+
+@Preview(
+    showBackground = true,
+    device = "spec:width=412dp,height=915dp",
+    group = "scale = 1",
+    fontScale = 1F,
+)
 @Composable
 private fun RelevantPurchasesListViewPreview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
@@ -253,7 +253,12 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
     }
 }
 
-@Preview(showBackground = true, device = "spec:width=412dp,height=915dp", group = "scale = 1", fontScale = 1F)
+@Preview(
+    showBackground = true,
+    device = "spec:width=412dp,height=915dp",
+    group = "scale = 1",
+    fontScale = 1F,
+)
 @Composable
 private fun RelevantPurchasesListViewWithMultiplePurchasesPreview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()

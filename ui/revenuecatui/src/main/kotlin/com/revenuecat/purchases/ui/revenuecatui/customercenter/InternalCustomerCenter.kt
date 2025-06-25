@@ -273,6 +273,7 @@ private fun CustomerCenterLoaded(
     )
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun CustomerCenterNavHost(
     currentDestination: CustomerCenterDestination,

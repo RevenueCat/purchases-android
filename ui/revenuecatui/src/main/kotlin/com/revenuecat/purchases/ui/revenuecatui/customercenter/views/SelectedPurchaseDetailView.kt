@@ -57,54 +57,24 @@ internal fun SelectedPurchaseDetailView(
     }
 }
 
-@Preview(showBackground = true, device = "spec:width=412dp,height=915dp", group = "scale = 1", fontScale = 1F)
+@Preview(
+    showBackground = true,
+    device = "spec:width=412dp,height=915dp",
+    group = "scale = 1",
+    fontScale = 1F,
+)
 @Composable
 private fun SelectedPurchaseDetailViewPreview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
+    val purchaseInfo = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
     CustomerCenterPreviewTheme {
         SelectedPurchaseDetailView(
             contactEmail = testData.support.email,
             localization = testData.localization,
-            purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+            purchaseInformation = purchaseInfo,
             supportedPaths = managementScreen.paths,
             onAction = {},
         )
     }
 }
-
-// @Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
-// @Composable
-// private fun NoActiveSubscriptionsViewPreview() {
-//    val testData = CustomerCenterConfigTestData.customerCenterData()
-//    val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
-//
-//    ManageSubscriptionsView(
-//        screenTitle = noActiveScreen.title,
-//        screenSubtitle = noActiveScreen.subtitle,
-//        screenType = noActiveScreen.type,
-//        supportedPaths = noActiveScreen.paths,
-//        contactEmail = testData.support.email,
-//        localization = testData.localization,
-//        purchaseInformation = null,
-//        onAction = {},
-//    )
-// }
-//
-// @Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
-// @Composable
-// private fun NoActiveSubscriptionsViewNoDescription_Preview() {
-//    val testData = CustomerCenterConfigTestData.customerCenterData()
-//    val noActiveScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!.copy(subtitle = null)
-//
-//    ManageSubscriptionsView(
-//        screenTitle = noActiveScreen.title,
-//        screenSubtitle = noActiveScreen.subtitle,
-//        screenType = noActiveScreen.type,
-//        supportedPaths = noActiveScreen.paths,
-//        contactEmail = testData.support.email,
-//        localization = testData.localization,
-//        purchaseInformation = null,
-//        onAction = {},
-//    )
-// }
