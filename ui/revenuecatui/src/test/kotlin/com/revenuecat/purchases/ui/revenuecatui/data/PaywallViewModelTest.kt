@@ -488,7 +488,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `updateState does not update if paywallsOptions identity doesn't change`() {
+    fun `updateState does not update if paywallsOptions identity does not change`() {
         val options1 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
             .setListener(listener)
             .build()
