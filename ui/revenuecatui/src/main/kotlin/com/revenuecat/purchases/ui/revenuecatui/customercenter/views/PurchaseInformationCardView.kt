@@ -1,11 +1,15 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,13 +27,17 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
+@SuppressWarnings("LongParameterList", "LongMethod")
 @Composable
 internal fun PurchaseInformationCardView(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     position: ButtonPosition = ButtonPosition.SINGLE,
+    isDetailedView: Boolean = false,
+    onCardClick: (() -> Unit)?,
 ) {
     val shape = when (position) {
         ButtonPosition.SINGLE -> RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE)
@@ -54,7 +62,9 @@ internal fun PurchaseInformationCardView(
         color = MaterialTheme.colorScheme.surface,
     ) {
         Column(
-            modifier = Modifier.padding(CustomerCenterConstants.Card.CARD_PADDING),
+            modifier = Modifier
+                .applyIfNotNull(onCardClick) { clickable { onCardClick?.invoke() } }
+                .padding(CustomerCenterConstants.Card.CARD_PADDING),
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -68,7 +78,14 @@ internal fun PurchaseInformationCardView(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
-                PurchaseStatusBadge(purchaseInformation, localization)
+                when {
+                    !purchaseInformation.isSubscription && !isDetailedView -> Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                    else -> PurchaseStatusBadge(purchaseInformation, localization)
+                }
             }
 
             getSubtitle(
@@ -133,6 +150,7 @@ private fun getPrice(
         PriceDetails.Unknown -> null
     }
 }
+
 internal enum class ButtonPosition {
     SINGLE,
     FIRST,
@@ -167,6 +185,7 @@ private fun PurchaseInformationCardView_Preview(
             localization = CustomerCenterConfigTestData.customerCenterData(
                 shouldWarnCustomerToUpdate = false,
             ).localization,
+            onCardClick = { },
         )
     }
 }
@@ -184,6 +203,7 @@ private fun PurchaseInformationCardView_Preview_Scale2(
             localization = CustomerCenterConfigTestData.customerCenterData(
                 shouldWarnCustomerToUpdate = false,
             ).localization,
+            onCardClick = { },
         )
     }
 }

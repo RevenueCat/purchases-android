@@ -194,7 +194,7 @@ internal object CustomerCenterConfigTestData {
         store = Store.APP_STORE,
         managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         product = null,
-        isSubscription = true,
+        isSubscription = false,
         isExpired = false,
         isTrial = false,
         isCancelled = false,
