@@ -10,7 +10,7 @@ internal data class CustomerCenterNavigationState(
     private val mainTitle: String?,
     val backStack: Deque<CustomerCenterDestination> = ArrayDeque<CustomerCenterDestination>().apply {
         // Setting this to null allows the Main destination to be displayed without a title until we have a top bar
-        push(CustomerCenterDestination.Main(null))
+        push(CustomerCenterDestination.Main(title = null))
     },
 ) {
     val currentDestination: CustomerCenterDestination
