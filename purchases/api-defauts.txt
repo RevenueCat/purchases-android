@@ -679,12 +679,13 @@ package com.revenuecat.purchases {
 
   public final class SubscriptionInfo {
     ctor @Deprecated public SubscriptionInfo(String productIdentifier, java.util.Date purchaseDate, java.util.Date? originalPurchaseDate, java.util.Date? expiresDate, com.revenuecat.purchases.Store store, java.util.Date? unsubscribeDetectedAt, boolean isSandbox, java.util.Date? billingIssuesDetectedAt, java.util.Date? gracePeriodExpiresDate, optional com.revenuecat.purchases.OwnershipType ownershipType, com.revenuecat.purchases.PeriodType periodType, java.util.Date? refundedAt, String? storeTransactionId, java.util.Date requestDate);
-    ctor public SubscriptionInfo(String productIdentifier, java.util.Date purchaseDate, java.util.Date? originalPurchaseDate, java.util.Date? expiresDate, com.revenuecat.purchases.Store store, java.util.Date? unsubscribeDetectedAt, boolean isSandbox, java.util.Date? billingIssuesDetectedAt, java.util.Date? gracePeriodExpiresDate, optional com.revenuecat.purchases.OwnershipType ownershipType, com.revenuecat.purchases.PeriodType periodType, java.util.Date? refundedAt, String? storeTransactionId, java.util.Date? autoResumeDate, String? displayName, com.revenuecat.purchases.models.Price? price, String? productPlanIdentifier, java.util.Date requestDate);
+    ctor public SubscriptionInfo(String productIdentifier, java.util.Date purchaseDate, java.util.Date? originalPurchaseDate, java.util.Date? expiresDate, com.revenuecat.purchases.Store store, java.util.Date? unsubscribeDetectedAt, boolean isSandbox, java.util.Date? billingIssuesDetectedAt, java.util.Date? gracePeriodExpiresDate, optional com.revenuecat.purchases.OwnershipType ownershipType, com.revenuecat.purchases.PeriodType periodType, java.util.Date? refundedAt, String? storeTransactionId, java.util.Date? autoResumeDate, String? displayName, com.revenuecat.purchases.models.Price? price, String? productPlanIdentifier, android.net.Uri? managementURL, java.util.Date requestDate);
     method public java.util.Date? getAutoResumeDate();
     method public java.util.Date? getBillingIssuesDetectedAt();
     method public String? getDisplayName();
     method public java.util.Date? getExpiresDate();
     method public java.util.Date? getGracePeriodExpiresDate();
+    method public android.net.Uri? getManagementURL();
     method public java.util.Date? getOriginalPurchaseDate();
     method public com.revenuecat.purchases.OwnershipType getOwnershipType();
     method public com.revenuecat.purchases.PeriodType getPeriodType();
@@ -706,6 +707,7 @@ package com.revenuecat.purchases {
     property public final java.util.Date? gracePeriodExpiresDate;
     property public final boolean isActive;
     property public final boolean isSandbox;
+    property public final android.net.Uri? managementURL;
     property public final java.util.Date? originalPurchaseDate;
     property public final com.revenuecat.purchases.OwnershipType ownershipType;
     property public final com.revenuecat.purchases.PeriodType periodType;
