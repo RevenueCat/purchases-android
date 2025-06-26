@@ -666,6 +666,10 @@ internal class CustomerCenterViewModelImpl(
     ): SubscriptionOption? {
         val crossProductPromotion: CrossProductPromotion? =
             promotionalOffer.crossProductPromotions[product.id]
+                // Check for cross-product promotions first (product.id includes base plan ex: "sub:p1m")
+                // But it's possible the product is not configured with base plan in RevenueCat
+                // so we also check for the Google product ID (which does not include base plan ex: "sub")
+                ?: promotionalOffer.crossProductPromotions[product.googleProduct?.productId ?: ""]
                 ?: promotionalOffer.productMapping[product.id]?.let {
                     CrossProductPromotion(
                         storeOfferIdentifier = it,
