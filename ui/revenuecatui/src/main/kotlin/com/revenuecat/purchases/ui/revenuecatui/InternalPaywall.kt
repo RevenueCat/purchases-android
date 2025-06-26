@@ -257,7 +257,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     if (activity == null) {
                         Logger.e("Activity is null, not initiating package purchase")
                     } else {
-                        viewModel.handlePackagePurchase(activity)
+                        viewModel.handlePackagePurchase(activity, pkg = action.rcPackage)
                     }
 
                 is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
