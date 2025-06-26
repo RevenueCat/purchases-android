@@ -26,6 +26,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
@@ -476,7 +477,7 @@ class CustomerCenterViewModelTests {
 
         val annualSubscriptionOption = createSubscriptionOption(
             productId = "old_product",
-            basePlanId = "p1m",
+            basePlanId = "p1y",
             offerId = "rc-cancel-offer",
             secondPhasePeriod = Period(value = 1, unit = Period.Unit.YEAR, "P1Y")
         )
@@ -493,7 +494,7 @@ class CustomerCenterViewModelTests {
         )
         val productAnnual = createGoogleStoreProduct(
             productId = "old_product",
-            basePlanId = "p1m",
+            basePlanId = "p1y",
             subscriptionOptions = listOf(annualSubscriptionOption)
         )
         coEvery { purchases.awaitGetProduct("old_product", null) } returns productAnnual
@@ -522,6 +523,76 @@ class CustomerCenterViewModelTests {
             expectedSubscriptionOption = annualSubscriptionOption,
             expectedOriginalPath = originalPath,
             expectedPricingDescription = "First 1 month free, then $9.99/yr"
+        )
+    }
+
+    @Test
+    fun `getPromotionalSubscriptionOption handles product without base plan`() = runTest {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+        val regularPricingPhase = stubPricingPhase(
+            billingCycleCount = 0,
+            billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+            price = 9.99,
+            recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+        )
+
+        val subscriptionOption = createSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            offerId = "promotional-offer-id",
+            pricingPhases = listOf(
+                stubPricingPhase(
+                    billingCycleCount = 1,
+                    billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                    price = 0.0,
+                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+                ),
+                regularPricingPhase
+            )
+        )
+        val subscriptionOptionBase = createSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            offerId = null,
+            pricingPhases = listOf(regularPricingPhase)
+        )
+
+        val product = createGoogleStoreProduct(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(subscriptionOption, subscriptionOptionBase)
+        )
+
+        val promotionalOffer = createPromotionalOffer(
+            crossProductPromotions = mapOf("paywall_tester.subs" to
+                HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                    storeOfferIdentifier = "promotional-offer-id",
+                    targetProductId = "paywall_tester.subs"
+                ))
+        )
+
+        val originalPath = createOriginalPath()
+        setupSuccessLoadScreen(originalPath, model)
+
+        coEvery { purchases.awaitGetProduct("paywall_tester.subs", null) } returns product
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        verifyPromotionalOfferResult(
+            result = result,
+            model = model,
+            expectedResult = true,
+            expectedPromotionalOffer = promotionalOffer,
+            expectedSubscriptionOption = subscriptionOption,
+            expectedOriginalPath = originalPath,
+            expectedPricingDescription = "First 1 month free, then $9.99/mth"
         )
     }
 
@@ -1669,31 +1740,32 @@ class CustomerCenterViewModelTests {
     private fun createSubscriptionOption(
         productId: String,
         basePlanId: String,
-        offerId: String,
+        offerId: String?,
         firstPhasePeriod: Period = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
         firstPhasePrice: Double = 0.0,
         secondPhasePeriod: Period = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
         secondPhasePrice: Double = 9.99,
+        pricingPhases: List<PricingPhase> = listOf(
+            stubPricingPhase(
+                billingCycleCount = 1,
+                billingPeriod = firstPhasePeriod,
+                price = firstPhasePrice,
+                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+            ),
+            stubPricingPhase(
+                billingCycleCount = 0,
+                billingPeriod = secondPhasePeriod,
+                price = secondPhasePrice,
+                recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+            )
+        ),
     ): GoogleSubscriptionOption {
         return stubGoogleSubscriptionOption(
             productId = productId,
             basePlanId = basePlanId,
             productDetails = mockk(),
             offerId = offerId,
-            pricingPhases = listOf(
-                stubPricingPhase(
-                    billingCycleCount = 1,
-                    billingPeriod = firstPhasePeriod,
-                    price = firstPhasePrice,
-                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
-                ),
-                stubPricingPhase(
-                    billingCycleCount = 0,
-                    billingPeriod = secondPhasePeriod,
-                    price = secondPhasePrice,
-                    recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
-                )
-            ),
+            pricingPhases = pricingPhases,
             tags = listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
         )
     }
