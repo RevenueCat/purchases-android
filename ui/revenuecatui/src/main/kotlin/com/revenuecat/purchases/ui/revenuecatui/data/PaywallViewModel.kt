@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
@@ -262,7 +263,7 @@ internal class PaywallViewModelImpl(
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
-                if (!selectedPackage.currentlySubscribed) {
+                if (selectedPackage.rcPackage.product.type != ProductType.SUBS || !selectedPackage.currentlySubscribed) {
                     performPurchase(activity, selectedPackage.rcPackage)
                 } else {
                     Logger.d("Ignoring purchase request for already subscribed package")
