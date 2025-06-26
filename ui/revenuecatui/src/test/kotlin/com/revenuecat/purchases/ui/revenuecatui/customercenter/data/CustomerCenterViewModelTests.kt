@@ -1625,6 +1625,7 @@ class CustomerCenterViewModelTests {
         every { purchases.syncPurchases() } just Runs
 
         every { configData.getManagementScreen() } returns screens[Screen.ScreenType.MANAGEMENT]
+        every { configData.getNoActiveScreen() } returns screens[Screen.ScreenType.NO_ACTIVE]
 
         every { customerInfo.managementURL } returns null
         every { customerInfo.activeSubscriptions } returns setOf()
