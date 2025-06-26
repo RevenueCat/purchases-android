@@ -5,11 +5,6 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +21,6 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,13 +56,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
-
-private fun getTitleForState(state: CustomerCenterState): String? {
-    return when (state) {
-        is CustomerCenterState.Success -> state.currentDestination.title
-        else -> null
-    }
-}
 
 @Suppress("LongMethod")
 @JvmSynthetic
@@ -155,13 +142,6 @@ private fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    // Create navigation ViewModel at the top level
-    val navigationViewModel = if (state is CustomerCenterState.Success) {
-        viewModel<CustomerCenterNavigationViewModel>()
-    } else {
-        null
-    }
-    
     val colorScheme = if (state is CustomerCenterState.Success) {
         val isDark = isSystemInDarkTheme()
         val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
@@ -214,23 +194,19 @@ private fun InternalCustomerCenter(
                 ) { CustomerCenterError(state) }
             }
             is CustomerCenterState.Success -> {
-                navigationViewModel?.let { navViewModel ->
-                    val navigationState by navViewModel.navigationState.collectAsState()
-                    val title = getTitleForDestination(navigationState.currentDestination, state)
+                val title = getTitleForDestination(state)
 
-                    CustomerCenterScaffold(
-                        modifier = modifier
-                            .background(MaterialTheme.colorScheme.background),
-                        title = title,
+                CustomerCenterScaffold(
+                    modifier = modifier
+                        .background(MaterialTheme.colorScheme.background),
+                    title = title,
+                    onAction = onAction,
+                    navigationButtonType = state.navigationButtonType,
+                ) {
+                    CustomerCenterLoaded(
+                        state = state,
                         onAction = onAction,
-                        navigationButtonType = state.navigationButtonType,
-                    ) {
-                        CustomerCenterLoaded(
-                            state = state,
-                            onAction = onAction,
-                            navigationViewModel = navViewModel,
-                        )
-                    }
+                    )
                 }
             }
         }
@@ -348,10 +324,9 @@ private fun CustomerCenterLoaded(
 }
 
 private fun getTitleForDestination(
-    destination: CustomerCenterDestination,
     state: CustomerCenterState.Success,
 ): String? {
-    return when (destination) {
+    return when (val destination = state.navigationState.currentDestination) {
         is CustomerCenterDestination.Main -> {
             val configuration = state.customerCenterConfigData
             if (state.purchaseInformation != null) {
@@ -364,24 +339,6 @@ private fun getTitleForDestination(
         }
         is CustomerCenterDestination.FeedbackSurvey -> destination.title
         is CustomerCenterDestination.PromotionalOffer -> null // No title for promotional offers
-        is CustomerCenterDestination.RestorePurchases -> null // No title for restore dialog
-    }
-}
-
-private fun getAnimationForTransition(
-    fromType: CustomerCenterAnimationType,
-    toType: CustomerCenterAnimationType,
-) = when {
-    // If either side is a dialog, use dialog animation
-    fromType == CustomerCenterAnimationType.FADE_DIALOG ||
-        toType == CustomerCenterAnimationType.FADE_DIALOG -> {
-        fadeIn() togetherWith fadeOut()
-    }
-
-    // Default horizontal slide for regular navigation
-    else -> {
-        slideInHorizontally(initialOffsetX = { it }) togetherWith
-            slideOutHorizontally(targetOffsetX = { -it })
     }
 }
 
