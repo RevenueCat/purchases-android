@@ -218,7 +218,7 @@ internal class CustomerCenterViewModelImpl(
 
                     currentState.copy(
                         navigationState = currentState.navigationState.push(
-                            CustomerCenterDestination.SelectedPurchaseDetail(purchase),
+                            CustomerCenterDestination.SelectedPurchaseDetail(purchase, screen.title),
                         ),
                         title = screen.title,
                         navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
@@ -420,7 +420,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    private suspend fun loadPurchaseInformation(
+    private suspend fun loadPurchases(
         dateFormatter: DateFormatter,
         locale: Locale,
     ): List<PurchaseInformation> {
@@ -618,19 +618,20 @@ internal class CustomerCenterViewModelImpl(
         context: Context,
         originalPath: CustomerCenterConfigData.HelpPath,
     ) {
-        val currentState = _state.value as? CustomerCenterState.Success
-        val purchaseInfo = when (val destination = currentState?.currentDestination) {
-            is CustomerCenterDestination.PromotionalOffer -> destination.purchaseInformation
-            else -> null
+        val purchaseInfo = (_state.value as? CustomerCenterState.Success).let { currentState ->
+            when (val destination = currentState?.currentDestination) {
+                is CustomerCenterDestination.PromotionalOffer -> destination.purchaseInformation
+                else -> null
+            }
         }
 
         // Continue with the original action and remove the promotional offer data
         mainPathAction(originalPath, context, purchaseInfo)
 
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    navigationState = currentState.navigationState.popToMain(),
+        _state.update { state ->
+            if (state is CustomerCenterState.Success) {
+                state.copy(
+                    navigationState = state.navigationState.popToMain(),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
@@ -695,8 +696,8 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
-            val title = if (purchaseInformation != null) {
+            val purchases = loadPurchases(dateFormatter, locale)
+            val title = if (purchases.isNotEmpty()) {
                 customerCenterConfigData.getManagementScreen()?.title
             } else {
                 customerCenterConfigData.getNoActiveScreen()?.title
@@ -704,7 +705,7 @@ internal class CustomerCenterViewModelImpl(
 
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
-                purchaseInformation,
+                purchases,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 title = title,

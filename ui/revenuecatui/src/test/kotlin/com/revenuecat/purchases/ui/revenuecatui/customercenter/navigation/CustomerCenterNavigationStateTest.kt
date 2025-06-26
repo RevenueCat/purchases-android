@@ -67,7 +67,8 @@ class CustomerCenterNavigationStateTest {
         )
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
-            data = promotionalOffer
+            data = promotionalOffer,
+            purchaseInformation = null
         )
 
         val stateAfterPushing = initialState.push(feedbackDestination).push(promoDestination)
@@ -127,7 +128,8 @@ class CustomerCenterNavigationStateTest {
         )
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
-            data = promotionalOffer
+            data = promotionalOffer,
+            purchaseInformation = null
         )
 
         val nestedState = initialState
@@ -177,7 +179,8 @@ class CustomerCenterNavigationStateTest {
         val mainDestination = CustomerCenterDestination.Main(title = "Main")
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
-            data = promotionalOffer
+            data = promotionalOffer,
+            purchaseInformation = null
         )
 
         val stateWithMultipleScreens = navigationState
@@ -225,7 +228,8 @@ class CustomerCenterNavigationStateTest {
         )
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
-            data = promotionalOffer
+            data = promotionalOffer,
+            purchaseInformation = null
         )
 
         val stateWithBothScreens = navigationState
@@ -256,7 +260,8 @@ class CustomerCenterNavigationStateTest {
         )
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
-            data = promotionalOffer
+            data = promotionalOffer,
+            purchaseInformation = null
         )
 
         // Only add feedback to stack, promo is not in stack
@@ -314,7 +319,8 @@ class CustomerCenterNavigationStateTest {
         )
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
-            data = promotionalOffer
+            data = promotionalOffer,
+            purchaseInformation = null
         )
         val anotherMain = CustomerCenterDestination.Main(title = "Another Main")
 

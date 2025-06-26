@@ -32,7 +32,6 @@ internal sealed class CustomerCenterDestination {
 
     data class SelectedPurchaseDetail(
         val purchaseInformation: PurchaseInformation,
-    ) : CustomerCenterDestination() {
-        override val animationType = CustomerCenterAnimationType.SLIDE_HORIZONTAL
-    }
+        override val title: String,
+    ) : CustomerCenterDestination()
 }
