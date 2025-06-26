@@ -559,11 +559,11 @@ internal class MockViewModel(
 
     var handlePackagePurchaseCount = 0
         private set
-    var handlePackagePurchaseParams = mutableListOf<Activity>()
+    var handlePackagePurchaseParams = mutableListOf<Pair<Activity, Package?>>()
         private set
-    override suspend fun handlePackagePurchase(activity: Activity) {
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
         handlePackagePurchaseCount++
-        handlePackagePurchaseParams.add(activity)
+        handlePackagePurchaseParams.add(activity to pkg)
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {
