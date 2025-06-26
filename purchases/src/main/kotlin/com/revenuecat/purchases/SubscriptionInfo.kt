@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import android.net.Uri
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.DateHelper
@@ -94,6 +95,10 @@ class SubscriptionInfo(
      */
     val productPlanIdentifier: String?,
     /**
+     * URL to manage this subscription.
+     */
+    val managementURL: Uri?,
+    /**
      * The date the request was made.
      */
     private val requestDate: Date,
@@ -160,6 +165,7 @@ class SubscriptionInfo(
         displayName = null,
         price = null,
         productPlanIdentifier = null,
+        managementURL = null,
         requestDate = requestDate,
     )
 
@@ -184,6 +190,7 @@ class SubscriptionInfo(
                 productPlanIdentifier: $productPlanIdentifier,
                 displayName: $displayName,
                 autoResumeDate: $autoResumeDate,
+                managementURL: $managementURL,
                 requestDate: $requestDate,
                 productIdentifier: $productIdentifier
             }
@@ -214,5 +221,6 @@ class SubscriptionInfo(
         displayName = response.displayName,
         price = response.price?.toPrice(locale),
         productPlanIdentifier = response.productPlanIdentifier,
+        managementURL = response.managementURL?.let { Uri.parse(it) },
     )
 }

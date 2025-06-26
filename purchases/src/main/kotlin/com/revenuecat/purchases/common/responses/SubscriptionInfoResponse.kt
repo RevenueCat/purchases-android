@@ -49,6 +49,8 @@ internal data class SubscriptionInfoResponse(
     val price: PriceResponse? = null,
     @SerialName("product_plan_identifier")
     val productPlanIdentifier: String? = null,
+    @SerialName("management_url")
+    val managementURL: String? = null,
 ) {
 
     @Serializable
