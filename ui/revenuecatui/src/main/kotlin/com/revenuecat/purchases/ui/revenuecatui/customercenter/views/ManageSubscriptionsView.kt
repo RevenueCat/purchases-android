@@ -50,7 +50,6 @@ internal fun ManageSubscriptionsView(
     ) {
         if (screenType == CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT && purchaseInformation != null) {
             ActiveUserManagementView(
-                screenTitle,
                 contactEmail,
                 localization,
                 purchaseInformation,
@@ -75,7 +74,6 @@ internal fun ManageSubscriptionsView(
 @Suppress("UnusedParameter")
 @Composable
 private fun ActiveUserManagementView(
-    screenTitle: String,
     contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
     purchaseInformation: PurchaseInformation,

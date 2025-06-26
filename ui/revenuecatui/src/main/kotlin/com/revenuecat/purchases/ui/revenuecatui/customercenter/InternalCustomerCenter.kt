@@ -162,47 +162,39 @@ private fun InternalCustomerCenter(
         MaterialTheme.colorScheme
     }
 
+    val navigationButtonType: CustomerCenterState.NavigationButtonType
+    val title: String?
+    if (state is CustomerCenterState.Success) {
+        title = state.navigationState.currentDestination.title
+        navigationButtonType = state.navigationButtonType
+    } else {
+        title = null
+        navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE
+    }
+
     MaterialTheme(
         colorScheme = colorScheme,
     ) {
-        when (state) {
-            is CustomerCenterState.NotLoaded -> {
-                CustomerCenterScaffold(
-                    modifier = modifier
-                        .background(MaterialTheme.colorScheme.background),
-                    title = null,
-                    onAction = onAction,
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                ) { }
-            }
-            is CustomerCenterState.Loading -> {
-                CustomerCenterScaffold(
-                    modifier = modifier
-                        .background(MaterialTheme.colorScheme.background),
-                    title = null,
-                    onAction = onAction,
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                ) { CustomerCenterLoading() }
-            }
-            is CustomerCenterState.Error -> {
-                CustomerCenterScaffold(
-                    modifier = modifier
-                        .background(MaterialTheme.colorScheme.background),
-                    title = null,
-                    onAction = onAction,
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                ) { CustomerCenterError(state) }
-            }
-            is CustomerCenterState.Success -> {
-                val title = getTitleForDestination(state)
+        CustomerCenterScaffold(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.background),
+            title = title,
+            onAction = onAction,
+            navigationButtonType = navigationButtonType,
+        ) {
+            when (state) {
+                is CustomerCenterState.NotLoaded -> {
+                }
 
-                CustomerCenterScaffold(
-                    modifier = modifier
-                        .background(MaterialTheme.colorScheme.background),
-                    title = title,
-                    onAction = onAction,
-                    navigationButtonType = state.navigationButtonType,
-                ) {
+                is CustomerCenterState.Loading -> {
+                    CustomerCenterLoading()
+                }
+
+                is CustomerCenterState.Error -> {
+                    CustomerCenterError(state)
+                }
+
+                is CustomerCenterState.Success -> {
                     CustomerCenterLoaded(
                         state = state,
                         onAction = onAction,
@@ -321,25 +313,6 @@ private fun CustomerCenterLoaded(
         customerCenterState = state,
         onAction = onAction,
     )
-}
-
-private fun getTitleForDestination(
-    state: CustomerCenterState.Success,
-): String? {
-    return when (val destination = state.navigationState.currentDestination) {
-        is CustomerCenterDestination.Main -> {
-            val configuration = state.customerCenterConfigData
-            if (state.purchaseInformation != null) {
-                // Show title in TopAppBar for active users
-                configuration.getManagementScreen()?.title
-            } else {
-                // Don't show title in TopAppBar for no active screen - it's shown in content
-                null
-            }
-        }
-        is CustomerCenterDestination.FeedbackSurvey -> destination.title
-        is CustomerCenterDestination.PromotionalOffer -> null // No title for promotional offers
-    }
 }
 
 @Composable
