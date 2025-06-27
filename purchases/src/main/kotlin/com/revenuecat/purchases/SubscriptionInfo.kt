@@ -169,6 +169,58 @@ class SubscriptionInfo(
         requestDate = requestDate,
     )
 
+    @Deprecated(
+        message = """
+            Use the constructor that has managementURL
+            """,
+        replaceWith = ReplaceWith(
+            "SubscriptionInfo(productIdentifier, purchaseDate, originalPurchaseDate, expiresDate, store, " +
+                "isSandbox, unsubscribeDetectedAt, billingIssuesDetectedAt, gracePeriodExpiresDate, ownershipType, " +
+                "periodType, refundedAt, storeTransactionId, autoResumeDate, displayName, price, " +
+                "productPlanIdentifier, managementURL, requestDate)",
+        ),
+    )
+    constructor(
+        productIdentifier: String,
+        purchaseDate: Date,
+        originalPurchaseDate: Date?,
+        expiresDate: Date?,
+        store: Store,
+        unsubscribeDetectedAt: Date?,
+        isSandbox: Boolean,
+        billingIssuesDetectedAt: Date?,
+        gracePeriodExpiresDate: Date?,
+        ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+        periodType: PeriodType,
+        refundedAt: Date?,
+        storeTransactionId: String?,
+        autoResumeDate: Date?,
+        displayName: String?,
+        price: Price?,
+        productPlanIdentifier: String?,
+        requestDate: Date,
+    ) : this(
+        productIdentifier = productIdentifier,
+        purchaseDate = purchaseDate,
+        originalPurchaseDate = originalPurchaseDate,
+        expiresDate = expiresDate,
+        store = store,
+        isSandbox = isSandbox,
+        unsubscribeDetectedAt = unsubscribeDetectedAt,
+        billingIssuesDetectedAt = billingIssuesDetectedAt,
+        gracePeriodExpiresDate = gracePeriodExpiresDate,
+        ownershipType = ownershipType,
+        periodType = periodType,
+        refundedAt = refundedAt,
+        storeTransactionId = storeTransactionId,
+        autoResumeDate = autoResumeDate,
+        displayName = displayName,
+        price = price,
+        productPlanIdentifier = productPlanIdentifier,
+        managementURL = null,
+        requestDate = requestDate,
+    )
+
     override fun toString(): String {
         return """
             SubscriptionInfo {

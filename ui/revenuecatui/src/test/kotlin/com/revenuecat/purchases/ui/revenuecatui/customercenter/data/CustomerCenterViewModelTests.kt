@@ -685,7 +685,9 @@ class CustomerCenterViewModelTests {
                     }
 
                     // Track reload completion
-                    if (restoreCompletedWithSuccess.isCompleted && initialLoadingCompleted.isCompleted && !reloadingCompleted.isCompleted) {
+                    if (restoreCompletedWithSuccess.isCompleted
+                        && initialLoadingCompleted.isCompleted
+                        && !reloadingCompleted.isCompleted) {
                         reloadingCompleted.complete(true)
                     }
 
@@ -821,7 +823,7 @@ class CustomerCenterViewModelTests {
 
         // Set up the CustomerInfo to have a subscription
         val subscription = SubscriptionInfo(
-            productIdentifier = "test_product_id",
+            productIdentifier = "productIdentifier",
             purchaseDate = Date(),
             originalPurchaseDate = null,
             expiresDate = null,
@@ -830,10 +832,16 @@ class CustomerCenterViewModelTests {
             isSandbox = false,
             billingIssuesDetectedAt = null,
             gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
             periodType = PeriodType.NORMAL,
             refundedAt = null,
             storeTransactionId = null,
-            requestDate = Date()
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://example.com/manage"),
         )
 
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf("test_product_id" to subscription)
@@ -1002,8 +1010,12 @@ class CustomerCenterViewModelTests {
             type = HelpPath.PathType.MISSING_PURCHASE
         )
         model.pathButtonPressed(mockk(), missingPurchasePath, null)
-        verify(exactly = 1) { directListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase) }
-        verify(exactly = 1) { purchasesListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase) }
+        verify(exactly = 1) {
+            directListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase)
+        }
+        verify(exactly = 1) {
+            purchasesListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase)
+        }
 
         // Test CANCEL path
         val cancelPath = HelpPath(
@@ -1085,8 +1097,8 @@ class CustomerCenterViewModelTests {
             originalPurchaseDate = null,
             expiresDate = null,
             store = Store.PLAY_STORE,
-            unsubscribeDetectedAt = null,
             isSandbox = false,
+            unsubscribeDetectedAt = null,
             billingIssuesDetectedAt = null,
             gracePeriodExpiresDate = null,
             ownershipType = OwnershipType.PURCHASED,
@@ -1097,6 +1109,7 @@ class CustomerCenterViewModelTests {
             displayName = null,
             price = null,
             productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://example.com/manage"),
             requestDate = Date(),
         )
 
@@ -1138,10 +1151,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1184,10 +1203,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1309,10 +1334,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1353,10 +1384,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1397,10 +1434,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1441,10 +1484,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1485,10 +1534,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1529,10 +1584,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1576,10 +1637,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
