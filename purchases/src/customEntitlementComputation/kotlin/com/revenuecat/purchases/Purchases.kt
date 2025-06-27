@@ -56,13 +56,6 @@ class Purchases internal constructor(
             purchasesOrchestrator.updatedCustomerInfoListener = value
         }
 
-    /**
-     * A [StateFlow] that emits [CustomerInfo] updates.
-     * The first value is emitted from cache when available.
-     */
-    val customerInfo: StateFlow<CustomerInfo?>
-        get() = purchasesOrchestrator.customerInfoStateFlow
-
     // region Public Methods
 
     /**
