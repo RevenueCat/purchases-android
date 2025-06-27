@@ -33,4 +33,5 @@ internal object ProductResponseJsonKeys {
     const val EXPIRES_DATE = "expires_date"
     const val PERIOD_TYPE = "period_type"
     const val OWNERSHIP_TYPE = "ownership_type"
+    const val MANAGEMENT_URL = "management_url"
 }

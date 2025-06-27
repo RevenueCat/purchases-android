@@ -133,6 +133,7 @@ internal class OfflineCustomerInfoCalculator(
                         ProductResponseJsonKeys.EXPIRES_DATE,
                         product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL,
                     )
+                    put(ProductResponseJsonKeys.MANAGEMENT_URL, determineManagementURL())
                     put(
                         ProductResponseJsonKeys.PERIOD_TYPE,
                         PeriodType.NORMAL.name.lowercase(),

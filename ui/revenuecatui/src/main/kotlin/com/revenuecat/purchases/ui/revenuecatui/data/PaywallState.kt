@@ -86,8 +86,8 @@ internal sealed interface PaywallState {
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
-            private val activelySubscribedProductIds: Set<String>,
-            private val purchasedNonSubscriptionProductIds: Set<String>,
+            val activelySubscribedProductIds: Set<String>,
+            val purchasedNonSubscriptionProductIds: Set<String>,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
