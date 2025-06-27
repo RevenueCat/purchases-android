@@ -34,6 +34,7 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import kotlinx.coroutines.flow.StateFlow
 import java.net.URL
 
 /**
@@ -111,6 +112,13 @@ class Purchases internal constructor(
         @Synchronized set(value) {
             purchasesOrchestrator.updatedCustomerInfoListener = value
         }
+
+    /**
+     * A [StateFlow] that emits [CustomerInfo] updates.
+     * The first value is emitted from cache when available.
+     */
+    val customerInfo: StateFlow<CustomerInfo?>
+        get() = purchasesOrchestrator.customerInfoStateFlow
 
     /**
      * Listener that receives callbacks for Customer Center events such as restore initiated,
