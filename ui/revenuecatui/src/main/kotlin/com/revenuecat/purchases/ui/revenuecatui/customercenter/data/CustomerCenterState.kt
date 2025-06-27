@@ -28,8 +28,10 @@ internal sealed class CustomerCenterState(
         @get:JvmSynthetic val purchaseInformation: PurchaseInformation? = null,
         @get:JvmSynthetic val supportedPathsForManagementScreen: List<CustomerCenterConfigData.HelpPath>? = null,
         @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState? = null,
-        private val title: String? = null,
-        @get:JvmSynthetic val navigationState: CustomerCenterNavigationState = CustomerCenterNavigationState(title),
+        @get:JvmSynthetic val navigationState: CustomerCenterNavigationState = CustomerCenterNavigationState(
+            showingActivePurchasesScreen = purchaseInformation != null,
+            managementScreenTitle = customerCenterConfigData.getManagementScreen()?.title,
+        ),
         @get:JvmSynthetic override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination

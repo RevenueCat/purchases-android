@@ -7,14 +7,14 @@ import java.util.Deque
 
 @Immutable
 internal data class CustomerCenterNavigationState(
-    private val mainTitle: String?,
+    private val showingActivePurchasesScreen: Boolean,
+    private val managementScreenTitle: String?,
     val backStack: Deque<CustomerCenterDestination> = ArrayDeque<CustomerCenterDestination>().apply {
-        // Setting this to null allows the Main destination to be displayed without a title until we have a top bar
-        push(CustomerCenterDestination.Main(title = null))
+        push(CustomerCenterDestination.Main(showingActivePurchasesScreen, managementScreenTitle))
     },
 ) {
     val currentDestination: CustomerCenterDestination
-        get() = backStack.peek() ?: CustomerCenterDestination.Main(title = null)
+        get() = backStack.peek() ?: CustomerCenterDestination.Main(showingActivePurchasesScreen, managementScreenTitle)
 
     val canNavigateBack: Boolean
         get() = backStack.size > 1
