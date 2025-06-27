@@ -71,9 +71,13 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override suspend fun awaitGetProduct(productId: String, basePlan: String?): StoreProduct? {
         val products = purchases.awaitGetProducts(listOf(productId))
-        return products.firstOrNull {
-            it.googleProduct?.basePlanId == basePlan
-        } ?: products.firstOrNull()
+        // Get products returns one product per base plan ID if it is a subscription product.
+        // If the product is an in-app product, it will return a single product.
+        return if (basePlan == null) {
+            products.firstOrNull()
+        } else {
+            products.firstOrNull { it.googleProduct?.basePlanId == basePlan }
+        }
     }
 
     override fun track(event: FeatureEvent) {
