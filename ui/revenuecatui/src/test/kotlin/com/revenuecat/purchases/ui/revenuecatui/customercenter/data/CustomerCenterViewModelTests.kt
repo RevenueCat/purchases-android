@@ -31,6 +31,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -51,6 +52,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -759,7 +761,9 @@ class CustomerCenterViewModelTests {
                     }
 
                     // Track reload completion
-                    if (restoreCompletedWithSuccess.isCompleted && initialLoadingCompleted.isCompleted && !reloadingCompleted.isCompleted) {
+                    if (restoreCompletedWithSuccess.isCompleted
+                        && initialLoadingCompleted.isCompleted
+                        && !reloadingCompleted.isCompleted) {
                         reloadingCompleted.complete(true)
                     }
 
@@ -895,7 +899,7 @@ class CustomerCenterViewModelTests {
 
         // Set up the CustomerInfo to have a subscription
         val subscription = SubscriptionInfo(
-            productIdentifier = "test_product_id",
+            productIdentifier = "productIdentifier",
             purchaseDate = Date(),
             originalPurchaseDate = null,
             expiresDate = null,
@@ -904,10 +908,16 @@ class CustomerCenterViewModelTests {
             isSandbox = false,
             billingIssuesDetectedAt = null,
             gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
             periodType = PeriodType.NORMAL,
             refundedAt = null,
             storeTransactionId = null,
-            requestDate = Date()
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://example.com/manage"),
         )
 
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf("test_product_id" to subscription)
@@ -1029,7 +1039,7 @@ class CustomerCenterViewModelTests {
         var feedbackState: CustomerCenterState.Success? = null
         val feedbackJob = launch {
             model.state.collect { state ->
-                if (state is CustomerCenterState.Success && state.feedbackSurveyData != null) {
+                if (state is CustomerCenterState.Success && state.currentDestination is CustomerCenterDestination.FeedbackSurvey) {
                     feedbackState = state
                     cancel()
                 }
@@ -1037,11 +1047,12 @@ class CustomerCenterViewModelTests {
         }
         feedbackJob.join()
 
-        // Ensure we have a state with feedback survey data
+        // Ensure we have a state with feedback survey destination
         assertThat(feedbackState).isNotNull
-        assertThat(feedbackState?.feedbackSurveyData).isNotNull
+        assertThat(feedbackState?.currentDestination).isInstanceOf(CustomerCenterDestination.FeedbackSurvey::class.java)
 
-        feedbackState?.feedbackSurveyData?.onAnswerSubmitted?.invoke(feedbackSurveyOption)
+        val feedbackDestination = feedbackState?.currentDestination as? CustomerCenterDestination.FeedbackSurvey
+        feedbackDestination?.data?.onAnswerSubmitted?.invoke(feedbackSurveyOption)
 
         // Verify both listeners were called with the correct ID
         verify(exactly = 1) { directListener.onFeedbackSurveyCompleted(feedbackSurveyOptionId) }
@@ -1076,8 +1087,12 @@ class CustomerCenterViewModelTests {
             type = HelpPath.PathType.MISSING_PURCHASE
         )
         model.pathButtonPressed(mockk(), missingPurchasePath, null)
-        verify(exactly = 1) { directListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase) }
-        verify(exactly = 1) { purchasesListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase) }
+        verify(exactly = 1) {
+            directListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase)
+        }
+        verify(exactly = 1) {
+            purchasesListener.onManagementOptionSelected(CustomerCenterManagementOption.MissingPurchase)
+        }
 
         // Test CANCEL path
         val cancelPath = HelpPath(
@@ -1159,8 +1174,8 @@ class CustomerCenterViewModelTests {
             originalPurchaseDate = null,
             expiresDate = null,
             store = Store.PLAY_STORE,
-            unsubscribeDetectedAt = null,
             isSandbox = false,
+            unsubscribeDetectedAt = null,
             billingIssuesDetectedAt = null,
             gracePeriodExpiresDate = null,
             ownershipType = OwnershipType.PURCHASED,
@@ -1171,6 +1186,7 @@ class CustomerCenterViewModelTests {
             displayName = null,
             price = null,
             productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://example.com/manage"),
             requestDate = Date(),
         )
 
@@ -1212,10 +1228,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1258,10 +1280,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1383,10 +1411,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1427,10 +1461,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1471,10 +1511,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1515,10 +1561,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1559,10 +1611,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1603,10 +1661,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1650,10 +1714,16 @@ class CustomerCenterViewModelTests {
                 isSandbox = false,
                 billingIssuesDetectedAt = null,
                 gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
                 periodType = PeriodType.NORMAL,
                 refundedAt = null,
                 storeTransactionId = null,
-                requestDate = Date()
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
             )
         )
 
@@ -1696,6 +1766,7 @@ class CustomerCenterViewModelTests {
         every { purchases.syncPurchases() } just Runs
 
         every { configData.getManagementScreen() } returns screens[Screen.ScreenType.MANAGEMENT]
+        every { configData.getNoActiveScreen() } returns screens[Screen.ScreenType.NO_ACTIVE]
 
         every { customerInfo.managementURL } returns null
         every { customerInfo.activeSubscriptions } returns setOf()
@@ -1715,6 +1786,13 @@ class CustomerCenterViewModelTests {
             paths = listOf(originalPath)
         )
 
+        val noActiveScreen = Screen(
+            type = Screen.ScreenType.NO_ACTIVE,
+            title = "No Active Subscription",
+            subtitle = "You don't have an active subscription.",
+            paths = emptyList()
+        )
+
         val mockScreens = mapOf(
             Screen.ScreenType.MANAGEMENT to managementScreen
         )
@@ -1726,6 +1804,7 @@ class CustomerCenterViewModelTests {
 
         every { configData.screens } returns mockScreens
         every { configData.getManagementScreen() } returns managementScreen
+        every { configData.getNoActiveScreen() } returns noActiveScreen
         every { configData.localization } returns localization
 
         // Wait for initial state to load
@@ -1818,15 +1897,16 @@ class CustomerCenterViewModelTests {
         val successState = updatedState as CustomerCenterState.Success
 
         if (expectedResult) {
-            assertThat(successState.promotionalOfferData).isNotNull
-            successState.promotionalOfferData?.let { data ->
+            assertThat(successState.currentDestination).isInstanceOf(CustomerCenterDestination.PromotionalOffer::class.java)
+            val promotionalOfferDestination = successState.currentDestination as? CustomerCenterDestination.PromotionalOffer
+            promotionalOfferDestination?.data?.let { data ->
                 assertThat(data.configuredPromotionalOffer).isEqualTo(expectedPromotionalOffer)
                 assertThat(data.subscriptionOption).isEqualTo(expectedSubscriptionOption)
                 assertThat(data.originalPath).isEqualTo(expectedOriginalPath)
                 assertThat(data.localizedPricingPhasesDescription).isEqualTo(expectedPricingDescription)
             }
         } else {
-            assertThat(successState.promotionalOfferData).isNull()
+            assertThat(successState.currentDestination).isNotInstanceOf(CustomerCenterDestination.PromotionalOffer::class.java)
         }
     }
 
