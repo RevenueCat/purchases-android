@@ -665,12 +665,13 @@ internal class CustomerCenterViewModelImpl(
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         product: StoreProduct,
     ): SubscriptionOption? {
+        val googleProduct = product.googleProduct
         val crossProductPromotion: CrossProductPromotion? =
             promotionalOffer.crossProductPromotions[product.id]
                 // Check for cross-product promotions first (product.id includes base plan ex: "sub:p1m")
                 // But it's possible the product is not configured with base plan in RevenueCat
                 // so we also check for the Google product ID (which does not include base plan ex: "sub")
-                ?: promotionalOffer.crossProductPromotions[product.googleProduct?.productId ?: ""]
+                ?: googleProduct?.let { promotionalOffer.crossProductPromotions[it.productId] }
                 ?: promotionalOffer.productMapping[product.id]?.let {
                     CrossProductPromotion(
                         storeOfferIdentifier = it,
@@ -687,12 +688,12 @@ internal class CustomerCenterViewModelImpl(
 
         val targetProduct: StoreProduct? = when {
             crossProductPromotion.targetProductId == product.id -> product
-            product.googleProduct?.basePlanId != null ->
-                // Passing oringinal product's base plan ID to find the target product
+            googleProduct?.basePlanId != null ->
+                // Passing original product's base plan ID to find the target product
                 // in case the target product is missing the base plan ID in the dashboard
                 // which is common for old products. Purchases.getProducts would return all products
                 // with the same product ID but different base plan IDs. That way we can find the most relevant product.
-                findTargetProduct(crossProductPromotion.targetProductId, product.googleProduct!!.basePlanId!!)
+                findTargetProduct(crossProductPromotion.targetProductId, googleProduct.basePlanId!!)
             else -> null
         }
 
