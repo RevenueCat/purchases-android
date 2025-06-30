@@ -7,7 +7,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseResult
@@ -26,6 +25,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
@@ -33,7 +33,6 @@ import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateLoadedComponentsLocaleTests.Args
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createGoogleStoreProduct
@@ -60,7 +59,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 import java.util.Date
 import java.util.Locale
 
@@ -465,44 +463,50 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer handles target product without base plan`() = runTest {
+    fun `loadAndDisplayPromotionalOffer loads target product with same base plan if not specified`() = runTest {
         setupPurchasesMock()
 
         val model = setupViewModel()
-
-        val monthlySubscriptionOption = createSubscriptionOption(
+        val regularPricingPhase = stubPricingPhase(
+            billingCycleCount = 0,
+            billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+            price = 9.99,
+            recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+        )
+        val subscriptionOption = createSubscriptionOption(
             productId = "paywall_tester.subs",
             basePlanId = "monthly",
-            offerId = "rc-cancel-offer"
+            offerId = "promotional-offer-id",
+            pricingPhases = listOf(
+                stubPricingPhase(
+                    billingCycleCount = 1,
+                    billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                    price = 0.0,
+                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+                ),
+                regularPricingPhase
+            )
         )
-
-        val annualSubscriptionOption = createSubscriptionOption(
-            productId = "old_product",
-            basePlanId = "p1m",
-            offerId = "rc-cancel-offer",
-            secondPhasePeriod = Period(value = 1, unit = Period.Unit.YEAR, "P1Y")
-        )
-
-        val crossProductPromotion = HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
-            storeOfferIdentifier = "rc-cancel-offer",
-            targetProductId = "old_product"
-        )
-
-        val productMonthly = createGoogleStoreProduct(
+        val subscriptionOptionBase = createSubscriptionOption(
             productId = "paywall_tester.subs",
             basePlanId = "monthly",
-            subscriptionOptions = listOf(monthlySubscriptionOption)
+            offerId = null,
+            pricingPhases = listOf(regularPricingPhase)
         )
-        val productAnnual = createGoogleStoreProduct(
-            productId = "old_product",
-            basePlanId = "p1m",
-            subscriptionOptions = listOf(annualSubscriptionOption)
+        val monthlyProduct = createGoogleStoreProduct(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(subscriptionOption, subscriptionOptionBase)
         )
-        coEvery { purchases.awaitGetProduct("old_product", null) } returns productAnnual
+
+        coEvery { purchases.awaitGetProduct("paywall_tester.subs", "monthly") } returns monthlyProduct
 
         val promotionalOffer = createPromotionalOffer(
-            productMapping = emptyMap(),
-            crossProductPromotions = mapOf("paywall_tester.subs:monthly" to crossProductPromotion)
+            crossProductPromotions = mapOf("paywall_tester.subs" to
+                HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                    storeOfferIdentifier = "promotional-offer-id",
+                    targetProductId = "paywall_tester.subs"
+                ))
         )
 
         val originalPath = createOriginalPath()
@@ -511,7 +515,7 @@ class CustomerCenterViewModelTests {
 
         val result = model.loadAndDisplayPromotionalOffer(
             context = mockk(relaxed = true),
-            product = productMonthly,
+            product = monthlyProduct,
             promotionalOffer = promotionalOffer,
             originalPath = originalPath
         )
@@ -521,9 +525,79 @@ class CustomerCenterViewModelTests {
             model = model,
             expectedResult = true,
             expectedPromotionalOffer = promotionalOffer,
-            expectedSubscriptionOption = annualSubscriptionOption,
+            expectedSubscriptionOption = subscriptionOption,
             expectedOriginalPath = originalPath,
-            expectedPricingDescription = "First 1 month free, then $9.99/yr"
+            expectedPricingDescription = "First 1 month free, then $9.99/mth"
+        )
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer handles source product without base plan`() = runTest {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+        val regularPricingPhase = stubPricingPhase(
+            billingCycleCount = 0,
+            billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+            price = 9.99,
+            recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+        )
+
+        val subscriptionOption = createSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            offerId = "promotional-offer-id",
+            pricingPhases = listOf(
+                stubPricingPhase(
+                    billingCycleCount = 1,
+                    billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                    price = 0.0,
+                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+                ),
+                regularPricingPhase
+            )
+        )
+        val subscriptionOptionBase = createSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            offerId = null,
+            pricingPhases = listOf(regularPricingPhase)
+        )
+
+        val product = createGoogleStoreProduct(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(subscriptionOption, subscriptionOptionBase)
+        )
+
+        val promotionalOffer = createPromotionalOffer(
+            crossProductPromotions = mapOf("paywall_tester.subs" to
+                HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                    storeOfferIdentifier = "promotional-offer-id",
+                    targetProductId = "paywall_tester.subs"
+                ))
+        )
+
+        val originalPath = createOriginalPath()
+        setupSuccessLoadScreen(originalPath, model)
+
+        coEvery { purchases.awaitGetProduct("paywall_tester.subs", "monthly") } returns product
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        verifyPromotionalOfferResult(
+            result = result,
+            model = model,
+            expectedResult = true,
+            expectedPromotionalOffer = promotionalOffer,
+            expectedSubscriptionOption = subscriptionOption,
+            expectedOriginalPath = originalPath,
+            expectedPricingDescription = "First 1 month free, then $9.99/mth"
         )
     }
 
@@ -1748,31 +1822,32 @@ class CustomerCenterViewModelTests {
     private fun createSubscriptionOption(
         productId: String,
         basePlanId: String,
-        offerId: String,
+        offerId: String?,
         firstPhasePeriod: Period = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
         firstPhasePrice: Double = 0.0,
         secondPhasePeriod: Period = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
         secondPhasePrice: Double = 9.99,
+        pricingPhases: List<PricingPhase> = listOf(
+            stubPricingPhase(
+                billingCycleCount = 1,
+                billingPeriod = firstPhasePeriod,
+                price = firstPhasePrice,
+                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+            ),
+            stubPricingPhase(
+                billingCycleCount = 0,
+                billingPeriod = secondPhasePeriod,
+                price = secondPhasePrice,
+                recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+            )
+        ),
     ): GoogleSubscriptionOption {
         return stubGoogleSubscriptionOption(
             productId = productId,
             basePlanId = basePlanId,
             productDetails = mockk(),
             offerId = offerId,
-            pricingPhases = listOf(
-                stubPricingPhase(
-                    billingCycleCount = 1,
-                    billingPeriod = firstPhasePeriod,
-                    price = firstPhasePrice,
-                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
-                ),
-                stubPricingPhase(
-                    billingCycleCount = 0,
-                    billingPeriod = secondPhasePeriod,
-                    price = secondPhasePrice,
-                    recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
-                )
-            ),
+            pricingPhases = pricingPhases,
             tags = listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
         )
     }
