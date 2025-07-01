@@ -250,11 +250,11 @@ internal class AmazonBilling(
         onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
-        queryAllPurchases(
+        queryPurchases(
             appUserID,
-            onReceivePurchaseHistory = {
+            onSuccess = {
                 // We get productIds[0] because the list is guaranteed to have just one item in Amazon's case.
-                val record: StoreTransaction? = it.firstOrNull { record -> productId == record.productIds[0] }
+                val record: StoreTransaction? = it.values.firstOrNull { record -> productId == record.productIds[0] }
                 if (record != null) {
                     onCompletion(record)
                 } else {
