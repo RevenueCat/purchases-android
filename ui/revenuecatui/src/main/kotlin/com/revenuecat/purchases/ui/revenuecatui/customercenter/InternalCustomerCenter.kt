@@ -367,7 +367,7 @@ private fun MainScreenContent(
                     }
                 },
                 onAction = onAction,
-                purchaseInformation = state.purchases,
+                purchases = state.purchases,
             )
         } ?: run {
             // Handle missing management screen

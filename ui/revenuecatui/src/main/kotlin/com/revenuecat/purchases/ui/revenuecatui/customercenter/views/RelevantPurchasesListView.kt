@@ -36,7 +36,7 @@ internal fun RelevantPurchasesListView(
     onPurchaseSelect: (PurchaseInformation) -> Unit,
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
-    purchaseInformation: List<PurchaseInformation> = emptyList(),
+    purchases: List<PurchaseInformation> = emptyList(),
 ) {
     Column(
         modifier = modifier
@@ -56,14 +56,13 @@ internal fun RelevantPurchasesListView(
 
         Spacer(modifier = Modifier.size(ManagementViewSpacer))
 
-        // Split purchases into subscriptions and non-subscriptions
-        val subscriptions = purchaseInformation.filter { it.product?.period != null }
-        val nonSubscriptions = purchaseInformation.filter { it.product?.period == null }
+        val subscriptions = purchases.filter { it.isSubscription }.toSet()
+        val nonSubscriptions = (purchases - subscriptions).toSet()
 
         PurchaseListSection(
             purchases = subscriptions,
             localization = localization,
-            totalPurchaseCount = purchaseInformation.size,
+            totalPurchaseCount = purchases.size,
             onPurchaseSelect = onPurchaseSelect,
         )
 
@@ -85,14 +84,14 @@ internal fun RelevantPurchasesListView(
             PurchaseListSection(
                 purchases = nonSubscriptions,
                 localization = localization,
-                totalPurchaseCount = purchaseInformation.size,
+                totalPurchaseCount = purchases.size,
                 onPurchaseSelect = onPurchaseSelect,
             )
         }
 
         ManageSubscriptionsButtonsView(
-            associatedPurchaseInformation = if (purchaseInformation.size == 1) {
-                purchaseInformation.first()
+            associatedPurchaseInformation = if (purchases.size == 1) {
+                purchases.first()
             } else {
                 null
             },
@@ -106,7 +105,7 @@ internal fun RelevantPurchasesListView(
 
 @Composable
 private fun PurchaseListSection(
-    purchases: List<PurchaseInformation>,
+    purchases: Set<PurchaseInformation>,
     localization: CustomerCenterConfigData.Localization,
     totalPurchaseCount: Int,
     onPurchaseSelect: (PurchaseInformation) -> Unit,
@@ -160,7 +159,7 @@ private fun RelevantPurchasesListViewPreview() {
                 localization = testData.localization,
                 onPurchaseSelect = {},
                 onAction = {},
-                purchaseInformation = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+                purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
             )
         }
     }
@@ -180,7 +179,7 @@ private fun NoActiveSubscriptionsViewPreview() {
                 localization = testData.localization,
                 onPurchaseSelect = {},
                 onAction = {},
-                purchaseInformation = emptyList(),
+                purchases = emptyList(),
             )
         }
     }
@@ -200,7 +199,7 @@ private fun RelevantPurchasesListViewWithLifetimePurchasePreview() {
                 contactEmail = "support@revenuecat.com",
                 onPurchaseSelect = {},
                 onAction = {},
-                purchaseInformation = listOf(
+                purchases = listOf(
                     CustomerCenterConfigTestData.purchaseInformationLifetime,
                 ),
             )
@@ -222,7 +221,7 @@ private fun RelevantPurchasesListViewWithSubscriptionsAndLifetimePurchasePreview
                 contactEmail = "support@revenuecat.com",
                 onPurchaseSelect = {},
                 onAction = {},
-                purchaseInformation = listOf(
+                purchases = listOf(
                     CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
                     CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
                     CustomerCenterConfigTestData.purchaseInformationLifetime,
@@ -247,7 +246,7 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
                 contactEmail = "support@revenuecat.com",
                 onPurchaseSelect = {},
                 onAction = {},
-                purchaseInformation = emptyList(),
+                purchases = emptyList(),
             )
         }
     }
@@ -272,7 +271,7 @@ private fun RelevantPurchasesListViewWithMultiplePurchasesPreview() {
                 contactEmail = "support@revenuecat.com",
                 onPurchaseSelect = {},
                 onAction = {},
-                purchaseInformation = listOf(
+                purchases = listOf(
                     CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
                     CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
                 ),
