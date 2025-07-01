@@ -11,7 +11,7 @@ internal object OfferingStrings {
     const val CREATED_OFFERINGS = "Offerings object created with %d offerings"
     const val JSON_EXCEPTION_ERROR = "JSONException when building Offerings object. Message: %s"
     const val LIST_PRODUCTS = "%s - %s"
-    const val LIST_UNFETCHED_PRODUCTS = "Product not found: %s - Product Type: %s, Status code: %s, Serialized doc ID: %s"
+    const val LIST_UNFETCHED_PRODUCTS = "Product not found: %s - Product Type: %s, Reason: %s, Serialized doc ID: %s"
     const val EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE = "BillingClient queryProductDetails has returned more than once, " +
         "with result: %s. More info here: https://rev.cat/google-duplicated-listener-timeouts"
     const val EXTRA_QUERY_PURCHASES_RESPONSE = "BillingClient queryPurchases has returned more than once, " +

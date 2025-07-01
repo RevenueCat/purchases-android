@@ -7,6 +7,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.QueryProductDetailsResult
+import com.android.billingclient.api.UnfetchedProduct.StatusCode
 import com.revenuecat.purchases.NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -84,7 +85,7 @@ internal class QueryProductDetailsUseCase(
                 OfferingStrings.LIST_UNFETCHED_PRODUCTS.format(
                     it.productId,
                     it.productType,
-                    it.statusCode.toString(),
+                    convertUnfetchedProductStatusCodeToString(it.statusCode),
                     it.serializedDocid,
                 )
             }
@@ -158,6 +159,16 @@ internal class QueryProductDetailsUseCase(
             } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                 errorLog(e) { "Error building Params during safety check." }
             }
+        }
+    }
+
+    private fun convertUnfetchedProductStatusCodeToString(statusCode: Int): String {
+        return when (statusCode) {
+            StatusCode.UNKNOWN -> "UNKNOWN"
+            StatusCode.PRODUCT_NOT_FOUND -> "PRODUCT_NOT_FOUND"
+            StatusCode.INVALID_PRODUCT_ID_FORMAT -> "INVALID_PRODUCT_ID_FORMAT"
+            StatusCode.NO_ELIGIBLE_OFFER -> "NO_ELIGIBLE_OFFER"
+            else -> "UNKNOWN_STATUS_CODE: $statusCode"
         }
     }
 }
