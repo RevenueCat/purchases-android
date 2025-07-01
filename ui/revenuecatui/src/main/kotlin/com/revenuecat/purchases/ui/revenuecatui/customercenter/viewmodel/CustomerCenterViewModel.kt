@@ -37,6 +37,7 @@ import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
@@ -70,6 +71,8 @@ internal interface CustomerCenterViewModel {
         product: PurchaseInformation?,
     )
 
+    fun selectPurchase(purchase: PurchaseInformation)
+
     suspend fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
@@ -78,6 +81,7 @@ internal interface CustomerCenterViewModel {
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation? = null,
     ): Boolean
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
@@ -170,11 +174,17 @@ internal class CustomerCenterViewModelImpl(
 
                     viewModelScope.launch {
                         val promotionalOfferDisplayed =
-                            handlePromotionalOffer(context, purchaseInformation?.product, it.promotionalOffer, path)
+                            handlePromotionalOffer(
+                                context,
+                                purchaseInformation?.product,
+                                it.promotionalOffer,
+                                path,
+                                purchaseInformation,
+                            )
                         if (!promotionalOfferDisplayed) {
                             // No promotional offer, close survey and execute main path action
                             goBackToMain()
-                            mainPathAction(path, context)
+                            mainPathAction(path, context, purchaseInformation)
                         }
                     }
                 } ?: run {
@@ -185,16 +195,65 @@ internal class CustomerCenterViewModelImpl(
         }
         viewModelScope.launch {
             val promotionalOfferDisplayed =
-                handlePromotionalOffer(context, purchaseInformation?.product, path.promotionalOffer, path)
+                handlePromotionalOffer(
+                    context,
+                    purchaseInformation?.product,
+                    path.promotionalOffer,
+                    path,
+                    purchaseInformation,
+                )
             if (!promotionalOfferDisplayed) {
-                mainPathAction(path, context)
+                mainPathAction(path, context, purchaseInformation)
             }
         }
     }
 
-    private fun handleCancelPath(context: Context) {
+    override fun selectPurchase(purchase: PurchaseInformation) {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val screen = currentState.customerCenterConfigData.getManagementScreen()
+                if (screen != null) {
+                    val baseSupportedPaths = supportedPaths(purchase, screen)
+
+                    // For detail screen: only show subscription-specific actions
+                    val detailSupportedPaths = PathUtils.filterSubscriptionSpecificPaths(baseSupportedPaths)
+
+                    currentState.copy(
+                        navigationState = currentState.navigationState.push(
+                            CustomerCenterDestination.SelectedPurchaseDetail(purchase, screen.title),
+                        ),
+                        title = screen.title,
+                        navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                        detailScreenPaths = detailSupportedPaths,
+                    )
+                } else {
+                    Logger.e("No management screen available in the customer center config data")
+                    CustomerCenterState.Error(
+                        PurchasesError(
+                            PurchasesErrorCode.UnknownError,
+                            "No management screen available in the customer center config data",
+                        ),
+                    )
+                }
+            } else {
+                currentState
+            }
+        }
+    }
+
+    private fun handleCancelPath(context: Context, purchaseInformation: PurchaseInformation? = null) {
         val currentState = _state.value as? CustomerCenterState.Success ?: return
-        val purchaseInfo = currentState.purchaseInformation
+        val purchaseInfo = purchaseInformation ?: when (val destination = currentState.currentDestination) {
+            is CustomerCenterDestination.SelectedPurchaseDetail -> destination.purchaseInformation
+            else -> {
+                // If we're on the main screen and there's only one purchase, use that purchase
+                if (currentState.purchases.size == 1) {
+                    currentState.purchases.first()
+                } else {
+                    null
+                }
+            }
+        }
 
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
@@ -221,6 +280,7 @@ internal class CustomerCenterViewModelImpl(
     private fun mainPathAction(
         path: CustomerCenterConfigData.HelpPath,
         context: Context,
+        purchaseInformation: PurchaseInformation? = null,
     ) {
         when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE -> {
@@ -234,7 +294,7 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
 
-            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> handleCancelPath(context)
+            CustomerCenterConfigData.HelpPath.PathType.CANCEL -> handleCancelPath(context, purchaseInformation)
 
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL -> {
                 path.url?.let {
@@ -307,12 +367,12 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun supportedPaths(
-        purchaseInformation: PurchaseInformation?,
+        selectedPurchaseInformation: PurchaseInformation?,
         screen: CustomerCenterConfigData.Screen,
-    ): List<CustomerCenterConfigData.HelpPath> {
+    ): List<HelpPath> {
         return screen.paths
-            .filter { isPathAllowedForStore(it, purchaseInformation) }
-            .filter { isPathAllowedForLifetimeSubscription(it, purchaseInformation) }
+            .filter { isPathAllowedForStore(it, selectedPurchaseInformation) }
+            .filter { isPathAllowedForLifetimeSubscription(it, selectedPurchaseInformation) }
     }
 
     private fun isPathAllowedForLifetimeSubscription(
@@ -342,37 +402,59 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    private suspend fun loadPurchaseInformation(
+    private fun computeMainScreenPaths(state: CustomerCenterState.Success): List<CustomerCenterConfigData.HelpPath> {
+        val managementScreen = state.customerCenterConfigData.getManagementScreen()
+        val baseSupportedPaths = managementScreen?.let { screen ->
+            val selectedPurchase = if (state.purchases.size == 1) {
+                state.purchases.first()
+            } else {
+                null
+            }
+            supportedPaths(selectedPurchase, screen)
+        } ?: emptyList()
+
+        // For main screen: if multiple purchases, show only general paths
+        // If single purchase or no purchases, show all available paths
+        return if (state.purchases.size > 1) {
+            PathUtils.filterGeneralPaths(baseSupportedPaths)
+        } else {
+            baseSupportedPaths
+        }
+    }
+
+    private suspend fun loadPurchases(
         dateFormatter: DateFormatter,
         locale: Locale,
-    ): PurchaseInformation? {
+    ): List<PurchaseInformation> {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
         if (hasActiveSubscriptions || hasNonSubscriptionTransactions) {
-            val activeTransactionDetails = findActiveTransaction(customerInfo)
+            val activeTransactions = findActiveTransactions(customerInfo)
 
-            if (activeTransactionDetails != null) {
-                val entitlement = customerInfo.entitlements.all.values
-                    .firstOrNull { it.productIdentifier == activeTransactionDetails.productIdentifier }
+            if (activeTransactions.isNotEmpty()) {
+                return activeTransactions.map { transaction ->
+                    val entitlement = customerInfo.entitlements.all.values
+                        .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
-                return createPurchaseInformation(
-                    activeTransactionDetails,
-                    entitlement,
-                    dateFormatter,
-                    locale,
-                )
+                    createPurchaseInformation(
+                        transaction,
+                        entitlement,
+                        dateFormatter,
+                        locale,
+                    )
+                }
             } else {
                 Logger.w("Could not find subscription information")
             }
         }
 
-        return null
+        return emptyList()
     }
 
-    private fun findActiveTransaction(customerInfo: CustomerInfo): TransactionDetails? {
+    private fun findActiveTransactions(customerInfo: CustomerInfo): List<TransactionDetails> {
         val activeSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
             .filter { it.isActive }
             .sortedBy { it.expiresDate }
@@ -382,12 +464,10 @@ internal class CustomerCenterViewModelImpl(
         val otherActiveSubscriptions = activeSubscriptions.filter { it.store != Store.PLAY_STORE }
         val otherNonSubscriptions = customerInfo.nonSubscriptionTransactions.filter { it.store != Store.PLAY_STORE }
 
-        val transaction = activeGoogleSubscriptions.firstOrNull()
-            ?: googleNonSubscriptions.firstOrNull()
-            ?: otherActiveSubscriptions.firstOrNull()
-            ?: otherNonSubscriptions.firstOrNull()
+        val prioritized =
+            activeGoogleSubscriptions + googleNonSubscriptions + otherActiveSubscriptions + otherNonSubscriptions
 
-        return transaction?.let {
+        return prioritized.mapNotNull {
             when (it) {
                 is SubscriptionInfo -> TransactionDetails.Subscription(
                     productIdentifier = it.productIdentifier,
@@ -470,6 +550,7 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         originalPath: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation?,
     ): Boolean {
         if (!promotionalOffer.eligible) {
             Logger.d(
@@ -495,6 +576,11 @@ internal class CustomerCenterViewModelImpl(
                         originalPath,
                         pricingPhasesDescription,
                     ),
+                    purchaseInformation = purchaseInformation,
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(promotionalOfferDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(promotionalOfferDestination),
@@ -536,17 +622,24 @@ internal class CustomerCenterViewModelImpl(
         context: Context,
         originalPath: CustomerCenterConfigData.HelpPath,
     ) {
-        // Continue with the original action and remove the promotional offer data
-        mainPathAction(originalPath, context)
+        val purchaseInfo = (_state.value as? CustomerCenterState.Success).let { currentState ->
+            when (val destination = currentState?.currentDestination) {
+                is CustomerCenterDestination.PromotionalOffer -> destination.purchaseInformation
+                else -> null
+            }
+        }
 
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                currentState.copy(
-                    navigationState = currentState.navigationState.popToMain(),
+        // Continue with the original action and remove the promotional offer data
+        mainPathAction(originalPath, context, purchaseInfo)
+
+        _state.update { state ->
+            if (state is CustomerCenterState.Success) {
+                state.copy(
+                    navigationState = state.navigationState.popToMain(),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
             } else {
-                currentState
+                state
             }
         }
     }
@@ -572,9 +665,11 @@ internal class CustomerCenterViewModelImpl(
                 state is CustomerCenterState.Success &&
                     navigationButtonType == CustomerCenterState.NavigationButtonType.BACK -> {
                     if (state.navigationState.canNavigateBack) {
+                        val newNavigationState = state.navigationState.pop()
+
                         state.copy(
-                            navigationState = state.navigationState.pop(),
-                            navigationButtonType = if (state.navigationState.pop().canNavigateBack) {
+                            navigationState = newNavigationState,
+                            navigationButtonType = if (newNavigationState.canNavigateBack) {
                                 CustomerCenterState.NavigationButtonType.BACK
                             } else {
                                 CustomerCenterState.NavigationButtonType.CLOSE
@@ -605,21 +700,24 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformation = loadPurchaseInformation(dateFormatter, locale)
-            val title = if (purchaseInformation != null) {
+            val purchases = loadPurchases(dateFormatter, locale)
+            val title = if (purchases.isNotEmpty()) {
                 customerCenterConfigData.getManagementScreen()?.title
             } else {
                 customerCenterConfigData.getNoActiveScreen()?.title
             }
+
+            val successState = CustomerCenterState.Success(
+                customerCenterConfigData,
+                purchases,
+                mainScreenPaths = emptyList(), // Will be computed below
+                detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
+                title = title,
+            )
+            val mainScreenPaths = computeMainScreenPaths(successState)
+
             _state.update {
-                CustomerCenterState.Success(
-                    customerCenterConfigData,
-                    purchaseInformation,
-                    supportedPathsForManagementScreen = customerCenterConfigData.getManagementScreen()?.let {
-                        supportedPaths(purchaseInformation, it)
-                    },
-                    title = title,
-                )
+                successState.copy(mainScreenPaths = mainScreenPaths)
             }
         } catch (e: PurchasesException) {
             _state.update {
@@ -785,6 +883,7 @@ internal class CustomerCenterViewModelImpl(
         product: StoreProduct?,
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer?,
         path: CustomerCenterConfigData.HelpPath,
+        purchaseInformation: PurchaseInformation?,
     ): Boolean {
         if (product != null && promotionalOffer != null) {
             return loadAndDisplayPromotionalOffer(
@@ -792,6 +891,7 @@ internal class CustomerCenterViewModelImpl(
                 product,
                 promotionalOffer,
                 path,
+                purchaseInformation,
             )
         } else {
             return false

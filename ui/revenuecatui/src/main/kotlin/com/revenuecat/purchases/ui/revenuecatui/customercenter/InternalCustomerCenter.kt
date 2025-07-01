@@ -49,8 +49,10 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Custome
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
@@ -137,6 +139,7 @@ internal fun InternalCustomerCenter(
                         viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
                 }
+                is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
             }
         },
     )
@@ -270,6 +273,7 @@ private fun CustomerCenterLoaded(
     )
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun CustomerCenterNavHost(
     currentDestination: CustomerCenterDestination,
@@ -314,6 +318,16 @@ private fun CustomerCenterNavHost(
                     },
                 )
             }
+
+            is CustomerCenterDestination.SelectedPurchaseDetail -> {
+                SelectedPurchaseDetailView(
+                    contactEmail = customerCenterState.customerCenterConfigData.support.email,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                    purchaseInformation = destination.purchaseInformation,
+                    supportedPaths = customerCenterState.detailScreenPaths,
+                    onAction = onAction,
+                )
+            }
         }
     }
 
@@ -339,18 +353,21 @@ private fun MainScreenContent(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val configuration = state.customerCenterConfigData
-
-    if (state.purchaseInformation != null) {
+    if (state.purchases.isNotEmpty()) {
         configuration.getManagementScreen()?.let { managementScreen ->
-            ManageSubscriptionsView(
+            RelevantPurchasesListView(
                 screenTitle = managementScreen.title,
-                screenSubtitle = managementScreen.subtitle,
-                screenType = managementScreen.type,
-                supportedPaths = state.supportedPathsForManagementScreen ?: emptyList(),
+                supportedPaths = state.mainScreenPaths,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                purchaseInformation = state.purchaseInformation,
+                onPurchaseSelect = { purchase ->
+                    // Only allow selection if there are multiple purchases
+                    if (state.purchases.size > 1) {
+                        onAction(CustomerCenterAction.SelectPurchase(purchase))
+                    }
+                },
                 onAction = onAction,
+                purchases = state.purchases,
             )
         } ?: run {
             // Handle missing management screen
@@ -358,14 +375,13 @@ private fun MainScreenContent(
         }
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
-            ManageSubscriptionsView(
+            NoActiveUserManagementView(
                 screenTitle = noActiveScreen.title,
                 screenSubtitle = noActiveScreen.subtitle,
-                screenType = noActiveScreen.type,
-                supportedPaths = noActiveScreen.paths,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                onAction = onAction,
+                noActiveScreen.paths,
+                onAction,
             )
         } ?: run {
             // Fallback with a restore button
@@ -438,8 +454,9 @@ internal fun CustomerCenterNoActiveScreenPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
-            purchaseInformation = null,
-            supportedPathsForManagementScreen = listOf(),
+            purchases = emptyList(),
+            mainScreenPaths = listOf(),
+            detailScreenPaths = listOf(),
         ),
         modifier = Modifier
             .fillMaxSize()
@@ -478,8 +495,36 @@ internal fun CustomerCenterLoadedPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
-            purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
-            supportedPathsForManagementScreen = previewConfigData.getManagementScreen()?.paths,
+            purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+            mainScreenPaths = previewConfigData.getManagementScreen()?.paths ?: emptyList(),
+            detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
+            } ?: emptyList(),
+        ),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        onAction = {},
+    )
+}
+
+@Preview
+@Composable
+internal fun CustomerCenterMultiplePurchasesPreview() {
+    InternalCustomerCenter(
+        state = CustomerCenterState.Success(
+            customerCenterConfigData = previewConfigData,
+            purchases = listOf(
+                CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+                CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
+            ),
+            mainScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE ||
+                    it.type == CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL
+            } ?: emptyList(),
+            detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
+            } ?: emptyList(),
         ),
         modifier = Modifier
             .fillMaxSize()

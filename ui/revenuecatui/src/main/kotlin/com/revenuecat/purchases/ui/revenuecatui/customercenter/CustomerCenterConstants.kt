@@ -18,6 +18,7 @@ internal object CustomerCenterConstants {
     }
 
     object Layout {
+        val TOP_PADDING_AFTER_TOP_BAR = 8.dp
         val HORIZONTAL_PADDING = 16.dp
         val ITEMS_SPACING = 2.dp
         val SECTION_SPACING = 24.dp
