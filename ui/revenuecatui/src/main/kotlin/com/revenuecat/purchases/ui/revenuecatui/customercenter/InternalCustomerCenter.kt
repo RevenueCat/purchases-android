@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,6 +30,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +59,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubsc
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
 
@@ -185,24 +188,30 @@ private fun InternalCustomerCenter(
 }
 
 @Composable
-private fun createColorScheme(state: CustomerCenterState) = if (state is CustomerCenterState.Success) {
+private fun createColorScheme(state: CustomerCenterState): ColorScheme {
     val isDark = isSystemInDarkTheme()
-    val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
-    val accentColor = appearance.getColorForTheme(isDark) { it.accentColor }
+    val baseColorScheme = MaterialTheme.colorScheme
 
-    // Only change background when presenting a promotional offer
-    val backgroundColor = if (state.currentDestination is CustomerCenterDestination.PromotionalOffer) {
-        appearance.getColorForTheme(isDark) { it.backgroundColor }
-    } else {
-        null
+    return remember(state, isDark, baseColorScheme) {
+        if (state is CustomerCenterState.Success) {
+            val appearance: CustomerCenterConfigData.Appearance = state.customerCenterConfigData.appearance
+            val accentColor = appearance.getColorForTheme(isDark) { it.accentColor }
+
+            // Only change background when presenting a promotional offer
+            val backgroundColor = if (state.currentDestination is CustomerCenterDestination.PromotionalOffer) {
+                appearance.getColorForTheme(isDark) { it.backgroundColor }
+            } else {
+                null
+            }
+
+            baseColorScheme.copy(
+                primary = accentColor ?: baseColorScheme.primary,
+                background = backgroundColor ?: baseColorScheme.background,
+            )
+        } else {
+            baseColorScheme
+        }
     }
-
-    MaterialTheme.colorScheme.copy(
-        primary = accentColor ?: MaterialTheme.colorScheme.primary,
-        background = backgroundColor ?: MaterialTheme.colorScheme.background,
-    )
-} else {
-    MaterialTheme.colorScheme
 }
 
 private data class ScaffoldConfigData(
@@ -211,20 +220,22 @@ private data class ScaffoldConfigData(
     val shouldUseLargeTopBar: Boolean,
 )
 
+@Composable
 private fun createScaffoldState(state: CustomerCenterState): ScaffoldConfigData {
-    if (state is CustomerCenterState.Success) {
-        val title = state.navigationState.currentDestination.title
-        val navigationButtonType = state.navigationButtonType
-        // Only use large top bar for Main screen with active subscriptions
-        val shouldUseLargeTopBar = state.currentDestination is CustomerCenterDestination.Main &&
-            title != null
-        return ScaffoldConfigData(title, navigationButtonType, shouldUseLargeTopBar)
-    } else {
-        return ScaffoldConfigData(
-            title = null,
-            navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-            shouldUseLargeTopBar = false,
-        )
+    return remember(state) {
+        if (state is CustomerCenterState.Success) {
+            val title = state.navigationState.currentDestination.title
+            val navigationButtonType = state.navigationButtonType
+            val shouldUseLargeTopBar = state.currentDestination is CustomerCenterDestination.Main &&
+                title != null
+            ScaffoldConfigData(title, navigationButtonType, shouldUseLargeTopBar)
+        } else {
+            ScaffoldConfigData(
+                title = null,
+                navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                shouldUseLargeTopBar = false,
+            )
+        }
     }
 }
 
@@ -250,10 +261,8 @@ private fun CustomerCenterScaffold(
     }
 
     Scaffold(
-        modifier = if (scrollBehavior != null) {
-            modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-        } else {
-            modifier
+        modifier = Modifier.applyIfNotNull(scrollBehavior) {
+            modifier.nestedScroll(it.nestedScrollConnection)
         },
         topBar = {
             CustomerCenterTopBar(
@@ -282,10 +291,16 @@ private fun CustomerCenterTopBar(
     scrollBehavior: TopAppBarScrollBehavior?,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
+    val colors = TopAppBarDefaults.topAppBarColors(
+        containerColor = MaterialTheme.colorScheme.background,
+        scrolledContainerColor = MaterialTheme.colorScheme.background,
+        titleContentColor = MaterialTheme.colorScheme.onBackground,
+        navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+    )
     if (scaffoldConfig.shouldUseLargeTopBar) {
         LargeTopAppBar(
             title = {
-                Text(text = scaffoldConfig.title ?: "")
+                scaffoldConfig.title?.let { Text(text = it) }
             },
             navigationIcon = {
                 CustomerCenterNavigationIcon(
@@ -293,20 +308,13 @@ private fun CustomerCenterTopBar(
                     onAction = onAction,
                 )
             },
-            colors = TopAppBarDefaults.largeTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-                scrolledContainerColor = MaterialTheme.colorScheme.background,
-                titleContentColor = MaterialTheme.colorScheme.onBackground,
-                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
-            ),
+            colors = colors,
             scrollBehavior = scrollBehavior,
         )
     } else {
         TopAppBar(
             title = {
-                if (scaffoldConfig.title != null) {
-                    Text(text = scaffoldConfig.title)
-                }
+                scaffoldConfig.title?.let { Text(text = it) }
             },
             navigationIcon = {
                 CustomerCenterNavigationIcon(
@@ -314,11 +322,7 @@ private fun CustomerCenterTopBar(
                     onAction = onAction,
                 )
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-                titleContentColor = MaterialTheme.colorScheme.onBackground,
-                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
-            ),
+            colors = colors,
         )
     }
 }
