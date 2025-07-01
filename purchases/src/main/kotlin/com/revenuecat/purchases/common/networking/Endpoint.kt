@@ -84,4 +84,24 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             ->
                 false
         }
+
+    val supportsFallbackBaseURLs: Boolean
+        get() = when (this) {
+            is GetOfferings,
+            GetProductEntitlementMapping,
+            ->
+                true
+
+            is LogIn,
+            PostReceipt,
+            PostRedeemWebPurchase,
+            is GetAmazonReceipt,
+            is PostAttributes,
+            PostDiagnostics,
+            PostPaywallEvents,
+            is GetCustomerInfo,
+            is GetCustomerCenterConfig,
+            ->
+                false
+        }
 }

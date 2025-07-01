@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import android.net.Uri
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.DateHelper
@@ -94,6 +95,10 @@ class SubscriptionInfo(
      */
     val productPlanIdentifier: String?,
     /**
+     * URL to manage this subscription.
+     */
+    val managementURL: Uri?,
+    /**
      * The date the request was made.
      */
     private val requestDate: Date,
@@ -160,6 +165,59 @@ class SubscriptionInfo(
         displayName = null,
         price = null,
         productPlanIdentifier = null,
+        managementURL = null,
+        requestDate = requestDate,
+    )
+
+    @Deprecated(
+        message = """
+            Use the constructor that has managementURL
+            """,
+        replaceWith = ReplaceWith(
+            "SubscriptionInfo(productIdentifier, purchaseDate, originalPurchaseDate, expiresDate, store, " +
+                "isSandbox, unsubscribeDetectedAt, billingIssuesDetectedAt, gracePeriodExpiresDate, ownershipType, " +
+                "periodType, refundedAt, storeTransactionId, autoResumeDate, displayName, price, " +
+                "productPlanIdentifier, managementURL, requestDate)",
+        ),
+    )
+    constructor(
+        productIdentifier: String,
+        purchaseDate: Date,
+        originalPurchaseDate: Date?,
+        expiresDate: Date?,
+        store: Store,
+        unsubscribeDetectedAt: Date?,
+        isSandbox: Boolean,
+        billingIssuesDetectedAt: Date?,
+        gracePeriodExpiresDate: Date?,
+        ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+        periodType: PeriodType,
+        refundedAt: Date?,
+        storeTransactionId: String?,
+        autoResumeDate: Date?,
+        displayName: String?,
+        price: Price?,
+        productPlanIdentifier: String?,
+        requestDate: Date,
+    ) : this(
+        productIdentifier = productIdentifier,
+        purchaseDate = purchaseDate,
+        originalPurchaseDate = originalPurchaseDate,
+        expiresDate = expiresDate,
+        store = store,
+        isSandbox = isSandbox,
+        unsubscribeDetectedAt = unsubscribeDetectedAt,
+        billingIssuesDetectedAt = billingIssuesDetectedAt,
+        gracePeriodExpiresDate = gracePeriodExpiresDate,
+        ownershipType = ownershipType,
+        periodType = periodType,
+        refundedAt = refundedAt,
+        storeTransactionId = storeTransactionId,
+        autoResumeDate = autoResumeDate,
+        displayName = displayName,
+        price = price,
+        productPlanIdentifier = productPlanIdentifier,
+        managementURL = null,
         requestDate = requestDate,
     )
 
@@ -184,6 +242,7 @@ class SubscriptionInfo(
                 productPlanIdentifier: $productPlanIdentifier,
                 displayName: $displayName,
                 autoResumeDate: $autoResumeDate,
+                managementURL: $managementURL,
                 requestDate: $requestDate,
                 productIdentifier: $productIdentifier
             }
@@ -214,5 +273,6 @@ class SubscriptionInfo(
         displayName = response.displayName,
         price = response.price?.toPrice(locale),
         productPlanIdentifier = response.productPlanIdentifier,
+        managementURL = response.managementURL?.let { Uri.parse(it) },
     )
 }

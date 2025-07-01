@@ -94,7 +94,14 @@ class StackComponentViewTests {
                 dark = ColorInfo.Hex(expectedDarkColor.toArgb()),
             ),
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(
+            components = listOf(component),
+            packages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            )
+        )
 
         themeChangingTest(
             arrange = {
@@ -143,7 +150,14 @@ class StackComponentViewTests {
                 width = borderWidthDp
             ),
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(
+            components = listOf(component),
+            packages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            )
+        )
 
         themeChangingTest(
             arrange = {
@@ -202,7 +216,14 @@ class StackComponentViewTests {
             ),
             backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
         )
-        val state = FakePaywallState(component)
+        val state = FakePaywallState(
+            components = listOf(component),
+            packages = listOf(
+                packageWithoutIntroOffer,
+                packageWithSingleIntroOffer,
+                packageWithMultipleIntroOffers
+            )
+        )
 
         themeChangingTest(
             arrange = {
@@ -342,7 +363,12 @@ class StackComponentViewTests {
                 contentAlignment = Alignment.Center,
             ) {
                 // This PackageComponentView has a StackComponentView child.
-                PackageComponentView(style = style, state = state, modifier = Modifier.testTag("pkg"))
+                PackageComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("pkg")
+                )
             }
         }
 
@@ -679,7 +705,7 @@ class StackComponentViewTests {
                         .background(parentBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    PackageComponentView(style = noIntroOfferPackageComponentStyle, state = state)
+                    PackageComponentView(style = noIntroOfferPackageComponentStyle, state = state, clickHandler = { })
                 }
                 Box(
                     modifier = Modifier
@@ -688,7 +714,11 @@ class StackComponentViewTests {
                         .background(parentBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    PackageComponentView(style = singleIntroOfferPackageComponentStyle, state = state)
+                    PackageComponentView(
+                        style = singleIntroOfferPackageComponentStyle,
+                        state = state,
+                        clickHandler = { }
+                    )
                 }
                 Box(
                     modifier = Modifier
@@ -697,7 +727,11 @@ class StackComponentViewTests {
                         .background(parentBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    PackageComponentView(style = multipleIntroOffersPackageComponentStyle, state = state)
+                    PackageComponentView(
+                        style = multipleIntroOffersPackageComponentStyle,
+                        state = state,
+                        clickHandler = { }
+                    )
                 }
             }
         }

@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions
 
 import com.android.billingclient.api.ProductDetails

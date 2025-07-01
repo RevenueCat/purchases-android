@@ -76,7 +76,7 @@ internal class HTTPClient(
                 is IllegalArgumentException,
                 is IOException,
                 -> {
-                    log(LogIntent.WARNING, NetworkStrings.PROBLEM_CONNECTING.format(e.message))
+                    log(LogIntent.WARNING) { NetworkStrings.PROBLEM_CONNECTING.format(e.message) }
                     connection.errorStream
                 }
                 else -> throw e
@@ -99,7 +99,7 @@ internal class HTTPClient(
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         baseURL: URL,
@@ -108,9 +108,11 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false,
+        fallbackBaseURLs: List<URL> = emptyList(),
+        fallbackURLIndex: Int = 0,
     ): HTTPResult {
         if (appConfig.forceServerErrors) {
-            warnLog("Forcing server error for request to ${endpoint.getPath()}")
+            warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
             return HTTPResult(
                 RCHTTPStatusCodes.ERROR,
                 payload = "",
@@ -127,6 +129,7 @@ internal class HTTPClient(
             callSuccessful = true
         } finally {
             trackHttpRequestPerformedIfNeeded(
+                baseURL,
                 endpoint,
                 requestStartTime,
                 callSuccessful,
@@ -135,8 +138,36 @@ internal class HTTPClient(
             )
         }
         if (callResult == null) {
-            log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            callResult = performRequest(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag = true)
+            log(LogIntent.WARNING) { NetworkStrings.ETAG_RETRYING_CALL }
+            callResult = performRequest(
+                baseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag = true,
+                fallbackBaseURLs,
+                fallbackURLIndex,
+            )
+        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
+            endpoint.supportsFallbackBaseURLs &&
+            fallbackURLIndex in fallbackBaseURLs.indices
+        ) {
+            // Handle server errors with fallback URLs
+            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
+            log(LogIntent.DEBUG) {
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
+            }
+            callResult = performRequest(
+                fallbackBaseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackBaseURLs,
+                fallbackURLIndex + 1,
+            )
         }
         return callResult
     }
@@ -186,7 +217,7 @@ internal class HTTPClient(
         val payload: String?
         val responseCode: Int
         try {
-            debugLog(NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
+            debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
         } finally {
@@ -194,7 +225,7 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
-        debugLog(NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
+        debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         if (payload == null) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
@@ -225,6 +256,7 @@ internal class HTTPClient(
     }
 
     private fun trackHttpRequestPerformedIfNeeded(
+        baseURL: URL,
         endpoint: Endpoint,
         requestStartTime: Date,
         callSuccessful: Boolean,
@@ -244,6 +276,7 @@ internal class HTTPClient(
             val verificationResult = callResult?.verificationResult ?: VerificationResult.NOT_REQUESTED
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
             tracker.trackHttpRequestPerformed(
+                baseURL.host,
                 endpoint,
                 responseTime,
                 requestWasError,

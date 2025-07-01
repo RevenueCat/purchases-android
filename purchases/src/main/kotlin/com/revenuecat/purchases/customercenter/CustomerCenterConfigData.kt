@@ -1,20 +1,21 @@
 package com.revenuecat.purchases.customercenter
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.EmptyStringToNullSerializer
 import com.revenuecat.purchases.paywalls.PaywallColor
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 typealias RCColor = PaywallColor
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @Serializable
 internal class CustomerCenterRoot(
     @SerialName("customer_center") val customerCenter: CustomerCenterConfigData,
 )
 
-@ExperimentalPreviewRevenueCatPurchasesAPI
+@InternalRevenueCatAPI
 @Serializable
 data class CustomerCenterConfigData(
     @Serializable(with = ScreenMapSerializer::class) val screens: Map<Screen.ScreenType, Screen>,
@@ -197,6 +198,51 @@ data class CustomerCenterConfigData(
 
             @SerialName("done")
             DONE,
+
+            @SerialName("renews_on_date_for_price")
+            RENEWS_ON_DATE_FOR_PRICE,
+
+            @SerialName("renews_on_date")
+            RENEWS_ON_DATE,
+
+            @SerialName("purchase_info_expired_on_date")
+            PURCHASE_INFO_EXPIRED_ON_DATE,
+
+            @SerialName("purchase_info_expires_on_date")
+            PURCHASE_INFO_EXPIRES_ON_DATE,
+
+            @SerialName("active")
+            ACTIVE,
+
+            @SerialName("badge_cancelled")
+            BADGE_CANCELLED,
+
+            @SerialName("badge_free_trial")
+            BADGE_FREE_TRIAL,
+
+            @SerialName("badge_free_trial_cancelled")
+            BADGE_FREE_TRIAL_CANCELLED,
+
+            @SerialName("app_store")
+            APP_STORE,
+
+            @SerialName("mac_app_store")
+            MAC_APP_STORE,
+
+            @SerialName("google_play_store")
+            GOOGLE_PLAY_STORE,
+
+            @SerialName("amazon_store")
+            AMAZON_STORE,
+
+            @SerialName("web_store")
+            WEB_STORE,
+
+            @SerialName("unknown_store")
+            UNKNOWN_STORE,
+
+            @SerialName("card_store_promotional")
+            CARD_STORE_PROMOTIONAL,
             ;
 
             val defaultValue: String
@@ -266,6 +312,21 @@ data class CustomerCenterConfigData(
                         "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} " +
                             "during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
                     DONE -> "Done"
+                    RENEWS_ON_DATE_FOR_PRICE -> "Your next charge is {{ price }} on {{ date }}."
+                    RENEWS_ON_DATE -> "Renews on {{ date }}"
+                    PURCHASE_INFO_EXPIRED_ON_DATE -> "Expired on {{ date }}"
+                    PURCHASE_INFO_EXPIRES_ON_DATE -> "Expires on {{ date }}"
+                    ACTIVE -> "Active"
+                    BADGE_CANCELLED -> "Cancelled"
+                    BADGE_FREE_TRIAL -> "Free Trial"
+                    BADGE_FREE_TRIAL_CANCELLED -> "Cancelled Trial"
+                    APP_STORE -> "App Store"
+                    MAC_APP_STORE -> "Mac App Store"
+                    GOOGLE_PLAY_STORE -> "Google Play Store"
+                    AMAZON_STORE -> "Amazon Store"
+                    WEB_STORE -> "Web"
+                    UNKNOWN_STORE -> "Unknown"
+                    CARD_STORE_PROMOTIONAL -> "Via Support"
                 }
         }
 
@@ -293,7 +354,44 @@ data class CustomerCenterConfigData(
                 val title: String,
                 val subtitle: String,
                 @SerialName("product_mapping") val productMapping: Map<String, String>,
-            ) : PathDetail()
+                @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion> =
+                    emptyMap(),
+            ) : PathDetail() {
+                @Deprecated(
+                    "Use constructor with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
+                    ),
+                )
+                constructor(
+                    androidOfferId: String,
+                    eligible: Boolean,
+                    title: String,
+                    subtitle: String,
+                    productMapping: Map<String, String>,
+                ) : this(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+
+                @Deprecated(
+                    "Use copy with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
+                    ),
+                )
+                fun copy(
+                    androidOfferId: String = this.androidOfferId,
+                    eligible: Boolean = this.eligible,
+                    title: String = this.title,
+                    subtitle: String = this.subtitle,
+                    productMapping: Map<String, String> = this.productMapping,
+                ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+
+                @Serializable
+                @Poko
+                class CrossProductPromotion(
+                    @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
+                    @SerialName("target_product_id") val targetProductId: String,
+                )
+            }
 
             @Serializable
             data class FeedbackSurvey(
@@ -358,15 +456,6 @@ data class CustomerCenterConfigData(
             MANAGEMENT,
             NO_ACTIVE,
             UNKNOWN,
-        }
-
-        val supportedPaths: List<HelpPath> by lazy {
-            val androidSupportedPathTypes = setOf(
-                HelpPath.PathType.MISSING_PURCHASE,
-                HelpPath.PathType.CANCEL,
-                HelpPath.PathType.CUSTOM_URL,
-            )
-            paths.filter { it.type in androidSupportedPathTypes }
         }
     }
 

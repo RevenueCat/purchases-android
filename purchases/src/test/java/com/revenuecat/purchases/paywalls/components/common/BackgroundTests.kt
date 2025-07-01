@@ -125,6 +125,22 @@ internal class BackgroundTests(@Suppress("UNUSED_PARAMETER") name: String, priva
                     ),
                 ),
             ),
+            arrayOf(
+                "Some unknown future value",
+                Args(
+                    json = """
+                        {
+                          "type": "some_unknown_future_value",
+                          "value": {
+                            "unknown_object": {
+                              "unknown_property": "something"
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = Background.Unknown(type = "some_unknown_future_value"),
+                ),
+            ),
         )
     }
 

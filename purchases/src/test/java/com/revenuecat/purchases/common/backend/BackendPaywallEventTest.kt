@@ -38,7 +38,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class BackendPaywallEventTest {
 
@@ -69,6 +68,7 @@ class BackendPaywallEventTest {
     @Before
     fun setUp() {
         appConfig = mockk()
+        every { appConfig.fallbackBaseURLs } returns emptyList()
         httpClient = mockk()
         unmockkObject(JsonProvider)
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
@@ -288,6 +288,7 @@ class BackendPaywallEventTest {
                 any(),
                 any(),
                 any(),
+                fallbackBaseURLs = any(),
             )
         } answers {
             if (delayMs != null) {

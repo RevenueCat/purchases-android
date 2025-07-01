@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.paparazzi)
     alias(libs.plugins.poko)
+    alias(libs.plugins.metalava)
+    alias(libs.plugins.baselineprofile)
 }
 
 // Conditional Maven Publish plugin application
@@ -74,6 +76,19 @@ android {
     }
 }
 
+metalava {
+    hiddenAnnotations.add("com.revenuecat.purchases.InternalRevenueCatAPI")
+    arguments.addAll(listOf("--hide", "ReferencesHidden"))
+    excludedSourceSets.setFrom(
+        "src/test",
+        "src/testDefaults",
+        "src/testCustomEntitlementComputation",
+        "src/androidTest",
+        "src/androidTestDefaults",
+        "src/androidTestCustomEntitlementComputation",
+    )
+}
+
 dependencies {
     api(project(":purchases"))
 
@@ -121,6 +136,8 @@ dependencies {
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
     androidTestImplementation(libs.androidx.test.compose)
+
+    baselineProfile(project(":baselineprofile"))
 }
 
 tasks.dokkaHtmlPartial.configure {
@@ -153,5 +170,13 @@ tasks.dokkaHtmlPartial.configure {
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
     compilerOptions {
         freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
+    }
+}
+
+baselineProfile {
+    mergeIntoMain = true
+    baselineProfileOutputDir = "."
+    filter {
+        include("com.revenuecat.purchases.ui.revenuecatui.**")
     }
 }

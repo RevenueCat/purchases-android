@@ -20,8 +20,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscribed
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
@@ -78,17 +80,19 @@ internal sealed interface PaywallState {
              */
             val showPricesWithDecimals: Boolean,
             val variableConfig: VariableConfig,
+            val variableDataProvider: VariableDataProvider,
             override val offering: Offering,
             /**
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
-            private val activelySubscribedProductIds: Set<String>,
-            private val purchasedNonSubscriptionProductIds: Set<String>,
+            val activelySubscribedProductIds: Set<String>,
+            val purchasedNonSubscriptionProductIds: Set<String>,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
+            initialSheetState: SimpleSheetState = SimpleSheetState(),
         ) : Loaded {
 
             data class AvailablePackages(
@@ -110,6 +114,9 @@ internal sealed interface PaywallState {
                         packagesOutsideTabs = packagesOutsideTabs + with?.packagesOutsideTabs.orEmpty(),
                         packagesByTab = packagesByTab.ifEmpty { with?.packagesByTab.orEmpty() },
                     )
+
+                val hasAnyPackages: Boolean
+                    get() = packagesOutsideTabs.isNotEmpty() || packagesByTab.isNotEmpty()
             }
 
             data class SelectedPackageInfo(
@@ -174,6 +181,8 @@ internal sealed interface PaywallState {
 
             var actionInProgress by mutableStateOf(false)
                 private set
+
+            val sheet = initialSheetState
 
             fun update(
                 localeList: FrameworkLocaleList? = null,

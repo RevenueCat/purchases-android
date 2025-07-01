@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -15,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
@@ -62,18 +65,23 @@ internal fun IconComponentView(
         }
     }
 
-    RemoteImage(
-        urlString = iconState.url,
+    Box(
         modifier = modifier
-            .size(iconState.size)
-            .padding(iconState.margin)
-            .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
-            .applyIfNotNull(backgroundColor) { background(it, composeShape) }
-            .clip(composeShape)
-            .applyIfNotNull(borderStyle) { border(it, composeShape) }
-            .padding(iconState.padding),
-        colorFilter = colorFilter,
-    )
+            .size(iconState.sizePlusMargin)
+            .padding(iconState.margin),
+    ) {
+        RemoteImage(
+            urlString = iconState.url,
+            modifier = Modifier
+                .size(iconState.size)
+                .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+                .applyIfNotNull(backgroundColor) { background(it, composeShape) }
+                .clip(composeShape)
+                .applyIfNotNull(borderStyle) { border(it, composeShape) }
+                .padding(iconState.padding),
+            colorFilter = colorFilter,
+        )
+    }
 }
 
 @Preview
@@ -86,6 +94,28 @@ private fun IconComponentView_Preview() {
                     size = Size(
                         width = SizeConstraint.Fixed(200u),
                         height = SizeConstraint.Fixed(200u),
+                    ),
+                ),
+                state = previewEmptyState(),
+            )
+        }
+    }
+}
+
+@EmergeSnapshotConfig(precision = 0.99f)
+@Preview
+@Composable
+private fun IconComponentView_Margin_Preview() {
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        Box(modifier = Modifier.background(Color.LightGray)) {
+            IconComponentView(
+                style = previewIconComponentStyle(
+                    size = Size(
+                        width = SizeConstraint.Fixed(200u),
+                        height = SizeConstraint.Fixed(200u),
+                    ),
+                    marginValues = PaddingValues(
+                        all = 100.dp,
                     ),
                 ),
                 state = previewEmptyState(),

@@ -1,36 +1,29 @@
 ## RevenueCat SDK
-### 📦 Dependency Updates
-* Remove redundant kotlin stdlib dependencies (#2310) via Jaewoong Eum (@skydoves)
-### Customer Center
-#### 🐞 Bugfixes
-* fix: Check eligible for promo offers (#2325) via Facundo Menzella (@facumenzella)
+### 🐞 Bugfixes
+* Fixes `OutOfMemoryError` caused by printing large `Offerings` objects. (#2452) via JayShortway (@JayShortway)
+* [Paywalls] Margin no longer decreases icon size (#2447) via JayShortway (@JayShortway)
+* `getOfferings()` returns fresh Offerings and Products when the locale has changed (#2438) via JayShortway (@JayShortway)
 
 ## RevenueCatUI SDK
-### Paywallv2
-#### ✨ New Features
-* [Paywalls v2] Supports custom fonts in `assets/fonts` (#2320) via JayShortway (@JayShortway)
-#### 🐞 Bugfixes
-* [Paywalls v2] Ignores already-consumed window insets. (#2326) via JayShortway (@JayShortway)
 ### Customer Center
+#### ✨ New Features
+* Redo Customer Center subscription card and action buttons (#2430) via Cesar de la Vega (@vegaro)
 #### 🐞 Bugfixes
-* Reload customer center after successful promo (#2317) via Cesar de la Vega (@vegaro)
+* Clean up paths logic in Customer Center (#2439) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Fix PurchasesIntegrationTest  (#2330) via Cesar de la Vega (@vegaro)
-* Migrate Groovy to KTS for purchases-ui module (#2323) via Jaewoong Eum (@skydoves)
-* Add `X-Is-Backgrounded` header to all requests (#2321) via Toni Rico (@tonidero)
-* Clean up libs.versions.toml (#2318) via Jaewoong Eum (@skydoves)
-* feat: Change default copy for web_subscription_manage #4921 (#2298) via Facundo Menzella (@facumenzella)
-* Improve Korean translation (#2319) via Jaewoong Eum (@skydoves)
-* [Paywalls V2] Renders images in template previews (#2311) via JayShortway (@JayShortway)
-* [Paywalls V2] Removes Git LFS and adds submodule for paywall preview resources (#2315) via JayShortway (@JayShortway)
-* [Paywalls V2] Make `radialGradient` use bigger size for radius calculation (#2314) via Toni Rico (@tonidero)
-* Migrate purchases Gradle module to KTS (#2313) via Jaewoong Eum (@skydoves)
-* Attempts to have Emerge Snapshots handle merge queue branches. (#2309) via JayShortway (@JayShortway)
-* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2306) via RevenueCat Git Bot (@RCGitBot)
-* Use coil-base instead of coil-compose for purchases package (#2307) via Jaewoong Eum (@skydoves)
-* Fix load shedder backend integration tests (#2308) via Toni Rico (@tonidero)
-* [Paywalls V2] Fixes the update-paywall-templates job (#2305) via JayShortway (@JayShortway)
-* [Paywalls V2] Adjusts CI to support images in template previews (#2302) via JayShortway (@JayShortway)
-* [Diagnostics] Sync diagnostics if file reaches lower limit (#2304) via Toni Rico (@tonidero)
-* Wrap Billing client crash with ours with more information (#2296) via Toni Rico (@tonidero)
+* [Paywalls] Tab toggle supports gradient colors (#2453) via JayShortway (@JayShortway)
+* Introduce Baseline Profiles for increasing SDK startup performance (#2437) via Jaewoong Eum (@skydoves)
+* Support spaces in template IDs when recording Paywall screenshots (#2449) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2444) via RevenueCat Git Bot (@RCGitBot)
+* Use script instead of gradle for metalava apiDump and apiCheck (#2445) via Cesar de la Vega (@vegaro)
+* Clean up `ExperimentalPreviewRevenueCatPurchasesAPI` (#2434) via Cesar de la Vega (@vegaro)
+* Remove assertion on strings in Customer Center test (#2433) via Cesar de la Vega (@vegaro)
+* Some Metalava updates (#2442) via JayShortway (@JayShortway)
+* [Paywalls] Ensures bottom window insets are applied to the sheet. (#2441) via JayShortway (@JayShortway)
+* [Paywalls] Buttons can now open sheets (#2436) via JayShortway (@JayShortway)
+* [Paywalls] Correctly deserializes the `Sheet` destination in Button components (#2435) via JayShortway (@JayShortway)
+* Include commit hash in commit message for paywall-rendering-validation (#2432) via Antonio Pallares (@ajpallares)
+* Update `PaywallTester` colors (#2429) via Cesar de la Vega (@vegaro)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2426) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane from 2.227.1 to 2.227.2 (#2392) via dependabot[bot] (@dependabot[bot])

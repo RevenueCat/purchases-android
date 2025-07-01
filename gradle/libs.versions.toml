@@ -5,6 +5,7 @@ activityCompose = "1.9.3"
 # We should not add that permission ourselves, so keeping it at 17.0.1 for now.
 adsIdentifier = "17.0.1"
 amazon = "3.0.5"
+androidxConstraintLayout = "2.1.3"
 androidxCore = "1.8.0"
 androidxNavigation = "2.5.3"
 annotation = "1.3.0"
@@ -23,22 +24,22 @@ dependencyGraph = "0.9"
 detekt = "1.23.6"
 detektRulesCompose = "0.4.10"
 dokka = "1.8.10"
-emergeGradlePlugin = "4.2.0"
-emergeSnapshots = "1.3.0"
+emergeGradlePlugin = "4.3.1"
+emergeSnapshots = "1.4.1"
 espresso = "3.4.0"
 fragment = "1.6.1"
 hamcrest = "1.3"
 recyclerview = "1.2.1"
 roboelectric = "4.11.1"
 kotlin = "1.8.22"
-kotlinBom = "1.8.0"
 # Can't update until we use more recent kotlin. 1.6.0 uses Kotlin 1.9.0
 kotlinxSerializationJSON = "1.5.1"
 kover = "0.7.2"
 legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
 material = "1.6.0"
-mavenPublish = "0.28.0"
+mavenPublish = "0.27.0"
+metalava = "0.4.0-alpha03"
 mockk = "1.13.11"
 mockwebserver = "4.2.0"
 multidex = "2.0.1"
@@ -50,13 +51,18 @@ testLibraries = "1.4.0"
 tink = "1.8.0"
 viewmodelCompose = "2.4.0"
 window = "1.1.0"
+junit = "1.2.1"
+uiautomator = "2.3.0"
+benchmarkMacroJunit4 = "1.3.4"
+baselineprofile = "1.4.0-beta02"
+profileinstaller = "1.4.1"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
-androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintLayout" }
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreference" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
@@ -107,6 +113,7 @@ compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview"
 compose-ui-util = { module = "androidx.compose.ui:ui-util" }
 compose-window-size = { module = "androidx.compose.material3:material3-window-size-class" }
 
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 detekt-compose = { module = "io.nlopez.compose.rules:detekt", version.ref = "detektRulesCompose" }
@@ -121,7 +128,6 @@ emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref
 emerge-snapshots-annotations = { module = "com.emergetools.snapshots:snapshots-annotations", version.ref = "emergeSnapshots" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 
-kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlinBom" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
 
@@ -137,6 +143,10 @@ testJUnitParams = { module = "pl.pragmatists:JUnitParams", version.ref = "testJU
 tink = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 window = { module = "androidx.window:window", version.ref = "window" }
 window-core = { module = "androidx.window:window-core", version.ref = "window" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junit" }
+androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
+androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmarkMacroJunit4" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -152,8 +162,11 @@ kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref =
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover"}
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+metalava = { id = "me.tylerbwong.gradle.metalava", version.ref = "metalava" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
 poko = { id = "dev.drewhamilton.poko", version.ref = "poko" }
+android-test = { id = "com.android.test", version.ref = "agp" }
+baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineprofile" }
 
 [bundles]
 test = ["androidx-test-core", "androidx-core-testing", "androidx-test-runner", "androidx-test-rules", "androidx-test-junit", "robolectric", "mockk", "assertJ"]

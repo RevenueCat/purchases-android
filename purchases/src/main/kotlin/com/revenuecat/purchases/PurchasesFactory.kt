@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
+import androidx.core.os.UserManagerCompat
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -23,6 +24,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
+import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -35,8 +37,11 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.FontLoader
+import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -54,7 +59,7 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
-    @Suppress("LongMethod", "LongParameterList")
+    @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
@@ -82,9 +87,39 @@ internal class PurchasesFactory(
                 forceSigningError,
             )
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(application)
+            val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
+                @Suppress("MaxLineLength")
+                debugLog {
+                    "${Emojis.DOUBLE_EXCLAMATION} Using device-protected storage. Make sure to *always* configure " +
+                        "Purchases with a Context object created using `createDeviceProtectedStorageContext()` to " +
+                        "avoid undefined behavior.\nSee " +
+                        "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
+                        "for more info."
+                }
+                context
+            } else {
+                application
+            }
 
-            val eTagManager = ETagManager(context)
+            val prefs = try {
+                PreferenceManager.getDefaultSharedPreferences(contextForStorage)
+            } catch (e: IllegalStateException) {
+                @Suppress("MaxLineLength")
+                if (!UserManagerCompat.isUserUnlocked(context)) {
+                    throw IllegalStateException(
+                        "Trying to configure Purchases while the device is locked. If you need to support this " +
+                            "scenario, ensure you *always* configure Purchases with a Context created with " +
+                            "`createDeviceProtectedStorageContext()` to avoid undefined behavior.\nSee " +
+                            "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
+                            "for more info.",
+                        e,
+                    )
+                } else {
+                    throw e
+                }
+            }
+
+            val eTagManager = ETagManager(contextForStorage)
 
             val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests = runningIntegrationTests)
             val backendDispatcher = Dispatcher(
@@ -100,8 +135,8 @@ internal class PurchasesFactory(
             var diagnosticsHelper: DiagnosticsHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
             if (diagnosticsEnabled && isAndroidNOrNewer()) {
-                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(context))
-                diagnosticsHelper = DiagnosticsHelper(context, diagnosticsFileHelper)
+                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(contextForStorage))
+                diagnosticsHelper = DiagnosticsHelper(contextForStorage, diagnosticsFileHelper)
                 diagnosticsTracker = DiagnosticsTracker(
                     appConfig,
                     diagnosticsFileHelper,
@@ -109,7 +144,7 @@ internal class PurchasesFactory(
                     eventsDispatcher,
                 )
             } else if (diagnosticsEnabled) {
-                warnLog("Diagnostics are only supported on Android N or newer.")
+                warnLog { "Diagnostics are only supported on Android N or newer." }
             }
 
             val signatureVerificationMode = try {
@@ -119,7 +154,7 @@ internal class PurchasesFactory(
             } catch (e: IllegalStateException) {
                 // If we're not able to create the signature verifier, we should disable signature verification
                 // instead of crashing
-                errorLog("Error creating signature verifier: ${e.message}. Disabling signature verification.")
+                errorLog { "Error creating signature verifier: ${e.message}. Disabling signature verification." }
                 SignatureVerificationMode.Disabled
             }
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
@@ -258,22 +293,31 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
+            val fontLoader = FontLoader(
+                context = contextForStorage,
+            )
+
+            val offeringFontPreDownloader = OfferingFontPreDownloader(
+                context = contextForStorage,
+                fontLoader = fontLoader,
+            )
+
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
                 diagnosticsTracker,
+                offeringFontPreDownloader = offeringFontPreDownloader,
             )
 
-            log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
-            log(LogIntent.DEBUG, ConfigureStrings.SDK_VERSION.format(Purchases.frameworkVersion))
-            log(LogIntent.DEBUG, ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName))
-            log(LogIntent.USER, ConfigureStrings.INITIAL_APP_USER_ID.format(appUserID))
-            log(
-                LogIntent.DEBUG,
-                ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name),
-            )
+            log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
+            log(LogIntent.DEBUG) { ConfigureStrings.SDK_VERSION.format(Purchases.frameworkVersion) }
+            log(LogIntent.DEBUG) { ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName) }
+            log(LogIntent.USER) { ConfigureStrings.INITIAL_APP_USER_ID.format(appUserID) }
+            log(LogIntent.DEBUG) {
+                ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name)
+            }
 
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
@@ -299,6 +343,7 @@ internal class PurchasesFactory(
                 purchasesStateCache = purchasesStateProvider,
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
+                fontLoader = fontLoader,
             )
 
             return Purchases(purchasesOrchestrator)
@@ -329,7 +374,7 @@ internal class PurchasesFactory(
                 },
             )
         } else {
-            debugLog("Paywall events are only supported on Android N or newer.")
+            debugLog { "Paywall events are only supported on Android N or newer." }
             null
         }
     }

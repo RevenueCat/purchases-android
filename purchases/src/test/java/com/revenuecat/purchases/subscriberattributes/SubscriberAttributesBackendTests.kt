@@ -45,6 +45,7 @@ class SubscriberAttributesPosterTests {
     private val mockAppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
         every { customEntitlementComputation } returns false
+        every { fallbackBaseURLs } returns emptyList()
     }
     private val appUserID = "jerry"
     private val dispatcher = SyncDispatcher()

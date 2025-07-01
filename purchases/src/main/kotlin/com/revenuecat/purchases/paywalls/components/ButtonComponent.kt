@@ -5,6 +5,8 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -28,6 +30,9 @@ class ButtonComponent(
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
+        object Unknown : Action
+
+        @Serializable
         object RestorePurchases : Action
 
         @Serializable
@@ -41,6 +46,9 @@ class ButtonComponent(
     @Serializable
     sealed interface Destination {
         // SerialNames are handled by the ActionSerializer.
+
+        @Serializable
+        object Unknown : Destination
 
         @Serializable
         object CustomerCenter : Destination
@@ -62,19 +70,26 @@ class ButtonComponent(
             @get:JvmSynthetic val urlLid: LocalizationKey,
             @get:JvmSynthetic val method: UrlMethod,
         ) : Destination
+
+        @Serializable
+        data class Sheet(
+            @get:JvmSynthetic val id: String,
+            @get:JvmSynthetic val name: String?,
+            @get:JvmSynthetic val stack: StackComponent,
+            @get:JvmSynthetic @SerialName("background_blur") val backgroundBlur: Boolean,
+            @get:JvmSynthetic val size: Size?,
+        ) : Destination
     }
 
     @InternalRevenueCatAPI
-    @Serializable
+    @Serializable(with = UrlMethodDeserializer::class)
     enum class UrlMethod {
-        @SerialName("in_app_browser")
+        // SerialNames are handled by the UrlMethodDeserializer.
+
         IN_APP_BROWSER,
-
-        @SerialName("external_browser")
         EXTERNAL_BROWSER,
-
-        @SerialName("deep_link")
         DEEP_LINK,
+        UNKNOWN,
     }
 }
 
@@ -109,14 +124,17 @@ private class ActionSurrogate(
     val type: ActionTypeSurrogate,
     val destination: DestinationSurrogate? = null,
     val url: UrlSurrogate? = null,
+    val sheet: Destination.Sheet? = null,
 ) {
     constructor(action: Action) : this(
         type = when (action) {
+            is Action.Unknown -> ActionTypeSurrogate.unknown
             is Action.NavigateBack -> ActionTypeSurrogate.navigate_back
             is Action.NavigateTo -> ActionTypeSurrogate.navigate_to
             is Action.RestorePurchases -> ActionTypeSurrogate.restore_purchases
         },
         destination = when (action) {
+            is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
             -> null
@@ -126,15 +144,21 @@ private class ActionSurrogate(
                 is Destination.PrivacyPolicy -> DestinationSurrogate.privacy_policy
                 is Destination.Terms -> DestinationSurrogate.terms
                 is Destination.Url -> DestinationSurrogate.url
+                is Destination.Sheet -> DestinationSurrogate.sheet
+                is Destination.Unknown -> DestinationSurrogate.unknown
             }
         },
         url = when (action) {
+            is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
-                is Destination.CustomerCenter -> null
+                is Destination.Unknown,
+                is Destination.CustomerCenter,
+                is Destination.Sheet,
+                -> null
                 is Destination.PrivacyPolicy -> UrlSurrogate(
                     url_lid = action.destination.urlLid,
                     method = action.destination.method,
@@ -151,10 +175,27 @@ private class ActionSurrogate(
                 )
             }
         },
+        sheet = when (action) {
+            is Action.Unknown,
+            is Action.NavigateBack,
+            is Action.RestorePurchases,
+            -> null
+
+            is Action.NavigateTo -> when (action.destination) {
+                is Destination.CustomerCenter,
+                is Destination.PrivacyPolicy,
+                is Destination.Terms,
+                is Destination.Unknown,
+                is Destination.Url,
+                -> null
+                is Destination.Sheet -> action.destination
+            }
+        },
     )
 
     fun toAction(): Action =
         when (type) {
+            ActionTypeSurrogate.unknown -> Action.Unknown
             ActionTypeSurrogate.restore_purchases -> Action.RestorePurchases
             ActionTypeSurrogate.navigate_back -> Action.NavigateBack
             ActionTypeSurrogate.navigate_to -> Action.NavigateTo(
@@ -184,6 +225,13 @@ private class ActionSurrogate(
                         )
                     }
 
+                    DestinationSurrogate.sheet -> {
+                        checkNotNull(sheet) { "`sheet` cannot be null when `destination` is `sheet`." }
+                        sheet
+                    }
+
+                    DestinationSurrogate.unknown -> Destination.Unknown
+
                     null -> error("`destination` cannot be null when `action` is `navigate_to`.")
                 },
             )
@@ -191,23 +239,39 @@ private class ActionSurrogate(
 }
 
 @Suppress("EnumNaming", "EnumEntryName", "EnumEntryNameCase")
-@Serializable
+@Serializable(with = ActionTypeSurrogateDeserializer::class)
 private enum class ActionTypeSurrogate {
     restore_purchases,
     navigate_back,
     navigate_to,
+    unknown,
 }
 
 @Suppress("EnumNaming", "EnumEntryName", "EnumEntryNameCase")
-@Serializable
+@Serializable(with = DestinationSurrogateDeserializer::class)
 private enum class DestinationSurrogate {
     customer_center,
     privacy_policy,
     terms,
     url,
+    sheet,
+    unknown,
 }
 
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("ConstructorParameterNaming", "PropertyName")
 @Serializable
 private class UrlSurrogate(val url_lid: LocalizationKey, val method: UrlMethod)
+
+private object ActionTypeSurrogateDeserializer : EnumDeserializerWithDefault<ActionTypeSurrogate> (
+    defaultValue = ActionTypeSurrogate.unknown,
+)
+
+private object DestinationSurrogateDeserializer : EnumDeserializerWithDefault<DestinationSurrogate> (
+    defaultValue = DestinationSurrogate.unknown,
+)
+
+@OptIn(InternalRevenueCatAPI::class)
+private object UrlMethodDeserializer : EnumDeserializerWithDefault<UrlMethod> (
+    defaultValue = UrlMethod.UNKNOWN,
+)

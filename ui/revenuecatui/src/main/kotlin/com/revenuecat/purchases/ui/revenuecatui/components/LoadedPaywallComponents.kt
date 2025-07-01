@@ -44,8 +44,18 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
+import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
@@ -54,7 +64,7 @@ import java.util.Date
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
-    clickHandler: suspend (PaywallAction) -> Unit,
+    clickHandler: suspend (PaywallAction.External) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
@@ -63,26 +73,75 @@ internal fun LoadedPaywallComponents(
     val style = state.stack
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
+    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
 
-    Column(modifier = modifier.background(background)) {
-        ComponentView(
-            style = style,
-            state = state,
-            onClick = clickHandler,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
-        )
-        footerComponentStyle?.let {
+    SimpleBottomSheetScaffold(
+        sheetState = state.sheet,
+        modifier = modifier.background(background),
+    ) {
+        Column {
             ComponentView(
-                style = it,
+                style = style,
                 state = state,
-                onClick = clickHandler,
+                onClick = onClick,
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
             )
+            footerComponentStyle?.let {
+                ComponentView(
+                    style = it,
+                    state = state,
+                    onClick = onClick,
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                )
+            }
         }
+    }
+}
+
+private suspend fun handleClick(
+    action: PaywallAction,
+    state: PaywallState.Loaded.Components,
+    externalClickHandler: suspend (PaywallAction.External) -> Unit,
+) {
+    when (action) {
+        is PaywallAction.External -> externalClickHandler(action)
+        is PaywallAction.Internal -> when (action) {
+            is PaywallAction.Internal.NavigateTo -> when (action.destination) {
+                is PaywallAction.Internal.NavigateTo.Destination.Sheet ->
+                    state.sheet.show(action.destination.sheet, state) { handleClick(it, state, externalClickHandler) }
+            }
+        }
+    }
+}
+
+/**
+ * Shows the provided [sheet] as this [SimpleSheetState]'s sheet content.
+ */
+private fun SimpleSheetState.show(
+    sheet: ButtonComponentStyle.Action.NavigateTo.Destination.Sheet,
+    state: PaywallState.Loaded.Components,
+    onClick: suspend (PaywallAction) -> Unit,
+) {
+    show(
+        backgroundBlur = sheet.backgroundBlur,
+    ) {
+        ComponentView(
+            style = sheet.stack,
+            state = state,
+            onClick = { action ->
+                when (action) {
+                    is PaywallAction.External.NavigateBack -> hide()
+                    else -> onClick(action)
+                }
+            },
+            modifier = Modifier
+                .applyIfNotNull(sheet.size) { size(it) }
+                .conditional(sheet.size == null) { fillMaxWidth() },
+        )
     }
 }
 
@@ -91,81 +150,45 @@ internal fun LoadedPaywallComponents(
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun LoadedPaywallComponents_Preview() {
-    val data = PaywallComponentsData(
-        templateName = "template",
-        assetBaseURL = URL("https://assets.pawwalls.com"),
-        componentsConfig = ComponentsConfig(
-            base = PaywallComponentsConfig(
-                stack = StackComponent(
-                    components = listOf(
-                        TextComponent(
-                            text = LocalizationKey("hello-world"),
-                            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-                        ),
-                    ),
-                    dimension = Vertical(alignment = CENTER, distribution = START),
-                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
-                ),
-                background = Background.Color(
-                    ColorScheme(
-                        light = ColorInfo.Hex(Color.Blue.toArgb()),
-                        dark = ColorInfo.Hex(Color.Red.toArgb()),
-                    ),
-                ),
-                stickyFooter = StickyFooterComponent(
-                    stack = StackComponent(
-                        components = listOf(
-                            TextComponent(
-                                text = LocalizationKey("sticky-footer"),
-                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-                            ),
-                        ),
-                        dimension = Vertical(alignment = CENTER, distribution = START),
-                        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
-                        shape = Shape.Rectangle(
-                            corners = CornerRadiuses.Dp(
-                                topLeading = 10.0,
-                                topTrailing = 10.0,
-                                bottomLeading = 0.0,
-                                bottomTrailing = 0.0,
-                            ),
-                        ),
-                        shadow = Shadow(
-                            ColorScheme(
-                                light = ColorInfo.Hex(Color.Black.toArgb()),
-                                dark = ColorInfo.Hex(Color.Yellow.toArgb()),
-                            ),
-                            radius = 10.0,
-                            x = 0.0,
-                            y = -5.0,
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        componentsLocalizations = mapOf(
-            LocaleId("en_US") to mapOf(
-                LocalizationKey("hello-world") to LocalizationData.Text("Hello, world!"),
-                LocalizationKey("sticky-footer") to LocalizationData.Text("Sticky Footer"),
-            ),
-        ),
-        defaultLocaleIdentifier = LocaleId("en_US"),
+    val state = previewHelloWorldPaywallState()
+    LoadedPaywallComponents(
+        state = state,
+        clickHandler = { },
+        modifier = Modifier
+            .fillMaxSize(),
     )
-    val offering = Offering(
-        identifier = "id",
-        serverDescription = "description",
-        metadata = emptyMap(),
-        availablePackages = emptyList(),
-        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
+}
+
+@Preview
+@Composable
+private fun LoadedPaywallComponents_BottomSheet_NullSize_Preview() {
+    val state = previewHelloWorldPaywallState()
+
+    state.sheet.show(
+        sheet = previewBottomSheet(size = null),
+        state = state,
+        onClick = { },
     )
-    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
-    val state = offering.toComponentsPaywallState(
-        validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
-        storefrontCountryCode = null,
-        dateProvider = { Date(MILLIS_2025_01_25) },
+
+    LoadedPaywallComponents(
+        state = state,
+        clickHandler = { },
+        modifier = Modifier
+            .fillMaxSize(),
     )
+}
+
+@Preview
+@Composable
+private fun LoadedPaywallComponents_BottomSheet_FitSize_Preview() {
+    val state = previewHelloWorldPaywallState()
+
+    state.sheet.show(
+        sheet = previewBottomSheet(size = Size(width = Fit, height = Fit)),
+        state = state,
+        onClick = { },
+    )
+
     LoadedPaywallComponents(
         state = state,
         clickHandler = { },
@@ -194,7 +217,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                 stack = StackComponent(
                     components = listOf(
                         StackComponent(
-                            components = emptyList(),
+                            components = listOf(TestData.Components.monthlyPackageComponent),
                             dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
                             size = Size(width = Fill, height = Fill),
                             backgroundColor = ColorScheme(
@@ -335,7 +358,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         identifier = "id",
         serverDescription = "description",
         metadata = emptyMap(),
-        availablePackages = emptyList(),
+        availablePackages = listOf(TestData.Packages.monthly),
         paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
@@ -354,5 +377,121 @@ private fun LoadedPaywallComponents_Preview_Bless() {
             .fillMaxSize(),
     )
 }
+
+@Suppress("LongMethod")
+@Composable
+private fun previewHelloWorldPaywallState(): PaywallState.Loaded.Components {
+    val data = PaywallComponentsData(
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = LocalizationKey("hello-world"),
+                            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                        ),
+                        TestData.Components.monthlyPackageComponent,
+                    ),
+                    dimension = Vertical(alignment = CENTER, distribution = START),
+                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
+                ),
+                background = Background.Color(
+                    ColorScheme(
+                        light = ColorInfo.Hex(Color.Blue.toArgb()),
+                        dark = ColorInfo.Hex(Color.Red.toArgb()),
+                    ),
+                ),
+                stickyFooter = StickyFooterComponent(
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LocalizationKey("sticky-footer"),
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                            ),
+                        ),
+                        dimension = Vertical(alignment = CENTER, distribution = START),
+                        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
+                        shape = Shape.Rectangle(
+                            corners = CornerRadiuses.Dp(
+                                topLeading = 10.0,
+                                topTrailing = 10.0,
+                                bottomLeading = 0.0,
+                                bottomTrailing = 0.0,
+                            ),
+                        ),
+                        shadow = Shadow(
+                            ColorScheme(
+                                light = ColorInfo.Hex(Color.Black.toArgb()),
+                                dark = ColorInfo.Hex(Color.Yellow.toArgb()),
+                            ),
+                            radius = 10.0,
+                            x = 0.0,
+                            y = -5.0,
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        componentsLocalizations = mapOf(
+            LocaleId("en_US") to mapOf(
+                LocalizationKey("hello-world") to LocalizationData.Text("Hello, world!"),
+                LocalizationKey("sticky-footer") to LocalizationData.Text("Sticky Footer"),
+            ),
+        ),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "id",
+        serverDescription = "description",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
+    )
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(
+        validationResult = validated,
+        activelySubscribedProductIds = emptySet(),
+        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
+    )
+}
+
+private fun previewBottomSheet(
+    size: Size? = null,
+) =
+    ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
+        id = "",
+        name = "",
+        stack = previewStackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "This is a bottom sheet.",
+                ),
+                previewTextComponentStyle(
+                    text = "This is a bottom sheet.",
+                ),
+                previewTextComponentStyle(
+                    text = "This is a bottom sheet.",
+                ),
+            ),
+            background = BackgroundStyles.Color(
+                color = ColorStyles(light = ColorStyle.Solid(Color.White)),
+            ),
+            border = null,
+            shape = Shape.Rectangle(
+                corners = CornerRadiuses.Dp(
+                    topLeading = 16.0,
+                    topTrailing = 16.0,
+                    bottomLeading = 0.0,
+                    bottomTrailing = 0.0,
+                ),
+            ),
+        ),
+        backgroundBlur = true,
+        size = size,
+    )
 
 private const val MILLIS_2025_01_25 = 1737763200000

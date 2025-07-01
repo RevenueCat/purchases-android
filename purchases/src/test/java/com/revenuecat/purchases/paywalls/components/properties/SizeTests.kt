@@ -99,6 +99,18 @@ internal class SizeTests {
                         )
                     )
                 ),
+                arrayOf(
+                    "unknown",
+                    Args(
+                        json = """
+                            {
+                              "unknown_property": "some_value",
+                              "type": "some_unknown_type"
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fit
+                    )
+                )
             )
         }
 

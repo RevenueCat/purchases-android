@@ -9,7 +9,6 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
@@ -26,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscribed
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
@@ -61,7 +61,7 @@ internal interface PaywallViewModel {
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(activity: Activity?)
-    suspend fun handlePackagePurchase(activity: Activity)
+    suspend fun handlePackagePurchase(activity: Activity, pkg: Package?)
 
     fun restorePurchases()
     suspend fun handleRestorePurchases()
@@ -69,7 +69,6 @@ internal interface PaywallViewModel {
     fun clearActionError()
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class PaywallViewModelImpl(
     override val resourceProvider: ResourceProvider,
@@ -112,8 +111,11 @@ internal class PaywallViewModelImpl(
     }
 
     fun updateOptions(options: PaywallOptions) {
-        if (this.options != options) {
-            this.options = options
+        val needsUpdateState = this.options.hashCode() != options.hashCode()
+        // Some properties not considered for equality (hashCode) may have changed
+        // (e.g. the listener may change in some re-renderers)
+        this.options = options
+        if (needsUpdateState) {
             updateState()
         }
     }
@@ -160,7 +162,7 @@ internal class PaywallViewModelImpl(
             return
         }
         viewModelScope.launch {
-            handlePackagePurchase(activity)
+            handlePackagePurchase(activity, pkg = null)
         }
     }
 
@@ -254,34 +256,57 @@ internal class PaywallViewModelImpl(
         finishAction()
     }
 
-    override suspend fun handlePackagePurchase(activity: Activity) {
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
-                if (!selectedPackage.currentlySubscribed) {
-                    performPurchase(activity, selectedPackage.rcPackage)
-                } else {
-                    Logger.d("Ignoring purchase request for already subscribed package")
-                }
+                performPurchaseIfNecessary(activity, selectedPackage)
             }
             is PaywallState.Loaded.Components -> {
-                val selectedPackageInfo = currentState.selectedPackageInfo
-                if (selectedPackageInfo == null) {
-                    Logger.w("Ignoring purchase request as no package is selected")
-                } else if (selectedPackageInfo.currentlySubscribed) {
-                    Logger.d("Ignoring purchase request for already subscribed package")
-                } else {
-                    performPurchase(activity, selectedPackageInfo.rcPackage)
-                }
+                // Purchase the provided package if not null, otherwise purchase the selected package.
+                val selectedPackageInfo = pkg?.let {
+                    PaywallState.Loaded.Components.SelectedPackageInfo(
+                        rcPackage = it,
+                        currentlySubscribed = it.currentlySubscribed(
+                            activelySubscribedProductIdentifiers = currentState.activelySubscribedProductIds,
+                            nonSubscriptionProductIdentifiers = currentState.purchasedNonSubscriptionProductIds,
+                        ),
+                    )
+                } ?: currentState.selectedPackageInfo
+                performPurchaseIfNecessary(activity, selectedPackageInfo)
             }
             is PaywallState.Error,
             is PaywallState.Loading,
             -> Logger.e("Unexpected state trying to purchase package: $currentState")
         }
         finishAction()
+    }
+
+    private suspend fun performPurchaseIfNecessary(
+        activity: Activity,
+        packageInfo: TemplateConfiguration.PackageInfo,
+    ) {
+        if (!packageInfo.currentlySubscribed) {
+            performPurchase(activity, packageInfo.rcPackage)
+        } else {
+            Logger.d("Ignoring purchase request for already subscribed package")
+        }
+    }
+
+    private suspend fun performPurchaseIfNecessary(
+        activity: Activity,
+        packageInfo: PaywallState.Loaded.Components.SelectedPackageInfo?,
+    ) {
+        if (packageInfo == null) {
+            Logger.w("Ignoring purchase request as no package is selected")
+        } else if (packageInfo.currentlySubscribed) {
+            Logger.d("Ignoring purchase request for already subscribed package")
+        } else {
+            performPurchase(activity, packageInfo.rcPackage)
+        }
     }
 
     @Suppress("LongMethod", "NestedBlockDepth")
@@ -407,9 +432,9 @@ internal class PaywallViewModelImpl(
 
         validationResult.errors?.let { validationErrors ->
             validationErrors.forEach { error ->
-                Logger.w(error.associatedErrorString(offering))
+                Logger.e(error.associatedErrorString(offering))
             }
-            Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
+            Logger.e(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
 
         val activelySubscribedProductIds = customerInfo.activeSubscriptions

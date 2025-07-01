@@ -1,8 +1,11 @@
-package com.revenuecat.purchases.customercenter
+package com.revenuecat.purchases.common.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterRoot
+import com.revenuecat.purchases.customercenter.RCColor
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -10,7 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.File
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class CustomerCenterConfigDataTest {

@@ -29,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Assert.assertEquals
@@ -44,7 +45,7 @@ class PaywallActionTests {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `Should pass the PaywallAction to the ViewModel`(): Unit = with(composeTestRule) {
+    fun `Should pass PaywallActionExternal to the ViewModel`(): Unit = with(composeTestRule) {
         // Arrange
         val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
@@ -64,20 +65,20 @@ class PaywallActionTests {
         // Bit of a convoluted way to create components, to ensure we use an an exhaustive when, forcing ourselves to
         // revisit this when we add any new PaywallActions.
         val components = listOf(
-            PaywallAction.RestorePurchases to localizationKeyRestore,
-            PaywallAction.NavigateBack to localizationKeyBack,
-            PaywallAction.PurchasePackage to localizationKeyPurchase,
-        ).map { (action, key) ->
+            PaywallAction.External.RestorePurchases to localizationKeyRestore,
+            PaywallAction.External.NavigateBack to localizationKeyBack,
+            PaywallAction.External.PurchasePackage(rcPackage = null) to localizationKeyPurchase,
+        ).map { (action: PaywallAction, key) ->
             when (action) {
-                is PaywallAction.RestorePurchases,
-                is PaywallAction.NavigateBack,
-                is PaywallAction.NavigateTo,
+                is PaywallAction.External.RestorePurchases,
+                is PaywallAction.External.NavigateBack,
+                is PaywallAction.External.NavigateTo,
                     -> ButtonComponent(
                     action = action.toButtonAction(),
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
                 )
 
-                is PaywallAction.PurchasePackage -> PurchaseButtonComponent(
+                is PaywallAction.External.PurchasePackage -> PurchaseButtonComponent(
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
                 )
             }
@@ -117,20 +118,20 @@ class PaywallActionTests {
             }
     }
 
-    private fun PaywallAction.toButtonAction(): ButtonComponent.Action =
+    private fun PaywallAction.External.toButtonAction(): ButtonComponent.Action =
         when (this) {
-            is PaywallAction.NavigateBack -> ButtonComponent.Action.NavigateBack
-            is PaywallAction.NavigateTo -> ButtonComponent.Action.NavigateTo(destination.toButtonDestination())
-            is PaywallAction.RestorePurchases -> ButtonComponent.Action.RestorePurchases
-            is PaywallAction.PurchasePackage -> error(
+            is PaywallAction.External.NavigateBack -> ButtonComponent.Action.NavigateBack
+            is PaywallAction.External.NavigateTo -> ButtonComponent.Action.NavigateTo(destination.toButtonDestination())
+            is PaywallAction.External.RestorePurchases -> ButtonComponent.Action.RestorePurchases
+            is PaywallAction.External.PurchasePackage -> error(
                 "PurchasePackage is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
             )
         }
 
-    private fun PaywallAction.NavigateTo.Destination.toButtonDestination(): ButtonComponent.Destination =
+    private fun PaywallAction.External.NavigateTo.Destination.toButtonDestination(): ButtonComponent.Destination =
         when (this) {
-            is PaywallAction.NavigateTo.Destination.CustomerCenter -> ButtonComponent.Destination.CustomerCenter
-            is PaywallAction.NavigateTo.Destination.Url -> ButtonComponent.Destination.Url(
+            is PaywallAction.External.NavigateTo.Destination.CustomerCenter -> ButtonComponent.Destination.CustomerCenter
+            is PaywallAction.External.NavigateTo.Destination.Url -> ButtonComponent.Destination.Url(
                 // We are treating the actual URL as a LocalizationKey here, which is not correct. However the actual
                 // LocalizationKey is not known here, and this is sufficient for our tests.
                 urlLid = LocalizationKey(url),
@@ -148,7 +149,7 @@ class PaywallActionTests {
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
             base = PaywallComponentsConfig(
-                stack = StackComponent(components = components),
+                stack = StackComponent(components = components + listOf(TestData.Components.monthlyPackageComponent)),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 stickyFooter = StickyFooterComponent(stack = StackComponent(components = components)),
             ),
@@ -163,7 +164,7 @@ class PaywallActionTests {
             identifier = "identifier",
             serverDescription = "description",
             metadata = emptyMap(),
-            availablePackages = emptyList(),
+            availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
 

@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -63,8 +64,12 @@ internal fun InternalPaywall(
         viewModel.closePaywall()
     }
 
-    viewModel.refreshStateIfLocaleChanged()
-    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+    val colorScheme = MaterialTheme.colorScheme
+    val isDark = isSystemInDarkTheme()
+    SideEffect {
+        viewModel.refreshStateIfLocaleChanged()
+        viewModel.refreshStateIfColorsChanged(colorScheme = colorScheme, isDark = isDark)
+    }
 
     val state = viewModel.state.collectAsState().value
 
@@ -207,7 +212,7 @@ internal fun getPaywallViewModel(
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
     val viewModel = viewModel<PaywallViewModelImpl>(
-        key = options.dataHash,
+        key = options.hashCode().toString(),
         factory = PaywallViewModelFactory(
             applicationContext.toResourceProvider(),
             options,
@@ -240,27 +245,27 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
 }
 
 @Composable
-private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction) -> Unit {
+private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
     return remember(viewModel) {
         {
                 action ->
             when (action) {
-                is PaywallAction.RestorePurchases -> viewModel.handleRestorePurchases()
-                is PaywallAction.PurchasePackage ->
+                is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
+                is PaywallAction.External.PurchasePackage ->
                     if (activity == null) {
                         Logger.e("Activity is null, not initiating package purchase")
                     } else {
-                        viewModel.handlePackagePurchase(activity)
+                        viewModel.handlePackagePurchase(activity, pkg = action.rcPackage)
                     }
 
-                is PaywallAction.NavigateBack -> viewModel.closePaywall()
-                is PaywallAction.NavigateTo -> when (val destination = action.destination) {
-                    is PaywallAction.NavigateTo.Destination.CustomerCenter ->
+                is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
+                is PaywallAction.External.NavigateTo -> when (val destination = action.destination) {
+                    is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
                         Logger.w("Customer Center is not yet implemented on Android.")
 
-                    is PaywallAction.NavigateTo.Destination.Url -> context.handleUrlDestination(
+                    is PaywallAction.External.NavigateTo.Destination.Url -> context.handleUrlDestination(
                         url = destination.url,
                         method = destination.method,
                     )
@@ -275,6 +280,12 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
         ButtonComponent.UrlMethod.IN_APP_BROWSER -> URLOpeningMethod.IN_APP_BROWSER
         ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> URLOpeningMethod.EXTERNAL_BROWSER
         ButtonComponent.UrlMethod.DEEP_LINK -> URLOpeningMethod.DEEP_LINK
+        ButtonComponent.UrlMethod.UNKNOWN -> {
+            // Buttons like this should be hidden, so this log should never be shown.
+            Logger.e("Ignoring button click with unknown open method for URL: '$url'. This is a bug in the SDK.")
+            return
+        }
     }
+
     URLOpener.openURL(this, url, openingMethod)
 }

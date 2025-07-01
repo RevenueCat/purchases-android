@@ -88,7 +88,6 @@ dependencies {
 
     androidTestImplementation(libs.emerge.snapshots)
 
-    implementation(platform(libs.kotlin.bom))
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)

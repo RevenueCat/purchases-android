@@ -51,6 +51,7 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -67,6 +68,8 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -117,6 +120,7 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
+    private val fontLoader: FontLoader,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -196,7 +200,7 @@ internal class PurchasesOrchestrator(
                 billing.getStorefront(
                     onSuccess = { countryCode ->
                         storefrontCountryCode = countryCode
-                        debugLog(BillingStrings.BILLING_COUNTRY_CODE.format(countryCode))
+                        debugLog { BillingStrings.BILLING_COUNTRY_CODE.format(countryCode) }
                     },
                     onError = { error ->
                         errorLog(error)
@@ -215,7 +219,7 @@ internal class PurchasesOrchestrator(
         }
 
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
-            log(LogIntent.WARNING, ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED)
+            log(LogIntent.WARNING) { ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED }
         }
     }
 
@@ -224,7 +228,7 @@ internal class PurchasesOrchestrator(
         synchronized(this) {
             state = state.copy(appInBackground = true)
         }
-        log(LogIntent.DEBUG, ConfigureStrings.APP_BACKGROUNDED)
+        log(LogIntent.DEBUG) { ConfigureStrings.APP_BACKGROUNDED }
         appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
         flushPaywallEvents()
@@ -237,12 +241,12 @@ internal class PurchasesOrchestrator(
             firstTimeInForeground = state.firstTimeInForeground
             state = state.copy(appInBackground = false, firstTimeInForeground = false)
         }
-        log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
+        log(LogIntent.DEBUG) { ConfigureStrings.APP_FOREGROUNDED }
         appConfig.isAppBackgrounded = false
 
         enqueue {
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
-                log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
+                log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
                 customerInfoHelper.retrieveCustomerInfo(
                     identityManager.currentAppUserID,
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
@@ -276,6 +280,23 @@ internal class PurchasesOrchestrator(
 
     // region Public Methods
 
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        storefrontCountryCode?.let {
+            callback.onReceived(it)
+        } ?: run {
+            billing.getStorefront(
+                onSuccess = { countryCode ->
+                    storefrontCountryCode = countryCode
+                    callback.onReceived(countryCode)
+                },
+                onError = { error ->
+                    errorLog(error)
+                    callback.onError(error)
+                },
+            )
+        }
+    }
+
     fun syncAttributesAndOfferingsIfNeeded(
         callback: SyncAttributesAndOfferingsCallback,
     ) {
@@ -290,13 +311,12 @@ internal class PurchasesOrchestrator(
         }
 
         if (!lastSyncAttributesAndOfferingsRateLimiter.shouldProceed()) {
-            log(
-                LogIntent.WARNING,
+            log(LogIntent.WARNING) {
                 SyncAttributesAndOfferingsStrings.RATE_LIMIT_REACHED.format(
                     lastSyncAttributesAndOfferingsRateLimiter.maxCallsInPeriod,
                     lastSyncAttributesAndOfferingsRateLimiter.periodSeconds.inWholeSeconds,
-                ),
-            )
+                )
+            }
 
             getOfferings(receiveOfferingsCallback)
             return
@@ -325,10 +345,10 @@ internal class PurchasesOrchestrator(
         isoCurrencyCode: String?,
         price: Double?,
     ) {
-        log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID))
+        log(LogIntent.DEBUG) { PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID) }
 
         deviceCache.getPreviouslySentHashedTokens().takeIf { it.contains(receiptID.sha1()) }?.apply {
-            log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_SKIPPING.format(receiptID, amazonUserID))
+            log(LogIntent.DEBUG) { PurchaseStrings.SYNCING_PURCHASE_SKIPPING.format(receiptID, amazonUserID) }
             return
         }
 
@@ -353,23 +373,25 @@ internal class PurchasesOrchestrator(
                     marketplace = null,
                     PostReceiptInitiationSource.RESTORE,
                     {
-                        val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
-                        log(LogIntent.PURCHASE, logMessage)
+                        log(LogIntent.PURCHASE) {
+                            PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
+                        }
                     },
                     { error ->
-                        val logMessage = PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(
-                            receiptID,
-                            amazonUserID,
-                            error,
-                        )
-                        log(LogIntent.RC_ERROR, logMessage)
+                        log(LogIntent.RC_ERROR) {
+                            PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(
+                                receiptID,
+                                amazonUserID,
+                                error,
+                            )
+                        }
                     },
                 )
             },
             { error ->
-                val logMessage =
+                log(LogIntent.RC_ERROR) {
                     PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(receiptID, amazonUserID, error)
-                log(LogIntent.RC_ERROR, logMessage)
+                }
             },
         )
     }
@@ -446,9 +468,9 @@ internal class PurchasesOrchestrator(
     fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
-        log(LogIntent.DEBUG, RestoreStrings.RESTORING_PURCHASE)
+        log(LogIntent.DEBUG) { RestoreStrings.RESTORING_PURCHASE }
         if (!allowSharingPlayStoreAccount) {
-            log(LogIntent.WARNING, RestoreStrings.SHARING_ACC_RESTORE_FALSE)
+            log(LogIntent.WARNING) { RestoreStrings.SHARING_ACC_RESTORE_FALSE }
         }
 
         val startTime = dateProvider.now
@@ -495,17 +517,15 @@ internal class PurchasesOrchestrator(
                                 appUserID = appUserID,
                                 initiationSource = PostReceiptInitiationSource.RESTORE,
                                 onSuccess = { _, info ->
-                                    log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
+                                    log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
                                     if (sortedByTime.last() == purchase) {
                                         dispatch { callbackWithTracking.onReceived(info) }
                                     }
                                 },
                                 onError = { _, error ->
-                                    log(
-                                        LogIntent.RC_ERROR,
-                                        RestoreStrings.RESTORING_PURCHASE_ERROR
-                                            .format(purchase, error),
-                                    )
+                                    log(LogIntent.RC_ERROR) {
+                                        RestoreStrings.RESTORING_PURCHASE_ERROR.format(purchase, error)
+                                    }
                                     if (sortedByTime.last() == purchase) {
                                         dispatch { callbackWithTracking.onError(error) }
                                     }
@@ -616,7 +636,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun invalidateCustomerInfoCache() {
-        log(LogIntent.DEBUG, CustomerInfoStrings.INVALIDATING_CUSTOMERINFO_CACHE)
+        log(LogIntent.DEBUG) { CustomerInfoStrings.INVALIDATING_CUSTOMERINFO_CACHE }
         deviceCache.clearCustomerInfoCache(appUserID)
     }
 
@@ -634,7 +654,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @OptIn(InternalRevenueCatAPI::class)
     fun track(event: FeatureEvent) {
         when (event) {
             is PaywallEvent ->
@@ -646,7 +666,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     fun getCustomerCenterConfig(callback: GetCustomerCenterConfigCallback) {
         backend.getCustomerCenterConfig(
             identityManager.currentAppUserID,
@@ -663,17 +683,17 @@ internal class PurchasesOrchestrator(
     // region Special Attributes
 
     fun setAttributes(attributes: Map<String, String?>) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAttributes"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAttributes") }
         subscriberAttributesManager.setAttributes(attributes, appUserID)
     }
 
     fun setEmail(email: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setEmail"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setEmail") }
         subscriberAttributesManager.setAttribute(SubscriberAttributeKey.Email, email, appUserID)
     }
 
     fun setPhoneNumber(phoneNumber: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setPhoneNumber"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setPhoneNumber") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.PhoneNumber,
             phoneNumber,
@@ -682,7 +702,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setDisplayName(displayName: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setDisplayName"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setDisplayName") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.DisplayName,
             displayName,
@@ -691,7 +711,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setPushToken(fcmToken: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setPushToken"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setPushToken") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.FCMTokens,
             fcmToken,
@@ -703,7 +723,7 @@ internal class PurchasesOrchestrator(
     // region Integration IDs
 
     fun setMixpanelDistinctID(mixpanelDistinctID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMixpanelDistinctID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setMixpanelDistinctID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.MixpanelDistinctId,
             mixpanelDistinctID,
@@ -712,7 +732,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setOnesignalID(onesignalID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setOnesignalID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.OneSignal,
             onesignalID,
@@ -721,7 +741,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setOnesignalUserID(onesignalUserID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalUserID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setOnesignalUserID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.OneSignalUserId,
             onesignalUserID,
@@ -730,7 +750,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setAirshipChannelID(airshipChannelID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAirshipChannelID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.Airship,
             airshipChannelID,
@@ -739,7 +759,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setFirebaseAppInstanceID(firebaseAppInstanceID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setFirebaseAppInstanceID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setFirebaseAppInstanceID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.FirebaseAppInstanceId,
             firebaseAppInstanceID,
@@ -748,7 +768,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setTenjinAnalyticsInstallationID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setTenjinAnalyticsInstallationID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.TenjinAnalyticsInstallationId,
             tenjinAnalyticsInstallationID,
@@ -760,12 +780,12 @@ internal class PurchasesOrchestrator(
     // region Attribution IDs
 
     fun collectDeviceIdentifiers() {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("collectDeviceIdentifiers"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("collectDeviceIdentifiers") }
         subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
     }
 
     fun setAdjustID(adjustID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAdjustID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAdjustID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Adjust,
             adjustID,
@@ -775,7 +795,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setAppsflyerID(appsflyerID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAppsflyerID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsflyerID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.AppsFlyer,
             appsflyerID,
@@ -785,7 +805,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setFBAnonymousID(fbAnonymousID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setFBAnonymousID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setFBAnonymousID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Facebook,
             fbAnonymousID,
@@ -795,7 +815,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setMparticleID(mparticleID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMparticleID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setMparticleID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Mparticle,
             mparticleID,
@@ -805,7 +825,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setCleverTapID(cleverTapID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCleverTapID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setCleverTapID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.CleverTap,
             cleverTapID,
@@ -815,7 +835,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setKochavaDeviceID(kochavaDeviceID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setKochavaDeviceID"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setKochavaDeviceID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Kochava,
             kochavaDeviceID,
@@ -828,7 +848,7 @@ internal class PurchasesOrchestrator(
     // region Campaign parameters
 
     fun setMediaSource(mediaSource: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMediaSource"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setMediaSource") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.MediaSource,
             mediaSource,
@@ -837,7 +857,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setCampaign(campaign: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCampaign"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setCampaign") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Campaign,
             campaign,
@@ -846,7 +866,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setAdGroup(adGroup: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAdGroup"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAdGroup") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.AdGroup,
             adGroup,
@@ -855,7 +875,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setAd(ad: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAd"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAd") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Ad,
             ad,
@@ -864,7 +884,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setKeyword(keyword: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("seKeyword"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("seKeyword") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Keyword,
             keyword,
@@ -873,7 +893,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setCreative(creative: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCreative"))
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setCreative") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Creative,
             creative,
@@ -887,7 +907,7 @@ internal class PurchasesOrchestrator(
     // region Custom entitlements computation
     fun switchUser(newAppUserID: String) {
         if (identityManager.currentAppUserID == newAppUserID) {
-            warnLog(IdentityStrings.SWITCHING_USER_SAME_APP_USER_ID.format(newAppUserID))
+            warnLog { IdentityStrings.SWITCHING_USER_SAME_APP_USER_ID.format(newAppUserID) }
             return
         }
 
@@ -898,6 +918,17 @@ internal class PurchasesOrchestrator(
     //endregion
 
     //endregion
+
+    // region Paywall fonts
+
+    @InternalRevenueCatAPI
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
+    }
+
+    // endregion Paywall fonts
 
     // region Private Methods
     private fun enqueue(command: () -> Unit) {
@@ -1088,16 +1119,15 @@ internal class PurchasesOrchestrator(
         isPersonalizedPrice: Boolean?,
         listener: PurchaseCallback,
     ) {
-        log(
-            LogIntent.PURCHASE,
+        log(LogIntent.PURCHASE) {
             PurchaseStrings.PURCHASE_STARTED.format(
                 " $purchasingData ${
                     presentedOfferingContext?.offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$it"
                     }
                 }",
-            ),
-        )
+            )
+        }
 
         trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
         val startTime = dateProvider.now
@@ -1107,7 +1137,7 @@ internal class PurchasesOrchestrator(
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
             if (!appConfig.finishTransactions) {
-                log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
+                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
             }
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 val mapOfProductIdToListener = mapOf(purchasingData.productId to listenerWithDiagnostics)
@@ -1156,20 +1186,19 @@ internal class PurchasesOrchestrator(
             return
         }
 
-        log(
-            LogIntent.PURCHASE,
+        log(LogIntent.PURCHASE) {
             PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
                     presentedOfferingContext?.offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$it"
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
-            ),
-        )
+            )
+        }
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
             if (!appConfig.finishTransactions) {
-                log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
+                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
             }
 
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
@@ -1225,8 +1254,7 @@ internal class PurchasesOrchestrator(
             return
         }
 
-        log(
-            LogIntent.PURCHASE,
+        log(LogIntent.PURCHASE) {
             PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
                     presentedOfferingContext?.offeringIdentifier?.let {
@@ -1234,12 +1262,12 @@ internal class PurchasesOrchestrator(
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
-            ),
-        )
+            )
+        }
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@PurchasesOrchestrator) {
             if (!appConfig.finishTransactions) {
-                log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
+                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
             }
             if (state.deprecatedProductChangeCallback == null) {
                 state = state.copy(deprecatedProductChangeCallback = listener)
@@ -1287,10 +1315,10 @@ internal class PurchasesOrchestrator(
 
         if (oldProductId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
             previousProductId = oldProductId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
-            warnLog(
+            warnLog {
                 "Using incorrect oldProductId: $oldProductId. The productId should not contain the basePlanId. " +
-                    "Using productId: $previousProductId.",
-            )
+                    "Using productId: $previousProductId."
+            }
         }
 
         billing.findPurchaseInPurchaseHistory(
@@ -1298,7 +1326,7 @@ internal class PurchasesOrchestrator(
             ProductType.SUBS,
             previousProductId,
             onCompletion = { purchaseRecord ->
-                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(previousProductId))
+                log(LogIntent.PURCHASE) { PurchaseStrings.FOUND_EXISTING_PURCHASE.format(previousProductId) }
 
                 billing.makePurchaseAsync(
                     activity,
@@ -1310,7 +1338,7 @@ internal class PurchasesOrchestrator(
                 )
             },
             onError = { error ->
-                log(LogIntent.GOOGLE_ERROR, error.toString())
+                log(LogIntent.GOOGLE_ERROR) { error.toString() }
                 getAndClearProductChangeCallback()
                 getAndClearAllPurchaseCallbacks()
                 listener.dispatch(error)
@@ -1497,12 +1525,11 @@ internal class PurchasesOrchestrator(
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
                                 mainHandler.post {
                                     if (hasResponded.getAndSet(true)) {
-                                        log(
-                                            LogIntent.GOOGLE_ERROR,
+                                        log(LogIntent.GOOGLE_ERROR) {
                                             PurchaseStrings.EXTRA_CONNECTION_CANMAKEPAYMENTS.format(
                                                 billingResult.responseCode,
-                                            ),
-                                        )
+                                            )
+                                        }
                                         return@post
                                     }
                                     try {
@@ -1520,10 +1547,9 @@ internal class PurchasesOrchestrator(
 
                                         callback.onReceived(featureSupportedResultOk)
                                     } catch (e: IllegalArgumentException) {
-                                        log(
-                                            LogIntent.GOOGLE_ERROR,
-                                            PurchaseStrings.EXCEPTION_CANMAKEPAYMENTS.format(e.localizedMessage),
-                                        )
+                                        log(LogIntent.GOOGLE_ERROR) {
+                                            PurchaseStrings.EXCEPTION_CANMAKEPAYMENTS.format(e.localizedMessage)
+                                        }
 
                                         // Play Services not available
                                         callback.onReceived(false)
@@ -1536,16 +1562,14 @@ internal class PurchasesOrchestrator(
                                     try {
                                         billingClient.endConnection()
                                     } catch (e: IllegalArgumentException) {
-                                        log(
-                                            LogIntent.GOOGLE_ERROR,
-                                            PurchaseStrings.EXCEPTION_CANMAKEPAYMENTS.format(e.localizedMessage),
-                                        )
+                                        log(LogIntent.GOOGLE_ERROR) {
+                                            PurchaseStrings.EXCEPTION_CANMAKEPAYMENTS.format(e.localizedMessage)
+                                        }
                                     } finally {
                                         if (hasResponded.getAndSet(true)) {
-                                            log(
-                                                LogIntent.GOOGLE_ERROR,
-                                                PurchaseStrings.EXTRA_CALLBACK_CANMAKEPAYMENTS,
-                                            )
+                                            log(LogIntent.GOOGLE_ERROR) {
+                                                PurchaseStrings.EXTRA_CALLBACK_CANMAKEPAYMENTS
+                                            }
                                         } else {
                                             callback.onReceived(false)
                                         }

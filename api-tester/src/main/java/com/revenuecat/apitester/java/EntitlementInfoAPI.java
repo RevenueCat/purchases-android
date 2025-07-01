@@ -71,6 +71,7 @@ final class EntitlementInfoAPI {
             case AMAZON:
             case RC_BILLING:
             case EXTERNAL:
+            case PADDLE:
         }
     }
 

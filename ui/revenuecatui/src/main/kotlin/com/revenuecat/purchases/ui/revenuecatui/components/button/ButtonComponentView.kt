@@ -6,6 +6,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -18,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -83,6 +86,20 @@ internal fun ButtonComponentView(
     val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
     val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
 
+    val layoutDirection = LocalLayoutDirection.current
+    val marginTop = remember(style.stackComponentStyle.margin) {
+        style.stackComponentStyle.margin.calculateTopPadding()
+    }
+    val marginBottom = remember(style.stackComponentStyle.margin) {
+        style.stackComponentStyle.margin.calculateBottomPadding()
+    }
+    val marginStart = remember(style.stackComponentStyle.margin, layoutDirection) {
+        style.stackComponentStyle.margin.calculateStartPadding(layoutDirection)
+    }
+    val marginEnd = remember(style.stackComponentStyle.margin, layoutDirection) {
+        style.stackComponentStyle.margin.calculateEndPadding(layoutDirection)
+    }
+
     // We are using a custom Layout instead of a Box to properly handle the case where the StackComponentView is
     // smaller than the CircularProgressIndicator, in either dimension. In this case, we want the
     // CircularProgressIndicator to shrink so it doesn't exceed the StackComponentView's bounds. Using IntrinsicSize
@@ -113,7 +130,14 @@ internal fun ButtonComponentView(
         measurePolicy = { measurables, constraints ->
             val stack = measurables[0].measure(constraints)
             // Ensure that the progress indicator is not bigger than the stack.
-            val progressSize = min(stack.width, stack.height)
+            val marginStartPx = marginStart.toPx()
+            val marginEndPx = marginEnd.toPx()
+            val marginTopPx = marginTop.toPx()
+            val marginBottomPx = marginBottom.toPx()
+            val progressSize = min(
+                stack.width - marginStartPx - marginEndPx,
+                stack.height - marginTopPx - marginBottomPx,
+            ).toInt()
             val progress = measurables[1].measure(
                 Constraints(
                     minWidth = progressSize,
@@ -124,6 +148,8 @@ internal fun ButtonComponentView(
             )
             val totalWidth = stack.width
             val totalHeight = stack.height
+            val stackHeightMinusMargin = totalHeight - marginTopPx - marginBottomPx
+            val stackWidthMinusMargin = totalWidth - marginStartPx - marginEndPx
             layout(
                 width = totalWidth,
                 height = totalHeight,
@@ -131,8 +157,8 @@ internal fun ButtonComponentView(
                 stack.placeRelative(x = 0, y = 0)
                 // Center the progress indicator.
                 progress.placeRelative(
-                    x = ((totalWidth / 2f) - (progress.width / 2f)).roundToInt(),
-                    y = ((totalHeight / 2f) - (progress.height / 2f)).roundToInt(),
+                    x = marginStartPx.toInt() + ((stackWidthMinusMargin / 2f) - (progress.width / 2f)).roundToInt(),
+                    y = marginTopPx.toInt() + ((stackHeightMinusMargin / 2f) - (progress.height / 2f)).roundToInt(),
                 )
             }
         },

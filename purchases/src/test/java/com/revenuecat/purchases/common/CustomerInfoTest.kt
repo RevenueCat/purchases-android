@@ -375,6 +375,9 @@ class CustomerInfoTest {
         assertThat(proSubscription.displayName).isEqualTo("Pro Monthly")
         assertThat(proSubscription.price).isEqualTo(Price("$4.99", 4_990_000, "USD"))
         assertThat(proSubscription.productPlanIdentifier).isEqualTo("monthly")
+        assertThat(proSubscription.managementURL).isEqualTo(
+            Uri.parse("https://play.google.com/store/account/subscriptions")
+        )
         assertThat(proSubscription.isActive).isTrue()
         assertThat(proSubscription.willRenew).isTrue()
 
@@ -397,6 +400,9 @@ class CustomerInfoTest {
         assertThat(basicSubscription.displayName).isEqualTo("Basic Monthly")
         assertThat(basicSubscription.price).isEqualTo(Price("$5.99", 5_990_000, "USD"))
         assertThat(basicSubscription.productPlanIdentifier).isEqualTo("monthly")
+        assertThat(basicSubscription.managementURL).isEqualTo(
+            Uri.parse("https://play.google.com/store/account/subscriptions")
+        )
         assertThat(basicSubscription.isActive).isFalse()
         assertThat(basicSubscription.willRenew).isFalse()
 
@@ -419,6 +425,9 @@ class CustomerInfoTest {
         assertThat(pausedSubscription.displayName).isNull()
         assertThat(pausedSubscription.price).isEqualTo(Price("$9.99", 9_990_000, "USD"))
         assertThat(pausedSubscription.productPlanIdentifier).isEqualTo("monthly")
+        assertThat(pausedSubscription.managementURL).isEqualTo(
+            Uri.parse("https://play.google.com/store/account/subscriptions")
+        )
         assertThat(pausedSubscription.isActive).isFalse()
         assertThat(pausedSubscription.willRenew).isTrue()
     }

@@ -107,7 +107,8 @@ internal abstract class BaseHTTPClientTest {
         endpoint: Endpoint,
         expectedResult: HTTPResult,
         verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
-        requestDateHeader: Date? = null
+        requestDateHeader: Date? = null,
+        server: MockWebServer = this.server,
     ) {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(

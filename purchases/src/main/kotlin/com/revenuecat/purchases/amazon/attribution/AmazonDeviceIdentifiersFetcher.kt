@@ -25,10 +25,9 @@ internal class AmazonDeviceIdentifiersFetcher : DeviceIdentifiersFetcher {
                 advertisingID = Settings.Secure.getString(contentResolver, "advertising_id")
             }
         } catch (e: Settings.SettingNotFoundException) {
-            log(
-                LogIntent.AMAZON_ERROR,
-                AttributionStrings.AMAZON_COULD_NOT_GET_ADID.format(e.localizedMessage),
-            )
+            log(LogIntent.AMAZON_ERROR) {
+                AttributionStrings.AMAZON_COULD_NOT_GET_ADID.format(e.localizedMessage)
+            }
         }
         val deviceIdentifiers = mapOf(
             SubscriberAttributeKey.DeviceIdentifiers.AmazonAdID.backendKey to advertisingID,

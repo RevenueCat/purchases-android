@@ -186,7 +186,8 @@ internal class CarouselComponentTests {
                           "loop": true,
                           "auto_advance": {
                             "ms_time_per_page": 1000,
-                            "ms_transition_time": 500
+                            "ms_transition_time": 500,
+                            "transition_type": "fade"
                           },
                           "pages": [
                             {
@@ -288,7 +289,8 @@ internal class CarouselComponentTests {
                             loop = true,
                             autoAdvance = CarouselComponent.AutoAdvancePages(
                                 msTimePerPage = 1000,
-                                msTransitionTime = 500
+                                msTransitionTime = 500,
+                                transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
                             )
                         )
                     ),
@@ -315,6 +317,81 @@ internal class CarouselComponentTests {
                                 )
                             ),
                             pageAlignment = VerticalAlignment.CENTER,
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "unknown page_control position",
+                    Args(
+                        json = """
+                        {
+                          "type": "carousel",
+                          "page_alignment": "center",
+                          "pages": [
+                            {
+                              "type": "stack",
+                              "components": []
+                            }
+                          ],
+                          "page_control": {
+                            "position": "some_unknown_value",
+                            "active": {
+                              "width": 10,
+                              "height": 20,
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "primary"
+                                },
+                                "dark": {
+                                  "type": "alias",
+                                  "value": "secondary"
+                                }
+                              }
+                            },
+                            "default": {
+                              "width": 30,
+                              "height": 40,
+                              "color": {
+                                "light": {
+                                  "type": "alias",
+                                  "value": "tertiary"
+                                },
+                                "dark": {
+                                  "type": "alias",
+                                  "value": "another_alias"
+                                }
+                              }
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = CarouselComponent(
+                            pages = listOf(
+                                StackComponent(
+                                    components = emptyList()
+                                )
+                            ),
+                            pageAlignment = VerticalAlignment.CENTER,
+                            pageControl = CarouselComponent.PageControl(
+                                position = CarouselComponent.PageControl.Position.BOTTOM,
+                                active = CarouselComponent.PageControl.Indicator(
+                                    width = 10u,
+                                    height = 20u,
+                                    color = ColorScheme(
+                                        light = ColorInfo.Alias(ColorAlias("primary")),
+                                        dark = ColorInfo.Alias(ColorAlias("secondary"))
+                                    ),
+                                ),
+                                default = CarouselComponent.PageControl.Indicator(
+                                    width = 30u,
+                                    height = 40u,
+                                    color = ColorScheme(
+                                        light = ColorInfo.Alias(ColorAlias("tertiary")),
+                                        dark = ColorInfo.Alias(ColorAlias("another_alias"))
+                                    ),
+                                )
+                            )
                         )
                     ),
                 ),
@@ -508,7 +585,8 @@ internal class CarouselComponentTests {
                           "loop": true,
                           "auto_advance": {
                             "ms_time_per_page": 1000,
-                            "ms_transition_time": 500
+                            "ms_transition_time": 500,
+                            "transition_type": "fade"
                           }
                         }
                         """.trimIndent(),
@@ -598,7 +676,8 @@ internal class CarouselComponentTests {
                             loop = true,
                             autoAdvance = CarouselComponent.AutoAdvancePages(
                                 msTimePerPage = 1000,
-                                msTransitionTime = 500
+                                msTransitionTime = 500,
+                                transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
                             )
                         )
                     )

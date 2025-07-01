@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.net.Uri
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.RCColor
@@ -9,7 +8,6 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("MagicNumber")
 internal object CustomerCenterConfigTestData {
 
@@ -76,6 +74,12 @@ internal object CustomerCenterConfigTestData {
                                 ),
                             ),
                         ),
+                        CustomerCenterConfigData.HelpPath(
+                            id = "5",
+                            title = "FAQ",
+                            type = CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
+                            url = "https://www.revenuecat.com/docs/customer-center-faq",
+                        ),
                     ),
                 ),
                 CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE to CustomerCenterConfigData.Screen(
@@ -125,14 +129,8 @@ internal object CustomerCenterConfigTestData {
 
     val purchaseInformationMonthlyRenewing = PurchaseInformation(
         title = "Basic",
-        durationTitle = "1 Month",
-        price = PriceDetails.Paid("$4.99"),
-        explanation = Explanation.EARLIEST_RENEWAL,
-        expirationOrRenewal =
-        ExpirationOrRenewal(
-            ExpirationOrRenewal.Label.NEXT_BILLING_DATE,
-            ExpirationOrRenewal.Date.DateString("June 1st, 2024"),
-        ),
+        pricePaid = PriceDetails.Paid("$4.99"),
+        expirationOrRenewal = ExpirationOrRenewal.Renewal("June 1st, 2024"),
         store = Store.PLAY_STORE,
         managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         product = TestStoreProduct(
@@ -143,19 +141,16 @@ internal object CustomerCenterConfigTestData {
             Price("$4.99", 4_990_000, "US"),
             Period(1, Period.Unit.MONTH, "P1M"),
         ),
-        isLifetime = false,
+        isSubscription = true,
+        isExpired = false,
+        isTrial = false,
+        isCancelled = false,
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
         title = "Basic",
-        durationTitle = "1 Year",
-        price = PriceDetails.Paid("$40.99"),
-        explanation = Explanation.EARLIEST_EXPIRATION,
-        expirationOrRenewal =
-        ExpirationOrRenewal(
-            ExpirationOrRenewal.Label.EXPIRES,
-            ExpirationOrRenewal.Date.DateString("June 1st, 2025"),
-        ),
+        pricePaid = PriceDetails.Paid("$40.99"),
+        expirationOrRenewal = ExpirationOrRenewal.Expiration("June 1st, 2024"),
         store = Store.PLAY_STORE,
         managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
         product = TestStoreProduct(
@@ -166,6 +161,55 @@ internal object CustomerCenterConfigTestData {
             Price("$40.99", 40_990_000, "US"),
             Period(1, Period.Unit.YEAR, "P1Y"),
         ),
-        isLifetime = false,
+        isSubscription = true,
+        isExpired = false,
+        isTrial = false,
+        isCancelled = true,
+    )
+
+    val purchaseInformationYearlyExpired = PurchaseInformation(
+        title = "Basic",
+        pricePaid = PriceDetails.Paid("$40.99"),
+        expirationOrRenewal = ExpirationOrRenewal.Expiration("June 1st, 2024"),
+        store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        product = TestStoreProduct(
+            "yearly_product_id",
+            "Basic",
+            "title",
+            "description",
+            Price("$40.99", 40_990_000, "US"),
+            Period(1, Period.Unit.YEAR, "P1Y"),
+        ),
+        isSubscription = true,
+        isExpired = true,
+        isTrial = false,
+        isCancelled = true,
+    )
+
+    val purchaseInformationLifetime = PurchaseInformation(
+        title = "Lifetime",
+        pricePaid = PriceDetails.Paid("$100.99"),
+        expirationOrRenewal = null,
+        store = Store.APP_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        product = null,
+        isSubscription = true,
+        isExpired = false,
+        isTrial = false,
+        isCancelled = false,
+    )
+
+    val purchaseInformationPromotional = PurchaseInformation(
+        title = "rc_promo_Test1_lifetime",
+        pricePaid = PriceDetails.Free,
+        expirationOrRenewal = ExpirationOrRenewal.Expiration("April 24th, 2225"),
+        store = Store.PROMOTIONAL,
+        managementURL = null,
+        product = null,
+        isSubscription = false,
+        isExpired = false,
+        isTrial = false,
+        isCancelled = true,
     )
 }

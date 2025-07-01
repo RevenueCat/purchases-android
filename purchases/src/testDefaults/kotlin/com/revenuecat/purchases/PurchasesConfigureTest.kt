@@ -5,17 +5,21 @@
 
 package com.revenuecat.purchases
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.File
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
@@ -138,7 +142,10 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
     @Test
     fun `configurations with different contexts are equal`() {
         val context1 = mockContext
-        val context2 = mockk<Context>().apply { every { applicationContext } returns mockk() }
+        val context2 = mockk<Context>().apply {
+            every { applicationContext } returns mockk()
+            every { isDeviceProtectedStorage } returns false
+        }
         val config1 = PurchasesConfiguration.Builder(context1, "api_key").build()
         val config2 = PurchasesConfiguration.Builder(context2, "api_key").build()
 
@@ -167,5 +174,31 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
             .build()
 
         assertThat(config1).isNotEqualTo(config2)
+    }
+
+    @Test
+    fun `should properly handle device-protected storage Contexts`() {
+        // Arrange
+        purchases.close()
+        val deviceProtectedStorageContext = mockk<Context>().apply {
+            every { applicationContext } returns mockContext.applicationContext
+            every { checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+                PackageManager.PERMISSION_GRANTED
+            every { resources } returns mockContext.resources
+            every { packageManager } returns mockContext.packageManager
+            every { packageName } returns mockContext.packageName
+            every { getSharedPreferences(any(), any()) } returns
+                mockContext.getSharedPreferences("test", Context.MODE_PRIVATE)
+            every { isDeviceProtectedStorageCompat } returns true
+            every { cacheDir } returns File("test_cache_folder")
+        }
+
+        // Act
+        purchases = Purchases.configure(
+            PurchasesConfiguration.Builder(deviceProtectedStorageContext, "api_key_diff").build()
+        )
+
+        // Assert
+        assertThat(purchases.currentConfiguration.context.isDeviceProtectedStorage).isTrue()
     }
 }

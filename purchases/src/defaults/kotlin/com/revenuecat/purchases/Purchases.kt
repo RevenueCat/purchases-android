@@ -18,6 +18,7 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
@@ -91,6 +93,11 @@ class Purchases internal constructor(
     val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
 
+    /**
+     * The storefront country code in ISO-3166-1 alpha2.
+     * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
+     * To get the country code asynchronously use [getStorefrontCountryCode] or [awaitStorefrontCountryCode].
+     */
     val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
 
@@ -148,6 +155,14 @@ class Purchases internal constructor(
     }
 
     // region Public Methods
+
+    /**
+     * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+     * If there is any error, it will return null and log said error.
+     */
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        purchasesOrchestrator.getStorefrontCountryCode(callback)
+    }
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
@@ -489,7 +504,7 @@ class Purchases internal constructor(
     /**
      * Used by `RevenueCatUI` to keep track of [FeatureEvent]s.
      */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @InternalRevenueCatAPI
     @JvmSynthetic
     fun track(event: FeatureEvent) {
         purchasesOrchestrator.track(event)
@@ -755,6 +770,17 @@ class Purchases internal constructor(
     //endregion
     //endregion
 
+    // region Paywall fonts
+
+    @InternalRevenueCatAPI
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return purchasesOrchestrator.getCachedFontFamilyOrStartDownload(fontInfo)
+    }
+
+    // endregion Paywall Fonts
+
     // region Deprecated
 
     /**
@@ -860,7 +886,7 @@ class Purchases internal constructor(
                 val uri = Uri.parse(string)
                 return DeepLinkParser.parseWebPurchaseRedemption(uri)
             } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-                errorLog("Error parsing URL: $string", e)
+                errorLog(e) { "Error parsing URL: $string" }
                 return null
             }
         }
@@ -965,10 +991,10 @@ class Purchases internal constructor(
         ): Purchases {
             if (isConfigured) {
                 if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
-                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG)
+                    infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG }
                     return sharedInstance
                 } else {
-                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                    infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS }
                 }
             }
             return PurchasesFactory(
@@ -1004,7 +1030,7 @@ class Purchases internal constructor(
         ) {
             val currentStore = sharedInstance.purchasesOrchestrator.appConfig.store
             if (currentStore != Store.PLAY_STORE) {
-                log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
+                log(LogIntent.RC_ERROR) { BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS }
                 callback.onReceived(true)
                 return
             }

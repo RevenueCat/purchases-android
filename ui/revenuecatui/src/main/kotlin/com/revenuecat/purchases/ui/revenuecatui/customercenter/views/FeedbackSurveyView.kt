@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:JvmSynthetic
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
@@ -18,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
@@ -34,9 +32,9 @@ internal fun FeedbackSurveyView(
     Box {
         FeedbackSurveyButtonsView(
             options = feedbackSurvey.options,
-            onOptionSelect = { option ->
+            onAnswerSubmit = { option ->
                 loadingOption = option.id
-                data.onOptionSelected(option)
+                data.onAnswerSubmitted(option)
                 loadingOption = null
             },
             loadingOption = loadingOption,
@@ -48,14 +46,14 @@ internal fun FeedbackSurveyView(
 @Composable
 internal fun FeedbackSurveyButtonsView(
     options: List<CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option>,
-    onOptionSelect: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option) -> Unit,
+    onAnswerSubmit: (CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey.Option) -> Unit,
     loadingOption: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         options.forEach { option ->
             Button(
-                onClick = { onOptionSelect(option) },
+                onClick = { onAnswerSubmit(option) },
                 enabled = loadingOption == null,
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
             ) {
@@ -70,7 +68,6 @@ internal fun FeedbackSurveyButtonsView(
 }
 
 @JvmSynthetic
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Preview(showBackground = true)
 @Composable
 internal fun FeedbackSurveyPreview() {
@@ -79,8 +76,7 @@ internal fun FeedbackSurveyPreview() {
             feedbackSurvey = CustomerCenterConfigTestData.customerCenterData()
                 .getManagementScreen()?.paths?.first { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }!!
                 .feedbackSurvey!!,
-            onOptionSelected = { _ -> },
+            onAnswerSubmitted = { _ -> },
         ),
-
     )
 }

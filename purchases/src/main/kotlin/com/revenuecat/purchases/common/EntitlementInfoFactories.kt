@@ -62,6 +62,7 @@ internal fun JSONObject.getStore(name: String) = when (getString(name)) {
     "amazon" -> Store.AMAZON
     "rc_billing" -> Store.RC_BILLING
     "external" -> Store.EXTERNAL
+    "paddle" -> Store.PADDLE
     else -> Store.UNKNOWN_STORE
 }
 
@@ -124,9 +125,9 @@ private fun isDateActive(
 ): Boolean {
     val dateActive = DateHelper.isDateActive(expirationDate, requestDate)
     if (!dateActive.isActive && !dateActive.inGracePeriod) {
-        warnLog(
-            PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate),
-        )
+        warnLog {
+            PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate)
+        }
     }
     return dateActive.isActive
 }

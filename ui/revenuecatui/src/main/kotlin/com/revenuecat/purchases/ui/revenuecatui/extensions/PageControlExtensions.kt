@@ -23,7 +23,9 @@ internal fun CarouselComponent.PageControl.toPageControlStyles(aliases: Map<Colo
         third = backgroundColor?.toColorStyles(aliases = aliases).orSuccessfullyNull(),
         fourth = border?.toBorderStyles(aliases = aliases).orSuccessfullyNull(),
         fifth = shadow?.toShadowStyles(aliases = aliases).orSuccessfullyNull(),
-    ) { activeColor, defaultColor, backgroundColor, borderStyle, shadowStyle ->
+        sixth = active.strokeColor?.toColorStyles(aliases = aliases).orSuccessfullyNull(),
+        seventh = default.strokeColor?.toColorStyles(aliases = aliases).orSuccessfullyNull(),
+    ) { activeColor, defaultColor, backgroundColor, borderStyle, shadowStyle, activeStrokeColor, defaultStrokeColor ->
         CarouselComponentStyle.PageControlStyles(
             position = position,
             spacing = spacing?.dp ?: 0.dp,
@@ -37,11 +39,15 @@ internal fun CarouselComponent.PageControl.toPageControlStyles(aliases: Map<Colo
                 width = active.width.toInt().dp,
                 height = active.height.toInt().dp,
                 color = activeColor,
+                strokeColor = activeStrokeColor,
+                strokeWidth = active.strokeWidth?.toInt()?.dp,
             ),
             default = CarouselComponentStyle.IndicatorStyles(
                 width = default.width.toInt().dp,
                 height = default.height.toInt().dp,
                 color = defaultColor,
+                strokeColor = defaultStrokeColor,
+                strokeWidth = default.strokeWidth?.toInt()?.dp,
             ),
         )
     }

@@ -40,11 +40,11 @@ internal class OfferingImagePreDownloader(
 ) {
     fun preDownloadOfferingImages(offering: Offering) {
         if (!shouldPredownloadImages) {
-            verboseLog("OfferingImagePreDownloader won't pre-download images")
+            verboseLog { "OfferingImagePreDownloader won't pre-download images" }
             return
         }
 
-        debugLog("OfferingImagePreDownloader: starting image download")
+        debugLog { "OfferingImagePreDownloader: starting image download" }
 
         downloadV1Images(offering)
         downloadV2Images(offering)
@@ -56,7 +56,7 @@ internal class OfferingImagePreDownloader(
                 Uri.parse(paywallData.assetBaseURL.toString()).buildUpon().path(it).build()
             }
             imageUris.forEach {
-                debugLog("Pre-downloading Paywall V1 image: $it")
+                debugLog { "Pre-downloading Paywall V1 image: $it" }
                 coilImageDownloader.downloadImage(it)
             }
         }
@@ -66,7 +66,7 @@ internal class OfferingImagePreDownloader(
         offering.paywallComponents?.let { paywallComponents ->
             val imageUrls = findImageUrisToDownload(paywallComponents)
             imageUrls.forEach {
-                debugLog("Pre-downloading Paywall V2 image: $it")
+                debugLog { "Pre-downloading Paywall V2 image: $it" }
                 coilImageDownloader.downloadImage(it)
             }
         }
@@ -123,8 +123,10 @@ internal class OfferingImagePreDownloader(
                 Uri.parse(value.light.webpLowRes.toString()),
                 value.dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
             )
-            is Background.Color -> emptySet()
-            null -> emptySet()
+            is Background.Color,
+            is Background.Unknown,
+            null,
+            -> emptySet()
         }
     }
 

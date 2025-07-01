@@ -52,25 +52,27 @@ internal class ButtonComponentState(
 
     private fun ButtonComponentStyle.Action.toPaywallAction(localeId: LocaleId): PaywallAction =
         when (this) {
-            is ButtonComponentStyle.Action.NavigateBack -> PaywallAction.NavigateBack
-            is ButtonComponentStyle.Action.NavigateTo -> PaywallAction.NavigateTo(
-                destination = destination.toPaywallDestination(localeId),
-            )
-            is ButtonComponentStyle.Action.PurchasePackage -> PaywallAction.PurchasePackage
-            is ButtonComponentStyle.Action.RestorePurchases -> PaywallAction.RestorePurchases
-        }
+            is ButtonComponentStyle.Action.NavigateBack -> PaywallAction.External.NavigateBack
+            is ButtonComponentStyle.Action.NavigateTo -> when (destination) {
+                is ButtonComponentStyle.Action.NavigateTo.Destination.CustomerCenter ->
+                    PaywallAction.External.NavigateTo(PaywallAction.External.NavigateTo.Destination.CustomerCenter)
 
-    private fun ButtonComponentStyle.Action.NavigateTo.Destination.toPaywallDestination(
-        localeId: LocaleId,
-    ): PaywallAction.NavigateTo.Destination =
-        when (this) {
-            is ButtonComponentStyle.Action.NavigateTo.Destination.CustomerCenter ->
-                PaywallAction.NavigateTo.Destination.CustomerCenter
+                is ButtonComponentStyle.Action.NavigateTo.Destination.Url ->
+                    PaywallAction.External.NavigateTo(
+                        PaywallAction.External.NavigateTo.Destination.Url(
+                            // We will use the URL for the default locale if there's no URL for the current locale.
+                            url = destination.urls.run { getOrDefault(localeId, entry.value) },
+                            method = destination.method,
+                        ),
+                    )
 
-            is ButtonComponentStyle.Action.NavigateTo.Destination.Url -> PaywallAction.NavigateTo.Destination.Url(
-                // We will use the URL for the default locale if there's no URL for the current locale.
-                url = urls.run { getOrDefault(localeId, entry.value) },
-                method = method,
-            )
+                is ButtonComponentStyle.Action.NavigateTo.Destination.Sheet ->
+                    PaywallAction.Internal.NavigateTo(PaywallAction.Internal.NavigateTo.Destination.Sheet(destination))
+            }
+
+            is ButtonComponentStyle.Action.PurchasePackage ->
+                PaywallAction.External.PurchasePackage(rcPackage = rcPackage)
+
+            is ButtonComponentStyle.Action.RestorePurchases -> PaywallAction.External.RestorePurchases
         }
 }

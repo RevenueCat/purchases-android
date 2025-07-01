@@ -1,10 +1,10 @@
 @file:Suppress("TooManyFunctions")
 @file:JvmSynthetic
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -44,6 +43,8 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterAnimations
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -54,6 +55,13 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
+
+private fun getTitleForState(state: CustomerCenterState): String? {
+    return when (state) {
+        is CustomerCenterState.Success -> state.currentDestination.title
+        else -> null
+    }
+}
 
 @Suppress("LongMethod")
 @JvmSynthetic
@@ -100,9 +108,7 @@ internal fun InternalCustomerCenter(
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
-                    coroutineScope.launch {
-                        viewModel.pathButtonPressed(context, action.path, action.product)
-                    }
+                    viewModel.pathButtonPressed(context, action.path, action.purchaseInformation)
                 }
 
                 is CustomerCenterAction.PerformRestore -> {
@@ -150,7 +156,7 @@ private fun InternalCustomerCenter(
         val accentColor = appearance.getColorForTheme(isDark) { it.accentColor }
 
         // Only change background when presenting a promotional offer
-        val backgroundColor = if (state.promotionalOfferData != null) {
+        val backgroundColor = if (state.currentDestination is CustomerCenterDestination.PromotionalOffer) {
             appearance.getColorForTheme(isDark) { it.backgroundColor }
         } else {
             null
@@ -183,10 +189,12 @@ private fun InternalCustomerCenter(
                 is CustomerCenterState.NotLoaded -> {}
                 is CustomerCenterState.Loading -> CustomerCenterLoading()
                 is CustomerCenterState.Error -> CustomerCenterError(state)
-                is CustomerCenterState.Success -> CustomerCenterLoaded(
-                    state,
-                    onAction,
-                )
+                is CustomerCenterState.Success -> {
+                    CustomerCenterLoaded(
+                        state = state,
+                        onAction = onAction,
+                    )
+                }
             }
         }
     }
@@ -255,45 +263,83 @@ private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    if (state.feedbackSurveyData != null) {
-        FeedbackSurveyView(state.feedbackSurveyData)
-    } else if (state.promotionalOfferData != null) {
-        val promotionalOfferData = state.promotionalOfferData
-        PromotionalOfferScreen(
-            promotionalOfferData = promotionalOfferData,
-            appearance = state.customerCenterConfigData.appearance,
-            localization = state.customerCenterConfigData.localization,
-            onAccept = { subscriptionOption ->
-                onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
-            },
-            onDismiss = {
-                onAction(CustomerCenterAction.DismissPromotionalOffer(promotionalOfferData.originalPath))
-            },
-        )
-    } else if (state.restorePurchasesState != null) {
+    CustomerCenterNavHost(
+        currentDestination = state.currentDestination,
+        customerCenterState = state,
+        onAction = onAction,
+    )
+}
+
+@Composable
+private fun CustomerCenterNavHost(
+    currentDestination: CustomerCenterDestination,
+    customerCenterState: CustomerCenterState.Success,
+    onAction: (CustomerCenterAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedContent(
+        targetState = currentDestination,
+        transitionSpec = {
+            CustomerCenterAnimations.getTransitionForNavigation(
+                from = initialState,
+                to = targetState,
+                navigationState = customerCenterState.navigationState,
+            )
+        },
+        label = "CustomerCenterScreens",
+        modifier = modifier,
+    ) { destination ->
+        when (destination) {
+            is CustomerCenterDestination.Main -> {
+                MainScreenContent(
+                    state = customerCenterState,
+                    onAction = onAction,
+                )
+            }
+
+            is CustomerCenterDestination.FeedbackSurvey -> {
+                FeedbackSurveyView(destination.data)
+            }
+
+            is CustomerCenterDestination.PromotionalOffer -> {
+                PromotionalOfferScreen(
+                    promotionalOfferData = destination.data,
+                    appearance = customerCenterState.customerCenterConfigData.appearance,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                    onAccept = { subscriptionOption ->
+                        onAction(CustomerCenterAction.PurchasePromotionalOffer(subscriptionOption))
+                    },
+                    onDismiss = {
+                        onAction(CustomerCenterAction.DismissPromotionalOffer(destination.data.originalPath))
+                    },
+                )
+            }
+        }
+    }
+
+    // Show RestorePurchases dialog as overlay
+    if (customerCenterState.restorePurchasesState != null) {
         RestorePurchasesDialog(
-            state = state.restorePurchasesState,
-            localization = state.customerCenterConfigData.localization,
+            state = customerCenterState.restorePurchasesState,
+            localization = customerCenterState.customerCenterConfigData.localization,
             onDismiss = { onAction(CustomerCenterAction.DismissRestoreDialog) },
             onRestore = { onAction(CustomerCenterAction.PerformRestore) },
-            onContactSupport = state.customerCenterConfigData.support.email?.let { email ->
+            onContactSupport = customerCenterState.customerCenterConfigData.support.email?.let { email ->
                 {
                     onAction(CustomerCenterAction.ContactSupport(email))
                 }
             },
         )
-    } else {
-        val configuration = state.customerCenterConfigData
-        MainScreen(state, configuration, onAction)
     }
 }
 
 @Composable
-private fun MainScreen(
+private fun MainScreenContent(
     state: CustomerCenterState.Success,
-    configuration: CustomerCenterConfigData,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
+    val configuration = state.customerCenterConfigData
+
     if (state.purchaseInformation != null) {
         configuration.getManagementScreen()?.let { managementScreen ->
             ManageSubscriptionsView(
@@ -325,16 +371,6 @@ private fun MainScreen(
             // Fallback with a restore button
             // NoSubscriptionsView(configuration = configuration)
         }
-    }
-}
-
-private fun getTitleForState(state: CustomerCenterState): String? {
-    return when (state) {
-        is CustomerCenterState.Success -> {
-            state.title
-        }
-
-        else -> null
     }
 }
 
