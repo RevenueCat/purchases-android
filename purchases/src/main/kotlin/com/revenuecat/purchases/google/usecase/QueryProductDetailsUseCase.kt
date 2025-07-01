@@ -6,6 +6,7 @@ import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
+import com.android.billingclient.api.QueryProductDetailsResult
 import com.revenuecat.purchases.NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -39,7 +40,7 @@ internal class QueryProductDetailsUseCase(
     val onError: PurchasesErrorCallback,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
-) : BillingClientUseCase<List<ProductDetails>>(useCaseParams, onError, executeRequestOnUIThread) {
+) : BillingClientUseCase<QueryProductDetailsResult>(useCaseParams, onError, executeRequestOnUIThread) {
 
     override val errorMessage: String
         get() = "Error when fetching products"
@@ -64,19 +65,32 @@ internal class QueryProductDetailsUseCase(
         }
     }
 
-    override fun onOk(received: List<ProductDetails>) {
+    override fun onOk(received: QueryProductDetailsResult) {
         log(LogIntent.DEBUG) {
             OfferingStrings.FETCHING_PRODUCTS_FINISHED.format(useCaseParams.productIds.joinToString())
         }
         log(LogIntent.PURCHASE) {
-            OfferingStrings.RETRIEVED_PRODUCTS.format(received.joinToString { it.toString() })
+            OfferingStrings.RETRIEVED_PRODUCTS.format(received.productDetailsList.joinToString { it.toString() })
         }
-        logErrorIfIssueBuildingBillingParams(received)
-        received.takeUnless { it.isEmpty() }?.forEach {
+        log(LogIntent.INFO) {
+            OfferingStrings.MISSING_PRODUCT_DETAILS.format(received.unfetchedProductList.joinToString { it.toString() })
+        }
+        logErrorIfIssueBuildingBillingParams(received.productDetailsList)
+        received.productDetailsList.takeUnless { it.isEmpty() }?.forEach {
             log(LogIntent.PURCHASE) { OfferingStrings.LIST_PRODUCTS.format(it.productId, it) }
         }
+        received.unfetchedProductList.takeUnless { it.isEmpty() }?.forEach {
+            log(LogIntent.INFO) {
+                OfferingStrings.LIST_UNFETCHED_PRODUCTS.format(
+                    it.productId,
+                    it.productType,
+                    it.statusCode.toString(),
+                    it.serializedDocid,
+                )
+            }
+        }
 
-        val storeProducts = received.toStoreProducts()
+        val storeProducts = received.productDetailsList.toStoreProducts()
         onReceive(storeProducts)
     }
 

@@ -242,7 +242,7 @@ internal class AmazonBilling(
         cache.addSuccessfullyPostedToken(purchase.purchaseToken)
     }
 
-    override fun findPurchaseInPurchaseHistory(
+    override fun findPurchaseInActivePurchases(
         appUserID: String,
         productType: RevenueCatProductType,
         productId: String,

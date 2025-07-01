@@ -17,9 +17,10 @@ import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.ProductDetails.OneTimePurchaseOfferDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
-import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.QueryProductDetailsResult
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -54,12 +55,12 @@ import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockInstallmentPlandetails
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
-import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
+import com.revenuecat.purchases.utils.mockQueryPurchases
 import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
 import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
-import com.revenuecat.purchases.utils.verifyQueryPurchaseHistoryCalledWithType
+import com.revenuecat.purchases.utils.verifyQueryPurchasesCalledWithType
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearStaticMockk
@@ -562,9 +563,6 @@ class BillingWrapperTest {
             oneTimePurchaseOfferDetails = oneTimePurchaseOfferDetails,
             subscriptionOfferDetails = null
         )
-        every {
-            oneTimePurchaseOfferDetails.zzb()
-        } returns productId
         
         val storeProduct = productDetails.toInAppStoreProduct()!!
         val isPersonalizedPrice = true
@@ -1096,9 +1094,9 @@ class BillingWrapperTest {
 
     @Test
     fun `getting all purchases gets both subs and inapps`() {
-        val builder = mockClient.mockQueryPurchaseHistory(
+        val builder = mockClient.mockQueryPurchases(
             billingClientOKResult,
-            listOf(stubPurchaseHistoryRecord())
+            listOf(stubGooglePurchase())
         )
 
         var receivedPurchases = listOf<StoreTransaction>()
@@ -1111,8 +1109,8 @@ class BillingWrapperTest {
         )
 
         assertThat(receivedPurchases.size).isNotZero
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, builder)
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, builder)
+        mockClient.verifyQueryPurchasesCalledWithType(subsGoogleProductType, builder)
+        mockClient.verifyQueryPurchasesCalledWithType(inAppGoogleProductType, builder)
     }
 
     @Test
@@ -1358,7 +1356,7 @@ class BillingWrapperTest {
                 capture(slot)
             )
         } answers {
-            slot.captured.onProductDetailsResponse(result, emptyList())
+            slot.captured.onProductDetailsResponse(result, QueryProductDetailsResult.create(emptyList(), emptyList()))
         }
 
         wrapper.queryProductDetailsAsync(
@@ -1394,7 +1392,7 @@ class BillingWrapperTest {
                 capture(slot)
             )
         } answers {
-            slot.captured.onProductDetailsResponse(result, emptyList())
+            slot.captured.onProductDetailsResponse(result, QueryProductDetailsResult.create(emptyList(), emptyList()))
         }
 
         wrapper.queryProductDetailsAsync(

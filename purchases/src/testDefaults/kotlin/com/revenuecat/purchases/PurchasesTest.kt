@@ -45,7 +45,6 @@ import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.io.File
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -184,7 +183,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -230,7 +229,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -1715,7 +1714,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,

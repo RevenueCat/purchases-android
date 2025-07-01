@@ -18,7 +18,6 @@ import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PostReceiptInitiationSource
@@ -51,8 +50,6 @@ import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
-import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
-import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
@@ -330,47 +327,16 @@ internal class BillingWrapper(
         }
     }
 
-    fun queryPurchaseHistoryAsync(
-        @BillingClient.ProductType productType: String,
-        onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
-        onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
-    ) {
-        log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType) }
-        QueryPurchaseHistoryUseCase(
-            QueryPurchaseHistoryUseCaseParams(
-                dateProvider,
-                diagnosticsTrackerIfEnabled,
-                productType,
-                appInBackground,
-            ),
-            onReceivePurchaseHistory,
-            onReceivePurchaseHistoryError,
-            ::withConnectedClient,
-            ::executeRequestOnUIThread,
-        ).run()
-    }
-
     override fun queryAllPurchases(
         appUserID: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
-        queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
-            { subsPurchasesList ->
-                queryPurchaseHistoryAsync(
-                    BillingClient.ProductType.INAPP,
-                    { inAppPurchasesList ->
-                        onReceivePurchaseHistory(
-                            subsPurchasesList.map {
-                                it.toStoreTransaction(ProductType.SUBS)
-                            } + inAppPurchasesList.map {
-                                it.toStoreTransaction(ProductType.INAPP)
-                            },
-                        )
-                    },
-                    onReceivePurchaseHistoryError,
-                )
+        queryPurchases(
+            appUserID,
+            { purchases ->
+                val storeTransactions = purchases.values.toList()
+                onReceivePurchaseHistory(storeTransactions)
             },
             onReceivePurchaseHistoryError,
         )
@@ -485,7 +451,7 @@ internal class BillingWrapper(
         ).run()
     }
 
-    override fun findPurchaseInPurchaseHistory(
+    override fun findPurchaseInActivePurchases(
         appUserID: String,
         productType: ProductType,
         productId: String,
@@ -494,18 +460,18 @@ internal class BillingWrapper(
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
         productType.toGoogleProductType()?.let { googleProductType ->
-            QueryPurchaseHistoryUseCase(
-                QueryPurchaseHistoryUseCaseParams(
+            QueryPurchasesByTypeUseCase(
+                QueryPurchasesByTypeUseCaseParams(
                     dateProvider,
                     diagnosticsTrackerIfEnabled,
-                    googleProductType,
                     appInBackground,
+                    googleProductType,
                 ),
                 { purchasesList ->
-                    val purchaseHistoryRecordWrapper =
-                        purchasesList.firstOrNull { it.products.contains(productId) }?.toStoreTransaction(productType)
-                    if (purchaseHistoryRecordWrapper != null) {
-                        onCompletion(purchaseHistoryRecordWrapper)
+                    val purchasesRecordWrapper =
+                        purchasesList.values.firstOrNull { it.productIds.contains(productId) }
+                    if (purchasesRecordWrapper != null) {
+                        onCompletion(purchasesRecordWrapper)
                     } else {
                         val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
                         val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
