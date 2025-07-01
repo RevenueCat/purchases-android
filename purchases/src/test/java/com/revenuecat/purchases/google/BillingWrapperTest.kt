@@ -17,7 +17,6 @@ import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
-import com.android.billingclient.api.ProductDetails.OneTimePurchaseOfferDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsResult
@@ -59,7 +58,6 @@ import com.revenuecat.purchases.utils.mockQueryPurchases
 import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
 import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.verifyQueryPurchasesCalledWithType
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -341,7 +339,7 @@ class BillingWrapperTest {
 
         val storeProduct = createStoreProductWithoutOffers()
         val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
-        val oldPurchase = mockPurchaseHistoryRecordWrapper()
+        val oldPurchase = mockPurchaseRecordWrapper()
         val replaceInfo = ReplaceProductInfo(oldPurchase, GoogleReplacementMode.DEFERRED)
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
@@ -488,7 +486,7 @@ class BillingWrapperTest {
 
         val productId = "product_a"
 
-        val replaceProductInfo = ReplaceProductInfo(mockPurchaseHistoryRecordWrapper())
+        val replaceProductInfo = ReplaceProductInfo(mockPurchaseRecordWrapper())
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
@@ -1651,17 +1649,17 @@ class BillingWrapperTest {
 
     // endregion
 
-    private fun mockPurchaseHistoryRecordWrapper(): StoreTransaction {
-        val oldPurchase = stubPurchaseHistoryRecord(
+    private fun mockPurchaseRecordWrapper(): StoreTransaction {
+        val oldPurchase = stubGooglePurchase(
             productIds = listOf("product_b"),
             purchaseToken = "atoken"
         )
 
-        return oldPurchase.toStoreTransaction(type = ProductType.SUBS)
+        return oldPurchase.toStoreTransaction(productType = ProductType.SUBS)
     }
 
     private fun mockReplaceSkuInfo(): ReplaceProductInfo {
-        val oldPurchase = mockPurchaseHistoryRecordWrapper()
+        val oldPurchase = mockPurchaseRecordWrapper()
         return ReplaceProductInfo(oldPurchase, GoogleReplacementMode.CHARGE_FULL_PRICE)
     }
 
@@ -1739,9 +1737,6 @@ class BillingWrapperTest {
         } just Runs
         every {
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any(), any())
-        } just Runs
-        every {
-            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
         } just Runs
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())

@@ -1,13 +1,11 @@
 package com.revenuecat.purchases.google.usecase
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ConsumeResponseListener
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -17,7 +15,6 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -90,7 +87,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     fun `restored tokens are saved in cache when consuming`() {
         val sku = "consumable"
         val token = "token_consumable"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
+        val googleRecordWrapper = getMockedPurchaseRecordWrapper(
             sku,
             token,
             ProductType.INAPP
@@ -102,7 +99,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             finishTransactions = true,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
@@ -146,7 +143,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val sku = "consumable"
         val token = "token_consumable"
 
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
+        val googleRecordWrapper = getMockedPurchaseRecordWrapper(
             sku,
             token,
             ProductType.INAPP
@@ -156,7 +153,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             finishTransactions = true,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
@@ -205,7 +202,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     fun `restored consumables are consumed`() {
         val sku = "consumable"
         val token = "token_consumable"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
+        val googleRecordWrapper = getMockedPurchaseRecordWrapper(
             sku,
             token,
             ProductType.INAPP
@@ -217,7 +214,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             finishTransactions = true,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
@@ -268,7 +265,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     fun `if it shouldn't consume restored transactions, don't consume and save it in cache`() {
         val sku = "consumable"
         val token = "token_consumable"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
+        val googleRecordWrapper = getMockedPurchaseRecordWrapper(
             sku,
             token,
             ProductType.INAPP
@@ -280,7 +277,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             finishTransactions = false,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = false,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
@@ -298,7 +295,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     fun `if it does not finish transactions, don't consume and save it in cache`() {
         val sku = "consumable"
         val token = "token_consumable"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
+        val googleRecordWrapper = getMockedPurchaseRecordWrapper(
             sku,
             token,
             ProductType.INAPP
@@ -310,7 +307,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             finishTransactions = false,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
@@ -1298,18 +1295,18 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         return p.toStoreTransaction(productType, presentedOfferingContext)
     }
 
-    private fun getMockedPurchaseHistoryRecordWrapper(
+    private fun getMockedPurchaseRecordWrapper(
         productId: String,
         purchaseToken: String,
         productType: ProductType
     ): StoreTransaction {
-        val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
+        val p: Purchase = stubGooglePurchase(
             productIds = listOf(productId),
             purchaseToken = purchaseToken
         )
 
         return p.toStoreTransaction(
-            type = productType
+            productType = productType
         )
     }
 
