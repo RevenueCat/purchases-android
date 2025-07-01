@@ -71,7 +71,6 @@ internal fun ManageSubscriptionsView(
 }
 
 @SuppressWarnings("LongParameterList")
-@Suppress("UnusedParameter")
 @Composable
 private fun ActiveUserManagementView(
     contactEmail: String?,
