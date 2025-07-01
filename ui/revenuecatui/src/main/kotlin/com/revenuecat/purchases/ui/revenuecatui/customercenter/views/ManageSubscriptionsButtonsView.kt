@@ -8,14 +8,17 @@ import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 
 @Suppress("LongParameterList")
 @Composable
 internal fun ManageSubscriptionsButtonsView(
-    purchaseInformation: PurchaseInformation?,
+    associatedPurchaseInformation: PurchaseInformation?,
     supportedPaths: List<HelpPath>,
     localization: CustomerCenterConfigData.Localization,
     contactEmail: String?,
@@ -24,18 +27,20 @@ internal fun ManageSubscriptionsButtonsView(
 ) {
     Column(
         modifier = Modifier
+            .padding(horizontal = ManagementViewHorizontalPadding)
             .padding(
                 top = CustomerCenterConstants.Layout.BUTTONS_TOP_PADDING,
                 bottom = CustomerCenterConstants.Layout.BUTTONS_BOTTOM_PADDING,
             ),
         verticalArrangement = Arrangement.spacedBy(CustomerCenterConstants.Layout.BUTTONS_SPACING),
     ) {
-        supportedPaths.forEach { path ->
+        PathUtils.sortPathsByButtonPriority(supportedPaths).forEach { path ->
             val pathButtonPressed =
-                CustomerCenterAction.PathButtonPressed(path, purchaseInformation)
+                CustomerCenterAction.PathButtonPressed(path, associatedPurchaseInformation)
             SettingsButton(
                 onClick = { onAction(pathButtonPressed) },
                 title = path.title,
+                style = PathUtils.getButtonStyleForPath(path),
             )
         }
         if (addContactButton && contactEmail != null) {
@@ -44,6 +49,7 @@ internal fun ManageSubscriptionsButtonsView(
                 title = localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
                 ),
+                style = SettingsButtonStyle.OUTLINED,
             )
         }
     }
