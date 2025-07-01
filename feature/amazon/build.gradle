@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
@@ -8,6 +10,13 @@ if (!project.getProperties()["ANDROID_VARIANT_TO_PUBLISH"].contains("customEntit
 }
 
 apply from: "$rootProject.projectDir/library.gradle"
+
+kotlin {
+    compilerOptions {
+        languageVersion = KotlinVersion.KOTLIN_1_8
+        apiVersion = KotlinVersion.KOTLIN_1_8
+    }
+}
 
 android {
     namespace 'com.revenuecat.purchases.amazon'

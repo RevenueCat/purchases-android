@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 plugins {
@@ -19,6 +20,13 @@ if (!project.properties["ANDROID_VARIANT_TO_PUBLISH"].toString().contains("custo
 
 // Apply shared library config
 apply(from = "${rootProject.projectDir}/library.gradle")
+
+kotlin {
+    compilerOptions {
+        languageVersion = KotlinVersion.fromVersion(libs.versions.kotlinLanguage.get())
+        apiVersion = KotlinVersion.fromVersion(libs.versions.kotlinApi.get())
+    }
+}
 
 android {
     namespace = "com.revenuecat.purchases.ui.revenuecatui"
