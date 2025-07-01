@@ -253,7 +253,6 @@ internal class AmazonBilling(
         queryPurchases(
             appUserID,
             onSuccess = {
-                // We get productIds[0] because the list is guaranteed to have just one item in Amazon's case.
                 val record: StoreTransaction? = it[productId]
                 if (record != null) {
                     onCompletion(record)
