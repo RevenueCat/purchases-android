@@ -32,7 +32,8 @@ internal fun SelectedPurchaseDetailView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(top = CustomerCenterConstants.Layout.TOP_PADDING_AFTER_TOP_BAR),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PurchaseInformationCardView(
