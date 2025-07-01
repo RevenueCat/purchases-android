@@ -222,7 +222,6 @@ internal class CustomerCenterViewModelImpl(
                         navigationState = currentState.navigationState.push(
                             CustomerCenterDestination.SelectedPurchaseDetail(purchase, screen.title),
                         ),
-                        title = screen.title,
                         navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                         detailScreenPaths = detailSupportedPaths,
                     )
@@ -701,18 +700,11 @@ internal class CustomerCenterViewModelImpl(
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchases = loadPurchases(dateFormatter, locale)
-            val title = if (purchases.isNotEmpty()) {
-                customerCenterConfigData.getManagementScreen()?.title
-            } else {
-                customerCenterConfigData.getNoActiveScreen()?.title
-            }
-
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
                 purchases,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
-                title = title,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
@@ -911,7 +903,6 @@ internal class CustomerCenterViewModelImpl(
         copy(
             navigationState = navigationState.popToMain(),
             restorePurchasesState = null,
-            title = null,
             navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
         )
 

@@ -16,7 +16,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test initial state has Main destination and cannot navigate back`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = "Test Title")
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test Title")
 
         assertThat(navigationState.currentDestination).isInstanceOf(CustomerCenterDestination.Main::class.java)
         assertThat(navigationState.canNavigateBack).isFalse()
@@ -25,7 +25,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test initial state with null title`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = null)
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = false, managementScreenTitle = null)
 
         val mainDestination = navigationState.currentDestination as CustomerCenterDestination.Main
         assertThat(mainDestination.title).isNull()
@@ -33,7 +33,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test push adds destination to stack and enables back navigation`() {
-        val initialState = CustomerCenterNavigationState(mainTitle = "Test")
+        val initialState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
 
         assertThat(initialState.canNavigateBack).isFalse()
         assertThat(initialState.backStack.size).isEqualTo(1)
@@ -56,7 +56,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test push multiple destinations creates correct stack order`() {
-        val initialState = CustomerCenterNavigationState(mainTitle = "Test")
+        val initialState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(
@@ -86,7 +86,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test pop removes current destination and goes back to previous`() {
-        val initialState = CustomerCenterNavigationState(mainTitle = "Test")
+        val initialState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(
@@ -106,7 +106,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test pop when cannot navigate back returns same state`() {
-        val initialState = CustomerCenterNavigationState(mainTitle = "Test")
+        val initialState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
 
         val poppedState = initialState.pop()
 
@@ -117,7 +117,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test popToMain from nested navigation returns to main`() {
-        val initialState = CustomerCenterNavigationState(mainTitle = "Test")
+        val initialState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(
@@ -144,7 +144,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test popToMain when already at main returns equivalent state`() {
-        val initialState = CustomerCenterNavigationState(mainTitle = "Test")
+        val initialState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
 
         val mainState = initialState.popToMain()
 
@@ -156,7 +156,8 @@ class CustomerCenterNavigationStateTest {
     @Test
     fun `test popToMain with empty stack logs error and returns unchanged state`() {
         val emptyStackState = CustomerCenterNavigationState(
-            mainTitle = "Test",
+            showingActivePurchasesScreen = true,
+            managementScreenTitle = "Test",
             backStack = ArrayDeque()
         )
 
@@ -167,7 +168,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test isBackwardTransition returns true when going from any screen to Main`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = "Test")
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(
@@ -176,7 +177,7 @@ class CustomerCenterNavigationStateTest {
             ),
             title = "Feedback"
         )
-        val mainDestination = CustomerCenterDestination.Main(title = "Main")
+        val mainDestination = CustomerCenterDestination.Main(showingActivePurchasesScreen = true, managementScreenTitle = "Main")
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
             data = promotionalOffer,
@@ -197,7 +198,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test isBackwardTransition returns false when going from Main to any screen`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = "Test")
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(
@@ -206,7 +207,7 @@ class CustomerCenterNavigationStateTest {
             ),
             title = "Feedback"
         )
-        val mainDestination = CustomerCenterDestination.Main(title = "Main")
+        val mainDestination = CustomerCenterDestination.Main(showingActivePurchasesScreen = true, managementScreenTitle = "Main")
 
         val stateWithFeedback = navigationState.push(feedbackDestination)
 
@@ -217,7 +218,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test isBackwardTransition uses stack positions for non-Main transitions`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = "Test")
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(
@@ -249,7 +250,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test isBackwardTransition returns false when destinations not in stack`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = "Test")
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(
@@ -278,19 +279,20 @@ class CustomerCenterNavigationStateTest {
     @Test
     fun `test currentDestination returns Main when stack is empty`() {
         val emptyStackState = CustomerCenterNavigationState(
-            mainTitle = "Test",
+            showingActivePurchasesScreen = true,
+            managementScreenTitle = "Test",
             backStack = ArrayDeque()
         )
 
         val currentDestination = emptyStackState.currentDestination
 
         assertThat(currentDestination).isInstanceOf(CustomerCenterDestination.Main::class.java)
-        assertThat((currentDestination as CustomerCenterDestination.Main).title).isNull()
+        assertThat((currentDestination as CustomerCenterDestination.Main).title).isEqualTo("Test")
     }
 
     @Test
     fun `test canNavigateBack is false when stack has only one item`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = "Test")
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
 
         assertThat(navigationState.canNavigateBack).isFalse()
         assertThat(navigationState.backStack.size).isEqualTo(1)
@@ -299,7 +301,8 @@ class CustomerCenterNavigationStateTest {
     @Test
     fun `test canNavigateBack is false when stack is empty`() {
         val emptyStackState = CustomerCenterNavigationState(
-            mainTitle = "Test",
+            showingActivePurchasesScreen = true,
+            managementScreenTitle = "Test",
             backStack = ArrayDeque()
         )
 
@@ -308,7 +311,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test complex navigation scenarios with multiple back operations and main screens`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = "Root")
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Root")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(
@@ -322,7 +325,7 @@ class CustomerCenterNavigationStateTest {
             data = promotionalOffer,
             purchaseInformation = null
         )
-        val anotherMain = CustomerCenterDestination.Main(title = "Another Main")
+        val anotherMain = CustomerCenterDestination.Main(showingActivePurchasesScreen = true, managementScreenTitle = "Another Main")
 
         val complexState = navigationState
             .push(feedbackDestination)
@@ -344,7 +347,7 @@ class CustomerCenterNavigationStateTest {
 
     @Test
     fun `test destination equality in stack operations`() {
-        val navigationState = CustomerCenterNavigationState(mainTitle = "Test")
+        val navigationState = CustomerCenterNavigationState(showingActivePurchasesScreen = true, managementScreenTitle = "Test")
         val feedbackSurvey = createMockFeedbackSurvey()
         val feedbackDestination1 = CustomerCenterDestination.FeedbackSurvey(
             data = FeedbackSurveyData(

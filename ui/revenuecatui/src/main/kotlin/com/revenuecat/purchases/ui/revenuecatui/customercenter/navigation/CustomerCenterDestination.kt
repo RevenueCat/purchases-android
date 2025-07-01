@@ -15,8 +15,11 @@ internal sealed class CustomerCenterDestination {
     abstract val title: String?
 
     data class Main(
-        override val title: String?,
-    ) : CustomerCenterDestination()
+        private val showingActivePurchasesScreen: Boolean,
+        private val managementScreenTitle: String?,
+    ) : CustomerCenterDestination() {
+        override val title: String? = if (showingActivePurchasesScreen) managementScreenTitle else null
+    }
 
     data class FeedbackSurvey(
         val data: FeedbackSurveyData,

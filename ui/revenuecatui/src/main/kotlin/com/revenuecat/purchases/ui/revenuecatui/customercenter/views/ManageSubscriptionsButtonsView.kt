@@ -28,7 +28,10 @@ internal fun ManageSubscriptionsButtonsView(
     Column(
         modifier = Modifier
             .padding(horizontal = ManagementViewHorizontalPadding)
-            .padding(top = CustomerCenterConstants.Layout.BUTTONS_TOP_PADDING),
+            .padding(
+                top = CustomerCenterConstants.Layout.BUTTONS_TOP_PADDING,
+                bottom = CustomerCenterConstants.Layout.BUTTONS_BOTTOM_PADDING,
+            ),
         verticalArrangement = Arrangement.spacedBy(CustomerCenterConstants.Layout.BUTTONS_SPACING),
     ) {
         PathUtils.sortPathsByButtonPriority(supportedPaths).forEach { path ->

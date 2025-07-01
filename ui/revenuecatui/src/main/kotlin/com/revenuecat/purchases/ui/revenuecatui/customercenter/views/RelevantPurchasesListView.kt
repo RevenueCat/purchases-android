@@ -19,8 +19,6 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewSpacer
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewTitleTopPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
@@ -29,7 +27,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCen
 @Suppress("LongParameterList", "LongMethod")
 @Composable
 internal fun RelevantPurchasesListView(
-    screenTitle: String,
     supportedPaths: List<HelpPath>,
     contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
@@ -44,18 +41,6 @@ internal fun RelevantPurchasesListView(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.Start,
     ) {
-        Text(
-            text = screenTitle,
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(
-                start = ManagementViewHorizontalPadding,
-                end = ManagementViewHorizontalPadding,
-                top = ManagementViewTitleTopPadding,
-            ),
-        )
-
-        Spacer(modifier = Modifier.size(ManagementViewSpacer))
-
         val subscriptions = purchases.filter { it.isSubscription }.toSet()
         val nonSubscriptions = (purchases - subscriptions).toSet()
 
@@ -153,7 +138,6 @@ private fun RelevantPurchasesListViewPreview() {
     CustomerCenterPreviewTheme {
         Box(modifier = Modifier.fillMaxSize()) {
             RelevantPurchasesListView(
-                screenTitle = managementScreen.title,
                 supportedPaths = managementScreen.paths,
                 contactEmail = "support@revenuecat.com",
                 localization = testData.localization,
@@ -173,7 +157,6 @@ private fun NoActiveSubscriptionsViewPreview() {
     CustomerCenterPreviewTheme {
         Column {
             RelevantPurchasesListView(
-                screenTitle = noActiveScreen.title,
                 supportedPaths = noActiveScreen.paths,
                 contactEmail = "support@revenuecat.com",
                 localization = testData.localization,
@@ -193,7 +176,6 @@ private fun RelevantPurchasesListViewWithLifetimePurchasePreview() {
     CustomerCenterPreviewTheme {
         Column {
             RelevantPurchasesListView(
-                screenTitle = managementScreen.title,
                 supportedPaths = managementScreen.paths,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
@@ -215,7 +197,6 @@ private fun RelevantPurchasesListViewWithSubscriptionsAndLifetimePurchasePreview
     CustomerCenterPreviewTheme {
         Column {
             RelevantPurchasesListView(
-                screenTitle = managementScreen.title,
                 supportedPaths = managementScreen.paths,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
@@ -240,7 +221,6 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
     CustomerCenterPreviewTheme {
         Column {
             RelevantPurchasesListView(
-                screenTitle = noActiveScreen.title,
                 supportedPaths = noActiveScreen.paths,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
@@ -265,7 +245,6 @@ private fun RelevantPurchasesListViewWithMultiplePurchasesPreview() {
     CustomerCenterPreviewTheme {
         Column {
             RelevantPurchasesListView(
-                screenTitle = managementScreen.title,
                 supportedPaths = managementScreen.paths,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
