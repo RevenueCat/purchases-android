@@ -34,6 +34,7 @@ import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
@@ -582,6 +583,10 @@ internal class CustomerCenterViewModelImpl(
                     navigationState = currentState.navigationState.push(promotionalOfferDestination),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(promotionalOfferDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                )
             } else {
                 currentState
             }
@@ -803,8 +808,13 @@ internal class CustomerCenterViewModelImpl(
         promotionalOffer: CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer,
         product: StoreProduct,
     ): SubscriptionOption? {
+        val googleProduct = product.googleProduct
         val crossProductPromotion: CrossProductPromotion? =
             promotionalOffer.crossProductPromotions[product.id]
+                // Check for cross-product promotions first (product.id includes base plan ex: "sub:p1m")
+                // But it's possible the product is not configured with base plan in RevenueCat
+                // so we also check for the Google product ID (which does not include base plan ex: "sub")
+                ?: googleProduct?.let { promotionalOffer.crossProductPromotions[it.productId] }
                 ?: promotionalOffer.productMapping[product.id]?.let {
                     CrossProductPromotion(
                         storeOfferIdentifier = it,
@@ -819,10 +829,15 @@ internal class CustomerCenterViewModelImpl(
             return null
         }
 
-        val targetProduct: StoreProduct? = if (crossProductPromotion.targetProductId == product.id) {
-            product
-        } else {
-            findTargetProduct(crossProductPromotion.targetProductId)
+        val targetProduct: StoreProduct? = when {
+            crossProductPromotion.targetProductId == product.id -> product
+            googleProduct?.basePlanId != null ->
+                // Passing original product's base plan ID to find the target product
+                // in case the target product is missing the base plan ID in the dashboard
+                // which is common for old products. Purchases.getProducts would return all products
+                // with the same product ID but different base plan IDs. That way we can find the most relevant product.
+                findTargetProduct(crossProductPromotion.targetProductId, googleProduct.basePlanId!!)
+            else -> null
         }
 
         if (targetProduct == null) {
@@ -841,10 +856,11 @@ internal class CustomerCenterViewModelImpl(
 
     private suspend fun findTargetProduct(
         targetProductId: String,
+        sourceBasePlan: String,
     ): StoreProduct? {
         val splitProduct = targetProductId.split(":")
         val productId = splitProduct.first()
-        val basePlan = splitProduct.getOrNull(1)
+        val basePlan = splitProduct.getOrNull(1) ?: sourceBasePlan
         val targetProduct = purchases.awaitGetProduct(productId, basePlan)
         return targetProduct
     }

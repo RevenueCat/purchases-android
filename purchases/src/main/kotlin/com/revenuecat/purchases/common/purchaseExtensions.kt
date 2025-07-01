@@ -16,6 +16,6 @@ internal fun Purchase.toHumanReadableDescription() =
 internal val Purchase.firstProductId: String
     get() = products[0].also {
         if (products.size > 1) {
-            log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_PURCHASE_MORE_THAN_ONE_SKU)
+            log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PURCHASE_MORE_THAN_ONE_SKU }
         }
     }

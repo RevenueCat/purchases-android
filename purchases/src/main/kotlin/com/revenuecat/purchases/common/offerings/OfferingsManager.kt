@@ -59,7 +59,7 @@ internal class OfferingsManager(
 
         val cachedOfferings = offeringsCache.cachedOfferings
         if (fetchCurrent) {
-            log(LogIntent.DEBUG, OfferingStrings.FORCE_OFFERINGS_FETCHING_NETWORK)
+            log(LogIntent.DEBUG) { OfferingStrings.FORCE_OFFERINGS_FETCHING_NETWORK }
             fetchAndCacheOfferings(
                 appUserID,
                 appInBackground,
@@ -67,7 +67,7 @@ internal class OfferingsManager(
                 { onSuccessWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_CHECKED) },
             )
         } else if (cachedOfferings == null) {
-            log(LogIntent.DEBUG, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
+            log(LogIntent.DEBUG) { OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK }
             fetchAndCacheOfferings(
                 appUserID,
                 appInBackground,
@@ -75,7 +75,7 @@ internal class OfferingsManager(
                 { onSuccessWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_FOUND) },
             )
         } else {
-            log(LogIntent.DEBUG, OfferingStrings.VENDING_OFFERINGS_CACHE)
+            log(LogIntent.DEBUG) { OfferingStrings.VENDING_OFFERINGS_CACHE }
 
             val isCacheStale = offeringsCache.isOfferingsCacheStale(appInBackground)
             trackGetOfferingsResultIfNeeded(
@@ -87,14 +87,13 @@ internal class OfferingsManager(
             )
             dispatch { onSuccess?.invoke(cachedOfferings) }
             if (isCacheStale) {
-                log(
-                    LogIntent.DEBUG,
+                log(LogIntent.DEBUG) {
                     if (appInBackground) {
                         OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
                     } else {
                         OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
-                    },
-                )
+                    }
+                }
                 fetchAndCacheOfferings(appUserID, appInBackground)
             }
         }
@@ -102,7 +101,7 @@ internal class OfferingsManager(
 
     fun onAppForeground(appUserID: String) {
         if (offeringsCache.isOfferingsCacheStale(appInBackground = false)) {
-            log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
+            log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND }
             fetchAndCacheOfferings(appUserID, appInBackground = false)
         }
     }
@@ -113,7 +112,7 @@ internal class OfferingsManager(
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
-        log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK)
+        log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
         backend.getOfferings(
             appUserID,
             appInBackground,
@@ -126,7 +125,7 @@ internal class OfferingsManager(
                     if (cachedOfferingsResponse == null) {
                         handleErrorFetchingOfferings(backendError, onError)
                     } else {
-                        warnLog(OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE)
+                        warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
                         createAndCacheOfferings(cachedOfferingsResponse, onError, onSuccess)
                     }
                 } else {
@@ -169,10 +168,9 @@ internal class OfferingsManager(
         )
             .contains(error.code)
 
-        log(
-            if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR,
-            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error),
-        )
+        log(if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR) {
+            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error)
+        }
 
         offeringsCache.forceCacheStale()
         dispatch {

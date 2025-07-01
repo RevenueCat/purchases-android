@@ -54,7 +54,7 @@ internal class OfflineCustomerInfoCalculator(
                         PurchasesErrorCode.UnsupportedError,
                         OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES,
                     )
-                    errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
+                    errorLog { COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error) }
                     diagnosticsTracker?.trackErrorEnteringOfflineEntitlementsMode(error)
                     onError(error)
                     return@queryActiveProducts
@@ -63,7 +63,7 @@ internal class OfflineCustomerInfoCalculator(
                 onSuccess.invoke(customerInfo)
             },
             onError = { error ->
-                errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
+                errorLog { COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error) }
                 diagnosticsTracker?.trackErrorEnteringOfflineEntitlementsMode(error)
                 onError(error)
             },
@@ -133,6 +133,7 @@ internal class OfflineCustomerInfoCalculator(
                         ProductResponseJsonKeys.EXPIRES_DATE,
                         product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL,
                     )
+                    put(ProductResponseJsonKeys.MANAGEMENT_URL, determineManagementURL())
                     put(
                         ProductResponseJsonKeys.PERIOD_TYPE,
                         PeriodType.NORMAL.name.lowercase(),

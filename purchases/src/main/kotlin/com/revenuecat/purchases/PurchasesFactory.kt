@@ -89,13 +89,13 @@ internal class PurchasesFactory(
 
             val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
                 @Suppress("MaxLineLength")
-                debugLog(
+                debugLog {
                     "${Emojis.DOUBLE_EXCLAMATION} Using device-protected storage. Make sure to *always* configure " +
                         "Purchases with a Context object created using `createDeviceProtectedStorageContext()` to " +
                         "avoid undefined behavior.\nSee " +
                         "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
-                        "for more info.",
-                )
+                        "for more info."
+                }
                 context
             } else {
                 application
@@ -144,7 +144,7 @@ internal class PurchasesFactory(
                     eventsDispatcher,
                 )
             } else if (diagnosticsEnabled) {
-                warnLog("Diagnostics are only supported on Android N or newer.")
+                warnLog { "Diagnostics are only supported on Android N or newer." }
             }
 
             val signatureVerificationMode = try {
@@ -154,7 +154,7 @@ internal class PurchasesFactory(
             } catch (e: IllegalStateException) {
                 // If we're not able to create the signature verifier, we should disable signature verification
                 // instead of crashing
-                errorLog("Error creating signature verifier: ${e.message}. Disabling signature verification.")
+                errorLog { "Error creating signature verifier: ${e.message}. Disabling signature verification." }
                 SignatureVerificationMode.Disabled
             }
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
@@ -311,14 +311,13 @@ internal class PurchasesFactory(
                 offeringFontPreDownloader = offeringFontPreDownloader,
             )
 
-            log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
-            log(LogIntent.DEBUG, ConfigureStrings.SDK_VERSION.format(Purchases.frameworkVersion))
-            log(LogIntent.DEBUG, ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName))
-            log(LogIntent.USER, ConfigureStrings.INITIAL_APP_USER_ID.format(appUserID))
-            log(
-                LogIntent.DEBUG,
-                ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name),
-            )
+            log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
+            log(LogIntent.DEBUG) { ConfigureStrings.SDK_VERSION.format(Purchases.frameworkVersion) }
+            log(LogIntent.DEBUG) { ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName) }
+            log(LogIntent.USER) { ConfigureStrings.INITIAL_APP_USER_ID.format(appUserID) }
+            log(LogIntent.DEBUG) {
+                ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name)
+            }
 
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
@@ -375,7 +374,7 @@ internal class PurchasesFactory(
                 },
             )
         } else {
-            debugLog("Paywall events are only supported on Android N or newer.")
+            debugLog { "Paywall events are only supported on Android N or newer." }
             null
         }
     }

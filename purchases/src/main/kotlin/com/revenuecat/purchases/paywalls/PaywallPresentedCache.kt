@@ -27,11 +27,11 @@ internal class PaywallPresentedCache {
     fun receiveEvent(event: PaywallEvent) {
         when (event.type) {
             PaywallEventType.IMPRESSION -> {
-                verboseLog("Caching paywall impression event.")
+                verboseLog { "Caching paywall impression event." }
                 lastPaywallImpressionEvent = event
             }
             PaywallEventType.CLOSE -> {
-                verboseLog("Clearing cached paywall impression event.")
+                verboseLog { "Clearing cached paywall impression event." }
                 lastPaywallImpressionEvent = null
             }
             else -> {

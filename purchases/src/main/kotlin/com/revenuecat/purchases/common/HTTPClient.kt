@@ -76,7 +76,7 @@ internal class HTTPClient(
                 is IllegalArgumentException,
                 is IOException,
                 -> {
-                    log(LogIntent.WARNING, NetworkStrings.PROBLEM_CONNECTING.format(e.message))
+                    log(LogIntent.WARNING) { NetworkStrings.PROBLEM_CONNECTING.format(e.message) }
                     connection.errorStream
                 }
                 else -> throw e
@@ -112,7 +112,7 @@ internal class HTTPClient(
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
         if (appConfig.forceServerErrors) {
-            warnLog("Forcing server error for request to ${endpoint.getPath()}")
+            warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
             return HTTPResult(
                 RCHTTPStatusCodes.ERROR,
                 payload = "",
@@ -138,7 +138,7 @@ internal class HTTPClient(
             )
         }
         if (callResult == null) {
-            log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
+            log(LogIntent.WARNING) { NetworkStrings.ETAG_RETRYING_CALL }
             callResult = performRequest(
                 baseURL,
                 endpoint,
@@ -155,10 +155,9 @@ internal class HTTPClient(
         ) {
             // Handle server errors with fallback URLs
             val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
-            log(
-                LogIntent.DEBUG,
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL),
-            )
+            log(LogIntent.DEBUG) {
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
+            }
             callResult = performRequest(
                 fallbackBaseURL,
                 endpoint,
@@ -218,7 +217,7 @@ internal class HTTPClient(
         val payload: String?
         val responseCode: Int
         try {
-            debugLog(NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
+            debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
         } finally {
@@ -226,7 +225,7 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
-        debugLog(NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
+        debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         if (payload == null) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
