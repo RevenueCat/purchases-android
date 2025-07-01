@@ -116,6 +116,7 @@ internal sealed class TransactionDetails(
         val willRenew: Boolean,
         val expiresDate: Date?,
         val isTrial: Boolean,
+        val managementURL: Uri?,
     ) : TransactionDetails(productIdentifier, store)
 
     data class NonSubscription(
@@ -441,7 +442,6 @@ internal class CustomerCenterViewModelImpl(
                     createPurchaseInformation(
                         transaction,
                         entitlement,
-                        customerInfo.managementURL,
                         dateFormatter,
                         locale,
                     )
@@ -477,6 +477,7 @@ internal class CustomerCenterViewModelImpl(
                     willRenew = it.willRenew,
                     expiresDate = it.expiresDate,
                     isTrial = it.periodType == PeriodType.TRIAL,
+                    managementURL = it.managementURL,
                 )
 
                 is Transaction -> TransactionDetails.NonSubscription(
@@ -492,7 +493,6 @@ internal class CustomerCenterViewModelImpl(
     private suspend fun createPurchaseInformation(
         transaction: TransactionDetails,
         entitlement: EntitlementInfo?,
-        managementURL: Uri?,
         dateFormatter: DateFormatter,
         locale: Locale,
     ): PurchaseInformation {
@@ -516,7 +516,6 @@ internal class CustomerCenterViewModelImpl(
             entitlementInfo = entitlement,
             subscribedProduct = product,
             transaction = transaction,
-            managementURL = managementURL,
             dateFormatter = dateFormatter,
             locale = locale,
         )

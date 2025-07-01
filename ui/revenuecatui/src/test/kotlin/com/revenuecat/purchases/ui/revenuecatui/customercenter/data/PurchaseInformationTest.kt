@@ -69,7 +69,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale,
         )
@@ -121,7 +120,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -173,7 +171,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -216,7 +213,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -259,7 +255,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -302,7 +297,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -339,14 +333,14 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.PROMOTIONAL,
             productIdentifier = "rc_promo_pro_cat_yearly",
-            expiresDate = expiresDate
+            expiresDate = expiresDate,
+            managementURL = null,
         )
 
         val purchaseInformation = PurchaseInformation(
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = null,
             dateFormatter = dateFormatter,
             locale = locale,
         )
@@ -362,6 +356,7 @@ class PurchaseInformationTest {
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
+            managementURL = null,
         )
     }
 
@@ -383,14 +378,14 @@ class PurchaseInformationTest {
             willRenew = false,
             store = Store.PROMOTIONAL,
             productIdentifier = "rc_promo_pro_cat_lifetime",
-            expiresDate = expiresDate
+            expiresDate = expiresDate,
+            managementURL = null,
         )
 
         val purchaseInformation = PurchaseInformation(
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = null,
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -406,6 +401,7 @@ class PurchaseInformationTest {
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2222"),
+            managementURL = null,
         )
     }
 
@@ -433,7 +429,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -448,7 +443,8 @@ class PurchaseInformationTest {
             isExpired = false,
             isTrial = false,
             isCancelled = false,
-            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
         )
     }
 
@@ -476,7 +472,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -492,6 +487,7 @@ class PurchaseInformationTest {
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
         )
     }
 
@@ -519,7 +515,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -535,6 +530,7 @@ class PurchaseInformationTest {
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
         )
     }
 
@@ -562,7 +558,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -577,7 +572,8 @@ class PurchaseInformationTest {
             isExpired = false,
             isTrial = false,
             isCancelled = false,
-            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
         )
     }
 
@@ -605,7 +601,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -621,6 +616,7 @@ class PurchaseInformationTest {
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
         )
     }
 
@@ -648,7 +644,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = null,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -664,6 +659,7 @@ class PurchaseInformationTest {
             isTrial = false,
             isCancelled = true,
             expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
         )
     }
 
@@ -702,7 +698,6 @@ class PurchaseInformationTest {
             entitlementInfo = entitlementInfo,
             subscribedProduct = storeProduct,
             transaction = transaction,
-            managementURL = Uri.parse(MANAGEMENT_URL),
             dateFormatter = dateFormatter,
             locale = locale
         )
@@ -718,6 +713,7 @@ class PurchaseInformationTest {
             isTrial = true,
             isCancelled = false,
             expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
         )
     }
 
@@ -732,6 +728,7 @@ class PurchaseInformationTest {
         isTrial: Boolean = false,
         isCancelled: Boolean = false,
         expirationOrRenewal: ExpirationOrRenewal? = null,
+        managementURL: Uri? = Uri.parse(MANAGEMENT_URL)
     ) {
         assertThat(purchaseInformation.title).isEqualTo(title)
         assertThat(purchaseInformation.pricePaid).isEqualTo(price)
@@ -742,6 +739,7 @@ class PurchaseInformationTest {
         assertThat(purchaseInformation.isTrial).isEqualTo(isTrial)
         assertThat(purchaseInformation.isCancelled).isEqualTo(isCancelled)
         assertThat(purchaseInformation.expirationOrRenewal).isEqualTo(expirationOrRenewal)
+        assertThat(purchaseInformation.managementURL).isEqualTo(managementURL)
     }
 
     private fun createEntitlementInfo(
@@ -780,6 +778,7 @@ class PurchaseInformationTest {
         expiresDate: Date?,
         productPlanIdentifier: String? = null,
         isTrial: Boolean = false,
+        managementURL: Uri? = Uri.parse(MANAGEMENT_URL)
     ): TransactionDetails.Subscription {
         return TransactionDetails.Subscription(
             productIdentifier = productIdentifier,
@@ -789,6 +788,7 @@ class PurchaseInformationTest {
             expiresDate = expiresDate,
             productPlanIdentifier = productPlanIdentifier,
             isTrial = isTrial,
+            managementURL = managementURL
         )
     }
 
