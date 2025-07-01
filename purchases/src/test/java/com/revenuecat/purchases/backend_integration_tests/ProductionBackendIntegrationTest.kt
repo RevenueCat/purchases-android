@@ -165,7 +165,6 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         assertSigningPerformed()
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can postPaywallEvents backend request`() {
         val request = EventsRequest(listOf(
@@ -205,7 +204,6 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         assertSigningNotPerformed()
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can get customer center config data`() {
         var customerCenterConfigData: CustomerCenterConfigData? = null
@@ -225,10 +223,13 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             error("Expected customer center config data")
         }
         customerCenterConfigData?.let {
-            val managementScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?: fail("Expected management screen")
+            val managementScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?:
+            fail("Expected management screen")
             assertThat(managementScreen.type).isEqualTo(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)
             assertThat(managementScreen.paths.size).isEqualTo(4)
-            val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { it.name.lowercase() }.toTypedArray()
+            val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map {
+                it.name.lowercase()
+            }.toTypedArray()
             assertThat(it.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
             assertThat(it.support.email).isNull()
         }

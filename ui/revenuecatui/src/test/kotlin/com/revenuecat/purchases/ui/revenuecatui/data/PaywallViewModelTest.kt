@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -70,7 +69,6 @@ import java.net.URL
 import java.util.Date
 import java.util.UUID
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
@@ -464,7 +462,32 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `updateState does update if different state`() {
+    fun `updateState does update if paywallsOptions identity changes`() {
+        val options1 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .setMode(PaywallMode.FULL_SCREEN)
+            .build()
+        val options2 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .setMode(PaywallMode.FOOTER)
+            .build()
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            options1,
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options1)
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options2)
+        coVerify(exactly = 2) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `updateState does not update if paywallsOptions identity does not change`() {
         val options1 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
             .setListener(listener)
             .build()
@@ -483,7 +506,7 @@ class PaywallViewModelTest {
         model.updateOptions(options1)
         coVerify(exactly = 1) { purchases.awaitOfferings() }
         model.updateOptions(options2)
-        coVerify(exactly = 2) { purchases.awaitOfferings() }
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
     }
 
     @Test
@@ -687,7 +710,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun handlePackagePurchase(): Unit = runBlocking {
+    fun `handlePackagePurchase purchases selected package`(): Unit = runBlocking {
         // Arrange
         val offering = Offering(
             identifier = "offering-id",
@@ -707,12 +730,47 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isFalse
 
         // Act
-        model.handlePackagePurchase(activity)
+        model.handlePackagePurchase(activity, pkg = null)
 
         // Assert
         coVerify { purchases.awaitPurchase(any()) }
         verifyOrder {
             listener.onPurchaseStarted(selectedPackage)
+            listener.onPurchaseCompleted(customerInfo, transaction)
+        }
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `handlePackagePurchase purchases provided package`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(selectedPackage = TestData.Packages.monthly)
+        val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
+        val expectedPackage = TestData.Packages.quarterly
+        assertThat(selectedPackage).isNotEqualTo(expectedPackage)
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+        assertThat(dismissInvoked).isFalse
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = expectedPackage)
+
+        // Assert
+        coVerify { purchases.awaitPurchase(any()) }
+        verifyOrder {
+            listener.onPurchaseStarted(expectedPackage)
             listener.onPurchaseCompleted(customerInfo, transaction)
         }
         assertThat(model.actionInProgress.value).isFalse
@@ -772,7 +830,7 @@ class PaywallViewModelTest {
         } throws PurchasesException(expectedError)
 
         // Act
-        model.handlePackagePurchase(activity)
+        model.handlePackagePurchase(activity, pkg = null)
 
         // Assert
         coVerify { purchases.awaitPurchase(any()) }
@@ -1120,7 +1178,7 @@ class PaywallViewModelTest {
         } throws PurchasesException(expectedError)
 
         // Act
-        model.handlePackagePurchase(activity)
+        model.handlePackagePurchase(activity, pkg = null)
 
         // Assert
         verifyEventTracked(
@@ -1166,7 +1224,7 @@ class PaywallViewModelTest {
         } throws PurchasesException(expectedError)
 
         // Act
-        model.handlePackagePurchase(activity)
+        model.handlePackagePurchase(activity, pkg = null)
 
         // Assert
         verifyNoEventsOfTypeTracked(PaywallEventType.CANCEL)

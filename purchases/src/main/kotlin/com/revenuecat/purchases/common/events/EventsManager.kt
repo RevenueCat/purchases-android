@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
@@ -103,11 +103,11 @@ internal class EventsManager(
      *
      * @param event The event to be tracked.
      */
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
         enqueue {
-            debugLog("Tracking event: $event")
+            debugLog { "Tracking event: $event" }
 
             val backendEvent = when (event) {
                 is PaywallEvent -> event.toBackendStoredEvent(
@@ -127,7 +127,7 @@ internal class EventsManager(
             if (backendEvent != null) {
                 fileHelper.appendEvent(backendEvent)
             } else {
-                debugLog("Backend event not implemented for: $event")
+                debugLog { "Backend event not implemented for: $event" }
             }
         }
     }
@@ -139,7 +139,7 @@ internal class EventsManager(
     fun flushEvents() {
         enqueue {
             if (flushInProgress) {
-                debugLog("Flush already in progress.")
+                debugLog { "Flush already in progress." }
                 return@enqueue
             }
             flushInProgress = true
@@ -153,23 +153,23 @@ internal class EventsManager(
             val storedEvents = storedEventsWithNullValues.filterNotNull()
 
             if (storedEvents.isEmpty()) {
-                verboseLog("No new events to sync.")
+                verboseLog { "No new events to sync." }
                 flushInProgress = false
                 return@enqueue
             }
 
-            verboseLog("New event flush: posting ${storedEvents.size} events.")
+            verboseLog { "New event flush: posting ${storedEvents.size} events." }
             postEvents(
                 EventsRequest(storedEvents.map { it.toBackendEvent() }),
                 {
-                    verboseLog("New event flush: success.")
+                    verboseLog { "New event flush: success." }
                     enqueue {
                         fileHelper.clear(storedEventsWithNullValues.size)
                         flushInProgress = false
                     }
                 },
                 { error, shouldMarkAsSynced ->
-                    errorLog("New event flush error: $error.")
+                    errorLog { "New event flush error: $error." }
                     enqueue {
                         if (shouldMarkAsSynced) {
                             fileHelper.clear(storedEventsWithNullValues.size)
@@ -191,19 +191,19 @@ internal class EventsManager(
             val storedBackendEvents = storedLegacyEvents.map { BackendStoredEvent.Paywalls(it.toBackendEvent()) }
 
             if (storedLegacyEvents.isEmpty()) {
-                verboseLog("No legacy events to sync. Skipping legacy flush.")
+                verboseLog { "No legacy events to sync. Skipping legacy flush." }
                 return@enqueue
             }
 
-            verboseLog("Legacy event flush: posting ${storedBackendEvents.size} events.")
+            verboseLog { "Legacy event flush: posting ${storedBackendEvents.size} events." }
             postEvents(
                 EventsRequest(storedBackendEvents.map { it.toBackendEvent() }),
                 {
-                    verboseLog("Legacy event flush: success.")
+                    verboseLog { "Legacy event flush: success." }
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
                 },
                 { error, shouldMarkAsSynced ->
-                    errorLog("Legacy event flush error: $error.")
+                    errorLog { "Legacy event flush error: $error." }
                     enqueue {
                         if (shouldMarkAsSynced) {
                             legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size)

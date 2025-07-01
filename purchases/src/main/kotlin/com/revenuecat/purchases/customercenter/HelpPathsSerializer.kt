@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.customercenter
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.debugLog
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
@@ -10,7 +10,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.jsonArray
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal object HelpPathsSerializer : KSerializer<List<CustomerCenterConfigData.HelpPath>> {
     override val descriptor: SerialDescriptor = ListSerializer(
         CustomerCenterConfigData.HelpPath.serializer(),
@@ -27,7 +27,7 @@ internal object HelpPathsSerializer : KSerializer<List<CustomerCenterConfigData.
                     jsonInput.json.decodeFromJsonElement(CustomerCenterConfigData.HelpPath.serializer(), jsonElement),
                 )
             } catch (e: IllegalArgumentException) {
-                debugLog("Issue deserializing CustomerCenter HelpPath. Ignoring. Error: $e")
+                debugLog { "Issue deserializing CustomerCenter HelpPath. Ignoring. Error: $e" }
             }
         }
 
