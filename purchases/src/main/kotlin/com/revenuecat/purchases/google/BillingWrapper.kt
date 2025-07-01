@@ -548,14 +548,14 @@ internal class BillingWrapper(
             log(LogIntent.GOOGLE_ERROR) {
                 BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
                     .format(billingResult.toHumanReadableDescription()) +
-                    "${
+                    (
                         notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
-                            "Purchases:" + purchase.joinToString(
+                            " Purchases:" + purchase.joinToString(
                                 ", ",
                                 transform = { it.toHumanReadableDescription() },
                             )
-                        }
-                    }"
+                        } ?: " No purchases received"
+                        )
             }
 
             var message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"

@@ -12,6 +12,15 @@ internal fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseC
         ?: "$this"
 }
 
+internal fun @receiver:BillingClient.OnPurchasesUpdatedSubResponseCode Int.getOnPurchasesUpdatedSubResponseCodeName(): String {
+    val allPossibleOnPurchasesUpdatedSubResponseCodes =
+        BillingClient.OnPurchasesUpdatedSubResponseCode::class.java.declaredFields
+    return allPossibleOnPurchasesUpdatedSubResponseCodes
+        .firstOrNull { it.getInt(it) == this }
+        ?.name
+        ?: "$this"
+}
+
 internal const val IN_APP_BILLING_LESS_THAN_3_ERROR_MESSAGE = "Google Play In-app Billing API version is less than 3"
 
 internal fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): PurchasesError {
