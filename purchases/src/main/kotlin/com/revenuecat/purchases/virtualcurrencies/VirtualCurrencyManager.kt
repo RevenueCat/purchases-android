@@ -34,7 +34,8 @@ internal class VirtualCurrencyManager(
 
         val cachedVirtualCurrencies = fetchCachedVirtualCurrencies(
             appUserID = appUserID,
-            isAppBackgrounded = isAppBackgrounded
+            isAppBackgrounded = isAppBackgrounded,
+            allowStaleCache = false
         )
         if (cachedVirtualCurrencies != null) {
             callback.onReceived(cachedVirtualCurrencies)
@@ -48,6 +49,18 @@ internal class VirtualCurrencyManager(
         )
 
         // TODO: Cache the VCs from the network
+    }
+
+    @Synchronized
+    fun cachedVirtualCurrencies(): VirtualCurrencies? {
+        val appUserID = identityManager.currentAppUserID
+        val isAppBackgrounded = appConfig.isAppBackgrounded
+
+        return fetchCachedVirtualCurrencies(
+            appUserID = appUserID,
+            isAppBackgrounded = isAppBackgrounded,
+            allowStaleCache = true
+        )
     }
 
     @Synchronized
@@ -68,9 +81,10 @@ internal class VirtualCurrencyManager(
 
     private fun fetchCachedVirtualCurrencies(
         appUserID: String,
-        isAppBackgrounded: Boolean
+        isAppBackgrounded: Boolean,
+        allowStaleCache: Boolean
     ): VirtualCurrencies? {
-        if (deviceCache.isVirtualCurrenciesCacheStale(appUserID, isAppBackgrounded)) {
+        if (!allowStaleCache && deviceCache.isVirtualCurrenciesCacheStale(appUserID, isAppBackgrounded)) {
             return null
         }
 

@@ -142,6 +142,7 @@ final class PurchasesAPI {
 
         purchases.getVirtualCurrencies(getVirtualCurrenciesCallback);
         purchases.invalidateVirtualCurrenciesCache();
+        VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {

@@ -35,6 +35,7 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 
@@ -488,6 +489,16 @@ class Purchases internal constructor(
     fun invalidateVirtualCurrenciesCache() {
         virtualCurrencyManager.invalidateVirtualCurrenciesCache()
     }
+
+    /**
+     * The currently cached ``VirtualCurrencies`` if one is available.
+     * This is synchronous, and therefore useful for contexts where an app needs a [VirtualCurrencies]
+     * right away without waiting for a callback.
+     *
+     * This allows initializing state to ensure that UI can be loaded from the very first frame.
+     */
+    val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = virtualCurrencyManager.cachedVirtualCurrencies()
 
     /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this

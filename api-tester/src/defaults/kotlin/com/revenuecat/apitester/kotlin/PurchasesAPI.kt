@@ -125,6 +125,7 @@ private class PurchasesAPI {
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
 
         purchases.getVirtualCurrencies(callback = getVirtualCurrenciesCallback)
+        val cachedVirtualCurrencies: VirtualCurrencies? = purchases.cachedVirtualCurrencies
     }
 
     @Suppress("LongMethod", "LongParameterList")
