@@ -44,9 +44,11 @@ internal abstract class BillingAbstract(
         endConnection()
     }
 
-    // Google Play Billing Library 8.0 removed APIs to query historical purchases.
-    // This method will from now on only return active purchases in Google Play.
-    // However, in Amazon, it will still return historical purchases.
+    /**
+     * Google Play Billing Library 8.0 removed APIs to query historical purchases.
+     * This method will only return active purchases in Google Play.
+     * However, in Amazon, it will still return historical purchases.
+     */
     abstract fun queryAllPurchases(
         appUserID: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
