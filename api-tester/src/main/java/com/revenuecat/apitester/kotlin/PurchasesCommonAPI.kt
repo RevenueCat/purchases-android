@@ -190,7 +190,6 @@ private class PurchasesCommonAPI {
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
         val purchaseResult: Result<PurchaseResult> = purchases.awaitPurchaseResult(purchasePackageBuilder.build())
         val getProductsResult: Result<List<StoreProduct>> = purchases.awaitGetProductsResult(listOf("product"))
-        val getVirtualCurrenciesResult: Result<VirtualCurrencies> = purchases.awaitGetVirtualCurrenciesResult()
     }
 
     @Suppress("ForbiddenComment")

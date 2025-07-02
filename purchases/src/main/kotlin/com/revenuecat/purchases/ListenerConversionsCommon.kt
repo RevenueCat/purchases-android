@@ -64,19 +64,6 @@ internal fun receiveCustomerInfoCallback(
     }
 }
 
-internal fun getVirtualCurrenciesCallback(
-    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
-    onError: (error: PurchasesError) -> Unit
-) = object : GetVirtualCurrenciesCallback {
-    override fun onReceived(virtualCurrencies: VirtualCurrencies) {
-        onSuccess(virtualCurrencies)
-    }
-
-    override fun onError(error: PurchasesError) {
-        onError(error)
-    }
-}
-
 /**
  * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
  * products vis RevenueCat and greatly simplifies management. See
@@ -155,20 +142,4 @@ fun Purchases.restorePurchasesWith(
     onSuccess: (customerInfo: CustomerInfo) -> Unit,
 ) {
     restorePurchases(receiveCustomerInfoCallback(onSuccess, onError))
-}
-
-/**
- * Fetches the virtual currencies for the current subscriber.
- *
- * @param [onSuccess] Will be called after the call has completed successfully
- * with a [VirtualCurrencies] object.
- * @param [onError] Will be called after the call has completed with an error.
- */
-fun Purchases.getVirtualCurrenciesWith(
-    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
-    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit
-) {
-    getVirtualCurrencies(
-        callback = getVirtualCurrenciesCallback(onSuccess, onError)
-    )
 }

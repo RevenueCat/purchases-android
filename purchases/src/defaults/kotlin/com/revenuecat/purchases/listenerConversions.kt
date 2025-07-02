@@ -12,6 +12,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 internal fun logInSuccessListener(
     onSuccess: (customerInfo: CustomerInfo, created: Boolean) -> Unit?,
@@ -277,6 +278,23 @@ fun Purchases.getAmazonLWAConsentStatusWith(
     onSuccess: (AmazonLWAConsentStatus) -> Unit,
 ) {
     getAmazonLWAConsentStatus(getAmazonLWAConsentStatusListener(onSuccess, onError))
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * @param [onSuccess] Will be called after the call has completed successfully
+ * with a [VirtualCurrencies] object.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+fun Purchases.getVirtualCurrenciesWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit
+) {
+    getVirtualCurrencies(
+        callback = getVirtualCurrenciesCallback(onSuccess, onError)
+    )
 }
 
 // region Deprecated

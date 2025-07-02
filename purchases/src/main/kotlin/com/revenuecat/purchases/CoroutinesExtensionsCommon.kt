@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -234,45 +233,6 @@ suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
             onError = {
                 continuation.resume(Result.failure(PurchasesException(it)))
             },
-        )
-    }
-}
-
-/**
- * Fetches the virtual currencies for the current subscriber.
- *
- * Coroutine friendly version of [Purchases.getVirtualCurrencies].
- *
- * @throws [PurchasesException] with a [PurchasesError] if an error occurred while fetching
- * the virtual currencies.
- *
- * @return The [VirtualCurrencies] with the subscriber's virtual currencies.
- */
-@JvmSynthetic
-@Throws(PurchasesException::class)
-suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
-    return suspendCoroutine { continuation ->
-        getVirtualCurrenciesWith(
-            onSuccess = { continuation.resume(it) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) }
-        )
-    }
-}
-
-/**
- * Fetches the virtual currencies for the current subscriber.
- *
- * Coroutine friendly version of [Purchases.getVirtualCurrencies].
- *
- * @return The [Result] of [VirtualCurrencies] with the subscriber's virtual currencies if
- * the execution succeeds, or a [Result] containing [PurchasesException] if it fails.
- */
-@JvmSynthetic
-suspend fun Purchases.awaitGetVirtualCurrenciesResult(): Result<VirtualCurrencies> {
-    return suspendCoroutine { continuation ->
-        getVirtualCurrenciesWith(
-            onSuccess = { continuation.resume(Result.success(it)) },
-            onError = { continuation.resume(Result.failure(PurchasesException(it))) },
         )
     }
 }
