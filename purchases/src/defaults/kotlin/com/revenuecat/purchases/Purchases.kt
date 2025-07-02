@@ -19,6 +19,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -34,6 +35,8 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 
 /**
@@ -46,6 +49,7 @@ import java.net.URL
  */
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
+    @get:JvmSynthetic internal val virtualCurrencyManager: VirtualCurrencyManager,
 ) : LifecycleDelegate {
     /**
      * The current configuration parameters of the Purchases SDK.
@@ -461,6 +465,40 @@ class Purchases internal constructor(
     ) {
         purchasesOrchestrator.getCustomerInfo(fetchPolicy, true, callback)
     }
+
+    /**
+     * Fetches the virtual currencies for the current subscriber.
+     *
+     * @param callback A listener called when the virtual currencies are available.
+     */
+    fun getVirtualCurrencies(
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        virtualCurrencyManager.virtualCurrencies(callback = callback)
+    }
+
+    /**
+     * Invalidates the cache for virtual currencies.
+     *
+     * This is useful for cases where a virtual currency's balance might have been updated
+     * outside of the app, like if you decreased a user's balance from the user spending a virtual currency,
+     * or if you increased the balance from your backend using the server APIs.
+     *
+     * For more info, see our [virtual currency docs](https://www.revenuecat.com/docs/offerings/virtual-currency)
+     */
+    fun invalidateVirtualCurrenciesCache() {
+        virtualCurrencyManager.invalidateVirtualCurrenciesCache()
+    }
+
+    /**
+     * The currently cached ``VirtualCurrencies`` if one is available.
+     * This is synchronous, and therefore useful for contexts where an app needs a [VirtualCurrencies]
+     * right away without waiting for a callback.
+     *
+     * This allows initializing state to ensure that UI can be loaded from the very first frame.
+     */
+    val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = virtualCurrencyManager.cachedVirtualCurrencies()
 
     /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this

@@ -13,7 +13,6 @@ internal object CustomerInfoResponseJsonKeys {
     const val SUBSCRIPTIONS = "subscriptions"
     const val MANAGEMENT_URL = "management_url"
     const val PURCHASE_DATE = "purchase_date"
-    const val VIRTUAL_CURRENCIES = "virtual_currencies"
 }
 
 internal object EntitlementsResponseJsonKeys {

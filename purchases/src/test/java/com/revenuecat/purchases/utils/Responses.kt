@@ -100,14 +100,6 @@ object Responses {
                         }
                       ]
                     },
-                    "virtual_currencies": {
-                        "GLD": {
-                            "balance": 100
-                        },
-                        "SLV": {
-                            "balance": 1000
-                        }
-                    },
                     "subscriptions": {
                       "pro": {
                         "billing_issues_detected_at": null,
@@ -303,6 +295,55 @@ object Responses {
                     "message": "Missing required params."
                 }
             """.removeJSONFormatting()
+
+    val validFullVirtualCurrenciesResponse = """
+        {
+          "virtual_currencies": {
+            "COIN": {
+              "balance": 1,
+              "code": "COIN",
+              "description": "It's a coin",
+              "name": "Coin"
+            },
+            "RC_COIN": {
+              "balance": 0,
+              "code": "RC_COIN",
+              "name": "RC Coin"
+            }
+          }
+        }
+    """.removeJSONFormatting()
+
+    val validEmptyVirtualCurrenciesResponse = """
+        {
+          "virtual_currencies": {}
+        }
+    """.removeJSONFormatting()
+
+    val validVirtualCurrencyResponseWithDescription = """
+        {
+          "balance": 1,
+          "code": "COIN",
+          "description": "It's a coin",
+          "name": "Coin"
+        }
+    """.removeJSONFormatting()
+
+    val validVirtualCurrencyResponseWithoutDescription = """
+        {
+          "balance": 0,
+          "code": "RC_COIN",
+          "name": "RC Coin"
+        }
+    """.removeJSONFormatting()
+
+    val validVirtualCurrencyResponseWithNegativeBalance = """
+        {
+          "balance": -1,
+          "code": "NEGATIVE",
+          "name": "Negative"
+        }
+    """.removeJSONFormatting()
 }
 
 private fun String.removeJSONFormatting(): String = JSONObject(this).toString()

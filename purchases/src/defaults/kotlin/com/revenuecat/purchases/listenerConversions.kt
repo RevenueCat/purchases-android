@@ -5,6 +5,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -12,6 +13,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 internal fun logInSuccessListener(
     onSuccess: (customerInfo: CustomerInfo, created: Boolean) -> Unit?,
@@ -71,6 +73,19 @@ internal fun getAmazonLWAConsentStatusListener(
 ) = object : GetAmazonLWAConsentStatusCallback {
     override fun onSuccess(consentStatus: AmazonLWAConsentStatus) {
         onSuccess(consentStatus)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
+
+internal fun getVirtualCurrenciesCallback(
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
+    onError: (error: PurchasesError) -> Unit,
+) = object : GetVirtualCurrenciesCallback {
+    override fun onReceived(virtualCurrencies: VirtualCurrencies) {
+        onSuccess(virtualCurrencies)
     }
 
     override fun onError(error: PurchasesError) {
@@ -277,6 +292,23 @@ fun Purchases.getAmazonLWAConsentStatusWith(
     onSuccess: (AmazonLWAConsentStatus) -> Unit,
 ) {
     getAmazonLWAConsentStatus(getAmazonLWAConsentStatusListener(onSuccess, onError))
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * @param [onSuccess] Will be called after the call has completed successfully
+ * with a [VirtualCurrencies] object.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+fun Purchases.getVirtualCurrenciesWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
+) {
+    getVirtualCurrencies(
+        callback = getVirtualCurrenciesCallback(onSuccess, onError),
+    )
 }
 
 // region Deprecated
