@@ -75,7 +75,9 @@ internal class QueryProductDetailsUseCase(
         }
         received.unfetchedProductList.takeIf { it.isNotEmpty() }?.let {
             log(LogIntent.INFO) {
-                OfferingStrings.MISSING_PRODUCT_DETAILS.format(received.unfetchedProductList.joinToString { it.toString() })
+                OfferingStrings.MISSING_PRODUCT_DETAILS.format(
+                    received.unfetchedProductList.joinToString { it.toString() },
+                )
             }
         }
 
