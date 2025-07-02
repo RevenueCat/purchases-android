@@ -227,7 +227,7 @@ class PurchaseInformationTest {
             isExpired = false,
             isTrial = false,
             isCancelled = false,
-            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063")
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
         )
     }
 
