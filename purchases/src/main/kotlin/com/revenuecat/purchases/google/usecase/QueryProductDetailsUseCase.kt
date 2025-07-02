@@ -73,9 +73,12 @@ internal class QueryProductDetailsUseCase(
         log(LogIntent.PURCHASE) {
             OfferingStrings.RETRIEVED_PRODUCTS.format(received.productDetailsList.joinToString { it.toString() })
         }
-        log(LogIntent.INFO) {
-            OfferingStrings.MISSING_PRODUCT_DETAILS.format(received.unfetchedProductList.joinToString { it.toString() })
+        received.unfetchedProductList.takeIf { it.isNotEmpty() }?.let {
+            log(LogIntent.INFO) {
+                OfferingStrings.MISSING_PRODUCT_DETAILS.format(received.unfetchedProductList.joinToString { it.toString() })
+            }
         }
+
         logErrorIfIssueBuildingBillingParams(received.productDetailsList)
         received.productDetailsList.takeUnless { it.isEmpty() }?.forEach {
             log(LogIntent.PURCHASE) { OfferingStrings.LIST_PRODUCTS.format(it.productId, it) }
