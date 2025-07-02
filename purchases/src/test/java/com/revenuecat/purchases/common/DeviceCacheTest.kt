@@ -717,7 +717,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a invalid VirtualCurrencies, the information is null`() {
+    fun `given an invalid VirtualCurrencies JSON string, the returned VirtualCurrencies from the cache is null`() {
         mockString(cache.virtualCurrenciesCacheKey(appUserID), "not json")
         val vcs = cache.getCachedVirtualCurrencies(appUserID)
         assertThat(vcs).`as`("vcs is null").isNull()
