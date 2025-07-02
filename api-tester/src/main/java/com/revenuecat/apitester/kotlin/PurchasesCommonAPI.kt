@@ -19,14 +19,12 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitGetProductsResult
-import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitOfferingsResult
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitPurchaseResult
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
-import com.revenuecat.purchases.getVirtualCurrenciesWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -40,7 +38,6 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.restorePurchasesWith
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
 import java.util.concurrent.ExecutorService
 
@@ -159,10 +156,6 @@ private class PurchasesCommonAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> },
         )
-        purchases.getVirtualCurrenciesWith(
-            onError = { _: PurchasesError -> },
-            onSuccess = { _: VirtualCurrencies -> },
-        )
     }
 
     suspend fun checkCoroutines(
@@ -176,7 +169,6 @@ private class PurchasesCommonAPI {
         val (transaction, newCustomerInfo) = purchases.awaitPurchase(purchasePackageBuilder.build())
         val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
         val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
-        val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
     }
 
     suspend fun checkCoroutinesResult(

@@ -20,6 +20,7 @@ import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
@@ -35,6 +36,7 @@ import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getStorefrontCountryCodeWith
+import com.revenuecat.purchases.getVirtualCurrenciesWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
@@ -172,6 +174,10 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: AmazonLWAConsentStatus -> },
         )
+        purchases.getVirtualCurrenciesWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: VirtualCurrencies -> },
+        )
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -191,6 +197,7 @@ private class PurchasesAPI {
         var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
         var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
         var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+        val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
