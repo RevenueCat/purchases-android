@@ -1,13 +1,11 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
-import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 internal val ON_ERROR_STUB: (error: PurchasesError) -> Unit = {}
 internal val ON_PURCHASE_ERROR_STUB: (error: PurchasesError, userCancelled: Boolean) -> Unit = { _, _ -> }

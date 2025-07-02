@@ -5,6 +5,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -72,6 +73,19 @@ internal fun getAmazonLWAConsentStatusListener(
 ) = object : GetAmazonLWAConsentStatusCallback {
     override fun onSuccess(consentStatus: AmazonLWAConsentStatus) {
         onSuccess(consentStatus)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
+
+internal fun getVirtualCurrenciesCallback(
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
+    onError: (error: PurchasesError) -> Unit
+) = object : GetVirtualCurrenciesCallback {
+    override fun onReceived(virtualCurrencies: VirtualCurrencies) {
+        onSuccess(virtualCurrencies)
     }
 
     override fun onError(error: PurchasesError) {
