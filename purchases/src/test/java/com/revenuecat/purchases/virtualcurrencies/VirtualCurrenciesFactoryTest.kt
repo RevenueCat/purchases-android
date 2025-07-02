@@ -55,7 +55,7 @@ class VirtualCurrenciesFactoryTest {
         }.isInstanceOf(JSONException::class.java)
 
         assertThatThrownBy {
-            VirtualCurrencyFactory.buildVirtualCurrency(
+            VirtualCurrenciesFactory.buildVirtualCurrencies(
                 JSONObject("asdf")
             )
         }.isInstanceOf(JSONException::class.java)
