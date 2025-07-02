@@ -12,6 +12,7 @@ internal fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseC
         ?: "$this"
 }
 
+@Suppress("MaximumLineLength", "MaxLineLength")
 internal fun @receiver:BillingClient.OnPurchasesUpdatedSubResponseCode Int.getOnPurchasesUpdatedSubResponseCodeName(): String {
     val allPossibleOnPurchasesUpdatedSubResponseCodes =
         BillingClient.OnPurchasesUpdatedSubResponseCode::class.java.declaredFields
