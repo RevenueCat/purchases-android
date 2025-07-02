@@ -33,6 +33,7 @@ import java.net.URL
 @Suppress("TooManyFunctions")
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
+    @get:JvmSynthetic internal val virtualCurrencyManager: VirtualCurrencyManager,
 ) {
 
     /**
