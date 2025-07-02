@@ -28,6 +28,8 @@ import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -76,6 +78,8 @@ internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
 
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
+
+internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit, (PurchasesError) -> Unit>
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
@@ -132,6 +136,10 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var getVirtualCurrenciesCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<VirtualCurrenciesCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -738,6 +746,68 @@ internal class Backend(
                 path,
                 onResultHandler,
                 Delay.NONE,
+            )
+        }
+    }
+
+    fun getVirtualCurrencies(
+        appUserID: String,
+        appInBackground: Boolean,
+        onSuccess: (VirtualCurrencies) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetVirtualCurrencies(userId = appUserID)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    getVirtualCurrenciesCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    getVirtualCurrenciesCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val virtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(
+                                httpResult = result,
+                            )
+                            onSuccessHandler(virtualCurrencies)
+                        } catch (e: JSONException) {
+                            onError(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            getVirtualCurrenciesCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
             )
         }
     }
