@@ -46,6 +46,12 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     ) {
         override fun getPath() = pathTemplate
     }
+    data class GetVirtualCurrencies(val userId: String): Endpoint(
+        pathTemplate = "/subscribers/%s/virtual_currencies",
+        name = "get_virtual_currencies"
+    ) {
+        override fun getPath() = pathTemplate.format(Uri.encode(userId))
+    }
 
     val supportsSignatureVerification: Boolean
         get() = when (this) {
@@ -55,7 +61,8 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetOfferings,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
-            ->
+            is GetVirtualCurrencies,
+                ->
                 true
             is GetAmazonReceipt,
             is PostAttributes,
@@ -72,7 +79,8 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             LogIn,
             PostReceipt,
             PostRedeemWebPurchase,
-            ->
+            is GetVirtualCurrencies,
+                ->
                 true
             is GetAmazonReceipt,
             is GetOfferings,
@@ -101,7 +109,8 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostPaywallEvents,
             is GetCustomerInfo,
             is GetCustomerCenterConfig,
-            ->
+            is GetVirtualCurrencies,
+                ->
                 false
         }
 }
