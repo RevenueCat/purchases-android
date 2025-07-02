@@ -472,7 +472,7 @@ class Purchases internal constructor(
      * @param callback A listener called when the virtual currencies are available.
      */
     fun getVirtualCurrencies(
-        callback: GetVirtualCurrenciesCallback
+        callback: GetVirtualCurrenciesCallback,
     ) {
         virtualCurrencyManager.virtualCurrencies(callback = callback)
     }

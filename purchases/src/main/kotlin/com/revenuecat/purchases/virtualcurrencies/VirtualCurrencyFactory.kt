@@ -9,11 +9,9 @@ import org.json.JSONObject
  * @throws [JSONException] If the JSON is invalid.
  */
 internal object VirtualCurrencyFactory {
-
-
     @Throws(JSONException::class)
     fun buildVirtualCurrency(
-        body: JSONObject
+        body: JSONObject,
     ): VirtualCurrency {
         return body.buildVirtualCurrency()
     }
@@ -29,7 +27,7 @@ internal fun JSONObject.buildVirtualCurrency(): VirtualCurrency {
         balance = balance,
         name = name,
         code = code,
-        serverDescription = serverDescription
+        serverDescription = serverDescription,
     )
 }
 

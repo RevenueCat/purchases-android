@@ -16,7 +16,6 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
@@ -49,6 +48,7 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")

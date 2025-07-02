@@ -25,7 +25,6 @@ import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -263,7 +262,7 @@ internal open class DeviceCache(
         val virtualCurrenciesData = JSONObject().apply {
             put("virtual_currencies", virtualCurrencies.rawData)
         }.toString()
-        
+
         preferences.edit()
             .putString(
                 virtualCurrenciesCacheKey(appUserID),
@@ -275,7 +274,8 @@ internal open class DeviceCache(
 
     @Synchronized
     fun isVirtualCurrenciesCacheStale(appUserID: String, appInBackground: Boolean) =
-        getVirtualCurrenciesCacheLastUpdated(appUserID).isCacheStale(appInBackground, dateProvider)
+        getVirtualCurrenciesCacheLastUpdated(appUserID)
+            .isCacheStale(appInBackground, dateProvider)
 
     @Synchronized
     fun clearVirtualCurrenciesCache(appUserID: String) {
@@ -308,7 +308,9 @@ internal open class DeviceCache(
         return Date(preferences.getLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), 0))
     }
 
-    private fun SharedPreferences.Editor.clearVirtualCurrenciesCacheTimestamp(appUserID: String): SharedPreferences.Editor {
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCacheTimestamp(
+        appUserID: String,
+    ): SharedPreferences.Editor {
         remove(virtualCurrenciesLastUpdatedCacheKey(appUserID))
 
         getCachedAppUserID()?.let {

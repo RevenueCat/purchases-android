@@ -1,21 +1,12 @@
 package com.revenuecat.purchases.virtualcurrencies
 
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
-import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.DateProvider
-import com.revenuecat.purchases.common.DefaultDateProvider
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.util.Date
 
+@Suppress("UnusedPrivateProperty")
 internal class VirtualCurrencyManager(
     private val identityManager: IdentityManager,
     private val deviceCache: DeviceCache,
@@ -25,9 +16,10 @@ internal class VirtualCurrencyManager(
 
     // region Public functions
 
+    @Suppress("ForbiddenComment")
     @Synchronized
     fun virtualCurrencies(
-        callback: GetVirtualCurrenciesCallback
+        callback: GetVirtualCurrenciesCallback,
     ) {
         val appUserID = identityManager.currentAppUserID
         val isAppBackgrounded = appConfig.isAppBackgrounded
@@ -35,7 +27,7 @@ internal class VirtualCurrencyManager(
         val cachedVirtualCurrencies = fetchCachedVirtualCurrencies(
             appUserID = appUserID,
             isAppBackgrounded = isAppBackgrounded,
-            allowStaleCache = false
+            allowStaleCache = false,
         )
         if (cachedVirtualCurrencies != null) {
             callback.onReceived(cachedVirtualCurrencies)
@@ -45,7 +37,7 @@ internal class VirtualCurrencyManager(
         fetchVirtualCurrenciesFromBackend(
             appUserID = appUserID,
             isAppBackgrounded = isAppBackgrounded,
-            callback = callback
+            callback = callback,
         )
 
         // TODO: Cache the VCs from the network
@@ -59,7 +51,7 @@ internal class VirtualCurrencyManager(
         return fetchCachedVirtualCurrencies(
             appUserID = appUserID,
             isAppBackgrounded = isAppBackgrounded,
-            allowStaleCache = true
+            allowStaleCache = true,
         )
     }
 
@@ -71,18 +63,18 @@ internal class VirtualCurrencyManager(
 
     private fun cacheVirtualCurrencies(
         virtualCurrencies: VirtualCurrencies,
-        appUserID: String
+        appUserID: String,
     ) {
         deviceCache.cacheVirtualCurrencies(
             appUserID = appUserID,
-            virtualCurrencies = virtualCurrencies
+            virtualCurrencies = virtualCurrencies,
         )
     }
 
     private fun fetchCachedVirtualCurrencies(
         appUserID: String,
         isAppBackgrounded: Boolean,
-        allowStaleCache: Boolean
+        allowStaleCache: Boolean,
     ): VirtualCurrencies? {
         if (!allowStaleCache && deviceCache.isVirtualCurrenciesCacheStale(appUserID, isAppBackgrounded)) {
             return null
@@ -91,11 +83,11 @@ internal class VirtualCurrencyManager(
         return deviceCache.getCachedVirtualCurrencies(appUserID = appUserID)
     }
 
-    // TODO: Make this throw and return VirtualCurrencies
+    @Suppress("UnusedParameter", "ForbiddenComment")
     private fun fetchVirtualCurrenciesFromBackend(
         appUserID: String,
         isAppBackgrounded: Boolean,
-        callback: GetVirtualCurrenciesCallback
+        callback: GetVirtualCurrenciesCallback,
     ) {
         // TODO: Implement this
     }

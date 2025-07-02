@@ -82,7 +82,7 @@ internal fun getAmazonLWAConsentStatusListener(
 
 internal fun getVirtualCurrenciesCallback(
     onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
-    onError: (error: PurchasesError) -> Unit
+    onError: (error: PurchasesError) -> Unit,
 ) = object : GetVirtualCurrenciesCallback {
     override fun onReceived(virtualCurrencies: VirtualCurrencies) {
         onSuccess(virtualCurrencies)
@@ -304,10 +304,10 @@ fun Purchases.getAmazonLWAConsentStatusWith(
 @Suppress("unused")
 fun Purchases.getVirtualCurrenciesWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
-    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
 ) {
     getVirtualCurrencies(
-        callback = getVirtualCurrenciesCallback(onSuccess, onError)
+        callback = getVirtualCurrenciesCallback(onSuccess, onError),
     )
 }
 

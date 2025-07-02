@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.interfaces
 
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 /**
  * Interface to be implemented when making calls that return a [VirtualCurrencies]

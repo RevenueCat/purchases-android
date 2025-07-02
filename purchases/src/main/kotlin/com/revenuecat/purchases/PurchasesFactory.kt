@@ -324,7 +324,7 @@ internal class PurchasesFactory(
                 identityManager = identityManager,
                 deviceCache = cache,
                 backend = backend,
-                appConfig = appConfig
+                appConfig = appConfig,
             )
 
             val purchasesOrchestrator = PurchasesOrchestrator(
@@ -356,7 +356,7 @@ internal class PurchasesFactory(
 
             return Purchases(
                 purchasesOrchestrator = purchasesOrchestrator,
-                virtualCurrencyManager = virtualCurrencyManager
+                virtualCurrencyManager = virtualCurrencyManager,
             )
         }
     }

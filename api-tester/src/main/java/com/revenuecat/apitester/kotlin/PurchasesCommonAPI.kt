@@ -17,11 +17,9 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitGetProductsResult
 import com.revenuecat.purchases.awaitGetVirtualCurrencies
-import com.revenuecat.purchases.awaitGetVirtualCurrenciesResult
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitOfferingsResult
 import com.revenuecat.purchases.awaitPurchase
@@ -42,6 +40,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.restorePurchasesWith
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
 import java.util.concurrent.ExecutorService
 
@@ -162,7 +161,7 @@ private class PurchasesCommonAPI {
         )
         purchases.getVirtualCurrenciesWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: VirtualCurrencies -> }
+            onSuccess = { _: VirtualCurrencies -> },
         )
     }
 

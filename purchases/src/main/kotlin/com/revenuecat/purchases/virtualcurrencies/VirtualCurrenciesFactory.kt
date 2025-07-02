@@ -20,7 +20,7 @@ internal object VirtualCurrenciesFactory {
 
     @Throws(JSONException::class)
     fun buildVirtualCurrencies(
-        body: JSONObject
+        body: JSONObject,
     ): VirtualCurrencies {
         val virtualCurrenciesObject = body.getJSONObject(VirtualCurrenciesResponseJsonKeys.VIRTUAL_CURRENCIES)
         return virtualCurrenciesObject.buildVirtualCurrencies()
@@ -37,7 +37,7 @@ internal fun JSONObject.buildVirtualCurrencies(): VirtualCurrencies {
 
     return VirtualCurrencies(
         all = all,
-        jsonObject = this
+        jsonObject = this,
     )
 }
 

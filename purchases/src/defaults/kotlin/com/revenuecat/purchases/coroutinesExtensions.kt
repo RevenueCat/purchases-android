@@ -208,7 +208,7 @@ suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
     return suspendCoroutine { continuation ->
         getVirtualCurrenciesWith(
             onSuccess = { continuation.resume(it) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) }
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
