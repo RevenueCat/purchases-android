@@ -748,7 +748,8 @@ workflows:
     when:
       equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
     jobs:
-      - deploy-snapshot
+      - deploy-snapshot:
+          context: maven-central-publishing
 
   snapshot-deploy-sample-app-tests:
     when:
@@ -758,7 +759,8 @@ workflows:
         - equal: [ "main", << pipeline.git.branch >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - deploy-snapshot
+      - deploy-snapshot:
+          context: maven-central-publishing
       - assemble-magic-weather-compose-sample-app:
           requires:
             - deploy-snapshot
@@ -813,7 +815,9 @@ workflows:
           requires:
             - hold
           <<: *release-branches
-      - deploy: *release-tags
+      - deploy:
+          <<: *release-tags
+          context: maven-central-publishing
       - docs-deploy: *release-tags
       - publish-purchase-tester-release:
           requires:
