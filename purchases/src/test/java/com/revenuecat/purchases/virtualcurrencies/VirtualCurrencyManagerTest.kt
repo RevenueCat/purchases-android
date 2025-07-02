@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.virtualcurrencies
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.Responses
@@ -32,11 +33,16 @@ class VirtualCurrencyManagerTest {
             mockIdentityManager.currentAppUserID
         } returns appUserID
 
+        val mockAppConfig = mockk<AppConfig>()
+        every {
+            mockAppConfig.isAppBackgrounded
+        } returns false
+
         val virtualCurrencyManager = VirtualCurrencyManager(
             identityManager = mockIdentityManager,
             deviceCache = mockDeviceCache,
             backend = mockk(),
-            appConfig = mockk()
+            appConfig = mockAppConfig
         )
 
         assertThat(virtualCurrencyManager.cachedVirtualCurrencies()).isEqualTo(virtualCurrencies)
@@ -56,11 +62,16 @@ class VirtualCurrencyManagerTest {
             mockIdentityManager.currentAppUserID
         } returns appUserID
 
+        val mockAppConfig = mockk<AppConfig>()
+        every {
+            mockAppConfig.isAppBackgrounded
+        } returns false
+
         val virtualCurrencyManager = VirtualCurrencyManager(
             identityManager = mockIdentityManager,
             deviceCache = mockDeviceCache,
             backend = mockk(),
-            appConfig = mockk()
+            appConfig = mockAppConfig
         )
 
         assertThat(virtualCurrencyManager.cachedVirtualCurrencies()).isNull()
