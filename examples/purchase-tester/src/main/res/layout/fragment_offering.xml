@@ -6,9 +6,15 @@
 
     <data>
 
+        <import type="android.view.View" />
+
         <variable
                 name="offering"
                 type="com.revenuecat.purchases.Offering" />
+
+        <variable
+                name="isBundleMode"
+                type="Boolean" />
 
     </data>
 
@@ -52,6 +58,26 @@
                         bind:detail="@{offering.serverDescription}"
                         bind:header="@{`Description:`}" />
 
+                <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/bundle_purchase_checkbox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:text="Use Bundle Purchase"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
+
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/purchase_all_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:text="Purchase All"
+                        android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintStart_toEndOf="@+id/bundle_purchase_checkbox"
+                        app:layout_constraintTop_toTopOf="@+id/bundle_purchase_checkbox"
+                        app:layout_constraintBottom_toBottomOf="@+id/bundle_purchase_checkbox" />
+
                 <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/offering_details_packages_header"
                         android:layout_width="match_parent"
@@ -60,8 +86,8 @@
                         android:layout_marginTop="@dimen/padding_small"
                         android:text="Packages"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/offering_details_server_description"
-                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/bundle_purchase_checkbox" />
 
                 <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/offering__details_packages_recycler"
