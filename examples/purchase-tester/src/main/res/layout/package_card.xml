@@ -156,8 +156,7 @@
                     android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
                     app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"/>
+                    app:layout_constraintTop_toTopOf="parent"/>
 
             <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/is_upgrade_checkbox"
