@@ -1164,6 +1164,101 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun startBundlePurchase(
+        activity: Activity,
+        packages: List<Package>,
+        listener: PurchaseCallback,
+    ) {
+        if (packages.isEmpty()) {
+            listener.dispatch(
+                PurchasesError(
+                    PurchasesErrorCode.PurchaseInvalidError,
+                    "Bundle purchase requires at least one package"
+                ).also { errorLog(it) }
+            )
+            return
+        }
+
+        // For bundle purchases, we only support Google Play Store subscriptions
+        if (store != Store.PLAY_STORE) {
+            listener.dispatch(
+                PurchasesError(
+                    PurchasesErrorCode.PurchaseNotAllowedError,
+                    "Bundle purchases are only supported on Google Play Store"
+                ).also { errorLog(it) }
+            )
+            return
+        }
+
+        val purchasingDataList = packages.map { it.product.purchasingData }
+        
+        // Check if all packages are subscriptions
+        val nonSubscriptionPackages = packages.filter { it.product.type != ProductType.SUBS }
+        if (nonSubscriptionPackages.isNotEmpty()) {
+            listener.dispatch(
+                PurchasesError(
+                    PurchasesErrorCode.PurchaseNotAllowedError,
+                    "Bundle purchases only support subscriptions. Found non-subscription packages: ${nonSubscriptionPackages.map { it.identifier }}"
+                ).also { errorLog(it) }
+            )
+            return
+        }
+
+        log(LogIntent.PURCHASE) {
+            "Bundle purchase started for packages: ${packages.map { it.identifier }}"
+        }
+
+        trackPurchaseStarted(packages.first().product.id, packages.first().product.type)
+        val startTime = dateProvider.now
+
+        val listenerWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(listener, packages.first().product.purchasingData, startTime)
+
+        var userPurchasing: String? = null
+        synchronized(this@PurchasesOrchestrator) {
+            if (!appConfig.finishTransactions) {
+                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
+            }
+            
+            // Check if any of the packages are already being purchased
+            val alreadyPurchasing = packages.any { packageToPurchase ->
+                state.purchaseCallbacksByProductId.containsKey(packageToPurchase.product.id)
+            }
+            
+            if (!alreadyPurchasing) {
+                // Register callbacks for all packages
+                val mapOfProductIdToListener = packages.associate { packageToPurchase ->
+                    packageToPurchase.product.id to listenerWithDiagnostics
+                }
+                state = state.copy(
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
+                )
+                userPurchasing = identityManager.currentAppUserID
+            }
+        }
+
+        userPurchasing?.let { appUserID ->
+            // Use the billing wrapper's bundle purchase method
+            (billing as? com.revenuecat.purchases.google.BillingWrapper)?.makeBundlePurchaseAsync(
+                activity,
+                appUserID,
+                purchasingDataList,
+                packages.first().presentedOfferingContext,
+                null,
+            ) ?: run {
+                listenerWithDiagnostics.dispatch(
+                    PurchasesError(
+                        PurchasesErrorCode.PurchaseNotAllowedError,
+                        "Bundle purchases are only supported on Google Play Store"
+                    ).also { errorLog(it) }
+                )
+            }
+        } ?: listenerWithDiagnostics.dispatch(
+            PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+                errorLog(it)
+            },
+        )
+    }
+
     fun startProductChange(
         activity: Activity,
         purchasingData: PurchasingData,

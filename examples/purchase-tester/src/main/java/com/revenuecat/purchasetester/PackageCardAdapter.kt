@@ -24,6 +24,9 @@ class PackageCardAdapter(
 ) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
+    private var isBundleMode = false
+    private val selectedPackages = mutableSetOf<Package>()
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PackageViewHolder {
         val binding = PackageCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return PackageViewHolder(binding)
@@ -32,20 +35,42 @@ class PackageCardAdapter(
     override fun getItemCount(): Int = packages.size
 
     override fun onBindViewHolder(holder: PackageViewHolder, position: Int) {
-        holder.bind(packages[position], isPlayStore)
+        holder.bind(packages[position], isPlayStore, isBundleMode, selectedPackages.contains(packages[position]))
     }
+
+    fun setBundleMode(enabled: Boolean) {
+        isBundleMode = enabled
+        if (!enabled) {
+            selectedPackages.clear()
+        }
+        notifyDataSetChanged()
+    }
+
+    fun getSelectedPackages(): List<Package> = selectedPackages.toList()
 
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         private val nothingCheckedIndex = -1
 
-        fun bind(currentPackage: Package, isPlayStore: Boolean) {
+        fun bind(currentPackage: Package, isPlayStore: Boolean, isBundleMode: Boolean, isSelected: Boolean) {
             val product = currentPackage.product
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
             binding.isActive = activeSubscriptions.contains(product.id)
             binding.isPlayStore = isPlayStore
+            binding.isBundleMode = isBundleMode
+            binding.isSelected = isSelected
+
+            // Set the checkbox state and listener
+            binding.buyOptionCheckbox.isChecked = isSelected
+            binding.buyOptionCheckbox.setOnCheckedChangeListener { _, checked ->
+                if (checked) {
+                    selectedPackages.add(currentPackage)
+                } else {
+                    selectedPackages.remove(currentPackage)
+                }
+            }
 
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(
@@ -158,5 +183,6 @@ class PackageCardAdapter(
             isUpgrade: Boolean,
             isPersonalizedPrice: Boolean,
         )
+        fun onBundlePurchaseClicked(selectedPackages: List<Package>)
     }
 }

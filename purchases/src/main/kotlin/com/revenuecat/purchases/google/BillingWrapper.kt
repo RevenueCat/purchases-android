@@ -310,6 +310,76 @@ internal class BillingWrapper(
         }
     }
 
+    fun makeBundlePurchaseAsync(
+        activity: Activity,
+        appUserID: String,
+        purchasingDataList: List<PurchasingData>,
+        presentedOfferingContext: PresentedOfferingContext?,
+        isPersonalizedPrice: Boolean? = null,
+    ) {
+        val googlePurchasingDataList = purchasingDataList.mapNotNull { it as? GooglePurchasingData }
+        if (googlePurchasingDataList.size != purchasingDataList.size) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_PURCHASE_TYPE.format(
+                    "Play",
+                    "GooglePurchasingData",
+                ),
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
+
+        // For bundle purchases, we only support subscriptions for now
+        val subscriptionPurchasingDataList = googlePurchasingDataList.mapNotNull { 
+            it as? GooglePurchasingData.Subscription 
+        }
+        if (subscriptionPurchasingDataList.size != googlePurchasingDataList.size) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "Bundle purchases currently only support subscriptions",
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
+
+        log(LogIntent.PURCHASE) { 
+            "Bundle purchasing products: ${subscriptionPurchasingDataList.joinToString { it.productId }}" 
+        }
+
+        synchronized(this@BillingWrapper) {
+            // Store context for each product in the bundle
+            subscriptionPurchasingDataList.forEach { googlePurchasingData ->
+                purchaseContext[googlePurchasingData.productId] = PurchaseContext(
+                    googlePurchasingData.productType,
+                    presentedOfferingContext,
+                    googlePurchasingData.optionId,
+                    null, // No replacement mode for bundle purchases
+                )
+            }
+        }
+
+        executeRequestOnUIThread {
+            val result = buildBundleSubscriptionPurchaseParams(
+                subscriptionPurchasingDataList,
+                appUserID,
+                isPersonalizedPrice,
+            )
+            when (result) {
+                is Result.Success -> {
+                    trackPurchaseStartIfNeeded(
+                        subscriptionPurchasingDataList.first(),
+                        null,
+                    )
+                    launchBillingFlow(activity, result.value)
+                }
+                is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
+            }
+        }
+    }
+
     @UiThread
     private fun launchBillingFlow(
         activity: Activity,
@@ -937,6 +1007,35 @@ internal class BillingWrapper(
                             setUpgradeInfo(it)
                         } ?: setObfuscatedAccountId(appUserID.sha256())
 
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
+                    }
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            throw NoCoreLibraryDesugaringException(e)
+        }
+    }
+
+    private fun buildBundleSubscriptionPurchaseParams(
+        purchaseInfos: List<GooglePurchasingData.Subscription>,
+        appUserID: String,
+        isPersonalizedPrice: Boolean?,
+    ): Result<BillingFlowParams, PurchasesError> {
+        val productDetailsParamsList = purchaseInfos.map { purchaseInfo ->
+            BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+                setOfferToken(purchaseInfo.token)
+                setProductDetails(purchaseInfo.productDetails)
+            }.build()
+        }
+
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+                    .setObfuscatedAccountId(appUserID.sha256())
+                    .apply {
                         isPersonalizedPrice?.let {
                             setIsOfferPersonalized(it)
                         }
