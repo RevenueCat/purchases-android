@@ -46,9 +46,6 @@ dependencyResolutionManagement {
             }
         }
 
-        // fetch plugins from gradle plugin portal (https://plugins.gradle.org)
-        gradlePluginPortal()
-
         // fallback for the rest of the dependencies
         mavenCentral()
     }
