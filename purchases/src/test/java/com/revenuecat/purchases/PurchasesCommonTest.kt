@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases
 
+import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
@@ -2000,5 +2001,80 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     // endregion
+
+    @Test
+    fun `startBundlePurchase calls billing for Google Play Store and subscriptions`() {
+        val orchestrator = purchases.purchasesOrchestrator
+        val activity = mockk<Activity>()
+        val callback = mockk<PurchaseCallback>(relaxed = true)
+        val package1 = stubStoreProduct("sub1", ProductType.SUBS).toPackage("pkg1")
+        val package2 = stubStoreProduct("sub2", ProductType.SUBS).toPackage("pkg2")
+        val packages = listOf(package1, package2)
+        val billing = mockk<com.revenuecat.purchases.google.BillingWrapper>(relaxed = true)
+        orchestrator.billing = billing
+        orchestrator.store = Store.PLAY_STORE
+        orchestrator.appConfig.finishTransactions = true
+        orchestrator.identityManager.currentAppUserID = "user123"
+        orchestrator.startBundlePurchase(activity, packages, callback)
+        verify {
+            billing.makeBundlePurchaseAsync(
+                activity,
+                "user123",
+                packages.map { it.product.purchasingData },
+                packages.first().presentedOfferingContext,
+                null
+            )
+        }
+    }
+
+    @Test
+    fun `startBundlePurchase returns error if already purchasing one of the packages`() {
+        val orchestrator = purchases.purchasesOrchestrator
+        val activity = mockk<Activity>()
+        val callback = mockk<PurchaseCallback>(relaxed = true)
+        val package1 = stubStoreProduct("sub1", ProductType.SUBS).toPackage("pkg1")
+        val package2 = stubStoreProduct("sub2", ProductType.SUBS).toPackage("pkg2")
+        val packages = listOf(package1, package2)
+        orchestrator.store = Store.PLAY_STORE
+        orchestrator.appConfig.finishTransactions = true
+        orchestrator.identityManager.currentAppUserID = "user123"
+        // Simulate already purchasing sub1
+        orchestrator.state = orchestrator.state.copy(purchaseCallbacksByProductId = mapOf("sub1" to callback))
+        orchestrator.startBundlePurchase(activity, packages, callback)
+        verify { callback.dispatch(match { it.code == PurchasesErrorCode.OperationAlreadyInProgressError }) }
+    }
+
+    @Test
+    fun `startBundlePurchase returns error if not Google Play Store`() {
+        val orchestrator = purchases.purchasesOrchestrator
+        val activity = mockk<Activity>()
+        val callback = mockk<PurchaseCallback>(relaxed = true)
+        val package1 = stubStoreProduct("sub1", ProductType.SUBS).toPackage("pkg1")
+        orchestrator.store = Store.AMAZON
+        orchestrator.startBundlePurchase(activity, listOf(package1), callback)
+        verify { callback.dispatch(match { it.code == PurchasesErrorCode.PurchaseNotAllowedError }) }
+    }
+
+    @Test
+    fun `startBundlePurchase returns error if any package is not a subscription`() {
+        val orchestrator = purchases.purchasesOrchestrator
+        val activity = mockk<Activity>()
+        val callback = mockk<PurchaseCallback>(relaxed = true)
+        val package1 = stubStoreProduct("sub1", ProductType.SUBS).toPackage("pkg1")
+        val package2 = stubStoreProduct("inapp1", ProductType.INAPP).toPackage("pkg2")
+        orchestrator.store = Store.PLAY_STORE
+        orchestrator.startBundlePurchase(activity, listOf(package1, package2), callback)
+        verify { callback.dispatch(match { it.code == PurchasesErrorCode.PurchaseNotAllowedError }) }
+    }
+
+    @Test
+    fun `startBundlePurchase returns error if package list is empty`() {
+        val orchestrator = purchases.purchasesOrchestrator
+        val activity = mockk<Activity>()
+        val callback = mockk<PurchaseCallback>(relaxed = true)
+        orchestrator.store = Store.PLAY_STORE
+        orchestrator.startBundlePurchase(activity, emptyList(), callback)
+        verify { callback.dispatch(match { it.code == PurchasesErrorCode.PurchaseInvalidError }) }
+    }
 
 }

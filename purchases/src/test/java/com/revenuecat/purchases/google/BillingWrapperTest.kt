@@ -43,6 +43,7 @@ import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
@@ -1652,6 +1653,245 @@ class BillingWrapperTest {
 
 
     // endregion
+
+    // region Bundle Purchase Tests
+
+    @Test
+    fun `makeBundlePurchaseAsync builds bundle subscription purchase params successfully`() {
+        val activity = mockk<Activity>()
+        val appUserID = "test_user"
+        val productId1 = "product_1"
+        val productId2 = "product_2"
+        val token1 = "token_1"
+        val token2 = "token_2"
+        
+        val productDetails1 = mockProductDetails(productId = productId1)
+        val productDetails2 = mockProductDetails(productId = productId2)
+        
+        val subscriptionData1 = GooglePurchasingData.Subscription(
+            productId = productId1,
+            productType = ProductType.SUBS,
+            productDetails = productDetails1,
+            token = token1,
+            optionId = "option_1"
+        )
+        val subscriptionData2 = GooglePurchasingData.Subscription(
+            productId = productId2,
+            productType = ProductType.SUBS,
+            productDetails = productDetails2,
+            token = token2,
+            optionId = "option_2"
+        )
+        
+        val purchasingDataList = listOf(subscriptionData1, subscriptionData2)
+        val presentedOfferingContext = mockk<PresentedOfferingContext>()
+        
+        // Mock the billing flow launch
+        val mockBillingFlowParams = mockk<BillingFlowParams>()
+        mockkStatic(BillingFlowParams::class)
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every { BillingFlowParams.newBuilder() } returns mockBuilder
+        every { mockBuilder.setProductDetailsParamsList(any()) } returns mockBuilder
+        every { mockBuilder.setObfuscatedAccountId(any()) } returns mockBuilder
+        every { mockBuilder.build() } returns mockBillingFlowParams
+        every { mockClient.launchBillingFlow(activity, mockBillingFlowParams) } returns billingClientOKResult
+        
+        // Connect the billing client
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        
+        wrapper.makeBundlePurchaseAsync(
+            activity = activity,
+            appUserID = appUserID,
+            purchasingDataList = purchasingDataList,
+            presentedOfferingContext = presentedOfferingContext
+        )
+        
+        // Verify that the billing flow was launched
+        verify { mockClient.launchBillingFlow(activity, mockBillingFlowParams) }
+        
+        // Verify that product details params were set with both products
+        verify { 
+            mockBuilder.setProductDetailsParamsList(match { 
+                it.size == 2
+            })
+        }
+        
+        // Verify obfuscated account ID was set
+        verify { mockBuilder.setObfuscatedAccountId(appUserID.sha256()) }
+    }
+
+    @Test
+    fun `makeBundlePurchaseAsync builds bundle subscription purchase params with personalized price`() {
+        val activity = mockk<Activity>()
+        val appUserID = "test_user"
+        val productId = "product_1"
+        val token = "token_1"
+        val isPersonalizedPrice = true
+        
+        val productDetails = mockProductDetails(productId = productId)
+        
+        val subscriptionData = GooglePurchasingData.Subscription(
+            productId = productId,
+            productType = ProductType.SUBS,
+            productDetails = productDetails,
+            token = token,
+            optionId = "option_1"
+        )
+        
+        val purchasingDataList = listOf(subscriptionData)
+        val presentedOfferingContext = mockk<PresentedOfferingContext>()
+        
+        // Mock the billing flow launch
+        val mockBillingFlowParams = mockk<BillingFlowParams>()
+        mockkStatic(BillingFlowParams::class)
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every { BillingFlowParams.newBuilder() } returns mockBuilder
+        every { mockBuilder.setProductDetailsParamsList(any()) } returns mockBuilder
+        every { mockBuilder.setObfuscatedAccountId(any()) } returns mockBuilder
+        every { mockBuilder.setIsOfferPersonalized(any()) } returns mockBuilder
+        every { mockBuilder.build() } returns mockBillingFlowParams
+        every { mockClient.launchBillingFlow(activity, mockBillingFlowParams) } returns billingClientOKResult
+        
+        // Connect the billing client
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        
+        wrapper.makeBundlePurchaseAsync(
+            activity = activity,
+            appUserID = appUserID,
+            purchasingDataList = purchasingDataList,
+            presentedOfferingContext = presentedOfferingContext,
+            isPersonalizedPrice = isPersonalizedPrice
+        )
+        
+        // Verify that personalized price was set
+        verify { mockBuilder.setIsOfferPersonalized(isPersonalizedPrice) }
+    }
+
+    @Test
+    fun `makeBundlePurchaseAsync handles NoClassDefFoundError exception`() {
+        val activity = mockk<Activity>()
+        val appUserID = "test_user"
+        val productId = "product_1"
+        val token = "token_1"
+        
+        val productDetails = mockProductDetails(productId = productId)
+        
+        val subscriptionData = GooglePurchasingData.Subscription(
+            productId = productId,
+            productType = ProductType.SUBS,
+            productDetails = productDetails,
+            token = token,
+            optionId = "option_1"
+        )
+        
+        val purchasingDataList = listOf(subscriptionData)
+        val presentedOfferingContext = mockk<PresentedOfferingContext>()
+        
+        // Mock the billing flow to throw NoClassDefFoundError
+        mockkStatic(BillingFlowParams::class)
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every { BillingFlowParams.newBuilder() } returns mockBuilder
+        every { mockBuilder.setProductDetailsParamsList(any()) } returns mockBuilder
+        every { mockBuilder.setObfuscatedAccountId(any()) } returns mockBuilder
+        every { mockBuilder.build() } throws NoClassDefFoundError("Test exception")
+        
+        // Connect the billing client
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        
+        var receivedError: PurchasesError? = null
+        wrapper.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
+            override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
+                // Not used in this test
+            }
+            override fun onPurchasesFailedToUpdate(error: PurchasesError) {
+                receivedError = error
+            }
+        }
+        
+        wrapper.makeBundlePurchaseAsync(
+            activity = activity,
+            appUserID = appUserID,
+            purchasingDataList = purchasingDataList,
+            presentedOfferingContext = presentedOfferingContext
+        )
+        
+        // Verify that the error was handled
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `makeBundlePurchaseAsync rejects non-Google purchasing data`() {
+        val activity = mockk<Activity>()
+        val appUserID = "test_user"
+        
+        // Create a non-Google purchasing data
+        val nonGooglePurchasingData = object : PurchasingData {
+            override val productId: String = "product_1"
+            override val productType: ProductType = ProductType.SUBS
+        }
+        
+        val purchasingDataList = listOf(nonGooglePurchasingData)
+        val presentedOfferingContext = mockk<PresentedOfferingContext>()
+        
+        var receivedError: PurchasesError? = null
+        wrapper.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
+            override fun onPurchasesFailedToUpdate(error: PurchasesError) {
+                receivedError = error
+            }
+        }
+        
+        wrapper.makeBundlePurchaseAsync(
+            activity = activity,
+            appUserID = appUserID,
+            purchasingDataList = purchasingDataList,
+            presentedOfferingContext = presentedOfferingContext
+        )
+        
+        // Verify that the error was handled
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(receivedError!!.message).contains("GooglePurchasingData")
+    }
+
+    @Test
+    fun `makeBundlePurchaseAsync rejects non-subscription products`() {
+        val activity = mockk<Activity>()
+        val appUserID = "test_user"
+        val productId = "product_1"
+        
+        val productDetails = mockProductDetails(productId = productId)
+        
+        // Create an in-app product instead of subscription
+        val inAppPurchasingData = GooglePurchasingData.InAppProduct(
+            productId = productId,
+            productDetails = productDetails
+        )
+        
+        val purchasingDataList = listOf(inAppPurchasingData)
+        val presentedOfferingContext = mockk<PresentedOfferingContext>()
+        
+        var receivedError: PurchasesError? = null
+        wrapper.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
+            override fun onPurchasesFailedToUpdate(error: PurchasesError) {
+                receivedError = error
+            }
+        }
+        
+        wrapper.makeBundlePurchaseAsync(
+            activity = activity,
+            appUserID = appUserID,
+            purchasingDataList = purchasingDataList,
+            presentedOfferingContext = presentedOfferingContext
+        )
+        
+        // Verify that the error was handled
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(receivedError!!.message).contains("Bundle purchases currently only support subscriptions")
+    }
+
+    // endregion Bundle Purchase Tests
 
     private fun mockPurchaseHistoryRecordWrapper(): StoreTransaction {
         val oldPurchase = stubPurchaseHistoryRecord(
