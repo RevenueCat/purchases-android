@@ -332,8 +332,8 @@ internal class BillingWrapper(
         }
 
         // For bundle purchases, we only support subscriptions for now
-        val subscriptionPurchasingDataList = googlePurchasingDataList.mapNotNull { 
-            it as? GooglePurchasingData.Subscription 
+        val subscriptionPurchasingDataList = googlePurchasingDataList.mapNotNull {
+            it as? GooglePurchasingData.Subscription
         }
         if (subscriptionPurchasingDataList.size != googlePurchasingDataList.size) {
             val error = PurchasesError(
@@ -345,8 +345,8 @@ internal class BillingWrapper(
             return
         }
 
-        log(LogIntent.PURCHASE) { 
-            "Bundle purchasing products: ${subscriptionPurchasingDataList.joinToString { it.productId }}" 
+        log(LogIntent.PURCHASE) {
+            "Bundle purchasing products: ${subscriptionPurchasingDataList.joinToString { it.productId }}"
         }
 
         synchronized(this@BillingWrapper) {

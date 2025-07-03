@@ -20,15 +20,15 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesTransactionException
-import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
@@ -83,7 +83,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun setupBundlePurchaseUI() {
         binding.isBundleMode = false
-        
+
         binding.bundlePurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
             binding.isBundleMode = isChecked
             packageCardAdapter?.setBundleMode(isChecked)
@@ -165,24 +165,37 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun startBundlePurchase(selectedPackages: List<Package>) {
         toggleLoadingIndicator(true)
-        
         Purchases.sharedInstance.purchaseBundle(
             requireActivity(),
             selectedPackages,
             object : PurchaseCallback {
-                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                override fun onCompleted(
+                    storeTransaction: StoreTransaction,
+                    customerInfo: CustomerInfo,
+                ) {
                     toggleLoadingIndicator(false)
-                    Toast.makeText(requireContext(), "Bundle purchase completed successfully!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        requireContext(),
+                        "Bundle purchase completed successfully!",
+                        Toast.LENGTH_LONG,
+                    ).show()
                     findNavController().navigateUp()
                 }
 
-                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                override fun onError(
+                    error: PurchasesError,
+                    userCancelled: Boolean,
+                ) {
                     toggleLoadingIndicator(false)
                     if (!userCancelled) {
-                        Toast.makeText(requireContext(), "Bundle purchase failed: ${error.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            requireContext(),
+                            "Bundle purchase failed: ${error.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
                     }
                 }
-            }
+            },
         )
     }
 

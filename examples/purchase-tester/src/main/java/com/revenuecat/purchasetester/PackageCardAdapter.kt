@@ -55,14 +55,30 @@ class PackageCardAdapter(
 
         fun bind(currentPackage: Package, isPlayStore: Boolean, isBundleMode: Boolean, isSelected: Boolean) {
             val product = currentPackage.product
+            setupBindingData(currentPackage, product, isPlayStore, isBundleMode, isSelected)
+            setupCheckbox(currentPackage, isSelected)
+            setupPurchaseButtons(currentPackage, product)
+            setupPackageDetails(currentPackage, product)
+            bindSubscriptionOptions(product)
+            setupRootClickListener()
+        }
+
+        private fun setupBindingData(
+            currentPackage: Package,
+            product: StoreProduct,
+            isPlayStore: Boolean,
+            isBundleMode: Boolean,
+            isSelected: Boolean,
+        ) {
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
             binding.isActive = activeSubscriptions.contains(product.id)
             binding.isPlayStore = isPlayStore
             binding.isBundleMode = isBundleMode
             binding.isSelected = isSelected
+        }
 
-            // Set the checkbox state and listener
+        private fun setupCheckbox(currentPackage: Package, isSelected: Boolean) {
             binding.buyOptionCheckbox.isChecked = isSelected
             binding.buyOptionCheckbox.setOnCheckedChangeListener { _, checked ->
                 if (checked) {
@@ -71,7 +87,9 @@ class PackageCardAdapter(
                     selectedPackages.remove(currentPackage)
                 }
             }
+        }
 
+        private fun setupPurchaseButtons(currentPackage: Package, product: StoreProduct) {
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(
                     binding.root,
@@ -106,7 +124,9 @@ class PackageCardAdapter(
                     showErrorMessage(errorStartingPurchase)
                 }
             }
+        }
 
+        private fun setupPackageDetails(currentPackage: Package, product: StoreProduct) {
             binding.packageType.detail = if (currentPackage.packageType == PackageType.CUSTOM) {
                 "custom -> ${currentPackage.packageType.identifier}"
             } else {
@@ -115,14 +135,6 @@ class PackageCardAdapter(
 
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
                 ?: product.amazonProduct?.originalProductJSON.toString()
-
-            bindSubscriptionOptions(product)
-
-            binding.root.setOnClickListener {
-                with(binding.packageDetailsContainer) {
-                    visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
-                }
-            }
         }
 
         private fun bindSubscriptionOptions(product: StoreProduct) {
@@ -161,6 +173,14 @@ class PackageCardAdapter(
                 .setMessage(errorMessage)
                 .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
                 .show()
+        }
+
+        private fun setupRootClickListener() {
+            binding.root.setOnClickListener {
+                with(binding.packageDetailsContainer) {
+                    visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
+                }
+            }
         }
     }
 
