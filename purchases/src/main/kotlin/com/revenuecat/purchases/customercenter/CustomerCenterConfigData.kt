@@ -243,6 +243,9 @@ data class CustomerCenterConfigData(
 
             @SerialName("card_store_promotional")
             CARD_STORE_PROMOTIONAL,
+
+            @SerialName("resubscribe")
+            RESUBSCRIBE,
             ;
 
             val defaultValue: String
@@ -327,6 +330,7 @@ data class CustomerCenterConfigData(
                     WEB_STORE -> "Web"
                     UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
+                    RESUBSCRIBE -> "Resubscribe"
                 }
         }
 
