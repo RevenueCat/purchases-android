@@ -25,12 +25,6 @@ android {
     }
 }
 
-project.afterEvaluate {
-    // Remove afterEvaluate
-    // after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
-    project.pluginManager.apply("org.jetbrains.kotlinx.kover")
-}
-
 def obtainMinSdkVersion() {
     def result = minVersion
 
