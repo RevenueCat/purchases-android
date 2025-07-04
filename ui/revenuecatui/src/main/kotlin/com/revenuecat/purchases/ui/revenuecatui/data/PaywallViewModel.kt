@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import android.app.Activity
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.os.LocaleListCompat
@@ -44,6 +45,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
+@Stable
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
     val resourceProvider: ResourceProvider

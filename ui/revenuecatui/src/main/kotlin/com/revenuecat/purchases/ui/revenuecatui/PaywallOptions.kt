@@ -1,11 +1,20 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
+@Stable
 internal sealed class OfferingSelection {
+
+    @Immutable
     data class OfferingType(val offeringType: Offering) : OfferingSelection()
+
+    @Immutable
     data class OfferingId(val offeringId: String) : OfferingSelection()
+
+    @Immutable
     object None : OfferingSelection()
 
     val offering: Offering?
@@ -23,6 +32,7 @@ internal sealed class OfferingSelection {
         }
 }
 
+@Immutable
 data class PaywallOptions internal constructor(
     internal val offeringSelection: OfferingSelection,
     internal val shouldDisplayDismissButton: Boolean,

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
@@ -30,19 +31,24 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import java.util.Date
 import android.os.LocaleList as FrameworkLocaleList
-
+@Stable
 internal sealed interface PaywallState {
+
+    @Immutable
     object Loading : PaywallState
 
+    @Immutable
     data class Error(val errorMessage: String) : PaywallState {
         init {
             Logger.e("Paywall transitioned to error state: $errorMessage")
         }
     }
 
+    @Stable
     sealed interface Loaded : PaywallState {
         val offering: Offering
 
+        @Stable
         data class Legacy(
             override val offering: Offering,
             val templateConfiguration: TemplateConfiguration,
