@@ -23,6 +23,8 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -134,10 +136,14 @@ internal fun ButtonComponentView(
             val marginEndPx = marginEnd.toPx()
             val marginTopPx = marginTop.toPx()
             val marginBottomPx = marginBottom.toPx()
-            val progressSize = min(
-                stack.width - marginStartPx - marginEndPx,
-                stack.height - marginTopPx - marginBottomPx,
-            ).toInt()
+            val progressSize = progressSize(
+                stackWidthPx = stack.width,
+                stackHeightPx = stack.height,
+                stackMarginStartPx = marginStartPx,
+                stackMarginEndPx = marginEndPx,
+                stackMarginTopPx = marginTopPx,
+                stackMarginBottomPx = marginBottomPx,
+            )
             val progress = measurables[1].measure(
                 Constraints(
                     minWidth = progressSize,
@@ -163,6 +169,33 @@ internal fun ButtonComponentView(
             }
         },
     )
+}
+
+@Suppress("LongParameterList")
+private fun Density.progressSize(
+    stackWidthPx: Int,
+    stackHeightPx: Int,
+    stackMarginStartPx: Float,
+    stackMarginEndPx: Float,
+    stackMarginTopPx: Float,
+    stackMarginBottomPx: Float,
+): Int {
+    val minDimensionDp = min(
+        a = stackWidthPx - stackMarginStartPx - stackMarginEndPx,
+        b = stackHeightPx - stackMarginTopPx - stackMarginBottomPx,
+    ).toDp()
+
+    val progressMarginDp = when {
+        minDimensionDp >= 32.dp -> 16.dp
+        minDimensionDp >= 24.dp -> minDimensionDp - 16.dp
+        minDimensionDp >= 16.dp -> 8.dp
+        minDimensionDp >= 8.dp -> minDimensionDp - 8.dp
+        else -> 0.dp
+    }
+
+    return (minDimensionDp - progressMarginDp)
+        .coerceIn(0.dp, 38.dp)
+        .roundToPx()
 }
 
 @Composable
