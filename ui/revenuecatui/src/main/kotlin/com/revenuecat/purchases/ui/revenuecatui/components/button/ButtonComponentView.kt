@@ -194,7 +194,7 @@ private fun Density.progressSize(
     }
 
     return (minDimensionDp - progressMarginDp)
-        .coerceIn(0.dp, 48.dp)
+        .coerceIn(0.dp, 38.dp)
         .roundToPx()
 }
 
