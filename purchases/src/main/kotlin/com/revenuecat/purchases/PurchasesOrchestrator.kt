@@ -135,6 +135,7 @@ internal class PurchasesOrchestrator(
             backend,
             identityManager,
             dispatcher,
+            diagnosticsTrackerIfEnabled,
         ),
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {

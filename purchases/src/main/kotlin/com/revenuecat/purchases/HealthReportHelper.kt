@@ -4,6 +4,7 @@ import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.responses.HealthReport
 import com.revenuecat.purchases.interfaces.ReceiveHealthReportCallback
 import com.revenuecat.purchases.utils.SDKHealthError
@@ -29,6 +30,7 @@ internal class HealthReportHelper(
     private val backend: Backend,
     private val identityManager: IdentityManager,
     private val dispatcher: Dispatcher,
+    private val diagnosticsTracker: DiagnosticsTracker?,
 ) {
 
     companion object {
@@ -45,8 +47,15 @@ internal class HealthReportHelper(
      * @param callback The callback to receive the health report result
      */
     fun retrieveHealthReport(callback: ReceiveHealthReportCallback) {
+        // Track health report started
+        diagnosticsTracker?.trackHealthReportStarted()
+        
         // Check if payments are allowed first
         if (!canMakePayments()) {
+            diagnosticsTracker?.trackHealthReportResult(
+                success = false,
+                error = "not_authorized_to_make_payments"
+            )
             callback.onReceived(
                 SDKHealthReport(
                     status = SDKHealthStatus.Unhealthy(SDKHealthError.NotAuthorizedToMakePayments)
@@ -63,10 +72,27 @@ internal class HealthReportHelper(
                 try {
                     val healthReport = parseHealthReport(jsonObject)
                     val sdkHealthReport = transformToSDKHealthReport(healthReport)
+                    
+                    // Track successful health report
+                    diagnosticsTracker?.trackHealthReportResult(
+                        success = true,
+                        status = when (sdkHealthReport.status) {
+                            is SDKHealthStatus.Healthy -> "healthy"
+                            is SDKHealthStatus.Unhealthy -> "unhealthy"
+                        }
+                    )
+                    
                     dispatch {
                         callback.onReceived(sdkHealthReport)
                     }
                 } catch (e: Exception) {
+                    // Track parsing error
+                    diagnosticsTracker?.trackHealthReportResult(
+                        success = false,
+                        error = "parse_error",
+                        errorMessage = e.message ?: "Unknown parsing error"
+                    )
+                    
                     dispatch {
                         callback.onError(
                             PurchasesError(
@@ -78,6 +104,14 @@ internal class HealthReportHelper(
                 }
             },
             onError = { error, isServerError ->
+                // Track error
+                diagnosticsTracker?.trackHealthReportResult(
+                    success = false,
+                    error = "backend_error",
+                    errorCode = error.code.name,
+                    errorMessage = error.message
+                )
+                
                 // Map specific backend errors to SDK health errors
                 val sdkHealthReport = when {
                     error.code == PurchasesErrorCode.InvalidCredentialsError -> {

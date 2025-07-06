@@ -236,3 +236,58 @@ suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
         )
     }
 }
+
+/**
+ * Performs a full SDK configuration health check and returns its status.
+ * 
+ * **Important**: This method is intended solely for debugging configuration issues with the SDK implementation.
+ * It should not be invoked in production builds.
+ *
+ * Coroutine friendly version of [Purchases.healthReport].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the health report.
+ * @return The [SDKHealthReport] containing the SDK configuration status.
+ */
+@JvmSynthetic
+@InternalRevenueCatAPI
+@Throws(PurchasesException::class)
+suspend fun Purchases.awaitHealthReport(): com.revenuecat.purchases.utils.SDKHealthReport {
+    return suspendCoroutine { continuation ->
+        healthReport(object : com.revenuecat.purchases.interfaces.ReceiveHealthReportCallback {
+            override fun onReceived(healthReport: com.revenuecat.purchases.utils.SDKHealthReport) {
+                continuation.resume(healthReport)
+            }
+            
+            override fun onError(error: PurchasesError) {
+                continuation.resumeWithException(PurchasesException(error))
+            }
+        })
+    }
+}
+
+/**
+ * Performs a full SDK configuration health check and returns its status.
+ * 
+ * **Important**: This method is intended solely for debugging configuration issues with the SDK implementation.
+ * It should not be invoked in production builds.
+ *
+ * Coroutine friendly version of [Purchases.healthReport].
+ *
+ * @return A [Result] containing [SDKHealthReport] if the execution succeeds,
+ * or a [Result] containing [PurchasesException] if it fails.
+ */
+@JvmSynthetic
+@InternalRevenueCatAPI
+suspend fun Purchases.awaitHealthReportResult(): Result<com.revenuecat.purchases.utils.SDKHealthReport> {
+    return suspendCoroutine { continuation ->
+        healthReport(object : com.revenuecat.purchases.interfaces.ReceiveHealthReportCallback {
+            override fun onReceived(healthReport: com.revenuecat.purchases.utils.SDKHealthReport) {
+                continuation.resume(Result.success(healthReport))
+            }
+            
+            override fun onError(error: PurchasesError) {
+                continuation.resume(Result.failure(PurchasesException(error)))
+            }
+        })
+    }
+}

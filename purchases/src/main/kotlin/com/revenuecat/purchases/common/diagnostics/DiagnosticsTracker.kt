@@ -512,6 +512,36 @@ internal class DiagnosticsTracker(
 
     // endregion Get Customer Info
 
+    // region Health Report
+
+    fun trackHealthReportStarted() {
+        trackEvent(
+            eventName = DiagnosticsEntryName.HEALTH_REPORT_STARTED,
+            properties = emptyMap(),
+        )
+    }
+
+    fun trackHealthReportResult(
+        success: Boolean,
+        status: String? = null,
+        error: String? = null,
+        errorCode: String? = null,
+        errorMessage: String? = null,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.HEALTH_REPORT_RESULT,
+            properties = mapOf(
+                SUCCESSFUL_KEY to success,
+                "status" to status,
+                "error" to error,
+                "error_code" to errorCode,
+                "error_message" to errorMessage,
+            ).filterNotNullValues(),
+        )
+    }
+
+    // endregion Health Report
+
     // region Purchase
 
     fun trackPurchaseStarted(productId: String, productType: ProductType) {
