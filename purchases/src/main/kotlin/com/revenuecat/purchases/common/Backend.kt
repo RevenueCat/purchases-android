@@ -77,6 +77,9 @@ internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> U
 
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
 
+/** @suppress */
+internal typealias HealthReportCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
+
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
@@ -132,6 +135,9 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var healthReportCallbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<HealthReportCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -375,6 +381,62 @@ internal class Backend(
         synchronized(this@Backend) {
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             offeringsCallbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
+        }
+    }
+
+    fun getHealthReport(
+        appUserID: String,
+        appInBackground: Boolean,
+        onSuccess: (JSONObject) -> Unit,
+        onError: (PurchasesError, isServerError: Boolean) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetHealthReport(appUserID)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                val isServerError = false
+                synchronized(this@Backend) {
+                    healthReportCallbacks.remove(cacheKey)
+                }?.forEach { (_, onError) ->
+                    onError(error, isServerError)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    healthReportCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccess, onError) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccess(result.body)
+                        } catch (e: JSONException) {
+                            val isServerError = false
+                            onError(e.toPurchasesError().also { errorLog(it) }, isServerError)
+                        }
+                    } else {
+                        onError(
+                            result.toPurchasesError().also { errorLog(it) },
+                            RCHTTPStatusCodes.isServerError(result.responseCode),
+                        )
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            healthReportCallbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
 

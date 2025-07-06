@@ -46,6 +46,12 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     ) {
         override fun getPath() = pathTemplate
     }
+    data class GetHealthReport(val userId: String) : Endpoint(
+        "/subscribers/%s/health_report",
+        "get_health_report",
+    ) {
+        override fun getPath() = pathTemplate.format(Uri.encode(userId))
+    }
 
     val supportsSignatureVerification: Boolean
         get() = when (this) {
@@ -55,6 +61,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetOfferings,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
+            is GetHealthReport,
             ->
                 true
             is GetAmazonReceipt,
@@ -81,6 +88,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostPaywallEvents,
             GetProductEntitlementMapping,
             is GetCustomerCenterConfig,
+            is GetHealthReport,
             ->
                 false
         }
@@ -101,6 +109,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostPaywallEvents,
             is GetCustomerInfo,
             is GetCustomerCenterConfig,
+            is GetHealthReport,
             ->
                 false
         }

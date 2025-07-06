@@ -58,6 +58,7 @@ import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.ReceiveHealthReportCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -128,6 +129,12 @@ internal class PurchasesOrchestrator(
             identityManager,
             offlineEntitlementsManager,
             customerInfoUpdateHandler,
+        ),
+    private val healthReportHelper: HealthReportHelper =
+        HealthReportHelper(
+            backend,
+            identityManager,
+            dispatcher,
         ),
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -415,6 +422,10 @@ internal class PurchasesOrchestrator(
             { listener.onReceived(it) },
             fetchCurrent,
         )
+    }
+
+    fun getHealthReport(callback: ReceiveHealthReportCallback) {
+        healthReportHelper.retrieveHealthReport(callback)
     }
 
     fun getProducts(
