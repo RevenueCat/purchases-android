@@ -22,6 +22,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.ReceiveHealthReportCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -283,6 +284,28 @@ class Purchases internal constructor(
         listener: ReceiveOfferingsCallback,
     ) {
         purchasesOrchestrator.getOfferings(listener)
+    }
+
+    /**
+     * Performs a full SDK configuration health check and returns its status.
+     * 
+     * **Important**: This method is intended solely for debugging configuration issues with the SDK implementation.
+     * It should not be invoked in production builds.
+     * 
+     * @param [callback] The callback to receive the health report result
+     */
+    @InternalRevenueCatAPI
+    fun healthReport(callback: ReceiveHealthReportCallback) {
+        if (!isConfigured) {
+            callback.onError(
+                PurchasesError(
+                    PurchasesErrorCode.ConfigurationError,
+                    "Purchases has not been configured. Please call Purchases.configure() first."
+                )
+            )
+            return
+        }
+        purchasesOrchestrator.getHealthReport(callback)
     }
 
     /**
