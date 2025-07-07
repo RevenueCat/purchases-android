@@ -57,7 +57,7 @@ dependencyResolutionManagement {
 include(":feature:amazon")
 include(":integration-tests")
 include(":purchases")
-include(":examples:purchase-tester")
+// TODO re-enable: include(":examples:purchase-tester")
 include(":api-tester")
 include(":ui:debugview")
 include(":ui:revenuecatui")
