@@ -396,16 +396,19 @@ class Purchases internal constructor(
      * @param [activity] Current activity
      * @param [packages] List of packages to purchase together
      * @param [callback] The callback that will be called when the bundle purchase completes
+     * @param [activeSubId] Optional active subscription ID for addon purchases. When provided, the bundle purchase will be treated as an addon to the existing subscription.
      */
     fun purchaseBundle(
         activity: Activity,
         packages: List<Package>,
         callback: PurchaseCallback,
+        activeSubId: String? = null,
     ) {
         purchasesOrchestrator.startBundlePurchase(
             activity,
             packages,
             callback,
+            activeSubId,
         )
     }
 

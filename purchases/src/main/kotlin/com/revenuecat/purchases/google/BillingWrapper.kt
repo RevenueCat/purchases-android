@@ -316,6 +316,7 @@ internal class BillingWrapper(
         purchasingDataList: List<PurchasingData>,
         presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean? = null,
+        activeSubId: String? = null,
     ) {
         val googlePurchasingDataList = purchasingDataList.mapNotNull { it as? GooglePurchasingData }
         if (googlePurchasingDataList.size != purchasingDataList.size) {
@@ -362,20 +363,56 @@ internal class BillingWrapper(
         }
 
         executeRequestOnUIThread {
-            val result = buildBundleSubscriptionPurchaseParams(
-                subscriptionPurchasingDataList,
-                appUserID,
-                isPersonalizedPrice,
-            )
-            when (result) {
-                is Result.Success -> {
-                    trackPurchaseStartIfNeeded(
-                        subscriptionPurchasingDataList.first(),
-                        null,
-                    )
-                    launchBillingFlow(activity, result.value)
+            if (activeSubId != null) {
+                // For addon purchases, we need to get the purchase token first
+                findPurchaseInPurchaseHistory(
+                    appUserID = appUserID,
+                    productType = ProductType.SUBS,
+                    productId = activeSubId,
+                    onCompletion = { storeTransaction ->
+                        // Create a ReplaceProductInfo without replacement mode for addon purchases
+                        val replaceProductInfo = ReplaceProductInfo(storeTransaction, null)
+                        val result = buildBundleSubscriptionPurchaseParamsWithReplaceInfo(
+                            subscriptionPurchasingDataList,
+                            appUserID,
+                            isPersonalizedPrice,
+                            replaceProductInfo,
+                        )
+                        when (result) {
+                            is Result.Success -> {
+                                trackPurchaseStartIfNeeded(
+                                    subscriptionPurchasingDataList.first(),
+                                    null,
+                                )
+                                launchBillingFlow(activity, result.value)
+                            }
+                            is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
+                        }
+                    },
+                    onError = { error ->
+                        log(LogIntent.GOOGLE_ERROR) {
+                            "Failed to get purchase token for active subscription $activeSubId: ${error.message}"
+                        }
+                        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+                    }
+                )
+            } else {
+                // Regular bundle purchase without addon
+                val result = buildBundleSubscriptionPurchaseParams(
+                    subscriptionPurchasingDataList,
+                    appUserID,
+                    isPersonalizedPrice,
+                )
+                when (result) {
+                    is Result.Success -> {
+                        trackPurchaseStartIfNeeded(
+                            subscriptionPurchasingDataList.first(),
+                            null,
+                        )
+                        launchBillingFlow(activity, result.value)
+                    }
+                    is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
                 }
-                is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
             }
         }
     }
@@ -1055,6 +1092,38 @@ internal class BillingWrapper(
                     serviceRequest(error)
                 }
             } ?: break
+        }
+    }
+
+    private fun buildBundleSubscriptionPurchaseParamsWithReplaceInfo(
+        purchaseInfos: List<GooglePurchasingData.Subscription>,
+        appUserID: String,
+        isPersonalizedPrice: Boolean?,
+        replaceProductInfo: ReplaceProductInfo,
+    ): Result<BillingFlowParams, PurchasesError> {
+        val productDetailsParamsList = purchaseInfos.map { purchaseInfo ->
+            BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+                setOfferToken(purchaseInfo.token)
+                setProductDetails(purchaseInfo.productDetails)
+            }.build()
+        }
+
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+                    .apply {
+                        // Use the existing extension function to set up the subscription update params
+                        setUpgradeInfo(replaceProductInfo)
+                        
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
+                    }
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            throw NoCoreLibraryDesugaringException(e)
         }
     }
 }

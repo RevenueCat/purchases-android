@@ -1168,6 +1168,7 @@ internal class PurchasesOrchestrator(
         activity: Activity,
         packages: List<Package>,
         listener: PurchaseCallback,
+        activeSubId: String? = null,
     ) {
         validateBundlePurchase(packages)?.let { error ->
             listener.dispatch(error.also { errorLog(it) })
@@ -1220,6 +1221,7 @@ internal class PurchasesOrchestrator(
                 purchasingDataList,
                 packages.first().presentedOfferingContext,
                 null,
+                activeSubId,
             ) ?: run {
                 listenerWithDiagnostics.dispatch(
                     PurchasesError(

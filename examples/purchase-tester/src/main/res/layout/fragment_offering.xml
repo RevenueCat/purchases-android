@@ -67,6 +67,26 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
 
+                <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/bundle_is_upgrade_checkbox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:text="Is product change?"
+                        android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/bundle_purchase_checkbox" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/bundle_is_addon_checkbox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:text="Is an addon to an existing subscription?"
+                        android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/bundle_is_upgrade_checkbox" />
+
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/purchase_all_button"
                         android:layout_width="wrap_content"
@@ -87,7 +107,7 @@
                         android:text="Packages"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/bundle_purchase_checkbox" />
+                        app:layout_constraintTop_toBottomOf="@+id/bundle_is_addon_checkbox" />
 
                 <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/offering__details_packages_recycler"
