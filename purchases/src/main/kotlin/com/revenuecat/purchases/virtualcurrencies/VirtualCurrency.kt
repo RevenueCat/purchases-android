@@ -3,8 +3,8 @@ package com.revenuecat.purchases.virtualcurrencies
 import android.os.Parcelable
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * A class representing information about a virtual currency in the app.

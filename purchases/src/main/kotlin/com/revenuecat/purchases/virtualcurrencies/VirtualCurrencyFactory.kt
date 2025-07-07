@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.virtualcurrencies
 
 import com.revenuecat.purchases.common.JsonProvider
-import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import org.json.JSONException
 import org.json.JSONObject
 
