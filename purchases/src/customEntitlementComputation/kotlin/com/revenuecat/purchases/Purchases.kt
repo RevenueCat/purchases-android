@@ -39,7 +39,7 @@ class Purchases internal constructor(
     // Constructor to support accepting a virtualCurrencyManager. It's unused since virtual currencies
     // aren't supported in custom entitlements computation mode.
     @Suppress("UNUSED_PARAMETER")
-    internal constructor(purchasesOrchestrator: PurchasesOrchestrator, virtualCurrencyManager: VirtualCurrencyManager):
+    internal constructor(purchasesOrchestrator: PurchasesOrchestrator, virtualCurrencyManager: VirtualCurrencyManager) :
         this(purchasesOrchestrator)
 
     /**
