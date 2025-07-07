@@ -491,7 +491,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * The currently cached ``VirtualCurrencies`` if one is available.
+     * The currently cached [VirtualCurrencies] if one is available.
      * This is synchronous, and therefore useful for contexts where an app needs a [VirtualCurrencies]
      * right away without waiting for a callback.
      *
