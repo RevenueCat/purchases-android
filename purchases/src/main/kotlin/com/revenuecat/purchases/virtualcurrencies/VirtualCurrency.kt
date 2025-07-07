@@ -3,6 +3,8 @@ package com.revenuecat.purchases.virtualcurrencies
 import android.os.Parcelable
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 /**
  * A class representing information about a virtual currency in the app.
@@ -13,12 +15,14 @@ import kotlinx.parcelize.Parcelize
  * @property serverDescription The virtual currency description defined in the RevenueCat dashboard.
  */
 @Poko
+@Serializable
 @Parcelize
 class VirtualCurrency internal constructor(
     val balance: Int,
     val name: String,
     val code: String,
-    val serverDescription: String?,
+    @SerialName("description")
+    val serverDescription: String? = null,
 ) : Parcelable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

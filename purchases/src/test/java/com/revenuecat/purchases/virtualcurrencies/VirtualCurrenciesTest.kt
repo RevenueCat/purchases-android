@@ -22,7 +22,6 @@ class VirtualCurrenciesTest {
         )
         val virtualCurrencies = VirtualCurrencies(
             all = mapOf(code to currency),
-            jsonObject = JSONObject()
         )
 
         val result = virtualCurrencies[code]
@@ -40,7 +39,6 @@ class VirtualCurrenciesTest {
         )
         val virtualCurrencies = VirtualCurrencies(
             all = mapOf(code to currency),
-            jsonObject = JSONObject()
         )
 
         assertNull(virtualCurrencies["NON_EXISTENT"])

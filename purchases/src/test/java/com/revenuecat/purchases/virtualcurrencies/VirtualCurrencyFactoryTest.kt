@@ -2,6 +2,8 @@ package com.revenuecat.purchases.virtualcurrencies
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.utils.Responses
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.MissingFieldException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.json.JSONException
@@ -50,14 +52,18 @@ class VirtualCurrencyFactoryTest {
         assertThat(defaultVirtualCurrencyWithNegativeBalance.code).isEqualTo("NEGATIVE")
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     @Test
-    fun `throws JSONException for invalid JSON`() {
+    fun `throws MissingFieldException for valid JSON that is missing fields`() {
         assertThatThrownBy {
             VirtualCurrencyFactory.buildVirtualCurrency(
                 JSONObject("{}")
             )
-        }.isInstanceOf(JSONException::class.java)
+        }.isInstanceOf(MissingFieldException::class.java)
+    }
 
+    @Test
+    fun `throws JSONException for invalid JSON`() {
         assertThatThrownBy {
             VirtualCurrencyFactory.buildVirtualCurrency(
                 JSONObject("asdf")

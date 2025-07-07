@@ -731,8 +731,14 @@ class DeviceCacheTest {
 
         cache.cacheVirtualCurrencies(appUserID, vcs)
         assertThat(slotForPutLong.captured).isNotNull
+        
+        // The serializer caches the JSON fields in a different order than the network response. Here, we
+        // check for the expected order.
+        val expectedCachedJSON = "{\"virtual_currencies\":{\"COIN\":{\"balance\":1,\"name\":\"Coin\",\"code\":" +
+            "\"COIN\",\"description\":\"It's a coin\"},\"RC_COIN\":{\"balance\":0,\"name\":\"RC Coin\",\"code\"" +
+            ":\"RC_COIN\"}}}"
         verifyAll {
-            mockEditor.putString(cache.virtualCurrenciesCacheKey(appUserID), Responses.validFullVirtualCurrenciesResponse)
+            mockEditor.putString(cache.virtualCurrenciesCacheKey(appUserID), expectedCachedJSON)
             mockEditor.putLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), slotForPutLong.captured)
             mockEditor.apply()
         }
@@ -761,11 +767,6 @@ class DeviceCacheTest {
 
     @Test
     fun `isVirtualCurrenciesCacheStale returns true if the cached object is stale`() {
-        val mockVirtualCurrencies = mockk<VirtualCurrencies>(relaxed = true)
-        every { mockVirtualCurrencies.rawData } returns JSONObject()
-        
-        cache.cacheVirtualCurrencies(appUserID, mockVirtualCurrencies)
-
         mockLong(cache.virtualCurrenciesLastUpdatedCacheKey(appUserID), Date(0).time)
         assertThat(cache.isVirtualCurrenciesCacheStale(appUserID, appInBackground = false)).isTrue
 
@@ -787,10 +788,15 @@ class DeviceCacheTest {
         val cachedVirtualCurrencies = cache.getCachedVirtualCurrencies(appUserID)
         assertThat(cachedVirtualCurrencies).isEqualTo(expectedVirtualCurrencies)
 
+        // The serializer caches the JSON fields in a different order than the network response. Here, we
+        // check for the expected order.
+        val expectedCachedJSON = "{\"virtual_currencies\":{\"COIN\":{\"balance\":1,\"name\":\"Coin\",\"code\":" +
+            "\"COIN\",\"description\":\"It's a coin\"},\"RC_COIN\":{\"balance\":0,\"name\":\"RC Coin\",\"code\"" +
+            ":\"RC_COIN\"}}}"
         verify {
             mockEditor.putString(
                 cache.virtualCurrenciesCacheKey(appUserID),
-                Responses.validFullVirtualCurrenciesResponse
+                expectedCachedJSON
             )
         }
     }
