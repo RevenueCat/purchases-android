@@ -83,6 +83,7 @@ internal open class BasePurchasesTest {
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
     internal val mockFontLoader = mockk<FontLoader>()
+    internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected lateinit var appConfig: AppConfig
@@ -451,16 +452,11 @@ internal open class BasePurchasesTest {
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
+            virtualCurrencyManager = mockVirtualCurrencyManager,
         )
-        val virtualCurrencyManager = VirtualCurrencyManager(
-            identityManager = mockIdentityManager,
-            deviceCache = mockCache,
-            backend = mockBackend,
-            appConfig = appConfig
-        )
+
         purchases = Purchases(
             purchasesOrchestrator = purchasesOrchestrator,
-            virtualCurrencyManager = virtualCurrencyManager
         )
         Purchases.sharedInstance = purchases
         purchasesOrchestrator.state = purchasesOrchestrator.state.copy(appInBackground = false)

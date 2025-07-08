@@ -36,12 +36,6 @@ class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) {
 
-    // Constructor to support accepting a virtualCurrencyManager. It's unused since virtual currencies
-    // aren't supported in custom entitlements computation mode.
-    @Suppress("UNUSED_PARAMETER")
-    internal constructor(purchasesOrchestrator: PurchasesOrchestrator, virtualCurrencyManager: VirtualCurrencyManager) :
-        this(purchasesOrchestrator)
-
     /**
      * The passed in or generated app user ID
      */
