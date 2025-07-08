@@ -201,6 +201,7 @@ private class PurchasesAPI {
             setMixpanelDistinctID("")
             setFirebaseAppInstanceID("")
             setTenjinAnalyticsInstallationID("")
+            setPostHogUserId("")
             setMediaSource("")
             setCampaign("")
             setCleverTapID("")

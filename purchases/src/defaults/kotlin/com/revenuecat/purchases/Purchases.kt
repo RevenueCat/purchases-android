@@ -637,6 +637,16 @@ class Purchases internal constructor(
         purchasesOrchestrator.setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID)
     }
 
+    /**
+     * Subscriber attribute associated with the PostHog User ID for the user
+     * Required for the RevenueCat PostHog integration
+     *
+     * @param postHogUserId null or an empty string will delete the subscriber attribute
+     */
+    fun setPostHogUserId(postHogUserId: String?) {
+        purchasesOrchestrator.setPostHogUserId(postHogUserId)
+    }
+
     // endregion
     // region Attribution IDs
 

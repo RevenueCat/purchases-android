@@ -777,6 +777,15 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setPostHogUserId(postHogUserId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setPostHogUserId") }
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.PostHogUserId,
+            postHogUserId,
+            appUserID,
+        )
+    }
+
     // endregion
     // region Attribution IDs
 
