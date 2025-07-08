@@ -2,6 +2,7 @@ package com.revenuecat.purchases.virtualcurrencies
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
@@ -91,6 +92,14 @@ class VirtualCurrencyManagerTest {
             mockAppConfig.isAppBackgrounded
         } returns false
 
+        val mockBackend = mockk<Backend>()
+        every {
+            mockBackend.getVirtualCurrencies(any(), any(), any(), any())
+        } answers {
+            val onSuccess = arg<(VirtualCurrencies) -> Unit>(2)
+            onSuccess(this@VirtualCurrencyManagerTest.virtualCurrencies)
+        }
+
         val mockCallback = mockk<GetVirtualCurrenciesCallback>()
         every {
             mockCallback.onReceived(any())
@@ -99,7 +108,7 @@ class VirtualCurrencyManagerTest {
         val virtualCurrencyManager = VirtualCurrencyManager(
             identityManager = mockIdentityManager,
             deviceCache = mockDeviceCache,
-            backend = mockk(),
+            backend = mockBackend,
             appConfig = mockAppConfig
         )
 
@@ -107,15 +116,17 @@ class VirtualCurrencyManagerTest {
 
         verify(exactly = 1) {
             mockDeviceCache.isVirtualCurrenciesCacheStale(appUserID = appUserID, appInBackground = false)
-
-            // TODO: Ensure that the VCs we cache come from the mocked backend
-//            mockDeviceCache.cacheVirtualCurrencies(
-//                appUserID = appUserID,
-//                virtualCurrencies = this@VirtualCurrencyManagerTest.virtualCurrencies
-//            )
-
-            // TODO: Ensure that we send the VCs from the network call to the callback
-            mockCallback.onReceived(VirtualCurrencies(all = emptyMap()))
+            mockBackend.getVirtualCurrencies(
+                appUserID = appUserID,
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any()
+            )
+            mockDeviceCache.cacheVirtualCurrencies(
+                appUserID = appUserID,
+                virtualCurrencies = this@VirtualCurrencyManagerTest.virtualCurrencies
+            )
+            mockCallback.onReceived(this@VirtualCurrencyManagerTest.virtualCurrencies)
         }
         
         verify(exactly = 0) {
