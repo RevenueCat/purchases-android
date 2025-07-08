@@ -1,13 +1,10 @@
 package com.revenuecat.purchases.virtualcurrencies
 
 import android.os.Parcelable
-import com.revenuecat.purchases.models.RawDataContainer
-import com.revenuecat.purchases.utils.JSONObjectParceler
 import dev.drewhamilton.poko.Poko
-import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.TypeParceler
-import org.json.JSONObject
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * This class contains all the virtual currencies associated to the user.
@@ -16,22 +13,11 @@ import org.json.JSONObject
  */
 @Poko
 @Parcelize
-@TypeParceler<JSONObject, JSONObjectParceler>()
+@Serializable
 class VirtualCurrencies internal constructor(
+    @SerialName("virtual_currencies")
     val all: Map<String, VirtualCurrency>,
-    private val jsonObject: JSONObject,
-) : Parcelable, RawDataContainer<JSONObject> {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as VirtualCurrencies
-        return all == other.all
-    }
-
-    override fun hashCode(): Int {
-        return all.hashCode()
-    }
+) : Parcelable {
 
     /**
      * Returns the virtual currency for the given key, or null if it doesn't exist.
@@ -40,8 +26,4 @@ class VirtualCurrencies internal constructor(
      * @return The virtual currency, or null if not found
      */
     operator fun get(code: String): VirtualCurrency? = all[code]
-
-    @IgnoredOnParcel
-    override val rawData: JSONObject
-        get() = jsonObject
 }

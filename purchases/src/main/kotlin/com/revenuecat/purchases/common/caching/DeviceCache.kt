@@ -25,6 +25,7 @@ import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -259,14 +260,12 @@ internal open class DeviceCache(
 
     @Synchronized
     fun cacheVirtualCurrencies(appUserID: String, virtualCurrencies: VirtualCurrencies) {
-        val virtualCurrenciesData = JSONObject().apply {
-            put("virtual_currencies", virtualCurrencies.rawData)
-        }.toString()
+        val virtualCurrenciesJSONString = Json.Default.encodeToString(VirtualCurrencies.serializer(), virtualCurrencies)
 
         preferences.edit()
             .putString(
                 virtualCurrenciesCacheKey(appUserID),
-                virtualCurrenciesData,
+                virtualCurrenciesJSONString,
             ).apply()
 
         setVirtualCurrenciesCacheTimestampToNow(appUserID)

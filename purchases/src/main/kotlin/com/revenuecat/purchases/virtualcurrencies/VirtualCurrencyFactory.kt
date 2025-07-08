@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.virtualcurrencies
 
+import com.revenuecat.purchases.common.JsonProvider
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -18,16 +19,8 @@ internal object VirtualCurrencyFactory {
 }
 
 internal fun JSONObject.buildVirtualCurrency(): VirtualCurrency {
-    val balance: Int = getInt(VirtualCurrencyJsonKeys.BALANCE)
-    val name: String = getString(VirtualCurrencyJsonKeys.NAME)
-    val code: String = getString(VirtualCurrencyJsonKeys.CODE)
-    val serverDescription: String? = optString(VirtualCurrencyJsonKeys.SERVER_DESCRIPTION).takeIf { it.isNotBlank() }
-
-    return VirtualCurrency(
-        balance = balance,
-        name = name,
-        code = code,
-        serverDescription = serverDescription,
+    return JsonProvider.defaultJson.decodeFromString<VirtualCurrency>(
+        this.toString(),
     )
 }
 

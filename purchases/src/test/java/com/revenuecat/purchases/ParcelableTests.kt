@@ -124,7 +124,6 @@ class ParcelableTests {
                         code = "RC_Coin",
                         serverDescription = null
                     )),
-                jsonObject = JSONObject(Responses.validFullVirtualCurrenciesResponse)
             )
         )
     }

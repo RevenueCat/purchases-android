@@ -20,7 +20,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 
 /**
@@ -34,7 +33,6 @@ import java.net.URL
 @Suppress("TooManyFunctions")
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
-    @get:JvmSynthetic internal val virtualCurrencyManager: VirtualCurrencyManager,
 ) {
 
     /**
