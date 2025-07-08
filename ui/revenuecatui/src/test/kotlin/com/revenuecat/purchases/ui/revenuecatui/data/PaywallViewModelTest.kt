@@ -511,10 +511,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `Should load default offering`() {
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
@@ -527,12 +524,13 @@ class PaywallViewModelTest {
         val expectedPaywall = defaultOffering.paywall!!
 
         verifyPaywall(state, expectedPaywall)
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.monthly))
-            .isTrue
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.annual))
-            .isFalse
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.lifetime))
-            .isTrue
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.monthly })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.annual })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.lifetime })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.size).isEqualTo(3)
     }
 
     @Test
@@ -541,10 +539,7 @@ class PaywallViewModelTest {
             PurchasesError(PurchasesErrorCode.NetworkError
         ))
 
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
@@ -564,10 +559,7 @@ class PaywallViewModelTest {
             mapOf(),
         )
 
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
@@ -1250,15 +1242,10 @@ class PaywallViewModelTest {
 
     private fun create(
         offering: Offering? = null,
-        activeSubscriptions: Set<String> = setOf(),
-        nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
         customPurchaseLogic: PurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
-        mockActiveSubscriptions(activeSubscriptions)
-        mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
-
         return PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
@@ -1272,40 +1259,6 @@ class PaywallViewModelTest {
             isDarkMode = false,
             shouldDisplayBlock = shouldDisplayBlock,
         )
-    }
-
-    private fun mockActiveSubscriptions(subscriptions: Set<String>) {
-        every { customerInfo.activeSubscriptions } returns subscriptions
-    }
-
-    private fun mockNonSubscriptionTransactions(productIdentifiers: Set<String>) {
-        every { customerInfo.nonSubscriptionTransactions } returns productIdentifiers
-            .map { productIdentifier ->
-                Transaction(
-                    transactionIdentifier = UUID.randomUUID().toString(),
-                    revenuecatId = UUID.randomUUID().toString(),
-                    productIdentifier = productIdentifier,
-                    productId = productIdentifier,
-                    purchaseDate = Date(),
-                    storeTransactionId = UUID.randomUUID().toString(),
-                    store = Store.PLAY_STORE,
-                    displayName = "Product $productIdentifier",
-                    isSandbox = false,
-                    originalPurchaseDate = Date(),
-                    price = (1..100).random().toDouble().let {
-                        Price("$it", it.toLong() * 1_000_000, "USD")
-                    },
-                )
-            }
-    }
-
-    /**
-     * Note: this is O(n), for testing only
-     */
-    private fun TemplateConfiguration.PackageConfiguration.packageIsCurrentlySubscribed(
-        rcPackage: Package,
-    ): Boolean {
-        return all.first { it.rcPackage.identifier == rcPackage.identifier }.currentlySubscribed
     }
 
     private fun verifyPaywall(

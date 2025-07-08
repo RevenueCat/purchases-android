@@ -114,8 +114,6 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     return offering.toComponentsPaywallState(
         validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
     )
