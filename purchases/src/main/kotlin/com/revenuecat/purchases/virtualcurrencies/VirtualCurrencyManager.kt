@@ -21,6 +21,7 @@ internal class VirtualCurrencyManager(
     fun virtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
+        // TODO: Add logging
         val appUserID = identityManager.currentAppUserID
         val isAppBackgrounded = appConfig.isAppBackgrounded
 
@@ -34,13 +35,17 @@ internal class VirtualCurrencyManager(
             return
         }
 
-        fetchVirtualCurrenciesFromBackend(
+        // TODO: Handle errors from network request
+        val virtualCurrenciesFromNetwork = fetchVirtualCurrenciesFromBackend(
             appUserID = appUserID,
             isAppBackgrounded = isAppBackgrounded,
             callback = callback,
         )
-
-        // TODO: Cache the VCs from the network
+        cacheVirtualCurrencies(
+            virtualCurrencies = virtualCurrenciesFromNetwork,
+            appUserID = appUserID,
+        )
+        callback.onReceived(virtualCurrenciesFromNetwork)
     }
 
     @Synchronized
@@ -88,7 +93,8 @@ internal class VirtualCurrencyManager(
         appUserID: String,
         isAppBackgrounded: Boolean,
         callback: GetVirtualCurrenciesCallback,
-    ) {
+    ): VirtualCurrencies {
         // TODO: Implement this
+        return VirtualCurrencies(all = emptyMap())
     }
 }
