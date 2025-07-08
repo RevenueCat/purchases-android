@@ -2471,7 +2471,6 @@ class BackendTest {
                             serverDescription = null,
                         ),
                     ),
-                    jsonObject = JSONObject(),
                 )
                 assertThat(it).isEqualTo(expectedVirtualCurrencies)
             },

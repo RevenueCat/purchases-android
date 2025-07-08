@@ -212,13 +212,13 @@
                                 app:layout_constraintStart_toStartOf="parent"
                                 app:layout_constraintTop_toBottomOf="@+id/customer_info_actions">
 
-                        <com.google.android.material.button.MaterialButton
-                                android:id="@+id/customer_info_fetch_vcs_button"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_margin="@dimen/padding_tiny"
-                                android:onClick="@{() -> viewModel.onFetchVCsClicked()}"
-                                android:text="Fetch & Log VCs" />
+                            <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/customer_info_fetch_vcs_button"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="@dimen/padding_tiny"
+                                    android:onClick="@{() -> viewModel.onFetchVCsClicked()}"
+                                    android:text="Fetch + Log VCs" />
 
                         <com.google.android.material.button.MaterialButton
                                 android:id="@+id/customer_info_invalidate_vcs_cache_button"
