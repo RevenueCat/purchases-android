@@ -55,6 +55,7 @@ class SubscriberAttributesPurchasesTests {
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
     private val fontLoaderMock = mockk<FontLoader>()
+    private val virtualCurrencyManagerMock = mockk<VirtualCurrencyManager>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -114,17 +115,11 @@ class SubscriberAttributesPurchasesTests {
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
             fontLoader = fontLoaderMock,
-        )
-        val virtualCurrencyManager = VirtualCurrencyManager(
-            identityManager = identityManager,
-            deviceCache = cache,
-            backend = backendMock,
-            appConfig = appConfig
+            virtualCurrencyManager = virtualCurrencyManagerMock,
         )
 
         underTest = Purchases(
             purchasesOrchestrator = purchasesOrchestrator,
-            virtualCurrencyManager = virtualCurrencyManager
         )
     }
 

@@ -352,11 +352,11 @@ internal class PurchasesFactory(
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
                 fontLoader = fontLoader,
+                virtualCurrencyManager = virtualCurrencyManager,
             )
 
             return Purchases(
                 purchasesOrchestrator = purchasesOrchestrator,
-                virtualCurrencyManager = virtualCurrencyManager,
             )
         }
     }

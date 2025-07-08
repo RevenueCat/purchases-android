@@ -36,7 +36,6 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 
 /**
@@ -49,7 +48,6 @@ import java.net.URL
  */
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
-    @get:JvmSynthetic internal val virtualCurrencyManager: VirtualCurrencyManager,
 ) : LifecycleDelegate {
     /**
      * The current configuration parameters of the Purchases SDK.
@@ -474,7 +472,7 @@ class Purchases internal constructor(
     fun getVirtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
-        virtualCurrencyManager.virtualCurrencies(callback = callback)
+        purchasesOrchestrator.getVirtualCurrencies(callback = callback)
     }
 
     /**
@@ -487,7 +485,7 @@ class Purchases internal constructor(
      * For more info, see our [virtual currency docs](https://www.revenuecat.com/docs/offerings/virtual-currency)
      */
     fun invalidateVirtualCurrenciesCache() {
-        virtualCurrencyManager.invalidateVirtualCurrenciesCache()
+        purchasesOrchestrator.invalidateVirtualCurrenciesCache()
     }
 
     /**
@@ -498,7 +496,7 @@ class Purchases internal constructor(
      * This allows initializing state to ensure that UI can be loaded from the very first frame.
      */
     val cachedVirtualCurrencies: VirtualCurrencies?
-        get() = virtualCurrencyManager.cachedVirtualCurrencies()
+        get() = purchasesOrchestrator.cachedVirtualCurrencies
 
     /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
