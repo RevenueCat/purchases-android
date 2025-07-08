@@ -491,7 +491,8 @@ class Purchases internal constructor(
     /**
      * The currently cached [VirtualCurrencies] if one is available.
      * This is synchronous, and therefore useful for contexts where an app needs a [VirtualCurrencies]
-     * right away without waiting for a callback.
+     * right away without waiting for a callback. This value will remain null until virtual currencies
+     * have been fetched at least once with [Purchases.getVirtualCurrencies] or an equivalent function.
      *
      * This allows initializing state to ensure that UI can be loaded from the very first frame.
      */
