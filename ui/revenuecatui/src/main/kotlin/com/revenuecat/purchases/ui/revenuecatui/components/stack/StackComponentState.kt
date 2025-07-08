@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberUpdatedStackComponentState(
@@ -42,6 +43,7 @@ internal fun rememberUpdatedStackComponentState(
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberUpdatedStackComponentState(

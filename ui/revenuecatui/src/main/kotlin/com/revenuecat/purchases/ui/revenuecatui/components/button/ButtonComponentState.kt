@@ -14,6 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberButtonComponentState(
@@ -25,6 +26,7 @@ internal fun rememberButtonComponentState(
         localeProvider = { paywallState.locale },
     )
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberButtonComponentState(
