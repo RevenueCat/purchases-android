@@ -77,6 +77,9 @@ class VirtualCurrencyManagerTest {
         every {
             mockDeviceCache.isVirtualCurrenciesCacheStale(any(), any())
         } returns true
+        every {
+            mockDeviceCache.cacheVirtualCurrencies(any(), any())
+        } returns Unit
 
         val mockIdentityManager = mockk<IdentityManager>()
         every {
@@ -104,10 +107,15 @@ class VirtualCurrencyManagerTest {
 
         verify(exactly = 1) {
             mockDeviceCache.isVirtualCurrenciesCacheStale(appUserID = appUserID, appInBackground = false)
-            // TODO: Verify that a network call was made
 
-            // TODO: Verify that the returned VCs match the ones returned from the network call
-//            mockCallback.onReceived(this@VirtualCurrencyManagerTest.virtualCurrencies)
+            // TODO: Ensure that the VCs we cache come from the mocked backend
+//            mockDeviceCache.cacheVirtualCurrencies(
+//                appUserID = appUserID,
+//                virtualCurrencies = this@VirtualCurrencyManagerTest.virtualCurrencies
+//            )
+
+            // TODO: Ensure that we send the VCs from the network call to the callback
+            mockCallback.onReceived(VirtualCurrencies(all = emptyMap()))
         }
         
         verify(exactly = 0) {
