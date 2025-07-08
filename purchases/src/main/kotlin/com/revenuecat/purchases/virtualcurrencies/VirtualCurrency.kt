@@ -23,23 +23,4 @@ class VirtualCurrency internal constructor(
     val code: String,
     @SerialName("description")
     val serverDescription: String? = null,
-) : Parcelable {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as VirtualCurrency
-        return balance == other.balance &&
-            name == other.name &&
-            code == other.code &&
-            serverDescription == other.serverDescription
-    }
-
-    override fun hashCode(): Int {
-        var result = balance.hashCode()
-        result = 31 * result + name.hashCode()
-        result = 31 * result + code.hashCode()
-        result = 31 * result + (serverDescription?.hashCode() ?: 0)
-        return result
-    }
-}
+) : Parcelable
