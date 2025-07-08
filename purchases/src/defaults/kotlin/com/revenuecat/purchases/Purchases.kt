@@ -36,7 +36,6 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 
 /**
