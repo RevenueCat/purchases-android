@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.virtualcurrencies
 
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -35,17 +36,11 @@ internal class VirtualCurrencyManager(
             return
         }
 
-        // TODO: Handle errors from network request
-        val virtualCurrenciesFromNetwork = fetchVirtualCurrenciesFromBackend(
+        fetchVirtualCurrenciesFromBackend(
             appUserID = appUserID,
             isAppBackgrounded = isAppBackgrounded,
-            callback = callback,
+            callback = fetchedVirtualCurrenciesFromBackendCallback(callback, appUserID),
         )
-        cacheVirtualCurrencies(
-            virtualCurrencies = virtualCurrenciesFromNetwork,
-            appUserID = appUserID,
-        )
-        callback.onReceived(virtualCurrenciesFromNetwork)
     }
 
     @Synchronized
@@ -88,13 +83,29 @@ internal class VirtualCurrencyManager(
         return deviceCache.getCachedVirtualCurrencies(appUserID = appUserID)
     }
 
-    @Suppress("UnusedParameter", "ForbiddenComment")
     private fun fetchVirtualCurrenciesFromBackend(
         appUserID: String,
         isAppBackgrounded: Boolean,
         callback: GetVirtualCurrenciesCallback,
-    ): VirtualCurrencies {
-        // TODO: Implement this
-        return VirtualCurrencies(all = emptyMap())
+    ) {
+        backend.getVirtualCurrencies(
+            appUserID = appUserID,
+            appInBackground = isAppBackgrounded,
+            onSuccess = { callback.onReceived(it) },
+            onError = { callback.onError(it) },
+        )
+    }
+
+    private fun fetchedVirtualCurrenciesFromBackendCallback(
+        originalCallback: GetVirtualCurrenciesCallback,
+        appUserID: String,
+    ): GetVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
+        override fun onReceived(virtualCurrencies: VirtualCurrencies) {
+            cacheVirtualCurrencies(virtualCurrencies, appUserID)
+            originalCallback.onReceived(virtualCurrencies)
+        }
+        override fun onError(error: PurchasesError) {
+            originalCallback.onError(error)
+        }
     }
 }

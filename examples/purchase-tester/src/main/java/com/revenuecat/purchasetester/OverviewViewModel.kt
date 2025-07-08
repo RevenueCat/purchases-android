@@ -13,9 +13,12 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.restorePurchasesWith
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.launch
 
+@Suppress("TooManyFunctions")
 class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {
 
     val customerInfo: MutableLiveData<CustomerInfo?> by lazy {
@@ -103,8 +106,40 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
         interactionHandler.syncAttributes()
     }
 
+    fun onFetchVCsClicked() {
+        viewModelScope.launch {
+            val virtualCurrencies: VirtualCurrencies = Purchases.sharedInstance.awaitGetVirtualCurrencies()
+            Log.i("PurchaseTester", formatVirtualCurrencies(virtualCurrencies = virtualCurrencies))
+        }
+    }
+
+    fun onInvalidateVirtualCurrenciesCache() {
+        Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+    }
+
+    fun onFetchVCCache() {
+        val cachedVirtualCurrencies: VirtualCurrencies? = Purchases.sharedInstance.cachedVirtualCurrencies
+        if (cachedVirtualCurrencies == null) {
+            Log.i("PurchaseTester", "Cached VCs are null")
+        } else {
+            formatVirtualCurrencies(virtualCurrencies = cachedVirtualCurrencies)
+                .let { Log.i("PurchaseTester", it) }
+        }
+    }
+
     private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
         return entitlementInfos.joinToString(separator = "\n") { it.toBriefString() }
+    }
+
+    private fun formatVirtualCurrencies(virtualCurrencies: VirtualCurrencies): String {
+        val stringBuilder = StringBuilder()
+        stringBuilder.append("----- Virtual Currencies:\n")
+        for (virtualCurrency in virtualCurrencies.all) {
+            stringBuilder.append("\t")
+            stringBuilder.append(virtualCurrency.toString())
+            stringBuilder.append("\n")
+        }
+        return stringBuilder.toString()
     }
 }
 
