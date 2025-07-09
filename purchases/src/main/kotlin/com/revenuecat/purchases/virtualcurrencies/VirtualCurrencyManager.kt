@@ -8,7 +8,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
-import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 
 @Suppress("UnusedPrivateProperty")
@@ -102,14 +101,13 @@ internal class VirtualCurrencyManager(
         }
 
         val cachedVirtualCurrencies: VirtualCurrencies? = deviceCache.getCachedVirtualCurrencies(appUserID = appUserID)
-        if (cachedVirtualCurrencies != null) {
-            return cachedVirtualCurrencies
-        } else {
+        if (cachedVirtualCurrencies == null) {
             log(LogIntent.DEBUG) {
                 VirtualCurrencyStrings.NO_CACHED_VIRTUAL_CURRENCIES
             }
-            return null
         }
+
+        return cachedVirtualCurrencies
     }
 
     private fun fetchVirtualCurrenciesFromBackend(
