@@ -911,7 +911,7 @@ internal class PurchasesOrchestrator(
     fun getVirtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
-        virtualCurrencyManager.virtualCurrencies(callback = callback)
+        virtualCurrencyManager.getVirtualCurrencies(callback = callback)
     }
 
     fun invalidateVirtualCurrenciesCache() {
@@ -919,7 +919,7 @@ internal class PurchasesOrchestrator(
     }
 
     val cachedVirtualCurrencies: VirtualCurrencies?
-        get() = virtualCurrencyManager.cachedVirtualCurrencies()
+        get() = virtualCurrencyManager.getCachedVirtualCurrencies()
 
     //endregion
 

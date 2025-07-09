@@ -57,7 +57,7 @@ class VirtualCurrencyManagerTest {
             appConfig = mockAppConfig
         )
 
-        virtualCurrencyManager.virtualCurrencies(mockCallback)
+        virtualCurrencyManager.getVirtualCurrencies(mockCallback)
 
         verify {
             mockDeviceCache.getCachedVirtualCurrencies(appUserID = appUserID)
@@ -112,7 +112,7 @@ class VirtualCurrencyManagerTest {
             appConfig = mockAppConfig
         )
 
-        virtualCurrencyManager.virtualCurrencies(mockCallback)
+        virtualCurrencyManager.getVirtualCurrencies(mockCallback)
 
         verify(exactly = 1) {
             mockDeviceCache.isVirtualCurrenciesCacheStale(appUserID = appUserID, appInBackground = false)
@@ -193,7 +193,7 @@ class VirtualCurrencyManagerTest {
             appConfig = mockAppConfig
         )
 
-        assertThat(virtualCurrencyManager.cachedVirtualCurrencies()).isEqualTo(virtualCurrencies)
+        assertThat(virtualCurrencyManager.getCachedVirtualCurrencies()).isEqualTo(virtualCurrencies)
     }
 
     @Test
@@ -222,7 +222,7 @@ class VirtualCurrencyManagerTest {
             appConfig = mockAppConfig
         )
 
-        assertThat(virtualCurrencyManager.cachedVirtualCurrencies()).isNull()
+        assertThat(virtualCurrencyManager.getCachedVirtualCurrencies()).isNull()
     }
     // endregion
 }
