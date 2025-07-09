@@ -1,11 +1,9 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 
-@OptIn(InternalRevenueCatAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE")
 private class OfferingAPI {
     fun check(offering: Offering) {

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.debugview.models
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -16,7 +15,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 
-@OptIn(InternalRevenueCatAPI::class)
 @Suppress("MagicNumber")
 internal val testOffering: Offering
     get() {
