@@ -68,6 +68,24 @@ class PaywallOptions internal constructor(
         return result
     }
 
+    internal fun copy(
+        offeringSelection: OfferingSelection = this.offeringSelection,
+        shouldDisplayDismissButton: Boolean = this.shouldDisplayDismissButton,
+        fontProvider: FontProvider? = this.fontProvider,
+        listener: PaywallListener? = this.listener,
+        purchaseLogic: PurchaseLogic? = this.purchaseLogic,
+        mode: PaywallMode = this.mode,
+        dismissRequest: () -> Unit = this.dismissRequest,
+    ): PaywallOptions = PaywallOptions(
+        offeringSelection = offeringSelection,
+        shouldDisplayDismissButton = shouldDisplayDismissButton,
+        fontProvider = fontProvider,
+        listener = listener,
+        purchaseLogic = purchaseLogic,
+        mode = mode,
+        dismissRequest = dismissRequest,
+    )
+
     class Builder(
         internal val dismissRequest: () -> Unit,
     ) {
