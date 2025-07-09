@@ -47,6 +47,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import io.mockk.every
+import kotlinx.serialization.SerializationException
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
@@ -56,6 +57,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -2615,6 +2617,75 @@ class BackendTest {
         assertThat(calledWithRandomDelay).isNotNull
         assertThat(calledWithRandomDelay).isEqualTo(Delay.DEFAULT)
     }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws JSONException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = JSONException("Invalid JSON")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws SerializationException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = SerializationException("Serialization error")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws IllegalArgumentException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = IllegalArgumentException("Invalid input")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
     // endregion
 
     // region helpers
@@ -2795,13 +2866,18 @@ class BackendTest {
         resultBody: String?,
         delayed: Boolean = false,
         shouldMockVirtualCurrencies: Boolean = true,
+        virtualCurrenciesFactoryException: Exception? = null,
         baseURL: URL = mockBaseURL
     ): VirtualCurrencies {
         val virtualCurrencies: VirtualCurrencies = mockk()
 
         val result = HTTPResult.createResult(responseCode, resultBody ?: "{\"virtual_currencies\":{}}")
 
-        if (shouldMockVirtualCurrencies) {
+        if (virtualCurrenciesFactoryException != null) {
+            every {
+                VirtualCurrenciesFactory.buildVirtualCurrencies(result)
+            } throws virtualCurrenciesFactoryException
+        } else if (shouldMockVirtualCurrencies) {
             every {
                 VirtualCurrenciesFactory.buildVirtualCurrencies(result)
             } returns virtualCurrencies

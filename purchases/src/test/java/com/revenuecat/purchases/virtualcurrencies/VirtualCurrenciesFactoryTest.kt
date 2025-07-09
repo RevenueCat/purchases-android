@@ -4,8 +4,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.utils.Responses
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.MissingFieldException
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.fail
 import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Test

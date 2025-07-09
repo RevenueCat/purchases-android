@@ -25,6 +25,7 @@ import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
@@ -245,14 +246,22 @@ internal open class DeviceCache(
 
     fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
 
+    @Suppress("SwallowedException", "ForbiddenComment")
     @Synchronized
     fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
         return preferences.getString(virtualCurrenciesCacheKey(appUserID), null)
             ?.let { json ->
                 try {
-                    val cachedJSONObject = JSONObject(json)
-                    return VirtualCurrenciesFactory.buildVirtualCurrencies(body = cachedJSONObject)
+                    return VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = json)
                 } catch (e: JSONException) {
+                    // TODO: Log all errors here in a future PR. We're suppressing the SwallowedException detekt
+                    // warning for now, but will remove that once we're logging the exceptions. We want to
+                    // swallow parsing errors for the cache so that reading the cache never causes a
+                    // getVirtualCurrencies request to fail
+                    null
+                } catch (e: SerializationException) {
+                    null
+                } catch (e: IllegalArgumentException) {
                     null
                 }
             }

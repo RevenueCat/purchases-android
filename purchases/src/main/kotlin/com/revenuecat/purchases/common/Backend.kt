@@ -792,6 +792,10 @@ internal class Backend(
                             onSuccessHandler(virtualCurrencies)
                         } catch (e: JSONException) {
                             onError(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: SerializationException) {
+                            onError(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onError(e.toPurchasesError().also { errorLog(it) })
                         }
                     } else {
                         onErrorHandler(result.toPurchasesError().also { errorLog(it) })
