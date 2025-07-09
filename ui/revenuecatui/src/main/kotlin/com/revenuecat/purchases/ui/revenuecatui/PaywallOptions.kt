@@ -68,6 +68,21 @@ class PaywallOptions internal constructor(
         return result
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PaywallOptions) return false
+
+        return when {
+            this.offeringSelection != other.offeringSelection -> false
+            this.shouldDisplayDismissButton != other.shouldDisplayDismissButton -> false
+            this.fontProvider != other.fontProvider -> false
+            this.listener != other.listener -> false
+            this.purchaseLogic != other.purchaseLogic -> false
+            this.mode != other.mode -> false
+            else -> this.dismissRequest == other.dismissRequest
+        }
+    }
+
     internal fun copy(
         offeringSelection: OfferingSelection = this.offeringSelection,
         shouldDisplayDismissButton: Boolean = this.shouldDisplayDismissButton,
