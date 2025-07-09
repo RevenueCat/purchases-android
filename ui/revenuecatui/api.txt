@@ -8,7 +8,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method @androidx.compose.runtime.Composable public static void PaywallDialog(com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions paywallDialogOptions);
   }
 
-  public final class PaywallDialogOptions {
+  @androidx.compose.runtime.Immutable public final class PaywallDialogOptions {
     ctor public PaywallDialogOptions(com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder builder);
     method public kotlin.jvm.functions.Function1<com.revenuecat.purchases.CustomerInfo,java.lang.Boolean>? component1();
     method public kotlin.jvm.functions.Function0<kotlin.Unit>? component2();
@@ -66,7 +66,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public default void onRestoreStarted();
   }
 
-  public final class PaywallOptions {
+  @androidx.compose.runtime.Immutable public final class PaywallOptions {
     ctor public PaywallOptions(com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder builder);
     method public com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? component3();
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallListener? component4();

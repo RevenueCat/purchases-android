@@ -232,8 +232,9 @@ package com.revenuecat.purchases {
 
   public final class Offering {
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages);
+    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents);
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional com.revenuecat.purchases.paywalls.PaywallData? paywall);
-    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents);
+    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional com.revenuecat.purchases.paywalls.PaywallData? paywall, @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents);
     method public String component1();
     method public String component2();
     method public java.util.Map<java.lang.String,java.lang.Object> component3();
