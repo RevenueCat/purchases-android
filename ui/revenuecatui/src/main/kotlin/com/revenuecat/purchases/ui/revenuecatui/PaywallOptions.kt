@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import dev.drewhamilton.poko.Poko
 
 @Stable
 internal sealed class OfferingSelection {
@@ -32,8 +33,9 @@ internal sealed class OfferingSelection {
         }
 }
 
+@Poko
 @Immutable
-data class PaywallOptions internal constructor(
+class PaywallOptions internal constructor(
     internal val offeringSelection: OfferingSelection,
     internal val shouldDisplayDismissButton: Boolean,
     val fontProvider: FontProvider?,
