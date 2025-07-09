@@ -13,6 +13,7 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
@@ -22,10 +23,12 @@ import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
@@ -44,6 +47,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private lateinit var dataStoreUtils: DataStoreUtils
     private var isPlayStore: Boolean = true
+    private var packageCardAdapter: PackageCardAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +77,28 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupBundlePurchaseUI()
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
+    }
+
+    private fun setupBundlePurchaseUI() {
+        binding.isBundleMode = false
+
+        binding.bundlePurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            binding.isBundleMode = isChecked
+            packageCardAdapter?.setBundleMode(isChecked)
+            // Force refresh the adapter to update UI
+            packageCardAdapter?.notifyDataSetChanged()
+        }
+
+        binding.purchaseAllButton.setOnClickListener {
+            val selectedPackages = packageCardAdapter?.getSelectedPackages()
+            if (selectedPackages.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "Please select at least one package", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            onBundlePurchaseClicked(selectedPackages)
+        }
     }
 
     private fun populateOfferings(offerings: Offerings) {
@@ -82,13 +107,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
 
-        binding.offeringDetailsPackagesRecycler.adapter =
-            PackageCardAdapter(
-                offering.availablePackages,
-                activeSubscriptions,
-                this,
-                isPlayStore,
-            )
+        packageCardAdapter = PackageCardAdapter(
+            offering.availablePackages,
+            activeSubscriptions,
+            this,
+            isPlayStore,
+        )
+        binding.offeringDetailsPackagesRecycler.adapter = packageCardAdapter
     }
 
     override fun onPurchasePackageClicked(
@@ -127,6 +152,104 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
             startPurchaseWithoutFinishingTransaction(subscriptionOption.purchasingData)
+        }
+    }
+
+    override fun onBundlePurchaseClicked(selectedPackages: List<Package>) {
+        var isUpgrade = binding.bundleIsUpgradeCheckbox.isChecked
+        var isAddon = binding.bundleIsAddonCheckbox.isChecked
+        if (Purchases.sharedInstance.finishTransactions) {
+            startBundlePurchase(isUpgrade, isAddon, selectedPackages)
+        } else {
+            startBundlePurchaseWithoutFinishingTransaction(isUpgrade, isAddon, selectedPackages)
+        }
+    }
+
+    private fun startBundlePurchase(isUpgrade: Boolean, isAddon: Boolean, selectedPackages: List<Package>) {
+        toggleLoadingIndicator(true)
+        
+        if (isAddon) {
+            promptForAddonInfo { activeSubId ->
+                activeSubId?.let {
+                    // For addon purchases, we need to get the purchase token for the active subscription
+                    // and then modify the purchasing data list to include the active subscription as the first item
+                    val modifiedPackages = createAddonBundlePackages(selectedPackages, activeSubId)
+                    modifiedPackages.forEach { pkg ->
+                        println("modifiedPackages:  - ${pkg.product.id}")
+                    }
+                    println("Active subscription ID: $activeSubId")
+                    executeAddonBundlePurchase(modifiedPackages, activeSubId)
+                }
+            }
+        } else {
+            executeBundlePurchase(selectedPackages)
+        }
+    }
+    
+    private fun executeBundlePurchase(packages: List<Package>) {
+        Purchases.sharedInstance.purchaseBundle(
+            requireActivity(),
+            packages,
+            object : PurchaseCallback {
+                override fun onCompleted(
+                    storeTransaction: StoreTransaction,
+                    customerInfo: CustomerInfo,
+                ) {
+                    toggleLoadingIndicator(false)
+                    Toast.makeText(
+                        requireContext(),
+                        "Bundle purchase completed successfully!",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    findNavController().navigateUp()
+                }
+
+                override fun onError(
+                    error: PurchasesError,
+                    userCancelled: Boolean,
+                ) {
+                    toggleLoadingIndicator(false)
+                    if (!userCancelled) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Bundle purchase failed: ${error.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                }
+            },
+        )
+    }
+    
+    private fun createAddonBundlePackages(selectedPackages: List<Package>, activeSubId: String): List<Package> {
+        // For addon purchases, we need to create a modified list where the first item
+        // represents the active subscription. Since we can't easily create a Package from scratch,
+        // we'll need to find a package from the current offering that matches the active subscription ID
+        // and place it at the beginning of the list.
+        
+        // Get the current offering to find a package that matches the active subscription
+        val currentOffering = binding.offering
+        val activeSubscriptionPackage = currentOffering?.availablePackages?.find { pkg ->
+            pkg.product.id == activeSubId || 
+            pkg.product.id.startsWith(activeSubId)
+        }
+        
+        return if (activeSubscriptionPackage != null) {
+            // If we found a matching package from the current offering, put it first and add the selected packages
+            listOf(activeSubscriptionPackage) + selectedPackages
+        } else {
+            // If no matching package found, just return the original list
+            // In a real implementation, you would create a package from the active subscription
+            println("Warning: Could not find package matching active subscription $activeSubId")
+            selectedPackages
+        }
+    }
+
+    private fun startBundlePurchaseWithoutFinishingTransaction(isUpgrade: Boolean, isAddon: Boolean, selectedPackages: List<Package>) {
+        // For non-finishing transactions, we'll handle each package individually
+        // This is a simplified approach - in a real implementation you might want to handle this differently
+        selectedPackages.forEach { pkg ->
+            startPurchaseWithoutFinishingTransaction(pkg.product.purchasingData)
         }
     }
 
@@ -219,6 +342,58 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
+    private fun promptForAddonInfo(callback: (String?) -> Unit) {
+        showOldSubIdPickerForAddon { subId ->
+            callback(subId)
+        }
+    }
+
+    private fun showError(error: PurchasesError) {
+        showUserError(requireActivity(), error)
+    }
+
+
+
+    private fun executeAddonBundlePurchase(packages: List<Package>, activeSubId: String) {
+        // For addon purchases, we pass the activeSubId to the bundle purchase
+        // The core library will handle getting the purchase token and setting it as old purchase token
+        println("Executing addon bundle purchase for active subscription: $activeSubId")
+        
+        Purchases.sharedInstance.purchaseBundle(
+            requireActivity(),
+            packages,
+            object : PurchaseCallback {
+                override fun onCompleted(
+                    storeTransaction: StoreTransaction,
+                    customerInfo: CustomerInfo,
+                ) {
+                    toggleLoadingIndicator(false)
+                    Toast.makeText(
+                        requireContext(),
+                        "Addon bundle purchase completed successfully!",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    findNavController().navigateUp()
+                }
+
+                override fun onError(
+                    error: PurchasesError,
+                    userCancelled: Boolean,
+                ) {
+                    toggleLoadingIndicator(false)
+                    if (!userCancelled) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Addon bundle purchase failed: ${error.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                }
+            },
+            activeSubId,
+        )
+    }
+
     private fun handleSuccessfulPurchase(orderId: String?) {
         context?.let {
             Toast.makeText(
@@ -257,6 +432,42 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             .setPositiveButton("Continue") { dialog, _ ->
                 dialog.dismiss()
                 callback(selectedUpgradeSubId)
+            }
+            .setNegativeButton("Cancel purchase") { dialog, _ ->
+                dialog.dismiss()
+                toggleLoadingIndicator(false)
+                callback(null)
+            }
+            .setOnCancelListener {
+                toggleLoadingIndicator(false)
+                callback(null)
+            }
+            .show()
+    }
+
+    private fun showOldSubIdPickerForAddon(callback: (String?) -> Unit) {
+        // Removes base plan id to get the sub id
+        val activeSubIds = activeSubscriptions.map { it.split(":").first() }
+        if (activeSubIds.isEmpty()) {
+            Toast.makeText(
+                requireContext(),
+                "Cannot add to existing subscription without an active subscription.",
+                Toast.LENGTH_LONG,
+            ).show()
+            toggleLoadingIndicator(false)
+            callback(null)
+            return
+        }
+
+        var selectedAddonSubId: String = activeSubIds[0]
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Choose which active subscription to add to")
+            .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { _, which ->
+                selectedAddonSubId = activeSubIds[which]
+            }
+            .setPositiveButton("Continue") { dialog, _ ->
+                dialog.dismiss()
+                callback(selectedAddonSubId)
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()

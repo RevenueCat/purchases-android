@@ -310,6 +310,113 @@ internal class BillingWrapper(
         }
     }
 
+    fun makeBundlePurchaseAsync(
+        activity: Activity,
+        appUserID: String,
+        purchasingDataList: List<PurchasingData>,
+        presentedOfferingContext: PresentedOfferingContext?,
+        isPersonalizedPrice: Boolean? = null,
+        activeSubId: String? = null,
+    ) {
+        val googlePurchasingDataList = purchasingDataList.mapNotNull { it as? GooglePurchasingData }
+        if (googlePurchasingDataList.size != purchasingDataList.size) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_PURCHASE_TYPE.format(
+                    "Play",
+                    "GooglePurchasingData",
+                ),
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
+
+        // For bundle purchases, we only support subscriptions for now
+        val subscriptionPurchasingDataList = googlePurchasingDataList.mapNotNull {
+            it as? GooglePurchasingData.Subscription
+        }
+        if (subscriptionPurchasingDataList.size != googlePurchasingDataList.size) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "Bundle purchases currently only support subscriptions",
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
+
+        log(LogIntent.PURCHASE) {
+            "Bundle purchasing products: ${subscriptionPurchasingDataList.joinToString { it.productId }}"
+        }
+
+        synchronized(this@BillingWrapper) {
+            // Store context for each product in the bundle
+            subscriptionPurchasingDataList.forEach { googlePurchasingData ->
+                purchaseContext[googlePurchasingData.productId] = PurchaseContext(
+                    googlePurchasingData.productType,
+                    presentedOfferingContext,
+                    googlePurchasingData.optionId,
+                    null, // No replacement mode for bundle purchases
+                )
+            }
+        }
+
+        executeRequestOnUIThread {
+            if (activeSubId != null) {
+                // For addon purchases, we need to get the purchase token first
+                findPurchaseInPurchaseHistory(
+                    appUserID = appUserID,
+                    productType = ProductType.SUBS,
+                    productId = activeSubId,
+                    onCompletion = { storeTransaction ->
+                        // Create a ReplaceProductInfo without replacement mode for addon purchases
+                        val replaceProductInfo = ReplaceProductInfo(storeTransaction, null)
+                        val result = buildBundleSubscriptionPurchaseParamsWithReplaceInfo(
+                            subscriptionPurchasingDataList,
+                            appUserID,
+                            isPersonalizedPrice,
+                            replaceProductInfo,
+                        )
+                        when (result) {
+                            is Result.Success -> {
+                                trackPurchaseStartIfNeeded(
+                                    subscriptionPurchasingDataList.first(),
+                                    null,
+                                )
+                                launchBillingFlow(activity, result.value)
+                            }
+                            is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
+                        }
+                    },
+                    onError = { error ->
+                        log(LogIntent.GOOGLE_ERROR) {
+                            "Failed to get purchase token for active subscription $activeSubId: ${error.message}"
+                        }
+                        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+                    }
+                )
+            } else {
+                // Regular bundle purchase without addon
+                val result = buildBundleSubscriptionPurchaseParams(
+                    subscriptionPurchasingDataList,
+                    appUserID,
+                    isPersonalizedPrice,
+                )
+                when (result) {
+                    is Result.Success -> {
+                        trackPurchaseStartIfNeeded(
+                            subscriptionPurchasingDataList.first(),
+                            null,
+                        )
+                        launchBillingFlow(activity, result.value)
+                    }
+                    is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
+                }
+            }
+        }
+    }
+
     @UiThread
     private fun launchBillingFlow(
         activity: Activity,
@@ -948,6 +1055,35 @@ internal class BillingWrapper(
         }
     }
 
+    private fun buildBundleSubscriptionPurchaseParams(
+        purchaseInfos: List<GooglePurchasingData.Subscription>,
+        appUserID: String,
+        isPersonalizedPrice: Boolean?,
+    ): Result<BillingFlowParams, PurchasesError> {
+        val productDetailsParamsList = purchaseInfos.map { purchaseInfo ->
+            BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+                setOfferToken(purchaseInfo.token)
+                setProductDetails(purchaseInfo.productDetails)
+            }.build()
+        }
+
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+                    .setObfuscatedAccountId(appUserID.sha256())
+                    .apply {
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
+                    }
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            throw NoCoreLibraryDesugaringException(e)
+        }
+    }
+
     @Synchronized
     private fun sendErrorsToAllPendingRequests(error: PurchasesError) {
         while (true) {
@@ -956,6 +1092,38 @@ internal class BillingWrapper(
                     serviceRequest(error)
                 }
             } ?: break
+        }
+    }
+
+    private fun buildBundleSubscriptionPurchaseParamsWithReplaceInfo(
+        purchaseInfos: List<GooglePurchasingData.Subscription>,
+        appUserID: String,
+        isPersonalizedPrice: Boolean?,
+        replaceProductInfo: ReplaceProductInfo,
+    ): Result<BillingFlowParams, PurchasesError> {
+        val productDetailsParamsList = purchaseInfos.map { purchaseInfo ->
+            BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+                setOfferToken(purchaseInfo.token)
+                setProductDetails(purchaseInfo.productDetails)
+            }.build()
+        }
+
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+                    .apply {
+                        // Use the existing extension function to set up the subscription update params
+                        setUpgradeInfo(replaceProductInfo)
+                        
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
+                    }
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            throw NoCoreLibraryDesugaringException(e)
         }
     }
 }
