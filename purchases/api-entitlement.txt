@@ -669,16 +669,6 @@ package com.revenuecat.purchases.common {
 
 }
 
-package com.revenuecat.purchases.common.events {
-
-  @kotlinx.serialization.Serializable public final class EventsRequest {
-    method public com.revenuecat.purchases.common.events.EventsRequest copy(java.util.List<? extends com.revenuecat.purchases.common.events.BackendEvent> events);
-    method public java.util.List<java.lang.String> getCacheKey();
-    property public final java.util.List<java.lang.String> cacheKey;
-  }
-
-}
-
 package com.revenuecat.purchases.customercenter {
 
   public interface CustomerCenterListener {
@@ -1268,7 +1258,7 @@ package com.revenuecat.purchases.paywalls {
     field public static final com.revenuecat.purchases.paywalls.PaywallColor.Serializer INSTANCE;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.serialization.InternalSerializationApi @kotlinx.serialization.Serializable public final class PaywallData {
+  @dev.drewhamilton.poko.Poko @kotlinx.serialization.Serializable public final class PaywallData {
     ctor public PaywallData(@kotlinx.serialization.SerialName("template_name") String templateName, com.revenuecat.purchases.paywalls.PaywallData.Configuration config, @kotlinx.serialization.SerialName("asset_base_url") @kotlinx.serialization.Serializable(with=URLSerializer::class) java.net.URL assetBaseURL, optional int revision, @kotlinx.serialization.SerialName("localized_strings") java.util.Map<java.lang.String,com.revenuecat.purchases.paywalls.PaywallData.LocalizedConfiguration> localization, optional @kotlinx.serialization.SerialName("localized_strings_by_tier") java.util.Map<java.lang.String,? extends java.util.Map<java.lang.String,com.revenuecat.purchases.paywalls.PaywallData.LocalizedConfiguration>> localizationByTier, optional @kotlinx.serialization.SerialName("zero_decimal_place_countries") @kotlinx.serialization.Serializable(with=GoogleListSerializer::class) java.util.List<java.lang.String> zeroDecimalPlaceCountries, optional @kotlinx.serialization.SerialName("default_locale") String? defaultLocale);
     method public com.revenuecat.purchases.paywalls.PaywallData.LocalizedConfiguration? configForLocale(java.util.Locale requiredLocale);
     method public java.net.URL getAssetBaseURL();

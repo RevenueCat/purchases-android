@@ -58,13 +58,8 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public default void onRestoreStarted();
   }
 
-  @androidx.compose.runtime.Immutable public final class PaywallOptions {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko public final class PaywallOptions {
     ctor public PaywallOptions(com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder builder);
-    method public com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? component3();
-    method public com.revenuecat.purchases.ui.revenuecatui.PaywallListener? component4();
-    method public com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? component5();
-    method public kotlin.jvm.functions.Function0<kotlin.Unit> component7();
-    method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions copy(com.revenuecat.purchases.ui.revenuecatui.OfferingSelection offeringSelection, boolean shouldDisplayDismissButton, com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? purchaseLogic, com.revenuecat.purchases.ui.revenuecatui.PaywallMode mode, kotlin.jvm.functions.Function0<kotlin.Unit> dismissRequest);
     method public kotlin.jvm.functions.Function0<kotlin.Unit> getDismissRequest();
     method public com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? getFontProvider();
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallListener? getListener();
