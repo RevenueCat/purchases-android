@@ -1,8 +1,8 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
 import dev.drewhamilton.poko.Poko
+import kotlinx.parcelize.Parcelize
 
 /**
  * Contains data about the context in which an offering was presented.
@@ -24,6 +24,17 @@ class PresentedOfferingContext @JvmOverloads constructor(
     val targetingContext: TargetingContext?,
 ) : Parcelable {
     constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null)
+
+    @JvmSynthetic
+    internal fun copy(
+        offeringIdentifier: String = this.offeringIdentifier,
+        placementIdentifier: String? = this.placementIdentifier,
+        targetingContext: TargetingContext? = this.targetingContext,
+    ): PresentedOfferingContext = PresentedOfferingContext(
+        offeringIdentifier = offeringIdentifier,
+        placementIdentifier = placementIdentifier,
+        targetingContext = targetingContext,
+    )
 
     @Parcelize
     @Poko

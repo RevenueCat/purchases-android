@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls
 
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
 import com.revenuecat.purchases.utils.getDefaultLocales
 import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
@@ -140,6 +141,27 @@ class PaywallData(
             }?.value
     }
 
+    @InternalRevenueCatAPI
+    fun copy(
+        templateName: String = this.templateName,
+        config: Configuration = this.config,
+        assetBaseURL: URL = this.assetBaseURL,
+        revision: Int = this.revision,
+        localization: Map<String, LocalizedConfiguration> = this.localization,
+        localizationByTier: Map<String, Map<String, LocalizedConfiguration>> = this.localizationByTier,
+        zeroDecimalPlaceCountries: List<String> = this.zeroDecimalPlaceCountries,
+        defaultLocale: String? = this.defaultLocale,
+    ): PaywallData = PaywallData(
+        templateName = templateName,
+        config = config,
+        assetBaseURL = assetBaseURL,
+        revision = revision,
+        localization = localization,
+        localizationByTier = localizationByTier,
+        zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
+        defaultLocale = defaultLocale,
+    )
+
     /**
      * Generic configuration for any paywall.
      */
@@ -237,6 +259,37 @@ class PaywallData(
             displayRestorePurchases = displayRestorePurchases,
             termsOfServiceURL = termsOfServiceURL,
             privacyURL = privacyURL,
+        )
+
+        @InternalRevenueCatAPI
+        fun copy(
+            packageIds: List<String> = this.packageIds,
+            defaultPackage: String? = this.defaultPackage,
+            imagesWebp: Images? = this.imagesWebp,
+            legacyImages: Images? = this.legacyImages,
+            imagesByTier: Map<String, Images>? = this.imagesByTier,
+            blurredBackgroundImage: Boolean = this.blurredBackgroundImage,
+            displayRestorePurchases: Boolean = this.displayRestorePurchases,
+            termsOfServiceURL: URL? = this.termsOfServiceURL,
+            privacyURL: URL? = this.privacyURL,
+            colors: ColorInformation = this.colors,
+            colorsByTier: Map<String, ColorInformation>? = this.colorsByTier,
+            tiers: List<Tier>? = this.tiers,
+            defaultTier: String? = this.defaultTier,
+        ): Configuration = Configuration(
+            packageIds = packageIds,
+            defaultPackage = defaultPackage,
+            imagesWebp = imagesWebp,
+            legacyImages = legacyImages,
+            imagesByTier = imagesByTier,
+            blurredBackgroundImage = blurredBackgroundImage,
+            displayRestorePurchases = displayRestorePurchases,
+            termsOfServiceURL = termsOfServiceURL,
+            privacyURL = privacyURL,
+            colors = colors,
+            colorsByTier = colorsByTier,
+            tiers = tiers,
+            defaultTier = defaultTier,
         )
 
         /**
@@ -514,7 +567,19 @@ class PaywallData(
              * This must be an icon identifier known by `RevenueCatUI`.
              */
             @SerialName("icon_id") val iconID: String? = null,
-        )
+        ) {
+            @JvmSynthetic
+            @InternalRevenueCatAPI
+            fun copy(
+                title: String = this.title,
+                content: String? = this.content,
+                iconID: String? = this.iconID,
+            ): Feature = Feature(
+                title = title,
+                content = content,
+                iconID = iconID,
+            )
+        }
 
         @Serializable
         @Poko
