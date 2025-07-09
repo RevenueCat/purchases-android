@@ -24,7 +24,7 @@ class VirtualCurrencyManagerTest {
 
     // region virtualCurrencies
     @Test
-    fun `virtualCurrencies returns cached VirtualCurrencies when cache is not stale`() {
+    fun `getVirtualCurrencies returns cached VirtualCurrencies when cache is not stale`() {
         val appUserID = "appUserID"
 
         val mockDeviceCache = mockk<DeviceCache>()
@@ -68,7 +68,7 @@ class VirtualCurrencyManagerTest {
 
     @Suppress("ForbiddenComment")
     @Test
-    fun `virtualCurrencies fetches VirtualCurrencies from network when cache is stale`() {
+    fun `getVirtualCurrencies fetches VirtualCurrencies from network when cache is stale`() {
         val appUserID = "appUserID"
 
         val mockDeviceCache = mockk<DeviceCache>()
@@ -168,7 +168,7 @@ class VirtualCurrencyManagerTest {
 
     // region cachedVirtualCurrencies
     @Test
-    fun `cachedVirtualCurrencies returns cached VirtualCurrencies when present`() {
+    fun `getVirtualCurrencies returns cached VirtualCurrencies when present`() {
         val appUserID = "appUserID"
 
         val mockDeviceCache = mockk<DeviceCache>()
@@ -197,7 +197,7 @@ class VirtualCurrencyManagerTest {
     }
 
     @Test
-    fun `cachedVirtualCurrencies returns null when virtual currencies cache is empty`() {
+    fun `getVirtualCurrencies returns null when virtual currencies cache is empty`() {
         val appUserID = "appUserID"
 
         val mockDeviceCache = mockk<DeviceCache>()
