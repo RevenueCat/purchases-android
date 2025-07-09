@@ -436,6 +436,7 @@ package com.revenuecat.purchases {
     method @Deprecated public void syncObserverModeAmazonPurchase(String productID, String receiptID, String amazonUserID, String? isoCurrencyCode, Double? price);
     method public void syncPurchases();
     method public void syncPurchases(optional com.revenuecat.purchases.interfaces.SyncPurchasesCallback? listener);
+    method public void setPostHogUserId(String? postHogUserId);
     property @Deprecated @kotlin.jvm.Synchronized public final boolean allowSharingPlayStoreAccount;
     property @kotlin.jvm.Synchronized public final String appUserID;
     property public final com.revenuecat.purchases.PurchasesConfiguration currentConfiguration;
