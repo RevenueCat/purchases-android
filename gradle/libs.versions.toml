@@ -118,6 +118,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 
 detekt-compose = { module = "io.nlopez.compose.rules:detekt", version.ref = "detektRulesCompose" }
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+detekt-libraries = { module = "io.gitlab.arturbosch.detekt:detekt-rules-libraries", version.ref = "detekt"}
 
 dokka-base = { module = "org.jetbrains.dokka:dokka-base", version.ref = "dokka" }
 dokka-baseTestUtils = { module = "org.jetbrains.dokka:dokka-base-test-utils", version.ref = "dokka" }

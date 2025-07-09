@@ -27,6 +27,7 @@ plugins {
 dependencies {
     detektPlugins(libs.detekt.formatting)
     detektPlugins(libs.detekt.compose)
+    detektPlugins(libs.detekt.libraries)
 }
 
 tasks.register<Delete>("clean") {
