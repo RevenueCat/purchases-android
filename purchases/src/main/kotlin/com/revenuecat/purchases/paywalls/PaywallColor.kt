@@ -2,9 +2,9 @@ package com.revenuecat.purchases.paywalls
 
 import android.graphics.Color
 import android.os.Build
-import dev.drewhamilton.poko.Poko
 import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor

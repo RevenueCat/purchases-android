@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import androidx.compose.runtime.Immutable
-import dev.drewhamilton.poko.Poko
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
+import dev.drewhamilton.poko.Poko
 
 @Immutable
 @Poko

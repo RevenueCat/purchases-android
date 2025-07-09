@@ -2,8 +2,8 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import dev.drewhamilton.poko.Poko
 import com.revenuecat.purchases.common.errorLog
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 import kotlin.math.roundToInt
 

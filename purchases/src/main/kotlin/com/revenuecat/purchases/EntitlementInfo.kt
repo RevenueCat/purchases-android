@@ -3,12 +3,12 @@ package com.revenuecat.purchases
 import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.utils.JSONObjectParceler
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import dev.drewhamilton.poko.Poko
 import org.json.JSONObject
 import java.util.Date
 
