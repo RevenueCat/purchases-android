@@ -17,7 +17,7 @@ import com.revenuecat.purchases.common.fromNow
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.add
-import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
+import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.subtract
 import io.mockk.Runs
 import io.mockk.every
@@ -172,7 +172,7 @@ class OfflineCustomerInfoCalculatorTest {
         val p1mProduct = PurchasedProduct(
             productIdentifier,
             basePlan,
-            stubStoreTransactionFromGooglePurchase(
+            stubStoreTransactionFromPurchaseHistoryRecord(
                 productIds = listOf(productIdentifier),
                 purchaseTime = twoHoursAgo.time,
             ),
@@ -184,7 +184,7 @@ class OfflineCustomerInfoCalculatorTest {
         val notBwProduct = PurchasedProduct(
             productIdentifier,
             nonBackwardsCompatibleBasePlan,
-            stubStoreTransactionFromGooglePurchase(
+            stubStoreTransactionFromPurchaseHistoryRecord(
                 productIds = listOf(productIdentifier),
                 purchaseTime = notBwProductPurchaseDate.time,
             ),
@@ -564,7 +564,7 @@ class OfflineCustomerInfoCalculatorTest {
     ): List<PurchasedProduct> {
         val products = entitlementMap.mappings.map { (productIdentifier, mapping) ->
             val expiresDate = expirationDates[productIdentifier]
-            val storeTransaction = stubStoreTransactionFromGooglePurchase(
+            val storeTransaction = stubStoreTransactionFromPurchaseHistoryRecord(
                 productIds = listOf(productIdentifier),
                 purchaseTime = oneHourAgo.time
             )

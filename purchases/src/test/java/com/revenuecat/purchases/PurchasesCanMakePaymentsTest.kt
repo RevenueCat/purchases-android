@@ -104,12 +104,12 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.enablePendingPurchases(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases() } returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         every { mockLocalBillingClient.startConnection(any()) } just Runs
 
         Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {}
-        verify(exactly = 1) { mockBuilder.enablePendingPurchases(any()) }
+        verify(exactly = 1) { mockBuilder.enablePendingPurchases() }
     }
 
     fun `canMakePayments returns true for Amazon configurations`() {
@@ -295,7 +295,7 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.enablePendingPurchases(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases() } returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
