@@ -22,6 +22,8 @@ style:
 complexity:
   LongMethod:
     ignoreAnnotated: [ 'Preview' ]
+  LongParameterList:
+    ignoreAnnotated: [ 'Poko' ]
   TooManyFunctions:
     ignoreAnnotatedFunctions: [ 'Preview' ]
 Compose:
