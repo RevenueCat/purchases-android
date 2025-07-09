@@ -19,7 +19,7 @@ internal class VirtualCurrencyManager(
 
     @Suppress("ForbiddenComment")
     @Synchronized
-    fun getVirtualCurrencies(
+    fun virtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
         // TODO: Add logging
@@ -44,7 +44,7 @@ internal class VirtualCurrencyManager(
     }
 
     @Synchronized
-    fun getCachedVirtualCurrencies(): VirtualCurrencies? {
+    fun cachedVirtualCurrencies(): VirtualCurrencies? {
         val appUserID = identityManager.currentAppUserID
         val isAppBackgrounded = appConfig.isAppBackgrounded
 
