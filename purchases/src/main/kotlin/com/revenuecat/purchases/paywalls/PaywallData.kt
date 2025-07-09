@@ -8,6 +8,7 @@ import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import com.revenuecat.purchases.utils.sharedLanguageCodeWith
 import com.revenuecat.purchases.utils.toLocale
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
@@ -20,7 +21,8 @@ import java.util.Locale
  * @see [Paywalls Documentation](https://rev.cat/paywalls)
  */
 @Serializable
-data class PaywallData(
+@Poko
+class PaywallData(
     /**
      * The type of template used to display this paywall.
      */
@@ -142,7 +144,8 @@ data class PaywallData(
      * Generic configuration for any paywall.
      */
     @Serializable
-    data class Configuration(
+    @Poko
+    class Configuration(
         /**
          * The list of package identifiers this paywall will display.
          *
@@ -249,7 +252,8 @@ data class PaywallData(
             }
 
         @Serializable
-        data class Images(
+        @Poko
+        class Images(
             /**
              * Image displayed as a header in a template.
              */
@@ -273,7 +277,8 @@ data class PaywallData(
         }
 
         @Serializable
-        data class Tier(
+        @Poko
+        class Tier(
             /**
              * RevenueCat generated id to match tiers with localizations.
              */
@@ -293,7 +298,8 @@ data class PaywallData(
         )
 
         @Serializable
-        data class ColorInformation(
+        @Poko
+        class ColorInformation(
             /**
              * Set of colors for light mode.
              */
@@ -306,7 +312,8 @@ data class PaywallData(
         )
 
         @Serializable
-        data class Colors(
+        @Poko
+        class Colors(
             /**
              * Color for the background of the paywall.
              */
@@ -407,7 +414,8 @@ data class PaywallData(
      * Defines the necessary localized information for a paywall.
      */
     @Serializable
-    data class LocalizedConfiguration(
+    @Poko
+    class LocalizedConfiguration(
         /**
          * The title of the paywall screen.
          */
@@ -489,7 +497,8 @@ data class PaywallData(
          * An item to be showcased in a paywall.
          */
         @Serializable
-        data class Feature(
+        @Poko
+        class Feature(
             /**
              * The title of the feature.
              */
@@ -508,7 +517,8 @@ data class PaywallData(
         )
 
         @Serializable
-        data class OfferOverride(
+        @Poko
+        class OfferOverride(
             /**
              *
              */

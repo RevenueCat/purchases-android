@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls
 
 import android.graphics.Color
 import android.os.Build
+import dev.drewhamilton.poko.Poko
 import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
 import kotlinx.serialization.KSerializer
@@ -18,7 +19,8 @@ private const val COLOR_WHITE_HEX = 0xFFFFFF
 /**
  * Represents a color to be used by `RevenueCatUI`.
  */
-data class PaywallColor(
+@Poko
+class PaywallColor(
     /**
      * The original Hex representation for this color.
      */

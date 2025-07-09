@@ -7,12 +7,14 @@ import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import kotlinx.parcelize.Parcelize
+import dev.drewhamilton.poko.Poko
 import org.json.JSONObject
 import java.util.Date
 import java.util.Locale
 
 @Parcelize
-data class Transaction(
+@Poko
+class Transaction(
     val transactionIdentifier: String,
     @Deprecated(
         "Use transactionIdentifier instead",

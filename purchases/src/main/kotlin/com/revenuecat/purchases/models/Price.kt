@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class Price(
+@Poko
+class Price(
 
     /**
      * Formatted price of the item, including its currency sign. For example $3.00.

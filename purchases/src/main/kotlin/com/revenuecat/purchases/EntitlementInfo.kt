@@ -8,6 +8,7 @@ import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import dev.drewhamilton.poko.Poko
 import org.json.JSONObject
 import java.util.Date
 
@@ -40,7 +41,8 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class EntitlementInfo(
+@Poko
+class EntitlementInfo(
     val identifier: String,
     val isActive: Boolean,
     val willRenew: Boolean,

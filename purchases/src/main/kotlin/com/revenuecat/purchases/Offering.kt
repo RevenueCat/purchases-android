@@ -18,7 +18,8 @@ import dev.drewhamilton.poko.Poko
  * @property metadata Offering metadata defined in RevenueCat dashboard.
  */
 @Suppress("UnsafeOptInUsageError")
-data class Offering
+@Poko
+class Offering
 @OptIn(InternalRevenueCatAPI::class)
 @JvmOverloads
 constructor(
