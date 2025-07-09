@@ -23,6 +23,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -62,6 +65,14 @@ internal open class DeviceCache(
         "$apiKeyPrefix.purchaserInfoLastUpdated"
     }
 
+    private val virtualCurrenciesCacheBaseKey: String by lazy {
+        "$apiKeyPrefix.virtualCurrencies"
+    }
+
+    private val virtualCurrenciesLastUpdatedCacheBaseKey: String by lazy {
+        "$apiKeyPrefix.virtualCurrenciesLastUpdated"
+    }
+
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
 
     fun startEditing(): SharedPreferences.Editor {
@@ -95,6 +106,8 @@ internal open class DeviceCache(
             .clearCustomerInfo()
             .clearAppUserID()
             .clearCustomerInfoCacheTimestamp(appUserID)
+            .clearVirtualCurrenciesCacheTimestamp(appUserID)
+            .clearVirtualCurrenciesCache(appUserID)
             .apply()
     }
 
@@ -225,6 +238,100 @@ internal open class DeviceCache(
         return Date(preferences.getLong(customerInfoLastUpdatedCacheKey(appUserID), 0))
     }
 
+    // endregion
+
+    // region virtual currencies
+    fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
+
+    fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
+
+    @Synchronized
+    fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
+        return preferences.getString(virtualCurrenciesCacheKey(appUserID), null)
+            ?.let { json ->
+                try {
+                    val cachedJSONObject = JSONObject(json)
+                    return VirtualCurrenciesFactory.buildVirtualCurrencies(body = cachedJSONObject)
+                } catch (e: JSONException) {
+                    null
+                }
+            }
+    }
+
+    @Synchronized
+    fun cacheVirtualCurrencies(appUserID: String, virtualCurrencies: VirtualCurrencies) {
+        val virtualCurrenciesJSONString = Json.Default.encodeToString(VirtualCurrencies.serializer(), virtualCurrencies)
+
+        preferences.edit()
+            .putString(
+                virtualCurrenciesCacheKey(appUserID),
+                virtualCurrenciesJSONString,
+            ).apply()
+
+        setVirtualCurrenciesCacheTimestampToNow(appUserID)
+    }
+
+    @Synchronized
+    fun isVirtualCurrenciesCacheStale(appUserID: String, appInBackground: Boolean) =
+        getVirtualCurrenciesCacheLastUpdated(appUserID)
+            .isCacheStale(appInBackground, dateProvider)
+
+    @Synchronized
+    fun clearVirtualCurrenciesCache(appUserID: String) {
+        val editor = preferences.edit()
+        clearVirtualCurrenciesCache(appUserID, editor)
+        editor.apply()
+    }
+
+    @Synchronized
+    fun clearVirtualCurrenciesCache(
+        appUserID: String,
+        editor: SharedPreferences.Editor,
+    ) {
+        editor.clearVirtualCurrenciesCacheTimestamp(appUserID = appUserID)
+        editor.clearVirtualCurrenciesCache(appUserID = appUserID)
+    }
+
+    @Synchronized
+    fun setVirtualCurrenciesCacheTimestampToNow(appUserID: String) {
+        setVirtualCurrenciesCacheTimestamp(appUserID, dateProvider.now)
+    }
+
+    @Synchronized
+    fun setVirtualCurrenciesCacheTimestamp(appUserID: String, date: Date) {
+        preferences.edit().putLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), date.time).apply()
+    }
+
+    @Synchronized
+    private fun getVirtualCurrenciesCacheLastUpdated(appUserID: String): Date {
+        return Date(preferences.getLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), 0))
+    }
+
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCacheTimestamp(
+        appUserID: String,
+    ): SharedPreferences.Editor {
+        remove(virtualCurrenciesLastUpdatedCacheKey(appUserID))
+
+        getCachedAppUserID()?.let {
+            remove(virtualCurrenciesLastUpdatedCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(virtualCurrenciesLastUpdatedCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCache(appUserID: String): SharedPreferences.Editor {
+        remove(virtualCurrenciesCacheKey(appUserID))
+
+        getCachedAppUserID()?.let {
+            remove(virtualCurrenciesCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(virtualCurrenciesCacheKey(it))
+        }
+        return this
+    }
     // endregion
 
     // region attribution data
