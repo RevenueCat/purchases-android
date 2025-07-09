@@ -2442,7 +2442,7 @@ class BackendTest {
     }
 
     @Test
-    fun `getVirtualCurrencies calls success handler`() {
+    fun `getVirtualCurrencies calls success handler for successful request`() {
         mockGetVirtualCurrenciesResponse(
             Endpoint.GetVirtualCurrencies(appUserID),
             null,
@@ -2497,6 +2497,28 @@ class BackendTest {
 
         assertThat(receivedVirtualCurrencies).isNull()
         assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when a Network error occurs`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            IOException(),
+            null
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
     }
 
     @Test
@@ -2593,7 +2615,6 @@ class BackendTest {
         assertThat(calledWithRandomDelay).isNotNull
         assertThat(calledWithRandomDelay).isEqualTo(Delay.DEFAULT)
     }
-
     // endregion
 
     // region helpers
