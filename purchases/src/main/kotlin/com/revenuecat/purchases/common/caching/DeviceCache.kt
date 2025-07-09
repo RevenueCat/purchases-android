@@ -23,6 +23,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
+import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import kotlinx.serialization.SerializationException
@@ -253,15 +254,20 @@ internal open class DeviceCache(
             ?.let { json ->
                 try {
                     return VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = json)
-                } catch (e: JSONException) {
-                    // TODO: Log all errors here in a future PR. We're suppressing the SwallowedException detekt
-                    // warning for now, but will remove that once we're logging the exceptions. We want to
-                    // swallow parsing errors for the cache so that reading the cache never causes a
-                    // getVirtualCurrencies request to fail
+                } catch (error: JSONException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
                     null
-                } catch (e: SerializationException) {
+                } catch (error: SerializationException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
                     null
-                } catch (e: IllegalArgumentException) {
+                } catch (error: IllegalArgumentException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
                     null
                 }
             }

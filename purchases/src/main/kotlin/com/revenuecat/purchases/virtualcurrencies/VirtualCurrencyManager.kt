@@ -3,9 +3,13 @@ package com.revenuecat.purchases.virtualcurrencies
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
+import com.revenuecat.purchases.strings.CustomerInfoStrings
+import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 
 @Suppress("UnusedPrivateProperty")
 internal class VirtualCurrencyManager(
@@ -17,12 +21,10 @@ internal class VirtualCurrencyManager(
 
     // region Public functions
 
-    @Suppress("ForbiddenComment")
     @Synchronized
     fun virtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
-        // TODO: Add logging
         val appUserID = identityManager.currentAppUserID
         val isAppBackgrounded = appConfig.isAppBackgrounded
 
@@ -32,10 +34,16 @@ internal class VirtualCurrencyManager(
             allowStaleCache = false,
         )
         if (cachedVirtualCurrencies != null) {
+            log(LogIntent.DEBUG) {
+                VirtualCurrencyStrings.VENDING_FROM_CACHE
+            }
             callback.onReceived(cachedVirtualCurrencies)
             return
         }
 
+        log(LogIntent.DEBUG) {
+            VirtualCurrencyStrings.VIRTUAL_CURRENCIES_STALE_UPDATING_FROM_NETWORK
+        }
         fetchVirtualCurrenciesFromBackend(
             appUserID = appUserID,
             isAppBackgrounded = isAppBackgrounded,
@@ -48,16 +56,29 @@ internal class VirtualCurrencyManager(
         val appUserID = identityManager.currentAppUserID
         val isAppBackgrounded = appConfig.isAppBackgrounded
 
-        return fetchCachedVirtualCurrencies(
+        val cachedVirtualCurrencies: VirtualCurrencies? = fetchCachedVirtualCurrencies(
             appUserID = appUserID,
             isAppBackgrounded = isAppBackgrounded,
             allowStaleCache = true,
         )
+
+        if (cachedVirtualCurrencies != null) {
+            log(LogIntent.DEBUG) {
+                VirtualCurrencyStrings.VENDING_FROM_CACHE
+            }
+            return cachedVirtualCurrencies
+        } else {
+            return null
+        }
     }
 
     @Synchronized
     fun invalidateVirtualCurrenciesCache() {
         val appUserID = identityManager.currentAppUserID
+
+        log(LogIntent.DEBUG) {
+            VirtualCurrencyStrings.INVALIDATING_VIRTUAL_CURRENCIES_CACHE
+        }
         deviceCache.clearVirtualCurrenciesCache(appUserID = appUserID)
     }
 
@@ -80,7 +101,15 @@ internal class VirtualCurrencyManager(
             return null
         }
 
-        return deviceCache.getCachedVirtualCurrencies(appUserID = appUserID)
+        val cachedVirtualCurrencies: VirtualCurrencies? = deviceCache.getCachedVirtualCurrencies(appUserID = appUserID)
+        if (cachedVirtualCurrencies != null) {
+            return cachedVirtualCurrencies
+        } else {
+            log(LogIntent.DEBUG) {
+                VirtualCurrencyStrings.NO_CACHED_VIRTUAL_CURRENCIES
+            }
+            return null
+        }
     }
 
     private fun fetchVirtualCurrenciesFromBackend(
@@ -101,10 +130,17 @@ internal class VirtualCurrencyManager(
         appUserID: String,
     ): GetVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
         override fun onReceived(virtualCurrencies: VirtualCurrencies) {
+            log(LogIntent.RC_SUCCESS) {
+                VirtualCurrencyStrings.VIRTUAL_CURRENCIES_UPDATED_FROM_NETWORK
+            }
+
             cacheVirtualCurrencies(virtualCurrencies, appUserID)
             originalCallback.onReceived(virtualCurrencies)
         }
         override fun onError(error: PurchasesError) {
+            log(LogIntent.RC_SUCCESS) {
+                VirtualCurrencyStrings.VIRTUAL_CURRENCIES_UPDATED_FROM_NETWORK_ERROR.format(error)
+            }
             originalCallback.onError(error)
         }
     }
