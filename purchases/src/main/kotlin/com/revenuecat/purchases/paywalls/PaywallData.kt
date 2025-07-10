@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls
 
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
 import com.revenuecat.purchases.utils.getDefaultLocales
 import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
@@ -19,6 +20,7 @@ import java.util.Locale
  *
  * @see [Paywalls Documentation](https://rev.cat/paywalls)
  */
+@InternalRevenueCatAPI
 @Serializable
 data class PaywallData(
     /**
