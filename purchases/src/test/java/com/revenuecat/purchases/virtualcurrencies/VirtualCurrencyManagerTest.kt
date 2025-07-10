@@ -69,7 +69,6 @@ class VirtualCurrencyManagerTest {
         }
     }
 
-    @Suppress("ForbiddenComment")
     @Test
     fun `virtualCurrencies fetches VirtualCurrencies from network when cache is stale`() {
         val appUserID = "appUserID"
@@ -138,7 +137,6 @@ class VirtualCurrencyManagerTest {
         }
     }
 
-    @Suppress("ForbiddenComment")
     @Test
     fun `virtualCurrencies passes error when network request fails`() {
         val appUserID = "appUserID"
