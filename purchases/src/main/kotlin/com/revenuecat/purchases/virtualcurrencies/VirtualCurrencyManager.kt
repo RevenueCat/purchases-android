@@ -46,7 +46,7 @@ internal class VirtualCurrencyManager(
         fetchVirtualCurrenciesFromBackend(
             appUserID = appUserID,
             isAppBackgrounded = isAppBackgrounded,
-            callback = fetchedVirtualCurrenciesFromBackendCallback(callback, appUserID),
+            callback = handleVirtualCurrenciesRequestResult(callback, appUserID),
         )
     }
 
@@ -123,8 +123,8 @@ internal class VirtualCurrencyManager(
         )
     }
 
-    private fun fetchedVirtualCurrenciesFromBackendCallback(
-        originalCallback: GetVirtualCurrenciesCallback,
+    private fun handleVirtualCurrenciesRequestResult(
+        completion: GetVirtualCurrenciesCallback,
         appUserID: String,
     ): GetVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
         override fun onReceived(virtualCurrencies: VirtualCurrencies) {
@@ -133,13 +133,13 @@ internal class VirtualCurrencyManager(
             }
 
             cacheVirtualCurrencies(virtualCurrencies, appUserID)
-            originalCallback.onReceived(virtualCurrencies)
+            completion.onReceived(virtualCurrencies)
         }
         override fun onError(error: PurchasesError) {
             log(LogIntent.RC_SUCCESS) {
                 VirtualCurrencyStrings.VIRTUAL_CURRENCIES_UPDATED_FROM_NETWORK_ERROR.format(error)
             }
-            originalCallback.onError(error)
+            completion.onError(error)
         }
     }
 }
