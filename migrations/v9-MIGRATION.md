@@ -1,4 +1,4 @@
-# V89 API Migration Guide
+# V9 API Migration Guide
 
 This latest release updates the SDK to use BillingClient 8. This version removed APIs to query for expired subscriptions and consumed one-time products, aside from other improvements. You can check the full list of changes here: https://developer.android.com/google/play/billing/release-notes#8-0-0
 
