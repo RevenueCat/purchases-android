@@ -151,7 +151,7 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
                 stringBuilder.append("\t\tDescription: ${keyValuePair.value.serverDescription}\n")
             }
         }
-        
+
         return stringBuilder.toString()
     }
 }
