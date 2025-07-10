@@ -201,6 +201,10 @@ package com.revenuecat.purchases {
   public static final class LogLevel.Companion {
   }
 
+  public final class NoCoreLibraryDesugaringException extends java.lang.RuntimeException {
+    ctor public NoCoreLibraryDesugaringException(Throwable cause);
+  }
+
   public final class Offering {
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages);
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents);
