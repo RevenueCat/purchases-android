@@ -119,6 +119,17 @@
                                 bind:header="@{`All Entitlements: `}"
                                 bind:detail="@{viewModel.allEntitlements}"/>
 
+                        <include
+                                android:id="@+id/customer_info_virtual_currencies"
+                                layout="@layout/row_view"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_all_entitlements"
+                                bind:header="@{`Virtual Currencies: `}"
+                                bind:detail="@{viewModel.formattedVirtualCurrencies}"/>
+
                         <LinearLayout
                                 android:id="@+id/customer_info_subscriber_attribute_actions"
                                 android:orientation="horizontal"
@@ -266,7 +277,7 @@
                                 android:visibility="gone"
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_all_entitlements"
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_virtual_currencies"
                                 app:layout_constraintVertical_bias="0">
 
                             <include
