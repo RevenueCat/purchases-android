@@ -1,10 +1,10 @@
 # V9 API Migration Guide
 
-This latest release updates the SDK to use BillingClient 8. This version removed APIs to query for expired subscriptions and consumed one-time products, aside from other improvements. You can check the full list of changes here: https://developer.android.com/google/play/billing/release-notes#8-0-0
+This release updates the SDK to use BillingClient 8. This version of BillingClient removed APIs to query for expired subscriptions and consumed one-time products, aside from other improvements. You can check the full list of changes here: https://developer.android.com/google/play/billing/release-notes#8-0-0
 
 Additionally, we've also updated Kotlin to 2.0.21 but kept language compatibility which means we now require Kotlin 1.8.0+. If you were using an older version of Kotlin, you will need to update it.
 
-Regarding API changes, we've also removed data classes from our public APIs. This means that for classes that were previously data classes, the `copy` constructor and `componentN` functions have been removed (unpacking). Equals/HashCode functions should still work as before.
+Regarding API changes, we've also removed data classes from our public APIs. This means that for classes that were previously data classes, the `copy` constructor and unpacking functions have been removed. Equals/HashCode functions should still work as before.
 
 ### BC8: No expired subscriptions or consumed one-time products
 
