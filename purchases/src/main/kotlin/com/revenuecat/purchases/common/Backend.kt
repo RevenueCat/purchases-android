@@ -138,7 +138,7 @@ internal class Backend(
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var getVirtualCurrenciesCallbacks =
+    @Volatile var virtualCurrenciesCallbacks =
         mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<VirtualCurrenciesCallback>>()
 
     fun close() {
@@ -774,7 +774,7 @@ internal class Backend(
 
             override fun onError(error: PurchasesError) {
                 synchronized(this@Backend) {
-                    getVirtualCurrenciesCallbacks.remove(cacheKey)
+                    virtualCurrenciesCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
                     onErrorHandler(error)
                 }
@@ -782,7 +782,7 @@ internal class Backend(
 
             override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
-                    getVirtualCurrenciesCallbacks.remove(cacheKey)
+                    virtualCurrenciesCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
@@ -791,11 +791,11 @@ internal class Backend(
                             )
                             onSuccessHandler(virtualCurrencies)
                         } catch (e: JSONException) {
-                            onError(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         } catch (e: SerializationException) {
-                            onError(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         } catch (e: IllegalArgumentException) {
-                            onError(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         }
                     } else {
                         onErrorHandler(result.toPurchasesError().also { errorLog(it) })
@@ -806,7 +806,7 @@ internal class Backend(
 
         synchronized(this@Backend) {
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
-            getVirtualCurrenciesCallbacks.addBackgroundAwareCallback(
+            virtualCurrenciesCallbacks.addBackgroundAwareCallback(
                 call,
                 dispatcher,
                 cacheKey,

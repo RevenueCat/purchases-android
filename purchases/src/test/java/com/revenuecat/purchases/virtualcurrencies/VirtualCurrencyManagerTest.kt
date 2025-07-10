@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.virtualcurrencies
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -10,6 +12,7 @@ import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import net.bytebuddy.implementation.bind.MethodDelegationBinder.MethodInvoker.Virtual
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -66,7 +69,6 @@ class VirtualCurrencyManagerTest {
         }
     }
 
-    @Suppress("ForbiddenComment")
     @Test
     fun `virtualCurrencies fetches VirtualCurrencies from network when cache is stale`() {
         val appUserID = "appUserID"
@@ -131,6 +133,76 @@ class VirtualCurrencyManagerTest {
         
         verify(exactly = 0) {
             mockDeviceCache.getCachedVirtualCurrencies(any())
+            mockCallback.onError(any())
+        }
+    }
+
+    @Test
+    fun `virtualCurrencies passes error when network request fails`() {
+        val appUserID = "appUserID"
+        val expectedError = PurchasesError(
+            code = PurchasesErrorCode.NetworkError,
+            underlyingErrorMessage = "Mock error"
+        )
+
+        val mockDeviceCache = mockk<DeviceCache>()
+        every {
+            mockDeviceCache.isVirtualCurrenciesCacheStale(any(), any())
+        } returns true
+
+        val mockIdentityManager = mockk<IdentityManager>()
+        every {
+            mockIdentityManager.currentAppUserID
+        } returns appUserID
+
+        val mockAppConfig = mockk<AppConfig>()
+        every {
+            mockAppConfig.isAppBackgrounded
+        } returns false
+
+        val mockBackend = mockk<Backend>()
+        every {
+            mockBackend.getVirtualCurrencies(any(), any(), any(), any())
+        } answers {
+            val onError = arg<(PurchasesError) -> Unit>(3)
+            onError(expectedError)
+        }
+
+        val mockCallback = mockk<GetVirtualCurrenciesCallback>()
+        every {
+            mockCallback.onReceived(any())
+        } returns Unit
+        every {
+            mockCallback.onError(any())
+        } returns Unit
+
+        val virtualCurrencyManager = VirtualCurrencyManager(
+            identityManager = mockIdentityManager,
+            deviceCache = mockDeviceCache,
+            backend = mockBackend,
+            appConfig = mockAppConfig
+        )
+
+        virtualCurrencyManager.virtualCurrencies(mockCallback)
+
+        verify(exactly = 1) {
+            mockDeviceCache.isVirtualCurrenciesCacheStale(appUserID = appUserID, appInBackground = false)
+            mockBackend.getVirtualCurrencies(
+                appUserID = appUserID,
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any()
+            )
+            mockCallback.onError(expectedError)
+        }
+
+        verify(exactly = 0) {
+            mockDeviceCache.getCachedVirtualCurrencies(any())
+            mockDeviceCache.cacheVirtualCurrencies(
+                appUserID = appUserID,
+                virtualCurrencies = any()
+            )
+            mockCallback.onReceived(any())
         }
     }
 
