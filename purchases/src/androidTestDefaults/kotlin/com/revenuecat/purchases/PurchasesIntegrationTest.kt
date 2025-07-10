@@ -16,6 +16,7 @@ import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -34,6 +35,7 @@ import java.net.UnknownHostException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+@Suppress("TooManyFunctions")
 @RunWith(AndroidJUnit4::class)
 class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
@@ -203,6 +205,68 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 isPersonalizedPrice = null,
             )
         }
+    }
+
+    @Test
+    fun testGetVirtualCurrenciesWithBalancesOfZero() {
+        val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
+        val lock = CountDownLatch(1)
+
+        onActivityReady { activity ->
+
+            Purchases.sharedInstance.logInWith(
+                appUserID = appUserIDWith0BalanceCurrencies,
+                onError = { error -> fail("should have been able to login. Error: $error") },
+                onSuccess = { _, created ->
+                    assertThat(created).isFalse() // This user should already exist
+
+                    Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+
+                    Purchases.sharedInstance.getVirtualCurrenciesWith(
+                        onError = { error -> fail("should be success. Error: $error") },
+                        onSuccess = { virtualCurrencies ->
+                            validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+                            lock.countDown()
+                        },
+                    )
+                },
+            )
+        }
+
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+
+//        let appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
+//        let purchases = try self.purchases
+//
+//            _ = try await purchases.logIn(appUserIDWith0BalanceCurrencies)
+//
+//                purchases.invalidateVirtualCurrenciesCache()
+//                let virtualCurrencies = try await purchases.virtualCurrencies()
+//                    try validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies)
+    }
+
+    @Suppress("MagicNumber")
+    private fun validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies: VirtualCurrencies) {
+        assertThat(virtualCurrencies.all.size).isEqualTo(3)
+
+        assertThat(virtualCurrencies.all["TEST"]).isNotNull()
+        assertThat(virtualCurrencies.all["TEST"]?.balance).isEqualTo(0)
+        assertThat(virtualCurrencies.all["TEST"]?.code).isEqualTo("TEST")
+        assertThat(virtualCurrencies.all["TEST"]?.name).isEqualTo("Test Currency")
+        assertThat(virtualCurrencies.all["TEST"]?.serverDescription).isEqualTo("This is a test currency")
+
+        assertThat(virtualCurrencies.all["TEST2"]).isNotNull()
+        assertThat(virtualCurrencies.all["TEST2"]?.balance).isEqualTo(0)
+        assertThat(virtualCurrencies.all["TEST2"]?.code).isEqualTo("TEST2")
+        assertThat(virtualCurrencies.all["TEST2"]?.name).isEqualTo("Test Currency 2")
+        assertThat(virtualCurrencies.all["TEST2"]?.serverDescription).isEqualTo("This is test currency 2")
+
+        assertThat(virtualCurrencies.all["TEST3"]).isNotNull()
+        assertThat(virtualCurrencies.all["TEST3"]?.balance).isEqualTo(0)
+        assertThat(virtualCurrencies.all["TEST3"]?.code).isEqualTo("TEST3")
+        assertThat(virtualCurrencies.all["TEST3"]?.name).isEqualTo("Test Currency 3")
+        assertThat(virtualCurrencies.all["TEST3"]?.serverDescription).isNull()
     }
 
     // endregion
