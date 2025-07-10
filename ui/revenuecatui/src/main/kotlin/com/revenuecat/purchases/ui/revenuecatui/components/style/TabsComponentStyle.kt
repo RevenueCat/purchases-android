@@ -29,8 +29,6 @@ internal data class TabControlButtonComponentStyle(
 @Immutable
 internal class TabControlToggleComponentStyle(
     @get:JvmSynthetic
-    val defaultValue: Boolean,
-    @get:JvmSynthetic
     val thumbColorOn: ColorStyles,
     @get:JvmSynthetic
     val thumbColorOff: ColorStyles,
