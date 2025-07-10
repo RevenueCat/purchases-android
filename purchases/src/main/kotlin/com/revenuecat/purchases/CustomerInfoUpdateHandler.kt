@@ -12,6 +12,9 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * This class is responsible for updating the customer info cache and notifying the listeners.
@@ -36,12 +39,21 @@ internal class CustomerInfoUpdateHandler(
 
     private var lastSentCustomerInfo: CustomerInfo? = null
 
+    private val _customerInfoStateFlow = MutableStateFlow<CustomerInfo?>(null)
+
+    init {
+        _customerInfoStateFlow.value = getCachedCustomerInfo(identityManager.currentAppUserID)
+    }
+
+    val customerInfoStateFlow: StateFlow<CustomerInfo?> = _customerInfoStateFlow.asStateFlow()
+
     fun cacheAndNotifyListeners(customerInfo: CustomerInfo) {
         deviceCache.cacheCustomerInfo(identityManager.currentAppUserID, customerInfo)
         notifyListeners(customerInfo)
     }
 
     fun notifyListeners(customerInfo: CustomerInfo) {
+        _customerInfoStateFlow.value = customerInfo
         synchronized(this@CustomerInfoUpdateHandler) { updatedCustomerInfoListener to lastSentCustomerInfo }
             .let { (listener, lastSentCustomerInfo) ->
                 if (lastSentCustomerInfo != customerInfo) {
