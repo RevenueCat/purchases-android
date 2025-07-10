@@ -5,7 +5,6 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.android.billingclient.api.QueryProductDetailsResult
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -34,16 +33,14 @@ import java.util.concurrent.atomic.AtomicInteger
 @Config(manifest = Config.NONE)
 internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
-    private val emptyResponseResult = QueryProductDetailsResult.create(emptyList(), emptyList())
-
-    private lateinit var mockProductDetailsResult: QueryProductDetailsResult
+    private lateinit var mockDetailsList: List<ProductDetails>
 
     private var storeProducts: List<StoreProduct>? = null
 
     @Before
     override fun setup() {
         super.setup()
-        mockProductDetailsResult = QueryProductDetailsResult.create(listOf(mockProductDetails()), emptyList())
+        mockDetailsList = listOf(mockProductDetails())
     }
 
     @Test
@@ -166,8 +163,8 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 capture(slot)
             )
         } answers {
-            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
-            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
+            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
+            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
         }
 
         wrapper.queryProductDetailsAsync(
@@ -198,12 +195,12 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
             )
         } answers {
             Thread {
-                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
+                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
                 lock.countDown()
             }.start()
 
             Thread {
-                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
+                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
                 lock.countDown()
             }.start()
         }
@@ -265,12 +262,12 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     if (timesExecutedInMainThread == 1) {
                         slot.captured.onProductDetailsResponse(
                             billingClientDisconnectedResult,
-                            emptyResponseResult
+                            emptyList()
                         )
                     } else {
                         slot.captured.onProductDetailsResponse(
                             billingClientOKResult,
-                            mockProductDetailsResult
+                            mockDetailsList
                         )
                     }
                 }
@@ -320,7 +317,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
-                        emptyResponseResult,
+                        emptyList()
                     )
                 }
 
@@ -369,7 +366,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        emptyResponseResult,
+                        emptyList()
                     )
                 }
 
@@ -421,7 +418,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        emptyResponseResult,
+                        emptyList()
                     )
                 }
 
@@ -472,7 +469,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
-                        emptyResponseResult,
+                        emptyList()
                     )
                 }
 
@@ -521,7 +518,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
-                        emptyResponseResult,
+                        emptyList()
                     )
                 }
 
@@ -546,7 +543,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 capture(slot)
             )
         } answers {
-            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
+            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
         }
     }
 

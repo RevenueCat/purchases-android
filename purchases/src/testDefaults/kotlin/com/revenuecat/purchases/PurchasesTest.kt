@@ -45,6 +45,7 @@ import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.File
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -183,7 +184,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -229,7 +230,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -1213,8 +1214,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun historicalPurchasesPassedToBackend() {
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
-        val inAppTransactions = getMockedPurchaseList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
-        val subTransactions = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS)
+        val inAppTransactions = getMockedPurchaseHistoryList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
+        val subTransactions = getMockedPurchaseHistoryList(subProductId, subPurchaseToken, ProductType.SUBS)
 
         every {
             mockBillingAbstract.queryAllPurchases(
@@ -1299,8 +1300,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         } answers {
             capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(productId, purchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseList(productIdSub, purchaseTokenSub, ProductType.SUBS)
+                    getMockedPurchaseHistoryList(productId, purchaseToken, ProductType.INAPP) +
+                        getMockedPurchaseHistoryList(productIdSub, purchaseTokenSub, ProductType.SUBS)
                 )
             }
         }
@@ -1645,14 +1646,14 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // region Private Methods
 
-    private fun getMockedPurchaseList(
+    private fun getMockedPurchaseHistoryList(
         productId: String,
         purchaseToken: String,
         productType: ProductType
     ): List<StoreTransaction> {
-        val purchaseRecordWrapper =
+        val purchaseHistoryRecordWrapper =
             getMockedStoreTransaction(productId, purchaseToken, productType)
-        return listOf(purchaseRecordWrapper)
+        return listOf(purchaseHistoryRecordWrapper)
     }
 
     private fun mockQueryingProductDetails(
@@ -1714,7 +1715,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,
