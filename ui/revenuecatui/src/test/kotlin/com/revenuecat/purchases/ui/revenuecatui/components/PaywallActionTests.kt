@@ -81,6 +81,7 @@ class PaywallActionTests {
                 is PaywallAction.External.PurchasePackage -> PurchaseButtonComponent(
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
                 )
+                else -> error("Unexpected PaywallAction: $action")
             }
         }
         val offering = FakeOffering(components, localizations)
