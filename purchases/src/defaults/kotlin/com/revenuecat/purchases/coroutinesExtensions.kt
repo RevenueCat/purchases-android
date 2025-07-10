@@ -16,7 +16,7 @@ import kotlin.coroutines.suspendCoroutine
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
  * @return The Store country code in ISO-3166-1 alpha2.
  */
-suspend fun Purchases.awaitStorefrontCountryCode(): String {
+public suspend fun Purchases.awaitStorefrontCountryCode(): String {
     return suspendCoroutine { continuation ->
         getStorefrontCountryCodeWith(
             onSuccess = continuation::resume,
@@ -37,7 +37,7 @@ suspend fun Purchases.awaitStorefrontCountryCode(): String {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitCustomerInfo(
+public suspend fun Purchases.awaitCustomerInfo(
     fetchPolicy: CacheFetchPolicy = CacheFetchPolicy.default(),
 ): CustomerInfo {
     return suspendCoroutine { continuation ->
@@ -61,7 +61,7 @@ suspend fun Purchases.awaitCustomerInfo(
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
+public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
     return suspendCoroutine { continuation ->
         logInWith(
             appUserID,
@@ -84,7 +84,7 @@ suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitLogOut(): CustomerInfo {
+public suspend fun Purchases.awaitLogOut(): CustomerInfo {
     return suspendCoroutine { continuation ->
         logOutWith(
             onSuccess = { continuation.resume(it) },
@@ -105,7 +105,7 @@ suspend fun Purchases.awaitLogOut(): CustomerInfo {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
+public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
     return suspendCoroutine { continuation ->
         syncPurchasesWith(
             onSuccess = continuation::resume,
@@ -132,7 +132,7 @@ suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
+public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
     return suspendCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
             onSuccess = continuation::resume,
@@ -158,7 +158,7 @@ suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
+public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
     return suspendCoroutine { continuation ->
         getAmazonLWAConsentStatusWith(
             onSuccess = continuation::resume,
@@ -177,7 +177,7 @@ suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
 @JvmSynthetic
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
-suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
+public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
     return suspendCoroutine { continuation ->
         getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
             override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {

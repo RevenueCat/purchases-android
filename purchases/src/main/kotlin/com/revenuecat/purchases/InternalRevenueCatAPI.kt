@@ -12,4 +12,4 @@ package com.revenuecat.purchases
     AnnotationTarget.PROPERTY,
     AnnotationTarget.TYPEALIAS,
 )
-annotation class InternalRevenueCatAPI
+public annotation class InternalRevenueCatAPI

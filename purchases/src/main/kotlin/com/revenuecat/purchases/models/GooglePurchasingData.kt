@@ -4,22 +4,22 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import dev.drewhamilton.poko.Poko
 
-sealed class GooglePurchasingData : PurchasingData {
+public sealed class GooglePurchasingData : PurchasingData {
     @Poko
-    class InAppProduct(
-        override val productId: String,
-        val productDetails: ProductDetails,
+    public class InAppProduct(
+        public override val productId: String,
+        public val productDetails: ProductDetails,
     ) : GooglePurchasingData()
 
     @Poko
-    class Subscription(
-        override val productId: String,
-        val optionId: String,
-        val productDetails: ProductDetails,
-        val token: String,
+    public class Subscription(
+        public override val productId: String,
+        public val optionId: String,
+        public val productDetails: ProductDetails,
+        public val token: String,
     ) : GooglePurchasingData()
 
-    override val productType: ProductType
+    public override val productType: ProductType
         get() = when (this) {
             is InAppProduct -> {
                 ProductType.INAPP

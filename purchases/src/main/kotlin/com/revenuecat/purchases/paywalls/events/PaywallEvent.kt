@@ -12,7 +12,7 @@ import java.util.UUID
  * Types of paywall events. Meant for RevenueCatUI use.
  */
 @InternalRevenueCatAPI
-enum class PaywallEventType(val value: String) {
+public enum class PaywallEventType(public val value: String) {
     /**
      * The paywall was shown to the user.
      */
@@ -34,29 +34,29 @@ enum class PaywallEventType(val value: String) {
  */
 @InternalRevenueCatAPI
 @Serializable
-data class PaywallEvent(
-    val creationData: CreationData,
-    val data: Data,
-    val type: PaywallEventType,
+public data class PaywallEvent(
+    public val creationData: CreationData,
+    public val data: Data,
+    public val type: PaywallEventType,
 ) : FeatureEvent {
 
     @Serializable
-    data class CreationData(
+    public data class CreationData(
         @Serializable(with = UUIDSerializer::class)
-        val id: UUID,
+        public val id: UUID,
         @Serializable(with = DateSerializer::class)
-        val date: Date,
+        public val date: Date,
     )
 
     @Serializable
-    data class Data(
-        val offeringIdentifier: String,
-        val paywallRevision: Int,
+    public data class Data(
+        public val offeringIdentifier: String,
+        public val paywallRevision: Int,
         @Serializable(with = UUIDSerializer::class)
-        val sessionIdentifier: UUID,
-        val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
-        val localeIdentifier: String,
-        val darkMode: Boolean,
+        public val sessionIdentifier: UUID,
+        public val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
+        public val localeIdentifier: String,
+        public val darkMode: Boolean,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {

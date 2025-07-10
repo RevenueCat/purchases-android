@@ -12,11 +12,11 @@ import dev.drewhamilton.poko.Poko
  * @property presentedOfferingContext [PresentedOfferingContext] from which this package was obtained.
  */
 @Poko
-class Package(
-    val identifier: String,
-    val packageType: PackageType,
-    val product: StoreProduct,
-    val presentedOfferingContext: PresentedOfferingContext,
+public class Package(
+    public val identifier: String,
+    public val packageType: PackageType,
+    public val product: StoreProduct,
+    public val presentedOfferingContext: PresentedOfferingContext,
 ) {
     @Deprecated(
         "Use constructor with presentedOfferingContext instead",
@@ -25,7 +25,7 @@ class Package(
                 "PresentedOfferingContext(offeringIdentifier = offering))",
         ),
     )
-    constructor(
+    public constructor(
         identifier: String,
         packageType: PackageType,
         product: StoreProduct,
@@ -41,14 +41,14 @@ class Package(
         "Use presentedOfferingContext.offeringIdentifier instead",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    val offering: String
+    public val offering: String
         get() = presentedOfferingContext.offeringIdentifier ?: ""
 }
 
 /**
  *  Enumeration of all possible Package types.
  */
-enum class PackageType(val identifier: String?) {
+public enum class PackageType(public val identifier: String?) {
     /**
      * A package that was defined with a custom identifier.
      */

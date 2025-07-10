@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("sticky_footer")
-class StickyFooterComponent(
+public class StickyFooterComponent(
     @get:JvmSynthetic
-    val stack: StackComponent,
+    public val stack: StackComponent,
 ) : PaywallComponent

@@ -1,11 +1,11 @@
 package com.revenuecat.purchases
 
-open class PurchasesException(val error: PurchasesError) : Exception() {
+public open class PurchasesException(public val error: PurchasesError) : Exception() {
 
-    val code: PurchasesErrorCode
+    public val code: PurchasesErrorCode
         get() = error.code
 
-    val underlyingErrorMessage: String?
+    public val underlyingErrorMessage: String?
         get() = error.underlyingErrorMessage
 
     override val message: String

@@ -16,23 +16,23 @@ import kotlinx.serialization.json.jsonPrimitive
 
 @InternalRevenueCatAPI
 @Serializable(with = PaywallComponentSerializer::class)
-sealed interface PaywallComponent
+public sealed interface PaywallComponent
 
 @InternalRevenueCatAPI
 internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
     // We're only describing the type field, while it will have many more. This works for now, but for a proper
     // implementation we can look at SealedClassSerializer. Unfortunately that's currently annotated with
     // @InternalSerializationApi.
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("PaywallComponent") {
+    public override val descriptor: SerialDescriptor = buildClassSerialDescriptor("PaywallComponent") {
         element("type", String.serializer().descriptor)
     }
 
-    override fun serialize(encoder: Encoder, value: PaywallComponent) {
+    public override fun serialize(encoder: Encoder, value: PaywallComponent) {
         // Serialization is not implemented as it is not needed.
     }
 
     @Suppress("CyclomaticComplexMethod")
-    override fun deserialize(decoder: Decoder): PaywallComponent {
+    public override fun deserialize(decoder: Decoder): PaywallComponent {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("Can only deserialize PaywallComponent from JSON, got: ${decoder::class}")
         val json = jsonDecoder.decodeJsonElement().jsonObject

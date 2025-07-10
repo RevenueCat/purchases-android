@@ -7,7 +7,7 @@ import dev.drewhamilton.poko.Poko
 import java.util.Locale
 
 @Poko
-class GoogleStoreProduct
+public class GoogleStoreProduct
 @JvmOverloads
 @Deprecated(
     "Replaced with constructor that takes a presentedOfferingContext",
@@ -24,24 +24,24 @@ constructor(
      * For subscriptions, this is the high-level productId set up for a subscription in the Play Console,
      * unique to an entitlement.
      */
-    val productId: String,
+    public val productId: String,
 
     /**
      * The basePlanId for subscription products. Null for INAPP.
      */
-    val basePlanId: String?,
+    public val basePlanId: String?,
 
     /**
      * Type of product. One of [ProductType].
      */
-    override val type: ProductType,
+    public override val type: ProductType,
 
     /**
      * Price information for a non-subscription product.
      * Base plan price for a subscription.
      * Use SubscriptionOption's pricing phases for offer pricing.
      */
-    override val price: Price,
+    public override val price: Price,
 
     /**
      * Name of the product.
@@ -54,7 +54,7 @@ constructor(
      * base plans don't have their own titles. Google suggests using the duration
      * as a way to title base plans.
      */
-    override val name: String,
+    public override val name: String,
 
     /**
      * Title of the product.
@@ -64,34 +64,34 @@ constructor(
      * base plans don't have their own titles. Google suggests using the duration
      * as a way to title base plans.
      */
-    override val title: String,
+    public override val title: String,
 
     /**
      * The description of the product.
      */
-    override val description: String,
+    public override val description: String,
 
     /**
      * Subscription period.
      * Null for INAPP products.
      */
-    override val period: Period?,
+    public override val period: Period?,
 
     /**
      * Contains all [SubscriptionOption]s. Null for INAPP products.
      */
-    override val subscriptionOptions: SubscriptionOptions?,
+    public override val subscriptionOptions: SubscriptionOptions?,
 
     /**
      * The default [SubscriptionOption] that will be used when purchasing and not specifying a different option.
      * Null for INAPP products.
      */
-    override val defaultOption: SubscriptionOption?,
+    public override val defaultOption: SubscriptionOption?,
 
     /**
      * The [ProductDetails] object returned from BillingClient that was used to construct this product.
      */
-    val productDetails: ProductDetails,
+    public val productDetails: ProductDetails,
 
     /**
      * The offering ID this `GoogleStoreProduct` was returned from.
@@ -102,14 +102,14 @@ constructor(
         "Use presentedOfferingContext instead",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    override val presentedOfferingIdentifier: String? = null,
+    public override val presentedOfferingIdentifier: String? = null,
 
     /**
      * The context from which this product was obtained.
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
-    override val presentedOfferingContext: PresentedOfferingContext? = null,
+    public override val presentedOfferingContext: PresentedOfferingContext? = null,
 ) : StoreProduct {
 
     internal constructor(
@@ -148,7 +148,7 @@ constructor(
                 "period, subscriptionOptions, defaultOption, productDetails, presentedOfferingIdentifier)",
         ),
     )
-    constructor(
+    public constructor(
         productId: String,
         basePlanId: String?,
         type: ProductType,
@@ -201,7 +201,7 @@ constructor(
      * INAPP: "<productId>"
      * Sub: "<productId:basePlanID>"
      */
-    override val id: String
+    public override val id: String
         get() = basePlanId?.let {
             "$productId:$basePlanId"
         } ?: productId
@@ -209,7 +209,7 @@ constructor(
     /**
      * Contains only data that is required to make the purchase.
      */
-    override val purchasingData: PurchasingData
+    public override val purchasingData: PurchasingData
         get() = if (type == ProductType.SUBS && defaultOption != null) {
             defaultOption.purchasingData
         } else {
@@ -226,7 +226,7 @@ constructor(
         "Replaced with productId",
         ReplaceWith("productId"),
     )
-    override val sku: String
+    public override val sku: String
         get() = productId
 
     /**
@@ -239,7 +239,7 @@ constructor(
         "Use copyWithPresentedOfferingContext instead",
         ReplaceWith("copyWithPresentedOfferingContext(presentedOfferingContext)"),
     )
-    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+    public override fun copyWithOfferingId(offeringId: String): StoreProduct {
         val newPresentedOfferingContext = presentedOfferingContext?.copy(offeringIdentifier = offeringId)
             ?: PresentedOfferingContext(offeringId)
         return copyWithPresentedOfferingContext(newPresentedOfferingContext)
@@ -251,7 +251,9 @@ constructor(
      * Creates a copy of this `GoogleStoreProduct` with the specified `presentedOfferingContext` set on itself and its
      * `defaultOption`/`subscriptionOptions`.
      */
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
+    public override fun copyWithPresentedOfferingContext(
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): StoreProduct {
         val subscriptionOptionsWithContext = subscriptionOptions?.mapNotNull {
             (it as? GoogleSubscriptionOption)?.let { googleOption ->
                 GoogleSubscriptionOption(googleOption, presentedOfferingContext)
@@ -281,7 +283,7 @@ constructor(
      * This value will use the basePlan to calculate the value.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
-    override fun formattedPricePerMonth(locale: Locale): String? {
+    public override fun formattedPricePerMonth(locale: Locale): String? {
         return subscriptionOptions?.basePlan?.pricingPhases?.last()?.formattedPriceInMonths(locale)
     }
 }
@@ -292,5 +294,5 @@ constructor(
  * `basePlanId`
  * `productDetails`
  */
-val StoreProduct.googleProduct: GoogleStoreProduct?
+public val StoreProduct.googleProduct: GoogleStoreProduct?
     get() = this as? GoogleStoreProduct

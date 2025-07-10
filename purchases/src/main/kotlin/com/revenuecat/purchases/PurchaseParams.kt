@@ -9,11 +9,11 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import dev.drewhamilton.poko.Poko
 
 @Poko
-class PurchaseParams(val builder: Builder) {
+public class PurchaseParams(public val builder: Builder) {
 
-    val isPersonalizedPrice: Boolean?
-    val oldProductId: String?
-    val googleReplacementMode: GoogleReplacementMode
+    public val isPersonalizedPrice: Boolean?
+    public val oldProductId: String?
+    public val googleReplacementMode: GoogleReplacementMode
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
@@ -43,13 +43,13 @@ class PurchaseParams(val builder: Builder) {
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      */
-    open class Builder private constructor(
+    public open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
-        constructor(activity: Activity, packageToPurchase: Package) :
+        public constructor(activity: Activity, packageToPurchase: Package) :
             this(
                 activity,
                 packageToPurchase.product.purchasingData,
@@ -57,7 +57,7 @@ class PurchaseParams(val builder: Builder) {
                 packageToPurchase.product,
             )
 
-        constructor(activity: Activity, storeProduct: StoreProduct) :
+        public constructor(activity: Activity, storeProduct: StoreProduct) :
             this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
 
         private fun ensureNoTestProduct(storeProduct: StoreProduct) {
@@ -71,7 +71,7 @@ class PurchaseParams(val builder: Builder) {
             }
         }
 
-        constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
+        public constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
             this(
                 activity,
                 subscriptionOption.purchasingData,
@@ -96,7 +96,7 @@ class PurchaseParams(val builder: Builder) {
          *
          * Default is set from the Package, StoreProduct, or SubscriptionOption used in the constructor.
          */
-        fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext) = apply {
+        public fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): Builder = apply {
             this.presentedOfferingContext = presentedOfferingContext
         }
 
@@ -109,7 +109,7 @@ class PurchaseParams(val builder: Builder) {
          * Default is false.
          * Ignored for Amazon Appstore purchases.
          */
-        fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
+        public fun isPersonalizedPrice(isPersonalizedPrice: Boolean): Builder = apply {
             this.isPersonalizedPrice = isPersonalizedPrice
         }
 
@@ -120,7 +120,7 @@ class PurchaseParams(val builder: Builder) {
          *
          * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
          */
-        fun oldProductId(oldProductId: String) = apply {
+        public fun oldProductId(oldProductId: String): Builder = apply {
             this.oldProductId = oldProductId
         }
 
@@ -130,11 +130,11 @@ class PurchaseParams(val builder: Builder) {
          *
          * Only applied for Play Store product changes. Ignored for Amazon Appstore purchases.
          */
-        fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
+        public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {
             this.googleReplacementMode = googleReplacementMode
         }
 
-        open fun build(): PurchaseParams {
+        public open fun build(): PurchaseParams {
             product?.let {
                 ensureNoTestProduct(it)
             }

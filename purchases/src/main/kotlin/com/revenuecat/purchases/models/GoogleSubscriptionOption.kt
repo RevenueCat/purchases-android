@@ -8,46 +8,46 @@ import dev.drewhamilton.poko.Poko
  * Defines an option for purchasing a Google subscription
  */
 @Poko
-class GoogleSubscriptionOption @JvmOverloads constructor(
+public class GoogleSubscriptionOption @JvmOverloads constructor(
     /**
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.
      * If it represents an offer, it will be basePlanId:offerId
      */
-    val productId: String,
+    public val productId: String,
 
     /**
      * The id of the base plan that this `GoogleSubscriptionOption` belongs to.
      */
-    val basePlanId: String,
+    public val basePlanId: String,
 
     /**
      * If this represents an offer, the offerId set in the Play Console.
      * Null otherwise.
      */
-    val offerId: String?,
+    public val offerId: String?,
 
     /**
      * Pricing phases defining a user's payment plan for the product over time.
      */
-    override val pricingPhases: List<PricingPhase>,
+    public override val pricingPhases: List<PricingPhase>,
 
     /**
      * Tags defined on the base plan or offer. Keep in mind that offers automatically
      * inherit their base plan's tag.
      */
-    override val tags: List<String>,
+    public override val tags: List<String>,
 
     /**
      * The `ProductDetails` object this `GoogleSubscriptionOption` was created from.
      * Use to get underlying BillingClient information.
      */
-    val productDetails: ProductDetails,
+    public val productDetails: ProductDetails,
 
     /**
      * The token used to purchase this `GoogleSubscriptionOption`, whether it represents
      * a base plan or an offer.
      */
-    val offerToken: String,
+    public val offerToken: String,
 
     /**
      * The context from which this subscription option was obtained.
@@ -55,13 +55,13 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
      * Null if not using RevenueCat offerings system, if fetched directly via `Purchases.getProducts`,
      * or on restores/syncs.
      */
-    override val presentedOfferingContext: PresentedOfferingContext? = null,
+    public override val presentedOfferingContext: PresentedOfferingContext? = null,
 
     /**
      * For installment subscriptions, the details of the installment plan the customer commits to.
      * Null for non-installment subscriptions.
      */
-    override val installmentsInfo: GoogleInstallmentsInfo? = null,
+    public override val installmentsInfo: GoogleInstallmentsInfo? = null,
 ) : SubscriptionOption {
 
     @Deprecated(
@@ -71,7 +71,7 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
                 "productDetails, offerToken, PresentedOfferingContext(offeringIdentifier = presentedOfferingId))",
         ),
     )
-    constructor(
+    public constructor(
         productId: String,
         basePlanId: String,
         offerId: String?,
@@ -107,7 +107,7 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
             subscriptionOption.installmentsInfo,
         )
 
-    override val id: String
+    public override val id: String
         get() = basePlanId + if (offerId.isNullOrBlank()) "" else ":$offerId"
 
     /**
@@ -119,10 +119,10 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
         "Use presentedOfferingContext instead",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    override val presentedOfferingIdentifier: String?
+    public override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
 
-    override val purchasingData: PurchasingData
+    public override val purchasingData: PurchasingData
         get() = GooglePurchasingData.Subscription(
             productId,
             id,

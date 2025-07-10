@@ -9,34 +9,34 @@ import dev.drewhamilton.poko.Poko
  * @property all Dictionary of all Offerings [Offering] objects keyed by their identifier.
  */
 @Poko
-class Offerings internal constructor(
-    val current: Offering?,
-    val all: Map<String, Offering>,
+public class Offerings internal constructor(
+    public val current: Offering?,
+    public val all: Map<String, Offering>,
     internal val placements: Placements? = null,
     internal val targeting: Targeting? = null,
 ) {
-    constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
+    public constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
 
     /**
      * Retrieves an specific offering by its identifier.
      * @param identifier Offering identifier
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun getOffering(identifier: String) = all[identifier]
+    public fun getOffering(identifier: String): Offering? = all[identifier]
 
     /**
      * Retrieves an specific offering by its identifier. It's equivalent to
      * calling [getOffering(identifier)]
      * @param identifier Offering identifier
      */
-    operator fun get(identifier: String) = getOffering(identifier)
+    public operator fun get(identifier: String): Offering? = getOffering(identifier)
 
     /**
      * Retrieves an specific offering by a placement identifier.
      * For more info see https://www.revenuecat.com/docs/tools/targeting
      * @param placementId Placement identifier
      */
-    fun getCurrentOfferingForPlacement(placementId: String): Offering? {
+    public fun getCurrentOfferingForPlacement(placementId: String): Offering? {
         val placements = this.placements ?: run {
             return null
         }
@@ -56,8 +56,8 @@ class Offerings internal constructor(
      * @property ruleId The rule id of the targeting that presented the offering.
      */
     internal data class Targeting(
-        val revision: Int,
-        val ruleId: String,
+        internal val revision: Int,
+        internal val ruleId: String,
     )
 
     /**
@@ -67,8 +67,8 @@ class Offerings internal constructor(
      * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
      */
     internal data class Placements(
-        val fallbackOfferingId: String?,
-        val offeringIdsByPlacement: Map<String, String?>,
+        internal val fallbackOfferingId: String?,
+        internal val offeringIdsByPlacement: Map<String, String?>,
     )
 }
 
