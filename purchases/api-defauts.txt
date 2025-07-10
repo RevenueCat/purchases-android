@@ -202,6 +202,10 @@ package com.revenuecat.purchases {
   public static final class LogLevel.Companion {
   }
 
+  public final class NoCoreLibraryDesugaringException extends java.lang.RuntimeException {
+    ctor public NoCoreLibraryDesugaringException(Throwable cause);
+  }
+
   @dev.drewhamilton.poko.Poko public final class Offering {
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages);
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional com.revenuecat.purchases.paywalls.PaywallData? paywall);
@@ -424,6 +428,7 @@ package com.revenuecat.purchases {
     method public void setOnesignalUserID(String? onesignalUserID);
     method public void setPhoneNumber(String? phoneNumber);
     method public static void setPlatformInfo(com.revenuecat.purchases.common.PlatformInfo);
+    method public void setPostHogUserId(String? postHogUserId);
     method public static void setProxyURL(java.net.URL?);
     method @kotlin.jvm.Synchronized public void setPurchasesAreCompletedBy(com.revenuecat.purchases.PurchasesAreCompletedBy);
     method public void setPushToken(String? fcmToken);
@@ -436,7 +441,6 @@ package com.revenuecat.purchases {
     method @Deprecated public void syncObserverModeAmazonPurchase(String productID, String receiptID, String amazonUserID, String? isoCurrencyCode, Double? price);
     method public void syncPurchases();
     method public void syncPurchases(optional com.revenuecat.purchases.interfaces.SyncPurchasesCallback? listener);
-    method public void setPostHogUserId(String? postHogUserId);
     property @Deprecated @kotlin.jvm.Synchronized public final boolean allowSharingPlayStoreAccount;
     property @kotlin.jvm.Synchronized public final String appUserID;
     property public final com.revenuecat.purchases.PurchasesConfiguration currentConfiguration;
