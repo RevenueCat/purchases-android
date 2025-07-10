@@ -136,7 +136,7 @@ internal class VirtualCurrencyManager(
             completion.onReceived(virtualCurrencies)
         }
         override fun onError(error: PurchasesError) {
-            log(LogIntent.RC_SUCCESS) {
+            log(LogIntent.RC_ERROR) {
                 VirtualCurrencyStrings.VIRTUAL_CURRENCIES_UPDATED_FROM_NETWORK_ERROR.format(error)
             }
             completion.onError(error)
