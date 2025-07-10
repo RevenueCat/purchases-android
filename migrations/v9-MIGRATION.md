@@ -6,9 +6,11 @@ Additionally, we've also updated Kotlin to 2.0.21 and our new minimum version is
 
 Regarding API changes, we've also removed data classes from our public APIs. This means that for classes that were previously data classes, the `copy` function and `componentN` functions (destructuring declarations) have been removed. `equals` and `hashCode` functions still work as before.
 
-### BC8: No expired subscriptions or consumed one-time products
+### Play Billing Library 8: No expired subscriptions or consumed one-time products
 
-With BC8, we can't query for expired subscriptions or consumed one-time products. This means that, for users migrating from a different implementation of the Play Billing Library, the SDK will not be able to send purchase information from these purchases. We can still ingest historical data from these purchases through a backend historical import. See [docs](https://www.revenuecat.com/docs/migrating-to-revenuecat/migrating-existing-subscriptions). This doesn't affect developers that have started using RevenueCat since day one.
+**Note:** the following is only relevant if you recently integrated RevenueCat, and do not (yet) have all your transactions imported. 
+  
+Play Billing Library 8 removed functionality to query expired subscriptions or consumed one-time products. This means that, for users migrating from a non-RevenueCat implementation of the Play Billing Library, the SDK will not be able to send purchase information from these purchases. We can still ingest historical data from these purchases through a backend historical import. See [docs](https://www.revenuecat.com/docs/migrating-to-revenuecat/migrating-existing-subscriptions). This doesn't affect developers that have all transactions in RevenueCat, which is true for the vast majority.
 
 ### Bumped minimum Kotlin version
 
