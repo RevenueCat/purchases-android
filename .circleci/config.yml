@@ -316,7 +316,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.21.0-SNAPSHOT s3://purchases-docs/android/8.21.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/8.23.0-SNAPSHOT s3://purchases-docs/android/8.23.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -748,7 +748,8 @@ workflows:
     when:
       equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
     jobs:
-      - deploy-snapshot
+      - deploy-snapshot:
+          context: maven-central-publishing
 
   snapshot-deploy-sample-app-tests:
     when:
@@ -758,7 +759,8 @@ workflows:
         - equal: [ "main", << pipeline.git.branch >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - deploy-snapshot
+      - deploy-snapshot:
+          context: maven-central-publishing
       - assemble-magic-weather-compose-sample-app:
           requires:
             - deploy-snapshot
@@ -813,7 +815,9 @@ workflows:
           requires:
             - hold
           <<: *release-branches
-      - deploy: *release-tags
+      - deploy:
+          <<: *release-tags
+          context: maven-central-publishing
       - docs-deploy: *release-tags
       - publish-purchase-tester-release:
           requires:
