@@ -39,18 +39,8 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? getAmazonLWAConsentStatus(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.AmazonLWAConsentStatus>);
   }
 
-  @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class CustomerInfo implements android.os.Parcelable com.revenuecat.purchases.models.RawDataContainer<org.json.JSONObject> {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class CustomerInfo implements android.os.Parcelable com.revenuecat.purchases.models.RawDataContainer<org.json.JSONObject> {
     ctor public CustomerInfo(com.revenuecat.purchases.EntitlementInfos entitlements, java.util.Map<java.lang.String,? extends java.util.Date?> allExpirationDatesByProduct, java.util.Map<java.lang.String,? extends java.util.Date?> allPurchaseDatesByProduct, java.util.Date requestDate, int schemaVersion, java.util.Date firstSeen, String originalAppUserId, android.net.Uri? managementURL, java.util.Date? originalPurchaseDate, org.json.JSONObject jsonObject);
-    method public com.revenuecat.purchases.EntitlementInfos component1();
-    method public java.util.Map<java.lang.String,java.util.Date?> component2();
-    method public java.util.Map<java.lang.String,java.util.Date?> component3();
-    method public java.util.Date component4();
-    method public int component5();
-    method public java.util.Date component6();
-    method public String component7();
-    method public android.net.Uri? component8();
-    method public java.util.Date? component9();
-    method public com.revenuecat.purchases.CustomerInfo copy(com.revenuecat.purchases.EntitlementInfos entitlements, java.util.Map<java.lang.String,? extends java.util.Date?> allExpirationDatesByProduct, java.util.Map<java.lang.String,? extends java.util.Date?> allPurchaseDatesByProduct, java.util.Date requestDate, int schemaVersion, java.util.Date firstSeen, String originalAppUserId, android.net.Uri? managementURL, java.util.Date? originalPurchaseDate, org.json.JSONObject jsonObject);
     method public java.util.Set<java.lang.String> getActiveSubscriptions();
     method public java.util.Map<java.lang.String,java.util.Date?> getAllExpirationDatesByProduct();
     method public java.util.Map<java.lang.String,java.util.Date?> getAllPurchaseDatesByProduct();
@@ -91,33 +81,15 @@ package com.revenuecat.purchases {
     property public final java.util.Map<java.lang.String,com.revenuecat.purchases.SubscriptionInfo> subscriptionsByProductIdentifier;
   }
 
-  @kotlinx.parcelize.Parcelize public final class DangerousSettings implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class DangerousSettings implements android.os.Parcelable {
     ctor public DangerousSettings(optional boolean autoSyncPurchases);
-    method public boolean component1();
-    method public com.revenuecat.purchases.DangerousSettings copy(boolean autoSyncPurchases, boolean customEntitlementComputation);
     method public boolean getAutoSyncPurchases();
     property public final boolean autoSyncPurchases;
   }
 
-  @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class EntitlementInfo implements android.os.Parcelable com.revenuecat.purchases.models.RawDataContainer<org.json.JSONObject> {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class EntitlementInfo implements android.os.Parcelable com.revenuecat.purchases.models.RawDataContainer<org.json.JSONObject> {
     ctor @Deprecated public EntitlementInfo(String identifier, boolean isActive, boolean willRenew, com.revenuecat.purchases.PeriodType periodType, java.util.Date latestPurchaseDate, java.util.Date originalPurchaseDate, java.util.Date? expirationDate, com.revenuecat.purchases.Store store, String productIdentifier, String? productPlanIdentifier, boolean isSandbox, java.util.Date? unsubscribeDetectedAt, java.util.Date? billingIssueDetectedAt, com.revenuecat.purchases.OwnershipType ownershipType, org.json.JSONObject jsonObject);
     ctor public EntitlementInfo(String identifier, boolean isActive, boolean willRenew, com.revenuecat.purchases.PeriodType periodType, java.util.Date latestPurchaseDate, java.util.Date originalPurchaseDate, java.util.Date? expirationDate, com.revenuecat.purchases.Store store, String productIdentifier, String? productPlanIdentifier, boolean isSandbox, java.util.Date? unsubscribeDetectedAt, java.util.Date? billingIssueDetectedAt, com.revenuecat.purchases.OwnershipType ownershipType, org.json.JSONObject jsonObject, optional com.revenuecat.purchases.VerificationResult verification);
-    method public String component1();
-    method public String? component10();
-    method public boolean component11();
-    method public java.util.Date? component12();
-    method public java.util.Date? component13();
-    method public com.revenuecat.purchases.OwnershipType component14();
-    method public com.revenuecat.purchases.VerificationResult component16();
-    method public boolean component2();
-    method public boolean component3();
-    method public com.revenuecat.purchases.PeriodType component4();
-    method public java.util.Date component5();
-    method public java.util.Date component6();
-    method public java.util.Date? component7();
-    method public com.revenuecat.purchases.Store component8();
-    method public String component9();
-    method public com.revenuecat.purchases.EntitlementInfo copy(String identifier, boolean isActive, boolean willRenew, com.revenuecat.purchases.PeriodType periodType, java.util.Date latestPurchaseDate, java.util.Date originalPurchaseDate, java.util.Date? expirationDate, com.revenuecat.purchases.Store store, String productIdentifier, String? productPlanIdentifier, boolean isSandbox, java.util.Date? unsubscribeDetectedAt, java.util.Date? billingIssueDetectedAt, com.revenuecat.purchases.OwnershipType ownershipType, org.json.JSONObject jsonObject, com.revenuecat.purchases.VerificationResult verification);
     method public java.util.Date? getBillingIssueDetectedAt();
     method public java.util.Date? getExpirationDate();
     method public String getIdentifier();
@@ -230,16 +202,9 @@ package com.revenuecat.purchases {
   public static final class LogLevel.Companion {
   }
 
-  public final class Offering {
+  @dev.drewhamilton.poko.Poko public final class Offering {
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages);
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents);
-    method public String component1();
-    method public String component2();
-    method public java.util.Map<java.lang.String,java.lang.Object> component3();
-    method public java.util.List<com.revenuecat.purchases.Package> component4();
-    method public com.revenuecat.purchases.paywalls.PaywallData? component5();
-    method public com.revenuecat.purchases.Offering.PaywallComponents? component6();
-    method public com.revenuecat.purchases.Offering copy(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, com.revenuecat.purchases.paywalls.PaywallData? paywall, com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents);
     method public operator com.revenuecat.purchases.Package get(String s);
     method public com.revenuecat.purchases.Package? getAnnual();
     method public java.util.List<com.revenuecat.purchases.Package> getAvailablePackages();
@@ -273,11 +238,8 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.Package? weekly;
   }
 
-  public final class Offerings {
+  @dev.drewhamilton.poko.Poko public final class Offerings {
     ctor public Offerings(com.revenuecat.purchases.Offering? current, java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> all);
-    method public com.revenuecat.purchases.Offering? component1();
-    method public java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> component2();
-    method public com.revenuecat.purchases.Offerings copy(com.revenuecat.purchases.Offering? current, java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> all, com.revenuecat.purchases.Offerings.Placements? placements, com.revenuecat.purchases.Offerings.Targeting? targeting);
     method public operator com.revenuecat.purchases.Offering? get(String identifier);
     method public java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> getAll();
     method public com.revenuecat.purchases.Offering? getCurrent();
@@ -293,14 +255,9 @@ package com.revenuecat.purchases {
     enum_constant @kotlinx.serialization.SerialName("UNKNOWN") public static final com.revenuecat.purchases.OwnershipType UNKNOWN;
   }
 
-  public final class Package {
+  @dev.drewhamilton.poko.Poko public final class Package {
     ctor public Package(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);
     ctor @Deprecated public Package(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, String offering);
-    method public String component1();
-    method public com.revenuecat.purchases.PackageType component2();
-    method public com.revenuecat.purchases.models.StoreProduct component3();
-    method public com.revenuecat.purchases.PresentedOfferingContext component4();
-    method public com.revenuecat.purchases.Package copy(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);
     method public String getIdentifier();
     method @Deprecated public String getOffering();
     method public com.revenuecat.purchases.PackageType getPackageType();
@@ -334,13 +291,9 @@ package com.revenuecat.purchases {
     enum_constant @kotlinx.serialization.SerialName("trial") public static final com.revenuecat.purchases.PeriodType TRIAL;
   }
 
-  @kotlinx.parcelize.Parcelize public final class PresentedOfferingContext implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class PresentedOfferingContext implements android.os.Parcelable {
     ctor public PresentedOfferingContext(String offeringIdentifier);
     ctor public PresentedOfferingContext(String offeringIdentifier, String? placementIdentifier, com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? targetingContext);
-    method public String component1();
-    method public String? component2();
-    method public com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? component3();
-    method public com.revenuecat.purchases.PresentedOfferingContext copy(String offeringIdentifier, String? placementIdentifier, com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? targetingContext);
     method public String getOfferingIdentifier();
     method public String? getPlacementIdentifier();
     method public com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? getTargetingContext();
@@ -349,11 +302,8 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? targetingContext;
   }
 
-  @kotlinx.parcelize.Parcelize public static final class PresentedOfferingContext.TargetingContext implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PresentedOfferingContext.TargetingContext implements android.os.Parcelable {
     ctor public PresentedOfferingContext.TargetingContext(int revision, String ruleId);
-    method public int component1();
-    method public String component2();
-    method public com.revenuecat.purchases.PresentedOfferingContext.TargetingContext copy(int revision, String ruleId);
     method public int getRevision();
     method public String getRuleId();
     property public final int revision;
@@ -366,10 +316,8 @@ package com.revenuecat.purchases {
     enum_constant public static final com.revenuecat.purchases.ProductType UNKNOWN;
   }
 
-  public final class PurchaseParams {
+  @dev.drewhamilton.poko.Poko public final class PurchaseParams {
     ctor public PurchaseParams(com.revenuecat.purchases.PurchaseParams.Builder builder);
-    method public com.revenuecat.purchases.PurchaseParams.Builder component1();
-    method public com.revenuecat.purchases.PurchaseParams copy(com.revenuecat.purchases.PurchaseParams.Builder builder);
     method public com.revenuecat.purchases.PurchaseParams.Builder getBuilder();
     method public com.revenuecat.purchases.models.GoogleReplacementMode getGoogleReplacementMode();
     method public String? getOldProductId();
@@ -391,11 +339,8 @@ package com.revenuecat.purchases {
     method public final com.revenuecat.purchases.PurchaseParams.Builder presentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);
   }
 
-  public final class PurchaseResult {
+  @dev.drewhamilton.poko.Poko public final class PurchaseResult {
     ctor public PurchaseResult(com.revenuecat.purchases.models.StoreTransaction storeTransaction, com.revenuecat.purchases.CustomerInfo customerInfo);
-    method public com.revenuecat.purchases.models.StoreTransaction component1();
-    method public com.revenuecat.purchases.CustomerInfo component2();
-    method public com.revenuecat.purchases.PurchaseResult copy(com.revenuecat.purchases.models.StoreTransaction storeTransaction, com.revenuecat.purchases.CustomerInfo customerInfo);
     method public com.revenuecat.purchases.CustomerInfo getCustomerInfo();
     method public com.revenuecat.purchases.models.StoreTransaction getStoreTransaction();
     property public final com.revenuecat.purchases.CustomerInfo customerInfo;
@@ -738,10 +683,8 @@ package com.revenuecat.purchases.amazon {
   public abstract sealed class AmazonPurchasingData implements com.revenuecat.purchases.models.PurchasingData {
   }
 
-  public static final class AmazonPurchasingData.Product extends com.revenuecat.purchases.amazon.AmazonPurchasingData {
+  @dev.drewhamilton.poko.Poko public static final class AmazonPurchasingData.Product extends com.revenuecat.purchases.amazon.AmazonPurchasingData {
     ctor public AmazonPurchasingData.Product(com.revenuecat.purchases.amazon.AmazonStoreProduct storeProduct);
-    method public com.revenuecat.purchases.amazon.AmazonStoreProduct component1();
-    method public com.revenuecat.purchases.amazon.AmazonPurchasingData.Product copy(com.revenuecat.purchases.amazon.AmazonStoreProduct storeProduct);
     method public String getProductId();
     method public com.revenuecat.purchases.ProductType getProductType();
     method public com.revenuecat.purchases.amazon.AmazonStoreProduct getStoreProduct();
@@ -750,25 +693,11 @@ package com.revenuecat.purchases.amazon {
     property public final com.revenuecat.purchases.amazon.AmazonStoreProduct storeProduct;
   }
 
-  public final class AmazonStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
+  @dev.drewhamilton.poko.Poko public final class AmazonStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
     ctor @Deprecated public AmazonStoreProduct(String id, com.revenuecat.purchases.ProductType type, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, String iconUrl, com.revenuecat.purchases.models.Period? freeTrialPeriod, org.json.JSONObject originalProductJSON, optional String? presentedOfferingIdentifier);
     ctor public AmazonStoreProduct(String id, com.revenuecat.purchases.ProductType type, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, String iconUrl, com.revenuecat.purchases.models.Period? freeTrialPeriod, org.json.JSONObject originalProductJSON);
     ctor public AmazonStoreProduct(String id, com.revenuecat.purchases.ProductType type, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, String iconUrl, com.revenuecat.purchases.models.Period? freeTrialPeriod, org.json.JSONObject originalProductJSON, optional com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     ctor @Deprecated public AmazonStoreProduct(String id, com.revenuecat.purchases.ProductType type, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, String iconUrl, com.revenuecat.purchases.models.Period? freeTrialPeriod, org.json.JSONObject originalProductJSON, String presentedOfferingIdentifier);
-    method public String component1();
-    method public String component10();
-    method public com.revenuecat.purchases.models.Period? component11();
-    method public org.json.JSONObject component12();
-    method public com.revenuecat.purchases.PresentedOfferingContext? component13();
-    method public com.revenuecat.purchases.ProductType component2();
-    method public String component3();
-    method public String component4();
-    method public String component5();
-    method public com.revenuecat.purchases.models.Period? component6();
-    method public com.revenuecat.purchases.models.Price component7();
-    method public com.revenuecat.purchases.models.SubscriptionOptions? component8();
-    method public com.revenuecat.purchases.models.SubscriptionOption? component9();
-    method public com.revenuecat.purchases.amazon.AmazonStoreProduct copy(String id, com.revenuecat.purchases.ProductType type, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, String iconUrl, com.revenuecat.purchases.models.Period? freeTrialPeriod, org.json.JSONObject originalProductJSON, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
     method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public com.revenuecat.purchases.models.SubscriptionOption? getDefaultOption();
@@ -813,25 +742,12 @@ package com.revenuecat.purchases.amazon {
 
 package com.revenuecat.purchases.common {
 
-  public final class PlatformInfo {
+  @dev.drewhamilton.poko.Poko public final class PlatformInfo {
     ctor public PlatformInfo(String flavor, String? version);
-    method public String component1();
-    method public String? component2();
-    method public com.revenuecat.purchases.common.PlatformInfo copy(String flavor, String? version);
     method public String getFlavor();
     method public String? getVersion();
     property public final String flavor;
     property public final String? version;
-  }
-
-}
-
-package com.revenuecat.purchases.common.events {
-
-  @kotlinx.serialization.Serializable public final class EventsRequest {
-    method public com.revenuecat.purchases.common.events.EventsRequest copy(java.util.List<? extends com.revenuecat.purchases.common.events.BackendEvent> events);
-    method public java.util.List<java.lang.String> getCacheKey();
-    property public final java.util.List<java.lang.String> cacheKey;
   }
 
 }
@@ -854,10 +770,8 @@ package com.revenuecat.purchases.customercenter {
     field public static final com.revenuecat.purchases.customercenter.CustomerCenterManagementOption.Cancel INSTANCE;
   }
 
-  public static final class CustomerCenterManagementOption.CustomUrl implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
+  @dev.drewhamilton.poko.Poko public static final class CustomerCenterManagementOption.CustomUrl implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
     ctor public CustomerCenterManagementOption.CustomUrl(android.net.Uri uri);
-    method public android.net.Uri component1();
-    method public com.revenuecat.purchases.customercenter.CustomerCenterManagementOption.CustomUrl copy(android.net.Uri uri);
     method public android.net.Uri getUri();
     property public final android.net.Uri uri;
   }
@@ -870,11 +784,8 @@ package com.revenuecat.purchases.customercenter {
 
 package com.revenuecat.purchases.data {
 
-  public final class LogInResult {
+  @dev.drewhamilton.poko.Poko public final class LogInResult {
     ctor public LogInResult(com.revenuecat.purchases.CustomerInfo customerInfo, boolean created);
-    method public com.revenuecat.purchases.CustomerInfo component1();
-    method public boolean component2();
-    method public com.revenuecat.purchases.data.LogInResult copy(com.revenuecat.purchases.CustomerInfo customerInfo, boolean created);
     method public boolean getCreated();
     method public com.revenuecat.purchases.CustomerInfo getCustomerInfo();
     property public final boolean created;
@@ -940,18 +851,14 @@ package com.revenuecat.purchases.interfaces {
     property public final boolean isSuccess;
   }
 
-  public static final class RedeemWebPurchaseListener.Result.Error extends com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result {
+  @dev.drewhamilton.poko.Poko public static final class RedeemWebPurchaseListener.Result.Error extends com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result {
     ctor public RedeemWebPurchaseListener.Result.Error(com.revenuecat.purchases.PurchasesError error);
-    method public com.revenuecat.purchases.PurchasesError component1();
-    method public com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result.Error copy(com.revenuecat.purchases.PurchasesError error);
     method public com.revenuecat.purchases.PurchasesError getError();
     property public final com.revenuecat.purchases.PurchasesError error;
   }
 
-  public static final class RedeemWebPurchaseListener.Result.Expired extends com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result {
+  @dev.drewhamilton.poko.Poko public static final class RedeemWebPurchaseListener.Result.Expired extends com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result {
     ctor public RedeemWebPurchaseListener.Result.Expired(String obfuscatedEmail);
-    method public String component1();
-    method public com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result.Expired copy(String obfuscatedEmail);
     method public String getObfuscatedEmail();
     property public final String obfuscatedEmail;
   }
@@ -964,10 +871,8 @@ package com.revenuecat.purchases.interfaces {
     field public static final com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser INSTANCE;
   }
 
-  public static final class RedeemWebPurchaseListener.Result.Success extends com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result {
+  @dev.drewhamilton.poko.Poko public static final class RedeemWebPurchaseListener.Result.Success extends com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result {
     ctor public RedeemWebPurchaseListener.Result.Success(com.revenuecat.purchases.CustomerInfo customerInfo);
-    method public com.revenuecat.purchases.CustomerInfo component1();
-    method public com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener.Result.Success copy(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public com.revenuecat.purchases.CustomerInfo getCustomerInfo();
     property public final com.revenuecat.purchases.CustomerInfo customerInfo;
   }
@@ -1002,11 +907,8 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.BillingFeature SUBSCRIPTIONS_UPDATE;
   }
 
-  public final class GoogleInstallmentsInfo implements com.revenuecat.purchases.models.InstallmentsInfo {
+  @dev.drewhamilton.poko.Poko public final class GoogleInstallmentsInfo implements com.revenuecat.purchases.models.InstallmentsInfo {
     ctor public GoogleInstallmentsInfo(int commitmentPaymentsCount, int renewalCommitmentPaymentsCount);
-    method public int component1();
-    method public int component2();
-    method public com.revenuecat.purchases.models.GoogleInstallmentsInfo copy(int commitmentPaymentsCount, int renewalCommitmentPaymentsCount);
     method public int getCommitmentPaymentsCount();
     method public int getRenewalCommitmentPaymentsCount();
     property public int commitmentPaymentsCount;
@@ -1018,24 +920,16 @@ package com.revenuecat.purchases.models {
     property public com.revenuecat.purchases.ProductType productType;
   }
 
-  public static final class GooglePurchasingData.InAppProduct extends com.revenuecat.purchases.models.GooglePurchasingData {
+  @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.InAppProduct extends com.revenuecat.purchases.models.GooglePurchasingData {
     ctor public GooglePurchasingData.InAppProduct(String productId, com.android.billingclient.api.ProductDetails productDetails);
-    method public String component1();
-    method public com.android.billingclient.api.ProductDetails component2();
-    method public com.revenuecat.purchases.models.GooglePurchasingData.InAppProduct copy(String productId, com.android.billingclient.api.ProductDetails productDetails);
     method public com.android.billingclient.api.ProductDetails getProductDetails();
     method public String getProductId();
     property public final com.android.billingclient.api.ProductDetails productDetails;
     property public String productId;
   }
 
-  public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {
+  @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {
     ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token);
-    method public String component1();
-    method public String component2();
-    method public com.android.billingclient.api.ProductDetails component3();
-    method public String component4();
-    method public com.revenuecat.purchases.models.GooglePurchasingData.Subscription copy(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token);
     method public String getOptionId();
     method public com.android.billingclient.api.ProductDetails getProductDetails();
     method public String getProductId();
@@ -1065,25 +959,11 @@ package com.revenuecat.purchases.models {
     method public com.revenuecat.purchases.models.GoogleReplacementMode?[] newArray(int size);
   }
 
-  public final class GoogleStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
+  @dev.drewhamilton.poko.Poko public final class GoogleStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
     ctor @Deprecated public GoogleStoreProduct(String productId, String? basePlanId, com.revenuecat.purchases.ProductType type, com.revenuecat.purchases.models.Price price, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, com.android.billingclient.api.ProductDetails productDetails, optional String? presentedOfferingIdentifier);
     ctor @Deprecated public GoogleStoreProduct(String productId, String? basePlanId, com.revenuecat.purchases.ProductType type, com.revenuecat.purchases.models.Price price, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, com.android.billingclient.api.ProductDetails productDetails);
     ctor @Deprecated public GoogleStoreProduct(String productId, String? basePlanId, com.revenuecat.purchases.ProductType type, com.revenuecat.purchases.models.Price price, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, com.android.billingclient.api.ProductDetails productDetails, optional @Deprecated String? presentedOfferingIdentifier);
     ctor @Deprecated public GoogleStoreProduct(String productId, String? basePlanId, com.revenuecat.purchases.ProductType type, com.revenuecat.purchases.models.Price price, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, com.android.billingclient.api.ProductDetails productDetails, optional @Deprecated String? presentedOfferingIdentifier, optional com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
-    method public String component1();
-    method public com.revenuecat.purchases.models.SubscriptionOption? component10();
-    method public com.android.billingclient.api.ProductDetails component11();
-    method @Deprecated public String? component12();
-    method public com.revenuecat.purchases.PresentedOfferingContext? component13();
-    method public String? component2();
-    method public com.revenuecat.purchases.ProductType component3();
-    method public com.revenuecat.purchases.models.Price component4();
-    method public String component5();
-    method public String component6();
-    method public String component7();
-    method public com.revenuecat.purchases.models.Period? component8();
-    method public com.revenuecat.purchases.models.SubscriptionOptions? component9();
-    method public com.revenuecat.purchases.models.GoogleStoreProduct copy(String productId, String? basePlanId, com.revenuecat.purchases.ProductType type, com.revenuecat.purchases.models.Price price, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, com.android.billingclient.api.ProductDetails productDetails, String? presentedOfferingIdentifier, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
     method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public String? getBasePlanId();
@@ -1124,21 +1004,11 @@ package com.revenuecat.purchases.models {
     method public static com.revenuecat.purchases.models.GoogleStoreProduct? getGoogleProduct(com.revenuecat.purchases.models.StoreProduct);
   }
 
-  public final class GoogleSubscriptionOption implements com.revenuecat.purchases.models.SubscriptionOption {
+  @dev.drewhamilton.poko.Poko public final class GoogleSubscriptionOption implements com.revenuecat.purchases.models.SubscriptionOption {
     ctor public GoogleSubscriptionOption(String productId, String basePlanId, String? offerId, java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases, java.util.List<java.lang.String> tags, com.android.billingclient.api.ProductDetails productDetails, String offerToken);
     ctor public GoogleSubscriptionOption(String productId, String basePlanId, String? offerId, java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases, java.util.List<java.lang.String> tags, com.android.billingclient.api.ProductDetails productDetails, String offerToken, optional com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     ctor public GoogleSubscriptionOption(String productId, String basePlanId, String? offerId, java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases, java.util.List<java.lang.String> tags, com.android.billingclient.api.ProductDetails productDetails, String offerToken, optional com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, optional com.revenuecat.purchases.models.GoogleInstallmentsInfo? installmentsInfo);
     ctor @Deprecated public GoogleSubscriptionOption(String productId, String basePlanId, String? offerId, java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases, java.util.List<java.lang.String> tags, com.android.billingclient.api.ProductDetails productDetails, String offerToken, String presentedOfferingId);
-    method public String component1();
-    method public String component2();
-    method public String? component3();
-    method public java.util.List<com.revenuecat.purchases.models.PricingPhase> component4();
-    method public java.util.List<java.lang.String> component5();
-    method public com.android.billingclient.api.ProductDetails component6();
-    method public String component7();
-    method public com.revenuecat.purchases.PresentedOfferingContext? component8();
-    method public com.revenuecat.purchases.models.GoogleInstallmentsInfo? component9();
-    method public com.revenuecat.purchases.models.GoogleSubscriptionOption copy(String productId, String basePlanId, String? offerId, java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases, java.util.List<java.lang.String> tags, com.android.billingclient.api.ProductDetails productDetails, String offerToken, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, com.revenuecat.purchases.models.GoogleInstallmentsInfo? installmentsInfo);
     method public String getBasePlanId();
     method public String getId();
     method public com.revenuecat.purchases.models.GoogleInstallmentsInfo? getInstallmentsInfo();
@@ -1182,12 +1052,8 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.OfferPaymentMode SINGLE_PAYMENT;
   }
 
-  @kotlinx.parcelize.Parcelize public final class Period implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class Period implements android.os.Parcelable {
     ctor public Period(int value, com.revenuecat.purchases.models.Period.Unit unit, String iso8601);
-    method public int component1();
-    method public com.revenuecat.purchases.models.Period.Unit component2();
-    method public String component3();
-    method public com.revenuecat.purchases.models.Period copy(int value, com.revenuecat.purchases.models.Period.Unit unit, String iso8601);
     method public String getIso8601();
     method public com.revenuecat.purchases.models.Period.Unit getUnit();
     method public int getValue();
@@ -1214,12 +1080,8 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.Period.Unit YEAR;
   }
 
-  @kotlinx.parcelize.Parcelize public final class Price implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class Price implements android.os.Parcelable {
     ctor public Price(String formatted, long amountMicros, String currencyCode);
-    method public String component1();
-    method public long component2();
-    method public String component3();
-    method public com.revenuecat.purchases.models.Price copy(String formatted, long amountMicros, String currencyCode);
     method public long getAmountMicros();
     method public String getCurrencyCode();
     method public String getFormatted();
@@ -1228,13 +1090,8 @@ package com.revenuecat.purchases.models {
     property public final String formatted;
   }
 
-  @kotlinx.parcelize.Parcelize public final class PricingPhase implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class PricingPhase implements android.os.Parcelable {
     ctor public PricingPhase(com.revenuecat.purchases.models.Period billingPeriod, com.revenuecat.purchases.models.RecurrenceMode recurrenceMode, Integer? billingCycleCount, com.revenuecat.purchases.models.Price price);
-    method public com.revenuecat.purchases.models.Period component1();
-    method public com.revenuecat.purchases.models.RecurrenceMode component2();
-    method public Integer? component3();
-    method public com.revenuecat.purchases.models.Price component4();
-    method public com.revenuecat.purchases.models.PricingPhase copy(com.revenuecat.purchases.models.Period billingPeriod, com.revenuecat.purchases.models.RecurrenceMode recurrenceMode, Integer? billingCycleCount, com.revenuecat.purchases.models.Price price);
     method @Deprecated public String formattedPriceInMonths();
     method @Deprecated public String formattedPriceInMonths(optional java.util.Locale locale);
     method public Integer? getBillingCycleCount();
@@ -1330,25 +1187,9 @@ package com.revenuecat.purchases.models {
     property public abstract com.revenuecat.purchases.ProductType type;
   }
 
-  @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {
     ctor public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
     ctor @Deprecated public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, String? presentedOfferingIdentifier, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
-    method public String? component1();
-    method public com.revenuecat.purchases.PresentedOfferingContext? component10();
-    method public String? component11();
-    method public com.revenuecat.purchases.models.PurchaseType component12();
-    method public String? component13();
-    method public String? component14();
-    method public com.revenuecat.purchases.ReplacementMode? component15();
-    method public java.util.List<java.lang.String> component2();
-    method public com.revenuecat.purchases.ProductType component3();
-    method public long component4();
-    method public String component5();
-    method public com.revenuecat.purchases.models.PurchaseState component6();
-    method public Boolean? component7();
-    method public String? component8();
-    method public org.json.JSONObject component9();
-    method public com.revenuecat.purchases.models.StoreTransaction copy(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
     method public String? getMarketplace();
     method public String? getOrderId();
     method public org.json.JSONObject getOriginalJson();
@@ -1428,16 +1269,9 @@ package com.revenuecat.purchases.models {
     field public static final String RC_IGNORE_OFFER_TAG = "rc-ignore-offer";
   }
 
-  public final class TestStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
+  @dev.drewhamilton.poko.Poko public final class TestStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
     ctor @Deprecated public TestStoreProduct(String id, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
     ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
-    method public String component1();
-    method public String component2();
-    method public String component3();
-    method public String component4();
-    method public com.revenuecat.purchases.models.Price component5();
-    method public com.revenuecat.purchases.models.Period? component6();
-    method public com.revenuecat.purchases.models.TestStoreProduct copy(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.Period? freeTrialPeriod, com.revenuecat.purchases.models.Price? introPrice);
     method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
     method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public com.revenuecat.purchases.models.SubscriptionOption? getDefaultOption();
@@ -1468,21 +1302,9 @@ package com.revenuecat.purchases.models {
     property public com.revenuecat.purchases.ProductType type;
   }
 
-  @kotlinx.parcelize.Parcelize public final class Transaction implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class Transaction implements android.os.Parcelable {
     ctor @Deprecated public Transaction(String transactionIdentifier, String revenuecatId, String productIdentifier, String productId, java.util.Date purchaseDate, String? storeTransactionId, com.revenuecat.purchases.Store store);
     ctor public Transaction(String transactionIdentifier, @Deprecated String revenuecatId, String productIdentifier, @Deprecated String productId, java.util.Date purchaseDate, String? storeTransactionId, com.revenuecat.purchases.Store store, String? displayName, optional boolean isSandbox, java.util.Date? originalPurchaseDate, com.revenuecat.purchases.models.Price? price);
-    method public String component1();
-    method public java.util.Date? component10();
-    method public com.revenuecat.purchases.models.Price? component11();
-    method @Deprecated public String component2();
-    method public String component3();
-    method @Deprecated public String component4();
-    method public java.util.Date component5();
-    method public String? component6();
-    method public com.revenuecat.purchases.Store component7();
-    method public String? component8();
-    method public boolean component9();
-    method public com.revenuecat.purchases.models.Transaction copy(String transactionIdentifier, String revenuecatId, String productIdentifier, String productId, java.util.Date purchaseDate, String? storeTransactionId, com.revenuecat.purchases.Store store, String? displayName, boolean isSandbox, java.util.Date? originalPurchaseDate, com.revenuecat.purchases.models.Price? price);
     method public String? getDisplayName();
     method public java.util.Date? getOriginalPurchaseDate();
     method public com.revenuecat.purchases.models.Price? getPrice();
