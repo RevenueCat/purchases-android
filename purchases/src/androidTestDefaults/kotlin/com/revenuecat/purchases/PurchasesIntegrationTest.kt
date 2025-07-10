@@ -32,6 +32,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
 import java.net.UnknownHostException
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -212,61 +213,163 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
         val lock = CountDownLatch(1)
 
-        onActivityReady { activity ->
+        Purchases.sharedInstance.logInWith(
+            appUserID = appUserIDWith0BalanceCurrencies,
+            onError = { error -> fail("should have been able to login. Error: $error") },
+            onSuccess = { _, created ->
+                assertThat(created).isFalse() // This user should already exist
 
-            Purchases.sharedInstance.logInWith(
-                appUserID = appUserIDWith0BalanceCurrencies,
-                onError = { error -> fail("should have been able to login. Error: $error") },
-                onSuccess = { _, created ->
-                    assertThat(created).isFalse() // This user should already exist
+                Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
 
-                    Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
-
-                    Purchases.sharedInstance.getVirtualCurrenciesWith(
-                        onError = { error -> fail("should be success. Error: $error") },
-                        onSuccess = { virtualCurrencies ->
-                            validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
-                            lock.countDown()
-                        },
-                    )
-                },
-            )
-        }
+                Purchases.sharedInstance.getVirtualCurrenciesWith(
+                    onError = { error -> fail("should be success. Error: $error") },
+                    onSuccess = { virtualCurrencies ->
+                        validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+                        lock.countDown()
+                    },
+                )
+            },
+        )
 
         lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isZero
+    }
 
-//        let appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
-//        let purchases = try self.purchases
-//
-//            _ = try await purchases.logIn(appUserIDWith0BalanceCurrencies)
-//
-//                purchases.invalidateVirtualCurrenciesCache()
-//                let virtualCurrencies = try await purchases.virtualCurrencies()
-//                    try validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies)
+    @Test
+    fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
+        val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesNonZero"
+        val lock = CountDownLatch(1)
+
+        Purchases.sharedInstance.logInWith(
+            appUserID = appUserIDWith0BalanceCurrencies,
+            onError = { error -> fail("should have been able to login. Error: $error") },
+            onSuccess = { _, created ->
+                assertThat(created).isFalse() // This user should already exist
+
+                Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+
+                Purchases.sharedInstance.getVirtualCurrenciesWith(
+                    onError = { error -> fail("should be success. Error: $error") },
+                    onSuccess = { virtualCurrencies ->
+                        validateAllNonZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+                        lock.countDown()
+                    },
+                )
+            },
+        )
+
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+    }
+
+    @Test
+    fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
+        val newAppUserID = "integrationTestUser_${UUID.randomUUID()}"
+        val lock = CountDownLatch(1)
+
+        Purchases.sharedInstance.logInWith(
+            appUserID = newAppUserID,
+            onError = { error -> fail("should have been able to login. Error: $error") },
+            onSuccess = { _, created ->
+                assertThat(created).isTrue() // This user should be new
+
+                Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+
+                Purchases.sharedInstance.getVirtualCurrenciesWith(
+                    onError = { error -> fail("should be success. Error: $error") },
+                    onSuccess = { virtualCurrencies ->
+                        validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+                        lock.countDown()
+                    },
+                )
+            },
+        )
+
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+    }
+
+    @Test
+    fun testCachedVirtualCurrencies() {
+        val appUserID = "integrationTestUserWithAllBalancesNonZero"
+        val lock = CountDownLatch(1)
+
+        Purchases.sharedInstance.logInWith(
+            appUserID = appUserID,
+            onError = { error -> fail("should have been able to login. Error: $error") },
+            onSuccess = { _, created ->
+                assertThat(created).isFalse() // This user should be already exist
+
+                Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+
+                Purchases.sharedInstance.getVirtualCurrenciesWith(
+                    onError = { error -> fail("should be success. Error: $error") },
+                    onSuccess = { virtualCurrencies ->
+                        validateAllNonZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+
+                        var cachedVirtualCurrencies = Purchases.sharedInstance.cachedVirtualCurrencies
+                        validateAllNonZeroBalanceVirtualCurrenciesObject(virtualCurrencies = cachedVirtualCurrencies)
+
+                        Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+                        cachedVirtualCurrencies = Purchases.sharedInstance.cachedVirtualCurrencies
+                        assertThat(cachedVirtualCurrencies).isNull()
+
+                        lock.countDown()
+                    },
+                )
+            },
+        )
+
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+    }
+
+    private fun validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies: VirtualCurrencies?) {
+        validateVirtualCurrenciesObject(
+            virtualCurrencies = virtualCurrencies,
+            testVCBalance = 0,
+            testVC2Balance = 0,
+        )
+    }
+
+    private fun validateAllNonZeroBalanceVirtualCurrenciesObject(virtualCurrencies: VirtualCurrencies?) {
+        validateVirtualCurrenciesObject(
+            virtualCurrencies = virtualCurrencies,
+            testVCBalance = 100,
+            testVC2Balance = 777,
+        )
     }
 
     @Suppress("MagicNumber")
-    private fun validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies: VirtualCurrencies) {
-        assertThat(virtualCurrencies.all.size).isEqualTo(3)
+    private fun validateVirtualCurrenciesObject(
+        virtualCurrencies: VirtualCurrencies?,
+        testVCBalance: Int,
+        testVC2Balance: Int,
+        testVC3Balance: Int = 0,
+    ) {
+        assertThat(virtualCurrencies).isNotNull()
+        assertThat(virtualCurrencies!!.all.size).isEqualTo(3)
 
-        assertThat(virtualCurrencies.all["TEST"]).isNotNull()
-        assertThat(virtualCurrencies.all["TEST"]?.balance).isEqualTo(0)
-        assertThat(virtualCurrencies.all["TEST"]?.code).isEqualTo("TEST")
-        assertThat(virtualCurrencies.all["TEST"]?.name).isEqualTo("Test Currency")
-        assertThat(virtualCurrencies.all["TEST"]?.serverDescription).isEqualTo("This is a test currency")
+        val testVCCode = "TEST"
+        assertThat(virtualCurrencies.all[testVCCode]).isNotNull()
+        assertThat(virtualCurrencies.all[testVCCode]?.balance).isEqualTo(testVCBalance)
+        assertThat(virtualCurrencies.all[testVCCode]?.code).isEqualTo(testVCCode)
+        assertThat(virtualCurrencies.all[testVCCode]?.name).isEqualTo("Test Currency")
+        assertThat(virtualCurrencies.all[testVCCode]?.serverDescription).isEqualTo("This is a test currency")
 
-        assertThat(virtualCurrencies.all["TEST2"]).isNotNull()
-        assertThat(virtualCurrencies.all["TEST2"]?.balance).isEqualTo(0)
-        assertThat(virtualCurrencies.all["TEST2"]?.code).isEqualTo("TEST2")
-        assertThat(virtualCurrencies.all["TEST2"]?.name).isEqualTo("Test Currency 2")
-        assertThat(virtualCurrencies.all["TEST2"]?.serverDescription).isEqualTo("This is test currency 2")
+        val testVCCode2 = "TEST2"
+        assertThat(virtualCurrencies.all[testVCCode2]).isNotNull()
+        assertThat(virtualCurrencies.all[testVCCode2]?.balance).isEqualTo(testVC2Balance)
+        assertThat(virtualCurrencies.all[testVCCode2]?.code).isEqualTo(testVCCode2)
+        assertThat(virtualCurrencies.all[testVCCode2]?.name).isEqualTo("Test Currency 2")
+        assertThat(virtualCurrencies.all[testVCCode2]?.serverDescription).isEqualTo("This is test currency 2")
 
-        assertThat(virtualCurrencies.all["TEST3"]).isNotNull()
-        assertThat(virtualCurrencies.all["TEST3"]?.balance).isEqualTo(0)
-        assertThat(virtualCurrencies.all["TEST3"]?.code).isEqualTo("TEST3")
-        assertThat(virtualCurrencies.all["TEST3"]?.name).isEqualTo("Test Currency 3")
-        assertThat(virtualCurrencies.all["TEST3"]?.serverDescription).isNull()
+        val testVCCode3 = "TEST3"
+        assertThat(virtualCurrencies.all[testVCCode3]).isNotNull()
+        assertThat(virtualCurrencies.all[testVCCode3]?.balance).isEqualTo(testVC3Balance)
+        assertThat(virtualCurrencies.all[testVCCode3]?.code).isEqualTo(testVCCode3)
+        assertThat(virtualCurrencies.all[testVCCode3]?.name).isEqualTo("Test Currency 3")
+        assertThat(virtualCurrencies.all[testVCCode3]?.serverDescription).isNull()
     }
 
     // endregion
