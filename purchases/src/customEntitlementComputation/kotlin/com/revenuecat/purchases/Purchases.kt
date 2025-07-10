@@ -254,7 +254,7 @@ public class Purchases internal constructor(
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        public val frameworkVersion = PurchasesOrchestrator.frameworkVersion
+        public val frameworkVersion: String = PurchasesOrchestrator.frameworkVersion
 
         /**
          * Set this property to your proxy URL before configuring Purchases *only*
