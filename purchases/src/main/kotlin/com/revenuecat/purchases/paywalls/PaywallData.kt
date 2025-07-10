@@ -21,6 +21,7 @@ import java.util.Locale
  *
  * @see [Paywalls Documentation](https://rev.cat/paywalls)
  */
+@InternalRevenueCatAPI
 @Serializable
 @Poko
 class PaywallData(
