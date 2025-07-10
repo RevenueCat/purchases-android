@@ -5,7 +5,6 @@ import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -15,7 +14,6 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -114,8 +112,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `restored tokens are saved in cache when acknowledging`() {
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
-        val token = historyRecordWrapper.purchaseToken
+        val googleRecordWrapper = getMockedPurchaseWrapper()
+        val token = googleRecordWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -123,7 +121,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             finishTransactions = true,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
@@ -162,12 +160,12 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `restored tokens are not save in cache if acknowledge fails`() {
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
-        val token = historyRecordWrapper.purchaseToken
+        val googleRecordWrapper = getMockedPurchaseWrapper()
+        val token = googleRecordWrapper.purchaseToken
 
         wrapper.consumeAndSave(
             finishTransactions = true,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
@@ -290,8 +288,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `restored subscriptions are acknowledged`() {
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
-        val token = historyRecordWrapper.purchaseToken
+        val googleRecordWrapper = getMockedPurchaseWrapper()
+        val token = googleRecordWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -299,7 +297,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             finishTransactions = true,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
@@ -341,8 +339,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `if it shouldn't finish restored transactions, don't acknowledge and save it in cache`() {
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
-        val token = historyRecordWrapper.purchaseToken
+        val googleRecordWrapper = getMockedPurchaseWrapper()
+        val token = googleRecordWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -350,7 +348,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             finishTransactions = false,
-            purchase = historyRecordWrapper,
+            purchase = googleRecordWrapper,
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
@@ -1300,17 +1298,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         return p.toStoreTransaction(productType, PresentedOfferingContext("offering_a"))
-    }
-
-    private fun getMockedPurchaseHistoryRecordWrapper(): StoreTransaction {
-        val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
-            productIds = listOf("sub"),
-            purchaseToken = "token_sub"
-        )
-
-        return p.toStoreTransaction(
-            type = ProductType.SUBS
-        )
     }
 
 }
