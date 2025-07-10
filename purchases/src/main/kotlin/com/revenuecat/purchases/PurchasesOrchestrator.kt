@@ -14,6 +14,7 @@ import coil.disk.DiskCache
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -776,6 +777,15 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setPostHogUserId(postHogUserId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setPostHogUserId") }
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.PostHogUserId,
+            postHogUserId,
+            appUserID,
+        )
+    }
+
     // endregion
     // region Attribution IDs
 
@@ -1321,7 +1331,7 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        billing.findPurchaseInPurchaseHistory(
+        billing.findPurchaseInActivePurchases(
             appUserID,
             ProductType.SUBS,
             previousProductId,
@@ -1512,7 +1522,7 @@ internal class PurchasesOrchestrator(
             callback: Callback<Boolean>,
         ) {
             BillingClient.newBuilder(context)
-                .enablePendingPurchases()
+                .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
                 .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->

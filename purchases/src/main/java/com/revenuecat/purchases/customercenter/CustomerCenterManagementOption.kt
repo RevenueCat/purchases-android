@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.customercenter
 
 import android.net.Uri
+import dev.drewhamilton.poko.Poko
 
 /**
  * Interface representing different customer center management options.
@@ -15,7 +16,8 @@ interface CustomerCenterManagementOption {
      * Action to open a custom URL
      * @property uri The URI to open
      */
-    data class CustomUrl(val uri: Uri) : CustomerCenterManagementOption
+    @Poko
+    class CustomUrl(val uri: Uri) : CustomerCenterManagementOption
 
     /**
      * Action to handle a missing purchase

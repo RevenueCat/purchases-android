@@ -1,3 +1,49 @@
+## 8.22.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(purchases): Add setPostHogUserId() method to Purchases API (#2495) via Hussain Mustafa (@hussain-mustafa990)
+### 🐞 Bugfixes
+* Improves button progress indicator size calculation. (#2485) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* Revert "BC8 migration (#2477)" (#2501) via Toni Rico (@tonidero)
+* Add codelab instructions on README file (#2489) via Jaewoong Eum (@skydoves)
+* Use collectAsStateWithLifecycle instead of collectAsState in Compose (#2488) via Jaewoong Eum (@skydoves)
+* Improve Composable stabilities (#2478) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2486) via RevenueCat Git Bot (@RCGitBot)
+* BC8 migration (#2477) via Toni Rico (@tonidero)
+* Fixes building sample apps with SNAPSHOT dependencies (#2483) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2484) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.21.0
+## RevenueCat SDK
+### ✨ New Features
+* Add `managementURL` to `SubscriptionInfo` (#2468) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* Use subscription's managementURL instead of CustomerInfo's in Customer Center (#2473) via Cesar de la Vega (@vegaro)
+* Issue when loading promotional offers when products are missing base plans (#2471) via Cesar de la Vega (@vegaro)
+* Purchases the right package when a purchase button is inside a package component (#2469) via JayShortway (@JayShortway)
+* fix potential infinite loop in paywalls (#2462) via Antonio Pallares (@ajpallares)
+
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Support multi purchases in Customer Center (#2431) via Cesar de la Vega (@vegaro)
+#### 🐞 Bugfixes
+* Use Material TopAppBar in Customer Center (#2459) via Cesar de la Vega (@vegaro)
+* Redo navigation in Customer Center (#2458) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Migrates publishing to Maven Central Portal. (#2476) via JayShortway (@JayShortway)
+* Introduce the Compose compiler metrics option for the ui package (#2474) via Jaewoong Eum (@skydoves)
+* Update workflows/issue-notifications.yml@v2 (#2475) via Josh Holtz (@joshdholtz)
+* Configure Renovate (#2470) via RevenueCat Git Bot (@RCGitBot)
+* Add GitHub Issue Action Ack (#2467) via Josh Holtz (@joshdholtz)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2448) via RevenueCat Git Bot (@RCGitBot)
+* Improve paywall error logs (#2461) via Toni Rico (@tonidero)
+* [EXTERNAL] Improve logger performance with message lambdas (#2456) via @landarskiy (#2460) via JayShortway (@JayShortway)
+* [Paywalls] Ignores `sheet.background` property in schema (#2451) via JayShortway (@JayShortway)
+
 ## 8.20.0
 ## RevenueCat SDK
 ### 🐞 Bugfixes

@@ -823,7 +823,6 @@ internal class StyleFactory(
         ) { thumbColorOn, thumbColorOff, trackColorOn, trackColorOff ->
             defaultTabIndex = if (component.defaultValue) 1 else 0
             TabControlToggleComponentStyle(
-                defaultValue = component.defaultValue,
                 thumbColorOn = thumbColorOn,
                 thumbColorOff = thumbColorOff,
                 trackColorOn = trackColorOn,

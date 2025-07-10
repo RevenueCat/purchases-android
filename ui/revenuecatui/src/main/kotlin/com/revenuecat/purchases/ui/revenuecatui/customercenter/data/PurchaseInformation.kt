@@ -42,7 +42,6 @@ internal data class PurchaseInformation(
         entitlementInfo: EntitlementInfo? = null,
         subscribedProduct: StoreProduct? = null,
         transaction: TransactionDetails,
-        managementURL: Uri?,
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
     ) : this(
@@ -56,7 +55,7 @@ internal data class PurchaseInformation(
             subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
         },
         isSubscription = transaction is TransactionDetails.Subscription && transaction.store != Store.PROMOTIONAL,
-        managementURL = managementURL,
+        managementURL = (transaction as? TransactionDetails.Subscription)?.managementURL,
         isExpired = entitlementInfo?.isActive?.let { !it }
             ?: when (transaction) {
                 is TransactionDetails.Subscription -> !transaction.isActive

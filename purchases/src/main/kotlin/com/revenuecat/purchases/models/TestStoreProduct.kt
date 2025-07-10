@@ -2,12 +2,14 @@ package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import dev.drewhamilton.poko.Poko
 
 /**
  * A test-only [StoreProduct] implementation.
  * This can be used to create mock data for tests or Jetpack Compose previews.
  */
-data class TestStoreProduct(
+@Poko
+class TestStoreProduct(
     override val id: String,
     override val name: String,
     override val title: String,

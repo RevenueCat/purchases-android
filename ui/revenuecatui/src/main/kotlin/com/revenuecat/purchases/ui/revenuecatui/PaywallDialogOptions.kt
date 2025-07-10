@@ -1,11 +1,15 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
+import dev.drewhamilton.poko.Poko
 
-data class PaywallDialogOptions internal constructor(
+@Immutable
+@Poko
+class PaywallDialogOptions internal constructor(
     val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     val dismissRequest: (() -> Unit)?,
     val offering: Offering?,
