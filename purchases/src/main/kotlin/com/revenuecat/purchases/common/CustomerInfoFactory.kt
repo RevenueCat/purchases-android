@@ -30,7 +30,6 @@ internal object CustomerInfoFactory {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
     }
 
-    @Suppress("LongMethod")
     @Throws(JSONException::class)
     fun buildCustomerInfo(
         body: JSONObject,
