@@ -3,9 +3,11 @@ package com.revenuecat.purchases.models
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import dev.drewhamilton.poko.Poko
 import java.util.Locale
 
-data class GoogleStoreProduct
+@Poko
+class GoogleStoreProduct
 @JvmOverloads
 @Deprecated(
     "Replaced with constructor that takes a presentedOfferingContext",

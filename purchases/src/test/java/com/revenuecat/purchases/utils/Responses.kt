@@ -120,7 +120,8 @@ object Responses {
                         "price": {
                           "currency": "USD",
                           "amount": "4.99"
-                        }
+                        },
+                        "management_url": "https://play.google.com/store/account/subscriptions"
                       },
                       "basic": {
                         "billing_issues_detected_at": null,
@@ -141,7 +142,8 @@ object Responses {
                         "price": {
                           "currency": "USD",
                           "amount": "5.99"
-                        }
+                        },
+                        "management_url": "https://play.google.com/store/account/subscriptions"
                       },
                       "paused": {
                         "auto_resume_date": "2100-04-06T20:54:45.975000Z",
@@ -158,7 +160,8 @@ object Responses {
                         "refunded_at": null,
                         "store": "play_store",
                         "store_transaction_id": "GPA.3304-5067-2770-55157",
-                        "unsubscribe_detected_at": null
+                        "unsubscribe_detected_at": null,
+                        "management_url": "https://play.google.com/store/account/subscriptions"
                       }
                     },
                     "entitlements": {

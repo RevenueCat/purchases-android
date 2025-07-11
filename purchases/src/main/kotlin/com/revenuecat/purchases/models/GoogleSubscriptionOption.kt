@@ -2,11 +2,13 @@ package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.PresentedOfferingContext
+import dev.drewhamilton.poko.Poko
 
 /**
  * Defines an option for purchasing a Google subscription
  */
-data class GoogleSubscriptionOption @JvmOverloads constructor(
+@Poko
+class GoogleSubscriptionOption @JvmOverloads constructor(
     /**
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.
      * If it represents an offer, it will be basePlanId:offerId
