@@ -224,7 +224,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 Purchases.sharedInstance.getVirtualCurrenciesWith(
                     onError = { error -> fail("should be success. Error: $error") },
                     onSuccess = { virtualCurrencies ->
-                        validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+                        validateAllZeroBalances(virtualCurrencies = virtualCurrencies)
                         lock.countDown()
                     },
                 )
@@ -251,7 +251,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 Purchases.sharedInstance.getVirtualCurrenciesWith(
                     onError = { error -> fail("should be success. Error: $error") },
                     onSuccess = { virtualCurrencies ->
-                        validateAllNonZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+                        validateNonZeroBalances(virtualCurrencies = virtualCurrencies)
                         lock.countDown()
                     },
                 )
@@ -278,7 +278,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 Purchases.sharedInstance.getVirtualCurrenciesWith(
                     onError = { error -> fail("should be success. Error: $error") },
                     onSuccess = { virtualCurrencies ->
-                        validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+                        validateAllZeroBalances(virtualCurrencies = virtualCurrencies)
                         lock.countDown()
                     },
                 )
@@ -305,10 +305,10 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 Purchases.sharedInstance.getVirtualCurrenciesWith(
                     onError = { error -> fail("should be success. Error: $error") },
                     onSuccess = { virtualCurrencies ->
-                        validateAllNonZeroBalanceVirtualCurrenciesObject(virtualCurrencies = virtualCurrencies)
+                        validateNonZeroBalances(virtualCurrencies = virtualCurrencies)
 
                         var cachedVirtualCurrencies = Purchases.sharedInstance.cachedVirtualCurrencies
-                        validateAllNonZeroBalanceVirtualCurrenciesObject(virtualCurrencies = cachedVirtualCurrencies)
+                        validateNonZeroBalances(virtualCurrencies = cachedVirtualCurrencies)
 
                         Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
                         cachedVirtualCurrencies = Purchases.sharedInstance.cachedVirtualCurrencies
@@ -324,7 +324,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         assertThat(lock.count).isZero
     }
 
-    private fun validateAllZeroBalanceVirtualCurrenciesObject(virtualCurrencies: VirtualCurrencies?) {
+    private fun validateAllZeroBalances(virtualCurrencies: VirtualCurrencies?) {
         validateVirtualCurrenciesObject(
             virtualCurrencies = virtualCurrencies,
             testVCBalance = 0,
@@ -332,7 +332,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         )
     }
 
-    private fun validateAllNonZeroBalanceVirtualCurrenciesObject(virtualCurrencies: VirtualCurrencies?) {
+    private fun validateNonZeroBalances(virtualCurrencies: VirtualCurrencies?) {
         validateVirtualCurrenciesObject(
             virtualCurrencies = virtualCurrencies,
             testVCBalance = 100,
