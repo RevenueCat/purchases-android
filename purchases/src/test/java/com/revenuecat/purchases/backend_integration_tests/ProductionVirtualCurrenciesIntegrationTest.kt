@@ -3,6 +3,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
 
@@ -65,7 +66,7 @@ internal class ProductionVirtualCurrenciesIntegrationTest: BaseBackendIntegratio
             balance = testVCBalance,
             serverDescription = "This is a test currency",
         )
-        assert(virtualCurrencies["TEST"] == expectedTestVirtualCurrency)
+        assertThat(virtualCurrencies["TEST"]).isEqualTo(expectedTestVirtualCurrency)
 
         val expectedTestVirtualCurrency2 = VirtualCurrency(
             code = "TEST2",
@@ -73,7 +74,7 @@ internal class ProductionVirtualCurrenciesIntegrationTest: BaseBackendIntegratio
             balance = testVC2Balance,
             serverDescription = "This is test currency 2",
         )
-        assert(virtualCurrencies["TEST2"] == expectedTestVirtualCurrency2)
+        assertThat(virtualCurrencies["TEST2"]).isEqualTo(expectedTestVirtualCurrency2)
 
         val expectedTestVirtualCurrency3 = VirtualCurrency(
             code = "TEST3",
@@ -81,6 +82,6 @@ internal class ProductionVirtualCurrenciesIntegrationTest: BaseBackendIntegratio
             balance = testVC3Balance,
             serverDescription = null,
         )
-        assert(virtualCurrencies["TEST3"] == expectedTestVirtualCurrency3)
+        assertThat(virtualCurrencies["TEST3"]).isEqualTo(expectedTestVirtualCurrency3)
     }
 }
