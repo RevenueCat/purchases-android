@@ -17,6 +17,7 @@ import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -347,29 +348,31 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         testVC2Balance: Int,
         testVC3Balance: Int = 0,
     ) {
-        assertThat(virtualCurrencies).isNotNull()
-        assertThat(virtualCurrencies!!.all.size).isEqualTo(3)
+        assert(virtualCurrencies!!.all.count() == 3)
 
-        val testVCCode = "TEST"
-        assertThat(virtualCurrencies.all[testVCCode]).isNotNull()
-        assertThat(virtualCurrencies.all[testVCCode]?.balance).isEqualTo(testVCBalance)
-        assertThat(virtualCurrencies.all[testVCCode]?.code).isEqualTo(testVCCode)
-        assertThat(virtualCurrencies.all[testVCCode]?.name).isEqualTo("Test Currency")
-        assertThat(virtualCurrencies.all[testVCCode]?.serverDescription).isEqualTo("This is a test currency")
+        val expectedTestVirtualCurrency = VirtualCurrency(
+            code = "TEST",
+            name = "Test Currency",
+            balance = testVCBalance,
+            serverDescription = "This is a test currency",
+        )
+        assert(virtualCurrencies["TEST"] == expectedTestVirtualCurrency)
 
-        val testVCCode2 = "TEST2"
-        assertThat(virtualCurrencies.all[testVCCode2]).isNotNull()
-        assertThat(virtualCurrencies.all[testVCCode2]?.balance).isEqualTo(testVC2Balance)
-        assertThat(virtualCurrencies.all[testVCCode2]?.code).isEqualTo(testVCCode2)
-        assertThat(virtualCurrencies.all[testVCCode2]?.name).isEqualTo("Test Currency 2")
-        assertThat(virtualCurrencies.all[testVCCode2]?.serverDescription).isEqualTo("This is test currency 2")
+        val expectedTestVirtualCurrency2 = VirtualCurrency(
+            code = "TEST2",
+            name = "Test Currency 2",
+            balance = testVC2Balance,
+            serverDescription = "This is test currency 2",
+        )
+        assert(virtualCurrencies["TEST2"] == expectedTestVirtualCurrency2)
 
-        val testVCCode3 = "TEST3"
-        assertThat(virtualCurrencies.all[testVCCode3]).isNotNull()
-        assertThat(virtualCurrencies.all[testVCCode3]?.balance).isEqualTo(testVC3Balance)
-        assertThat(virtualCurrencies.all[testVCCode3]?.code).isEqualTo(testVCCode3)
-        assertThat(virtualCurrencies.all[testVCCode3]?.name).isEqualTo("Test Currency 3")
-        assertThat(virtualCurrencies.all[testVCCode3]?.serverDescription).isNull()
+        val expectedTestVirtualCurrency3 = VirtualCurrency(
+            code = "TEST3",
+            name = "Test Currency 3",
+            balance = testVC3Balance,
+            serverDescription = null,
+        )
+        assert(virtualCurrencies["TEST3"] == expectedTestVirtualCurrency3)
     }
 
     // endregion

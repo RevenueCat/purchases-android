@@ -2,6 +2,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
 
@@ -58,25 +59,28 @@ internal class ProductionVirtualCurrenciesIntegrationTest: BaseBackendIntegratio
     ) {
         assert(virtualCurrencies.all.count() == 3)
 
-        val testCurrency = virtualCurrencies["TEST"]
-        assert(testCurrency != null)
-        assert(testCurrency?.balance == testVCBalance)
-        assert(testCurrency?.code == "TEST")
-        assert(testCurrency?.name == "Test Currency")
-        assert(testCurrency?.serverDescription == "This is a test currency")
+        val expectedTestVirtualCurrency = VirtualCurrency(
+            code = "TEST",
+            name = "Test Currency",
+            balance = testVCBalance,
+            serverDescription = "This is a test currency",
+        )
+        assert(virtualCurrencies["TEST"] == expectedTestVirtualCurrency)
 
-        val testCurrency2 = virtualCurrencies["TEST2"]
-        assert(testCurrency2 != null)
-        assert(testCurrency2?.balance == testVC2Balance)
-        assert(testCurrency2?.code == "TEST2")
-        assert(testCurrency2?.name == "Test Currency 2")
-        assert(testCurrency2?.serverDescription == "This is test currency 2")
+        val expectedTestVirtualCurrency2 = VirtualCurrency(
+            code = "TEST2",
+            name = "Test Currency 2",
+            balance = testVC2Balance,
+            serverDescription = "This is test currency 2",
+        )
+        assert(virtualCurrencies["TEST2"] == expectedTestVirtualCurrency2)
 
-        val testCurrency3 = virtualCurrencies["TEST3"]
-        assert(testCurrency3 != null)
-        assert(testCurrency3?.balance == testVC3Balance)
-        assert(testCurrency3?.code == "TEST3")
-        assert(testCurrency3?.name == "Test Currency 3")
-        assert(testCurrency3?.serverDescription == null)
+        val expectedTestVirtualCurrency3 = VirtualCurrency(
+            code = "TEST3",
+            name = "Test Currency 3",
+            balance = testVC3Balance,
+            serverDescription = null,
+        )
+        assert(virtualCurrencies["TEST3"] == expectedTestVirtualCurrency3)
     }
 }
