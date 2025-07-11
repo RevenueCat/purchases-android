@@ -8,7 +8,6 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -39,7 +38,6 @@ class CustomerInfoTest {
         createCustomerInfo("{}")
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `Given an empty response, empty object is created`() {
         assertThat(emptyCustomerInfo).isNotNull
