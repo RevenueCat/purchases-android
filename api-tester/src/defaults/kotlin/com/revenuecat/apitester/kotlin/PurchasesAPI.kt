@@ -20,6 +20,7 @@ import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
@@ -35,8 +36,10 @@ import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getStorefrontCountryCodeWith
+import com.revenuecat.purchases.getVirtualCurrenciesWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -47,6 +50,7 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
@@ -83,6 +87,11 @@ private class PurchasesAPI {
             override fun onError(error: PurchasesError) {}
         }
 
+        val getVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
+            override fun onReceived(virtualCurrencies: VirtualCurrencies) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback)
         purchases.getAmazonLWAConsentStatus(getAmazonLWAConsentStatusCallback)
 
@@ -116,6 +125,10 @@ private class PurchasesAPI {
         purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
         val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
+
+        purchases.getVirtualCurrencies(callback = getVirtualCurrenciesCallback)
+        purchases.invalidateVirtualCurrenciesCache()
+        val cachedVirtualCurrencies: VirtualCurrencies? = purchases.cachedVirtualCurrencies
     }
 
     @Suppress("LongMethod", "LongParameterList")
@@ -162,6 +175,10 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: AmazonLWAConsentStatus -> },
         )
+        purchases.getVirtualCurrenciesWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: VirtualCurrencies -> },
+        )
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -181,6 +198,7 @@ private class PurchasesAPI {
         var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
         var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
         var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+        val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
