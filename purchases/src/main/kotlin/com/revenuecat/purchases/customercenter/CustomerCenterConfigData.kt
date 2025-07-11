@@ -7,6 +7,7 @@ import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 typealias RCColor = PaywallColor
 
 @OptIn(InternalRevenueCatAPI::class)

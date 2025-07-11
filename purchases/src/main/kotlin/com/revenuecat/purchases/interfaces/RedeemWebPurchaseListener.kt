@@ -2,6 +2,7 @@ package com.revenuecat.purchases.interfaces
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
+import dev.drewhamilton.poko.Poko
 
 /**
  * Interface to handle the redemption of a RevenueCat Web purchase.
@@ -14,12 +15,14 @@ fun interface RedeemWebPurchaseListener {
         /**
          * Indicates that the web purchase was redeemed successfully.
          */
-        data class Success(val customerInfo: CustomerInfo) : Result()
+        @Poko
+        class Success(val customerInfo: CustomerInfo) : Result()
 
         /**
          * Indicates that an unknown error occurred during the redemption.
          */
-        data class Error(val error: PurchasesError) : Result()
+        @Poko
+        class Error(val error: PurchasesError) : Result()
 
         /**
          * Indicates that the redemption token is invalid.
@@ -31,7 +34,8 @@ fun interface RedeemWebPurchaseListener {
          * might be sent if a new one wasn't already sent recently.
          * The email where it will be sent is indicated by the [obfuscatedEmail].
          */
-        data class Expired(val obfuscatedEmail: String) : Result()
+        @Poko
+        class Expired(val obfuscatedEmail: String) : Result()
 
         /**
          * Indicates that the redemption couldn't be performed because the purchase belongs to a different user.

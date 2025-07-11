@@ -42,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibilit
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberUpdatedImageComponentState(
@@ -55,6 +56,7 @@ internal fun rememberUpdatedImageComponentState(
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberUpdatedImageComponentState(

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.models.StoreProduct
+import dev.drewhamilton.poko.Poko
 
 /**
  * Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements
@@ -10,7 +11,8 @@ import com.revenuecat.purchases.models.StoreProduct
  * @property offering offering Id this package was returned from.
  * @property presentedOfferingContext [PresentedOfferingContext] from which this package was obtained.
  */
-data class Package(
+@Poko
+class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,

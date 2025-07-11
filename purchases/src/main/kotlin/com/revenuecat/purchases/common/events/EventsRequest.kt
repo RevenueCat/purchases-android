@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.events
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.Serializable
 
 /**
@@ -7,8 +8,9 @@ import kotlinx.serialization.Serializable
  *
  * @property events A list of [BackendEvent] objects representing the events in the request.
  */
+@Poko
 @Serializable
-data class EventsRequest internal constructor(
+internal class EventsRequest internal constructor(
     internal val events: List<BackendEvent>,
 ) {
     /**

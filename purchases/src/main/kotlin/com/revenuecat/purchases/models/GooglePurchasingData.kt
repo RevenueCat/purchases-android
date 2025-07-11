@@ -2,14 +2,17 @@ package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
+import dev.drewhamilton.poko.Poko
 
 sealed class GooglePurchasingData : PurchasingData {
-    data class InAppProduct(
+    @Poko
+    class InAppProduct(
         override val productId: String,
         val productDetails: ProductDetails,
     ) : GooglePurchasingData()
 
-    data class Subscription(
+    @Poko
+    class Subscription(
         override val productId: String,
         val optionId: String,
         val productDetails: ProductDetails,

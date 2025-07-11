@@ -173,7 +173,6 @@ private class PurchasesAPI {
         val customerInfoFetchPolicy: CustomerInfo =
             purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
         val logInResult: LogInResult = purchases.awaitLogIn("appUserID")
-        val (customerInfo2: CustomerInfo, created: Boolean) = purchases.awaitLogIn("appUserID")
         val customerInfo3: CustomerInfo = purchases.awaitLogOut()
         val customerInfo4: CustomerInfo = purchases.awaitRestore()
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
@@ -201,6 +200,7 @@ private class PurchasesAPI {
             setMixpanelDistinctID("")
             setFirebaseAppInstanceID("")
             setTenjinAnalyticsInstallationID("")
+            setPostHogUserId("")
             setMediaSource("")
             setCampaign("")
             setCleverTapID("")
