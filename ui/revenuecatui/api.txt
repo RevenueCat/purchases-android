@@ -48,6 +48,10 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method @androidx.compose.runtime.Composable public static void Paywall(com.revenuecat.purchases.ui.revenuecatui.PaywallOptions options);
   }
 
+  public final class PaywallWindowKt {
+    method public static void launchPaywallWindow(android.app.Activity activity, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener);
+  }
+
   public interface PaywallListener {
     method public default void onPurchaseCancelled();
     method public default void onPurchaseCompleted(com.revenuecat.purchases.CustomerInfo customerInfo, com.revenuecat.purchases.models.StoreTransaction storeTransaction);
