@@ -7,6 +7,6 @@ import androidx.compose.runtime.Composable
  * @param options The options to configure the [Paywall] if needed.
  */
 @Composable
-fun Paywall(options: PaywallOptions) {
+public fun Paywall(options: PaywallOptions) {
     InternalPaywall(options)
 }

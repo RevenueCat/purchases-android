@@ -17,13 +17,13 @@ import java.lang.ref.WeakReference
 /**
  * Implement this interface to receive the result of the paywall activity.
  */
-interface PaywallResultHandler : ActivityResultCallback<PaywallResult>
+public interface PaywallResultHandler : ActivityResultCallback<PaywallResult>
 
 /**
  * Implement this interface to receive whether the paywall was displayed when it depends on a condition.
  */
-interface PaywallDisplayCallback {
-    fun onPaywallDisplayResult(wasDisplayed: Boolean)
+public interface PaywallDisplayCallback {
+    public fun onPaywallDisplayResult(wasDisplayed: Boolean)
 }
 
 /**
@@ -32,7 +32,7 @@ interface PaywallDisplayCallback {
  * This can be instantiated with an [ActivityResultCaller] instance
  * like a [ComponentActivity] or a [Fragment].
  */
-class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
+public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
     private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
 
     // We need to know whether the activity is running or finished to avoid launching the paywall
@@ -54,7 +54,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * Only available for original template paywalls. Ignored for v2 Paywalls.
      */
     @JvmOverloads
-    fun launch(
+    public fun launch(
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
@@ -81,7 +81,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * original template paywalls. Ignored for v2 Paywalls.
      */
     @JvmSynthetic
-    fun launch(
+    public fun launch(
         offeringIdentifier: String,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
@@ -107,7 +107,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
     @JvmOverloads
-    fun launchIfNeeded(
+    public fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
@@ -146,7 +146,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
     @JvmSynthetic
-    fun launchIfNeeded(
+    public fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
         offeringIdentifier: String,
         fontProvider: ParcelizableFontProvider? = null,
@@ -179,7 +179,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param shouldDisplayBlock the paywall will be displayed only if this returns true.
      */
     @JvmOverloads
-    fun launchIfNeeded(
+    public fun launchIfNeeded(
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,

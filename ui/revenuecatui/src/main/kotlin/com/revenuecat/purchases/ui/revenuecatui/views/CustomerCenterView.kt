@@ -12,11 +12,15 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
  */
 public class CustomerCenterView : AbstractComposeView {
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init()
     }
 
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    public constructor(
+        context: Context,
+        attrs: AttributeSet?,
+        defStyleAttr: Int,
+    ) : super(context, attrs, defStyleAttr) {
         init()
     }
 
@@ -24,7 +28,7 @@ public class CustomerCenterView : AbstractComposeView {
      * Constructor for programmatic use.
      */
     @JvmOverloads
-    constructor(
+    public constructor(
         context: Context,
         dismissHandler: (() -> Unit)? = null,
     ) : super(context) {
@@ -37,7 +41,7 @@ public class CustomerCenterView : AbstractComposeView {
     /**
      * Sets a dismiss handler for when the customer center is closed.
      */
-    fun setDismissHandler(dismissHandler: (() -> Unit)?) {
+    public fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
     }
 

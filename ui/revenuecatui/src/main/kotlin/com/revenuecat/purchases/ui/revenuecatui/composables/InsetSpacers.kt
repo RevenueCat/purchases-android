@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-fun StatusBarSpacer() {
+public fun StatusBarSpacer() {
     return Spacer(
         Modifier.windowInsetsTopHeight(
             WindowInsets.statusBars,
@@ -19,7 +19,7 @@ fun StatusBarSpacer() {
 }
 
 @Composable
-fun SystemBarsSpacer() {
+public fun SystemBarsSpacer() {
     return Spacer(
         Modifier.windowInsetsBottomHeight(
             WindowInsets.systemBars,

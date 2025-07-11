@@ -5,12 +5,12 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 
-interface PaywallListener {
-    fun onPurchaseStarted(rcPackage: Package) {}
-    fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {}
-    fun onPurchaseError(error: PurchasesError) {}
-    fun onPurchaseCancelled() {}
-    fun onRestoreStarted() {}
-    fun onRestoreCompleted(customerInfo: CustomerInfo) {}
-    fun onRestoreError(error: PurchasesError) {}
+public interface PaywallListener {
+    public fun onPurchaseStarted(rcPackage: Package) {}
+    public fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {}
+    public fun onPurchaseError(error: PurchasesError) {}
+    public fun onPurchaseCancelled() {}
+    public fun onRestoreStarted() {}
+    public fun onRestoreCompleted(customerInfo: CustomerInfo) {}
+    public fun onRestoreError(error: PurchasesError) {}
 }

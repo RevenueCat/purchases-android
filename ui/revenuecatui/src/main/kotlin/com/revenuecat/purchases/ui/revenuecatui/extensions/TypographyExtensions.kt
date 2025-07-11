@@ -5,7 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 
-fun Typography.copyWithFontProvider(fontProvider: FontProvider): Typography {
+public fun Typography.copyWithFontProvider(fontProvider: FontProvider): Typography {
     with(this) {
         return copy(
             displayLarge = displayLarge.modifyFontIfNeeded(TypographyType.DISPLAY_LARGE, fontProvider),

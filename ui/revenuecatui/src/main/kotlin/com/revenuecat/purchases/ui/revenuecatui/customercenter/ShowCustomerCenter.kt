@@ -20,12 +20,12 @@ import androidx.activity.result.contract.ActivityResultContract
  * }
  * ```
  */
-class ShowCustomerCenter : ActivityResultContract<Unit, Unit>() {
-    override fun createIntent(context: Context, input: Unit): Intent {
+public class ShowCustomerCenter : ActivityResultContract<Unit, Unit>() {
+    public override fun createIntent(context: Context, input: Unit): Intent {
         return CustomerCenterActivity.createIntent(context)
     }
 
-    override fun parseResult(resultCode: Int, intent: Intent?) {
+    public override fun parseResult(resultCode: Int, intent: Intent?) {
         // No result to parse since Customer Center doesn't return any data
     }
 }

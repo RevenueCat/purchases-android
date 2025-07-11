@@ -3,7 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts
 /**
  * Text styles for which the fonts can be overridden in the paywall.
  */
-enum class TypographyType {
+public enum class TypographyType {
     DISPLAY_LARGE,
     DISPLAY_MEDIUM,
     DISPLAY_SMALL,
