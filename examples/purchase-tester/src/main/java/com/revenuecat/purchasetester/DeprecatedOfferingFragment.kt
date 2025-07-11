@@ -9,7 +9,6 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
@@ -24,9 +23,10 @@ import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import com.revenuecat.purchasetester.ui.PackageList
 
 @SuppressWarnings("TooManyFunctions")
-class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.PackageCardAdapterListener {
+class DeprecatedOfferingFragment : Fragment() {
 
     lateinit var binding: FragmentOfferingBinding
 
@@ -61,13 +61,16 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
         val offering = offerings.getOffering(offeringId) ?: return
         binding.offering = offering
 
-        binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
-        binding.offeringDetailsPackagesRecycler.adapter =
-            DeprecatedPackageCardAdapter(
-                offering.availablePackages,
-                activeSubscriptions,
-                this,
+        binding.offeringDetailsPackagesRecycler.setContent {
+            PackageList(
+                packages = offering.availablePackages,
+                activeSubscriptions = activeSubscriptions,
+                onPurchasePackageClicked = ::onPurchasePackageClicked,
+                onPurchaseProductClicked = ::onPurchaseProductClicked,
+                onPurchaseSubscriptionOptionClicked = { _, _, _, _ -> },
+                isPlayStore = false,
             )
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -84,7 +87,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
     }
 
-    override fun onPurchasePackageClicked(
+    fun onPurchasePackageClicked(
         cardView: View,
         currentPackage: Package,
     ) {
@@ -93,7 +96,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
         startPurchasePackage(currentPackage)
     }
 
-    override fun onPurchaseProductClicked(
+    fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
     ) {
