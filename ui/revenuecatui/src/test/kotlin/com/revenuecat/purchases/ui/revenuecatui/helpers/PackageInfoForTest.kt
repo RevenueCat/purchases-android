@@ -10,7 +10,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import java.util.Locale
 
 internal fun Package.getPackageInfoForTest(
-    currentlySubscribed: Boolean = false,
     paywallData: PaywallData = TestData.template2,
     features: List<PaywallData.LocalizedConfiguration.Feature> = emptyList(),
     tierId: String? = null,
@@ -106,7 +105,6 @@ internal fun Package.getPackageInfoForTest(
     return TemplateConfiguration.PackageInfo(
         rcPackage = this,
         localization = processedLocalization,
-        currentlySubscribed = currentlySubscribed,
         discountRelativeToMostExpensivePerMonth = discountRelativeToMostExpensivePerMonth,
     )
 }

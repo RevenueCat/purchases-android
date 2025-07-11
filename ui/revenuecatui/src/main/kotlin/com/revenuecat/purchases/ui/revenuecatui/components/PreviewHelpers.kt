@@ -121,8 +121,6 @@ internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallSta
     }?.getOrThrow()!!
     return offering.toComponentsPaywallState(
         validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
     )

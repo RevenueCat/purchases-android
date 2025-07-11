@@ -5,7 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -177,8 +177,6 @@ internal fun PaywallComponentsTemplate_Preview(
             val validationResult = result.value
             val state = offering.toComponentsPaywallState(
                 validationResult = validationResult,
-                activelySubscribedProductIds = emptySet(),
-                purchasedNonSubscriptionProductIds = emptySet(),
                 storefrontCountryCode = "US",
                 dateProvider = { Date(MILLIS_2025_04_23) },
             )

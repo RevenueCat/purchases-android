@@ -25,7 +25,6 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscribed
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
@@ -92,8 +91,6 @@ internal sealed interface PaywallState {
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
-            val activelySubscribedProductIds: Set<String>,
-            val purchasedNonSubscriptionProductIds: Set<String>,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
@@ -127,7 +124,6 @@ internal sealed interface PaywallState {
 
             data class SelectedPackageInfo(
                 val rcPackage: Package,
-                val currentlySubscribed: Boolean,
             )
 
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
@@ -167,13 +163,7 @@ internal sealed interface PaywallState {
 
             val selectedPackageInfo by derivedStateOf {
                 selectedPackage?.let { rcPackage ->
-                    SelectedPackageInfo(
-                        rcPackage = rcPackage,
-                        currentlySubscribed = rcPackage.currentlySubscribed(
-                            activelySubscribedProductIdentifiers = activelySubscribedProductIds,
-                            nonSubscriptionProductIdentifiers = purchasedNonSubscriptionProductIds,
-                        ),
-                    )
+                    SelectedPackageInfo(rcPackage = rcPackage)
                 }
             }
 

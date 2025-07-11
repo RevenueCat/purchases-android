@@ -34,12 +34,6 @@ internal class TemplateConfigurationFactoryTest {
                 TestData.Packages.annual,
                 TestData.Packages.lifetime,
             ),
-            activelySubscribedProductIdentifiers = setOf(
-                TestData.Packages.monthly.product.id,
-            ),
-            nonSubscriptionProductIdentifiers = setOf(
-                TestData.Packages.lifetime.product.id
-            ),
             template = PaywallTemplate.TEMPLATE_2,
             storefrontCountryCode = "US",
         )
@@ -68,9 +62,9 @@ internal class TemplateConfigurationFactoryTest {
         )
         val packageConfiguration = template2Configuration.packages as TemplateConfiguration.PackageConfiguration.Multiple
 
-        val annualPackage = TestData.Packages.annual.getPackageInfoForTest(currentlySubscribed = false)
-        val monthlyPackage = TestData.Packages.monthly.getPackageInfoForTest(currentlySubscribed = true)
-        val lifetime = TestData.Packages.lifetime.getPackageInfoForTest(currentlySubscribed = true)
+        val annualPackage = TestData.Packages.annual.getPackageInfoForTest()
+        val monthlyPackage = TestData.Packages.monthly.getPackageInfoForTest()
+        val lifetime = TestData.Packages.lifetime.getPackageInfoForTest()
 
         val expectedConfiguration = TemplateConfiguration.PackageConfiguration.Multiple(
             TemplateConfiguration.PackageConfiguration.MultiPackage(

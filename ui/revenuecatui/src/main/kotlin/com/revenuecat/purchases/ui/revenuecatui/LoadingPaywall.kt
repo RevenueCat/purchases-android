@@ -67,8 +67,6 @@ internal fun LoadingPaywall(
             resourceProvider,
             isInPreviewMode(),
         ),
-        activelySubscribedProductIdentifiers = setOf(),
-        nonSubscriptionProductIdentifiers = setOf(),
         mode = mode,
         validatedPaywallData = paywallData,
         template = LoadingPaywallConstants.template,

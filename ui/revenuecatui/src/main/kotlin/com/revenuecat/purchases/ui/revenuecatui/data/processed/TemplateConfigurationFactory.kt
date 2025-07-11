@@ -12,8 +12,6 @@ internal object TemplateConfigurationFactory {
         mode: PaywallMode,
         paywallData: PaywallData,
         availablePackages: List<Package>,
-        activelySubscribedProductIdentifiers: Set<String>,
-        nonSubscriptionProductIdentifiers: Set<String>,
         template: PaywallTemplate,
         storefrontCountryCode: String?,
     ): Result<TemplateConfiguration> {
@@ -37,8 +35,6 @@ internal object TemplateConfigurationFactory {
             PackageConfigurationFactory.createPackageConfiguration(
                 variableDataProvider = variableDataProvider,
                 availablePackages = availablePackages,
-                activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-                nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
                 packageIdsInConfig = paywallData.config.packageIds,
                 default = paywallData.config.defaultPackage,
                 configurationType = template.configurationType,

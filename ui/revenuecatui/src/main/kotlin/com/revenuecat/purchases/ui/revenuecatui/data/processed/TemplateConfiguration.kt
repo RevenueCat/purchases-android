@@ -42,7 +42,6 @@ internal data class TemplateConfiguration(
     data class PackageInfo(
         val rcPackage: Package,
         val localization: ProcessedLocalizedConfiguration,
-        val currentlySubscribed: Boolean,
         val discountRelativeToMostExpensivePerMonth: Double?,
     )
 

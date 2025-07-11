@@ -285,8 +285,6 @@ private fun PaywallData.LocalizedConfiguration.validate(): PaywallValidationErro
 @Suppress("ReturnCount", "TooGenericExceptionCaught", "LongParameterList")
 internal fun Offering.toLegacyPaywallState(
     variableDataProvider: VariableDataProvider,
-    activelySubscribedProductIdentifiers: Set<String>,
-    nonSubscriptionProductIdentifiers: Set<String>,
     mode: PaywallMode,
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
@@ -298,8 +296,6 @@ internal fun Offering.toLegacyPaywallState(
         mode = mode,
         paywallData = validatedPaywallData,
         availablePackages = availablePackages,
-        activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-        nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
         template,
         storefrontCountryCode = storefrontCountryCode,
     )
@@ -318,8 +314,6 @@ internal fun Offering.toLegacyPaywallState(
 @Suppress("LongParameterList")
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
-    activelySubscribedProductIds: Set<String>,
-    purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
 ): PaywallState.Loaded.Components {
@@ -336,8 +330,6 @@ internal fun Offering.toComponentsPaywallState(
         variableDataProvider = validationResult.variableDataProvider,
         offering = this,
         locales = validationResult.locales,
-        activelySubscribedProductIds = activelySubscribedProductIds,
-        purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
         dateProvider = dateProvider,
         packages = validationResult.packages,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
