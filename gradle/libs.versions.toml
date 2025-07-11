@@ -1,5 +1,5 @@
 [versions]
-agp = "8.11.0"
+agp = "8.11.1"
 activityCompose = "1.9.3"
 # Note that version 18.0.1 adds the AD_ID permission to the SDK.
 # We should not add that permission ourselves, so keeping it at 17.0.1 for now.
