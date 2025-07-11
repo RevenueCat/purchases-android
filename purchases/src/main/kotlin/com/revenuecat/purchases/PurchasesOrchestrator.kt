@@ -53,6 +53,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -85,6 +86,8 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -129,6 +132,7 @@ internal class PurchasesOrchestrator(
             offlineEntitlementsManager,
             customerInfoUpdateHandler,
         ),
+    private val virtualCurrencyManager: VirtualCurrencyManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -912,6 +916,21 @@ internal class PurchasesOrchestrator(
     }
 
     //endregion
+
+    // region Virtual Currencies
+    fun getVirtualCurrencies(
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        virtualCurrencyManager.virtualCurrencies(callback = callback)
+    }
+
+    fun invalidateVirtualCurrenciesCache() {
+        virtualCurrencyManager.invalidateVirtualCurrenciesCache()
+    }
+
+    val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = virtualCurrencyManager.cachedVirtualCurrencies()
+
     //endregion
 
     // region Custom entitlements computation

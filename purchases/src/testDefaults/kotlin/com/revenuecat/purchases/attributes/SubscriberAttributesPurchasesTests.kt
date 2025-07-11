@@ -28,6 +28,7 @@ import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.SyncDispatcher
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
 import io.mockk.clearMocks
 import io.mockk.every
@@ -54,6 +55,7 @@ class SubscriberAttributesPurchasesTests {
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
     private val fontLoaderMock = mockk<FontLoader>()
+    private val virtualCurrencyManagerMock = mockk<VirtualCurrencyManager>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -113,9 +115,12 @@ class SubscriberAttributesPurchasesTests {
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
             fontLoader = fontLoaderMock,
+            virtualCurrencyManager = virtualCurrencyManagerMock,
         )
 
-        underTest = Purchases(purchasesOrchestrator)
+        underTest = Purchases(
+            purchasesOrchestrator = purchasesOrchestrator,
+        )
     }
 
     @After

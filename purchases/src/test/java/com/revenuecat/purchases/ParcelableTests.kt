@@ -11,6 +11,8 @@ import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.testParcelization
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import org.assertj.core.api.Assertions
 import org.json.JSONObject
 import org.junit.Test
@@ -46,7 +48,7 @@ class ParcelableTests {
             firstSeen = Date(System.currentTimeMillis()),
             originalAppUserId = "original_app_user_id",
             managementURL = Uri.parse("https://management.com"),
-            originalPurchaseDate = Date(System.currentTimeMillis())
+            originalPurchaseDate = Date(System.currentTimeMillis()),
         )
     )
 
@@ -91,6 +93,39 @@ class ParcelableTests {
         GoogleReplacementMode.values().forEach { testParcelization(it, true) }
         val nullMode: GoogleReplacementMode? = null
         testParcelization(nullMode, true)
+    }
+
+    @Test
+    fun `VirtualCurrency is Parcelable`() {
+        testParcelization(
+            VirtualCurrency(
+                balance = 100,
+                name = "Coin",
+                code = "COIN",
+                serverDescription = "It's a coin"
+            )
+        )
+    }
+
+    @Test
+    fun `VirtualCurrencies is Parcelable`() {
+        testParcelization(
+            VirtualCurrencies(
+                all = mapOf(
+                    "COIN" to  VirtualCurrency(
+                        balance = 1,
+                        name = "Coin",
+                        code = "COIN",
+                        serverDescription = "It's a coin"
+                    ),
+                    "RC_COIN" to VirtualCurrency(
+                        balance = 0,
+                        name = "RC Coin",
+                        code = "RC_Coin",
+                        serverDescription = null
+                    )),
+            )
+        )
     }
 
     private fun getEntitlementInfo(

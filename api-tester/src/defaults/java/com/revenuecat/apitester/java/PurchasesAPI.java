@@ -22,11 +22,13 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback;
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -129,6 +131,18 @@ final class PurchasesAPI {
 
         final WebPurchaseRedemption webPurchaseRedemption1 = Purchases.parseAsWebPurchaseRedemption(intent);
         final WebPurchaseRedemption webPurchaseRedemption2 = Purchases.parseAsWebPurchaseRedemption("");
+
+        final GetVirtualCurrenciesCallback getVirtualCurrenciesCallback = new GetVirtualCurrenciesCallback() {
+            @Override
+            public void onReceived(@NonNull VirtualCurrencies virtualCurrencies) {}
+
+            @Override
+            public void onError(@NonNull PurchasesError error) {}
+        };
+
+        purchases.getVirtualCurrencies(getVirtualCurrenciesCallback);
+        purchases.invalidateVirtualCurrenciesCache();
+        VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {

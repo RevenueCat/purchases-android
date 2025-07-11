@@ -21,6 +21,7 @@ class EndpointTest {
         Endpoint.PostDiagnostics,
         Endpoint.PostPaywallEvents,
         Endpoint.PostRedeemWebPurchase,
+        Endpoint.GetVirtualCurrencies("test-user-id"),
     )
 
     @Test
@@ -94,6 +95,20 @@ class EndpointTest {
     }
 
     @Test
+    fun `GetVirtualCurrencies has correct path`() {
+        val endpoint = Endpoint.GetVirtualCurrencies(userId = "test user-id")
+        val expectedPath = "/subscribers/test%20user-id/virtual_currencies"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetVirtualCurrencies has correct name`() {
+        val endpoint = Endpoint.GetVirtualCurrencies(userId = "test user-id")
+        val expectedName = "get_virtual_currencies"
+        assertThat(endpoint.name).isEqualTo(expectedName)
+    }
+
+    @Test
     fun `supportsSignatureVerification returns true for expected values`() {
         val expectedSupportsValidationEndpoints = listOf(
             Endpoint.GetCustomerInfo("test-user-id"),
@@ -102,6 +117,7 @@ class EndpointTest {
             Endpoint.GetOfferings("test-user-id"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
+            Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -143,6 +159,7 @@ class EndpointTest {
             Endpoint.LogIn,
             Endpoint.PostReceipt,
             Endpoint.PostRedeemWebPurchase,
+            Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
