@@ -19,14 +19,19 @@ import com.revenuecat.purchases.utils.subtract
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import io.mockk.every
+import kotlinx.serialization.SerializationException
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.runs
+import io.mockk.unmockkObject
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONException
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -66,6 +71,7 @@ class DeviceCacheTest {
 
     @Before
     fun setup() {
+        mockkObject(VirtualCurrenciesFactory)
         mockPrefs = mockk()
         mockEditor = mockk()
         mockDateProvider = mockk()
@@ -91,6 +97,11 @@ class DeviceCacheTest {
         every { mockDateProvider.now } returns currentTime
 
         cache = DeviceCache(mockPrefs, apiKey, dateProvider = mockDateProvider)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(VirtualCurrenciesFactory)
     }
 
     @Test
@@ -801,6 +812,41 @@ class DeviceCacheTest {
         }
     }
 
+    @Test
+    fun `getCachedVirtualCurrencies returns null when VirtualCurrenciesFactory throws SerializationException`() {
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), "{}")
+        
+        every {
+            VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = any())
+        } throws SerializationException("Serialization error")
+        
+        val vcs = cache.getCachedVirtualCurrencies(appUserID)
+        assertThat(vcs).`as`("cached VirtualCurrencies is null when SerializationException is thrown").isNull()
+    }
+
+    @Test
+    fun `getCachedVirtualCurrencies returns null when VirtualCurrenciesFactory throws IllegalArgumentException`() {
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), "{}")
+        
+        every {
+            VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = any())
+        } throws IllegalArgumentException("Invalid input")
+        
+        val vcs = cache.getCachedVirtualCurrencies(appUserID)
+        assertThat(vcs).`as`("cached VirtualCurrencies is null when IllegalArgumentException is thrown").isNull()
+    }
+
+    @Test
+    fun `getCachedVirtualCurrencies returns null when VirtualCurrenciesFactory throws JSONException`() {
+        mockString(cache.virtualCurrenciesCacheKey(appUserID), "{}")
+
+        every {
+            VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = any())
+        } throws JSONException("JSON exception")
+
+        val vcs = cache.getCachedVirtualCurrencies(appUserID)
+        assertThat(vcs).`as`("cached VirtualCurrencies is null when JSONException is thrown").isNull()
+    }
     // endregion virtualCurrencies
 
     private fun mockString(key: String, value: String?) {

@@ -23,8 +23,10 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
+import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
@@ -245,14 +247,27 @@ internal open class DeviceCache(
 
     fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
 
+    @Suppress("SwallowedException", "ForbiddenComment")
     @Synchronized
     fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
         return preferences.getString(virtualCurrenciesCacheKey(appUserID), null)
             ?.let { json ->
                 try {
-                    val cachedJSONObject = JSONObject(json)
-                    return VirtualCurrenciesFactory.buildVirtualCurrencies(body = cachedJSONObject)
-                } catch (e: JSONException) {
+                    return VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = json)
+                } catch (error: JSONException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
+                    null
+                } catch (error: SerializationException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
+                    null
+                } catch (error: IllegalArgumentException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
                     null
                 }
             }
