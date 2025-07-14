@@ -36,7 +36,7 @@ aliases:
     executor:
       name: android/android_machine
       resource_class: xlarge
-      tag: 2025.04.1
+      tag: 2024.11.1
 
 version: 2.1
 orbs:
