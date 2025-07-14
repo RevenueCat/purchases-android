@@ -17,9 +17,6 @@ internal class VirtualCurrencyManager(
     private val backend: Backend,
     private val appConfig: AppConfig,
 ) {
-
-    // region Public functions
-
     @Synchronized
     fun virtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
