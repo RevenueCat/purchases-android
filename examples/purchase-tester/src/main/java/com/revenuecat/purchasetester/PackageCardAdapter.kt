@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
 import androidx.core.view.children
+import androidx.core.view.isGone
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Package
@@ -14,7 +15,7 @@ import com.revenuecat.purchases.amazon.amazonProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases_sample.databinding.PackageCardBinding
+import com.revenuecat.purchasetester.databinding.PackageCardBinding
 
 class PackageCardAdapter(
     private val packages: List<Package>,
@@ -95,7 +96,7 @@ class PackageCardAdapter(
 
             binding.root.setOnClickListener {
                 with(binding.packageDetailsContainer) {
-                    visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
+                    visibility = if (isGone) View.VISIBLE else View.GONE
                 }
             }
         }

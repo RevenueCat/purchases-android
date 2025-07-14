@@ -11,8 +11,9 @@ import androidx.navigation.ui.NavigationUI
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.revenuecat.purchases_sample.databinding.FragmentLogsBinding
-import com.revenuecat.purchases_sample.databinding.LogRowViewBinding
+import com.revenuecat.purchasetester.databinding.FragmentLogsBinding
+import com.revenuecat.purchasetester.databinding.LogRowViewBinding
+import com.revenuecat.purchasetester.utils.colorResource
 
 class LogsFragment : Fragment() {
 

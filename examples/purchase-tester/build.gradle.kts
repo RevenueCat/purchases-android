@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.androidx.navigation.safeargs)
 }
@@ -7,12 +8,8 @@ plugins {
 apply(from = "$rootDir/base-application.gradle")
 
 android {
-    buildFeatures {
-        dataBinding = true
-    }
-
     defaultConfig {
-        applicationId = "com.revenuecat.purchases_sample"
+        applicationId = "com.revenuecat.purchasetester"
         minSdk = (project.properties["purchaseTesterMinSdkVersion"] as String).toInt()
         versionCode = (project.properties["purchaseTesterVersionCode"] as String).toInt()
         versionName = project.properties["purchaseTesterVersionName"] as String
@@ -59,12 +56,43 @@ android {
         testBuildType = "debug"
     }
 
-    namespace = "com.revenuecat.purchases_sample"
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    buildFeatures {
+        compose = true
+        viewBinding = true
+        dataBinding = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.4.8"
+    }
+
+    namespace = "com.revenuecat.purchasetester"
 }
 
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
+
+    implementation(platform(libs.compose.bom))
+    implementation(libs.material)
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material)
+    implementation(libs.compose.window.size)
+    implementation(libs.navigation.compose)
+    implementation(libs.compose.ui.google.fonts)
+
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)

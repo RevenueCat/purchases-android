@@ -16,6 +16,7 @@ import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchasetester.utils.JSON_FORMATTER_INDENT_SPACES
 import kotlinx.coroutines.launch
 
 @Suppress("TooManyFunctions")

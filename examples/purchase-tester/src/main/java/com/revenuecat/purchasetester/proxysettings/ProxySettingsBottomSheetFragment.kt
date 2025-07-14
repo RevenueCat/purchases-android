@@ -6,15 +6,15 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.revenuecat.purchases_sample.R
-import com.revenuecat.purchases_sample.databinding.FragmentProxySettingsBottomSheetBinding
+import com.revenuecat.purchasetester.R
+import com.revenuecat.purchasetester.databinding.FragmentProxySettingsBottomSheetBinding
 
 class ProxySettingsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private val viewModel: ProxySettingsBottomSheetViewModel by viewModels()
     private lateinit var binding: FragmentProxySettingsBottomSheetBinding
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentProxySettingsBottomSheetBinding.inflate(inflater)
         binding.lifecycleOwner = this
 

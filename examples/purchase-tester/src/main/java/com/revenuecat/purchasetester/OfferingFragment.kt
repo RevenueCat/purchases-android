@@ -17,6 +17,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
@@ -27,8 +28,9 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases_sample.R
-import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import com.revenuecat.purchasetester.databinding.FragmentOfferingBinding
+import com.revenuecat.purchasetester.utils.DataStoreUtils
+import com.revenuecat.purchasetester.utils.configurationDataStore
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -97,7 +99,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentPackage))
         } else {
             startPurchaseWithoutFinishingTransaction(currentPackage.product.purchasingData)
@@ -110,7 +112,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentProduct))
         } else {
             startPurchaseWithoutFinishingTransaction(currentProduct.purchasingData)
@@ -123,7 +125,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
             startPurchaseWithoutFinishingTransaction(subscriptionOption.purchasingData)
@@ -271,7 +273,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun showReplacementModePicker(callback: (GoogleReplacementMode?, Error?) -> Unit) {
-        val replacementModeOptions = GoogleReplacementMode.values()
+        val replacementModeOptions = GoogleReplacementMode.entries.toTypedArray()
         var selectedReplacementMode: GoogleReplacementMode? = null
 
         val replacementModeNames = replacementModeOptions.map { it.name }.toTypedArray()
