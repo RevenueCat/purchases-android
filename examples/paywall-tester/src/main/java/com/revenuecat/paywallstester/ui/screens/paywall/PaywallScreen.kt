@@ -7,9 +7,9 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -24,7 +24,7 @@ fun PaywallScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        when (val state = viewModel.state.collectAsState().value) {
+        when (val state = viewModel.state.collectAsStateWithLifecycle().value) {
             is PaywallScreenState.Loading -> {
                 Text(text = "Loading...")
             }

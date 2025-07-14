@@ -58,9 +58,9 @@ private class CheckedPreviewProvider : PreviewParameterProvider<Boolean> {
 private fun TabControlToggleView_Preview(
     @PreviewParameter(CheckedPreviewProvider::class) checked: Boolean,
 ) {
+    val initialTabIndex = if (checked) 1 else 0
     TabControlToggleView(
         style = TabControlToggleComponentStyle(
-            defaultValue = checked,
             thumbColorOn = ColorStyles(
                 light = ColorStyle.Solid(color = Color.Red),
                 dark = ColorStyle.Solid(color = Color.Blue),
@@ -78,7 +78,7 @@ private fun TabControlToggleView_Preview(
                 dark = ColorStyle.Solid(color = Color.Yellow),
             ),
         ),
-        state = previewEmptyState(),
+        state = previewEmptyState(initialSelectedTabIndex = initialTabIndex),
     )
 }
 
@@ -102,7 +102,6 @@ private fun TabControlToggleView_Gradient_Preview() {
 
     TabControlToggleView(
         style = TabControlToggleComponentStyle(
-            defaultValue = false,
             thumbColorOn = ColorStyles(
                 light = ColorInfo.Gradient.Radial(
                     points = pointsRgb,

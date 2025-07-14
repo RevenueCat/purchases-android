@@ -1,11 +1,13 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.models.StoreTransaction
+import dev.drewhamilton.poko.Poko
 
 /**
  * The result of a successful purchase operation. Used in coroutines.
  */
-data class PurchaseResult(
+@Poko
+class PurchaseResult(
     /**
      * The [StoreTransaction] for this purchase.
      */

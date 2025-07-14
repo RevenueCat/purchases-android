@@ -28,6 +28,7 @@ final class SubscriptionInfoAPI {
         final String displayName = subscriptionInfo.getDisplayName();
         final Price price = subscriptionInfo.getPrice();
         final String productPlanIdentifier = subscriptionInfo.getProductPlanIdentifier();
+        final android.net.Uri managementURL = subscriptionInfo.getManagementURL();
         final boolean isActive = subscriptionInfo.isActive();
         final boolean willRenew = subscriptionInfo.getWillRenew();
 
@@ -68,7 +69,8 @@ final class SubscriptionInfoAPI {
                 "Display Name",
                 new Price("", 0, "USD"),
                 "plan_id",
+                null,
                 new Date()
         );
     }
-} 
+}

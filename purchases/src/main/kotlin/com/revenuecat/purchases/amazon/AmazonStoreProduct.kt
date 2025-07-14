@@ -7,9 +7,11 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import dev.drewhamilton.poko.Poko
 import org.json.JSONObject
 
-data class AmazonStoreProduct @JvmOverloads constructor(
+@Poko
+class AmazonStoreProduct @JvmOverloads constructor(
 
     /**
      * The productId

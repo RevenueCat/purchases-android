@@ -17,12 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -71,7 +72,7 @@ internal fun InternalPaywall(
         viewModel.refreshStateIfColorsChanged(colorScheme = colorScheme, isDark = isDark)
     }
 
-    val state = viewModel.state.collectAsState().value
+    val state = viewModel.state.collectAsStateWithLifecycle().value
 
     PaywallTheme(fontProvider = options.fontProvider) {
         AnimatedVisibility(
@@ -205,6 +206,7 @@ private fun TemplatePaywall(state: PaywallState.Loaded.Legacy, viewModel: Paywal
     }
 }
 
+@Stable
 @Composable
 internal fun getPaywallViewModel(
     options: PaywallOptions,
@@ -212,7 +214,7 @@ internal fun getPaywallViewModel(
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
     val viewModel = viewModel<PaywallViewModelImpl>(
-        key = options.dataHash,
+        key = options.hashCode().toString(),
         factory = PaywallViewModelFactory(
             applicationContext.toResourceProvider(),
             options,
@@ -257,7 +259,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     if (activity == null) {
                         Logger.e("Activity is null, not initiating package purchase")
                     } else {
-                        viewModel.handlePackagePurchase(activity)
+                        viewModel.handlePackagePurchase(activity, pkg = action.rcPackage)
                     }
 
                 is PaywallAction.External.NavigateBack -> viewModel.closePaywall()

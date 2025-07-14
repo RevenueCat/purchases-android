@@ -29,6 +29,7 @@ private class SubscriptionInfoAPI {
             val displayName: String? = displayName
             val price: Price? = price
             val productPlanIdentifier: String? = productPlanIdentifier
+            val managementURL = managementURL
             val isActive: Boolean = isActive
             val willRenew: Boolean = willRenew
         }
@@ -71,6 +72,7 @@ private class SubscriptionInfoAPI {
             displayName = "Display Name",
             price = Price("", 0, "USD"),
             productPlanIdentifier = "plan_id",
+            managementURL = null,
             requestDate = Date(),
         )
     }

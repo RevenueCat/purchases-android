@@ -148,23 +148,6 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleQueryPurchaseHistoryRequest(
-        productType: String,
-        billingResponseCode: Int,
-        billingDebugMessage: String,
-        responseTime: Duration,
-    ) {
-        trackEvent(
-            eventName = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
-            properties = mapOf(
-                PRODUCT_TYPE_QUERIED_KEY to productType,
-                BILLING_RESPONSE_CODE to billingResponseCode,
-                BILLING_DEBUG_MESSAGE to billingDebugMessage,
-                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-            ),
-        )
-    }
-
     fun trackGoogleBillingStartConnection() {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_START_CONNECTION,

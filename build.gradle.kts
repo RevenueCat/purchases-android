@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.mavenPublish) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kover) apply false
@@ -27,6 +28,7 @@ plugins {
 dependencies {
     detektPlugins(libs.detekt.formatting)
     detektPlugins(libs.detekt.compose)
+    detektPlugins(libs.detekt.libraries)
 }
 
 tasks.register<Delete>("clean") {
