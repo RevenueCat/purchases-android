@@ -122,11 +122,13 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         setContent {
             MaterialTheme {
                 Scaffold { paddingValues ->
-                    Box(Modifier
-                        .fillMaxSize()
-                        .conditional(Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA) {
-                            padding(paddingValues)
-                        }) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .conditional(Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA) {
+                                padding(paddingValues)
+                            },
+                    ) {
                         Paywall(paywallOptions)
                     }
                 }
