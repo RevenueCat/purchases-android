@@ -125,7 +125,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                     Box(
                         Modifier
                             .fillMaxSize()
-                            .conditional(Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA) {
+                            .conditional(Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                                 padding(paddingValues)
                             },
                     ) {
