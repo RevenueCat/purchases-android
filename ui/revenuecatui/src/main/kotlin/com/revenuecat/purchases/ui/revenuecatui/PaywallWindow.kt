@@ -47,4 +47,3 @@ fun launchPaywallWindow(
 
     windowManager.addView(container, params)
 }
-
