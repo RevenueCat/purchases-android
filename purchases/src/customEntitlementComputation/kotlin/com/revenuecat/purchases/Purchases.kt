@@ -153,11 +153,13 @@ public class Purchases internal constructor(
 
     /**
      * Restores purchases made with the current Play Store account for the current user.
-     * This method will post all purchases associated with the current Play Store account to
-     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
-     * used by an existing user, the current `appUserID` will be aliased together with the
+     * This method will post all active subscriptions and non consumed one time purchases associated with the current
+     * Play Store account to RevenueCat and become associated with the current `appUserID`. If the receipt token is
+     * being used by an existing user, the current `appUserID` will be aliased together with the
      * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
      * the same user.
+     *
+     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * You shouldn't use this method if you have your own account system. In that case
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
