@@ -8,7 +8,7 @@ Regarding API changes, we've also removed data classes from our public APIs. Thi
 
 ### Play Billing Library 8: No expired subscriptions or consumed one-time products
 
-**Note:** the following is only relevant if you recently integrated RevenueCat, and do not (yet) have all your transactions imported. 
+**Note:** the following is only relevant if you recently integrated RevenueCat before upgrading to v9, and do not (yet) have all your transactions imported. 
   
 Play Billing Library 8 removed functionality to query expired subscriptions or consumed one-time products. This means that, for users migrating from a non-RevenueCat implementation of the Play Billing Library, the SDK will not be able to send purchase information from these purchases. We can still ingest historical data from these purchases through a backend historical import. See [docs](https://www.revenuecat.com/docs/migrating-to-revenuecat/migrating-existing-subscriptions). This doesn't affect developers that have all transactions in RevenueCat, which is true for the vast majority.
 
