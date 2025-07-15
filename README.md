@@ -66,7 +66,7 @@ Or view / build our Android sample app:
 
 ## Requirements
 - Java 8+
-- Kotlin 1.7.0+
+- Kotlin 1.8.0+
 - Minimum target: Android 5.0+ (API level 21+)
 
 ## SDK Reference
