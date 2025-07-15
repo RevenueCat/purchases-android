@@ -5,6 +5,7 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.utils.JSONObjectParceler
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -15,7 +16,8 @@ import org.json.JSONObject
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class StoreTransaction(
+@Poko
+class StoreTransaction(
     /**
      * Unique Google order identifier for the purchased transaction.
      *

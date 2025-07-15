@@ -150,6 +150,7 @@ final class PurchasesAPI {
         purchases.setCleverTapID("");
         purchases.setKochavaDeviceID("");
         purchases.setTenjinAnalyticsInstallationID("");
+        purchases.setPostHogUserId("");
         purchases.setAdGroup("");
         purchases.setAd("");
         purchases.setKeyword("");

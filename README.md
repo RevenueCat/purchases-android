@@ -48,6 +48,22 @@ Please follow the [Quickstart Guide](https://docs.revenuecat.com/docs/) for more
 Or view / build our Android sample app:
 - [MagicWeather](examples/MagicWeather) (open it on a different Android Studio window)
 
+## Codelab
+
+1. [RevenueCat Google Play Integration](https://revenuecat.github.io/codelab/google-play/codelab-1-google-play-integration/index.html#0): In this codelab, you'll learn how to:
+
+   - Properly configure products on Google Play.
+   - Set up the RevenueCat dashboard and connect it to your Google Play products.
+   - Understanding Product, Offering, Package, and Entitlement.
+   - Create paywalls using the [Paywall Editor](https://www.revenuecat.com/docs/tools/paywalls/creating-paywalls#using-the-editor).
+
+2. [Android In-App Purchases & Paywalls](https://revenuecat.github.io/codelab/android/codelab-2-android-sdk/index.html#0): In this codelab, you will:
+
+   - Integrate the Android RevenueCat SDK into your project
+   - Implement in-app purchases in your Android application
+   - Learn how to distinguish between paying and non-paying users
+   - Build a paywall screen, which is based on server-driven UI approach
+
 ## Requirements
 - Java 8+
 - Kotlin 1.7.0+

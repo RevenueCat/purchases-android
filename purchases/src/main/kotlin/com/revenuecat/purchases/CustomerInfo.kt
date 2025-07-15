@@ -12,6 +12,7 @@ import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.JSONObjectParceler
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -40,7 +41,8 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class CustomerInfo(
+@Poko
+class CustomerInfo(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
