@@ -27,10 +27,26 @@ constructor(
     public val serverDescription: String,
     public val metadata: Map<String, Any>,
     public val availablePackages: List<Package>,
+    @InternalRevenueCatAPI
     public val paywall: PaywallData? = null,
     @InternalRevenueCatAPI
     public val paywallComponents: PaywallComponents? = null,
 ) {
+    @OptIn(InternalRevenueCatAPI::class)
+    public constructor(
+        identifier: String,
+        serverDescription: String,
+        metadata: Map<String, Any>,
+        availablePackages: List<Package>,
+    ) : this(
+        identifier = identifier,
+        serverDescription = serverDescription,
+        metadata = metadata,
+        availablePackages = availablePackages,
+        paywall = null,
+        paywallComponents = null,
+    )
+
     @InternalRevenueCatAPI
     @Poko
     public class PaywallComponents(
