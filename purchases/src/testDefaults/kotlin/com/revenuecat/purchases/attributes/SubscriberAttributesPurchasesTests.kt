@@ -118,9 +118,7 @@ class SubscriberAttributesPurchasesTests {
             virtualCurrencyManager = virtualCurrencyManagerMock,
         )
 
-        underTest = Purchases(
-            purchasesOrchestrator = purchasesOrchestrator,
-        )
+        underTest = Purchases(purchasesOrchestrator)
     }
 
     @After
