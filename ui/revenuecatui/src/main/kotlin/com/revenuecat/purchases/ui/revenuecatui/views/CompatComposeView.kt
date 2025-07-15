@@ -62,18 +62,23 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         (parent as ViewGroup).removeView(this)
     }
 
-    override fun onSaveInstanceState(): Bundle =
-        performSave(super.onSaveInstanceState())
+    override fun onSaveInstanceState(): Parcelable? {
+        val state = super.onSaveInstanceState()
+        if (isManagingViewTree) performSave(state)
+        return state
+    }
 
     override fun onRestoreInstanceState(state: Parcelable?) {
         super.onRestoreInstanceState(state)
-        performRestore(state)
+        if (isManagingViewTree) performRestore(state)
     }
 
     override fun onAttachedToWindow() {
         initViewTreeOwners()
-        savedStateRegistryController.performAttach()
-        performRestore(null)
+        if (isManagingViewTree) {
+            savedStateRegistryController.performAttach()
+            performRestore(null)
+        }
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         super.onAttachedToWindow()
@@ -91,10 +96,12 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
         super.onWindowFocusChanged(hasWindowFocus)
         if (hasWindowFocus) {
-            // Make focusable and request focus, to be able to intercept back button presses.
-            isFocusableInTouchMode = true
-            isFocusable = true
-            requestFocus()
+            if (isManagingViewTree) {
+                // Make focusable and request focus, to be able to intercept back button presses.
+                isFocusableInTouchMode = true
+                isFocusable = true
+                requestFocus()
+            }
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         } else {
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
@@ -108,7 +115,9 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         super.onDetachedFromWindow()
     }
 
+    @Suppress("ReturnCount")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (!isManagingViewTree) return super.dispatchKeyEvent(event)
         if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
             onBackPressed()
             return true
