@@ -7,6 +7,7 @@ import android.os.Parcelable
 import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -113,6 +114,10 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             configureSdkWithSavedData(savedInstanceState)
         }
         val args = getArgs()
+        val shouldDisplayEdgeToEdge = args?.shouldDisplayEdgeToEdge == true
+        if (shouldDisplayEdgeToEdge) {
+            enableEdgeToEdge()
+        }
         val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
             .setOfferingId(args?.offeringId)
             .setFontProvider(getFontProvider())
@@ -125,7 +130,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                     Box(
                         Modifier
                             .fillMaxSize()
-                            .conditional(Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                            .conditional(!shouldDisplayEdgeToEdge) {
                                 padding(paddingValues)
                             },
                     ) {
