@@ -1,5 +1,5 @@
 buildscript {
-    extra["compileVersion"] = 34
+    extra["compileVersion"] = 35
     extra["minVersion"] = 21
 }
 
