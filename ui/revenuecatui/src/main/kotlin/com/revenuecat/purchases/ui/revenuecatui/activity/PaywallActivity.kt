@@ -31,6 +31,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
@@ -121,7 +122,13 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         setContent {
             MaterialTheme {
                 Scaffold { paddingValues ->
-                    Box(Modifier.fillMaxSize().padding(paddingValues)) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .conditional(Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                                padding(paddingValues)
+                            },
+                    ) {
                         Paywall(paywallOptions)
                     }
                 }
