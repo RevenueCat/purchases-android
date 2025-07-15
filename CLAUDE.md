@@ -32,6 +32,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Code Quality and Analysis
 ```bash
+# Run lint (static code analysis)
+./gradlew lint
+
 # Run detekt (static code analysis)
 ./gradlew detektAll
 
@@ -109,6 +112,7 @@ com.revenuecat.purchases/
 ```
 
 ### Product Flavors
+The `purchases` module has 2 flavors:
 - **`defaults`** - Standard Google Play implementation
 - **`customEntitlementComputation`** - Custom entitlement computation variant
 
