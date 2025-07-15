@@ -21,18 +21,16 @@ import dev.drewhamilton.poko.Poko
 @Poko
 public class Offering
 @OptIn(InternalRevenueCatAPI::class)
-@JvmOverloads
 constructor(
     public val identifier: String,
     public val serverDescription: String,
     public val metadata: Map<String, Any>,
     public val availablePackages: List<Package>,
     @InternalRevenueCatAPI
-    public val paywall: PaywallData? = null,
+    public val paywall: PaywallData?,
     @InternalRevenueCatAPI
-    public val paywallComponents: PaywallComponents? = null,
+    public val paywallComponents: PaywallComponents?,
 ) {
-    @OptIn(InternalRevenueCatAPI::class)
     public constructor(
         identifier: String,
         serverDescription: String,
@@ -45,6 +43,37 @@ constructor(
         availablePackages = availablePackages,
         paywall = null,
         paywallComponents = null,
+    )
+
+    public constructor(
+        identifier: String,
+        serverDescription: String,
+        metadata: Map<String, Any>,
+        availablePackages: List<Package>,
+        paywall: PaywallData?,
+    ) : this(
+        identifier = identifier,
+        serverDescription = serverDescription,
+        metadata = metadata,
+        availablePackages = availablePackages,
+        paywall = paywall,
+        paywallComponents = null,
+    )
+
+    @OptIn(InternalRevenueCatAPI::class)
+    public constructor(
+        identifier: String,
+        serverDescription: String,
+        metadata: Map<String, Any>,
+        availablePackages: List<Package>,
+        paywallComponents: PaywallComponents?,
+    ) : this(
+        identifier = identifier,
+        serverDescription = serverDescription,
+        metadata = metadata,
+        availablePackages = availablePackages,
+        paywall = null,
+        paywallComponents = paywallComponents,
     )
 
     @InternalRevenueCatAPI
