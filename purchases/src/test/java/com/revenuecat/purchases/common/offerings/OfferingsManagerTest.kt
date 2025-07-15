@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -791,4 +792,10 @@ class OfferingsManagerTest {
         every { mockDiagnosticsTracker.trackGetOfferingsStarted() } just runs
         every { mockDiagnosticsTracker.trackGetOfferingsResult(any(), any(), any(), any(), any(), any(), any()) } just runs
     }
+
+    private fun Offerings.copy(current: Offering?): Offerings =
+        Offerings(
+            current = current,
+            all = this.all,
+        )
 }

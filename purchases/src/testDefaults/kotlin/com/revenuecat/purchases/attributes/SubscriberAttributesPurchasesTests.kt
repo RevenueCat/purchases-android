@@ -327,6 +327,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setPostHogUserId`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.PostHogUserId) { parameter ->
+            underTest.setPostHogUserId(parameter)
+        }
+    }
+
     // endregion
 
     // region Campaign parameters
