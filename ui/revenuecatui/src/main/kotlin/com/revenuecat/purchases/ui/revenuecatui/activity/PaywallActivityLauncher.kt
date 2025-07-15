@@ -113,6 +113,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param shouldDisplayEdgeToEdge Whether to display the paywall in edge-to-edge mode.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
+    @Suppress("LongParameterList")
     @JvmOverloads
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
@@ -155,6 +156,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param shouldDisplayEdgeToEdge Whether to display the paywall in edge-to-edge mode.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
+    @Suppress("LongParameterList")
     @JvmSynthetic
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
