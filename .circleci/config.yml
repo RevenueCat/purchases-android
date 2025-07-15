@@ -192,6 +192,33 @@ commands:
 
 jobs:
 
+  # Shared build job that compiles all modules and persists to workspace
+  build-all-modules:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
+      - install-sdkman
+      - android/accept_licenses
+      - android-dependencies
+      - android/restore_build_cache
+      - run:
+          name: Build all modules and compile tests
+          command: ./gradlew build assembleAndroidTest --continue
+      - run:
+          name: Build compatibility test apps
+          command: |
+            ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
+            ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
+      - android/save_build_cache
+      - persist_to_workspace:
+          root: .
+          paths:
+            - "**/build/"
+            - ".gradle/"
+
   assemble-magic-weather-compose-sample-app:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -231,16 +258,10 @@ jobs:
       - checkout
       - checkout-submodule:
           path: upstream/paywall-preview-resources
+      - attach_workspace:
+          at: .
       - install-sdkman
       - android/accept_licenses
-      - android-dependencies
-      - android/restore_build_cache
-      - run:
-          name: Verify purchases-android target SDK compatibility (currently 33)
-          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
-      - run:
-          name: Verify purchases-ui target SDK compatibility (currently 34)
-          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
       - run:
           name: Run Tests
           command: ./gradlew lint test
@@ -274,27 +295,27 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
-      - android/restore_gradle_cache
       - run:
           name: Detekt
           command: ./gradlew detektAll
-      - android/save_gradle_cache
 
   metalava:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
-      - android/restore_gradle_cache
       - run:
           name: Validate binary compatibility (Defaults)
           command: ./gradlew metalavaCheckCompatibilityDefaultsRelease
       - run:
           name: Validate binary compatibility (CustomEntitlementComputation)
           command: ./gradlew metalavaCheckCompatibilityCustomEntitlementComputationRelease
-      - android/save_gradle_cache
 
   docs-deploy:
     <<: *android-executor
@@ -381,10 +402,10 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - android/accept_licenses
-      - android/restore_gradle_cache
-      - android/restore_build_cache
       - run:
           name: Prepare Keystore
           working_directory: examples/purchase-tester
@@ -400,8 +421,6 @@ jobs:
           path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/apk/debug/purchase-tester-debug.apk
-      - android/save_gradle_cache
-      - android/save_build_cache
 
   publish-purchase-tester-release:
     <<: *android-executor
@@ -434,6 +453,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -459,13 +480,14 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - run:
           name: Replace API_KEY
           working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
           command: |
             sed -i s/REVENUECAT_API_KEY/$API_KEY/ IntegrationTest.kt
-      - android/restore_build_cache
       - run:
           name: Prepare Keystore
           working_directory: integration-tests
@@ -484,7 +506,6 @@ jobs:
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
-      - android/save_build_cache
       - persist_to_workspace:
           root: .
           paths:
@@ -495,15 +516,15 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore_build_cache
       - run:
           name: Create purchases integration tests apks
           command: |
             bundle exec fastlane android build_default_purchases_integration_tests
-      - android/save_build_cache
       - persist_to_workspace:
           root: .
           paths:
@@ -526,6 +547,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -534,12 +557,10 @@ jobs:
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
-      - android/restore_build_cache
       - run:
           name: Build and run load shedder integration tests
           command: |
             bundle exec fastlane android run_load_shedder_purchases_integration_tests
-      - android/save_build_cache
       - store_artifacts:
           path: ~/gsutil/
       - store_test_results:
@@ -550,6 +571,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -558,12 +581,10 @@ jobs:
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
-      - android/restore_build_cache
       - run:
           name: Build and run custom entitlement computation integration tests
           command: |
             bundle exec fastlane android run_custom_entitlement_computation_integration_tests
-      - android/save_build_cache
       - store_artifacts:
           path: ~/gsutil/
       - store_test_results:
@@ -576,15 +597,15 @@ jobs:
       - checkout
       - checkout-submodule:
           path: upstream/paywall-preview-resources
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore_build_cache
       - run:
           name: Build and run purchases ui snapshot tests
           command: |
             bundle exec fastlane android emerge_purchases_ui_snapshot_tests
-      - android/save_build_cache
 
   run-firebase-tests:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
@@ -602,15 +623,15 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore_build_cache
       - run:
           name: Run backend integration tests
           command: |
             bundle exec fastlane android run_backend_integration_tests
-      - android/save_build_cache
       - run:
           name: Save test results
           command: |
@@ -627,6 +648,8 @@ jobs:
       - checkout
       - checkout-submodule:
           path: upstream/paywall-preview-resources
+      - attach_workspace:
+          at: .
       - install-sdkman
       # Required by Emerge CLI
       - install-ruby:
@@ -636,7 +659,6 @@ jobs:
           command: gem install emerge
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore_build_cache
       - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
@@ -707,6 +729,8 @@ jobs:
     <<: *android-machine-emulator
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - android/create_avd:
           avd_name: test-revenuecat-ui
@@ -775,19 +799,46 @@ workflows:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - test
-      - detekt
-      - metalava
-      - assemble-purchase-tester
-      - assemble-paywall-tester-release
-      - run-backend-integration-tests
-      - record-and-upload-paparazzi-revenuecatui-snapshots
-      - run-revenuecatui-ui-tests
-      - emerge_purchases_ui_snapshot_tests
-      - integration-tests-build: *release-branches
-      - purchases-integration-tests-build: *release-branches
+      - build-all-modules
+      - test:
+          requires:
+            - build-all-modules
+      - detekt:
+          requires:
+            - build-all-modules
+      - metalava:
+          requires:
+            - build-all-modules
+      - assemble-purchase-tester:
+          requires:
+            - build-all-modules
+      - assemble-paywall-tester-release:
+          requires:
+            - build-all-modules
+      - run-backend-integration-tests:
+          requires:
+            - build-all-modules
+      - record-and-upload-paparazzi-revenuecatui-snapshots:
+          requires:
+            - build-all-modules
+      - run-revenuecatui-ui-tests:
+          requires:
+            - build-all-modules
+      - emerge_purchases_ui_snapshot_tests:
+          requires:
+            - build-all-modules
+      - integration-tests-build: 
+          <<: *release-branches
+          requires:
+            - build-all-modules
+      - purchases-integration-tests-build: 
+          <<: *release-branches
+          requires:
+            - build-all-modules
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
           <<: *release-branches
+          requires:
+            - build-all-modules
       - run-firebase-tests-purchases-integration-test:
           requires:
             - purchases-integration-tests-build
@@ -795,6 +846,8 @@ workflows:
           <<: *release-branches
           context:
             - slack-secrets
+          requires:
+            - build-all-modules
       - run-firebase-tests:
           requires:
             - integration-tests-build
