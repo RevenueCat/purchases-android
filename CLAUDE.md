@@ -170,7 +170,7 @@ The `purchases` module has 2 flavors:
 - **Compile SDK**: 34
 - **Min SDK**: 21 (24 for UI modules)
 - **Java**: 8+
-- **Kotlin**: 1.7.0+
+- **Kotlin**: 1.8.0+
 
 ## Development Notes
 
