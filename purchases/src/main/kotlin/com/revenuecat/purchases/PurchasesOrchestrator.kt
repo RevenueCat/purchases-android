@@ -85,6 +85,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import kotlinx.coroutines.flow.StateFlow
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -161,6 +162,9 @@ internal class PurchasesOrchestrator(
         @Synchronized set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
+
+    val customerInfoStateFlow: StateFlow<CustomerInfo?>
+        get() = customerInfoUpdateHandler.customerInfoStateFlow
 
     @get:Synchronized
     @set:Synchronized
