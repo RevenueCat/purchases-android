@@ -14,11 +14,13 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.revenuecat.purchases.InternalRevenueCatAPI
 
@@ -112,6 +114,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         if (isManagingViewTree) viewModelStore.clear()
+        deinitViewTreeOwners()
         super.onDetachedFromWindow()
     }
 
@@ -145,6 +148,21 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         windowRoot.setViewTreeViewModelStoreOwner(this)
 
         isManagingViewTree = true
+    }
+
+    private fun deinitViewTreeOwners() {
+        if (!isManagingViewTree) return
+        val windowRoot = findWindowRoot() ?: return
+
+        if (windowRoot.findViewTreeLifecycleOwner() === this) {
+            windowRoot.setViewTreeLifecycleOwner(null)
+        }
+        if (windowRoot.findViewTreeSavedStateRegistryOwner() === this) {
+            windowRoot.setViewTreeSavedStateRegistryOwner(null)
+        }
+        if (windowRoot.findViewTreeViewModelStoreOwner() === this) {
+            windowRoot.setViewTreeViewModelStoreOwner(null)
+        }
     }
 
     private fun View.findWindowRoot(): View? {
