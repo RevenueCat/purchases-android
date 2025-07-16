@@ -278,7 +278,11 @@ private fun DisplayOfferingMenu(
         )
         DropdownMenuItem(
             text = { Text(text = "Display paywall as activity") },
-            onClick = { activity.launchPaywall(offering) },
+            onClick = { activity.launchPaywall(offering, edgeToEdge = false) },
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Display paywall as activity (edgeToEdge enabled)") },
+            onClick = { activity.launchPaywall(offering, edgeToEdge = true) },
         )
         DropdownMenuItem(
             text = { Text(text = "Display paywall as view in an activity") },
