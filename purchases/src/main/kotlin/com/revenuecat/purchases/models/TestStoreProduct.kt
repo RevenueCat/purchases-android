@@ -9,7 +9,7 @@ import dev.drewhamilton.poko.Poko
  * This can be used to create mock data for tests or Jetpack Compose previews.
  */
 @Poko
-class TestStoreProduct(
+public class TestStoreProduct(
     override val id: String,
     override val name: String,
     override val title: String,
@@ -26,7 +26,7 @@ class TestStoreProduct(
                 "freeTrialPeriod, introPrice)",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         title: String,
         description: String,

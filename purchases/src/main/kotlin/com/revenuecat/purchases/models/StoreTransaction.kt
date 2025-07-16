@@ -17,13 +17,13 @@ import org.json.JSONObject
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class StoreTransaction(
+public class StoreTransaction(
     /**
      * Unique Google order identifier for the purchased transaction.
      *
      * Only available for non-restored Google purchases. Always null for Amazon.
      */
-    val orderId: String?,
+    public val orderId: String?,
 
     /**
      * Product IDs purchased.
@@ -31,83 +31,83 @@ class StoreTransaction(
      * If size > 1, indicates that a multi-line purchase occurred, which RevenueCat does not support.
      * Only the first productId will be processed by the SDK.
      */
-    val productIds: List<String>,
+    public val productIds: List<String>,
 
     /**
      * Type of the product associated with the purchase.
      */
-    val type: ProductType,
+    public val type: ProductType,
 
     /**
      * Time the product was purchased, in milliseconds since the epoch.
      */
-    val purchaseTime: Long,
+    public val purchaseTime: Long,
 
     /**
      * Token that uniquely identifies a purchase.
      */
-    val purchaseToken: String,
+    public val purchaseToken: String,
 
     /**
      * State of the purchase.
      */
-    val purchaseState: PurchaseState,
+    public val purchaseState: PurchaseState,
 
     /**
      * Whether the subscription renews automatically.
      *
      * Null for Google restored purchases.
      */
-    val isAutoRenewing: Boolean?,
+    public val isAutoRenewing: Boolean?,
 
     /**
      * String containing the signature of the Google purchase data that was signed with the private key of
      * the developer. Always null for Amazon.
      */
-    val signature: String?,
+    public val signature: String?,
 
     /**
      * Returns a JSONObject format that contains details about the purchase.
      */
-    val originalJson: JSONObject,
+    public val originalJson: JSONObject,
 
     /**
      * Context of the offering that was presented when making the purchase.
      */
-    val presentedOfferingContext: PresentedOfferingContext?,
+    public val presentedOfferingContext: PresentedOfferingContext?,
 
     /**
      * Amazon's store user id. Null for Google
      */
-    val storeUserID: String?,
+    public val storeUserID: String?,
 
     /**
      * One of [PurchaseType] indicating the type of purchase.
      */
-    val purchaseType: PurchaseType,
+    public val purchaseType: PurchaseType,
 
     /**
      * Amazon's marketplace. Null for Google
      */
-    val marketplace: String?,
+    public val marketplace: String?,
 
     /**
      * The id of the SubscriptionOption purchased.
      * In Google, this will be calculated from the basePlanId and offerId
      * Null for restored transactions and purchases initiated outside of the app.
      */
-    val subscriptionOptionId: String?,
+    public val subscriptionOptionId: String?,
 
     /**
      * The replacementMode used to perform the upgrade/downgrade of this purchase.
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
      * This is not available for Amazon purchases.
      */
-    val replacementMode: ReplacementMode?,
+    public val replacementMode: ReplacementMode?,
 ) : Parcelable {
 
     @Deprecated("Use constructor with presentedOfferingContext instead")
-    constructor(
+    public constructor(
         orderId: String?,
         productIds: List<String>,
         type: ProductType,
@@ -148,7 +148,7 @@ class StoreTransaction(
         "Use presentedOfferingContext",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    val presentedOfferingIdentifier: String?
+    public val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
 
     /**
@@ -159,12 +159,12 @@ class StoreTransaction(
         "Replaced with productIds",
         ReplaceWith("productIds"),
     )
-    val skus: List<String>
+    public val skus: List<String>
         get() = productIds
 
-    override fun equals(other: Any?) = other is StoreTransaction &&
+    public override fun equals(other: Any?): Boolean = other is StoreTransaction &&
         ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    public override fun hashCode(): Int = ComparableData(this).hashCode()
 }
 
 /**
@@ -206,7 +206,7 @@ private data class ComparableData(
     )
 }
 
-enum class PurchaseType {
+public enum class PurchaseType {
     GOOGLE_PURCHASE,
     GOOGLE_RESTORED_PURCHASE,
     AMAZON_PURCHASE,

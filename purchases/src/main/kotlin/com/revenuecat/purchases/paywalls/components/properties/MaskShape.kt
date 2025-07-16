@@ -7,24 +7,24 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable(with = MaskShapeDeserializer::class)
-sealed interface MaskShape {
+public sealed interface MaskShape {
     // SerialNames are handled by the MaskShapeDeserializer
 
     @Poko
     @Serializable
-    class Rectangle(
+    public class Rectangle(
         @get:JvmSynthetic
-        val corners: CornerRadiuses? = null,
+        public val corners: CornerRadiuses? = null,
     ) : MaskShape
 
     @Serializable
-    object Concave : MaskShape
+    public object Concave : MaskShape
 
     @Serializable
-    object Convex : MaskShape
+    public object Convex : MaskShape
 
     @Serializable
-    object Circle : MaskShape
+    public object Circle : MaskShape
 }
 
 @OptIn(InternalRevenueCatAPI::class)

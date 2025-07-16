@@ -15,11 +15,11 @@ import com.revenuecat.purchases.models.StoreTransaction
     "Use PurchaseCallback for all purchases now, even product changes",
     ReplaceWith("PurchaseCallback"),
 )
-interface ProductChangeCallback : PurchaseErrorCallback {
+public interface ProductChangeCallback : PurchaseErrorCallback {
     /**
      * Will be called after the product change has been completed
      * @param storeTransaction StoreTransaction object for the purchased product.
      * @param customerInfo Updated [CustomerInfo].
      */
-    fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo)
+    public fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo)
 }

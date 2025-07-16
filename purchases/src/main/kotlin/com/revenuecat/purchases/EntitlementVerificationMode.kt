@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 /**
  * Verification strictness levels for [EntitlementInfo].
  */
-enum class EntitlementVerificationMode {
+public enum class EntitlementVerificationMode {
     /**
      * The SDK will not perform any entitlement verification.
      */
@@ -26,14 +26,14 @@ enum class EntitlementVerificationMode {
     // Hidden ENFORCED mode during feature beta
     // ENFORCED;
 
-    companion object {
+    public companion object {
         /**
          * Default entitlement verification mode.
          */
-        val default: EntitlementVerificationMode
+        public val default: EntitlementVerificationMode
             get() = INFORMATIONAL
     }
 
-    val isEnabled: Boolean
+    public val isEnabled: Boolean
         get() = this != DISABLED
 }

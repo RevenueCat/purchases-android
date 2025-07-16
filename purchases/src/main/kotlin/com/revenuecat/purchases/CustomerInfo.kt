@@ -42,16 +42,16 @@ import java.util.Date
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class CustomerInfo(
-    val entitlements: EntitlementInfos,
-    val allExpirationDatesByProduct: Map<String, Date?>,
-    val allPurchaseDatesByProduct: Map<String, Date?>,
-    val requestDate: Date,
-    val schemaVersion: Int,
-    val firstSeen: Date,
-    val originalAppUserId: String,
-    val managementURL: Uri?,
-    val originalPurchaseDate: Date?,
+public class CustomerInfo(
+    public val entitlements: EntitlementInfos,
+    public val allExpirationDatesByProduct: Map<String, Date?>,
+    public val allPurchaseDatesByProduct: Map<String, Date?>,
+    public val requestDate: Date,
+    public val schemaVersion: Int,
+    public val firstSeen: Date,
+    public val originalAppUserId: String,
+    public val managementURL: Uri?,
+    public val originalPurchaseDate: Date?,
     private val jsonObject: JSONObject,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
@@ -62,7 +62,7 @@ class CustomerInfo(
      * For Amazon subscriptions, productIds will be termSku
      */
     @IgnoredOnParcel
-    val activeSubscriptions: Set<String> by lazy {
+    public val activeSubscriptions: Set<String> by lazy {
         activeIdentifiers(allExpirationDatesByProduct)
     }
 
@@ -74,7 +74,7 @@ class CustomerInfo(
         "Use allPurchasedProductIds instead",
         ReplaceWith("allPurchasedProductIds"),
     )
-    val allPurchasedSkus: Set<String> by lazy {
+    public val allPurchasedSkus: Set<String> by lazy {
         this.nonSubscriptionTransactions.map { it.productIdentifier }.toSet() + allExpirationDatesByProduct.keys
     }
 
@@ -86,7 +86,7 @@ class CustomerInfo(
      * For Amazon subscriptions, productsIds are termSkus
      */
     @IgnoredOnParcel
-    val allPurchasedProductIds: Set<String> by lazy {
+    public val allPurchasedProductIds: Set<String> by lazy {
         this.nonSubscriptionTransactions.map { it.productIdentifier }.toSet() + allExpirationDatesByProduct.keys
     }
 
@@ -94,7 +94,7 @@ class CustomerInfo(
      * @return The latest expiration date of all purchased productIds
      */
     @IgnoredOnParcel
-    val latestExpirationDate: Date? by lazy {
+    public val latestExpirationDate: Date? by lazy {
         allExpirationDatesByProduct.values.sortedBy { it }.takeUnless { it.isEmpty() }?.last()
     }
 
@@ -103,7 +103,7 @@ class CustomerInfo(
      * non-subscription purchases
      */
     @IgnoredOnParcel
-    val nonSubscriptionTransactions: List<Transaction> by lazy {
+    public val nonSubscriptionTransactions: List<Transaction> by lazy {
         val nonSubscriptionTransactionList = mutableListOf<Transaction>()
         val nonSubscriptions = subscriberJSONObject.getJSONObject("non_subscriptions")
         nonSubscriptions.keys().forEach { productId ->
@@ -119,7 +119,7 @@ class CustomerInfo(
     }
 
     @IgnoredOnParcel
-    val subscriptionsByProductIdentifier: Map<String, SubscriptionInfo> by lazy {
+    public val subscriptionsByProductIdentifier: Map<String, SubscriptionInfo> by lazy {
         CustomerInfoFactory.parseSubscriptionInfos(subscriberJSONObject, requestDate)
     }
 
@@ -132,7 +132,7 @@ class CustomerInfo(
         "Use getExpirationDateForProductId instead",
         ReplaceWith("getExpirationDateForProductId"),
     )
-    fun getExpirationDateForSku(sku: String): Date? {
+    public fun getExpirationDateForSku(sku: String): Date? {
         return allExpirationDatesByProduct[sku]
     }
 
@@ -144,7 +144,7 @@ class CustomerInfo(
      * For Amazon subscriptions, productsIds are termSkus
      * @return Expiration date for given productId
      */
-    fun getExpirationDateForProductId(productId: String): Date? {
+    public fun getExpirationDateForProductId(productId: String): Date? {
         return allExpirationDatesByProduct[productId]
     }
 
@@ -157,7 +157,7 @@ class CustomerInfo(
         "Use getPurchaseDateForProductId instead",
         ReplaceWith("getPurchaseDateForProductId"),
     )
-    fun getPurchaseDateForSku(sku: String): Date? {
+    public fun getPurchaseDateForSku(sku: String): Date? {
         return allPurchaseDatesByProduct[sku]
     }
 
@@ -169,7 +169,7 @@ class CustomerInfo(
      * For Amazon subscriptions, productsIds are termSkus
      * @return Purchase date for given productId
      */
-    fun getPurchaseDateForProductId(productId: String): Date? {
+    public fun getPurchaseDateForProductId(productId: String): Date? {
         return allPurchaseDatesByProduct[productId]
     }
 
@@ -178,7 +178,7 @@ class CustomerInfo(
      * @param entitlement Entitlement for which to return expiration date
      * @return Expiration date for a given entitlement
      */
-    fun getExpirationDateForEntitlement(entitlement: String): Date? {
+    public fun getExpirationDateForEntitlement(entitlement: String): Date? {
         return entitlements.all[entitlement]?.expirationDate
     }
 
@@ -187,12 +187,12 @@ class CustomerInfo(
      * @param entitlement Entitlement for which to return purchase date
      * @return Purchase date for given entitlement
      */
-    fun getPurchaseDateForEntitlement(entitlement: String): Date? {
+    public fun getPurchaseDateForEntitlement(entitlement: String): Date? {
         return entitlements.all[entitlement]?.latestPurchaseDate
     }
 
     @IgnoredOnParcel
-    override val rawData: JSONObject
+    public override val rawData: JSONObject
         get() = jsonObject
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
@@ -208,7 +208,7 @@ class CustomerInfo(
     /**
      * @hide
      */
-    override fun toString() =
+    public override fun toString(): String =
         "<CustomerInfo\n " +
             "latestExpirationDate: $latestExpirationDate\n" +
             "activeSubscriptions:  ${activeSubscriptions.map {
@@ -219,8 +219,9 @@ class CustomerInfo(
             "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
             "requestDate: $requestDate\n>"
 
-    override fun equals(other: Any?) = other is CustomerInfo && ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    public override fun equals(other: Any?): Boolean =
+        other is CustomerInfo && ComparableData(this) == ComparableData(other)
+    public override fun hashCode(): Int = ComparableData(this).hashCode()
 }
 
 /**

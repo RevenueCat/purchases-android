@@ -9,13 +9,13 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("package")
-class PackageComponent(
+public class PackageComponent(
     @get:JvmSynthetic
     @SerialName("package_id")
-    val packageId: String,
+    public val packageId: String,
     @get:JvmSynthetic
     @SerialName("is_selected_by_default")
-    val isSelectedByDefault: Boolean,
+    public val isSelectedByDefault: Boolean,
     @get:JvmSynthetic
-    val stack: StackComponent,
+    public val stack: StackComponent,
 ) : PaywallComponent

@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable(with = HorizontalAlignmentDeserializer::class)
-enum class HorizontalAlignment {
+public enum class HorizontalAlignment {
     // SerialNames are handled by the HorizontalAlignmentDeserializer.
 
     LEADING,
@@ -16,7 +16,7 @@ enum class HorizontalAlignment {
 
 @InternalRevenueCatAPI
 @Serializable(with = VerticalAlignmentDeserializer::class)
-enum class VerticalAlignment {
+public enum class VerticalAlignment {
     // SerialNames are handled by the VerticalAlignmentDeserializer.
 
     TOP,
@@ -26,7 +26,7 @@ enum class VerticalAlignment {
 
 @InternalRevenueCatAPI
 @Serializable(with = TwoDimensionalAlignmentDeserializer::class)
-enum class TwoDimensionalAlignment {
+public enum class TwoDimensionalAlignment {
     // SerialNames are handled by the TwoDimensionalAlignmentDeserializer.
 
     CENTER,

@@ -16,7 +16,7 @@ import kotlin.coroutines.suspendCoroutine
  * If you prefer to implement custom purchase and restore logic with completion handlers, please implement
  * `PurchaseLogicWithCallback`.
  */
-interface PurchaseLogic {
+public interface PurchaseLogic {
     /**
      * Performs an in-app purchase for the specified package.
      *
@@ -27,7 +27,7 @@ interface PurchaseLogic {
      * @param rcPackage The package representing the in-app product that the user intends to purchase.
      * @return A `PurchaseLogicResult` object containing the outcome of the purchase operation.
      */
-    suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult
+    public suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult
 
     /**
      * Restores previously completed purchases for the given customer.
@@ -38,7 +38,7 @@ interface PurchaseLogic {
      * @param customerInfo An object containing information about the customer.
      * @return A `PurchaseLogicResult` object containing the outcome of the restoration process.
      */
-    suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult
+    public suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult
 }
 
 /**
@@ -48,7 +48,7 @@ interface PurchaseLogic {
  * If you prefer to implement custom purchase and restore logic with coroutines, please implement
  * `PurchaseLogic` directly.
  */
-abstract class PurchaseLogicWithCallback : PurchaseLogic {
+public abstract class PurchaseLogicWithCallback : PurchaseLogic {
 
     /**
      * Performs an in-app purchase for the specified package with a completion callback.
@@ -61,7 +61,7 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
      * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
      * of the purchase operation.
      */
-    abstract fun performPurchaseWithCompletion(
+    public abstract fun performPurchaseWithCompletion(
         activity: Activity,
         rcPackage: Package,
         completion: (PurchaseLogicResult) -> Unit,
@@ -77,13 +77,16 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
      * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
      * of the restoration process.
      */
-    abstract fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicResult) -> Unit)
+    public abstract fun performRestoreWithCompletion(
+        customerInfo: CustomerInfo,
+        completion: (PurchaseLogicResult) -> Unit,
+    )
 
     /**
      * This method is called by RevenueCat, which in turn calls `performPurchaseWithCompletion` where your app's
      * custom purchase logic is performed.
      */
-    final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
+    public final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
         suspendCoroutine { continuation ->
             performPurchaseWithCompletion(activity, rcPackage) { result ->
                 continuation.resume(result)
@@ -94,7 +97,7 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
      * This method is called by RevenueCat, which in turn calls `performRestoreWithCompletion` where your app's
      * custom purchase logic is performed.
      */
-    final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
+    public final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
                 continuation.resume(result)
@@ -105,16 +108,16 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
 /**
  * Represents the result of a purchase attempt made by custom app-based code (not RevenueCat).
  */
-sealed interface PurchaseLogicResult {
+public sealed interface PurchaseLogicResult {
     /**
      * Indicates a successful purchase or restore.
      */
-    object Success : PurchaseLogicResult
+    public object Success : PurchaseLogicResult
 
     /**
      * Indicates the purchase or restore was cancelled.
      */
-    object Cancellation : PurchaseLogicResult
+    public object Cancellation : PurchaseLogicResult
 
     /**
      * Indicates an error occurred during the purchase or restore attempt.
@@ -122,6 +125,6 @@ sealed interface PurchaseLogicResult {
      * @property error Details of the error that occurred. If provided, an error dialog will be shown to the user.
      */
     @Poko
-    class Error(val errorDetails: PurchasesError? = null) :
+    public class Error(public val errorDetails: PurchasesError? = null) :
         PurchaseLogicResult
 }

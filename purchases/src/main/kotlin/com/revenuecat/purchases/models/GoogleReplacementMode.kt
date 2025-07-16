@@ -11,8 +11,8 @@ import com.revenuecat.purchases.ReplacementMode
  *
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
-enum class GoogleReplacementMode(
-    @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode val playBillingClientMode: Int,
+public enum class GoogleReplacementMode(
+    @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode public val playBillingClientMode: Int,
 ) : ReplacementMode {
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.
@@ -66,16 +66,16 @@ enum class GoogleReplacementMode(
     DEFERRED(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.DEFERRED),
     ;
 
-    override fun describeContents(): Int {
+    public override fun describeContents(): Int {
         return 0
     }
 
-    override fun writeToParcel(out: Parcel, flags: Int) {
+    public override fun writeToParcel(out: Parcel, flags: Int) {
         out.writeString(this.name)
     }
 
-    companion object CREATOR : Parcelable.Creator<GoogleReplacementMode?> {
-        fun fromPlayBillingClientMode(
+    public companion object CREATOR : Parcelable.Creator<GoogleReplacementMode?> {
+        public fun fromPlayBillingClientMode(
             @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode playBillingClientMode: Int?,
         ): GoogleReplacementMode? {
             return playBillingClientMode?.let {
@@ -83,11 +83,11 @@ enum class GoogleReplacementMode(
             }
         }
 
-        override fun createFromParcel(`in`: Parcel): GoogleReplacementMode? {
+        public override fun createFromParcel(`in`: Parcel): GoogleReplacementMode? {
             return `in`.readString()?.let { GoogleReplacementMode.valueOf(it) }
         }
 
-        override fun newArray(size: Int): Array<GoogleReplacementMode?> {
+        public override fun newArray(size: Int): Array<GoogleReplacementMode?> {
             return arrayOfNulls(size)
         }
     }

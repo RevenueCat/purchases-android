@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable(with = FontWeightDeserializer::class)
-enum class FontWeight {
+public enum class FontWeight {
     // SerialNames are handled by the FontWeightDeserializer.
 
     EXTRA_LIGHT,
@@ -23,7 +23,7 @@ enum class FontWeight {
 
 @InternalRevenueCatAPI
 @Serializable(with = FontStyleDeserializer::class)
-enum class FontStyle {
+public enum class FontStyle {
     // SerialNames are handled by the FontStyleDeserializer.
 
     NORMAL,
@@ -36,7 +36,7 @@ enum class FontStyle {
 @Suppress("MagicNumber")
 @InternalRevenueCatAPI
 @Serializable
-enum class FontSize {
+public enum class FontSize {
     @SerialName("heading_xxl")
     HEADING_XXL,
 

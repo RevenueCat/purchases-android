@@ -8,7 +8,7 @@ import kotlinx.android.parcel.IgnoredOnParcel
  * Use the platform specific subclasses in each implementation.
  * @property name Identifier of the proration mode to be used
  */
-interface ReplacementMode : Parcelable {
+public interface ReplacementMode : Parcelable {
     @IgnoredOnParcel
-    val name: String
+    public val name: String
 }

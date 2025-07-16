@@ -10,27 +10,27 @@ import java.net.URL
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ImageUrls(
+public class ImageUrls(
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
-    val original: URL,
+    public val original: URL,
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
-    val webp: URL,
+    public val webp: URL,
     @get:JvmSynthetic
     @SerialName("webp_low_res")
     @Serializable(with = URLSerializer::class)
-    val webpLowRes: URL,
+    public val webpLowRes: URL,
     @get:JvmSynthetic
-    val width: UInt,
+    public val width: UInt,
     @get:JvmSynthetic
-    val height: UInt,
+    public val height: UInt,
 )
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ThemeImageUrls(
-    @get:JvmSynthetic val light: ImageUrls,
-    @get:JvmSynthetic val dark: ImageUrls? = null,
+public class ThemeImageUrls(
+    @get:JvmSynthetic public val light: ImageUrls,
+    @get:JvmSynthetic public val dark: ImageUrls? = null,
 )

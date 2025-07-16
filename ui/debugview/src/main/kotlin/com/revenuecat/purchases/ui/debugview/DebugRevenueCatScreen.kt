@@ -11,7 +11,7 @@ import com.revenuecat.purchases.models.StoreTransaction
  * @param onPurchaseErrored Callback that will be called when a purchase fails or is cancelled within the debug screen.
  */
 @Composable
-fun DebugRevenueCatScreen(
+public fun DebugRevenueCatScreen(
     onPurchaseCompleted: (StoreTransaction) -> Unit,
     onPurchaseErrored: (PurchasesTransactionException) -> Unit,
 ) {

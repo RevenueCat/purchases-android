@@ -6,21 +6,21 @@ import dev.drewhamilton.poko.Poko
 /**
  * Interface representing different customer center management options.
  */
-interface CustomerCenterManagementOption {
+public interface CustomerCenterManagementOption {
     /**
      * Action to cancel the current operation
      */
-    object Cancel : CustomerCenterManagementOption
+    public object Cancel : CustomerCenterManagementOption
 
     /**
      * Action to open a custom URL
      * @property uri The URI to open
      */
     @Poko
-    class CustomUrl(val uri: Uri) : CustomerCenterManagementOption
+    public class CustomUrl(public val uri: Uri) : CustomerCenterManagementOption
 
     /**
      * Action to handle a missing purchase
      */
-    object MissingPurchase : CustomerCenterManagementOption
+    public object MissingPurchase : CustomerCenterManagementOption
 }

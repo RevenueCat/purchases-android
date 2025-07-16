@@ -8,7 +8,7 @@ internal object Constants {
 }
 
 @InternalRevenueCatAPI
-object SharedConstants {
-    const val RC_CUSTOMER_CENTER_TAG = "rc-customer-center"
-    const val MICRO_MULTIPLIER = 1_000_000.0
+public object SharedConstants {
+    public const val RC_CUSTOMER_CENTER_TAG: String = "rc-customer-center"
+    public const val MICRO_MULTIPLIER: Double = 1_000_000.0
 }

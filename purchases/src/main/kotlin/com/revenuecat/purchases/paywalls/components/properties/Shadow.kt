@@ -7,9 +7,9 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class Shadow(
-    @get:JvmSynthetic val color: ColorScheme,
-    @get:JvmSynthetic val radius: Double,
-    @get:JvmSynthetic val x: Double,
-    @get:JvmSynthetic val y: Double,
+public class Shadow(
+    @get:JvmSynthetic public val color: ColorScheme,
+    @get:JvmSynthetic public val radius: Double,
+    @get:JvmSynthetic public val x: Double,
+    @get:JvmSynthetic public val y: Double,
 )

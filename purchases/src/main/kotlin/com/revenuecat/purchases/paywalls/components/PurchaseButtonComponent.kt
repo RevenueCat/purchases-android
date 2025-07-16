@@ -9,6 +9,6 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("purchase_button")
-class PurchaseButtonComponent(
-    @get:JvmSynthetic val stack: StackComponent,
+public class PurchaseButtonComponent(
+    @get:JvmSynthetic public val stack: StackComponent,
 ) : PaywallComponent

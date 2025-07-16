@@ -19,71 +19,71 @@ import kotlinx.serialization.encoding.Encoder
 @Poko
 @Serializable
 @SerialName("button")
-class ButtonComponent(
-    @get:JvmSynthetic val action: Action,
-    @get:JvmSynthetic val stack: StackComponent,
+public class ButtonComponent(
+    @get:JvmSynthetic public val action: Action,
+    @get:JvmSynthetic public val stack: StackComponent,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
     @Serializable(with = ActionSerializer::class)
-    sealed interface Action {
+    public sealed interface Action {
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
-        object Unknown : Action
+        public object Unknown : Action
 
         @Serializable
-        object RestorePurchases : Action
+        public object RestorePurchases : Action
 
         @Serializable
-        object NavigateBack : Action
+        public object NavigateBack : Action
 
         @Serializable
-        data class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action
+        public data class NavigateTo(@get:JvmSynthetic public val destination: Destination) : Action
     }
 
     @InternalRevenueCatAPI
     @Serializable
-    sealed interface Destination {
+    public sealed interface Destination {
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
-        object Unknown : Destination
+        public object Unknown : Destination
 
         @Serializable
-        object CustomerCenter : Destination
+        public object CustomerCenter : Destination
 
         @Serializable
-        data class PrivacyPolicy(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        public data class PrivacyPolicy(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
-        data class Terms(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        public data class Terms(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
-        data class Url(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        public data class Url(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
-        data class Sheet(
-            @get:JvmSynthetic val id: String,
-            @get:JvmSynthetic val name: String?,
-            @get:JvmSynthetic val stack: StackComponent,
-            @get:JvmSynthetic @SerialName("background_blur") val backgroundBlur: Boolean,
-            @get:JvmSynthetic val size: Size?,
+        public data class Sheet(
+            @get:JvmSynthetic public val id: String,
+            @get:JvmSynthetic public val name: String?,
+            @get:JvmSynthetic public val stack: StackComponent,
+            @get:JvmSynthetic @SerialName("background_blur") public val backgroundBlur: Boolean,
+            @get:JvmSynthetic public val size: Size?,
         ) : Destination
     }
 
     @InternalRevenueCatAPI
     @Serializable(with = UrlMethodDeserializer::class)
-    enum class UrlMethod {
+    public enum class UrlMethod {
         // SerialNames are handled by the UrlMethodDeserializer.
 
         IN_APP_BROWSER,

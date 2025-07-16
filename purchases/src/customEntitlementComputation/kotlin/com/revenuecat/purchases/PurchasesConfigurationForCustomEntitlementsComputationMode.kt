@@ -7,7 +7,7 @@ import com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsCompu
  * Holds parameters to initialize the SDK in Custom Entitlements Computation mode. Create an instance of this class
  * using the [Builder] and pass it to [Purchases.configureInCustomEntitlementsComputationMode].
  */
-class PurchasesConfigurationForCustomEntitlementsComputationMode internal constructor(
+public class PurchasesConfigurationForCustomEntitlementsComputationMode internal constructor(
     internal val context: Context,
     internal val apiKey: String,
     internal val appUserID: String,
@@ -19,7 +19,7 @@ class PurchasesConfigurationForCustomEntitlementsComputationMode internal constr
      * @param apiKey: the API Key for your app. Obtained from the RevenueCat dashboard.
      * @param appUserID: a unique id for identifying the user.
      */
-    class Builder(
+    public class Builder(
         private val context: Context,
         private val apiKey: String,
         private val appUserID: String,
@@ -33,7 +33,7 @@ class PurchasesConfigurationForCustomEntitlementsComputationMode internal constr
          *
          * If this setting is disabled, you can show the snackbar by calling [Purchases.showInAppMessagesIfNeeded].
          */
-        fun showInAppMessagesAutomatically(enabled: Boolean): Builder {
+        public fun showInAppMessagesAutomatically(enabled: Boolean): Builder {
             showInAppMessagesAutomatically = enabled
             return this
         }
@@ -42,7 +42,7 @@ class PurchasesConfigurationForCustomEntitlementsComputationMode internal constr
          * Enable this setting if you want to allow pending purchases for prepaid subscriptions (only supported in
          * Google Play). Note that entitlements are not granted until payment is done. Default is enabled.
          */
-        fun pendingTransactionsForPrepaidPlansEnabled(enabled: Boolean): Builder {
+        public fun pendingTransactionsForPrepaidPlansEnabled(enabled: Boolean): Builder {
             pendingTransactionsForPrepaidPlansEnabled = enabled
             return this
         }
@@ -51,12 +51,13 @@ class PurchasesConfigurationForCustomEntitlementsComputationMode internal constr
          * Creates a [PurchasesConfigurationForCustomEntitlementsComputationMode] instance with the specified
          * properties.
          */
-        fun build() = PurchasesConfigurationForCustomEntitlementsComputationMode(
-            context = context,
-            apiKey = apiKey,
-            appUserID = appUserID,
-            showInAppMessagesAutomatically = showInAppMessagesAutomatically,
-            pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled,
-        )
+        public fun build(): PurchasesConfigurationForCustomEntitlementsComputationMode =
+            PurchasesConfigurationForCustomEntitlementsComputationMode(
+                context = context,
+                apiKey = apiKey,
+                appUserID = appUserID,
+                showInAppMessagesAutomatically = showInAppMessagesAutomatically,
+                pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled,
+            )
     }
 }
