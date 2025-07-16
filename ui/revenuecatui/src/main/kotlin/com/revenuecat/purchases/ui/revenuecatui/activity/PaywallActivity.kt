@@ -114,8 +114,8 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             configureSdkWithSavedData(savedInstanceState)
         }
         val args = getArgs()
-        val shouldDisplayEdgeToEdge = args?.shouldDisplayEdgeToEdge == true
-        if (shouldDisplayEdgeToEdge) {
+        val edgeToEdge = args?.edgeToEdge == true
+        if (edgeToEdge) {
             enableEdgeToEdge()
         }
         val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
@@ -130,7 +130,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                     Box(
                         Modifier
                             .fillMaxSize()
-                            .conditional(!shouldDisplayEdgeToEdge) {
+                            .conditional(!edgeToEdge) {
                                 padding(paddingValues)
                             },
                     ) {

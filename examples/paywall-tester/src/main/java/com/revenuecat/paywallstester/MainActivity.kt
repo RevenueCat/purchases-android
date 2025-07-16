@@ -46,8 +46,8 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         Log.e("PaywallsTester", "LAUNCH PAYWALL RESULT: $result")
     }
 
-    fun launchPaywall(offering: Offering? = null, shouldDisplayEdgeToEdge: Boolean = false) {
-        paywallActivityLauncher.launch(offering, shouldDisplayEdgeToEdge = shouldDisplayEdgeToEdge)
+    fun launchPaywall(offering: Offering? = null, edgeToEdge: Boolean = false) {
+        paywallActivityLauncher.launch(offering, edgeToEdge = edgeToEdge)
     }
 
     fun launchPaywallFooterViewAsActivity(offering: Offering? = null) {

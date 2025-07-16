@@ -8,7 +8,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 import kotlinx.parcelize.Parcelize
 
 internal const val DEFAULT_DISPLAY_DISMISS_BUTTON = true
-internal val defaultDisplayEdgeToEdge = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+internal val defaultEdgeToEdge = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
 
 @Parcelize
 internal data class PaywallActivityArgs(
@@ -16,19 +16,19 @@ internal data class PaywallActivityArgs(
     val offeringId: String? = null,
     val fonts: Map<TypographyType, PaywallFontFamily?>? = null,
     val shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
-    val shouldDisplayEdgeToEdge: Boolean = defaultDisplayEdgeToEdge,
+    val edgeToEdge: Boolean = defaultEdgeToEdge,
 ) : Parcelable {
     constructor(
         requiredEntitlementIdentifier: String? = null,
         offeringId: String? = null,
         fontProvider: ParcelizableFontProvider?,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
-        shouldDisplayEdgeToEdge: Boolean = defaultDisplayEdgeToEdge,
+        edgeToEdge: Boolean = defaultEdgeToEdge,
     ) : this(
         requiredEntitlementIdentifier,
         offeringId,
         fontProvider?.let { TypographyType.values().associateBy({ it }, { fontProvider.getFont(it) }) },
         shouldDisplayDismissButton,
-        shouldDisplayEdgeToEdge,
+        edgeToEdge,
     )
 }
