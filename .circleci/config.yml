@@ -792,7 +792,6 @@ workflows:
           requires:
             - purchases-integration-tests-build
       - run-firebase-tests-purchases-load-shedder-integration-test:
-          <<: *release-branches
           context:
             - slack-secrets
       - run-firebase-tests:
