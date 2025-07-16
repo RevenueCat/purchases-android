@@ -211,6 +211,12 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGetVirtualCurrenciesWithBalancesOfZero() {
+        // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
+        // VC tests in the load shedder integration tests
+        if (isRunningLoadShedderIntegrationTests()) {
+            return
+        }
+
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
         val lock = CountDownLatch(1)
 
@@ -238,6 +244,12 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
+        // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
+        // VC tests in the load shedder integration tests
+        if (isRunningLoadShedderIntegrationTests()) {
+            return
+        }
+
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesNonZero"
         val lock = CountDownLatch(1)
 
@@ -265,6 +277,12 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
+        // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
+        // VC tests in the load shedder integration tests
+        if (isRunningLoadShedderIntegrationTests()) {
+            return
+        }
+
         val newAppUserID = "integrationTestUser_${UUID.randomUUID()}"
         val lock = CountDownLatch(1)
 
@@ -292,6 +310,12 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testCachedVirtualCurrencies() {
+        // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
+        // VC tests in the load shedder integration tests
+        if (isRunningLoadShedderIntegrationTests()) {
+            return
+        }
+
         val appUserID = "integrationTestUserWithAllBalancesNonZero"
         val lock = CountDownLatch(1)
 

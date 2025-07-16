@@ -170,6 +170,10 @@ open class BasePurchasesIntegrationTest {
         }
     }
 
+    protected fun isRunningLoadShedderIntegrationTests(): Boolean {
+        return Constants.isRunningLoadShedderIntegrationTests.toBoolean()
+    }
+
     private fun clearAllSharedPreferences(context: Context) {
         PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
         context.getSharedPreferences(
