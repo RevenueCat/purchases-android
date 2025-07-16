@@ -360,6 +360,12 @@ platform :android do
         new_text: "true",
         paths_of_files_to_update: [constants_path]
       )
+    else
+      replace_text_in_files(
+        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
+        new_text: "false",
+        paths_of_files_to_update: [constants_path]
+      )
     end
     unless proxy_url.nil?
       replace_text_in_files(
