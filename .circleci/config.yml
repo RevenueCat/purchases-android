@@ -786,7 +786,7 @@ workflows:
       - emerge_purchases_ui_snapshot_tests
       - integration-tests-build
       - purchases-integration-tests-build
-      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
+      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
       - run-firebase-tests-purchases-integration-test:
           requires:
             - purchases-integration-tests-build
