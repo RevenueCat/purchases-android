@@ -59,7 +59,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     override val viewModelStore: ViewModelStore = ViewModelStore()
 
     open fun onBackPressed() {
-        (parent as ViewGroup).removeView(this)
+        (parent as? ViewGroup)?.removeView(this)
     }
 
     override fun onSaveInstanceState(): Parcelable? {
