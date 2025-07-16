@@ -355,7 +355,7 @@ internal class PurchasesFactory(
                 virtualCurrencyManager = virtualCurrencyManager,
             )
 
-            return Purchases(purchasesOrchestrator = purchasesOrchestrator)
+            return Purchases(purchasesOrchestrator)
         }
     }
 
