@@ -52,18 +52,22 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * will be used. Only available for original template paywalls. Ignored for v2 Paywalls.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
      * Only available for original template paywalls. Ignored for v2 Paywalls.
+     * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
+     * Default is true for Android 15+, false otherwise.
      */
     @JvmOverloads
     fun launch(
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        edgeToEdge: Boolean = defaultEdgeToEdge,
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
                 offeringId = offering?.identifier,
                 fontProvider = fontProvider,
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
+                edgeToEdge = edgeToEdge,
             ),
         )
     }
@@ -79,18 +83,22 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * will be used. Only available for original template paywalls. Ignored for v2 Paywalls.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall. Only available for
      * original template paywalls. Ignored for v2 Paywalls.
+     * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
+     * Default is true for Android 15+, false otherwise.
      */
     @JvmSynthetic
     fun launch(
         offeringIdentifier: String,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        edgeToEdge: Boolean = defaultEdgeToEdge,
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
                 offeringId = offeringIdentifier,
                 fontProvider = fontProvider,
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
+                edgeToEdge = edgeToEdge,
             ),
         )
     }
@@ -104,14 +112,18 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * have this entitlement active.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall. Only available for
      * original template paywalls. Ignored for v2 Paywalls.
+     * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
+     * Default is true for Android 15+, false otherwise.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
+    @Suppress("LongParameterList")
     @JvmOverloads
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        edgeToEdge: Boolean = defaultEdgeToEdge,
         paywallDisplayCallback: PaywallDisplayCallback? = null,
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
@@ -124,6 +136,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         offeringId = offering?.identifier,
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
+                        edgeToEdge = edgeToEdge,
                     ),
                 )
             }
@@ -143,14 +156,18 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * have this entitlement active.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall. Only available for
      * original template paywalls. Ignored for v2 Paywalls.
+     * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
+     * Default is true for Android 15+, false otherwise.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
+    @Suppress("LongParameterList")
     @JvmSynthetic
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
         offeringIdentifier: String,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        edgeToEdge: Boolean = defaultEdgeToEdge,
         paywallDisplayCallback: PaywallDisplayCallback? = null,
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
@@ -163,6 +180,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         offeringId = offeringIdentifier,
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
+                        edgeToEdge = edgeToEdge,
                     ),
                 )
             }
@@ -176,6 +194,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * will be used. Only available for original template paywalls. Ignored for v2 Paywalls.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall. Only available for
      * original template paywalls. Ignored for v2 Paywalls.
+     * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
+     * Default is true for Android 15+, false otherwise.
      * @param shouldDisplayBlock the paywall will be displayed only if this returns true.
      */
     @JvmOverloads
@@ -183,6 +203,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        edgeToEdge: Boolean = defaultEdgeToEdge,
         shouldDisplayBlock: (CustomerInfo) -> Boolean,
     ) {
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
@@ -192,6 +213,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         offeringId = offering?.identifier,
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
+                        edgeToEdge = edgeToEdge,
                     ),
                 )
             }
