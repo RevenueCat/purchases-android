@@ -18,18 +18,34 @@ import dev.drewhamilton.poko.Poko
  * @property metadata Offering metadata defined in RevenueCat dashboard.
  */
 @Suppress("UnsafeOptInUsageError")
-data class Offering
+@Poko
+class Offering
 @OptIn(InternalRevenueCatAPI::class)
-@JvmOverloads
 constructor(
     val identifier: String,
     val serverDescription: String,
     val metadata: Map<String, Any>,
     val availablePackages: List<Package>,
+    @InternalRevenueCatAPI
     val paywall: PaywallData? = null,
     @InternalRevenueCatAPI
     val paywallComponents: PaywallComponents? = null,
 ) {
+    @OptIn(InternalRevenueCatAPI::class)
+    constructor(
+        identifier: String,
+        serverDescription: String,
+        metadata: Map<String, Any>,
+        availablePackages: List<Package>,
+    ) : this(
+        identifier = identifier,
+        serverDescription = serverDescription,
+        metadata = metadata,
+        availablePackages = availablePackages,
+        paywall = null,
+        paywallComponents = null,
+    )
+
     @InternalRevenueCatAPI
     @Poko
     class PaywallComponents(

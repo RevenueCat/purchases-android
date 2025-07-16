@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import dev.drewhamilton.poko.Poko
 
 @Stable
 internal sealed class OfferingSelection {
@@ -32,8 +33,9 @@ internal sealed class OfferingSelection {
         }
 }
 
+@Poko
 @Immutable
-data class PaywallOptions internal constructor(
+class PaywallOptions internal constructor(
     internal val offeringSelection: OfferingSelection,
     internal val shouldDisplayDismissButton: Boolean,
     val fontProvider: FontProvider?,
@@ -65,6 +67,39 @@ data class PaywallOptions internal constructor(
         result = hashMultiplier * result + mode.hashCode()
         return result
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PaywallOptions) return false
+
+        return when {
+            this.offeringSelection != other.offeringSelection -> false
+            this.shouldDisplayDismissButton != other.shouldDisplayDismissButton -> false
+            this.fontProvider != other.fontProvider -> false
+            this.listener != other.listener -> false
+            this.purchaseLogic != other.purchaseLogic -> false
+            this.mode != other.mode -> false
+            else -> this.dismissRequest == other.dismissRequest
+        }
+    }
+
+    internal fun copy(
+        offeringSelection: OfferingSelection = this.offeringSelection,
+        shouldDisplayDismissButton: Boolean = this.shouldDisplayDismissButton,
+        fontProvider: FontProvider? = this.fontProvider,
+        listener: PaywallListener? = this.listener,
+        purchaseLogic: PurchaseLogic? = this.purchaseLogic,
+        mode: PaywallMode = this.mode,
+        dismissRequest: () -> Unit = this.dismissRequest,
+    ): PaywallOptions = PaywallOptions(
+        offeringSelection = offeringSelection,
+        shouldDisplayDismissButton = shouldDisplayDismissButton,
+        fontProvider = fontProvider,
+        listener = listener,
+        purchaseLogic = purchaseLogic,
+        mode = mode,
+        dismissRequest = dismissRequest,
+    )
 
     class Builder(
         internal val dismissRequest: () -> Unit,

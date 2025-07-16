@@ -1,27 +1,22 @@
 ## RevenueCat SDK
-### ✨ New Features
-* Add `managementURL` to `SubscriptionInfo` (#2468) via Cesar de la Vega (@vegaro)
 ### 🐞 Bugfixes
-* Use subscription's managementURL instead of CustomerInfo's in Customer Center (#2473) via Cesar de la Vega (@vegaro)
-* Issue when loading promotional offers when products are missing base plans (#2471) via Cesar de la Vega (@vegaro)
-* Purchases the right package when a purchase button is inside a package component (#2469) via JayShortway (@JayShortway)
-* fix potential infinite loop in paywalls (#2462) via Antonio Pallares (@ajpallares)
+* Fix upgrades/downgrades after BC8 update (#2532) via Toni Rico (@tonidero)
+### 📦 Dependency Updates
+* [RENOVATE] Update build-dependencies (#2515) via RevenueCat Git Bot (@RCGitBot)
+* [RENOVATE] Update build-dependencies (#2472) via RevenueCat Git Bot (@RCGitBot)
 
 ## RevenueCatUI SDK
-### Customer Center
-#### ✨ New Features
-* Support multi purchases in Customer Center (#2431) via Cesar de la Vega (@vegaro)
+### Paywallv2
 #### 🐞 Bugfixes
-* Use Material TopAppBar in Customer Center (#2459) via Cesar de la Vega (@vegaro)
-* Redo navigation in Customer Center (#2458) via Cesar de la Vega (@vegaro)
+* Make PaywallActivity not consume insets in Android 16+ (#2520) via Toni Rico (@tonidero)
 
 ### 🔄 Other Changes
-* Migrates publishing to Maven Central Portal. (#2476) via JayShortway (@JayShortway)
-* Introduce the Compose compiler metrics option for the ui package (#2474) via Jaewoong Eum (@skydoves)
-* Update workflows/issue-notifications.yml@v2 (#2475) via Josh Holtz (@joshdholtz)
-* Configure Renovate (#2470) via RevenueCat Git Bot (@RCGitBot)
-* Add GitHub Issue Action Ack (#2467) via Josh Holtz (@joshdholtz)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2448) via RevenueCat Git Bot (@RCGitBot)
-* Improve paywall error logs (#2461) via Toni Rico (@tonidero)
-* [EXTERNAL] Improve logger performance with message lambdas (#2456) via @landarskiy (#2460) via JayShortway (@JayShortway)
-* [Paywalls] Ignores `sheet.background` property in schema (#2451) via JayShortway (@JayShortway)
+* Add CLAUDE.md (#2522) via Cesar de la Vega (@vegaro)
+* Update kotlin version in README (#2524) via Cesar de la Vega (@vegaro)
+* Increase compile/target SDK version to 35 (#2525) via Toni Rico (@tonidero)
+* Fix snapshot deployment (#2526) via Toni Rico (@tonidero)
+* Update CircleCI android orb (#2521) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2517) via RevenueCat Git Bot (@RCGitBot)
+* Improve v9 migration docs (#2514) via Toni Rico (@tonidero)
+* Bump AGP to 8.10.1 and Gradle to 8.14.2 (#2440) via Jaewoong Eum (@skydoves)
+* Fixes compilation of the CEC sample app. (#2512) via JayShortway (@JayShortway)

@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -22,7 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 /**
  * View that wraps the [Paywall] Composable to display the Paywall through XML layouts and the View system.
  */
-class PaywallView : AbstractComposeView {
+class PaywallView : CompatComposeView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
@@ -127,6 +126,10 @@ class PaywallView : AbstractComposeView {
      */
     fun setDisplayDismissButton(shouldDisplayDismissButton: Boolean) {
         paywallOptions = paywallOptions.copy(shouldDisplayDismissButton = shouldDisplayDismissButton)
+    }
+
+    override fun onBackPressed() {
+        dismissHandler?.run { invoke() } ?: super.onBackPressed()
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {

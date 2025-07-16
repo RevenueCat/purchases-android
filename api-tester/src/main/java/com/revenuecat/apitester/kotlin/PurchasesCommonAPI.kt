@@ -166,7 +166,6 @@ private class PurchasesCommonAPI {
         val offerings: Offerings = purchases.awaitOfferings()
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
-        val (transaction, newCustomerInfo) = purchases.awaitPurchase(purchasePackageBuilder.build())
         val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
         val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
     }

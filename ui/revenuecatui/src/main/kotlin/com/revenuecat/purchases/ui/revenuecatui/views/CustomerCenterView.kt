@@ -3,14 +3,13 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * View that wraps the [CustomerCenter] Composable to display the Customer Center through the View system.
  */
-public class CustomerCenterView : AbstractComposeView {
+public class CustomerCenterView : CompatComposeView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init()
@@ -39,6 +38,10 @@ public class CustomerCenterView : AbstractComposeView {
      */
     fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
+    }
+
+    override fun onBackPressed() {
+        dismissHandler?.run { invoke() } ?: super.onBackPressed()
     }
 
     private fun init() {

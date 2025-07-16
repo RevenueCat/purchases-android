@@ -3,6 +3,7 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 import kotlin.math.roundToInt
 
@@ -19,7 +20,8 @@ private object PeriodConstants {
  * Represents subscription or [PricingPhase] billing period
  */
 @Parcelize
-data class Period(
+@Poko
+class Period(
     /**
      * The number of period units.
      */
