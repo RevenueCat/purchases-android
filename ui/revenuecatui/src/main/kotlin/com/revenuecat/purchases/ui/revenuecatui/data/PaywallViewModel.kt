@@ -26,7 +26,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscribed
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
@@ -265,17 +264,13 @@ internal class PaywallViewModelImpl(
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
-                performPurchaseIfNecessary(activity, selectedPackage)
+                performPurchase(activity, selectedPackage.rcPackage)
             }
             is PaywallState.Loaded.Components -> {
                 // Purchase the provided package if not null, otherwise purchase the selected package.
                 val selectedPackageInfo = pkg?.let {
                     PaywallState.Loaded.Components.SelectedPackageInfo(
                         rcPackage = it,
-                        currentlySubscribed = it.currentlySubscribed(
-                            activelySubscribedProductIdentifiers = currentState.activelySubscribedProductIds,
-                            nonSubscriptionProductIdentifiers = currentState.purchasedNonSubscriptionProductIds,
-                        ),
                     )
                 } ?: currentState.selectedPackageInfo
                 performPurchaseIfNecessary(activity, selectedPackageInfo)
@@ -289,23 +284,10 @@ internal class PaywallViewModelImpl(
 
     private suspend fun performPurchaseIfNecessary(
         activity: Activity,
-        packageInfo: TemplateConfiguration.PackageInfo,
-    ) {
-        if (!packageInfo.currentlySubscribed) {
-            performPurchase(activity, packageInfo.rcPackage)
-        } else {
-            Logger.d("Ignoring purchase request for already subscribed package")
-        }
-    }
-
-    private suspend fun performPurchaseIfNecessary(
-        activity: Activity,
         packageInfo: PaywallState.Loaded.Components.SelectedPackageInfo?,
     ) {
         if (packageInfo == null) {
             Logger.w("Ignoring purchase request as no package is selected")
-        } else if (packageInfo.currentlySubscribed) {
-            Logger.d("Ignoring purchase request for already subscribed package")
         } else {
             performPurchase(activity, packageInfo.rcPackage)
         }
@@ -394,7 +376,6 @@ internal class PaywallViewModelImpl(
                 } else {
                     _state.value = calculateState(
                         currentOffering,
-                        purchases.awaitCustomerInfo(),
                         _colorScheme.value,
                         purchases.storefrontCountryCode,
                         options.mode,
@@ -414,7 +395,6 @@ internal class PaywallViewModelImpl(
 
     private fun calculateState(
         offering: Offering,
-        customerInfo: CustomerInfo,
         colorScheme: ColorScheme,
         storefrontCountryCode: String?,
         mode: PaywallMode,
@@ -439,15 +419,9 @@ internal class PaywallViewModelImpl(
             Logger.e(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
 
-        val activelySubscribedProductIds = customerInfo.activeSubscriptions
-        val purchasedNonSubscriptionProductIds: Set<String> = customerInfo.nonSubscriptionTransactions
-            .mapTo(mutableSetOf()) { it.productIdentifier }
-
         return when (validationResult) {
             is PaywallValidationResult.Legacy -> offering.toLegacyPaywallState(
                 variableDataProvider = variableDataProvider,
-                activelySubscribedProductIdentifiers = activelySubscribedProductIds,
-                nonSubscriptionProductIdentifiers = purchasedNonSubscriptionProductIds,
                 mode = mode,
                 validatedPaywallData = validationResult.displayablePaywall,
                 template = validationResult.template,
@@ -456,8 +430,6 @@ internal class PaywallViewModelImpl(
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validationResult,
-                activelySubscribedProductIds = activelySubscribedProductIds,
-                purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
             )

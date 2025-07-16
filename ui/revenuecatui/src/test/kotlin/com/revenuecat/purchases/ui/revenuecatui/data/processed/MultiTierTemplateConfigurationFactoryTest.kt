@@ -40,12 +40,6 @@ internal class MultiTierTemplateConfigurationFactoryTest {
                 TestData.Packages.annual,
                 TestData.Packages.lifetime,
             ),
-            activelySubscribedProductIdentifiers = setOf(
-                TestData.Packages.monthly.product.id,
-            ),
-            nonSubscriptionProductIdentifiers = setOf(
-                TestData.Packages.lifetime.product.id
-            ),
             template = PaywallTemplate.TEMPLATE_7,
             storefrontCountryCode = "US",
         )
@@ -118,37 +112,31 @@ internal class MultiTierTemplateConfigurationFactoryTest {
         )
 
         val monthlyPackage = TestData.Packages.monthly.getPackageInfoForTest(
-            currentlySubscribed = true,
             paywallData = TestData.template7,
             features = basicFeatures,
             tierId = "basic"
         )
         val bimonthlyPackage = TestData.Packages.bimonthly.getPackageInfoForTest(
-            currentlySubscribed = false,
             paywallData = TestData.template7,
             features = standardFeatures,
             tierId = "standard"
         )
         val quarterlyPackage = TestData.Packages.quarterly.getPackageInfoForTest(
-            currentlySubscribed = false,
             paywallData = TestData.template7,
             features = premiumFeatures,
             tierId = "premium"
         )
         val semesterPackage = TestData.Packages.semester.getPackageInfoForTest(
-            currentlySubscribed = false,
             paywallData = TestData.template7,
             features = standardFeatures,
             tierId = "standard"
         )
         val annualPackage = TestData.Packages.annual.getPackageInfoForTest(
-            currentlySubscribed = false,
             paywallData = TestData.template7,
             features = basicFeatures,
             tierId = "basic"
         )
         val lifetime = TestData.Packages.lifetime.getPackageInfoForTest(
-            currentlySubscribed = true,
             paywallData = TestData.template7,
             features = premiumFeatures,
             tierId = "premium"
@@ -248,8 +236,6 @@ internal class MultiTierTemplateConfigurationFactoryTest {
                 TestData.Packages.weekly,
                 TestData.Packages.lifetime,
             ),
-            activelySubscribedProductIdentifiers = emptySet(),
-            nonSubscriptionProductIdentifiers = emptySet(),
             template = PaywallTemplate.TEMPLATE_7,
             storefrontCountryCode = "US",
         )

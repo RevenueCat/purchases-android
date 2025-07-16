@@ -27,7 +27,7 @@ aliases:
     executor:
       name: android/android_docker
       resource_class: xlarge
-      tag: 2024.04.1
+      tag: 2025.04.1
     environment:
       JVM_OPTS: -Xmx6g
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
@@ -364,18 +364,18 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache:
-          cache-prefix: v1a
+          cache_prefix: v1a
       - android/restore_build_cache:
-          cache-prefix: v1a
+          cache_prefix: v1a
       - prepare-signing-key
       - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy_snapshot
       - android/save_gradle_cache:
-          cache-prefix: v1a
+          cache_prefix: v1a
       - android/save_build_cache:
-          cache-prefix: v1a
+          cache_prefix: v1a
 
   assemble-purchase-tester:
     <<: *android-executor

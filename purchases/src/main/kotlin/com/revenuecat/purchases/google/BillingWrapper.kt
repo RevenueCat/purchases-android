@@ -466,8 +466,10 @@ internal class BillingWrapper(
                     appInBackground,
                     googleProductType,
                 ),
-                { purchasesByProductId ->
-                    val purchasesRecordWrapper = purchasesByProductId[productId]
+                { purchasesByHashedToken ->
+                    val purchasesRecordWrapper = purchasesByHashedToken.values.firstOrNull {
+                        it.productIds.firstOrNull() == productId
+                    }
                     if (purchasesRecordWrapper != null) {
                         onCompletion(purchasesRecordWrapper)
                     } else {
