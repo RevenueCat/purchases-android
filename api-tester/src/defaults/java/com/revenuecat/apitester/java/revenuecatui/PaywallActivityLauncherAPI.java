@@ -37,6 +37,7 @@ final class PaywallActivityLauncherAPI {
         launcher.launch(offering, null, true);
         launcher.launch(null, fontProvider, true);
         launcher.launch(null, null, true);
+        launcher.launch(null, null, true, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier");
         launcher.launchIfNeeded("requiredEntitlementIdentifier", offering);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null);
@@ -44,7 +45,8 @@ final class PaywallActivityLauncherAPI {
         launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, null, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, fontProvider, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, null, true);
-        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, paywallDisplayCallback);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, paywallDisplayCallback);
         launcher.launchIfNeeded(offering, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(offering, null, true, customerInfo -> null);
         launcher.launchIfNeeded(null, fontProvider, true, customerInfo -> null);

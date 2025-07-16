@@ -95,7 +95,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 "device locale only matches language, not region, es-AR -> es-ES",
                 Args(
                     paywallLocales = nonEmptyListOf("en_US", "es_ES"),
-                    deviceLocales = nonEmptyListOf("es-AR",),
+                    deviceLocales = nonEmptyListOf("es-AR"),
                     expected = "es-ES",
                 ),
             ),
@@ -365,8 +365,6 @@ internal class PaywallStateLoadedComponentsLocaleTests(
             paywallComponents = null,
         ),
         locales = paywallLocales.map { LocaleId(it) }.toNonEmptySetOrNull()!!,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
         dateProvider = { Date() },
         packages = PaywallState.Loaded.Components.AvailablePackages(
             packagesOutsideTabs = emptyList(),

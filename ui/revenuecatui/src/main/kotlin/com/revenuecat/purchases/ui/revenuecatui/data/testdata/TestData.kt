@@ -488,8 +488,6 @@ internal class MockViewModel(
         when (val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, resourceProvider)) {
             is PaywallValidationResult.Legacy -> offering.toLegacyPaywallState(
                 variableDataProvider = VariableDataProvider(resourceProvider),
-                activelySubscribedProductIdentifiers = setOf(),
-                nonSubscriptionProductIdentifiers = setOf(),
                 mode = mode,
                 validatedPaywallData = validated.displayablePaywall,
                 template = validated.template,
@@ -498,8 +496,6 @@ internal class MockViewModel(
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validated,
-                activelySubscribedProductIds = emptySet(),
-                purchasedNonSubscriptionProductIds = emptySet(),
                 storefrontCountryCode = null,
                 dateProvider = { Date(MILLIS_2025_01_25) },
             )
