@@ -16,6 +16,8 @@ import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -31,9 +33,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
 import java.net.UnknownHostException
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+@Suppress("TooManyFunctions")
 @RunWith(AndroidJUnit4::class)
 class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
@@ -203,6 +207,172 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 isPersonalizedPrice = null,
             )
         }
+    }
+
+    @Test
+    fun testGetVirtualCurrenciesWithBalancesOfZero() {
+        val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
+        val lock = CountDownLatch(1)
+
+        Purchases.sharedInstance.logInWith(
+            appUserID = appUserIDWith0BalanceCurrencies,
+            onError = { error -> fail("should have been able to login. Error: $error") },
+            onSuccess = { _, created ->
+                assertThat(created).isFalse() // This user should already exist
+
+                Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+
+                Purchases.sharedInstance.getVirtualCurrenciesWith(
+                    onError = { error -> fail("should be success. Error: $error") },
+                    onSuccess = { virtualCurrencies ->
+                        validateAllZeroBalances(virtualCurrencies = virtualCurrencies)
+                        lock.countDown()
+                    },
+                )
+            },
+        )
+
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+    }
+
+    @Test
+    fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
+        val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesNonZero"
+        val lock = CountDownLatch(1)
+
+        Purchases.sharedInstance.logInWith(
+            appUserID = appUserIDWith0BalanceCurrencies,
+            onError = { error -> fail("should have been able to login. Error: $error") },
+            onSuccess = { _, created ->
+                assertThat(created).isFalse() // This user should already exist
+
+                Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+
+                Purchases.sharedInstance.getVirtualCurrenciesWith(
+                    onError = { error -> fail("should be success. Error: $error") },
+                    onSuccess = { virtualCurrencies ->
+                        validateNonZeroBalances(virtualCurrencies = virtualCurrencies)
+                        lock.countDown()
+                    },
+                )
+            },
+        )
+
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+    }
+
+    @Test
+    fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
+        val newAppUserID = "integrationTestUser_${UUID.randomUUID()}"
+        val lock = CountDownLatch(1)
+
+        Purchases.sharedInstance.logInWith(
+            appUserID = newAppUserID,
+            onError = { error -> fail("should have been able to login. Error: $error") },
+            onSuccess = { _, created ->
+                assertThat(created).isTrue() // This user should be new
+
+                Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+
+                Purchases.sharedInstance.getVirtualCurrenciesWith(
+                    onError = { error -> fail("should be success. Error: $error") },
+                    onSuccess = { virtualCurrencies ->
+                        validateAllZeroBalances(virtualCurrencies = virtualCurrencies)
+                        lock.countDown()
+                    },
+                )
+            },
+        )
+
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+    }
+
+    @Test
+    fun testCachedVirtualCurrencies() {
+        val appUserID = "integrationTestUserWithAllBalancesNonZero"
+        val lock = CountDownLatch(1)
+
+        Purchases.sharedInstance.logInWith(
+            appUserID = appUserID,
+            onError = { error -> fail("should have been able to login. Error: $error") },
+            onSuccess = { _, created ->
+                assertThat(created).isFalse() // This user should be already exist
+
+                Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+
+                Purchases.sharedInstance.getVirtualCurrenciesWith(
+                    onError = { error -> fail("should be success. Error: $error") },
+                    onSuccess = { virtualCurrencies ->
+                        validateNonZeroBalances(virtualCurrencies = virtualCurrencies)
+
+                        var cachedVirtualCurrencies = Purchases.sharedInstance.cachedVirtualCurrencies
+                        validateNonZeroBalances(virtualCurrencies = cachedVirtualCurrencies)
+
+                        Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+                        cachedVirtualCurrencies = Purchases.sharedInstance.cachedVirtualCurrencies
+                        assertThat(cachedVirtualCurrencies).isNull()
+
+                        lock.countDown()
+                    },
+                )
+            },
+        )
+
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+    }
+
+    private fun validateAllZeroBalances(virtualCurrencies: VirtualCurrencies?) {
+        validateVirtualCurrenciesObject(
+            virtualCurrencies = virtualCurrencies,
+            testVCBalance = 0,
+            testVC2Balance = 0,
+        )
+    }
+
+    private fun validateNonZeroBalances(virtualCurrencies: VirtualCurrencies?) {
+        validateVirtualCurrenciesObject(
+            virtualCurrencies = virtualCurrencies,
+            testVCBalance = 100,
+            testVC2Balance = 777,
+        )
+    }
+
+    @Suppress("MagicNumber")
+    private fun validateVirtualCurrenciesObject(
+        virtualCurrencies: VirtualCurrencies?,
+        testVCBalance: Int,
+        testVC2Balance: Int,
+        testVC3Balance: Int = 0,
+    ) {
+        assert(virtualCurrencies!!.all.count() == 3)
+
+        val expectedTestVirtualCurrency = VirtualCurrency(
+            code = "TEST",
+            name = "Test Currency",
+            balance = testVCBalance,
+            serverDescription = "This is a test currency",
+        )
+        assertThat(virtualCurrencies["TEST"]).isEqualTo(expectedTestVirtualCurrency)
+
+        val expectedTestVirtualCurrency2 = VirtualCurrency(
+            code = "TEST2",
+            name = "Test Currency 2",
+            balance = testVC2Balance,
+            serverDescription = "This is test currency 2",
+        )
+        assertThat(virtualCurrencies["TEST2"]).isEqualTo(expectedTestVirtualCurrency2)
+
+        val expectedTestVirtualCurrency3 = VirtualCurrency(
+            code = "TEST3",
+            name = "Test Currency 3",
+            balance = testVC3Balance,
+            serverDescription = null,
+        )
+        assertThat(virtualCurrencies["TEST3"]).isEqualTo(expectedTestVirtualCurrency3)
     }
 
     // endregion

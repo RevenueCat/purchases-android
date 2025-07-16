@@ -45,6 +45,7 @@ import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
 import io.mockk.clearMocks
 import io.mockk.every
@@ -82,6 +83,7 @@ internal open class BasePurchasesTest {
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
     internal val mockFontLoader = mockk<FontLoader>()
+    internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected lateinit var appConfig: AppConfig
@@ -450,8 +452,12 @@ internal open class BasePurchasesTest {
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
+            virtualCurrencyManager = mockVirtualCurrencyManager,
         )
-        purchases = Purchases(purchasesOrchestrator)
+
+        purchases = Purchases(
+            purchasesOrchestrator = purchasesOrchestrator,
+        )
         Purchases.sharedInstance = purchases
         purchasesOrchestrator.state = purchasesOrchestrator.state.copy(appInBackground = false)
     }

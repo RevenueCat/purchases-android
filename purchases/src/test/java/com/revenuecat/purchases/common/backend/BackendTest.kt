@@ -43,7 +43,11 @@ import com.revenuecat.purchases.utils.getNullableString
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import io.mockk.every
+import kotlinx.serialization.SerializationException
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
@@ -53,6 +57,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -78,6 +83,7 @@ class BackendTest {
     @Before
     fun setup() {
         mockkObject(CustomerInfoFactory)
+        mockkObject(VirtualCurrenciesFactory)
         receivedError = null
         receivedOfferingsJSON = null
         receivedCustomerInfo = null
@@ -87,7 +93,10 @@ class BackendTest {
     }
 
     @After
-    fun tearDown() = unmockkObject(CustomerInfoFactory)
+    fun tearDown() {
+        unmockkObject(CustomerInfoFactory)
+        unmockkObject(VirtualCurrenciesFactory)
+    }
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
@@ -148,6 +157,7 @@ class BackendTest {
 
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedCustomerInfoCreated: Boolean? = null
+    private var receivedVirtualCurrencies: VirtualCurrencies? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
@@ -193,6 +203,14 @@ class BackendTest {
 
     private val onReceiveLoginErrorHandler: (PurchasesError) -> Unit = {
         this@BackendTest.receivedError = it
+    }
+
+    private val onReceiveVirtualCurrenciesSuccessHandler: (VirtualCurrencies) -> Unit = { info ->
+        this@BackendTest.receivedVirtualCurrencies = info
+    }
+
+    private val onReceiveVirtualCurrenciesErrorHandler: (PurchasesError) -> Unit = { error ->
+        this@BackendTest.receivedError = error
     }
 
     // region general backend functionality
@@ -2405,6 +2423,271 @@ class BackendTest {
 
     // endregion
 
+    // region getVirtualCurrencies
+
+    @Test
+    fun getVirtualCurrenciesCallsProperURL() {
+        val virtualCurrencies = getVirtualCurrencies(200, null, null)
+
+        assertThat(receivedVirtualCurrencies).isNotNull
+        assertThat(receivedVirtualCurrencies).isEqualTo(virtualCurrencies)
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetVirtualCurrencies(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders
+            )
+        }
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls success handler for successful request`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            Responses.validFullVirtualCurrenciesResponse,
+            true,
+            shouldMockVirtualCurrencies = false
+        )
+        var successCalled = false
+        backend.getVirtualCurrencies(appUserID, false,
+            {
+                successCalled = true
+                val expectedVirtualCurrencies = VirtualCurrencies(
+                    all = mapOf(
+                        "COIN" to VirtualCurrency(
+                            balance = 1,
+                            name = "Coin",
+                            code = "COIN",
+                            serverDescription = "It's a coin",
+                        ),
+                        "RC_COIN" to VirtualCurrency(
+                            balance = 0,
+                            name = "RC Coin",
+                            code = "RC_COIN",
+                            serverDescription = null,
+                        ),
+                    ),
+                )
+                assertThat(it).isEqualTo(expectedVirtualCurrencies)
+            },
+            { error -> fail("expected success $error", error) }
+        )
+        assertTrue(successCalled)
+    }
+
+    @Test
+    fun getVirtualCurrenciesFailsIf40X() {
+        val failureCode = 400
+
+        getVirtualCurrencies(failureCode, null, null)
+
+        assertThat(receivedVirtualCurrencies).isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun getVirtualCurrenciesFailsIf50X() {
+        val failureCode = 500
+
+        getVirtualCurrencies(failureCode, null, null)
+
+        assertThat(receivedVirtualCurrencies).isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when a Network error occurs`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            IOException(),
+            null
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `given multiple getVirtualCurrencies calls for same subscriber same body, only one is triggered`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetVirtualCurrencies(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given getVirtualCurrencies call on foreground, then one in background, only one request without delay is triggered`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = true, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            asyncDispatcher.enqueue(any(), Delay.NONE)
+        }
+    }
+
+    @Test
+    fun `given getVirtualCurrencies call on background, then one in foreground, both are executed`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = true, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetVirtualCurrencies(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `getVirtualCurrencies call is enqueued with delay if on background`() {
+        dispatcher.calledDelay = null
+
+        getVirtualCurrencies(200, clientException = null, resultBody = null, appInBackground = true)
+
+        val calledWithRandomDelay: Delay? = dispatcher.calledDelay
+        assertThat(calledWithRandomDelay).isNotNull
+        assertThat(calledWithRandomDelay).isEqualTo(Delay.DEFAULT)
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws JSONException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = JSONException("Invalid JSON")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws SerializationException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = SerializationException("Serialization error")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws IllegalArgumentException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = IllegalArgumentException("Invalid input")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+    // endregion
+
     // region helpers
 
     private fun mockResponse(
@@ -2549,6 +2832,76 @@ class BackendTest {
         )
 
         return info
+    }
+
+    private fun getVirtualCurrencies(
+        responseCode: Int,
+        clientException: Exception?,
+        resultBody: String?,
+        appInBackground: Boolean = false
+    ): VirtualCurrencies {
+        val virtualCurrencies = mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            responseCode,
+            clientException,
+            resultBody
+        )
+
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground,
+            onReceiveVirtualCurrenciesSuccessHandler,
+            onReceiveVirtualCurrenciesErrorHandler
+        )
+
+        return virtualCurrencies
+    }
+
+    private fun mockGetVirtualCurrenciesResponse(
+        endpoint: Endpoint,
+        body: Map<String, Any?>?,
+        responseCode: Int,
+        clientException: Exception?,
+        resultBody: String?,
+        delayed: Boolean = false,
+        shouldMockVirtualCurrencies: Boolean = true,
+        virtualCurrenciesFactoryException: Exception? = null,
+        baseURL: URL = mockBaseURL
+    ): VirtualCurrencies {
+        val virtualCurrencies: VirtualCurrencies = mockk()
+
+        val result = HTTPResult.createResult(responseCode, resultBody ?: "{\"virtual_currencies\":{}}")
+
+        if (virtualCurrenciesFactoryException != null) {
+            every {
+                VirtualCurrenciesFactory.buildVirtualCurrencies(result)
+            } throws virtualCurrenciesFactoryException
+        } else if (shouldMockVirtualCurrencies) {
+            every {
+                VirtualCurrenciesFactory.buildVirtualCurrencies(result)
+            } returns virtualCurrencies
+        }
+        val everyMockedCall = every {
+            mockClient.performRequest(
+                eq(baseURL),
+                eq(endpoint),
+                (if (body == null) any() else capture(requestBodySlot)),
+                any(),
+                capture(headersSlot)
+            )
+        }
+
+        if (clientException == null) {
+            everyMockedCall answers {
+                if (delayed) Thread.sleep(200)
+                result
+            }
+        } else {
+            everyMockedCall throws clientException
+        }
+
+        return virtualCurrencies
     }
 
     // endregion

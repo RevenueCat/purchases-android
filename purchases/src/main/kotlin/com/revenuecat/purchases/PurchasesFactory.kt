@@ -49,6 +49,7 @@ import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -319,6 +320,13 @@ internal class PurchasesFactory(
                 ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name)
             }
 
+            val virtualCurrencyManager = VirtualCurrencyManager(
+                identityManager = identityManager,
+                deviceCache = cache,
+                backend = backend,
+                appConfig = appConfig,
+            )
+
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
                 appUserID,
@@ -344,6 +352,7 @@ internal class PurchasesFactory(
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
                 fontLoader = fontLoader,
+                virtualCurrencyManager = virtualCurrencyManager,
             )
 
             return Purchases(purchasesOrchestrator)
