@@ -14,11 +14,13 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.revenuecat.purchases.InternalRevenueCatAPI
 
@@ -59,21 +61,26 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     override val viewModelStore: ViewModelStore = ViewModelStore()
 
     open fun onBackPressed() {
-        (parent as ViewGroup).removeView(this)
+        (parent as? ViewGroup)?.removeView(this)
     }
 
-    override fun onSaveInstanceState(): Bundle =
-        performSave(super.onSaveInstanceState())
+    override fun onSaveInstanceState(): Parcelable? {
+        val state = super.onSaveInstanceState()
+        if (isManagingViewTree) performSave(state)
+        return state
+    }
 
     override fun onRestoreInstanceState(state: Parcelable?) {
         super.onRestoreInstanceState(state)
-        performRestore(state)
+        if (isManagingViewTree) performRestore(state)
     }
 
     override fun onAttachedToWindow() {
         initViewTreeOwners()
-        savedStateRegistryController.performAttach()
-        performRestore(null)
+        if (isManagingViewTree) {
+            savedStateRegistryController.performAttach()
+            performRestore(null)
+        }
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         super.onAttachedToWindow()
@@ -91,10 +98,12 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
         super.onWindowFocusChanged(hasWindowFocus)
         if (hasWindowFocus) {
-            // Make focusable and request focus, to be able to intercept back button presses.
-            isFocusableInTouchMode = true
-            isFocusable = true
-            requestFocus()
+            if (isManagingViewTree) {
+                // Make focusable and request focus, to be able to intercept back button presses.
+                isFocusableInTouchMode = true
+                isFocusable = true
+                requestFocus()
+            }
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         } else {
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
@@ -105,10 +114,13 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         if (isManagingViewTree) viewModelStore.clear()
+        deinitViewTreeOwners()
         super.onDetachedFromWindow()
     }
 
+    @Suppress("ReturnCount")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (!isManagingViewTree) return super.dispatchKeyEvent(event)
         if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
             onBackPressed()
             return true
@@ -136,6 +148,21 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         windowRoot.setViewTreeViewModelStoreOwner(this)
 
         isManagingViewTree = true
+    }
+
+    private fun deinitViewTreeOwners() {
+        if (!isManagingViewTree) return
+        val windowRoot = findWindowRoot() ?: return
+
+        if (windowRoot.findViewTreeLifecycleOwner() === this) {
+            windowRoot.setViewTreeLifecycleOwner(null)
+        }
+        if (windowRoot.findViewTreeSavedStateRegistryOwner() === this) {
+            windowRoot.setViewTreeSavedStateRegistryOwner(null)
+        }
+        if (windowRoot.findViewTreeViewModelStoreOwner() === this) {
+            windowRoot.setViewTreeViewModelStoreOwner(null)
+        }
     }
 
     private fun View.findWindowRoot(): View? {
