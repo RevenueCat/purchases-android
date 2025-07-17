@@ -70,7 +70,7 @@ internal class PurchasesFactory(
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
     ): Purchases {
-        validateConfiguration(configuration)
+        val apiKeyValidationResult = validateConfiguration(configuration)
 
         with(configuration) {
             val application = context.getApplication()
@@ -184,6 +184,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
+                apiKeyValidationResult,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
@@ -389,7 +390,7 @@ internal class PurchasesFactory(
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun validateConfiguration(configuration: PurchasesConfiguration) {
+    fun validateConfiguration(configuration: PurchasesConfiguration): APIKeyValidator.ValidationResult {
         with(configuration) {
             require(context.hasPermission(Manifest.permission.INTERNET)) {
                 "Purchases requires INTERNET permission."
@@ -399,7 +400,7 @@ internal class PurchasesFactory(
 
             require(context.applicationContext is Application) { "Needs an application context." }
 
-            apiKeyValidator.validateAndLog(apiKey, store)
+            return apiKeyValidator.validateAndLog(apiKey, store)
         }
     }
 
