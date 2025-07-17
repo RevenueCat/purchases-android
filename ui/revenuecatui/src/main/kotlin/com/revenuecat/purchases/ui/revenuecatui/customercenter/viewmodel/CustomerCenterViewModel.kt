@@ -377,19 +377,16 @@ internal class CustomerCenterViewModelImpl(
         return screen.paths
             .filter { isPathAllowedForStore(it, selectedPurchaseInformation) }
             .filter { isPathAllowedForLifetimeSubscription(it, selectedPurchaseInformation) }
-            .let { filteredPaths ->
-                transformPathsOnSubscriptionState(filteredPaths, selectedPurchaseInformation, localization)
-            }
+            .transformPathsOnSubscriptionState(selectedPurchaseInformation, localization)
     }
 
-    private fun transformPathsOnSubscriptionState(
-        paths: List<HelpPath>,
+    private fun List<HelpPath>.transformPathsOnSubscriptionState(
         selectedPurchaseInformation: PurchaseInformation?,
         localization: CustomerCenterConfigData.Localization,
     ): List<HelpPath> {
-        return paths.map { path ->
+        return map { path ->
             // For cancelled subscriptions, show "Resubscribe" instead of "Cancel"
-            if (path.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL &&
+            if (path.type == HelpPath.PathType.CANCEL &&
                 selectedPurchaseInformation?.isCancelled == true
             ) {
                 path.copy(
