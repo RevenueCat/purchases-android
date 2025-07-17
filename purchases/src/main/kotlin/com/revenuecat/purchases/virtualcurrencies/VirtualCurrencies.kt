@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.virtualcurrencies
 
 import android.os.Parcelable
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
@@ -14,7 +15,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Parcelize
 @Serializable
-class VirtualCurrencies internal constructor(
+class VirtualCurrencies @InternalRevenueCatAPI constructor(
     @SerialName("virtual_currencies")
     val all: Map<String, VirtualCurrency>,
 ) : Parcelable {

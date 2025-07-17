@@ -1,5 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
@@ -9,5 +10,12 @@ private class VirtualCurrenciesAPI {
         val all: Map<String, VirtualCurrency> = virtualCurrencies.all
         val subscriptTest: VirtualCurrency? = virtualCurrencies["COIN"]
         val getTest: VirtualCurrency? = virtualCurrencies.get(code = "COIN")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    fun checkInternalRevenueCatAPIs() {
+        val virtualCurrencies = VirtualCurrencies(
+            all = emptyMap(),
+        )
     }
 }
