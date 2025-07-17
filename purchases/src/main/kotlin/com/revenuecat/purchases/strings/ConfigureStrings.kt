@@ -23,6 +23,10 @@ internal object ConfigureStrings {
     const val GOOGLE_API_KEY_AMAZON_STORE = "Looks like you're using a Google API key but have configured the SDK " +
         "for the Amazon app store.\nEither use an Amazon API key which should look like 'amzn_1a2b3c4d5e6f7h' or " +
         "configure the SDK to use Google.\nSee https://rev.cat/auth for more details."
+    const val TEST_STORE_API_KEY = "Using a Test Store API key.\n" +
+        "The Test Store is for development only. Never use a Test Store API key in production. " +
+        "Test Store purchases are simulated, do not use Google Play or Amazon store, and generate no revenue. " +
+        "Apps submitted with a Test Store API key will be rejected during App Review."
     const val INVALID_API_KEY = "The specified API Key is not recognized.\n" +
         "Ensure that you are using the public app-specific API key, " +
         "which should look like 'goog_1a2b3c4d5e6f7h' or 'amzn_1a2b3c4d5e6f7h'.\n" +

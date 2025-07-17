@@ -33,7 +33,9 @@ class PurchasesFactoryTest {
     fun setup() {
         purchasesFactory = PurchasesFactory(isDebugBuild = { true }, apiKeyValidatorMock)
 
-        every { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) } just runs
+        every {
+            apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
+        } returns APIKeyValidator.ValidationResult.VALID
     }
 
     @After
