@@ -11,5 +11,6 @@ package com.revenuecat.purchases
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY,
     AnnotationTarget.TYPEALIAS,
+    AnnotationTarget.CONSTRUCTOR,
 )
 annotation class InternalRevenueCatAPI
