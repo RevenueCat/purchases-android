@@ -213,7 +213,11 @@ internal class CustomerCenterViewModelImpl(
             if (currentState is CustomerCenterState.Success) {
                 val screen = currentState.customerCenterConfigData.getManagementScreen()
                 if (screen != null) {
-                    val baseSupportedPaths = supportedPaths(purchase, screen)
+                    val baseSupportedPaths = supportedPaths(
+                        purchase,
+                        screen,
+                        currentState.customerCenterConfigData.localization,
+                    )
 
                     // For detail screen: only show subscription-specific actions
                     val detailSupportedPaths = PathUtils.filterSubscriptionSpecificPaths(baseSupportedPaths)
@@ -368,10 +372,34 @@ internal class CustomerCenterViewModelImpl(
     private fun supportedPaths(
         selectedPurchaseInformation: PurchaseInformation?,
         screen: CustomerCenterConfigData.Screen,
+        localization: CustomerCenterConfigData.Localization,
     ): List<HelpPath> {
         return screen.paths
             .filter { isPathAllowedForStore(it, selectedPurchaseInformation) }
             .filter { isPathAllowedForLifetimeSubscription(it, selectedPurchaseInformation) }
+            .transformPathsOnSubscriptionState(selectedPurchaseInformation, localization)
+    }
+
+    private fun List<HelpPath>.transformPathsOnSubscriptionState(
+        selectedPurchaseInformation: PurchaseInformation?,
+        localization: CustomerCenterConfigData.Localization,
+    ): List<HelpPath> {
+        return map { path ->
+            // For cancelled subscriptions, show "Resubscribe" instead of "Cancel"
+            if (path.type == HelpPath.PathType.CANCEL &&
+                selectedPurchaseInformation?.isCancelled == true
+            ) {
+                path.copy(
+                    title = localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.RESUBSCRIBE,
+                    ),
+                    feedbackSurvey = null,
+                    promotionalOffer = null,
+                )
+            } else {
+                path
+            }
+        }
     }
 
     private fun isPathAllowedForLifetimeSubscription(
@@ -409,7 +437,7 @@ internal class CustomerCenterViewModelImpl(
             } else {
                 null
             }
-            supportedPaths(selectedPurchase, screen)
+            supportedPaths(selectedPurchase, screen, state.customerCenterConfigData.localization)
         } ?: emptyList()
 
         // For main screen: if multiple purchases, show only general paths
