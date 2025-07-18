@@ -241,11 +241,3 @@ baselineProfile {
         exclude("com.revenuecat.purchases.ui.revenuecatui.**")
     }
 }
-
-// Remove afterEvaluate
-// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
-afterEvaluate {
-    dependencies {
-        add("kover", project(":feature:amazon"))
-    }
-}
