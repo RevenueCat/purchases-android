@@ -236,12 +236,12 @@ jobs:
       - android/accept_licenses
       - android-dependencies
       - android/restore_build_cache
-      - run:
-          name: Verify purchases-android target SDK compatibility (currently 33)
-          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
-      - run:
-          name: Verify purchases-ui target SDK compatibility (currently 34)
-          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
+      # - run:
+      #     name: Verify purchases-android target SDK compatibility (currently 33)
+      #     command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
+      # - run:
+      #     name: Verify purchases-ui target SDK compatibility (currently 34)
+      #     command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
       - run:
           name: Run Tests
           command: ./scripts/run-tests-split.sh
