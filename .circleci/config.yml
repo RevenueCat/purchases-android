@@ -226,7 +226,7 @@ jobs:
 
   test:
     <<: *android-executor
-    parallelism: 2
+    parallelism: 4
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout

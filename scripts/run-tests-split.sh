@@ -18,6 +18,20 @@ else
   TEST_FILES=$(find . -path "*src/test*" \( -name "*Test.kt" -o -name "*Test.java" \))
 fi
 
+# List of known JVM modules that use the generic 'test' task (not Android variant tasks)
+JVM_MODULES=(":bom" ":dokka-hide-internal")
+
+# Function to check if a module is a JVM module
+is_jvm_module() {
+  local module="$1"
+  for jvm_module in "${JVM_MODULES[@]}"; do
+    if [ "$module" = "$jvm_module" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 # Group test files by module and variant to use appropriate test tasks
 declare -A module_variant_tests
 
@@ -40,12 +54,6 @@ for file in $TEST_FILES; do
       # Capitalize first letter
       variant="$(echo ${variant:0:1} | tr '[:lower:]' '[:upper:]')${variant:1}"
     fi
-  fi
-  
-  # For tests in src/test (not variant-specific), default to "Defaults" for Android modules
-  # This handles the case where Android modules have tests in src/test but still need variant tasks
-  if [ -z "$variant" ]; then
-    variant="Defaults"
   fi
   
   # Convert file path to test class name
@@ -79,8 +87,19 @@ for key in "${!module_variant_tests[@]}"; do
   variant=$(echo "$key" | cut -d'|' -f2)
   classes="${module_variant_tests[$key]}"
   
-  # Always try the Android variant test task first
-  echo "Running Android tests for $module_path with variant $variant"
-  task_name="${module_path}:test${variant}DebugUnitTest"
-  ./gradlew "$task_name" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
+  if [ -z "$variant" ]; then
+    # For tests in src/test (no variant), check if it's a JVM module
+    if is_jvm_module "$module_path"; then
+      echo "Running JVM tests for $module_path"
+      ./gradlew "${module_path}:test" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
+    else
+      echo "Running Android tests for $module_path (defaults variant)"
+      ./gradlew "${module_path}:testDefaultsDebugUnitTest" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
+    fi
+  else
+    # For variant-specific tests, use the Android variant task
+    echo "Running Android tests for $module_path with variant $variant"
+    task_name="${module_path}:test${variant}DebugUnitTest"
+    ./gradlew "$task_name" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
+  fi
 done
