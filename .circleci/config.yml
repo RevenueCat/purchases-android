@@ -226,6 +226,7 @@ jobs:
 
   test:
     <<: *android-executor
+    parallelism: 2
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
@@ -243,7 +244,7 @@ jobs:
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
       - run:
           name: Run Tests
-          command: ./gradlew lint test
+          command: ./scripts/run-tests-split.sh
       - run:
           name: Consolidate artifacts
           command: |
