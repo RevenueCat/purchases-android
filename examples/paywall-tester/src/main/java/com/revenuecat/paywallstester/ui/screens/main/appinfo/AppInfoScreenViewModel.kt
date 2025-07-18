@@ -23,13 +23,11 @@ interface AppInfoScreenViewModel {
     data class UiState(
         val appUserID: String,
         val apiKeyDescription: String,
-        val isCustomerCenterVisible: Boolean,
     ) {
         companion object {
             val Empty = UiState(
                 appUserID = "",
                 apiKeyDescription = "",
-                isCustomerCenterVisible = false,
             )
         }
     }
@@ -39,8 +37,6 @@ interface AppInfoScreenViewModel {
     fun logIn(newAppUserId: String)
     fun logOut()
     fun switchApiKey(newApiKey: String)
-    fun showCustomerCenter()
-    fun hideCustomerCenter()
 }
 
 internal class AppInfoScreenViewModelImpl(
@@ -96,14 +92,6 @@ internal class AppInfoScreenViewModelImpl(
         apiKeyStore.setLastUsedApiKey(newApiKey)
         configurePurchases(newApiKey)
         updateApiKeyDescription()
-    }
-
-    override fun showCustomerCenter() {
-        _state.update { it.copy(isCustomerCenterVisible = true) }
-    }
-
-    override fun hideCustomerCenter() {
-        _state.update { it.copy(isCustomerCenterVisible = false) }
     }
 
     private fun updateAppUserID() {

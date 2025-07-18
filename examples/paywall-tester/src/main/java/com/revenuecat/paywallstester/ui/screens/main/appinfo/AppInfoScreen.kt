@@ -21,6 +21,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,22 +51,21 @@ fun AppInfoScreen(
     ),
 ) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
+    var isCustomerCenterVisible by rememberSaveable { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
 
     // Use remember to cache the listener across recompositions
     val customerCenterListener = remember { createCustomerCenterListener() }
 
-    val state by viewModel.state.collectAsState()
-
-    if (state.isCustomerCenterVisible) {
+    if (isCustomerCenterVisible) {
         CustomerCenter(
             modifier = Modifier.fillMaxSize(),
             options = CustomerCenterOptions.Builder()
                 .setListener(customerCenterListener)
                 .build(),
         ) {
-            viewModel.hideCustomerCenter()
+            isCustomerCenterVisible = false
         }
         return
     }
@@ -75,6 +75,7 @@ fun AppInfoScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        val state by viewModel.state.collectAsState()
         val currentUserID by remember { derivedStateOf { state.appUserID } }
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
         Text(text = "Current user ID: $currentUserID")
@@ -92,7 +93,7 @@ fun AppInfoScreen(
             Text(text = "Show debug view")
         }
         Button(onClick = {
-            viewModel.showCustomerCenter()
+            isCustomerCenterVisible = true
         }) {
             Text(text = "Show customer center")
         }
@@ -212,19 +213,11 @@ fun AppInfoScreenPreview() {
     AppInfoScreen(
         viewModel = object : AppInfoScreenViewModel {
             override val state: StateFlow<UiState>
-                get() = MutableStateFlow(
-                    UiState(
-                        appUserID = "test-user-id",
-                        apiKeyDescription = "test-api-key",
-                        isCustomerCenterVisible = false,
-                    ),
-                )
+                get() = MutableStateFlow(UiState(appUserID = "test-user-id", apiKeyDescription = "test-api-key"))
 
             override fun logIn(newAppUserId: String) { }
             override fun logOut() { }
             override fun switchApiKey(newApiKey: String) { }
-            override fun showCustomerCenter() { }
-            override fun hideCustomerCenter() { }
         },
     )
 }
