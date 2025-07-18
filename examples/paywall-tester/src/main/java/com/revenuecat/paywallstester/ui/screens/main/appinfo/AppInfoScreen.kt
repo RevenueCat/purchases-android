@@ -50,21 +50,22 @@ fun AppInfoScreen(
     ),
 ) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
-    var isCustomerCenterVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
 
     // Use remember to cache the listener across recompositions
     val customerCenterListener = remember { createCustomerCenterListener() }
 
-    if (isCustomerCenterVisible) {
+    val state by viewModel.state.collectAsState()
+
+    if (state.isCustomerCenterVisible) {
         CustomerCenter(
             modifier = Modifier.fillMaxSize(),
             options = CustomerCenterOptions.Builder()
                 .setListener(customerCenterListener)
                 .build(),
         ) {
-            isCustomerCenterVisible = false
+            viewModel.hideCustomerCenter()
         }
         return
     }
@@ -74,7 +75,6 @@ fun AppInfoScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val state by viewModel.state.collectAsState()
         val currentUserID by remember { derivedStateOf { state.appUserID } }
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
         Text(text = "Current user ID: $currentUserID")
@@ -92,7 +92,7 @@ fun AppInfoScreen(
             Text(text = "Show debug view")
         }
         Button(onClick = {
-            isCustomerCenterVisible = true
+            viewModel.showCustomerCenter()
         }) {
             Text(text = "Show customer center")
         }
@@ -212,11 +212,19 @@ fun AppInfoScreenPreview() {
     AppInfoScreen(
         viewModel = object : AppInfoScreenViewModel {
             override val state: StateFlow<UiState>
-                get() = MutableStateFlow(UiState(appUserID = "test-user-id", apiKeyDescription = "test-api-key"))
+                get() = MutableStateFlow(
+                    UiState(
+                        appUserID = "test-user-id",
+                        apiKeyDescription = "test-api-key",
+                        isCustomerCenterVisible = false,
+                    ),
+                )
 
             override fun logIn(newAppUserId: String) { }
             override fun logOut() { }
             override fun switchApiKey(newApiKey: String) { }
+            override fun showCustomerCenter() { }
+            override fun hideCustomerCenter() { }
         },
     )
 }
