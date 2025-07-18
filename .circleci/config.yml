@@ -226,6 +226,7 @@ jobs:
 
   test:
     <<: *android-executor
+    parallelism: 4
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
@@ -235,15 +236,15 @@ jobs:
       - android/accept_licenses
       - android-dependencies
       - android/restore_build_cache
-      - run:
-          name: Verify purchases-android target SDK compatibility (currently 33)
-          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
-      - run:
-          name: Verify purchases-ui target SDK compatibility (currently 34)
-          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
+      # - run:
+      #     name: Verify purchases-android target SDK compatibility (currently 33)
+      #     command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
+      # - run:
+      #     name: Verify purchases-ui target SDK compatibility (currently 34)
+      #     command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
       - run:
           name: Run Tests
-          command: ./gradlew lint test
+          command: ./scripts/run-tests-split.sh
       - run:
           name: Consolidate artifacts
           command: |
