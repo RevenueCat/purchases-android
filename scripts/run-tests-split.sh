@@ -46,13 +46,20 @@ for file in $TEST_FILES; do
   
   # Extract variant from test path (e.g., "testDefaults" -> "Defaults", "androidTestDefaults" -> "Defaults")
   variant=""
-  if echo "$file" | grep -q "/src/\(test\|androidTest\)[^/]*/"; then
-    variant_path=$(echo "$file" | sed -E 's|.*/src/((?:test|androidTest)[^/]*)/.*|\1|')
+  if echo "$file" | grep -q "/src/.*[Tt]est[^/]*/"; then
+    # Extract the test directory name (e.g., "testDefaults", "androidTestDefaults", "test", "androidTest")
+    variant_path=$(echo "$file" | sed -E 's|.*/src/([^/]*[Tt]est[^/]*)/.*|\1|')
     if [[ "$variant_path" != "test" && "$variant_path" != "androidTest" ]]; then
-      # Convert testDefaults -> Defaults, androidTestDefaults -> Defaults, etc.
-      variant=$(echo "$variant_path" | sed 's/^.*test//')
-      # Capitalize first letter
-      variant="$(echo ${variant:0:1} | tr '[:lower:]' '[:upper:]')${variant:1}"
+      # Remove "test" or "androidTest" prefix to get just the variant
+      if [[ "$variant_path" =~ ^androidTest ]]; then
+        variant=$(echo "$variant_path" | sed 's/^androidTest//')
+      else
+        variant=$(echo "$variant_path" | sed 's/^test//')
+      fi
+      # Capitalize first letter if variant is not empty
+      if [ -n "$variant" ]; then
+        variant="$(echo ${variant:0:1} | tr '[:lower:]' '[:upper:]')${variant:1}"
+      fi
     fi
   fi
   
