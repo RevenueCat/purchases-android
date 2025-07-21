@@ -23,39 +23,16 @@ debug_log ""
 debug_log "=== Discovering Test Tasks ==="
 
 # Get all test tasks that './gradlew test' would execute
-ALL_TEST_TASKS=$(./gradlew test --dry-run 2>/dev/null | grep -E ':.*:test.*UnitTest|:.*:test[[:space:]]*$' | grep 'SKIPPED' | sed 's/ SKIPPED$//' | sort)
+# Focus on actual test execution tasks, not compilation tasks  
+ALL_TEST_TASKS=$(./gradlew test --dry-run 2>/dev/null | grep 'SKIPPED' | sed 's/ SKIPPED$//' | grep -E ':.*:test[^:]*$' | sort)
 
-# Filter out tasks that don't have actual test files (optimization)
-VALID_TEST_TASKS=""
-debug_log "Validating test tasks (checking for actual test files):"
-
-for task in $ALL_TEST_TASKS; do
-  # Extract module path from task (e.g., ":purchases:testDefaultsDebugUnitTest" -> "purchases")
-  module_path=$(echo "$task" | sed -E 's|^:([^:]+).*|\1|')
-  
-  # For nested modules like ":ui:revenuecatui:test"
-  if echo "$task" | grep -q ":[^:]*:[^:]*:"; then
-    module_path=$(echo "$task" | sed -E 's|^:([^:]+:[^:]+):.*|\1|' | tr ':' '/')
-  fi
-  
-  # Check if this module has test files
-  test_file_count=$(find "$module_path" -path "*/src/test*" \( -name "*Test.kt" -o -name "*Test.java" \) 2>/dev/null | wc -l | tr -d ' ')
-  
-  if [ "$test_file_count" -gt 0 ]; then
-    VALID_TEST_TASKS="$VALID_TEST_TASKS$task\n"
-    debug_log "  ✅ $task ($test_file_count test files)"
-  else
-    debug_log "  ❌ $task (no test files, skipping)"
-  fi
-done
-
-# Convert to clean list
-VALID_TEST_TASKS=$(echo -e "$VALID_TEST_TASKS" | grep -v '^$' | sort)
+# Use all tasks that './gradlew test' would run - trust Gradle's decision
+VALID_TEST_TASKS="$ALL_TEST_TASKS"
 TOTAL_TASKS=$(echo "$VALID_TEST_TASKS" | wc -l | tr -d ' ')
 
 debug_log ""
-debug_log "Total valid test tasks found: $TOTAL_TASKS"
-debug_log "Valid test tasks:"
+debug_log "Total test tasks found: $TOTAL_TASKS"
+debug_log "Test tasks to split:"
 echo "$VALID_TEST_TASKS" | tee -a "$DEBUG_LOG"
 
 # Step 2: Split tasks across CircleCI nodes
