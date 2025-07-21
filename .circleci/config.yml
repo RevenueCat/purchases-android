@@ -249,7 +249,9 @@ jobs:
           name: Generate test comparison baseline
           command: |
               mkdir -p build/test-split-debug
-              ./gradlew test --dry-run | grep ':test' | grep 'SKIPPED' | sort > build/test-split-debug/gradle-test-baseline.log || true
+              if [ "$CIRCLE_NODE_INDEX" = "0" ]; then
+                ./gradlew test --dry-run | grep ':test' | grep 'SKIPPED' | sort > build/test-split-debug/gradle-test-baseline.log || true
+              fi
           when: always
       - run:
           name: Consolidate artifacts

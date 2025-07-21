@@ -15,156 +15,115 @@ if [ "$CIRCLE_NODE_INDEX" = "0" ]; then
   ./gradlew lint
 fi
 
-# Gather test files and split them across parallel nodes. Include variations like
-# src/testDefaults and src/testCustomEntitlementComputation. Focus on unit tests only
-# since './gradlew test' doesn't run Android instrumentation tests.
-# If the CircleCI CLI is unavailable (e.g. when running locally), fall back to finding all tests
-# without splitting.
-PATTERNS=("**/src/test*/**/*Test.kt" "**/src/test*/**/*Test.java")
-if command -v circleci >/dev/null 2>&1 && circleci tests glob --help >/dev/null 2>&1; then
-  TEST_FILES=$(circleci tests glob "${PATTERNS[@]}" | circleci tests split)
-else
-  echo "circleci CLI not found or not in job context; running all tests without splitting" >&2
-  TEST_FILES=$(find . -path "*src/test*" \( -name "*Test.kt" -o -name "*Test.java" \))
-fi
-
-# Debug logging
 debug_log "=== DEBUG: Test Split Script Analysis ==="
 debug_log "Node: ${CIRCLE_NODE_INDEX:-local} of ${CIRCLE_NODE_TOTAL:-1}"
-debug_log "Test files found: $(echo "$TEST_FILES" | wc -l)"
-debug_log "Test files:"
-echo "$TEST_FILES" | tee -a "$DEBUG_LOG"
+
+# Step 1: Discover all test tasks that would run with './gradlew test'
 debug_log ""
+debug_log "=== Discovering Test Tasks ==="
 
-# List of known JVM modules that use the generic 'test' task (not Android variant tasks)
-JVM_MODULES=(":bom" ":dokka-hide-internal")
+# Get all test tasks that './gradlew test' would execute
+ALL_TEST_TASKS=$(./gradlew test --dry-run 2>/dev/null | grep -E ':.*:test.*UnitTest|:.*:test[[:space:]]*$' | grep 'SKIPPED' | sed 's/ SKIPPED$//' | sort)
 
-# Function to check if a module is a JVM module
-is_jvm_module() {
-  local module="$1"
-  for jvm_module in "${JVM_MODULES[@]}"; do
-    if [ "$module" = "$jvm_module" ]; then
-      return 0
-    fi
-  done
-  return 1
-}
+# Filter out tasks that don't have actual test files (optimization)
+VALID_TEST_TASKS=""
+debug_log "Validating test tasks (checking for actual test files):"
 
-# Group test files by module and variant to use appropriate test tasks
-declare -A module_variant_tests
-declare -a all_tasks_to_run
-
-for file in $TEST_FILES; do
-  # Extract module name, handling nested modules like ui/revenuecatui
-  # Look for the pattern before /src/ to get the full module path
-  module=$(echo "$file" | sed -E 's|^\.?/?([^/]+.*)/src/.*|\1|')
+for task in $ALL_TEST_TASKS; do
+  # Extract module path from task (e.g., ":purchases:testDefaultsDebugUnitTest" -> "purchases")
+  module_path=$(echo "$task" | sed -E 's|^:([^:]+).*|\1|')
   
-  # Convert filesystem path to Gradle project path (replace / with :)
-  # ui/revenuecatui -> :ui:revenuecatui
-  module_gradle_path=":$(echo "$module" | sed 's|/|:|g')"
-  
-  # Extract variant from test path (e.g., "testDefaults" -> "Defaults")
-  variant=""
-  if echo "$file" | grep -q "/src/test[^/]*/"; then
-    # Extract the test directory name (e.g., "testDefaults", "test")
-    variant_path=$(echo "$file" | sed -E 's|.*/src/(test[^/]*)/.*|\1|')
-    if [[ "$variant_path" != "test" ]]; then
-      # Remove "test" prefix to get just the variant
-      variant=$(echo "$variant_path" | sed 's/^test//')
-      # Capitalize first letter if variant is not empty
-      if [ -n "$variant" ]; then
-        variant="$(echo ${variant:0:1} | tr '[:lower:]' '[:upper:]')${variant:1}"
-      fi
-    fi
+  # For nested modules like ":ui:revenuecatui:test"
+  if echo "$task" | grep -q ":[^:]*:[^:]*:"; then
+    module_path=$(echo "$task" | sed -E 's|^:([^:]+:[^:]+):.*|\1|' | tr ':' '/')
   fi
   
-  # Convert file path to test class name
-  class_name=$(echo "$file" | sed \
-    -e 's|^\./||' \
-    -e 's|.*/src/test[^/]*/java/||' \
-    -e 's|.*/src/test[^/]*/kotlin/||' \
-    -e 's|\.kt$||' \
-    -e 's|\.java$||' \
-    -e 's|/|.|g')
+  # Check if this module has test files
+  test_file_count=$(find "$module_path" -path "*/src/test*" \( -name "*Test.kt" -o -name "*Test.java" \) 2>/dev/null | wc -l | tr -d ' ')
   
-  # Create key for grouping: module_gradle_path|variant (using | as separator)
-  key="${module_gradle_path}|${variant}"
-  
-  # Add class to the group
-  if [ -z "${module_variant_tests[$key]}" ]; then
-    module_variant_tests[$key]="$class_name"
+  if [ "$test_file_count" -gt 0 ]; then
+    VALID_TEST_TASKS="$VALID_TEST_TASKS$task\n"
+    debug_log "  ✅ $task ($test_file_count test files)"
   else
-    module_variant_tests[$key]="${module_variant_tests[$key]} $class_name"
+    debug_log "  ❌ $task (no test files, skipping)"
   fi
-  
-  # Debug: Show file processing
-  debug_log "File: $file -> Module: $module_gradle_path, Variant: '$variant', Class: $class_name"
 done
 
-debug_log ""
-debug_log "=== Grouped Tests by Module:Variant ==="
-for key in "${!module_variant_tests[@]}"; do
-  module_path=$(echo "$key" | cut -d'|' -f1)
-  variant=$(echo "$key" | cut -d'|' -f2)
-  classes="${module_variant_tests[$key]}"
-  class_count=$(echo "$classes" | wc -w)
-  debug_log "$key -> $class_count classes: $classes"
-done
-debug_log ""
+# Convert to clean list
+VALID_TEST_TASKS=$(echo -e "$VALID_TEST_TASKS" | grep -v '^$' | sort)
+TOTAL_TASKS=$(echo "$VALID_TEST_TASKS" | wc -l | tr -d ' ')
 
-if [ ${#module_variant_tests[@]} -eq 0 ]; then
-  debug_log "No tests to run on this node"
+debug_log ""
+debug_log "Total valid test tasks found: $TOTAL_TASKS"
+debug_log "Valid test tasks:"
+echo "$VALID_TEST_TASKS" | tee -a "$DEBUG_LOG"
+
+# Step 2: Split tasks across CircleCI nodes
+debug_log ""
+debug_log "=== Splitting Tasks Across Nodes ==="
+
+if [ -z "$VALID_TEST_TASKS" ]; then
+  debug_log "No valid test tasks found"
   exit 0
 fi
 
-# Run tests for each module:variant combination
-debug_log "=== Tasks to Execute ==="
-for key in "${!module_variant_tests[@]}"; do
-  module_path=$(echo "$key" | cut -d'|' -f1)
-  variant=$(echo "$key" | cut -d'|' -f2)
-  classes="${module_variant_tests[$key]}"
-  test_args=$(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
+# Use CircleCI's built-in test splitting on the task list
+if command -v circleci >/dev/null 2>&1 && circleci tests glob --help >/dev/null 2>&1; then
+  # Write tasks to a temp file for CircleCI to split
+  TASKS_FILE=$(mktemp)
+  echo "$VALID_TEST_TASKS" > "$TASKS_FILE"
   
-  if [ -z "$variant" ]; then
-    # For tests in src/test (no variant), check if it's a JVM module
-    if is_jvm_module "$module_path"; then
-      task="${module_path}:test"
-      debug_log "JVM: $task $test_args"
-      all_tasks_to_run+=("$task")
-      ./gradlew "$task" $test_args
-    else
-      debug_task="${module_path}:testDefaultsDebugUnitTest"
-      release_task="${module_path}:testDefaultsReleaseUnitTest"
-      debug_log "Android (defaults): $debug_task $test_args"
-      debug_log "Android (defaults): $release_task $test_args"
-      all_tasks_to_run+=("$debug_task" "$release_task")
-      # Run both Debug and Release variants to match './gradlew test' behavior
-      ./gradlew "$debug_task" $test_args
-      ./gradlew "$release_task" $test_args
-    fi
-  else
-    # For variant-specific tests, run both Debug and Release
-    debug_task_name="${module_path}:test${variant}DebugUnitTest"
-    release_task_name="${module_path}:test${variant}ReleaseUnitTest"
-    debug_log "Android ($variant): $debug_task_name $test_args"
-    debug_log "Android ($variant): $release_task_name $test_args"
-    all_tasks_to_run+=("$debug_task_name" "$release_task_name")
-    ./gradlew "$debug_task_name" $test_args
-    ./gradlew "$release_task_name" $test_args
+  # Split tasks using CircleCI
+  MY_TASKS=$(circleci tests split "$TASKS_FILE" --split-by=timings --timings-type=classname)
+  rm "$TASKS_FILE"
+  
+  debug_log "Tasks assigned to this node by CircleCI:"
+  echo "$MY_TASKS" | tee -a "$DEBUG_LOG"
+else
+  # Fallback: simple round-robin splitting for local testing
+  debug_log "CircleCI CLI not found; using round-robin splitting for local testing"
+  
+  NODE_INDEX=${CIRCLE_NODE_INDEX:-0}
+  NODE_TOTAL=${CIRCLE_NODE_TOTAL:-1}
+  
+  MY_TASKS=$(echo "$VALID_TEST_TASKS" | awk -v node="$NODE_INDEX" -v total="$NODE_TOTAL" 'NR % total == node')
+  
+  debug_log "Tasks assigned to node $NODE_INDEX of $NODE_TOTAL:"
+  echo "$MY_TASKS" | tee -a "$DEBUG_LOG"
+fi
+
+ASSIGNED_TASK_COUNT=$(echo "$MY_TASKS" | grep -v '^$' | wc -l | tr -d ' ')
+
+if [ "$ASSIGNED_TASK_COUNT" -eq 0 ]; then
+  debug_log "No tasks assigned to this node"
+  exit 0
+fi
+
+# Step 3: Execute assigned tasks
+debug_log ""
+debug_log "=== Executing Assigned Tasks ==="
+debug_log "Running $ASSIGNED_TASK_COUNT tasks on this node"
+
+# Track all tasks for summary
+declare -a executed_tasks=()
+
+for task in $MY_TASKS; do
+  if [ -n "$task" ]; then
+    debug_log "Executing: $task"
+    ./gradlew "$task"
+    executed_tasks+=("$task")
   fi
 done
 
 debug_log ""
 debug_log "=== SUMMARY ==="
-debug_log "Total test files processed: $(echo "$TEST_FILES" | wc -l)"
-debug_log "Total task executions: ${#all_tasks_to_run[@]}"
-debug_log "Tasks executed:"
-for task in "${all_tasks_to_run[@]}"; do
+debug_log "Total tasks in project: $TOTAL_TASKS"
+debug_log "Tasks assigned to this node: $ASSIGNED_TASK_COUNT"
+debug_log "Tasks executed successfully:"
+for task in "${executed_tasks[@]}"; do
   debug_log "  - $task"
 done
 debug_log ""
-debug_log "To compare with full test run, execute:"
-debug_log "  ./gradlew test --dry-run | grep ':test' | grep 'SKIPPED' | sort"
 debug_log "=== END SUMMARY ==="
 
-echo "Debug log saved to: $DEBUG_LOG"
+echo "Debug log saved to: $DEBUG_LOG" 
