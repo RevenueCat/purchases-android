@@ -41,8 +41,9 @@ ALL_TEST_TASKS=$(./gradlew test --dry-run 2>/dev/null | grep 'SKIPPED' | sed 's/
 # 1. remove :testClasses
 FILTERED_TASKS=$(echo "$ALL_TEST_TASKS" | grep -v ':testClasses$')
 
-# 2. find modules that have UnitTest variants
-variant_modules=$(echo "$FILTERED_TASKS" | grep 'UnitTest' | sed -E 's/(^:+[^:]+):.*/\1/' | sort -u)
+# 2. find modules that have UnitTest variants (full module path)
+#    Remove the ':test<Variant>UnitTest' suffix, leaving the full module path
+variant_modules=$(echo "$FILTERED_TASKS" | grep 'UnitTest' | sed -E 's/:test[^:]*$//' | sort -u)
 
 # 3. exclude :module:test when that module is in variant_modules
 VALID_TEST_TASKS=$( echo "$FILTERED_TASKS" | while read -r task; do
