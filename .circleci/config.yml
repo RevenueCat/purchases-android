@@ -246,6 +246,12 @@ jobs:
           name: Run Tests
           command: ./scripts/run-tests-split.sh
       - run:
+          name: Generate test comparison baseline
+          command: |
+              mkdir -p build/test-split-debug
+              ./gradlew test --dry-run | grep ':test' | grep 'SKIPPED' | sort > build/test-split-debug/gradle-test-baseline.log || true
+          when: always
+      - run:
           name: Consolidate artifacts
           command: |
               mkdir -p build/test-results/
@@ -261,6 +267,9 @@ jobs:
       - android/save_build_cache
       - store_artifacts:
           path: build/reports
+      - store_artifacts:
+          path: build/test-split-debug
+          destination: test-split-debug
       - run:
           name: Save test results
           command: |

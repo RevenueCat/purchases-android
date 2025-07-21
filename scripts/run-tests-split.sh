@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+# Create debug log file for CircleCI artifacts
+mkdir -p build/test-split-debug
+DEBUG_LOG="build/test-split-debug/test-split-analysis-node-${CIRCLE_NODE_INDEX:-local}.log"
+
+# Function to log to both console and file
+debug_log() {
+  echo "$1" | tee -a "$DEBUG_LOG"
+}
+
 # Run lint only on the first container
 if [ "$CIRCLE_NODE_INDEX" = "0" ]; then
   ./gradlew lint
@@ -12,12 +21,20 @@ fi
 # If the CircleCI CLI is unavailable (e.g. when running locally), fall back to finding all tests
 # without splitting.
 PATTERNS=("**/src/test*/**/*Test.kt" "**/src/test*/**/*Test.java")
-if command -v circleci >/dev/null 2>&1; then
+if command -v circleci >/dev/null 2>&1 && circleci tests glob --help >/dev/null 2>&1; then
   TEST_FILES=$(circleci tests glob "${PATTERNS[@]}" | circleci tests split)
 else
-  echo "circleci CLI not found; running all tests without splitting" >&2
+  echo "circleci CLI not found or not in job context; running all tests without splitting" >&2
   TEST_FILES=$(find . -path "*src/test*" \( -name "*Test.kt" -o -name "*Test.java" \))
 fi
+
+# Debug logging
+debug_log "=== DEBUG: Test Split Script Analysis ==="
+debug_log "Node: ${CIRCLE_NODE_INDEX:-local} of ${CIRCLE_NODE_TOTAL:-1}"
+debug_log "Test files found: $(echo "$TEST_FILES" | wc -l)"
+debug_log "Test files:"
+echo "$TEST_FILES" | tee -a "$DEBUG_LOG"
+debug_log ""
 
 # List of known JVM modules that use the generic 'test' task (not Android variant tasks)
 JVM_MODULES=(":bom" ":dokka-hide-internal")
@@ -35,6 +52,7 @@ is_jvm_module() {
 
 # Group test files by module and variant to use appropriate test tasks
 declare -A module_variant_tests
+declare -a all_tasks_to_run
 
 for file in $TEST_FILES; do
   # Extract module name, handling nested modules like ui/revenuecatui
@@ -78,36 +96,75 @@ for file in $TEST_FILES; do
   else
     module_variant_tests[$key]="${module_variant_tests[$key]} $class_name"
   fi
+  
+  # Debug: Show file processing
+  debug_log "File: $file -> Module: $module_gradle_path, Variant: '$variant', Class: $class_name"
 done
 
-if [ ${#module_variant_tests[@]} -eq 0 ]; then
-  echo "No tests to run on this node"
-  exit 0
-fi
-
-# Run tests for each module:variant combination
+debug_log ""
+debug_log "=== Grouped Tests by Module:Variant ==="
 for key in "${!module_variant_tests[@]}"; do
   module_path=$(echo "$key" | cut -d'|' -f1)
   variant=$(echo "$key" | cut -d'|' -f2)
   classes="${module_variant_tests[$key]}"
+  class_count=$(echo "$classes" | wc -w)
+  debug_log "$key -> $class_count classes: $classes"
+done
+debug_log ""
+
+if [ ${#module_variant_tests[@]} -eq 0 ]; then
+  debug_log "No tests to run on this node"
+  exit 0
+fi
+
+# Run tests for each module:variant combination
+debug_log "=== Tasks to Execute ==="
+for key in "${!module_variant_tests[@]}"; do
+  module_path=$(echo "$key" | cut -d'|' -f1)
+  variant=$(echo "$key" | cut -d'|' -f2)
+  classes="${module_variant_tests[$key]}"
+  test_args=$(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
   
   if [ -z "$variant" ]; then
     # For tests in src/test (no variant), check if it's a JVM module
     if is_jvm_module "$module_path"; then
-      echo "Running JVM tests for $module_path"
-      ./gradlew "${module_path}:test" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
+      task="${module_path}:test"
+      debug_log "JVM: $task $test_args"
+      all_tasks_to_run+=("$task")
+      ./gradlew "$task" $test_args
     else
-      echo "Running Android unit tests for $module_path (both Debug and Release)"
+      debug_task="${module_path}:testDefaultsDebugUnitTest"
+      release_task="${module_path}:testDefaultsReleaseUnitTest"
+      debug_log "Android (defaults): $debug_task $test_args"
+      debug_log "Android (defaults): $release_task $test_args"
+      all_tasks_to_run+=("$debug_task" "$release_task")
       # Run both Debug and Release variants to match './gradlew test' behavior
-      ./gradlew "${module_path}:testDefaultsDebugUnitTest" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
-      ./gradlew "${module_path}:testDefaultsReleaseUnitTest" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
+      ./gradlew "$debug_task" $test_args
+      ./gradlew "$release_task" $test_args
     fi
   else
     # For variant-specific tests, run both Debug and Release
-    echo "Running Android unit tests for $module_path with variant $variant (both Debug and Release)"
     debug_task_name="${module_path}:test${variant}DebugUnitTest"
     release_task_name="${module_path}:test${variant}ReleaseUnitTest"
-    ./gradlew "$debug_task_name" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
-    ./gradlew "$release_task_name" $(echo "$classes" | sed 's/\([^ ]*\)/--tests \1/g')
+    debug_log "Android ($variant): $debug_task_name $test_args"
+    debug_log "Android ($variant): $release_task_name $test_args"
+    all_tasks_to_run+=("$debug_task_name" "$release_task_name")
+    ./gradlew "$debug_task_name" $test_args
+    ./gradlew "$release_task_name" $test_args
   fi
 done
+
+debug_log ""
+debug_log "=== SUMMARY ==="
+debug_log "Total test files processed: $(echo "$TEST_FILES" | wc -l)"
+debug_log "Total task executions: ${#all_tasks_to_run[@]}"
+debug_log "Tasks executed:"
+for task in "${all_tasks_to_run[@]}"; do
+  debug_log "  - $task"
+done
+debug_log ""
+debug_log "To compare with full test run, execute:"
+debug_log "  ./gradlew test --dry-run | grep ':test' | grep 'SKIPPED' | sort"
+debug_log "=== END SUMMARY ==="
+
+echo "Debug log saved to: $DEBUG_LOG"
