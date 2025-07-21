@@ -35,7 +35,28 @@ debug_log "=== Discovering Test Tasks ==="
 ALL_TEST_TASKS=$(./gradlew test --dry-run 2>/dev/null | grep 'SKIPPED' | sed 's/ SKIPPED$//' | grep -E ':.*:test[^:]*$' | sort)
 
 # Use all tasks that './gradlew test' would run - trust Gradle's decision
-VALID_TEST_TASKS="$ALL_TEST_TASKS"
+# -------------------------------------------------------------------
+# Filter 1: Drop tasks ending with ':testClasses' (compile-only, no tests)
+# -------------------------------------------------------------------
+# 1. remove :testClasses
+FILTERED_TASKS=$(echo "$ALL_TEST_TASKS" | grep -v ':testClasses$')
+
+# 2. find modules that have UnitTest variants
+variant_modules=$(echo "$FILTERED_TASKS" | grep 'UnitTest' | sed -E 's/(^:+[^:]+):.*/\1/' | sort -u)
+
+# 3. exclude :module:test when that module is in variant_modules
+VALID_TEST_TASKS=$( echo "$FILTERED_TASKS" | while read -r task; do
+  if [[ "$task" =~ :test$ ]]; then
+    module=${task%:test}
+    echo "$variant_modules" | grep -q "^$module$" && continue  # skip aggregate
+  fi
+  echo "$task"
+done | sort)
+
+# -------------------------------------------------------------------
+# END FILTERS
+# -------------------------------------------------------------------
+
 TOTAL_TASKS=$(echo "$VALID_TEST_TASKS" | wc -l | tr -d ' ')
 
 debug_log ""
