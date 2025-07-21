@@ -245,6 +245,8 @@ jobs:
       - run:
           name: Run Tests
           command: ./scripts/run-tests-split.sh
+          environment:
+            DRY_RUN: true
       - run:
           name: Generate test comparison baseline
           command: |

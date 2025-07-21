@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+# Support dry-run mode for verification
+DRY_RUN=${DRY_RUN:-false}
+
 # Create debug log file for CircleCI artifacts
 mkdir -p build/test-split-debug
 DEBUG_LOG="build/test-split-debug/test-split-analysis-node-${CIRCLE_NODE_INDEX:-local}.log"
@@ -10,13 +13,18 @@ debug_log() {
   echo "$1" | tee -a "$DEBUG_LOG"
 }
 
-# Run lint only on the first container
-if [ "$CIRCLE_NODE_INDEX" = "0" ]; then
+# Run lint only on the first container (skip in dry-run mode)
+if [ "$CIRCLE_NODE_INDEX" = "0" ] && [ "$DRY_RUN" != "true" ]; then
   ./gradlew lint
+elif [ "$CIRCLE_NODE_INDEX" = "0" ] && [ "$DRY_RUN" = "true" ]; then
+  debug_log "🔍 DRY RUN: Skipping lint task"
 fi
 
 debug_log "=== DEBUG: Test Split Script Analysis ==="
 debug_log "Node: ${CIRCLE_NODE_INDEX:-local} of ${CIRCLE_NODE_TOTAL:-1}"
+if [ "$DRY_RUN" = "true" ]; then
+  debug_log "🔍 DRY RUN MODE: Tasks will be logged but not executed"
+fi
 
 # Step 1: Discover all test tasks that would run with './gradlew test'
 debug_log ""
@@ -76,18 +84,27 @@ if [ "$ASSIGNED_TASK_COUNT" -eq 0 ]; then
   exit 0
 fi
 
-# Step 3: Execute assigned tasks
+# Step 3: Execute assigned tasks (or dry-run)
 debug_log ""
-debug_log "=== Executing Assigned Tasks ==="
-debug_log "Running $ASSIGNED_TASK_COUNT tasks on this node"
+if [ "$DRY_RUN" = "true" ]; then
+  debug_log "=== DRY RUN: Tasks That Would Be Executed ==="
+  debug_log "Would run $ASSIGNED_TASK_COUNT tasks on this node"
+else
+  debug_log "=== Executing Assigned Tasks ==="
+  debug_log "Running $ASSIGNED_TASK_COUNT tasks on this node"
+fi
 
 # Track all tasks for summary
 declare -a executed_tasks=()
 
 for task in $MY_TASKS; do
   if [ -n "$task" ]; then
-    debug_log "Executing: $task"
-    ./gradlew "$task"
+    if [ "$DRY_RUN" = "true" ]; then
+      debug_log "Would execute: $task"
+    else
+      debug_log "Executing: $task"
+      ./gradlew "$task"
+    fi
     executed_tasks+=("$task")
   fi
 done
@@ -96,7 +113,11 @@ debug_log ""
 debug_log "=== SUMMARY ==="
 debug_log "Total tasks in project: $TOTAL_TASKS"
 debug_log "Tasks assigned to this node: $ASSIGNED_TASK_COUNT"
-debug_log "Tasks executed successfully:"
+if [ "$DRY_RUN" = "true" ]; then
+  debug_log "Tasks that would be executed:"
+else
+  debug_log "Tasks executed successfully:"
+fi
 for task in "${executed_tasks[@]}"; do
   debug_log "  - $task"
 done
