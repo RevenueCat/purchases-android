@@ -26,43 +26,51 @@ if [ "$DRY_RUN" = "true" ]; then
   debug_log "🔍 DRY RUN MODE: Tasks will be logged but not executed"
 fi
 
-# Step 1: Discover all test tasks that would run with './gradlew test'
+# Step 1: Generate flavor-based test tasks
 debug_log ""
-debug_log "=== Discovering Test Tasks ==="
+debug_log "=== Generating Flavor-Based Test Tasks ==="
 
-# Get all test tasks that './gradlew test' would execute
-# Focus on actual test execution tasks, not compilation tasks  
-ALL_TEST_TASKS=$(./gradlew test --dry-run 2>/dev/null | grep 'SKIPPED' | sed 's/ SKIPPED$//' | grep -E ':.*:test[^:]*$' | sort)
+# Define Android flavors and build types
+FLAVORS=("Defaults" "CustomEntitlementComputation")
+BUILD_TYPES=("Debug" "Release")
 
-# Use all tasks that './gradlew test' would run - trust Gradle's decision
-# -------------------------------------------------------------------
-# Filter 1: Drop tasks ending with ':testClasses' (compile-only, no tests)
-# -------------------------------------------------------------------
-# 1. remove :testClasses
-FILTERED_TASKS=$(echo "$ALL_TEST_TASKS" | grep -v ':testClasses$')
+# Android modules (have flavors and build types)
+ANDROID_MODULES=(
+  ":api-tester"
+  ":examples:paywall-tester"
+  ":examples:purchase-tester" 
+  ":examples:web-purchase-redemption-sample"
+  ":feature:amazon"
+  ":integration-tests"
+  ":purchases"
+  ":test-apps:testpurchasesandroidcompatibility"
+  ":test-apps:testpurchasesuiandroidcompatibility"
+  ":ui:debugview"
+  ":ui:revenuecatui"
+)
 
-# 2. find modules that have UnitTest variants (full module path)
-#    Remove the ':test<Variant>UnitTest' suffix, leaving the full module path
-variant_modules=$(echo "$FILTERED_TASKS" | grep 'UnitTest' | sed -E 's/:test[^:]*$//' | sort -u)
+# Generate all test tasks
+declare -a ALL_TEST_TASKS
 
-# 3. exclude :module:test when that module is in variant_modules
-VALID_TEST_TASKS=$( echo "$FILTERED_TASKS" | while read -r task; do
-  if [[ "$task" =~ :test$ ]]; then
-    module=${task%:test}
-    echo "$variant_modules" | grep -q "^$module$" && continue  # skip aggregate
-  fi
-  echo "$task"
-done | sort)
+# Add Android module flavor tasks
+for module in "${ANDROID_MODULES[@]}"; do
+  for flavor in "${FLAVORS[@]}"; do
+    for build_type in "${BUILD_TYPES[@]}"; do
+      ALL_TEST_TASKS+=("$module:test${flavor}${build_type}UnitTest")
+    done
+  done
+done
 
-# -------------------------------------------------------------------
-# END FILTERS
-# -------------------------------------------------------------------
-
+# Convert array to newline-separated string and sort
+VALID_TEST_TASKS=$(printf '%s\n' "${ALL_TEST_TASKS[@]}" | sort)
 TOTAL_TASKS=$(echo "$VALID_TEST_TASKS" | wc -l | tr -d ' ')
 
 debug_log ""
-debug_log "Total test tasks found: $TOTAL_TASKS"
-debug_log "Test tasks to split:"
+debug_log "Total test tasks generated: $TOTAL_TASKS"
+debug_log "Android modules: ${#ANDROID_MODULES[@]}"
+debug_log "Android combinations: ${#FLAVORS[@]} flavors × ${#BUILD_TYPES[@]} build types = $((${#FLAVORS[@]} * ${#BUILD_TYPES[@]})) per module"
+debug_log ""
+debug_log "All test tasks to split:"
 echo "$VALID_TEST_TASKS" | tee -a "$DEBUG_LOG"
 
 # Step 2: Split tasks across CircleCI nodes
@@ -74,30 +82,16 @@ if [ -z "$VALID_TEST_TASKS" ]; then
   exit 0
 fi
 
-# Use CircleCI's built-in test splitting on the task list
-if command -v circleci >/dev/null 2>&1 && circleci tests glob --help >/dev/null 2>&1; then
-  # Write tasks to a temp file for CircleCI to split
-  TASKS_FILE=$(mktemp)
-  echo "$VALID_TEST_TASKS" > "$TASKS_FILE"
-  
-  # Split tasks using CircleCI
-  MY_TASKS=$(circleci tests split "$TASKS_FILE" --split-by=timings --timings-type=classname)
-  rm "$TASKS_FILE"
-  
-  debug_log "Tasks assigned to this node by CircleCI:"
-  echo "$MY_TASKS" | tee -a "$DEBUG_LOG"
-else
-  # Fallback: simple round-robin splitting for local testing
-  debug_log "CircleCI CLI not found; using round-robin splitting for local testing"
-  
-  NODE_INDEX=${CIRCLE_NODE_INDEX:-0}
-  NODE_TOTAL=${CIRCLE_NODE_TOTAL:-1}
-  
-  MY_TASKS=$(echo "$VALID_TEST_TASKS" | awk -v node="$NODE_INDEX" -v total="$NODE_TOTAL" 'NR % total == node')
-  
-  debug_log "Tasks assigned to node $NODE_INDEX of $NODE_TOTAL:"
-  echo "$MY_TASKS" | tee -a "$DEBUG_LOG"
-fi
+# Write tasks to a temp file for CircleCI to split
+TASKS_FILE=$(mktemp)
+echo "$VALID_TEST_TASKS" > "$TASKS_FILE"
+
+# Split tasks using CircleCI
+MY_TASKS=$(circleci tests split "$TASKS_FILE" --split-by=timings --timings-type=classname)
+rm "$TASKS_FILE"
+
+debug_log "Tasks assigned to this node by CircleCI:"
+echo "$MY_TASKS" | tee -a "$DEBUG_LOG"
 
 ASSIGNED_TASK_COUNT=$(echo "$MY_TASKS" | grep -v '^$' | wc -l | tr -d ' ')
 
