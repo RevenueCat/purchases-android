@@ -105,6 +105,11 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
     }
 }
 
+tasks.withType<Test> {
+    // Disabling verification in tests until Amazon publishes a version of their SDK compiled with a modern JDK.
+    jvmArgs("-noverify")
+}
+
 fun obtainTestApplicationId(): String =
     if (project.hasProperty("testApplicationId")) {
         project.properties["testApplicationId"] as String
