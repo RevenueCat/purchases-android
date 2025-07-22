@@ -73,7 +73,7 @@ private fun ContentUnavailableView(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
-                .padding(all = 20.dp),
+                .padding(vertical = 20.dp, horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
