@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -18,6 +19,7 @@ class BillingFactoryTest {
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
         val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
+        val mockBackend = mockk<Backend>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.PLAY_STORE,
@@ -28,7 +30,7 @@ class BillingFactoryTest {
             mockDiagnosticsTracker,
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+            backend = mockBackend,
         )
     }
 
@@ -37,6 +39,7 @@ class BillingFactoryTest {
         val mockApplication = mockk<Application>(relaxed = true)
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
+        val mockBackend = mockk<Backend>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.PLAY_STORE,
@@ -47,7 +50,7 @@ class BillingFactoryTest {
             diagnosticsTrackerIfEnabled = null,
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+            backend = mockBackend,
         )
     }
 }

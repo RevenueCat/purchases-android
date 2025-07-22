@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.teststore.TestStorePurchasingData
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -50,13 +51,11 @@ class TestStoreProduct(
         get() = buildSubscriptionOptions()
     override val defaultOption: SubscriptionOption?
         get() = subscriptionOptions?.defaultOffer
-    override val purchasingData: PurchasingData
-        get() = object : PurchasingData {
-            override val productId: String
-                get() = id
-            override val productType: ProductType
-                get() = type
-        }
+    override val purchasingData: PurchasingData = TestStorePurchasingData(
+        productId = id,
+        productType = type,
+        storeProduct = this,
+    )
 
     @Deprecated(
         "Use presentedOfferingContext",
