@@ -10,9 +10,9 @@ import androidx.compose.ui.unit.sp
  **/
 internal object CustomerCenterUIConstants {
 
+    private val PaddingTiny = 4.dp
     private val PaddingSmall = 8.dp
     private val PaddingMedium = 16.dp
-    private val PaddingLarge = 24.dp
     private val PaddingXL = 32.dp
 
     val ManagementViewTitleTopPadding = 64.dp
@@ -27,9 +27,8 @@ internal object CustomerCenterUIConstants {
     val SubscriptionViewIconSize = 24.dp
 
     val ContentUnavailableViewPadding = PaddingMedium
-    val ContentUnavailableViewPaddingTopTitle = PaddingSmall
-    val ContentUnavailableViewPaddingTopDescription = PaddingLarge
-    val ContentUnavailableIconSize = 56.dp
+    val ContentUnavailableViewPaddingTitle = PaddingTiny
+    val ContentUnavailableIconSize = 24.dp
 
     val ManagementViewHorizontalPadding = PaddingMedium
     val ManagementViewSpacer = PaddingXL
