@@ -233,7 +233,6 @@ jobs:
           path: upstream/paywall-preview-resources
       - install-sdkman
       - android/accept_licenses
-      - android-dependencies
       - run:
           name: Assemble all variants (warms Gradle cache once)
           command: ./gradlew testClasses --parallel --no-daemon
@@ -242,7 +241,6 @@ jobs:
           root: .
           paths:
             - .
-            - '**/build'
 
   test_defaults_debug:
     <<: *android-executor
