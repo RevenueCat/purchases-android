@@ -224,62 +224,72 @@ jobs:
           command: bundle exec fastlane android build_custom_entitlement_computation_sample
       - android/save_build_cache
 
-  test_defaults_debug:
+  prepare-tests:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
-    steps: &steps_test_job
+    steps:
       - checkout
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
       - android/accept_licenses
       - android-dependencies
-      - android/restore_build_cache
+      - run:
+          name: Pre-compile all unit-test classes
+          command: ./gradlew testClasses --parallel --no-daemon
+      - android/save_gradle_cache
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  test_defaults_debug:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
           name: Run Defaults Debug Tests
-          command: ./scripts/run-tests-split.sh
-          environment:
-            FLAVOR: Defaults
-            BUILD_TYPE: Debug
-      - android/save_build_cache
-      - store_test_results:
-          path: build/test-results
+          command: ./gradlew testDefaultsDebugUnitTest --parallel --no-daemon
 
   test_defaults_release:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
-      *steps_test_job
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
           name: Run Defaults Release Tests
-          command: ./scripts/run-tests-split.sh
-          environment:
-            FLAVOR: Defaults
-            BUILD_TYPE: Release
+          command: ./gradlew testDefaultsReleaseUnitTest --parallel --no-daemon
 
   test_cec_debug:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
-      *steps_test_job
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
           name: Run CEC Debug Tests
-          command: ./scripts/run-tests-split.sh
-          environment:
-            FLAVOR: CustomEntitlementComputation
-            BUILD_TYPE: Debug
+          command: ./gradlew testCustomEntitlementComputationDebugUnitTest --parallel --no-daemon
 
   test_cec_release:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
-      *steps_test_job
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
           name: Run CEC Release Tests
-          command: ./scripts/run-tests-split.sh
-          environment:
-            FLAVOR: CustomEntitlementComputation
-            BUILD_TYPE: Release
+          command: ./gradlew testCustomEntitlementComputationReleaseUnitTest --parallel --no-daemon
 
   detekt:
     <<: *android-executor
