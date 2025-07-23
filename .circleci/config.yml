@@ -254,8 +254,13 @@ jobs:
       - run:
           name: Run Defaults Debug Tests
           command: ./gradlew testDefaultsDebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - store_test_results:
-          path: .
+          path: build/test-results
       - store_artifacts:
           path: build/reports
 
@@ -278,8 +283,13 @@ jobs:
           command: ./gradlew purchases:koverXmlReportDefaultsRelease
       - codecov/upload:
           file: purchases/build/reports/kover/reportDefaultsRelease.xml
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - store_test_results:
-          path: .
+          path: build/test-results
       - store_artifacts:
           path: build/reports
 
@@ -294,8 +304,13 @@ jobs:
       - run:
           name: Run CEC Debug Tests
           command: ./gradlew testCustomEntitlementComputationDebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - store_test_results:
-          path: .
+          path: build/test-results
 
   test_cec_release:
     <<: *android-executor
@@ -308,8 +323,13 @@ jobs:
       - run:
           name: Run CEC Release Tests
           command: ./gradlew testCustomEntitlementComputationReleaseUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - store_test_results:
-          path: .
+          path: build/test-results
 
   detekt:
     <<: *android-executor
