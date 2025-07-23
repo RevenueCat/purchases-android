@@ -76,7 +76,7 @@ commands:
       - android/restore_gradle_cache
       - run:
           name: Download Dependencies
-          command: ./gradlew androidDependencies
+          command: ./gradlew androidDependencies --offline
       - android/save_gradle_cache
 
   prepare-signing-key:
@@ -233,6 +233,7 @@ jobs:
           path: upstream/paywall-preview-resources
       - install-sdkman
       - android/accept_licenses
+      - android-dependencies
       - run:
           name: Assemble all variants (warms Gradle cache once)
           command: ./gradlew testClasses --parallel --no-daemon
