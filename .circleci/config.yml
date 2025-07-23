@@ -797,10 +797,19 @@ workflows:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - test_defaults_debug
-      - test_defaults_release
-      - test_cec_debug
-      - test_cec_release 
+      - prepare-tests
+      - test_defaults_debug:
+          requires:
+            - prepare-tests
+      - test_defaults_release:
+          requires:
+            - prepare-tests
+      - test_cec_debug:
+          requires:
+            - prepare-tests
+      - test_cec_release:
+          requires:
+            - prepare-tests
       - detekt
       - metalava
       - assemble-purchase-tester
