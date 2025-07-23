@@ -1,7 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -105,21 +108,27 @@ private fun ContentUnavailableView(
     }
 }
 
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun NoActiveUserManagementView_Preview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
     val noActiveScreen =
         testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
     CustomerCenterPreviewTheme {
-        NoActiveUserManagementView(
-            screenTitle = noActiveScreen.title,
-            screenSubtitle = noActiveScreen.subtitle,
-            contactEmail = "support@example.com",
-            localization = testData.localization,
-            supportedPaths = noActiveScreen.paths,
-            onAction = { },
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            NoActiveUserManagementView(
+                screenTitle = noActiveScreen.title,
+                screenSubtitle = noActiveScreen.subtitle,
+                contactEmail = "support@example.com",
+                localization = testData.localization,
+                supportedPaths = noActiveScreen.paths,
+                onAction = { },
+            )
+        }
     }
 }
