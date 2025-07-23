@@ -242,6 +242,7 @@ jobs:
           root: .
           paths:
             - .
+            - '**/build'
 
   test_defaults_debug:
     <<: *android-executor
