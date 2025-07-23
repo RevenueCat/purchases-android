@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -18,12 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableIconSize
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingTitle
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingHorizontal
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingText
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingVertical
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
@@ -75,7 +75,10 @@ private fun ContentUnavailableView(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 20.dp, horizontal = 16.dp),
+                .padding(
+                    vertical = ContentUnavailableViewPaddingVertical,
+                    horizontal = ContentUnavailableViewPaddingHorizontal,
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
@@ -87,7 +90,7 @@ private fun ContentUnavailableView(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = ContentUnavailableViewPaddingTitle),
+                modifier = Modifier.padding(top = ContentUnavailableViewPaddingText),
             )
 
             description?.let {
@@ -95,6 +98,7 @@ private fun ContentUnavailableView(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = ContentUnavailableViewPaddingText),
                 )
             }
         }

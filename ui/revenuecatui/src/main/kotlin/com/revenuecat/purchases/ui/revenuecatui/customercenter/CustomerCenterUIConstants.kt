@@ -26,8 +26,9 @@ internal object CustomerCenterUIConstants {
     val SubscriptionViewHorizontalSpace = PaddingSmall
     val SubscriptionViewIconSize = 24.dp
 
-    val ContentUnavailableViewPadding = PaddingMedium
-    val ContentUnavailableViewPaddingTitle = PaddingTiny
+    val ContentUnavailableViewPaddingHorizontal = 16.dp
+    val ContentUnavailableViewPaddingVertical = 20.dp
+    val ContentUnavailableViewPaddingText = PaddingTiny
     val ContentUnavailableIconSize = 24.dp
 
     val ManagementViewHorizontalPadding = PaddingMedium
