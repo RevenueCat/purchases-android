@@ -616,8 +616,17 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_build_cache
       - attach_workspace:
           at: .
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - android/restore_gradle_cache
       - run:
           name: Build and run purchases ui snapshot tests
@@ -643,6 +652,9 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - android/restore_gradle_cache
       - run:
           name: Run backend integration tests
@@ -655,8 +667,19 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - attach_workspace:
           at: .
+      - install-sdkman
+      # Required by Emerge CLI
+      - install-ruby:
+          version: 3.2.0
+      - run:
+          name: Install Emerge CLI
+          command: gem install emerge
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - android/restore_gradle_cache
       - revenuecat/setup-git-credentials
       - run:
@@ -730,6 +753,14 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - install-sdkman
+      - android/create_avd:
+          avd_name: test-revenuecat-ui
+          system_image: system-images;android-32;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-revenuecat-ui
+          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
       - android/restore_gradle_cache
       - run:
           name: Run RevenueCatUI UI tests for Android in CircleCI
