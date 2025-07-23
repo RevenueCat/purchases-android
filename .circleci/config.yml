@@ -236,7 +236,12 @@ jobs:
       - android-dependencies
       - run:
           name: Assemble all variants (warms Gradle cache once)
-          command: ./gradlew assemble --parallel --no-daemon
+          command: ./gradlew  \
+            testDefaultsDebugUnitTestClasses \
+            testDefaultsReleaseUnitTestClasses \
+            testCustomEntitlementComputationDebugUnitTestClasses \
+            testCustomEntitlementComputationReleaseUnitTestClasses \
+            --parallel --no-daemon
       - android/save_gradle_cache
       - persist_to_workspace:
           root: .
@@ -891,6 +896,7 @@ workflows:
             - run-firebase-tests-purchases-integration-test
             - run-firebase-tests-purchases-load-shedder-integration-test
             - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
+            - verify-compatibility
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
