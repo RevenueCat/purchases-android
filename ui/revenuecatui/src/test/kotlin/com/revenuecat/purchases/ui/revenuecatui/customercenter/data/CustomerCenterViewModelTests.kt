@@ -35,9 +35,11 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.add
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createGoogleStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.helpers.stubGoogleSubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.helpers.stubPricingPhase
+import com.revenuecat.purchases.ui.revenuecatui.helpers.subtract
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearMocks
@@ -53,6 +55,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -60,6 +63,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Date
 import java.util.Locale
+import kotlin.time.Duration
 
 @RunWith(AndroidJUnit4::class)
 class CustomerCenterViewModelTests {
@@ -1723,7 +1727,7 @@ class CustomerCenterViewModelTests {
         val state = model.state.filterIsInstance<CustomerCenterState.Success>()
             .first { it.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail }
         val paths = state.detailScreenPaths
-                    
+
         // Find the path that should remain unchanged
         val unchangedPath = paths.find { it.id == "cancel_id" }
         assertThat(unchangedPath).isNotNull
@@ -1891,7 +1895,154 @@ class CustomerCenterViewModelTests {
         job.join()
     }
 
-    // Helper method to setup common mocks
+    @Test
+    fun `loadCustomerCenter shows latest expired subscription when no active purchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+
+        val expiredDate1 = Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
+        val purchaseDate1 = expiredDate1.subtract(Duration.parse("7d"))
+
+        val expiredDate2 = Date(System.currentTimeMillis() - 3 * 24 * 60 * 60 * 1000) // 3 days ago (latest)
+        val purchaseDate2 = expiredDate2.subtract(Duration.parse("7d"))
+
+        val olderExpiredSubscription = SubscriptionInfo(
+            productIdentifier = "old_product",
+            purchaseDate = purchaseDate1,
+            originalPurchaseDate = purchaseDate1,
+            expiresDate = expiredDate1,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = Date(),
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = null,
+            managementURL = null,
+        )
+
+        val latestExpiredSubscription = SubscriptionInfo(
+            productIdentifier = "latest_product",
+            purchaseDate = purchaseDate2,
+            originalPurchaseDate = purchaseDate2,
+            expiresDate = expiredDate2,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = Date(),
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = null,
+            managementURL = null,
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "old_product" to olderExpiredSubscription,
+            "latest_product" to latestExpiredSubscription
+        )
+
+        val mockProduct = createGoogleStoreProduct(
+            productId = "latest_product",
+            basePlanId = "monthly",
+            name = "Latest Product"
+        )
+        coEvery { purchases.awaitGetProduct("latest_product", null) } returns mockProduct
+
+        val model = setupViewModel()
+
+        val successState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(successState.purchases).hasSize(1)
+        val purchase = successState.purchases.first()
+        assertThat(purchase.product?.id).isEqualTo("latest_product:monthly")
+        assertThat(purchase.isExpired).isTrue()
+    }
+
+    @Test
+    fun `loadCustomerCenter returns empty when no purchases at all`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+
+        val model = setupViewModel()
+
+        val successState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(successState.purchases).isEmpty()
+    }
+
+    @Test
+    fun `expired subscription should not show CANCEL path`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+
+        val expiredDate = Date(System.currentTimeMillis() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
+        val purchaseDate = expiredDate.subtract(Duration.parse("7d"))
+
+        val expiredSubscription = SubscriptionInfo(
+            productIdentifier = "expired_product",
+            purchaseDate = purchaseDate,
+            originalPurchaseDate = purchaseDate,
+            expiresDate = expiredDate,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = Date(),
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = null,
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "expired_product" to expiredSubscription
+        )
+
+        val mockProduct = createGoogleStoreProduct(
+            productId = "expired_product",
+            basePlanId = "monthly",
+            name = "Expired Product"
+        )
+        coEvery { purchases.awaitGetProduct("expired_product", null) } returns mockProduct
+
+        val model = setupViewModel()
+
+        val successState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(successState.purchases).hasSize(1)
+        val purchase = successState.purchases.first()
+        assertThat(purchase.isExpired).isTrue()
+
+        val paths = successState.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected CANCEL path to not be present for expired subscription. Paths: $paths")
+            .noneMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }
+    }
+
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null
