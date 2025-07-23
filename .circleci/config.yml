@@ -235,8 +235,8 @@ jobs:
       - android/accept_licenses
       - android-dependencies
       - run:
-          name: Pre-compile all unit-test classes
-          command: ./gradlew testClasses --parallel --no-daemon
+          name: Assemble all variants (warms Gradle cache once)
+          command: ./gradlew assemble --parallel --no-daemon
       - android/save_gradle_cache
       - persist_to_workspace:
           root: .
@@ -254,6 +254,10 @@ jobs:
       - run:
           name: Run Defaults Debug Tests
           command: ./gradlew testDefaultsDebugUnitTest --parallel --no-daemon
+      - store_test_results:
+          path: .
+      - store_artifacts:
+          path: build/reports
 
   test_defaults_release:
     <<: *android-executor
@@ -266,6 +270,18 @@ jobs:
       - run:
           name: Run Defaults Release Tests
           command: ./gradlew testDefaultsReleaseUnitTest --parallel --no-daemon
+      - run:
+          name: Generate Kover HTML
+          command: ./gradlew purchases:koverHtmlReportDefaultsRelease
+      - run:
+          name: Generate Kover XML
+          command: ./gradlew purchases:koverXmlReportDefaultsRelease
+      - codecov/upload:
+          file: purchases/build/reports/kover/reportDefaultsRelease.xml
+      - store_test_results:
+          path: .
+      - store_artifacts:
+          path: build/reports
 
   test_cec_debug:
     <<: *android-executor
@@ -278,6 +294,8 @@ jobs:
       - run:
           name: Run CEC Debug Tests
           command: ./gradlew testCustomEntitlementComputationDebugUnitTest --parallel --no-daemon
+      - store_test_results:
+          path: .
 
   test_cec_release:
     <<: *android-executor
@@ -290,6 +308,8 @@ jobs:
       - run:
           name: Run CEC Release Tests
           command: ./gradlew testCustomEntitlementComputationReleaseUnitTest --parallel --no-daemon
+      - store_test_results:
+          path: .
 
   detekt:
     <<: *android-executor
@@ -633,14 +653,6 @@ jobs:
           command: |
             bundle exec fastlane android run_backend_integration_tests
       - android/save_build_cache
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} build/test-results \;
-          when: always
-      - store_test_results:
-          path: build/test-results
 
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
@@ -755,6 +767,19 @@ jobs:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
 
+  lint:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run Android Lint
+          command: ./gradlew lint --parallel --no-daemon
+      - store_artifacts:
+          path: build/reports
+
 workflows:
   version: 2
   danger:
@@ -808,6 +833,9 @@ workflows:
           requires:
             - prepare-tests
       - test_cec_release:
+          requires:
+            - prepare-tests
+      - lint:
           requires:
             - prepare-tests
       - detekt
