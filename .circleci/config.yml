@@ -423,8 +423,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
-      - android/accept_licenses
+      - attach_workspace:
+          at: .
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -616,12 +616,9 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - checkout-submodule:
-          path: upstream/paywall-preview-resources
-      - install-sdkman
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - android/restore_build_cache
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
           name: Build and run purchases ui snapshot tests
           command: |
@@ -644,10 +641,9 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - android/restore_build_cache
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
           name: Run backend integration tests
           command: |
@@ -659,18 +655,9 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - checkout-submodule:
-          path: upstream/paywall-preview-resources
-      - install-sdkman
-      # Required by Emerge CLI
-      - install-ruby:
-          version: 3.2.0
-      - run:
-          name: Install Emerge CLI
-          command: gem install emerge
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - android/restore_build_cache
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
@@ -741,15 +728,11 @@ jobs:
     <<: *android-machine-emulator
     steps:
       - checkout
-      - install-sdkman
-      - android/create_avd:
-          avd_name: test-revenuecat-ui
-          system_image: system-images;android-32;google_apis;x86_64
-          install: true
-      - android/start_emulator:
-          avd_name: test-revenuecat-ui
-          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
+          name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
@@ -779,6 +762,20 @@ jobs:
           command: ./gradlew lint --parallel --no-daemon
       - store_artifacts:
           path: build/reports
+
+  verify-compatibility:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Verify purchases-android target SDK (33)
+          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug --no-daemon --parallel
+      - run:
+          name: Verify purchases-ui target SDK (34)
+          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
 workflows:
   version: 2
@@ -835,17 +832,36 @@ workflows:
       - test_cec_release:
           requires:
             - prepare-tests
+      - verify-compatibility:
+          requires:
+            - prepare-tests
       - lint:
           requires:
             - prepare-tests
-      - detekt
-      - metalava
-      - assemble-purchase-tester
-      - assemble-paywall-tester-release
-      - run-backend-integration-tests
-      - record-and-upload-paparazzi-revenuecatui-snapshots
-      - run-revenuecatui-ui-tests
-      - emerge_purchases_ui_snapshot_tests
+      - detekt:
+          requires:
+            - prepare-tests
+      - metalava:
+          requires:
+            - prepare-tests
+      - assemble-purchase-tester:
+          requires:
+            - prepare-tests
+      - assemble-paywall-tester-release:
+          requires:
+            - prepare-tests
+      - run-backend-integration-tests:
+          requires:
+            - prepare-tests
+      - record-and-upload-paparazzi-revenuecatui-snapshots:
+          requires:
+            - prepare-tests
+      - run-revenuecatui-ui-tests:
+          requires:
+            - prepare-tests
+      - emerge_purchases_ui_snapshot_tests:
+          requires:
+            - prepare-tests
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
