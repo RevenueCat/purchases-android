@@ -46,6 +46,12 @@ internal fun PurchaseStatusBadge(
             )
             color = Color(CustomerCenterConstants.Card.COLOR_BADGE_FREE_TRIAL)
         }
+        PurchaseStatus.LIFETIME -> {
+            text = localization.commonLocalizedString(
+                CustomerCenterConfigData.Localization.CommonLocalizedString.BADGE_LIFETIME,
+            )
+            color = Color(CustomerCenterConstants.Card.COLOR_BADGE_LIFETIME)
+        }
         PurchaseStatus.ACTIVE -> {
             text = localization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.ACTIVE,
@@ -83,6 +89,7 @@ private fun determinePurchaseStatus(purchaseInformation: PurchaseInformation): P
         purchaseInformation.isCancelled && purchaseInformation.isTrial -> PurchaseStatus.FREE_TRIAL_CANCELLED
         purchaseInformation.isCancelled && purchaseInformation.store != Store.PROMOTIONAL -> PurchaseStatus.CANCELLED
         purchaseInformation.isTrial -> PurchaseStatus.FREE_TRIAL
+        purchaseInformation.isLifetime() -> PurchaseStatus.LIFETIME
         purchaseInformation.expirationOrRenewal != null -> PurchaseStatus.ACTIVE
         else -> PurchaseStatus.NONE
     }
@@ -93,6 +100,7 @@ private enum class PurchaseStatus {
     FREE_TRIAL_CANCELLED,
     CANCELLED,
     FREE_TRIAL,
+    LIFETIME,
     ACTIVE,
     NONE,
 }
