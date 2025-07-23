@@ -236,12 +236,7 @@ jobs:
       - android-dependencies
       - run:
           name: Assemble all variants (warms Gradle cache once)
-          command: ./gradlew  \
-            testDefaultsDebugUnitTestClasses \
-            testDefaultsReleaseUnitTestClasses \
-            testCustomEntitlementComputationDebugUnitTestClasses \
-            testCustomEntitlementComputationReleaseUnitTestClasses \
-            --parallel --no-daemon
+          command: ./gradlew testClasses --parallel --no-daemon
       - android/save_gradle_cache
       - persist_to_workspace:
           root: .
