@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.asWebPurchaseRedemption
-import com.revenuecat.purchases_sample.R
 
 class MainActivity : AppCompatActivity() {
 
