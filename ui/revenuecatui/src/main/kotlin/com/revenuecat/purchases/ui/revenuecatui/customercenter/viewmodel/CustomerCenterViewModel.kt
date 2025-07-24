@@ -517,16 +517,7 @@ internal class CustomerCenterViewModelImpl(
 
         return prioritized.mapNotNull {
             when (it) {
-                is SubscriptionInfo -> TransactionDetails.Subscription(
-                    productIdentifier = it.productIdentifier,
-                    productPlanIdentifier = it.productPlanIdentifier,
-                    store = it.store,
-                    isActive = it.isActive,
-                    willRenew = it.willRenew,
-                    expiresDate = it.expiresDate,
-                    isTrial = it.periodType == PeriodType.TRIAL,
-                    managementURL = it.managementURL,
-                )
+                is SubscriptionInfo -> it.asTransactionDetails()
 
                 is Transaction -> TransactionDetails.NonSubscription(
                     productIdentifier = it.productIdentifier,
@@ -539,22 +530,10 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun findLatestExpiredSubscription(customerInfo: CustomerInfo): TransactionDetails.Subscription? {
-        val expiredSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
-            .filter { !it.isActive && it.expiresDate != null }
+        return customerInfo.subscriptionsByProductIdentifier.values
+            .filter { !it.isActive }
             .sortedByDescending { it.expiresDate }
-
-        return expiredSubscriptions.firstOrNull()?.let { subscription ->
-            TransactionDetails.Subscription(
-                productIdentifier = subscription.productIdentifier,
-                productPlanIdentifier = subscription.productPlanIdentifier,
-                store = subscription.store,
-                isActive = subscription.isActive,
-                willRenew = subscription.willRenew,
-                expiresDate = subscription.expiresDate,
-                isTrial = subscription.periodType == PeriodType.TRIAL,
-                managementURL = subscription.managementURL,
-            )
-        }
+            .firstOrNull()?.asTransactionDetails()
     }
 
     private suspend fun createPurchaseInformation(
@@ -1029,4 +1008,15 @@ internal class CustomerCenterViewModelImpl(
             purchases.customerCenterListener?.onManagementOptionSelected(action)
         }
     }
+
+    private fun SubscriptionInfo.asTransactionDetails() = TransactionDetails.Subscription(
+        productIdentifier = productIdentifier,
+        productPlanIdentifier = productPlanIdentifier,
+        store = store,
+        isActive = isActive,
+        willRenew = willRenew,
+        expiresDate = expiresDate,
+        isTrial = periodType == PeriodType.TRIAL,
+        managementURL = managementURL,
+    )
 }

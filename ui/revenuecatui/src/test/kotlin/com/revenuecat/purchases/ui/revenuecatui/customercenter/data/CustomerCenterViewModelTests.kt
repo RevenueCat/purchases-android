@@ -6,7 +6,6 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
@@ -36,7 +35,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.helpers.add
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createGoogleStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.helpers.stubGoogleSubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.helpers.stubPricingPhase
@@ -55,7 +53,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
