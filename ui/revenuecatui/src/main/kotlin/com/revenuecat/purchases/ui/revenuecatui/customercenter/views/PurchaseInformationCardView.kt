@@ -133,6 +133,7 @@ private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Lo
         Store.PADDLE,
         Store.RC_BILLING,
         -> CustomerCenterConfigData.Localization.CommonLocalizedString.WEB_STORE
+        Store.TEST_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.TEST_STORE
         Store.UNKNOWN_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.UNKNOWN_STORE
     }
     return localization.commonLocalizedString(key)

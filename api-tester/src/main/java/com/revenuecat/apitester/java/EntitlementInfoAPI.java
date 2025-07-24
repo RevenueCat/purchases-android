@@ -72,6 +72,7 @@ final class EntitlementInfoAPI {
             case RC_BILLING:
             case EXTERNAL:
             case PADDLE:
+            case TEST_STORE:
         }
     }
 

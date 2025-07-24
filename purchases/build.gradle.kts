@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.library)
@@ -11,6 +13,10 @@ plugins {
     alias(libs.plugins.metalava)
     alias(libs.plugins.baselineprofile)
 }
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
 apply(from = "${rootProject.projectDir}/library.gradle")
 
@@ -36,6 +42,12 @@ android {
     defaultConfig {
         testApplicationId = obtainTestApplicationId()
         testBuildType = obtainTestBuildType()
+
+        buildConfigField(
+            type = "boolean",
+            name = "ENABLE_TEST_STORE",
+            value = (localProperties["ENABLE_TEST_STORE"] as? String ?: "false").toString(),
+        )
 
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),

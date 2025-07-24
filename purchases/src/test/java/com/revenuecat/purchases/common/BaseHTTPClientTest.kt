@@ -115,7 +115,7 @@ internal abstract class BaseHTTPClientTest {
                 expectedResult.responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                "/v1${endpoint.getPath()}",
+                urlPath = endpoint.getPath(),
                 refreshETag = false,
                 requestDate = requestDateHeader,
                 verificationResult = verificationResult

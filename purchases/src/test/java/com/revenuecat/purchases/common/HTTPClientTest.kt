@@ -597,7 +597,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 RCHTTPStatusCodes.BAD_REQUEST,
                 "not uh json",
                 eTagHeader = any(),
-                "/v1${endpoint.getPath()}",
+                urlPath = endpoint.getPath(),
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED

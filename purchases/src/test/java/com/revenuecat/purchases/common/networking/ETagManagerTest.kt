@@ -348,7 +348,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = responsePayload,
             eTagHeader = eTagInResponse,
-            urlPathWithVersion = path,
+            urlPath = path,
             refreshETag = false,
             requestDate = null,
             verificationResult = NOT_REQUESTED
@@ -370,7 +370,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             payload = responsePayload,
             eTagHeader = eTagInResponse,
-            urlPathWithVersion = path,
+            urlPath = path,
             refreshETag = false,
             requestDate = null,
             verificationResult = NOT_REQUESTED
@@ -394,7 +394,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             payload = responsePayload,
             eTagHeader = eTagInResponse,
-            urlPathWithVersion = path,
+            urlPath = path,
             refreshETag = false,
             requestDate = null,
             verificationResult = NOT_REQUESTED
@@ -419,7 +419,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             payload = responsePayload,
             eTagHeader = eTagInResponse,
-            urlPathWithVersion = path,
+            urlPath = path,
             refreshETag = true,
             requestDate = null,
             verificationResult = NOT_REQUESTED
@@ -443,7 +443,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = responsePayload,
             eTagHeader = eTagInResponse,
-            urlPathWithVersion = path,
+            urlPath = path,
             refreshETag = false,
             requestDate = null,
             verificationResult = NOT_REQUESTED
@@ -467,7 +467,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = responsePayload,
             eTagHeader = eTagInResponse,
-            urlPathWithVersion = path,
+            urlPath = path,
             refreshETag = true,
             requestDate = null,
             verificationResult = NOT_REQUESTED
@@ -487,7 +487,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = "",
             eTagHeader = "etag",
-            urlPathWithVersion = "/v1/subscribers/appUserID",
+            urlPath = "/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = null,
             verificationResult = VERIFIED
@@ -504,7 +504,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = "",
             eTagHeader = "etag",
-            urlPathWithVersion = "/v1/subscribers/appUserID",
+            urlPath = "/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = expectedDate,
             verificationResult = NOT_REQUESTED
@@ -525,7 +525,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = "",
             eTagHeader = "etag",
-            urlPathWithVersion = "/v1/subscribers/appUserID",
+            urlPath = "/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = expectedDate,
             verificationResult = NOT_REQUESTED
@@ -573,7 +573,7 @@ class ETagManagerTest {
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             payload = "",
             eTagHeader = "etag",
-            urlPathWithVersion = "/v1/subscribers/appUserID",
+            urlPath = "/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = null,
             verificationResult = backendVerificationResult

@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -174,9 +175,17 @@ internal class PurchasesFactory(
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
+            val finalStore = if (
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && BuildConfig.ENABLE_TEST_STORE
+            ) {
+                Store.TEST_STORE
+            } else {
+                store
+            }
+
             // Override used for integration tests.
             val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
-                store,
+                finalStore,
                 application,
                 backendHelper,
                 cache,
@@ -184,7 +193,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
-                apiKeyValidationResult,
+                backend,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
