@@ -224,7 +224,7 @@ jobs:
           command: bundle exec fastlane android build_custom_entitlement_computation_sample
       - android/save_build_cache
 
-  test:
+  prepare-tests:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
@@ -233,39 +233,101 @@ jobs:
           path: upstream/paywall-preview-resources
       - install-sdkman
       - android/accept_licenses
-      - android-dependencies
-      - android/restore_build_cache
+      - android/restore_gradle_cache
       - run:
-          name: Verify purchases-android target SDK compatibility (currently 33)
-          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
+          name: Assemble all variants (warms Gradle cache once)
+          command: ./gradlew testClasses --parallel --no-daemon
+      - android/save_gradle_cache
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  test_defaults_debug:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
-          name: Verify purchases-ui target SDK compatibility (currently 34)
-          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
+          name: Run Defaults Debug Tests
+          command: ./gradlew testDefaultsDebugUnitTest --parallel --no-daemon
       - run:
-          name: Run Tests
-          command: ./gradlew lint test
-      - run:
-          name: Consolidate artifacts
+          name: Collect JUnit XMLs
           command: |
-              mkdir -p build/test-results/
-              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+      - store_test_results:
+          path: build/test-results
+      - store_artifacts:
+          path: build/reports
+
+  test_defaults_release:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
-          name: Kover HTML
+          name: Run Defaults Release Tests
+          command: ./gradlew testDefaultsReleaseUnitTest --parallel --no-daemon
+      - run:
+          name: Generate Kover HTML
           command: ./gradlew purchases:koverHtmlReportDefaultsRelease
       - run:
-          name: Kover XML
+          name: Generate Kover XML
           command: ./gradlew purchases:koverXmlReportDefaultsRelease
       - codecov/upload:
           file: purchases/build/reports/kover/reportDefaultsRelease.xml
-      - android/save_build_cache
-      - store_artifacts:
-          path: build/reports
       - run:
-          name: Save test results
+          name: Collect JUnit XMLs
           command: |
             mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} build/test-results \;
-          when: always
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+      - store_test_results:
+          path: build/test-results
+      - store_artifacts:
+          path: build/reports
+
+  test_cec_debug:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run CEC Debug Tests
+          command: ./gradlew testCustomEntitlementComputationDebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+      - store_test_results:
+          path: build/test-results
+
+  test_cec_release:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run CEC Release Tests
+          command: ./gradlew testCustomEntitlementComputationReleaseUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - store_test_results:
           path: build/test-results
 
@@ -381,8 +443,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
-      - android/accept_licenses
+      - attach_workspace:
+          at: .
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -580,6 +642,12 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
+      - attach_workspace:
+          at: .
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_gradle_cache
       - run:
           name: Build and run purchases ui snapshot tests
           command: |
@@ -602,23 +670,17 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore_build_cache
+      - android/restore_gradle_cache
       - run:
           name: Run backend integration tests
           command: |
             bundle exec fastlane android run_backend_integration_tests
       - android/save_build_cache
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} build/test-results \;
-          when: always
-      - store_test_results:
-          path: build/test-results
 
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
@@ -627,6 +689,8 @@ jobs:
       - checkout
       - checkout-submodule:
           path: upstream/paywall-preview-resources
+      - attach_workspace:
+          at: .
       - install-sdkman
       # Required by Emerge CLI
       - install-ruby:
@@ -636,7 +700,7 @@ jobs:
           command: gem install emerge
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore_build_cache
+      - android/restore_gradle_cache
       - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
@@ -707,6 +771,8 @@ jobs:
     <<: *android-machine-emulator
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - android/create_avd:
           avd_name: test-revenuecat-ui
@@ -715,7 +781,9 @@ jobs:
       - android/start_emulator:
           avd_name: test-revenuecat-ui
           post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
+      - android/restore_gradle_cache
       - run:
+          name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
@@ -732,6 +800,33 @@ jobs:
       - run:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
+
+  lint:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run Android Lint
+          command: ./gradlew lint --parallel --no-daemon
+      - store_artifacts:
+          path: build/reports
+
+  verify-compatibility:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Verify purchases-android target SDK (33)
+          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug --no-daemon --parallel
+      - run:
+          name: Verify purchases-ui target SDK (34)
+          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
 workflows:
   version: 2
@@ -775,15 +870,49 @@ workflows:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - test
-      - detekt
-      - metalava
-      - assemble-purchase-tester
-      - assemble-paywall-tester-release
-      - run-backend-integration-tests
-      - record-and-upload-paparazzi-revenuecatui-snapshots
-      - run-revenuecatui-ui-tests
-      - emerge_purchases_ui_snapshot_tests
+      - prepare-tests
+      - test_defaults_debug:
+          requires:
+            - prepare-tests
+      - test_defaults_release:
+          requires:
+            - prepare-tests
+      - test_cec_debug:
+          requires:
+            - prepare-tests
+      - test_cec_release:
+          requires:
+            - prepare-tests
+      - verify-compatibility:
+          requires:
+            - prepare-tests
+      - lint:
+          requires:
+            - prepare-tests
+      - detekt:
+          requires:
+            - prepare-tests
+      - metalava:
+          requires:
+            - prepare-tests
+      - assemble-purchase-tester:
+          requires:
+            - prepare-tests
+      - assemble-paywall-tester-release:
+          requires:
+            - prepare-tests
+      - run-backend-integration-tests:
+          requires:
+            - prepare-tests
+      - record-and-upload-paparazzi-revenuecatui-snapshots:
+          requires:
+            - prepare-tests
+      - run-revenuecatui-ui-tests:
+          requires:
+            - prepare-tests
+      - emerge_purchases_ui_snapshot_tests:
+          requires:
+            - prepare-tests
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
@@ -801,7 +930,10 @@ workflows:
       - hold:
           type: approval
           requires:
-            - test
+            - test_defaults_debug
+            - test_defaults_release
+            - test_cec_debug
+            - test_cec_release
             - assemble-purchase-tester
             - assemble-paywall-tester-release
             - run-backend-integration-tests
@@ -810,6 +942,7 @@ workflows:
             - run-firebase-tests-purchases-integration-test
             - run-firebase-tests-purchases-load-shedder-integration-test
             - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
+            - verify-compatibility
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
