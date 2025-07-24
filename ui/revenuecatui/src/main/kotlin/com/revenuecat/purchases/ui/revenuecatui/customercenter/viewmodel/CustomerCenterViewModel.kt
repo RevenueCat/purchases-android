@@ -430,8 +430,13 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun computeMainScreenPaths(state: CustomerCenterState.Success): List<HelpPath> {
-        val managementScreen = state.customerCenterConfigData.getManagementScreen()
-        val baseSupportedPaths = managementScreen?.let { screen ->
+        val screenToUse = if (state.purchases.isNotEmpty() && state.purchases.any { !it.isExpired }) {
+            state.customerCenterConfigData.getManagementScreen()
+        } else {
+            state.customerCenterConfigData.getNoActiveScreen()
+        }
+
+        val baseSupportedPaths = screenToUse?.let { screen ->
             val selectedPurchase = if (state.purchases.size == 1) {
                 state.purchases.first()
             } else {

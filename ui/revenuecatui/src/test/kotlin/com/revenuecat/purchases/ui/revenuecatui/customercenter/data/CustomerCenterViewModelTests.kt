@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
@@ -113,6 +114,24 @@ class CustomerCenterViewModelTests {
                         id = "id4",
                         title = "title1",
                         type = HelpPath.PathType.REFUND_REQUEST
+                    )
+                )
+            ),
+            Screen.ScreenType.NO_ACTIVE to CustomerCenterConfigData.Screen(
+                type = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
+                title = "No Active Subscription",
+                subtitle = "You don't have an active subscription.",
+                paths = listOf(
+                    HelpPath(
+                        id = "restore_id",
+                        title = "Restore Purchases",
+                        type = HelpPath.PathType.MISSING_PURCHASE
+                    ),
+                    HelpPath(
+                        id = "support_id",
+                        title = "Contact Support",
+                        type = HelpPath.PathType.CUSTOM_URL,
+                        url = "https://support.example.com"
                     )
                 )
             )
@@ -2041,6 +2060,14 @@ class CustomerCenterViewModelTests {
         assertThat(paths)
             .withFailMessage("Expected CANCEL path to not be present for expired subscription. Paths: $paths")
             .noneMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }
+        
+        // Should have paths from NO_ACTIVE screen (MISSING_PURCHASE and CUSTOM_URL)
+        assertThat(paths)
+            .withFailMessage("Expected MISSING_PURCHASE path from NO_ACTIVE screen. Paths: $paths")
+            .anyMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE && it.id == "restore_id" }
+        assertThat(paths)
+            .withFailMessage("Expected CUSTOM_URL path from NO_ACTIVE screen. Paths: $paths")
+            .anyMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL && it.id == "support_id" }
     }
 
     private fun setupPurchasesMock() {
