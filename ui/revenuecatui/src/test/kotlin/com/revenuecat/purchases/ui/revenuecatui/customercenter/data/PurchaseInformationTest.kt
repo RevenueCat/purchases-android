@@ -792,6 +792,16 @@ class PurchaseInformationTest {
         )
     }
 
+    @Test
+    fun `test lifetime purchase shows as lifetime`() {
+        assertThat(CustomerCenterConfigTestData.purchaseInformationLifetime.isLifetime).isTrue()
+    }
+
+    @Test
+    fun `test subscription purchase shows as not lifetime`() {
+        assertThat(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.isLifetime).isFalse()
+    }
+
     private fun setupDateFormatter(expiresDate: Date?, expirationDateString: String) {
         if (expiresDate != null) {
             every { dateFormatter.format(expiresDate, any()) } returns expirationDateString

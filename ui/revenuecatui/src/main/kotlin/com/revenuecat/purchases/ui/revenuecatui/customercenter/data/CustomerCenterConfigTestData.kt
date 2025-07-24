@@ -145,6 +145,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = false,
+        isLifetime = false,
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -165,6 +166,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = true,
+        isLifetime = false,
     )
 
     val purchaseInformationYearlyExpired = PurchaseInformation(
@@ -185,6 +187,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = true,
         isTrial = false,
         isCancelled = true,
+        isLifetime = false,
     )
 
     val purchaseInformationLifetime = PurchaseInformation(
@@ -198,6 +201,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = false,
+        isLifetime = true,
     )
 
     val purchaseInformationPromotional = PurchaseInformation(
@@ -211,5 +215,6 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = true,
+        isLifetime = false,
     )
 }
