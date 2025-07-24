@@ -793,66 +793,13 @@ class PurchaseInformationTest {
     }
 
     @Test
-    fun `test isLifetime returns true for promotional lifetime product by product identifier`() {
-        val storeProduct = TestStoreProduct(
-            "premium_lifetime",
-            "Premium Lifetime",
-            "Premium Lifetime",
-            "Lifetime access to premium features",
-            Price("$99.99", 9999_000_000, "USD"),
-            null
-        )
-
-        val purchaseInformation = PurchaseInformation(
-            title = "Premium Lifetime",
-            pricePaid = PriceDetails.Free,
-            expirationOrRenewal = null,
-            product = storeProduct,
-            store = Store.PROMOTIONAL,
-            isSubscription = false,
-            managementURL = null,
-            isExpired = false,
-            isTrial = false,
-            isCancelled = false,
-        )
-
-        assertThat(purchaseInformation.isLifetime()).isTrue()
+    fun `test lifetime purchase shows as lifetime`() {
+        assertThat(CustomerCenterConfigTestData.purchaseInformationLifetime.isLifetime).isTrue()
     }
 
     @Test
-    fun `test isLifetime returns true for promotional lifetime product by title`() {
-        val purchaseInformation = PurchaseInformation(
-            title = "Premium Lifetime Access",
-            pricePaid = PriceDetails.Free,
-            expirationOrRenewal = null,
-            product = null,
-            store = Store.PROMOTIONAL,
-            isSubscription = false,
-            managementURL = null,
-            isExpired = false,
-            isTrial = false,
-            isCancelled = false,
-        )
-
-        assertThat(purchaseInformation.isLifetime()).isTrue()
-    }
-
-    @Test
-    fun `test isLifetime returns false for non-promotional product`() {
-        val purchaseInformation = PurchaseInformation(
-            title = "Premium Monthly",
-            pricePaid = PriceDetails.Paid("$9.99"),
-            expirationOrRenewal = mockk(),
-            product = null,
-            store = Store.PLAY_STORE,
-            isSubscription = true,
-            managementURL = null,
-            isExpired = false,
-            isTrial = false,
-            isCancelled = false,
-        )
-
-        assertThat(purchaseInformation.isLifetime()).isFalse()
+    fun `test subscription purchase shows as not lifetime`() {
+        assertThat(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.isLifetime).isFalse()
     }
 
     private fun setupDateFormatter(expiresDate: Date?, expirationDateString: String) {
