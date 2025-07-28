@@ -83,6 +83,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.teststore.TestStorePurchasingData
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
@@ -447,6 +448,7 @@ internal class PurchasesOrchestrator(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
     ) {
+        ensureNoTestProduct(purchaseParams.purchasingData)
         with(purchaseParams) {
             oldProductId?.let { productId ->
                 startProductChange(
@@ -467,6 +469,17 @@ internal class PurchasesOrchestrator(
                     callback,
                 )
             }
+        }
+    }
+
+    private fun ensureNoTestProduct(purchasingData: PurchasingData) {
+        if (purchasingData is TestStorePurchasingData && store != Store.TEST_STORE) {
+            throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.ProductNotAvailableForPurchaseError,
+                    "Cannot purchase ${purchasingData.productId}",
+                ),
+            )
         }
     }
 

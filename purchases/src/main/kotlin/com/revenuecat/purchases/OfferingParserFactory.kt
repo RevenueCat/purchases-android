@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.teststore.TestStoreOfferingParser
 
 internal object OfferingParserFactory {
 
@@ -19,6 +20,7 @@ internal object OfferingParserFactory {
                 throw e
             }
         }
+        Store.TEST_STORE -> TestStoreOfferingParser()
         else -> {
             errorLog { "Incompatible store ($store) used" }
             throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")

@@ -149,12 +149,12 @@ class TestStoreProduct(
         )
         val subscriptionOptionsList = listOfNotNull(
             TestSubscriptionOption(
-                id,
                 listOfNotNull(freeTrialPricingPhase, introPricePricingPhase, basePricePhase),
+                purchasingData = purchasingData,
             ).takeIf { freeTrialPricingPhase != null || introPricePricingPhase != null },
             TestSubscriptionOption(
-                id,
                 listOf(basePricePhase),
+                purchasingData = purchasingData,
             ),
         )
         return SubscriptionOptions(subscriptionOptionsList)
@@ -162,7 +162,6 @@ class TestStoreProduct(
 }
 
 private class TestSubscriptionOption(
-    val productIdentifier: String,
     override val pricingPhases: List<PricingPhase>,
     val basePlanId: String = "testBasePlanId",
     override val tags: List<String> = emptyList(),
@@ -170,18 +169,11 @@ private class TestSubscriptionOption(
         offeringIdentifier = "offering",
     ),
     override val installmentsInfo: InstallmentsInfo? = null,
+    override val purchasingData: PurchasingData,
 ) : SubscriptionOption {
     override val id: String
         get() = if (pricingPhases.size == 1) basePlanId else "$basePlanId:testOfferId"
 
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext.offeringIdentifier
-
-    override val purchasingData: PurchasingData
-        get() = object : PurchasingData {
-            override val productId: String
-                get() = productIdentifier
-            override val productType: ProductType
-                get() = ProductType.SUBS
-        }
 }

@@ -74,6 +74,14 @@ internal class PurchasesFactory(
         val apiKeyValidationResult = validateConfiguration(configuration)
 
         with(configuration) {
+            val finalStore = if (
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && BuildConfig.ENABLE_TEST_STORE
+            ) {
+                Store.TEST_STORE
+            } else {
+                store
+            }
+
             val application = context.getApplication()
             val appConfig = AppConfig(
                 context,
@@ -81,7 +89,7 @@ internal class PurchasesFactory(
                 showInAppMessagesAutomatically,
                 platformInfo,
                 proxyURL,
-                store,
+                finalStore,
                 isDebugBuild(),
                 dangerousSettings,
                 runningIntegrationTests,
@@ -174,14 +182,6 @@ internal class PurchasesFactory(
             )
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
-
-            val finalStore = if (
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && BuildConfig.ENABLE_TEST_STORE
-            ) {
-                Store.TEST_STORE
-            } else {
-                store
-            }
 
             // Override used for integration tests.
             val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
@@ -277,7 +277,7 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 diagnosticsTracker,
             )
-            val offeringParser = OfferingParserFactory.createOfferingParser(store)
+            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             @Suppress("ComplexCondition")
