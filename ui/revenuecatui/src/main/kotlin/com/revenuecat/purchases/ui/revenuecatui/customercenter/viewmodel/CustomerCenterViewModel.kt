@@ -532,7 +532,7 @@ internal class CustomerCenterViewModelImpl(
     private fun findLatestExpiredSubscription(customerInfo: CustomerInfo): TransactionDetails.Subscription? {
         return customerInfo.subscriptionsByProductIdentifier.values
             .filter { !it.isActive && it.expiresDate != null }
-            .minByOrNull { it.expiresDate!! }?.asTransactionDetails()
+            .maxByOrNull { it.expiresDate!! }?.asTransactionDetails()
     }
 
     private suspend fun createPurchaseInformation(
