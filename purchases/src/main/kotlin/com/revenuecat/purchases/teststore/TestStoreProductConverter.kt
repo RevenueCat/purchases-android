@@ -51,7 +51,7 @@ internal object TestStoreProductConverter {
                 throw PurchasesException(
                     PurchasesError(
                         PurchasesErrorCode.ProductNotAvailableForPurchaseError,
-                        "Base priceis required for test subscription products",
+                        "Base price is required for test subscription products",
                     ),
                 )
             }
