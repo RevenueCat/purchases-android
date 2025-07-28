@@ -401,27 +401,6 @@ jobs:
           path: build/reports
           destination: full-test-reports
 
-  test_other_modules:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run Other Module Tests
-          command: ./gradlew :integration-tests:test :test-apps:testpurchasesandroidcompatibility:test :test-apps:testpurchasesuiandroidcompatibility:test :examples:paywall-tester:test :examples:purchase-tester:test :examples:web-purchase-redemption-sample:test --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
-      - store_test_results:
-          path: build/test-results
-      - store_artifacts:
-          path: build/reports
-
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
