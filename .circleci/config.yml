@@ -413,6 +413,56 @@ jobs:
           path: build/reports
           destination: full-test-reports
 
+  test_legacy_comparison:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
+      - attach_workspace:
+          at: .
+      - install-sdkman
+      - android/accept_licenses
+      - android/restore_build_cache
+      - run:
+          name: Verify purchases-android target SDK compatibility (currently 33)
+          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
+      - run:
+          name: Verify purchases-ui target SDK compatibility (currently 34)
+          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
+      - run:
+          name: Run Tests
+          command: ./gradlew lint test
+      - run:
+          name: Consolidate artifacts
+          command: |
+              mkdir -p build/test-results-legacy/
+              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-legacy/ \;
+      - run:
+          name: Kover HTML
+          command: ./gradlew purchases:koverHtmlReportDefaultsRelease
+      - run:
+          name: Kover XML
+          command: ./gradlew purchases:koverXmlReportDefaultsRelease
+      - codecov/upload:
+          file: purchases/build/reports/kover/reportDefaultsRelease.xml
+      - android/save_build_cache
+      - store_artifacts:
+          path: build/reports
+          destination: legacy-test-reports
+      - store_artifacts:
+          path: build/test-results-legacy
+          destination: legacy-test-results
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} build/test-results \;
+          when: always
+      - store_test_results:
+          path: build/test-results
+
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -954,6 +1004,9 @@ workflows:
     jobs:
       - prepare-tests
       - test_full_comparison:
+          requires:
+            - prepare-tests
+      - test_legacy_comparison:
           requires:
             - prepare-tests
 
