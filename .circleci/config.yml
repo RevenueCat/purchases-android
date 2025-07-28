@@ -262,7 +262,11 @@ jobs:
       - store_test_results:
           path: build/test-results
       - store_artifacts:
+          path: build/test-results
+          destination: defaults-debug-test-results
+      - store_artifacts:
           path: build/reports
+          destination: defaults-debug-test-reports
 
   test_defaults_release:
     <<: *android-executor
@@ -291,7 +295,11 @@ jobs:
       - store_test_results:
           path: build/test-results
       - store_artifacts:
+          path: build/test-results
+          destination: defaults-release-test-results
+      - store_artifacts:
           path: build/reports
+          destination: defaults-release-test-reports
 
   test_cec_debug:
     <<: *android-executor
@@ -311,6 +319,12 @@ jobs:
             find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - store_test_results:
           path: build/test-results
+      - store_artifacts:
+          path: build/test-results
+          destination: cec-debug-test-results
+      - store_artifacts:
+          path: build/reports
+          destination: cec-debug-test-reports
 
   test_cec_release:
     <<: *android-executor
@@ -330,6 +344,62 @@ jobs:
             find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - store_test_results:
           path: build/test-results
+      - store_artifacts:
+          path: build/test-results
+          destination: cec-release-test-results
+      - store_artifacts:
+          path: build/reports
+          destination: cec-release-test-reports
+
+  test_other_modules:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run Other Module Tests
+          command: ./gradlew :integration-tests:test :test-apps:testpurchasesandroidcompatibility:test :test-apps:testpurchasesuiandroidcompatibility:test :examples:paywall-tester:test :examples:purchase-tester:test :examples:web-purchase-redemption-sample:test --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results-other
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-other/ \;
+      - store_test_results:
+          path: build/test-results-other
+      - store_artifacts:
+          path: build/test-results-other
+          destination: other-modules-test-results
+      - store_artifacts:
+          path: build/reports
+          destination: other-modules-test-reports
+
+  test_full_comparison:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run Full Test Suite
+          command: ./gradlew test --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results-full
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-full/ \;
+      - store_test_results:
+          path: build/test-results-full
+      - store_artifacts:
+          path: build/test-results-full
+          destination: full-test-results
+      - store_artifacts:
+          path: build/reports
+          destination: full-test-reports
 
   test_other_modules:
     <<: *android-executor
@@ -907,6 +977,9 @@ workflows:
       - test_other_modules:
           requires:
             - prepare-tests
+      - test_full_comparison:
+          requires:
+            - prepare-tests
       - verify-compatibility:
           requires:
             - prepare-tests
@@ -959,6 +1032,7 @@ workflows:
             - test_cec_debug
             - test_cec_release
             - test_other_modules
+            - test_full_comparison
             - assemble-purchase-tester
             - assemble-paywall-tester-release
             - run-backend-integration-tests
