@@ -21,7 +21,14 @@ internal object TestStoreProductConverter {
         val purchaseOptions = productResponse.purchaseOptions
 
         val purchaseOptionKey = defaultPurchaseOptionId ?: purchaseOptions.keys.first()
-        val purchaseOption = purchaseOptions[purchaseOptionKey]!!
+        val purchaseOption = purchaseOptions[purchaseOptionKey] ?: run {
+            throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.ProductNotAvailableForPurchaseError,
+                    "No purchase option found for product ${productResponse.identifier}",
+                ),
+            )
+        }
 
         val basePrice: Price?
         var period: Period? = null
