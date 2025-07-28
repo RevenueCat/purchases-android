@@ -386,7 +386,7 @@ jobs:
       - android/restore_gradle_cache
       - run:
           name: Run Full Test Suite
-          command: ./gradlew test --parallel --no-daemon
+          command: ./gradlew lint test --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
           command: |
