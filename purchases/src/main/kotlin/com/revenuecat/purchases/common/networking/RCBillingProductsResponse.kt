@@ -30,6 +30,7 @@ internal data class RCBillingPurchaseOption(
 internal data class RCBillingPhase(
     val price: RCBillingPrice? = null,
     @SerialName("period_duration") val periodDuration: String? = null,
+    @SerialName("cycle_count") val cycleCount: Int? = null,
 )
 
 @Serializable

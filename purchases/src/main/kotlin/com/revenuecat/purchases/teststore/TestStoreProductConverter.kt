@@ -8,6 +8,8 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.networking.RCBillingProductResponse
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.TestStoreProduct
 
@@ -32,8 +34,8 @@ internal object TestStoreProductConverter {
 
         val basePrice: Price?
         var period: Period? = null
-        var freeTrialPeriod: Period? = null
-        var introPrice: Price? = null
+        var freeTrialPricingPhase: PricingPhase? = null
+        var introPricePricingPhase: PricingPhase? = null
 
         if (purchaseOption.basePrice != null) {
             val basePriceObj = purchaseOption.basePrice
@@ -64,17 +66,31 @@ internal object TestStoreProductConverter {
             }
 
             val trialPhase = purchaseOption.trial
-            if (trialPhase?.periodDuration != null) {
-                freeTrialPeriod = Period.create(trialPhase.periodDuration)
+            if (trialPhase?.periodDuration != null && trialPhase.cycleCount != null) {
+                freeTrialPricingPhase = PricingPhase(
+                    billingPeriod = Period.create(trialPhase.periodDuration),
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                    billingCycleCount = trialPhase.cycleCount,
+                    price = Price(
+                        formatted = "Free",
+                        amountMicros = 0L,
+                        currencyCode = basePrice.currencyCode,
+                    ),
+                )
             }
 
             val introPhase = purchaseOption.introPrice
-            if (introPhase?.price != null) {
+            if (introPhase?.price != null && introPhase.periodDuration != null && introPhase.cycleCount != null) {
                 val priceObj = introPhase.price
-                introPrice = Price(
-                    formatted = formatPrice(priceObj.amountMicros, priceObj.currency),
-                    amountMicros = priceObj.amountMicros,
-                    currencyCode = priceObj.currency,
+                introPricePricingPhase = PricingPhase(
+                    billingPeriod = Period.create(introPhase.periodDuration),
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                    billingCycleCount = introPhase.cycleCount,
+                    price = Price(
+                        formatted = formatPrice(priceObj.amountMicros, priceObj.currency),
+                        amountMicros = priceObj.amountMicros,
+                        currencyCode = priceObj.currency,
+                    ),
                 )
             }
         }
@@ -86,8 +102,8 @@ internal object TestStoreProductConverter {
             description = productResponse.description ?: "",
             price = basePrice,
             period = period,
-            freeTrialPeriod = freeTrialPeriod,
-            introPrice = introPrice,
+            freeTrialPricingPhase = freeTrialPricingPhase,
+            introPricePricingPhase = introPricePricingPhase,
         )
     }
 
