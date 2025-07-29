@@ -11,13 +11,15 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.utils.PriceFactory
+import java.util.Locale
 
 internal object TestStoreProductConverter {
 
     @JvmSynthetic
     @Suppress("LongMethod")
     @Throws(PurchasesException::class)
-    fun convertToStoreProduct(productResponse: WebBillingProductResponse): TestStoreProduct {
+    fun convertToStoreProduct(productResponse: WebBillingProductResponse, locale: Locale = Locale.getDefault()): TestStoreProduct {
         val defaultPurchaseOptionId = productResponse.defaultPurchaseOptionId
         val purchaseOptions = productResponse.purchaseOptions
 
@@ -38,20 +40,12 @@ internal object TestStoreProductConverter {
 
         if (purchaseOption.basePrice != null) {
             val basePriceObj = purchaseOption.basePrice
-            basePrice = Price(
-                formatted = formatPrice(basePriceObj.amountMicros, basePriceObj.currency),
-                amountMicros = basePriceObj.amountMicros,
-                currencyCode = basePriceObj.currency,
-            )
+            basePrice = PriceFactory.createPrice(basePriceObj.amountMicros, basePriceObj.currency, locale)
         } else {
             val basePhase = purchaseOption.base
             if (basePhase?.price != null) {
                 val priceObj = basePhase.price
-                basePrice = Price(
-                    formatted = formatPrice(priceObj.amountMicros, priceObj.currency),
-                    amountMicros = priceObj.amountMicros,
-                    currencyCode = priceObj.currency,
-                )
+                basePrice = PriceFactory.createPrice(priceObj.amountMicros, priceObj.currency, locale)
                 if (basePhase.periodDuration != null) {
                     period = Period.create(basePhase.periodDuration)
                 }
@@ -65,16 +59,12 @@ internal object TestStoreProductConverter {
             }
 
             val trialPhase = purchaseOption.trial
-            if (trialPhase?.periodDuration != null && trialPhase.cycleCount != null) {
+            if (trialPhase?.periodDuration != null && trialPhase.cycleCount != null && basePhase.price != null) {
                 freeTrialPricingPhase = PricingPhase(
                     billingPeriod = Period.create(trialPhase.periodDuration),
                     recurrenceMode = RecurrenceMode.FINITE_RECURRING,
                     billingCycleCount = trialPhase.cycleCount,
-                    price = Price(
-                        formatted = "Free",
-                        amountMicros = 0L,
-                        currencyCode = basePrice.currencyCode,
-                    ),
+                    price = PriceFactory.createPrice(0, basePhase.price.currency, locale),
                 )
             }
 
@@ -85,11 +75,7 @@ internal object TestStoreProductConverter {
                     billingPeriod = Period.create(introPhase.periodDuration),
                     recurrenceMode = RecurrenceMode.FINITE_RECURRING,
                     billingCycleCount = introPhase.cycleCount,
-                    price = Price(
-                        formatted = formatPrice(priceObj.amountMicros, priceObj.currency),
-                        amountMicros = priceObj.amountMicros,
-                        currencyCode = priceObj.currency,
-                    ),
+                    price = PriceFactory.createPrice(priceObj.amountMicros, priceObj.currency, locale),
                 )
             }
         }
@@ -104,10 +90,5 @@ internal object TestStoreProductConverter {
             freeTrialPricingPhase = freeTrialPricingPhase,
             introPricePricingPhase = introPricePricingPhase,
         )
-    }
-
-    @Suppress("MagicNumber")
-    private fun formatPrice(amountMicros: Long, currencyCode: String): String {
-        return "$currencyCode ${"%.2f".format(amountMicros / 1_000_000.0)}"
     }
 }

@@ -17,9 +17,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class TestStoreProductConverterTest {
+
+    private val testLocale = Locale.US
 
     @Test
     fun `converts one time product correctly`() {
@@ -39,14 +42,14 @@ class TestStoreProductConverterTest {
             )
         )
 
-        val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val result = convertToStoreProduct(productResponse)
 
         assertThat(result).isInstanceOf(TestStoreProduct::class.java)
         assertThat(result.id).isEqualTo("test_product")
         assertThat(result.title).isEqualTo("Test Product")
         assertThat(result.name).isEqualTo("Test Product")
         assertThat(result.description).isEqualTo("Test Description")
-        assertThat(result.price.formatted).isEqualTo("USD 9.99")
+        assertThat(result.price.formatted).isEqualTo("$9.99")
         assertThat(result.price.amountMicros).isEqualTo(9990000L)
         assertThat(result.price.currencyCode).isEqualTo("USD")
     }
@@ -72,10 +75,10 @@ class TestStoreProductConverterTest {
             )
         )
 
-        val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val result = convertToStoreProduct(productResponse)
 
         val expectedPrice = Price(
-            formatted = "EUR 4.99",
+            formatted = "€4.99",
             amountMicros = 4990000L,
             currencyCode = "EUR"
         )
@@ -119,7 +122,7 @@ class TestStoreProductConverterTest {
             )
         )
 
-        val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val result = convertToStoreProduct(productResponse)
 
         assertThat(result.defaultOption?.freePhase).isEqualTo(
             PricingPhase(
@@ -127,7 +130,7 @@ class TestStoreProductConverterTest {
                 recurrenceMode = RecurrenceMode.FINITE_RECURRING,
                 billingCycleCount = 2,
                 price = Price(
-                    formatted = "Free",
+                    formatted = "$0.00",
                     amountMicros = 0L,
                     currencyCode = "USD"
                 )
@@ -140,7 +143,7 @@ class TestStoreProductConverterTest {
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = null,
                 price = Price(
-                    formatted = "USD 9.99",
+                    formatted = "$9.99",
                     amountMicros = 9990000L,
                     currencyCode = "USD"
                 )
@@ -177,7 +180,7 @@ class TestStoreProductConverterTest {
             )
         )
 
-        val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val result = convertToStoreProduct(productResponse)
 
         assertThat(result.defaultOption?.freePhase).isNull()
         assertThat(result.defaultOption?.introPhase).isEqualTo(
@@ -186,7 +189,7 @@ class TestStoreProductConverterTest {
                 recurrenceMode = RecurrenceMode.FINITE_RECURRING,
                 billingCycleCount = 3,
                 price = Price(
-                    formatted = "USD 1.99",
+                    formatted = "$1.99",
                     amountMicros = 1990000L,
                     currencyCode = "USD"
                 )
@@ -198,7 +201,7 @@ class TestStoreProductConverterTest {
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = null,
                 price = Price(
-                    formatted = "USD 9.99",
+                    formatted = "$9.99",
                     amountMicros = 9990000L,
                     currencyCode = "USD"
                 )
@@ -225,7 +228,7 @@ class TestStoreProductConverterTest {
         )
 
         try {
-            TestStoreProductConverter.convertToStoreProduct(productResponse)
+            convertToStoreProduct(productResponse)
             fail("Expected PurchasesException to be thrown")
         } catch (e: PurchasesException) {
             assertThat(e.error.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
@@ -252,7 +255,7 @@ class TestStoreProductConverterTest {
         )
 
         try {
-            val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+            val result = convertToStoreProduct(productResponse)
             fail("Expected PurchasesException to be thrown, but got result: $result")
         } catch (e: PurchasesException) {
             assertThat(e.error.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
@@ -284,7 +287,7 @@ class TestStoreProductConverterTest {
             )
         )
 
-        val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val result = convertToStoreProduct(productResponse)
 
         assertThat(result.subscriptionOptions?.freeTrial).isNull()
     }
@@ -315,7 +318,7 @@ class TestStoreProductConverterTest {
             )
         )
 
-        val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val result = convertToStoreProduct(productResponse)
 
         assertThat(result.subscriptionOptions?.introOffer).isNull()
     }
@@ -338,9 +341,9 @@ class TestStoreProductConverterTest {
             )
         )
 
-        val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val result = convertToStoreProduct(productResponse)
 
-        assertThat(result.price.formatted).isEqualTo("JPY 12.35")
+        assertThat(result.price.formatted).isEqualTo("¥12")
     }
 
     @Test
@@ -361,9 +364,16 @@ class TestStoreProductConverterTest {
             )
         )
 
-        val result = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val result = convertToStoreProduct(productResponse)
 
-        assertThat(result.price.formatted).isEqualTo("USD 0.00")
+        assertThat(result.price.formatted).isEqualTo("$0.00")
         assertThat(result.price.amountMicros).isEqualTo(0L)
+    }
+
+    private fun convertToStoreProduct(
+        productResponse: WebBillingProductResponse,
+        locale: Locale = testLocale
+    ): TestStoreProduct {
+        return TestStoreProductConverter.convertToStoreProduct(productResponse, locale)
     }
 }
