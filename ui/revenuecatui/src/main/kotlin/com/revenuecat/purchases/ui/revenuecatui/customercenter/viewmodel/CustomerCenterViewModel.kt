@@ -1034,7 +1034,7 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun notifyListenersForCustomActionSelected(
-        customActionData: com.revenuecat.purchases.customercenter.CustomActionData,
+        customActionData: CustomActionData,
     ) {
         listener?.onCustomActionSelected(customActionData.actionIdentifier, customActionData.purchaseIdentifier)
         purchases.customerCenterListener?.onCustomActionSelected(
