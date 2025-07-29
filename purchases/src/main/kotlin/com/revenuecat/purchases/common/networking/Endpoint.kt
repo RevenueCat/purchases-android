@@ -55,9 +55,9 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     ) {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
     }
-    data class RCBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
+    data class WebBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
         pathTemplate = "/rcbilling/v1/subscribers/%s/products?id=%s",
-        name = "rc_billing_get_products",
+        name = "web_billing_get_products",
     ) {
         override fun getPath(): String {
             return pathTemplate.format(Uri.encode(userId), productIds.joinToString("&id=") { Uri.encode(it) })
@@ -80,7 +80,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostDiagnostics,
             PostPaywallEvents,
             is GetCustomerCenterConfig,
-            is RCBillingGetProducts,
+            is WebBillingGetProducts,
             ->
                 false
         }
@@ -101,7 +101,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostPaywallEvents,
             GetProductEntitlementMapping,
             is GetCustomerCenterConfig,
-            is RCBillingGetProducts,
+            is WebBillingGetProducts,
             ->
                 false
         }
@@ -123,7 +123,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetCustomerInfo,
             is GetCustomerCenterConfig,
             is GetVirtualCurrencies,
-            is RCBillingGetProducts,
+            is WebBillingGetProducts,
             ->
                 false
         }

@@ -323,7 +323,7 @@ object Responses {
         }
     """.removeJSONFormatting()
 
-    val validRCBillingProductsResponse = """
+    val validWebBillingProductsResponse = """
         {
             "product_details": [
                 {
