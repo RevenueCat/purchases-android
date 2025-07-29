@@ -313,7 +313,7 @@ internal class CustomerCenterViewModelImpl(
 
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION -> {
                 path.actionIdentifier?.let { actionIdentifier ->
-                    val customActionData = com.revenuecat.purchases.customercenter.CustomActionData(
+                    val customActionData = CustomActionData(
                         actionIdentifier = actionIdentifier,
                         purchaseIdentifier = purchaseInformation?.product?.id,
                     )
