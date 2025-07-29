@@ -197,7 +197,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.PostPaywallEvents.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.PostPaywallEvents.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
