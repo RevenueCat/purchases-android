@@ -96,6 +96,8 @@ internal interface CustomerCenterViewModel {
 
     fun clearActionError()
 
+    fun onCustomActionSelected(customActionData: com.revenuecat.purchases.customercenter.CustomActionData)
+
     // trigger state refresh
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(currentColorScheme: ColorScheme, isSystemInDarkTheme: Boolean)
@@ -309,6 +311,16 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
 
+            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION -> {
+                path.actionIdentifier?.let { actionIdentifier ->
+                    val customActionData = com.revenuecat.purchases.customercenter.CustomActionData(
+                        actionIdentifier = actionIdentifier,
+                        purchaseIdentifier = purchaseInformation?.product?.id,
+                    )
+                    onCustomActionSelected(customActionData)
+                }
+            }
+
             else -> {
                 // Other cases are not supported
             }
@@ -419,6 +431,7 @@ internal class CustomerCenterViewModelImpl(
         return when (path.type) {
             HelpPath.PathType.MISSING_PURCHASE,
             HelpPath.PathType.CUSTOM_URL,
+            HelpPath.PathType.CUSTOM_ACTION,
             -> true
             HelpPath.PathType.CANCEL ->
                 purchaseInformation?.store == Store.PLAY_STORE || purchaseInformation?.managementURL != null
@@ -982,11 +995,33 @@ internal class CustomerCenterViewModelImpl(
                     CustomerCenterManagementOption.CustomUrl(it.toUri())
                 }
 
+            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION ->
+                path.actionIdentifier?.let { actionIdentifier ->
+                    CustomerCenterManagementOption.CustomAction(
+                        actionIdentifier = actionIdentifier,
+                        purchaseIdentifier = null, // This will be set appropriately when called from the UI
+                    )
+                }
+
             else -> null
         }
         if (action != null) {
             listener?.onManagementOptionSelected(action)
             purchases.customerCenterListener?.onManagementOptionSelected(action)
         }
+    }
+
+    override fun onCustomActionSelected(customActionData: com.revenuecat.purchases.customercenter.CustomActionData) {
+        notifyListenersForCustomActionSelected(customActionData)
+    }
+
+    private fun notifyListenersForCustomActionSelected(
+        customActionData: com.revenuecat.purchases.customercenter.CustomActionData,
+    ) {
+        listener?.onCustomActionSelected(customActionData.actionIdentifier, customActionData.purchaseIdentifier)
+        purchases.customerCenterListener?.onCustomActionSelected(
+            customActionData.actionIdentifier,
+            customActionData.purchaseIdentifier,
+        )
     }
 }

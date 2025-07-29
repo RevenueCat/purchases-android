@@ -59,4 +59,14 @@ interface CustomerCenterListener {
     fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
         // Default empty implementation
     }
+
+    /**
+     * Called when a custom action is selected in the Customer Center.
+     *
+     * @param actionIdentifier The unique identifier for the custom action
+     * @param purchaseIdentifier The product identifier of the purchase being viewed, if any
+     */
+    fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
+        // Default empty implementation
+    }
 }

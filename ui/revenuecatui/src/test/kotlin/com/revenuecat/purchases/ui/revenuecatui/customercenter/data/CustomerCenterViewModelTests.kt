@@ -2062,4 +2062,155 @@ class CustomerCenterViewModelTests {
     private fun examplePromotionalOffer() = CustomerCenterConfigTestData.customerCenterData()
         .screens[Screen.ScreenType.MANAGEMENT]!!.paths[1].promotionalOffer
 
+    @Test
+    fun `onCustomActionSelected calls listener with correct action identifier from actionIdentifier field`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+        
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionData = com.revenuecat.purchases.customercenter.CustomActionData(
+            actionIdentifier = "delete_user",
+            purchaseIdentifier = "monthly_sub"
+        )
+        
+        model.onCustomActionSelected(customActionData)
+        
+        verify { directListener.onCustomActionSelected("delete_user", "monthly_sub") }
+        verify { purchasesListener.onCustomActionSelected("delete_user", "monthly_sub") }
+    }
+
+    @Test
+    fun `pathButtonPressed with CUSTOM_ACTION uses actionIdentifier when available`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionPath = HelpPath(
+            id = "path_123",
+            title = "Delete Account",
+            type = HelpPath.PathType.CUSTOM_ACTION,
+            actionIdentifier = "delete_user"
+        )
+        
+        val purchaseInfo = createMockPurchaseInformation("monthly_sub")
+        
+        model.pathButtonPressed(mockk(relaxed = true), customActionPath, purchaseInfo)
+        
+        verify { directListener.onCustomActionSelected("delete_user", "monthly_sub") }
+        verify { purchasesListener.onCustomActionSelected("delete_user", "monthly_sub") }
+    }
+
+    @Test
+    fun `pathButtonPressed with CUSTOM_ACTION ignores action when actionIdentifier is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionPath = HelpPath(
+            id = "legacy_action_id",
+            title = "Rate App",
+            type = HelpPath.PathType.CUSTOM_ACTION,
+            actionIdentifier = null
+        )
+        
+        model.pathButtonPressed(mockk(relaxed = true), customActionPath, null)
+        
+        verify(exactly = 0) { directListener.onCustomActionSelected(any(), any()) }
+        verify(exactly = 0) { purchasesListener.onCustomActionSelected(any(), any()) }
+    }
+
+    @Test
+    fun `pathButtonPressed with CUSTOM_ACTION includes purchase identifier when available`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionPath = HelpPath(
+            id = "path_id",
+            title = "Contact Support",
+            type = HelpPath.PathType.CUSTOM_ACTION,
+            actionIdentifier = "contact_support"
+        )
+        
+        val purchaseInfo = createMockPurchaseInformation("annual_plan")
+        
+        model.pathButtonPressed(mockk(relaxed = true), customActionPath, purchaseInfo)
+        
+        verify { directListener.onCustomActionSelected("contact_support", "annual_plan") }
+        verify { purchasesListener.onCustomActionSelected("contact_support", "annual_plan") }
+    }
+
+    @Test
+    fun `pathButtonPressed with CUSTOM_ACTION passes null purchase identifier when no purchase info`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionPath = HelpPath(
+            id = "path_id",
+            title = "General Action",
+            type = HelpPath.PathType.CUSTOM_ACTION,
+            actionIdentifier = "general_action"
+        )
+        
+        model.pathButtonPressed(mockk(relaxed = true), customActionPath, null)
+        
+        verify { directListener.onCustomActionSelected("general_action", null) }
+        verify { purchasesListener.onCustomActionSelected("general_action", null) }
+    }
+
+    private fun createMockPurchaseInformation(productId: String): PurchaseInformation {
+        val mockProduct = mockk<StoreProduct>()
+        every { mockProduct.id } returns productId
+        
+        return mockk<PurchaseInformation>().apply {
+            every { product } returns mockProduct
+        }
+    }
+
 }

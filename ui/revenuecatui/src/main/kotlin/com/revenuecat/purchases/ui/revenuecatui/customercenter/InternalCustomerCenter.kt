@@ -139,6 +139,9 @@ internal fun InternalCustomerCenter(
                         viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
                 }
+                is CustomerCenterAction.CustomActionSelected -> {
+                    viewModel.onCustomActionSelected(action.customActionData)
+                }
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
             }
         },

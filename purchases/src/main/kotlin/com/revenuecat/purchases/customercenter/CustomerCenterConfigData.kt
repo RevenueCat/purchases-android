@@ -349,6 +349,7 @@ data class CustomerCenterConfigData(
         @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
         val url: String? = null,
         @SerialName("open_method") val openMethod: OpenMethod? = null,
+        @SerialName("action_identifier") val actionIdentifier: String? = null,
     ) {
         @Serializable
         sealed class PathDetail {
@@ -419,6 +420,7 @@ data class CustomerCenterConfigData(
             CHANGE_PLANS,
             CANCEL,
             CUSTOM_URL,
+            CUSTOM_ACTION,
             UNKNOWN,
         }
 
