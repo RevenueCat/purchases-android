@@ -420,10 +420,9 @@ jobs:
       - checkout
       - checkout-submodule:
           path: upstream/paywall-preview-resources
-      - attach_workspace:
-          at: .
       - install-sdkman
       - android/accept_licenses
+      - android-dependencies
       - android/restore_build_cache
       - run:
           name: Verify purchases-android target SDK compatibility (currently 33)
@@ -437,8 +436,8 @@ jobs:
       - run:
           name: Consolidate artifacts
           command: |
-              mkdir -p build/test-results-legacy/
-              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-legacy/ \;
+              mkdir -p build/test-results/
+              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - run:
           name: Kover HTML
           command: ./gradlew purchases:koverHtmlReportDefaultsRelease
@@ -450,10 +449,6 @@ jobs:
       - android/save_build_cache
       - store_artifacts:
           path: build/reports
-          destination: legacy-test-reports
-      - store_artifacts:
-          path: build/test-results-legacy
-          destination: legacy-test-results
       - run:
           name: Save test results
           command: |
