@@ -27,77 +27,77 @@ class EndpointTest {
     @Test
     fun `GetCustomerInfo has correct path`() {
         val endpoint = Endpoint.GetCustomerInfo("test user-id")
-        val expectedPath = "/subscribers/test%20user-id"
+        val expectedPath = "/v1/subscribers/test%20user-id"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `PostReceipt has correct path`() {
         val endpoint = Endpoint.PostReceipt
-        val expectedPath = "/receipts"
+        val expectedPath = "/v1/receipts"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `GetOfferings has correct path`() {
         val endpoint = Endpoint.GetOfferings("test user-id")
-        val expectedPath = "/subscribers/test%20user-id/offerings"
+        val expectedPath = "/v1/subscribers/test%20user-id/offerings"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `LogIn has correct path`() {
         val endpoint = Endpoint.LogIn
-        val expectedPath = "/subscribers/identify"
+        val expectedPath = "/v1/subscribers/identify"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `Diagnostics has correct path`() {
         val endpoint = Endpoint.PostDiagnostics
-        val expectedPath = "/diagnostics"
+        val expectedPath = "/v1/diagnostics"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `Paywall events has correct path`() {
         val endpoint = Endpoint.PostPaywallEvents
-        val expectedPath = "/events"
+        val expectedPath = "/v1/events"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `PostAttributes has correct path`() {
         val endpoint = Endpoint.PostAttributes("test user-id")
-        val expectedPath = "/subscribers/test%20user-id/attributes"
+        val expectedPath = "/v1/subscribers/test%20user-id/attributes"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `GetAmazonReceipt has correct path`() {
         val endpoint = Endpoint.GetAmazonReceipt("test user-id", "test-receipt-id")
-        val expectedPath = "/receipts/amazon/test%20user-id/test-receipt-id"
+        val expectedPath = "/v1/receipts/amazon/test%20user-id/test-receipt-id"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `GetProductEntitlementMapping has correct path`() {
         val endpoint = Endpoint.GetProductEntitlementMapping
-        val expectedPath = "/product_entitlement_mapping"
+        val expectedPath = "/v1/product_entitlement_mapping"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `PostRedeemWebPurchase has correct path`() {
         val endpoint = Endpoint.PostRedeemWebPurchase
-        val expectedPath = "/subscribers/redeem_purchase"
+        val expectedPath = "/v1/subscribers/redeem_purchase"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `GetVirtualCurrencies has correct path`() {
         val endpoint = Endpoint.GetVirtualCurrencies(userId = "test user-id")
-        val expectedPath = "/subscribers/test%20user-id/virtual_currencies"
+        val expectedPath = "/v1/subscribers/test%20user-id/virtual_currencies"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
