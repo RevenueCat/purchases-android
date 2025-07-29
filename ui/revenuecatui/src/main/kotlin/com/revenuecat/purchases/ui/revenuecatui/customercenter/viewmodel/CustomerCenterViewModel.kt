@@ -1029,7 +1029,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun onCustomActionSelected(customActionData: com.revenuecat.purchases.customercenter.CustomActionData) {
+    override fun onCustomActionSelected(customActionData: CustomActionData) {
         notifyListenersForCustomActionSelected(customActionData)
     }
 
