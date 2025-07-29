@@ -31,5 +31,4 @@ internal object PriceFactory {
 
         return Price(formatted, amountMicros, currencyCode)
     }
-
 }

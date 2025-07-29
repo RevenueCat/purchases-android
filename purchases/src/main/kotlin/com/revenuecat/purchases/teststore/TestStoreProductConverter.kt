@@ -19,7 +19,10 @@ internal object TestStoreProductConverter {
     @JvmSynthetic
     @Suppress("LongMethod")
     @Throws(PurchasesException::class)
-    fun convertToStoreProduct(productResponse: WebBillingProductResponse, locale: Locale = Locale.getDefault()): TestStoreProduct {
+    fun convertToStoreProduct(
+        productResponse: WebBillingProductResponse,
+        locale: Locale = Locale.getDefault(),
+    ): TestStoreProduct {
         val defaultPurchaseOptionId = productResponse.defaultPurchaseOptionId
         val purchaseOptions = productResponse.purchaseOptions
 
