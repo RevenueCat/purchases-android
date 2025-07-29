@@ -239,9 +239,6 @@ data class CustomerCenterConfigData(
             @SerialName("web_store")
             WEB_STORE,
 
-            @SerialName("test_store")
-            TEST_STORE,
-
             @SerialName("unknown_store")
             UNKNOWN_STORE,
 
@@ -332,7 +329,6 @@ data class CustomerCenterConfigData(
                     GOOGLE_PLAY_STORE -> "Google Play Store"
                     AMAZON_STORE -> "Amazon Store"
                     WEB_STORE -> "Web"
-                    TEST_STORE -> "Test Store"
                     UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                     RESUBSCRIBE -> "Resubscribe"

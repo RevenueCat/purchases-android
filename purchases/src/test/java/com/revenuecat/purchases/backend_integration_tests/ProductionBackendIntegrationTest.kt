@@ -44,7 +44,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         assertThat(error).isNull()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.GetProductEntitlementMapping.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.GetProductEntitlementMapping.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -91,7 +91,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.GetOfferings("test-user-id").getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.GetOfferings("test-user-id").getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -133,7 +133,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -158,7 +158,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningPerformed()
@@ -197,7 +197,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.PostPaywallEvents.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.PostPaywallEvents.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
