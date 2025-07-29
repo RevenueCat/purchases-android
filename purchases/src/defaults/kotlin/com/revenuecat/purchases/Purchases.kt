@@ -355,13 +355,7 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback,
     ) {
-        purchasesOrchestrator.startPurchase(
-            activity,
-            storeProduct.purchasingData,
-            null,
-            null,
-            callback,
-        )
+        purchase(PurchaseParams.Builder(activity, storeProduct).build(), callback)
     }
 
     /**
@@ -385,13 +379,7 @@ class Purchases internal constructor(
         packageToPurchase: Package,
         listener: PurchaseCallback,
     ) {
-        purchasesOrchestrator.startPurchase(
-            activity,
-            packageToPurchase.product.purchasingData,
-            packageToPurchase.presentedOfferingContext,
-            null,
-            listener,
-        )
+        purchase(PurchaseParams.Builder(activity, packageToPurchase).build(), listener)
     }
 
     /**
