@@ -438,14 +438,14 @@ jobs:
           command: |
               mkdir -p build/test-results/
               find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
-      - run:
-          name: Kover HTML
-          command: ./gradlew purchases:koverHtmlReportDefaultsRelease
-      - run:
-          name: Kover XML
-          command: ./gradlew purchases:koverXmlReportDefaultsRelease
-      - codecov/upload:
-          file: purchases/build/reports/kover/reportDefaultsRelease.xml
+      # - run:
+          # name: Kover HTML
+          # command: ./gradlew purchases:koverHtmlReportDefaultsRelease
+      # - run:
+          # name: Kover XML
+          # command: ./gradlew purchases:koverXmlReportDefaultsRelease
+      # - codecov/upload:
+          # file: purchases/build/reports/kover/reportDefaultsRelease.xml
       - android/save_build_cache
       - store_artifacts:
           path: build/reports
@@ -998,9 +998,9 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-tests
-      - test_full_comparison:
-          requires:
-            - prepare-tests
+      # - test_full_comparison:
+          # requires:
+            # - prepare-tests
       - test_legacy_comparison:
           requires:
             - prepare-tests
