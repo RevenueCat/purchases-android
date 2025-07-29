@@ -438,6 +438,30 @@ jobs:
       - store_test_results:
           path: build/test-results
 
+  test_dokka_hide_internal:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run dokka-hide-internal Tests
+          command: ./gradlew :dokka-hide-internal:test --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results-dokka
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-dokka/ \;
+      - store_test_results:
+          path: build/test-results-dokka
+      - store_artifacts:
+          path: build/test-results-dokka
+          destination: dokka-hide-internal-test-results
+      - store_artifacts:
+          path: build/reports
+          destination: dokka-hide-internal-test-reports
+
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -982,6 +1006,9 @@ workflows:
           # requires:
             # - prepare-tests
       - test_legacy_comparison:
+          requires:
+            - prepare-tests
+      - test_dokka_hide_internal:
           requires:
             - prepare-tests
 
