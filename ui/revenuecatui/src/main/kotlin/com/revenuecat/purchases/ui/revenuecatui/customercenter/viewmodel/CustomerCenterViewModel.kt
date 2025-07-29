@@ -24,6 +24,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
+import com.revenuecat.purchases.customercenter.CustomActionData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
@@ -96,7 +97,7 @@ internal interface CustomerCenterViewModel {
 
     fun clearActionError()
 
-fun onCustomActionSelected(customActionData: CustomActionData)
+    fun onCustomActionSelected(customActionData: CustomActionData)
 
     // trigger state refresh
     fun refreshStateIfLocaleChanged()
@@ -163,7 +164,7 @@ internal class CustomerCenterViewModelImpl(
         path: HelpPath,
         purchaseInformation: PurchaseInformation?,
     ) {
-        notifyListenersForManagementOptionSelected(path)
+        notifyListenersForManagementOptionSelected(path, purchaseInformation)
         path.feedbackSurvey?.let { feedbackSurvey ->
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 option?.let {
@@ -246,6 +247,10 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    override fun onCustomActionSelected(customActionData: CustomActionData) {
+        notifyListenersForCustomActionSelected(customActionData)
+    }
+
     private fun handleCancelPath(context: Context, purchaseInformation: PurchaseInformation? = null) {
         val currentState = _state.value as? CustomerCenterState.Success ?: return
         val purchaseInfo = purchaseInformation ?: when (val destination = currentState.currentDestination) {
@@ -311,7 +316,7 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
 
-            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION -> {
+            HelpPath.PathType.CUSTOM_ACTION -> {
                 path.actionIdentifier?.let { actionIdentifier ->
                     val customActionData = CustomActionData(
                         actionIdentifier = actionIdentifier,
@@ -1000,7 +1005,7 @@ internal class CustomerCenterViewModelImpl(
         purchases.customerCenterListener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
     }
 
-    private fun notifyListenersForManagementOptionSelected(path: HelpPath) {
+    private fun notifyListenersForManagementOptionSelected(path: HelpPath, purchaseInformation: PurchaseInformation?) {
         val action = when (path.type) {
             HelpPath.PathType.MISSING_PURCHASE ->
                 CustomerCenterManagementOption.MissingPurchase
@@ -1013,11 +1018,11 @@ internal class CustomerCenterViewModelImpl(
                     CustomerCenterManagementOption.CustomUrl(it.toUri())
                 }
 
-            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION ->
+            HelpPath.PathType.CUSTOM_ACTION ->
                 path.actionIdentifier?.let { actionIdentifier ->
                     CustomerCenterManagementOption.CustomAction(
                         actionIdentifier = actionIdentifier,
-                        purchaseIdentifier = null, // This will be set appropriately when called from the UI
+                        purchaseIdentifier = purchaseInformation?.product?.id,
                     )
                 }
 
@@ -1027,10 +1032,6 @@ internal class CustomerCenterViewModelImpl(
             listener?.onManagementOptionSelected(action)
             purchases.customerCenterListener?.onManagementOptionSelected(action)
         }
-    }
-
-    override fun onCustomActionSelected(customActionData: CustomActionData) {
-        notifyListenersForCustomActionSelected(customActionData)
     }
 
     private fun notifyListenersForCustomActionSelected(
