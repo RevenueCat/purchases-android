@@ -1154,7 +1154,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun startPurchase(
+    private fun startPurchase(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1206,7 +1206,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun startProductChange(
+    private fun startProductChange(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1274,62 +1274,6 @@ internal class PurchasesOrchestrator(
                 errorLog(it)
             }
             getAndClearAllPurchaseCallbacks().forEach { it.dispatch(operationInProgressError) }
-        }
-    }
-
-    fun startDeprecatedProductChange(
-        activity: Activity,
-        purchasingData: PurchasingData,
-        presentedOfferingContext: PresentedOfferingContext?,
-        oldProductId: String,
-        googleReplacementMode: GoogleReplacementMode?,
-        listener: ProductChangeCallback,
-    ) {
-        if (purchasingData.productType != ProductType.SUBS) {
-            getAndClearProductChangeCallback()
-            listener.dispatch(
-                PurchasesError(
-                    PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE,
-                ).also { errorLog(it) },
-            )
-            return
-        }
-
-        log(LogIntent.PURCHASE) {
-            PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $purchasingData ${
-                    presentedOfferingContext?.offeringIdentifier?.let {
-                        PurchaseStrings.OFFERING + "$it"
-                    }
-                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
-
-            )
-        }
-        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
-        synchronized(this@PurchasesOrchestrator) {
-            if (!appConfig.finishTransactions) {
-                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
-            }
-            if (state.deprecatedProductChangeCallback == null) {
-                state = state.copy(deprecatedProductChangeCallback = listener)
-                userPurchasing = identityManager.currentAppUserID
-            }
-        }
-        userPurchasing?.let { appUserID ->
-            replaceOldPurchaseWithNewProduct(
-                purchasingData,
-                oldProductId,
-                googleReplacementMode,
-                activity,
-                appUserID,
-                presentedOfferingContext,
-                null,
-                listener,
-            )
-        } ?: run {
-            getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
         }
     }
 
