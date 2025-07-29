@@ -4,37 +4,37 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class RCBillingProductsResponse(
-    @SerialName("product_details") val productDetails: List<RCBillingProductResponse>,
+internal data class WebBillingProductsResponse(
+    @SerialName("product_details") val productDetails: List<WebBillingProductResponse>,
 )
 
 @Serializable
-internal data class RCBillingProductResponse(
+internal data class WebBillingProductResponse(
     val identifier: String,
     @SerialName("product_type") val productType: String,
     val title: String,
     val description: String? = null,
     @SerialName("default_purchase_option_id") val defaultPurchaseOptionId: String? = null,
-    @SerialName("purchase_options") val purchaseOptions: Map<String, RCBillingPurchaseOption>,
+    @SerialName("purchase_options") val purchaseOptions: Map<String, WebBillingPurchaseOption>,
 )
 
 @Serializable
-internal data class RCBillingPurchaseOption(
-    @SerialName("base_price") val basePrice: RCBillingPrice? = null,
-    val base: RCBillingPhase? = null,
-    val trial: RCBillingPhase? = null,
-    @SerialName("intro_price") val introPrice: RCBillingPhase? = null,
+internal data class WebBillingPurchaseOption(
+    @SerialName("base_price") val basePrice: WebBillingPrice? = null,
+    val base: WebBillingPhase? = null,
+    val trial: WebBillingPhase? = null,
+    @SerialName("intro_price") val introPrice: WebBillingPhase? = null,
 )
 
 @Serializable
-internal data class RCBillingPhase(
-    val price: RCBillingPrice? = null,
+internal data class WebBillingPhase(
+    val price: WebBillingPrice? = null,
     @SerialName("period_duration") val periodDuration: String? = null,
     @SerialName("cycle_count") val cycleCount: Int? = null,
 )
 
 @Serializable
-internal data class RCBillingPrice(
+internal data class WebBillingPrice(
     @SerialName("amount_micros") val amountMicros: Long,
     val currency: String,
 )

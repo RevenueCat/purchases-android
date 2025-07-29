@@ -24,11 +24,11 @@ import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
-import com.revenuecat.purchases.common.networking.RCBillingPhase
-import com.revenuecat.purchases.common.networking.RCBillingPrice
-import com.revenuecat.purchases.common.networking.RCBillingProductResponse
-import com.revenuecat.purchases.common.networking.RCBillingProductsResponse
-import com.revenuecat.purchases.common.networking.RCBillingPurchaseOption
+import com.revenuecat.purchases.common.networking.WebBillingPhase
+import com.revenuecat.purchases.common.networking.WebBillingPrice
+import com.revenuecat.purchases.common.networking.WebBillingProductResponse
+import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
+import com.revenuecat.purchases.common.networking.WebBillingPurchaseOption
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
@@ -96,7 +96,7 @@ class BackendTest {
         receivedCustomerInfoCreated = null
         receivedIsServerError = null
         receivedVirtualCurrencies = null
-        receivedRCBillingProductsResponse = null
+        receivedWebBillingProductsResponse = null
     }
 
     @After
@@ -165,7 +165,7 @@ class BackendTest {
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedCustomerInfoCreated: Boolean? = null
     private var receivedVirtualCurrencies: VirtualCurrencies? = null
-    private var receivedRCBillingProductsResponse: RCBillingProductsResponse? = null
+    private var receivedWebBillingProductsResponse: WebBillingProductsResponse? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
@@ -221,11 +221,11 @@ class BackendTest {
         this@BackendTest.receivedError = error
     }
 
-    private val onReceiveRCBillingProductsSuccessHandler: (RCBillingProductsResponse) -> Unit = { response ->
-        this@BackendTest.receivedRCBillingProductsResponse = response
+    private val onReceiveWebBillingProductsSuccessHandler: (WebBillingProductsResponse) -> Unit = { response ->
+        this@BackendTest.receivedWebBillingProductsResponse = response
     }
 
-    private val onReceiveRCBillingProductsErrorHandler: (PurchasesError) -> Unit = { error ->
+    private val onReceiveWebBillingProductsErrorHandler: (PurchasesError) -> Unit = { error ->
         this@BackendTest.receivedError = error
     }
 
@@ -2704,20 +2704,20 @@ class BackendTest {
     }
     // endregion Virtual currencies
 
-    // region RCBilling products
+    // region WebBilling products
 
     @Test
-    fun getRCBillingProductsCallsProperURL() {
+    fun getWebBillingProductsCallsProperURL() {
         val productIDs = setOf("product1", "product2")
-        val response = getRCBillingProductsResponse(200, productIDs, null, null)
+        val response = getWebBillingProductsResponse(200, productIDs, null, null)
 
-        assertThat(receivedRCBillingProductsResponse).isNotNull
-        assertThat(receivedRCBillingProductsResponse).isEqualTo(response)
+        assertThat(receivedWebBillingProductsResponse).isNotNull
+        assertThat(receivedWebBillingProductsResponse).isEqualTo(response)
 
         verify(exactly = 1) {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
-                endpoint = Endpoint.RCBillingGetProducts(appUserID, productIDs),
+                endpoint = Endpoint.WebBillingGetProducts(appUserID, productIDs),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders
@@ -2726,31 +2726,31 @@ class BackendTest {
     }
 
     @Test
-    fun `getRCBillingProducts calls success handler for successful request`() {
+    fun `getWebBillingProducts calls success handler for successful request`() {
         val productIDs = setOf("product1", "product2")
-        mockGetRCBillingProductsResponse(
-            Endpoint.RCBillingGetProducts(appUserID, productIDs),
+        mockGetWebBillingProductsResponse(
+            Endpoint.WebBillingGetProducts(appUserID, productIDs),
             200,
             null,
-            Responses.validRCBillingProductsResponse,
+            Responses.validWebBillingProductsResponse,
             true,
         )
         var successCalled = false
-        backend.getRCBillingProducts(appUserID, productIDs,
+        backend.getWebBillingProducts(appUserID, productIDs,
             {
                 successCalled = true
-                val expectedRCBillingProductsResponse = RCBillingProductsResponse(
+                val expectedWebBillingProductsResponse = WebBillingProductsResponse(
                     productDetails = listOf(
-                        RCBillingProductResponse(
+                        WebBillingProductResponse(
                             identifier = "product1",
                             productType = "subscription",
                             title = "Test Monthly Subscription",
                             description = "A test monthly subscription product",
                             defaultPurchaseOptionId = "base_option",
                             purchaseOptions = mapOf(
-                                "base_option" to RCBillingPurchaseOption(
-                                    base = RCBillingPhase(
-                                        price = RCBillingPrice(
+                                "base_option" to WebBillingPurchaseOption(
+                                    base = WebBillingPhase(
+                                        price = WebBillingPrice(
                                             amountMicros = 9990000,
                                             currency = "EUR",
                                         ),
@@ -2760,16 +2760,16 @@ class BackendTest {
                                 )
                             ),
                         ),
-                        RCBillingProductResponse(
+                        WebBillingProductResponse(
                             identifier = "product2",
                             productType = "subscription",
                             title = "Test Monthly Subscription",
                             description = "A test monthly subscription product",
                             defaultPurchaseOptionId = "base_option",
                             purchaseOptions = mapOf(
-                                "base_option" to RCBillingPurchaseOption(
-                                    base = RCBillingPhase(
-                                        price = RCBillingPrice(
+                                "base_option" to WebBillingPurchaseOption(
+                                    base = WebBillingPhase(
+                                        price = WebBillingPrice(
                                             amountMicros = 9990000,
                                             currency = "EUR",
                                         ),
@@ -2781,7 +2781,7 @@ class BackendTest {
                         ),
                     ),
                 )
-                assertThat(it).isEqualTo(expectedRCBillingProductsResponse)
+                assertThat(it).isEqualTo(expectedWebBillingProductsResponse)
             },
             { error -> fail("expected success $error", error) }
         )
@@ -2789,36 +2789,36 @@ class BackendTest {
     }
 
     @Test
-    fun getRCBillingProductsFailsIf40X() {
+    fun getWebBillingProductsFailsIf40X() {
         val failureCode = 400
 
-        getRCBillingProductsResponse(failureCode, emptySet(), null, null)
+        getWebBillingProductsResponse(failureCode, emptySet(), null, null)
 
         assertThat(receivedVirtualCurrencies).isNull()
         assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
-    fun getRCBillingProductsFailsIf50X() {
+    fun getWebBillingProductsFailsIf50X() {
         val failureCode = 500
 
-        getRCBillingProductsResponse(failureCode, emptySet(), null, null)
+        getWebBillingProductsResponse(failureCode, emptySet(), null, null)
 
         assertThat(receivedVirtualCurrencies).isNull()
         assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
-    fun `getRCBillingProducts calls error handler when a Network error occurs`() {
+    fun `getWebBillingProducts calls error handler when a Network error occurs`() {
         val productIDs = setOf("product1", "product2")
-        mockGetRCBillingProductsResponse(
-            Endpoint.RCBillingGetProducts(appUserID, productIDs),
+        mockGetWebBillingProductsResponse(
+            Endpoint.WebBillingGetProducts(appUserID, productIDs),
             200,
             IOException(),
             null
         )
         var errorCalled = false
-        backend.getRCBillingProducts(
+        backend.getWebBillingProducts(
             appUserID,
             productIDs,
             { fail("expected error handler to be called") },
@@ -2831,35 +2831,35 @@ class BackendTest {
     }
 
     @Test
-    fun `given multiple getRCBillingProduct calls for same subscriber same body, only one is triggered`() {
+    fun `given multiple getWebBillingProduct calls for same subscriber same body, only one is triggered`() {
         val productIDs = setOf("product1", "product2")
-        mockGetRCBillingProductsResponse(
-            Endpoint.RCBillingGetProducts(appUserID, productIDs),
+        mockGetWebBillingProductsResponse(
+            Endpoint.WebBillingGetProducts(appUserID, productIDs),
             200,
             null,
             null,
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getRCBillingProducts(appUserID, productIDs, onSuccess = {
+        asyncBackend.getWebBillingProducts(appUserID, productIDs, onSuccess = {
             lock.countDown()
-        }, onError = onReceiveRCBillingProductsErrorHandler)
-        asyncBackend.getRCBillingProducts(appUserID, productIDs, onSuccess = {
+        }, onError = onReceiveWebBillingProductsErrorHandler)
+        asyncBackend.getWebBillingProducts(appUserID, productIDs, onSuccess = {
             lock.countDown()
-        }, onError = onReceiveRCBillingProductsErrorHandler)
+        }, onError = onReceiveWebBillingProductsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
-                Endpoint.RCBillingGetProducts(appUserID, productIDs),
+                Endpoint.WebBillingGetProducts(appUserID, productIDs),
                 body = null,
                 postFieldsToSign = null,
                 any()
             )
         }
     }
-    // endregion RCBilling Products
+    // endregion WebBilling Products
 
     // region helpers
 
@@ -3031,24 +3031,24 @@ class BackendTest {
         return virtualCurrencies
     }
 
-    private fun getRCBillingProductsResponse(
+    private fun getWebBillingProductsResponse(
         responseCode: Int,
         productIDs: Set<String> = emptySet(),
         clientException: Exception?,
         resultBody: String?,
-    ): RCBillingProductsResponse {
-        val virtualCurrencies = mockGetRCBillingProductsResponse(
-            Endpoint.RCBillingGetProducts(appUserID, productIDs),
+    ): WebBillingProductsResponse {
+        val virtualCurrencies = mockGetWebBillingProductsResponse(
+            Endpoint.WebBillingGetProducts(appUserID, productIDs),
             responseCode,
             clientException,
             resultBody
         )
 
-        backend.getRCBillingProducts(
+        backend.getWebBillingProducts(
             appUserID,
             productIDs,
-            onReceiveRCBillingProductsSuccessHandler,
-            onReceiveRCBillingProductsErrorHandler,
+            onReceiveWebBillingProductsSuccessHandler,
+            onReceiveWebBillingProductsErrorHandler,
         )
 
         return virtualCurrencies
@@ -3100,15 +3100,15 @@ class BackendTest {
         return virtualCurrencies
     }
 
-    private fun mockGetRCBillingProductsResponse(
+    private fun mockGetWebBillingProductsResponse(
         endpoint: Endpoint,
         responseCode: Int,
         clientException: Exception?,
         resultBody: String?,
         delayed: Boolean = false,
         baseURL: URL = mockBaseURL
-    ): RCBillingProductsResponse {
-        val response = RCBillingProductsResponse(productDetails = emptyList())
+    ): WebBillingProductsResponse {
+        val response = WebBillingProductsResponse(productDetails = emptyList())
 
         val result = HTTPResult.createResult(responseCode, resultBody ?: "{\"product_details\":[]}")
 
