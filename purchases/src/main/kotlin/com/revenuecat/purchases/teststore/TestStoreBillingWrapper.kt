@@ -76,7 +76,7 @@ internal class TestStoreBillingWrapper(
     ) {
         debugLog { "TestStoreBillingAbstract: queryProductDetailsAsync for products: $productIds" }
 
-        backend.getRCBillingProducts(
+        backend.getWebBillingProducts(
             appUserID = deviceCache.getCachedAppUserID() ?: "",
             productIds = productIds,
             onSuccess = { response ->

@@ -5,7 +5,7 @@ package com.revenuecat.purchases.teststore
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.common.networking.RCBillingProductResponse
+import com.revenuecat.purchases.common.networking.WebBillingProductResponse
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -18,7 +18,7 @@ internal object TestStoreProductConverter {
     @JvmSynthetic
     @Suppress("LongMethod")
     @Throws(PurchasesException::class)
-    fun convertToStoreProduct(productResponse: RCBillingProductResponse): StoreProduct {
+    fun convertToStoreProduct(productResponse: WebBillingProductResponse): StoreProduct {
         val defaultPurchaseOptionId = productResponse.defaultPurchaseOptionId
         val purchaseOptions = productResponse.purchaseOptions
 
