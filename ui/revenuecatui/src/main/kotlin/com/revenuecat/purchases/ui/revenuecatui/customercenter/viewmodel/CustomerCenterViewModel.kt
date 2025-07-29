@@ -96,7 +96,7 @@ internal interface CustomerCenterViewModel {
 
     fun clearActionError()
 
-    fun onCustomActionSelected(customActionData: com.revenuecat.purchases.customercenter.CustomActionData)
+fun onCustomActionSelected(customActionData: CustomActionData)
 
     // trigger state refresh
     fun refreshStateIfLocaleChanged()
