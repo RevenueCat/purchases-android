@@ -11,11 +11,11 @@ import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.networking.RCBillingPhase
-import com.revenuecat.purchases.common.networking.RCBillingPrice
-import com.revenuecat.purchases.common.networking.RCBillingProductResponse
-import com.revenuecat.purchases.common.networking.RCBillingProductsResponse
-import com.revenuecat.purchases.common.networking.RCBillingPurchaseOption
+import com.revenuecat.purchases.common.networking.WebBillingPhase
+import com.revenuecat.purchases.common.networking.WebBillingPrice
+import com.revenuecat.purchases.common.networking.WebBillingProductResponse
+import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
+import com.revenuecat.purchases.common.networking.WebBillingPurchaseOption
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.AlertDialogHelper
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -164,18 +164,18 @@ class TestStoreBillingWrapperTest {
         val productResponse = createMockProductResponse(productId)
         val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
-        val billingResponse = RCBillingProductsResponse(listOf(productResponse))
+        val billingResponse = WebBillingProductsResponse(listOf(productResponse))
         
         every { deviceCache.getCachedAppUserID() } returns "test_user"
-        every { backend.getRCBillingProducts(any(), any(), any(), any()) } answers {
-            val onSuccess = thirdArg<(RCBillingProductsResponse) -> Unit>()
+        every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
+            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
         
         // Mock dialog helper to simulate cancellation
         every { 
             purchaseDialogHelper.showDialog(
-                any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
             ) 
         } answers {
             val onNegativeClicked = lastArg<() -> Unit>()
@@ -211,21 +211,21 @@ class TestStoreBillingWrapperTest {
         val productResponse = createMockProductResponse(productId)
         val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
-        val billingResponse = RCBillingProductsResponse(listOf(productResponse))
+        val billingResponse = WebBillingProductsResponse(listOf(productResponse))
         
         every { deviceCache.getCachedAppUserID() } returns "test_user"
-        every { backend.getRCBillingProducts(any(), any(), any(), any()) } answers {
-            val onSuccess = thirdArg<(RCBillingProductsResponse) -> Unit>()
+        every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
+            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
         
         // Mock dialog helper to simulate successful purchase
         every { 
             purchaseDialogHelper.showDialog(
-                any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
             ) 
         } answers {
-            val onPositiveClicked = arg<() -> Unit>(5)
+            val onPositiveClicked = arg<() -> Unit>(6)
             onPositiveClicked()
         }
         
@@ -251,18 +251,18 @@ class TestStoreBillingWrapperTest {
         assertThat(listenerImpl.lastError).isNull()
     }
 
-    private fun createMockProductResponse(productId: String): RCBillingProductResponse {
-        return RCBillingProductResponse(
+    private fun createMockProductResponse(productId: String): WebBillingProductResponse {
+        return WebBillingProductResponse(
             identifier = productId,
             productType = "subs",
             title = "Test Product",
             description = "Test product description",
             defaultPurchaseOptionId = "option1",
             purchaseOptions = mapOf(
-                "option1" to RCBillingPurchaseOption(
+                "option1" to WebBillingPurchaseOption(
                     basePrice = null,
-                    base = RCBillingPhase(
-                        price = RCBillingPrice(
+                    base = WebBillingPhase(
+                        price = WebBillingPrice(
                             amountMicros = 999000,
                             currency = "USD"
                         ),
@@ -285,19 +285,19 @@ class TestStoreBillingWrapperTest {
         val productResponse = createMockProductResponse(productId)
         val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
-        val billingResponse = RCBillingProductsResponse(listOf(productResponse))
+        val billingResponse = WebBillingProductsResponse(listOf(productResponse))
         
         every { deviceCache.getCachedAppUserID() } returns "test_user"
-        every { backend.getRCBillingProducts(any(), any(), any(), any()) } answers {
-            val onSuccess = thirdArg<(RCBillingProductsResponse) -> Unit>()
+        every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
+            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
         
         // Mock dialog helper to simulate successful purchase
         every { 
-            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any()) 
+            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            val onPositiveClicked = arg<() -> Unit>(5)
+            val onPositiveClicked = arg<() -> Unit>(6)
             onPositiveClicked()
         }
         
@@ -334,19 +334,19 @@ class TestStoreBillingWrapperTest {
         val productResponse = createMockProductResponse(productId)
         val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
-        val billingResponse = RCBillingProductsResponse(listOf(productResponse))
+        val billingResponse = WebBillingProductsResponse(listOf(productResponse))
         
         every { deviceCache.getCachedAppUserID() } returns "test_user"
-        every { backend.getRCBillingProducts(any(), any(), any(), any()) } answers {
-            val onSuccess = thirdArg<(RCBillingProductsResponse) -> Unit>()
+        every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
+            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
         
         // Mock dialog helper to simulate successful purchase
         every { 
-            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any()) 
+            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            val onPositiveClicked = arg<() -> Unit>(5)
+            val onPositiveClicked = arg<() -> Unit>(6)
             onPositiveClicked()
         }
         
@@ -385,19 +385,19 @@ class TestStoreBillingWrapperTest {
         val productResponse = createMockProductResponse(productId)
         val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
-        val billingResponse = RCBillingProductsResponse(listOf(productResponse))
+        val billingResponse = WebBillingProductsResponse(listOf(productResponse))
         
         every { deviceCache.getCachedAppUserID() } returns "test_user"
-        every { backend.getRCBillingProducts(any(), any(), any(), any()) } answers {
-            val onSuccess = thirdArg<(RCBillingProductsResponse) -> Unit>()
+        every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
+            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
         
         // Mock dialog helper to simulate successful purchase
         every { 
-            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any()) 
+            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            val onPositiveClicked = arg<() -> Unit>(5)
+            val onPositiveClicked = arg<() -> Unit>(6)
             onPositiveClicked()
         }
         
@@ -469,21 +469,21 @@ class TestStoreBillingWrapperTest {
         every { deviceCache.getCachedAppUserID() } returns "test_user"
         
         // Mock backend responses for each product
-        every { backend.getRCBillingProducts(any(), setOf(productId1), any(), any()) } answers {
-            val onSuccess = thirdArg<(RCBillingProductsResponse) -> Unit>()
-            onSuccess(RCBillingProductsResponse(listOf(productResponse1)))
+        every { backend.getWebBillingProducts(any(), setOf(productId1), any(), any()) } answers {
+            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
+            onSuccess(WebBillingProductsResponse(listOf(productResponse1)))
         }
         
-        every { backend.getRCBillingProducts(any(), setOf(productId2), any(), any()) } answers {
-            val onSuccess = thirdArg<(RCBillingProductsResponse) -> Unit>()
-            onSuccess(RCBillingProductsResponse(listOf(productResponse2)))
+        every { backend.getWebBillingProducts(any(), setOf(productId2), any(), any()) } answers {
+            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
+            onSuccess(WebBillingProductsResponse(listOf(productResponse2)))
         }
         
         // Mock dialog helper to always accept
         every { 
-            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any()) 
+            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            val onPositiveClicked = arg<() -> Unit>(5)
+            val onPositiveClicked = arg<() -> Unit>(6)
             onPositiveClicked()
         }
         
