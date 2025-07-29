@@ -222,7 +222,6 @@ internal class TestStoreBillingWrapper(
         product: StoreProduct,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
-        // TODO: Implement actual purchase logic by sending purchase details to server.
         val purchaseToken = UUID.randomUUID().toString()
         val purchaseTime = Date().time
 
