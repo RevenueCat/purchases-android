@@ -109,6 +109,13 @@ class EndpointTest {
     }
 
     @Test
+    fun `RCBillingGetProducts has correct path`() {
+        val endpoint = Endpoint.RCBillingGetProducts(userId = "test user-id", linkedSetOf("product1", "product2"))
+        val expectedPath = "/rcbilling/v1/subscribers/test%20user-id/products?id=product1&id=product2"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
     fun `supportsSignatureVerification returns true for expected values`() {
         val expectedSupportsValidationEndpoints = listOf(
             Endpoint.GetCustomerInfo("test-user-id"),
@@ -133,6 +140,7 @@ class EndpointTest {
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
             Endpoint.PostPaywallEvents,
+            Endpoint.RCBillingGetProducts("test-user-id", setOf("product1", "product2")),
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -177,6 +185,7 @@ class EndpointTest {
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
             Endpoint.PostPaywallEvents,
+            Endpoint.RCBillingGetProducts("test-user-id", setOf("product1", "product2")),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
