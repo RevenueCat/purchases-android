@@ -30,7 +30,7 @@ internal data class WebBillingPurchaseOption(
 internal data class WebBillingPhase(
     val price: WebBillingPrice? = null,
     @SerialName("period_duration") val periodDuration: String? = null,
-    @SerialName("cycle_count") val cycleCount: Int? = null,
+    @SerialName("cycle_count") val cycleCount: Int = 1,
 )
 
 @Serializable
