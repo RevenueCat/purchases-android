@@ -193,12 +193,21 @@ internal class TestStoreBillingWrapper(
             activity = activity,
             title = "Test Store Purchase",
             message = message,
-            positiveButtonText = "Purchase",
-            negativeButtonText = "Cancel",
+            positiveButtonText = "Test valid Purchase",
+            negativeButtonText = "Test failed Purchase",
+            neutralButtonText = "Cancel",
             onPositiveButtonClicked = {
                 completePurchase(product, presentedOfferingContext)
             },
             onNegativeButtonClicked = {
+                purchasesUpdatedListener?.onPurchasesFailedToUpdate(
+                    PurchasesError(
+                        PurchasesErrorCode.ProductNotAvailableForPurchaseError,
+                        "Simulated test purchase failure: no real transaction occurred",
+                    ),
+                )
+            },
+            onNeutralButtonClicked = {
                 purchasesUpdatedListener?.onPurchasesFailedToUpdate(
                     PurchasesError(
                         PurchasesErrorCode.PurchaseCancelledError,

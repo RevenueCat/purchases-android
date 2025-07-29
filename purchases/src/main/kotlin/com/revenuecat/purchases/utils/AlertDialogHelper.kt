@@ -11,8 +11,10 @@ internal interface AlertDialogHelper {
         message: String,
         positiveButtonText: String,
         negativeButtonText: String,
+        neutralButtonText: String,
         onPositiveButtonClicked: () -> Unit,
         onNegativeButtonClicked: () -> Unit,
+        onNeutralButtonClicked: () -> Unit,
     )
 }
 
@@ -24,8 +26,10 @@ internal class DefaultAlertDialogHelper : AlertDialogHelper {
         message: String,
         positiveButtonText: String,
         negativeButtonText: String,
+        neutralButtonText: String,
         onPositiveButtonClicked: () -> Unit,
         onNegativeButtonClicked: () -> Unit,
+        onNeutralButtonClicked: () -> Unit,
     ) {
         AlertDialog.Builder(activity)
             .setTitle(title)
@@ -37,6 +41,10 @@ internal class DefaultAlertDialogHelper : AlertDialogHelper {
             .setNegativeButton(negativeButtonText) { dialog, _ ->
                 dialog.dismiss()
                 onNegativeButtonClicked()
+            }
+            .setNeutralButton(neutralButtonText) { dialog, _ ->
+                dialog.dismiss()
+                onNeutralButtonClicked()
             }
             .show()
     }
