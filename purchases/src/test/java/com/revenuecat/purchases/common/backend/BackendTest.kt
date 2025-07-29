@@ -3037,7 +3037,7 @@ class BackendTest {
         clientException: Exception?,
         resultBody: String?,
     ): WebBillingProductsResponse {
-        val virtualCurrencies = mockGetWebBillingProductsResponse(
+        val productsResponse = mockGetWebBillingProductsResponse(
             Endpoint.WebBillingGetProducts(appUserID, productIDs),
             responseCode,
             clientException,
@@ -3051,7 +3051,7 @@ class BackendTest {
             onReceiveWebBillingProductsErrorHandler,
         )
 
-        return virtualCurrencies
+        return productsResponse
     }
 
     private fun mockGetVirtualCurrenciesResponse(
