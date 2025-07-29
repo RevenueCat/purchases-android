@@ -257,12 +257,12 @@ jobs:
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-defaults-debug
+            find . -path ./build/test-results-defaults-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-debug/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-defaults-debug
       - store_artifacts:
-          path: build/test-results
+          path: build/test-results-defaults-debug
           destination: defaults-debug-test-results
       - store_artifacts:
           path: build/reports
@@ -290,12 +290,12 @@ jobs:
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-defaults-release
+            find . -path ./build/test-results-defaults-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-release/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-defaults-release
       - store_artifacts:
-          path: build/test-results
+          path: build/test-results-defaults-release
           destination: defaults-release-test-results
       - store_artifacts:
           path: build/reports
@@ -315,12 +315,12 @@ jobs:
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-cec-debug
+            find . -path ./build/test-results-cec-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-debug/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-cec-debug
       - store_artifacts:
-          path: build/test-results
+          path: build/test-results-cec-debug
           destination: cec-debug-test-results
       - store_artifacts:
           path: build/reports
@@ -340,12 +340,12 @@ jobs:
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-cec-release
+            find . -path ./build/test-results-cec-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-release/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-cec-release
       - store_artifacts:
-          path: build/test-results
+          path: build/test-results-cec-release
           destination: cec-release-test-results
       - store_artifacts:
           path: build/reports
@@ -366,7 +366,7 @@ jobs:
           name: Collect JUnit XMLs
           command: |
             mkdir -p build/test-results-other
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-other/ \;
+            find . -type f -regex ".*/build/test-results/.*xml" -not -path "./build/test-results-other/*" -exec cp --parents {} build/test-results-other/ \;
       - store_test_results:
           path: build/test-results-other
       - store_artifacts:
@@ -375,43 +375,6 @@ jobs:
       - store_artifacts:
           path: build/reports
           destination: other-modules-test-reports
-
-  test_full_comparison:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run Full Test Suite
-          command: ./gradlew lint test --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results-full
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-full/ \;
-      - run:
-          name: Kover HTML
-          command: ./gradlew purchases:koverHtmlReportDefaultsRelease
-      - run:
-          name: Kover XML
-          command: ./gradlew purchases:koverXmlReportDefaultsRelease
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} build/test-results \;
-          when: always
-      - store_test_results:
-          path: build/test-results-full
-      - store_artifacts:
-          path: build/test-results-full
-          destination: full-test-results
-      - store_artifacts:
-          path: build/reports
-          destination: full-test-reports
 
   test_legacy_comparison:
     <<: *android-executor
@@ -431,7 +394,7 @@ jobs:
           name: Consolidate artifacts
           command: |
               mkdir -p build/test-results/
-              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+              find . -type f -regex ".*/build/test-results/.*xml" -not -path "./build/test-results/*" -exec cp --parents {} build/test-results/ \;
       - android/save_build_cache
       - store_artifacts:
           path: build/reports
@@ -997,9 +960,18 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-tests
-      # - test_full_comparison:
-          # requires:
-            # - prepare-tests
+      - test_defaults_debug:
+          requires:
+            - prepare-tests
+      - test_defaults_release:
+          requires:
+            - prepare-tests
+      - test_cec_debug:
+          requires:
+            - prepare-tests
+      - test_cec_release:
+          requires:
+            - prepare-tests
       - test_legacy_comparison:
           requires:
             - prepare-tests
