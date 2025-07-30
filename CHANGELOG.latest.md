@@ -1,32 +1,22 @@
 ## RevenueCat SDK
-This release updates the SDK to use Google Play Billing Library 8. This version of the Billing Library removed APIs to query for expired subscriptions and consumed one-time products, aside from other improvements. You can check the full list of changes here: https://developer.android.com/google/play/billing/release-notes#8-0-0
+### 🐞 Bugfixes
+* Resubscribe if cancelled (#2487) via Cesar de la Vega (@vegaro)
+### Virtual Currency
+#### 🐞 Bugfixes
+* Update VC Caching Log Message (#2552) via Will Taylor (@fire-at-will)
 
-Additionally, we've also updated Kotlin to 2.0.21 and our new minimum version is Kotlin 1.8.0+. If you were using an older version of Kotlin, you will need to update it.
-
-Regarding API changes, we've also removed data classes from our public APIs. This means that for classes that were previously data classes, the `copy` function and `componentN` functions (destructuring declarations) have been removed. `equals` and `hashCode` functions still work as before.
-
-### Play Billing Library 8: No expired subscriptions or consumed one-time products
-
-**Note:** the following is only relevant if you recently integrated RevenueCat, and do not (yet) have all your transactions imported. 
-  
-Play Billing Library 8 removed functionality to query expired subscriptions or consumed one-time products. This means that, for users migrating from a non-RevenueCat implementation of the Play Billing Library, the SDK will not be able to send purchase information from these purchases. We can still ingest historical data from these purchases through a backend historical import. See [docs](https://www.revenuecat.com/docs/migrating-to-revenuecat/migrating-existing-subscriptions). This doesn't affect developers that have all transactions in RevenueCat, which is true for the vast majority.
-
-### Bumped minimum Kotlin version
-
-RevenueCat SDK v9 bumps Kotlin to 2.0.21, with a minimum Kotlin version of 1.8.0.
-
-### Using the SDK with your own IAP code (previously Observer Mode)
-
-Using the SDK with your own IAP code is still supported in v9. Other than updating the SDK version, there are no changes required. Just make sure the version of the Play Billing Library is also version 8.0.0+.
-
-### 💥 Breaking Changes
-* Removes data classes from public API (#2498) via JayShortway (@JayShortway)
-* Marks `PaywallData` and `PaywallColor` as `InternalRevenueCatAPI`. (#2507) via JayShortway (@JayShortway)
-* BC8 migration (#2506) via Toni Rico (@tonidero)
-* Update to kotlin 2.0.21 while keeping language compatibility (#2493) via Toni Rico (@tonidero)
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Update design of No Active subscriptions screen in Customer Center (#2559) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Update CustomEntitlementComputation sample app kotlin version (#2510) via Toni Rico (@tonidero)
-* Fix `Switch` component previews (#2509) via Toni Rico (@tonidero)
-* Add V9 migration guide (#2508) via Toni Rico (@tonidero)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2499) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2561) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2560) via RevenueCat Git Bot (@RCGitBot)
+* Bump danger from 9.5.1 to 9.5.3 (#2556) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.227.2 to 2.228.0 (#2557) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `9a29f63` to `7d97553` (#2558) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2555) via RevenueCat Git Bot (@RCGitBot)
+* Bump nokogiri from 1.18.8 to 1.18.9 (#2553) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2551) via RevenueCat Git Bot (@RCGitBot)
+* Fix paywall tester so customer center doesn't close when changing to dark mode (#2550) via Cesar de la Vega (@vegaro)

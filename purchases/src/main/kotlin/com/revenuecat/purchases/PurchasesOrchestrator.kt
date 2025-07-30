@@ -53,6 +53,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -85,6 +86,8 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -129,6 +132,7 @@ internal class PurchasesOrchestrator(
             offlineEntitlementsManager,
             customerInfoUpdateHandler,
         ),
+    private val virtualCurrencyManager: VirtualCurrencyManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -912,6 +916,21 @@ internal class PurchasesOrchestrator(
     }
 
     //endregion
+
+    // region Virtual Currencies
+    fun getVirtualCurrencies(
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        virtualCurrencyManager.virtualCurrencies(callback = callback)
+    }
+
+    fun invalidateVirtualCurrenciesCache() {
+        virtualCurrencyManager.invalidateVirtualCurrenciesCache()
+    }
+
+    val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = virtualCurrencyManager.cachedVirtualCurrencies()
+
     //endregion
 
     // region Custom entitlements computation
@@ -1122,7 +1141,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun startPurchase(
+    private fun startPurchase(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1174,7 +1193,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun startProductChange(
+    private fun startProductChange(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1242,62 +1261,6 @@ internal class PurchasesOrchestrator(
                 errorLog(it)
             }
             getAndClearAllPurchaseCallbacks().forEach { it.dispatch(operationInProgressError) }
-        }
-    }
-
-    fun startDeprecatedProductChange(
-        activity: Activity,
-        purchasingData: PurchasingData,
-        presentedOfferingContext: PresentedOfferingContext?,
-        oldProductId: String,
-        googleReplacementMode: GoogleReplacementMode?,
-        listener: ProductChangeCallback,
-    ) {
-        if (purchasingData.productType != ProductType.SUBS) {
-            getAndClearProductChangeCallback()
-            listener.dispatch(
-                PurchasesError(
-                    PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE,
-                ).also { errorLog(it) },
-            )
-            return
-        }
-
-        log(LogIntent.PURCHASE) {
-            PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $purchasingData ${
-                    presentedOfferingContext?.offeringIdentifier?.let {
-                        PurchaseStrings.OFFERING + "$it"
-                    }
-                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
-
-            )
-        }
-        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
-        synchronized(this@PurchasesOrchestrator) {
-            if (!appConfig.finishTransactions) {
-                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
-            }
-            if (state.deprecatedProductChangeCallback == null) {
-                state = state.copy(deprecatedProductChangeCallback = listener)
-                userPurchasing = identityManager.currentAppUserID
-            }
-        }
-        userPurchasing?.let { appUserID ->
-            replaceOldPurchaseWithNewProduct(
-                purchasingData,
-                oldProductId,
-                googleReplacementMode,
-                activity,
-                appUserID,
-                presentedOfferingContext,
-                null,
-                listener,
-            )
-        } ?: run {
-            getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
         }
     }
 

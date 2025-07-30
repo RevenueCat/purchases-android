@@ -50,6 +50,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.BillingStrings
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockInstallmentPlandetails
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
@@ -1646,6 +1647,62 @@ class BillingWrapperTest {
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
+    // region findPurchaseInActivePurchases
+
+    @Test
+    fun `findPurchaseInActivePurchases finds purchase in active purchases`() {
+        val oldPurchase = stubGooglePurchase()
+        val purchases = listOf(oldPurchase)
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList()
+        )
+
+        var foundPurchase: StoreTransaction? = null
+        wrapper.findPurchaseInActivePurchases(
+            appUserID = "test-app-user-id",
+            productType = ProductType.SUBS,
+            productId = oldPurchase.firstProductId,
+            onCompletion = { foundPurchase = it },
+            onError = { fail("Shouldn't be an error: $it") }
+        )
+
+        assertThat(foundPurchase).isNotNull
+        assertThat(foundPurchase!!.purchaseToken).isEqualTo(oldPurchase.purchaseToken)
+    }
+
+    @Test
+    fun `findPurchaseInActivePurchases does not find purchase if not in active purchases`() {
+        val oldPurchase = stubGooglePurchase()
+        val purchases = listOf(oldPurchase)
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList()
+        )
+
+        var error: PurchasesError? = null
+        wrapper.findPurchaseInActivePurchases(
+            appUserID = "test-app-user-id",
+            productType = ProductType.SUBS,
+            productId = "unpurchased-product-id",
+            onCompletion = { fail("Should be an error") },
+            onError = { error = it }
+        )
+
+        assertThat(error).isNotNull
+        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(error!!.underlyingErrorMessage).isEqualTo(
+            PurchaseStrings.NO_EXISTING_PURCHASE.format("unpurchased-product-id")
+        )
+    }
+
+    // endregion findPurchaseInActivePurchases
 
     // endregion
 

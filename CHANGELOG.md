@@ -1,3 +1,74 @@
+## 9.1.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Resubscribe if cancelled (#2487) via Cesar de la Vega (@vegaro)
+### Virtual Currency
+#### 🐞 Bugfixes
+* Update VC Caching Log Message (#2552) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Update design of No Active subscriptions screen in Customer Center (#2559) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2561) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2560) via RevenueCat Git Bot (@RCGitBot)
+* Bump danger from 9.5.1 to 9.5.3 (#2556) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.227.2 to 2.228.0 (#2557) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `9a29f63` to `7d97553` (#2558) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2555) via RevenueCat Git Bot (@RCGitBot)
+* Bump nokogiri from 1.18.8 to 1.18.9 (#2553) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2551) via RevenueCat Git Bot (@RCGitBot)
+* Fix paywall tester so customer center doesn't close when changing to dark mode (#2550) via Cesar de la Vega (@vegaro)
+
+## 9.1.1
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2544) via RevenueCat Git Bot (@RCGitBot)
+* Expose Virtual Currency Constructors with @InternalRevenueCatAPI (#2543) via Will Taylor (@fire-at-will)
+* Expose API key validation result to BillingFactory (#2542) via Toni Rico (@tonidero)
+
+## 9.1.0
+## RevenueCat SDK
+### Virtual Currency
+#### ✨ New Features
+* Virtual Currency Support (#2519) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* PaywallActivityLauncher: Add `edgeToEdge` parameter to display paywall in full screen (#2530) via Toni Rico (@tonidero)
+#### 🐞 Bugfixes
+* Remove logic to avoid repurchasing already subscribed products (#2492) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Dont run VC tests on load shedder integration tests (#2538) via Will Taylor (@fire-at-will)
+* Introduces `CompatComposeView` to handle scenarios where the view tree is not set up (#2527) via JayShortway (@JayShortway)
+
+## 9.0.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix upgrades/downgrades after BC8 update (#2532) via Toni Rico (@tonidero)
+### 📦 Dependency Updates
+* [RENOVATE] Update build-dependencies (#2515) via RevenueCat Git Bot (@RCGitBot)
+* [RENOVATE] Update build-dependencies (#2472) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Make PaywallActivity not consume insets in Android 16+ (#2520) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Add CLAUDE.md (#2522) via Cesar de la Vega (@vegaro)
+* Update kotlin version in README (#2524) via Cesar de la Vega (@vegaro)
+* Increase compile/target SDK version to 35 (#2525) via Toni Rico (@tonidero)
+* Fix snapshot deployment (#2526) via Toni Rico (@tonidero)
+* Update CircleCI android orb (#2521) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2517) via RevenueCat Git Bot (@RCGitBot)
+* Improve v9 migration docs (#2514) via Toni Rico (@tonidero)
+* Bump AGP to 8.10.1 and Gradle to 8.14.2 (#2440) via Jaewoong Eum (@skydoves)
+* Fixes compilation of the CEC sample app. (#2512) via JayShortway (@JayShortway)
+
 ## 9.0.0
 ## RevenueCat SDK
 This release updates the SDK to use Google Play Billing Library 8. This version of the Billing Library removed APIs to query for expired subscriptions and consumed one-time products, aside from other improvements. You can check the full list of changes here: https://developer.android.com/google/play/billing/release-notes#8-0-0
@@ -8,9 +79,9 @@ Regarding API changes, we've also removed data classes from our public APIs. Thi
 
 ### Play Billing Library 8: No expired subscriptions or consumed one-time products
 
-**Note:** the following is only relevant if you recently integrated RevenueCat, and do not (yet) have all your transactions imported. 
-  
-Play Billing Library 8 removed functionality to query expired subscriptions or consumed one-time products. This means that, for users migrating from a non-RevenueCat implementation of the Play Billing Library, the SDK will not be able to send purchase information from these purchases. We can still ingest historical data from these purchases through a backend historical import. See [docs](https://www.revenuecat.com/docs/migrating-to-revenuecat/migrating-existing-subscriptions). This doesn't affect developers that have all transactions in RevenueCat, which is true for the vast majority.
+Play Billing Library 8 removed the ability to query for expired subscriptions and consumed one-time products. This means that the RevenueCat SDK will no longer be able to send purchase information from these purchases. There are 2 cases where this can have an impact:
+- If you have consumed one time purchases in Google Play that need to be restored (for example, in order to grant a lifetime entitlement). In these cases, the SDK will not be able to find these purchases and will not be able to restore them and grant the entitlements. This can especially be a problem if you're using anonymous ids and don't have your own account system. Please make sure your products are correctly configured as non-consumables in the RevenueCat dashboard to avoid consuming them in the first place if you intend to make them behave as lifetime purchases.
+- (Only relevant if you recently integrated RevenueCat before upgrading to v9, and do not (yet) have all your transactions imported). The SDK will not be able to send purchase information from these expired subscriptions and consumed one time purchases to our backend, so we might miss this data in our customer profile/targeting. We can still ingest historical data from these purchases through a backend historical import. See [docs](https://www.revenuecat.com/docs/migrating-to-revenuecat/migrating-existing-subscriptions). This case doesn't affect developers that have all transactions in RevenueCat, which is true for the vast majority.
 
 ### Bumped minimum Kotlin version
 

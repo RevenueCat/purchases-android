@@ -3,10 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.ComposeView
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -155,8 +155,9 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
             .setOfferingId(initialOfferingId)
             .build()
         addView(
-            ComposeView(context).apply {
-                setContent {
+            object : CompatComposeView(context) {
+                @Composable
+                override fun Content() {
                     val paywallOptions by remember {
                         paywallOptionsState
                     }

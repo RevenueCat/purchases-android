@@ -131,7 +131,7 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.GetOfferings("test-user-id").getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.GetOfferings("test-user-id").getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -173,7 +173,7 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -198,7 +198,7 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningPerformed()
