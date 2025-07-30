@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.actions
 
+import com.revenuecat.purchases.customercenter.CustomActionData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
@@ -16,5 +17,6 @@ internal sealed class CustomerCenterAction {
     data class PurchasePromotionalOffer(val subscriptionOption: SubscriptionOption) : CustomerCenterAction()
     data class DismissPromotionalOffer(val originalPath: CustomerCenterConfigData.HelpPath) : CustomerCenterAction()
     data class OpenURL(val url: String) : CustomerCenterAction()
+    data class CustomActionSelected(val customActionData: CustomActionData) : CustomerCenterAction()
     object NavigationButtonPressed : CustomerCenterAction()
 }

@@ -24,6 +24,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.common.SharedConstants
+import com.revenuecat.purchases.customercenter.CustomActionData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
@@ -96,6 +97,8 @@ internal interface CustomerCenterViewModel {
 
     fun clearActionError()
 
+    fun onCustomActionSelected(customActionData: CustomActionData)
+
     // trigger state refresh
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(currentColorScheme: ColorScheme, isSystemInDarkTheme: Boolean)
@@ -161,7 +164,7 @@ internal class CustomerCenterViewModelImpl(
         path: HelpPath,
         purchaseInformation: PurchaseInformation?,
     ) {
-        notifyListenersForManagementOptionSelected(path)
+        notifyListenersForManagementOptionSelected(path, purchaseInformation)
         path.feedbackSurvey?.let { feedbackSurvey ->
             displayFeedbackSurvey(feedbackSurvey, onAnswerSubmitted = { option ->
                 option?.let {
@@ -244,6 +247,10 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    override fun onCustomActionSelected(customActionData: CustomActionData) {
+        notifyListenersForCustomActionSelected(customActionData)
+    }
+
     private fun handleCancelPath(context: Context, purchaseInformation: PurchaseInformation? = null) {
         val currentState = _state.value as? CustomerCenterState.Success ?: return
         val purchaseInfo = purchaseInformation ?: when (val destination = currentState.currentDestination) {
@@ -306,6 +313,16 @@ internal class CustomerCenterViewModelImpl(
                         it,
                         path.openMethod ?: HelpPath.OpenMethod.EXTERNAL,
                     )
+                }
+            }
+
+            HelpPath.PathType.CUSTOM_ACTION -> {
+                path.actionIdentifier?.let { actionIdentifier ->
+                    val customActionData = CustomActionData(
+                        actionIdentifier = actionIdentifier,
+                        purchaseIdentifier = purchaseInformation?.product?.id,
+                    )
+                    onCustomActionSelected(customActionData)
                 }
             }
 
@@ -419,6 +436,7 @@ internal class CustomerCenterViewModelImpl(
         return when (path.type) {
             HelpPath.PathType.MISSING_PURCHASE,
             HelpPath.PathType.CUSTOM_URL,
+            HelpPath.PathType.CUSTOM_ACTION,
             -> true
             HelpPath.PathType.CANCEL ->
                 purchaseInformation?.store == Store.PLAY_STORE || purchaseInformation?.managementURL != null
@@ -987,7 +1005,7 @@ internal class CustomerCenterViewModelImpl(
         purchases.customerCenterListener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
     }
 
-    private fun notifyListenersForManagementOptionSelected(path: HelpPath) {
+    private fun notifyListenersForManagementOptionSelected(path: HelpPath, purchaseInformation: PurchaseInformation?) {
         val action = when (path.type) {
             HelpPath.PathType.MISSING_PURCHASE ->
                 CustomerCenterManagementOption.MissingPurchase
@@ -1000,12 +1018,30 @@ internal class CustomerCenterViewModelImpl(
                     CustomerCenterManagementOption.CustomUrl(it.toUri())
                 }
 
+            HelpPath.PathType.CUSTOM_ACTION ->
+                path.actionIdentifier?.let { actionIdentifier ->
+                    CustomerCenterManagementOption.CustomAction(
+                        actionIdentifier = actionIdentifier,
+                        purchaseIdentifier = purchaseInformation?.product?.id,
+                    )
+                }
+
             else -> null
         }
         if (action != null) {
             listener?.onManagementOptionSelected(action)
             purchases.customerCenterListener?.onManagementOptionSelected(action)
         }
+    }
+
+    private fun notifyListenersForCustomActionSelected(
+        customActionData: CustomActionData,
+    ) {
+        listener?.onCustomActionSelected(customActionData.actionIdentifier, customActionData.purchaseIdentifier)
+        purchases.customerCenterListener?.onCustomActionSelected(
+            customActionData.actionIdentifier,
+            customActionData.purchaseIdentifier,
+        )
     }
 
     private fun SubscriptionInfo.asTransactionDetails() = TransactionDetails.Subscription(
