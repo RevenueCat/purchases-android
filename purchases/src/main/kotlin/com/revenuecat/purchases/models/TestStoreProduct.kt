@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.teststore.TestStorePurchasingData
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -16,9 +17,68 @@ class TestStoreProduct(
     override val description: String,
     override val price: Price,
     override val period: Period?,
-    private val freeTrialPeriod: Period? = null,
-    private val introPrice: Price? = null,
+    private val freeTrialPricingPhase: PricingPhase? = null,
+    private val introPricePricingPhase: PricingPhase? = null,
 ) : StoreProduct {
+    constructor(
+        id: String,
+        name: String,
+        title: String,
+        description: String,
+        price: Price,
+        period: Period? = null,
+    ) : this(
+        id,
+        name,
+        title,
+        description,
+        price,
+        period,
+        freeTrialPricingPhase = null,
+        introPricePricingPhase = null,
+    )
+
+    @Deprecated(
+        "Replaced with constructor that takes pricing phases for free trial and intro price",
+        ReplaceWith(
+            "TestStoreProduct(id, name, title, description, price, period, " +
+                "freeTrialPricingPhase, introPricePricingPhase)",
+        ),
+    )
+    constructor(
+        id: String,
+        name: String,
+        title: String,
+        description: String,
+        price: Price,
+        period: Period? = null,
+        freeTrialPeriod: Period? = null,
+        introPrice: Price? = null,
+    ) : this(
+        id,
+        name,
+        title,
+        description,
+        price,
+        period,
+        freeTrialPeriod?.let {
+            PricingPhase(
+                billingPeriod = it,
+                recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                billingCycleCount = 1,
+                price = Price(amountMicros = 0, currencyCode = price.currencyCode, formatted = "Free"),
+            )
+        },
+        introPrice?.let {
+            PricingPhase(
+                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                billingCycleCount = 1,
+                price = it,
+            )
+        },
+    )
+
     @Deprecated(
         "Replaced with constructor that takes a name",
         ReplaceWith(
@@ -50,13 +110,11 @@ class TestStoreProduct(
         get() = buildSubscriptionOptions()
     override val defaultOption: SubscriptionOption?
         get() = subscriptionOptions?.defaultOffer
-    override val purchasingData: PurchasingData
-        get() = object : PurchasingData {
-            override val productId: String
-                get() = id
-            override val productType: ProductType
-                get() = type
-        }
+    override val purchasingData: PurchasingData = TestStorePurchasingData(
+        productId = id,
+        productType = type,
+        storeProduct = this,
+    )
 
     @Deprecated(
         "Use presentedOfferingContext",
@@ -83,22 +141,6 @@ class TestStoreProduct(
 
     private fun buildSubscriptionOptions(): SubscriptionOptions? {
         if (period == null) return null
-        val freePhase = freeTrialPeriod?.let { freeTrialPeriod ->
-            PricingPhase(
-                billingPeriod = freeTrialPeriod,
-                recurrenceMode = RecurrenceMode.FINITE_RECURRING,
-                billingCycleCount = 1,
-                price = Price(amountMicros = 0, currencyCode = price.currencyCode, formatted = "Free"),
-            )
-        }
-        val introPhase = introPrice?.let { introPrice ->
-            PricingPhase(
-                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
-                recurrenceMode = RecurrenceMode.FINITE_RECURRING,
-                billingCycleCount = 1,
-                price = introPrice,
-            )
-        }
         val basePricePhase = PricingPhase(
             billingPeriod = period,
             recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
@@ -107,12 +149,12 @@ class TestStoreProduct(
         )
         val subscriptionOptionsList = listOfNotNull(
             TestSubscriptionOption(
-                id,
-                listOfNotNull(freePhase, introPhase, basePricePhase),
-            ).takeIf { freeTrialPeriod != null || introPhase != null },
+                listOfNotNull(freeTrialPricingPhase, introPricePricingPhase, basePricePhase),
+                purchasingData = purchasingData,
+            ).takeIf { freeTrialPricingPhase != null || introPricePricingPhase != null },
             TestSubscriptionOption(
-                id,
                 listOf(basePricePhase),
+                purchasingData = purchasingData,
             ),
         )
         return SubscriptionOptions(subscriptionOptionsList)
@@ -120,7 +162,6 @@ class TestStoreProduct(
 }
 
 private class TestSubscriptionOption(
-    val productIdentifier: String,
     override val pricingPhases: List<PricingPhase>,
     val basePlanId: String = "testBasePlanId",
     override val tags: List<String> = emptyList(),
@@ -128,18 +169,11 @@ private class TestSubscriptionOption(
         offeringIdentifier = "offering",
     ),
     override val installmentsInfo: InstallmentsInfo? = null,
+    override val purchasingData: PurchasingData,
 ) : SubscriptionOption {
     override val id: String
         get() = if (pricingPhases.size == 1) basePlanId else "$basePlanId:testOfferId"
 
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext.offeringIdentifier
-
-    override val purchasingData: PurchasingData
-        get() = object : PurchasingData {
-            override val productId: String
-                get() = productIdentifier
-            override val productType: ProductType
-                get() = ProductType.SUBS
-        }
 }
