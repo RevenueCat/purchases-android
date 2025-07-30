@@ -8,7 +8,7 @@ import org.json.JSONException
 import java.io.IOException
 
 @SuppressWarnings("MagicNumber")
-private enum class BackendErrorCode(val value: Int) {
+internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidPlatform(7000),
     BackendStoreProblem(7101),
     BackendCannotTransferPurchase(7102),
@@ -27,9 +27,16 @@ private enum class BackendErrorCode(val value: Int) {
     BackendPlayStoreGenericError(7231),
     BackendUserIneligibleForPromoOffer(7232),
     BackendInvalidAppleSubscriptionKey(7234),
+    BackendCouldNotCreateAlias(7255),
+    BackendInvalidAppUserId(7256),
     BackendInvalidSubscriberAttributes(7263),
     BackendInvalidSubscriberAttributesBody(7264),
+    BackendSubscriberAttributesAreBeingUpdated(7629),
+    BackendRequestAlreadyInProgress(7638),
     BackendProductIDsMalformed(7662),
+    BackendInvalidWebRedemptionToken(7849),
+    BackendPurchaseBelongsToOtherUser(7852),
+    BackendExpiredWebRedemptionToken(7853),
     ;
 
     companion object {
@@ -81,7 +88,9 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendInvalidPaymentModeOrIntroPriceNotProvided,
         BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided,
         -> PurchasesErrorCode.PurchaseInvalidError
-        BackendErrorCode.BackendEmptyAppUserId -> PurchasesErrorCode.InvalidAppUserIdError
+        BackendErrorCode.BackendEmptyAppUserId,
+        BackendErrorCode.BackendInvalidAppUserId,
+        -> PurchasesErrorCode.InvalidAppUserIdError
         BackendErrorCode.BackendPlayStoreQuotaExceeded -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendPlayStoreInvalidPackageName,
         BackendErrorCode.BackendInvalidPlatform,
@@ -96,7 +105,14 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendBadRequest,
         BackendErrorCode.BackendInternalServerError,
         -> PurchasesErrorCode.UnexpectedBackendResponseError
+        BackendErrorCode.BackendRequestAlreadyInProgress,
+        BackendErrorCode.BackendSubscriberAttributesAreBeingUpdated,
+        -> PurchasesErrorCode.OperationAlreadyInProgressError
+        BackendErrorCode.BackendCouldNotCreateAlias -> PurchasesErrorCode.ConfigurationError
         BackendErrorCode.BackendProductIDsMalformed -> PurchasesErrorCode.UnsupportedError
+        BackendErrorCode.BackendInvalidWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError
+        BackendErrorCode.BackendPurchaseBelongsToOtherUser -> PurchasesErrorCode.ProductAlreadyPurchasedError
+        BackendErrorCode.BackendExpiredWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError
     }
 }
 

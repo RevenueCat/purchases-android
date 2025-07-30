@@ -34,7 +34,6 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class BackendGetCustomerCenterConfigTest {
 
@@ -66,7 +65,14 @@ class BackendGetCustomerCenterConfigTest {
                             androidOfferId = "rc-refund-offer",
                             eligible = true,
                             title = "Wait!",
-                            subtitle = "Before you go, here's a one-time offer to continue at a discount."
+                            subtitle = "Before you go, here's a one-time offer to continue at a discount.",
+                            productMapping = mapOf("monthly_subscription" to "rc-refund-offer"),
+                            crossProductPromotions = mapOf(
+                                "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                    storeOfferIdentifier = "rc-refund-offer",
+                                    targetProductId = "yearly_subscription",
+                                )
+                            )
                         )
                     ),
                     HelpPath(
@@ -88,7 +94,14 @@ class BackendGetCustomerCenterConfigTest {
                                         androidOfferId = "rc-cancel-offer",
                                         eligible = true,
                                         title = "Wait!",
-                                        subtitle = "Before you go, here's a one-time offer to continue at a discount."
+                                        subtitle = "Before you go, here's a one-time offer to continue at a discount.",
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer"),
+                                        crossProductPromotions = mapOf(
+                                            "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                                storeOfferIdentifier = "rc-cancel-offer",
+                                                targetProductId = "yearly_subscription",
+                                            )
+                                        )
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -98,7 +111,14 @@ class BackendGetCustomerCenterConfigTest {
                                         androidOfferId = "rc-cancel-offer",
                                         eligible = true,
                                         title = "Wait!",
-                                        subtitle = "Before you go, here's a one-time offer to continue at a discount."
+                                        subtitle = "Before you go, here's a one-time offer to continue at a discount.",
+                                        productMapping = mapOf("monthly_subscription" to "rc-cancel-offer"),
+                                        crossProductPromotions = mapOf(
+                                            "monthly_subscription" to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                                                storeOfferIdentifier = "rc-cancel-offer",
+                                                targetProductId = "yearly_subscription",
+                                            )
+                                        )
                                     )
                                 ),
                                 HelpPath.PathDetail.FeedbackSurvey.Option(
@@ -107,7 +127,16 @@ class BackendGetCustomerCenterConfigTest {
                                 )
                             )
                         )
-                    )
+                    ),
+                    HelpPath(
+                        id = "path_ZD-yiHSBN",
+                        title = "RevenueCat",
+                        type = HelpPath.PathType.CUSTOM_URL,
+                        promotionalOffer = null,
+                        feedbackSurvey = null,
+                        url = "https://revenuecat.com",
+                        openMethod = HelpPath.OpenMethod.EXTERNAL,
+                    ),
                 )
             ),
             Screen.ScreenType.NO_ACTIVE to Screen(
@@ -119,7 +148,16 @@ class BackendGetCustomerCenterConfigTest {
                         id = "9q9719171o",
                         title = "Check purchases",
                         type = HelpPath.PathType.MISSING_PURCHASE
-                    )
+                    ),
+                    HelpPath(
+                        id = "path_ZD-yiHSDN",
+                        title = "RevenueCat",
+                        type = HelpPath.PathType.CUSTOM_URL,
+                        promotionalOffer = null,
+                        feedbackSurvey = null,
+                        url = "https://revenuecat.com",
+                        openMethod = HelpPath.OpenMethod.EXTERNAL,
+                    ),
                 )
             )
         ),
@@ -143,44 +181,12 @@ class BackendGetCustomerCenterConfigTest {
             locale = "en",
             localizedStrings = mapOf(
                 "amazon_subscription_manage" to "You can manage your subscription in the Amazon Appstore app on an Amazon device.",
-                "apple_subscription_manage" to "You can manage your subscription by using the App Store app on an Apple device.",
-                "billing_cycle" to "Billing cycle",
-                "cancel" to "Cancel",
-                "check_past_purchases" to "Check past purchases",
-                "contact_support" to "Contact support",
-                "current_price" to "Current price",
-                "default_body" to "Please describe your issue or question.",
-                "default_subject" to "Support Request",
-                "dismiss" to "Dismiss",
-                "expired" to "Expired",
-                "expires" to "Expires",
-                "going_to_check_purchases" to "Let\u2019s take a look! We\u2019re going to check your account for missing purchases.",
-                "google_subscription_manage" to "You can manage your subscription by using the Play Store app on an Android device.",
-                "next_billing_date" to "Next billing date",
-                "no_subscriptions_found" to "No Subscriptions found",
-                "no_thanks" to "No, thanks",
-                "platform_mismatch" to "Platform mismatch",
-                "please_contact_support" to "Please contact support to manage your subscription.",
-                "purchases_not_recovered" to "We couldn't find any additional purchases under this account. Contact support for assistance if you think this is an error.",
-                "purchases_recovered" to "Purchases recovered!",
-                "purchases_recovered_explanation" to "We applied the previously purchased items to your account. Sorry for the inconvenience.",
-                "refund_canceled" to "Refund canceled",
-                "refund_error_generic" to "An error occurred while processing the refund request. Please try again.",
-                "refund_granted" to "Refund granted successfully!",
-                "refund_status" to "Refund status",
-                "restore_purchases" to "Restore purchases",
-                "sub_earliest_expiration" to "This is your subscription with the earliest expiration date.",
-                "sub_earliest_renewal" to "This is your subscription with the earliest billing date.",
-                "sub_expired" to "This subscription has expired.",
-                "try_check_restore" to "We can try checking your Apple account for any previous purchases",
-                "update_warning_description" to "Downloading the latest version of the app may help solve the problem.",
-                "update_warning_ignore" to "Continue",
-                "update_warning_title" to "Update available",
-                "update_warning_update" to "Update",
+                "done" to "Done",
             )
         ),
         support = CustomerCenterConfigData.Support(
-            email = "support@revenuecat.com"
+            email = "support@revenuecat.com",
+            shouldWarnCustomerToUpdate = true
         ),
         lastPublishedAppVersion = null
     )
@@ -190,6 +196,7 @@ class BackendGetCustomerCenterConfigTest {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns mockBaseURL
             every { customEntitlementComputation } returns false
+            every { fallbackBaseURLs } returns emptyList()
         }
         httpClient = mockk()
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
@@ -226,8 +233,6 @@ class BackendGetCustomerCenterConfigTest {
             onErrorHandler = { error -> fail("Expected success. Got error: $error") },
         )
         assertThat(customerCenterConfigData).isEqualTo(expectedCustomerCenterConfigData)
-        val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { it.name.lowercase() }.toTypedArray()
-        assertThat(customerCenterConfigData!!.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
     }
 
     @Test
@@ -246,7 +251,8 @@ class BackendGetCustomerCenterConfigTest {
     fun `given multiple getCustomerCenterConfig calls for same subscriber same body, only one is triggered`() {
         mockHttpResult(delayMs = 200)
         val lock = CountDownLatch(2)
-        asyncBackend.getCustomerCenterConfig("test-user-id",
+        asyncBackend.getCustomerCenterConfig(
+            "test-user-id",
             onSuccessHandler = {
                 lock.countDown()
             },
@@ -254,7 +260,8 @@ class BackendGetCustomerCenterConfigTest {
                 fail("Expected success. Got error: $it")
             },
         )
-        asyncBackend.getCustomerCenterConfig("test-user-id",
+        asyncBackend.getCustomerCenterConfig(
+            "test-user-id",
             onSuccessHandler = {
                 lock.countDown()
             },
@@ -277,7 +284,7 @@ class BackendGetCustomerCenterConfigTest {
 
     private fun mockHttpResult(
         responseCode: Int = RCHTTPStatusCodes.SUCCESS,
-        delayMs: Long? = null
+        delayMs: Long? = null,
     ) {
         every {
             httpClient.performRequest(
@@ -286,6 +293,7 @@ class BackendGetCustomerCenterConfigTest {
                 any(),
                 any(),
                 any(),
+                fallbackBaseURLs = any(),
             )
         } answers {
             if (delayMs != null) {

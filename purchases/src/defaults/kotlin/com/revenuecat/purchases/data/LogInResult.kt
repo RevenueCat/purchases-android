@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.data
 
 import com.revenuecat.purchases.CustomerInfo
+import dev.drewhamilton.poko.Poko
 
 /**
  * The result of a successful login operation. Used in coroutines.
  */
-data class LogInResult(
+@Poko
+class LogInResult(
     /**
      * The [CustomerInfo] associated with the logged in user.
      */

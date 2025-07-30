@@ -11,10 +11,7 @@ import com.android.billingclient.api.ProductDetails.PricingPhase
 import com.android.billingclient.api.ProductDetails.RecurrenceMode
 import com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
-import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.google.toStoreTransaction
@@ -52,10 +49,12 @@ fun mockProductDetails(
 fun mockOneTimePurchaseOfferDetails(
     price: Double = 4.99,
     priceCurrencyCodeValue: String = "USD",
+    offerTokenValue: String? = "mock-offer-token",
 ): OneTimePurchaseOfferDetails = mockk<OneTimePurchaseOfferDetails>().apply {
     every { formattedPrice } returns "${'$'}$price"
     every { priceAmountMicros } returns price.times(1_000_000).toLong()
     every { priceCurrencyCode } returns priceCurrencyCodeValue
+    every { offerToken } returns offerTokenValue
 }
 
 fun mockSubscriptionOfferDetails(
@@ -173,23 +172,6 @@ fun stubGooglePurchase(
     signature,
 )
 
-fun stubPurchaseHistoryRecord(
-    productIds: List<String> = listOf("monthly_intro_pricing_one_week"),
-    purchaseTime: Long = System.currentTimeMillis(),
-    purchaseToken: String = "abcdefghijkcopgbomfinlko.AO-J1OxJixLsieYN08n9hV4qBsvqvQo6wXesyAClWs-t7KnYLCm3-" +
-        "q6z8adcZnenbzqMHuMIqZ9kQ4KebT_Bge6KfZUhBt-0N0U0s71AEwFpzT7hrtErzdg",
-    signature: String = "signature${System.currentTimeMillis()}",
-): PurchaseHistoryRecord = PurchaseHistoryRecord(
-    """
-            {
-                "productIds": ${JSONArray(productIds)},
-                "purchaseTime": $purchaseTime,
-                "purchaseToken": "$purchaseToken"
-            }
-    """.trimIndent(),
-    signature,
-)
-
 fun stubStoreTransactionFromGooglePurchase(
     productIds: List<String>,
     purchaseTime: Long,
@@ -203,63 +185,53 @@ fun stubStoreTransactionFromGooglePurchase(
     ).toStoreTransaction(ProductType.SUBS, null)
 }
 
-fun stubStoreTransactionFromPurchaseHistoryRecord(
-    productIds: List<String>,
-    purchaseTime: Long,
-): StoreTransaction {
-    return stubPurchaseHistoryRecord(
-        productIds = productIds,
-        purchaseTime = purchaseTime,
-    ).toStoreTransaction(ProductType.SUBS)
-}
-
-fun BillingClient.mockQueryPurchaseHistory(
+fun BillingClient.mockQueryPurchases(
     result: BillingResult,
-    history: List<PurchaseHistoryRecord>,
+    purchases: List<Purchase>,
 ): Any {
-    mockkStatic(QueryPurchaseHistoryParams::class)
+    mockkStatic(QueryPurchasesParams::class)
 
-    val mockBuilder = mockk<QueryPurchaseHistoryParams.Builder>(relaxed = true)
+    val mockBuilder = mockk<QueryPurchasesParams.Builder>(relaxed = true)
     every {
-        QueryPurchaseHistoryParams.newBuilder()
+        QueryPurchasesParams.newBuilder()
     } returns mockBuilder
 
     every {
         mockBuilder.setProductType(any())
     } returns mockBuilder
 
-    val params = mockk<QueryPurchaseHistoryParams>(relaxed = true)
+    val params = mockk<QueryPurchasesParams>(relaxed = true)
     every {
         mockBuilder.build()
     } returns params
 
-    val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
+    val billingClientPurchasesListenerSlot = slot<PurchasesResponseListener>()
 
     every {
-        queryPurchaseHistoryAsync(
+        queryPurchasesAsync(
             params,
-            capture(billingClientPurchaseHistoryListenerSlot),
+            capture(billingClientPurchasesListenerSlot),
         )
     } answers {
-        billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
+        billingClientPurchasesListenerSlot.captured.onQueryPurchasesResponse(
             result,
-            history,
+            purchases,
         )
     }
 
     return mockBuilder
 }
 
-fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
+fun BillingClient.verifyQueryPurchasesCalledWithType(
     @BillingClient.ProductType googleType: String,
     builder: Any,
 ) {
     verify(exactly = 1) {
-        (builder as QueryPurchaseHistoryParams.Builder).setProductType(googleType)
+        (builder as QueryPurchasesParams.Builder).setProductType(googleType)
     }
 
     verify {
-        queryPurchaseHistoryAsync(any<QueryPurchaseHistoryParams>(), any())
+        queryPurchasesAsync(any<QueryPurchasesParams>(), any())
     }
 
     clearStaticMockk(QueryPurchasesParams::class)

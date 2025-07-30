@@ -71,7 +71,7 @@ internal class AmazonBilling(
     private val productDataHandler: ProductDataResponseListener =
         ProductDataHandler(purchasingServiceProvider, mainHandler),
     private val purchaseHandler: PurchaseResponseListener =
-        PurchaseHandler(purchasingServiceProvider, applicationContext),
+        PurchaseHandler(purchasingServiceProvider, applicationContext, diagnosticsTrackerIfEnabled),
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
         purchasingServiceProvider,
     ),
@@ -157,7 +157,7 @@ internal class AmazonBilling(
             purchaseToken,
             storeUserID,
             onSuccess = { response ->
-                log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
+                log(LogIntent.DEBUG) { AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()) }
 
                 val termSku = getTermSkuFromJSON(response)
                 if (termSku == null) {
@@ -191,11 +191,19 @@ internal class AmazonBilling(
                             productIds,
                             userData.marketplace,
                             {
-                                trackAmazonQueryProductDetailsRequestIfNeeded(wasSuccessful = true, requestStartTime)
+                                trackAmazonQueryProductDetailsRequestIfNeeded(
+                                    wasSuccessful = true,
+                                    requestStartTime,
+                                    productIds,
+                                )
                                 onReceive(it)
                             },
                             {
-                                trackAmazonQueryProductDetailsRequestIfNeeded(wasSuccessful = false, requestStartTime)
+                                trackAmazonQueryProductDetailsRequestIfNeeded(
+                                    wasSuccessful = false,
+                                    requestStartTime,
+                                    productIds,
+                                )
                                 onError(it)
                             },
                         )
@@ -234,19 +242,18 @@ internal class AmazonBilling(
         cache.addSuccessfullyPostedToken(purchase.purchaseToken)
     }
 
-    override fun findPurchaseInPurchaseHistory(
+    override fun findPurchaseInActivePurchases(
         appUserID: String,
         productType: RevenueCatProductType,
         productId: String,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
-        queryAllPurchases(
+        log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
+        queryPurchases(
             appUserID,
-            onReceivePurchaseHistory = {
-                // We get productIds[0] because the list is guaranteed to have just one item in Amazon's case.
-                val record: StoreTransaction? = it.firstOrNull { record -> productId == record.productIds[0] }
+            onSuccess = {
+                val record: StoreTransaction? = it[productId]
                 if (record != null) {
                     onCompletion(record)
                 } else {
@@ -286,7 +293,7 @@ internal class AmazonBilling(
         if (!shouldFinishTransactions()) return
 
         if (replaceProductInfo != null) {
-            log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)
+            log(LogIntent.AMAZON_WARNING) { AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED }
             return
         }
         executeRequestOnUIThread { connectionError ->
@@ -352,12 +359,12 @@ internal class AmazonBilling(
                         onSuccess(marketplace)
                     },
                     onError = { error ->
-                        errorLog(BillingStrings.BILLING_AMAZON_ERROR_STOREFRONT.format(error))
+                        errorLog { BillingStrings.BILLING_AMAZON_ERROR_STOREFRONT.format(error) }
                         onError(error)
                     },
                 )
             } else {
-                errorLog(BillingStrings.BILLING_CONNECTION_ERROR_STORE_COUNTRY.format(connectionError))
+                errorLog { BillingStrings.BILLING_CONNECTION_ERROR_STORE_COUNTRY.format(connectionError) }
                 onError(connectionError)
             }
         }
@@ -388,12 +395,12 @@ internal class AmazonBilling(
                         )
                     },
                     onError = { error ->
-                        errorLog(BillingStrings.BILLING_AMAZON_ERROR_LWA_CONSENT_STATUS.format(error))
+                        errorLog { BillingStrings.BILLING_AMAZON_ERROR_LWA_CONSENT_STATUS.format(error) }
                         onError(error)
                     },
                 )
             } else {
-                errorLog(BillingStrings.BILLING_CONNECTION_ERROR_LWA_CONSENT_STATUS.format(connectionError))
+                errorLog { BillingStrings.BILLING_CONNECTION_ERROR_LWA_CONSENT_STATUS.format(connectionError) }
                 onError(connectionError)
             }
         }
@@ -405,7 +412,7 @@ internal class AmazonBilling(
     ) = mapNotNull { receipt ->
         val sku = tokensToSkusMap[receipt.receiptId]
         if (sku == null) {
-            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
+            log(LogIntent.AMAZON_ERROR) { AmazonStrings.ERROR_FINDING_RECEIPT_SKU }
             return@mapNotNull null
         }
         val amazonPurchaseWrapper = receipt.toStoreTransaction(
@@ -453,10 +460,9 @@ internal class AmazonBilling(
     private fun logErrorsIfAny(errors: Map<String, PurchasesError>) {
         if (errors.isNotEmpty()) {
             val receiptsWithErrors = errors.keys.joinToString("\n")
-            log(
-                LogIntent.AMAZON_ERROR,
-                AmazonStrings.ERROR_FETCHING_RECEIPTS.format(receiptsWithErrors),
-            )
+            log(LogIntent.AMAZON_ERROR) {
+                AmazonStrings.ERROR_FETCHING_RECEIPTS.format(receiptsWithErrors)
+            }
         }
     }
 
@@ -470,7 +476,7 @@ internal class AmazonBilling(
                 val requestStartTime = dateProvider.now
                 purchaseUpdatesHandler.queryPurchases(
                     onSuccess = onSuccess@{ receipts, userData ->
-                        trackAmazonQueryPurchasesRequestIfNeeded(wasSuccessful = true, requestStartTime)
+                        trackAmazonQueryPurchasesRequestIfNeeded(wasSuccessful = true, requestStartTime, receipts)
                         val filteredReceipts = if (filterOnlyActivePurchases) {
                             // This filters out expired receipts according to the current date.
                             // Note that this is not calculating the expiration date of the purchase,
@@ -506,7 +512,11 @@ internal class AmazonBilling(
                         }
                     },
                     onError = {
-                        trackAmazonQueryPurchasesRequestIfNeeded(wasSuccessful = false, requestStartTime)
+                        trackAmazonQueryPurchasesRequestIfNeeded(
+                            wasSuccessful = false,
+                            requestStartTime,
+                            receipts = null,
+                        )
                         onError(it)
                     },
                 )
@@ -548,7 +558,7 @@ internal class AmazonBilling(
                 receipt.receiptId,
                 amazonUserID,
                 onSuccess = { response ->
-                    log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
+                    log(LogIntent.DEBUG) { AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()) }
 
                     successMap[receipt.receiptId] = response[TERM_SKU_JSON_KEY] as String
 
@@ -559,7 +569,7 @@ internal class AmazonBilling(
                     }
                 },
                 onError = { error ->
-                    log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
+                    log(LogIntent.AMAZON_ERROR) { AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error) }
 
                     errorMap[receipt.receiptId] = error
 
@@ -620,7 +630,7 @@ internal class AmazonBilling(
         return if (finishTransactions) {
             true
         } else {
-            log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS)
+            log(LogIntent.AMAZON_WARNING) { AmazonStrings.WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS }
             false
         }
     }
@@ -660,20 +670,24 @@ internal class AmazonBilling(
     private fun trackAmazonQueryProductDetailsRequestIfNeeded(
         wasSuccessful: Boolean,
         requestStartTime: Date,
+        requestedProductIds: Set<String>,
     ) {
         diagnosticsTrackerIfEnabled?.trackAmazonQueryProductDetailsRequest(
             responseTime = Duration.between(requestStartTime, dateProvider.now),
             wasSuccessful,
+            requestedProductIds,
         )
     }
 
     private fun trackAmazonQueryPurchasesRequestIfNeeded(
         wasSuccessful: Boolean,
         requestStartTime: Date,
+        receipts: List<Receipt>?,
     ) {
         diagnosticsTrackerIfEnabled?.trackAmazonQueryPurchasesRequest(
             responseTime = Duration.between(requestStartTime, dateProvider.now),
             wasSuccessful,
+            receipts?.map { it.sku },
         )
     }
     // endregion

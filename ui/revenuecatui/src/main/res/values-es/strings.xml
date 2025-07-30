@@ -19,4 +19,5 @@
     <string name="weekly">Semanalmente</string>
     <string name="lifetime">Toda la vida</string>
     <string name="no_browser_cannot_open_link">No hay navegador instalado. No se pudo abrir el enlace.</string>
+    <string name="cannot_open_link">Enlace inválido. No se pudo abrir.</string>
 </resources>

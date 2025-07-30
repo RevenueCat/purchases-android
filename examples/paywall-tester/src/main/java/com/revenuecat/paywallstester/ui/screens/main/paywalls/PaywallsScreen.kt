@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.revenuecat.paywallstester.ui.screens.main.paywalls
 
 import android.app.Activity
@@ -16,12 +18,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -31,13 +37,14 @@ import com.revenuecat.paywallstester.SamplePaywallsLoader
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
-import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
@@ -47,7 +54,9 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 private class TestAppPurchaseLogicSuspend : PurchaseLogic {
 
-    companion object { private const val TAG = "PaywallTester" }
+    companion object {
+        private const val TAG = "PaywallTester"
+    }
 
     override suspend fun performPurchase(
         activity: Activity,
@@ -71,7 +80,9 @@ private class TestAppPurchaseLogicSuspend : PurchaseLogic {
 
 private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
 
-    companion object { private const val TAG = "PaywallTester" }
+    companion object {
+        private const val TAG = "PaywallTester"
+    }
 
     override fun performPurchaseWithCompletion(
         activity: Activity,
@@ -94,6 +105,7 @@ private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongMethod")
 @Composable
 fun PaywallsScreen(
@@ -113,7 +125,9 @@ fun PaywallsScreen(
         }
     }
 
-    LazyColumn {
+    LazyColumn(
+        modifier = Modifier.testTag("paywall_screen"),
+    ) {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -123,6 +137,7 @@ fun PaywallsScreen(
                     modifier = Modifier.padding(8.dp),
                 )
                 ButtonWithEmoji(
+                    modifier = Modifier.testTag("full_screen_button"),
                     onClick = {
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
@@ -132,39 +147,47 @@ fun PaywallsScreen(
                     emoji = "\uD83D\uDCF1",
                     label = "Full screen",
                 )
-                ButtonWithEmoji(
-                    onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(
-                            offering,
-                            condensed = false,
-                            purchaseLogic = myAppPurchaseLogic,
-                        )
-                    },
-                    emoji = "\uD83D\uDD3D",
-                    label = "Footer",
-                )
-                ButtonWithEmoji(
-                    onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(
-                            offering,
-                            condensed = true,
-                            purchaseLogic = myAppPurchaseLogic,
-                        )
-                    },
-                    emoji = "\uD83D\uDDDC️",
-                    label = "Condenser footer",
-                )
-                ButtonWithEmoji(
-                    onClick = {
-                        displayPaywallState = DisplayPaywallState.FullScreen(
-                            offering,
-                            CustomFontProvider(bundledLobsterTwoFontFamily),
-                            purchaseLogic = myAppPurchaseLogic,
-                        )
-                    },
-                    emoji = "\uD83C\uDD70️",
-                    label = "Custom font",
-                )
+                if (offering.paywallComponents == null) {
+                    ButtonWithEmoji(
+                        modifier = Modifier.testTag("footer_button"),
+                        onClick = {
+                            displayPaywallState = DisplayPaywallState.Footer(
+                                offering,
+                                condensed = false,
+                                purchaseLogic = myAppPurchaseLogic,
+                            )
+                        },
+                        emoji = "\uD83D\uDD3D",
+                        label = "Footer",
+                    )
+                }
+                if (offering.paywallComponents == null) {
+                    ButtonWithEmoji(
+                        onClick = {
+                            displayPaywallState = DisplayPaywallState.Footer(
+                                offering,
+                                condensed = true,
+                                purchaseLogic = myAppPurchaseLogic,
+                            )
+                        },
+                        emoji = "\uD83D\uDDDC️",
+                        label = "Condenser footer",
+                    )
+                }
+                // Custom font is set on the paywall level in Paywalls V2.
+                if (offering.paywallComponents == null) {
+                    ButtonWithEmoji(
+                        onClick = {
+                            displayPaywallState = DisplayPaywallState.FullScreen(
+                                offering,
+                                CustomFontProvider(bundledLobsterTwoFontFamily),
+                                purchaseLogic = myAppPurchaseLogic,
+                            )
+                        },
+                        emoji = "\uD83C\uDD70️",
+                        label = "Custom font",
+                    )
+                }
             }
         }
     }
@@ -200,7 +223,7 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
     ) {
         Scaffold { scaffoldPadding ->
             Box(modifier = Modifier.padding(scaffoldPadding)) {
-                PaywallFooter(
+                OriginalTemplatePaywallFooter(
                     options = PaywallOptions.Builder(dismissRequest = onDismiss)
                         .setOffering(currentState.offering)
                         .setPurchaseLogic(currentState.purchaseLogic)
@@ -214,14 +237,19 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
     }
 }
 
+@Stable
 private sealed class DisplayPaywallState {
+
+    @Immutable
     object None : DisplayPaywallState()
+
     data class FullScreen
     constructor(
         val offering: Offering? = null,
         val fontProvider: FontProvider? = null,
         var purchaseLogic: PurchaseLogic? = null,
     ) : DisplayPaywallState()
+
     data class Footer(
         val offering: Offering? = null,
         val condensed: Boolean = false,
@@ -234,10 +262,11 @@ private fun ButtonWithEmoji(
     emoji: String,
     label: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
     Button(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
         onClick = onClick,

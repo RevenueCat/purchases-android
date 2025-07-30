@@ -38,7 +38,7 @@ internal class PurchaseUpdatesHandler(
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
         // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
         try {
-            log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA.format(response))
+            log(LogIntent.DEBUG) { AmazonStrings.RETRIEVED_PRODUCT_DATA.format(response) }
 
             val requestId = response.requestId
 
@@ -59,7 +59,7 @@ internal class PurchaseUpdatesHandler(
                 }
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            errorLog("Exception in onPurchaseUpdatesResponse", e)
+            errorLog(e) { "Exception in onPurchaseUpdatesResponse" }
             throw e
         }
     }

@@ -11,16 +11,19 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.loaded
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.data.loadedLegacy
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template1
@@ -30,14 +33,18 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template5
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7CustomPackages
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.URL
+import java.util.Date
 import java.util.Locale
 
 internal object TestData {
@@ -387,9 +394,30 @@ internal object TestData {
             ),
         )
     }
+
+    object Components {
+        val monthlyPackageComponent = PackageComponent(
+            packageId = PackageType.MONTHLY.identifier!!,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
+    }
 }
 
-internal class MockResourceProvider : ResourceProvider {
+internal class MockResourceProvider(
+    /**
+     * A map of resource type to a map of resource name to resource ID. For instance, to specify a font resource, do:
+     *
+     * ```kotlin
+     * mapOf(
+     *     "font" to mapOf("Roboto" to 100)
+     * )
+     * ```
+     */
+    private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
+    private val assetPaths: List<String> = emptyList(),
+    private val downloadedFilesByUrl: Map<String, DownloadedFontFamily> = emptyMap(),
+) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
     }
@@ -418,6 +446,22 @@ internal class MockResourceProvider : ResourceProvider {
     override fun getLocale(): Locale {
         return Locale.getDefault()
     }
+
+    override fun getResourceIdentifier(name: String, type: String): Int =
+        resourceIds[type]?.get(name) ?: 0
+
+    override fun getAssetFontPath(name: String): String? {
+        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+        val filePath = "${ResourceProvider.ASSETS_FONTS_DIR}/$nameWithExtension"
+
+        return assetPaths.find { it == filePath }
+    }
+
+    override fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return downloadedFilesByUrl[fontInfo.url]
+    }
 }
 
 @Suppress("TooManyFunctions")
@@ -436,21 +480,26 @@ internal class MockViewModel(
     override val actionError: State<PurchasesError?>
         get() = _actionError
 
-    fun loadedState(): PaywallState.Loaded? {
-        return state.value.loaded()
+    fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
+        return state.value.loadedLegacy()
     }
 
     private val _state = MutableStateFlow(
-        offering.toPaywallState(
-            variableDataProvider = VariableDataProvider(resourceProvider),
-            activelySubscribedProductIdentifiers = setOf(),
-            nonSubscriptionProductIdentifiers = setOf(),
-            mode = mode,
-            validatedPaywallData = offering.paywall!!,
-            template = PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
-            shouldDisplayDismissButton = false,
-            storefrontCountryCode = "US",
-        ),
+        when (val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, resourceProvider)) {
+            is PaywallValidationResult.Legacy -> offering.toLegacyPaywallState(
+                variableDataProvider = VariableDataProvider(resourceProvider),
+                mode = mode,
+                validatedPaywallData = validated.displayablePaywall,
+                template = validated.template,
+                shouldDisplayDismissButton = false,
+                storefrontCountryCode = "US",
+            )
+            is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
+                validationResult = validated,
+                storefrontCountryCode = null,
+                dateProvider = { Date(MILLIS_2025_01_25) },
+            )
+        },
     )
 
     private val _actionInProgress = mutableStateOf(false)
@@ -488,7 +537,6 @@ internal class MockViewModel(
         private set
     override fun closePaywall() {
         closePaywallCallCount++
-        unsupportedMethod()
     }
 
     var purchaseSelectedPackageCallCount = 0
@@ -505,10 +553,35 @@ internal class MockViewModel(
         }
     }
 
+    var handlePackagePurchaseCount = 0
+        private set
+    var handlePackagePurchaseParams = mutableListOf<Pair<Activity, Package?>>()
+        private set
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
+        handlePackagePurchaseCount++
+        handlePackagePurchaseParams.add(activity to pkg)
+        if (allowsPurchases) {
+            simulateActionInProgress()
+        } else {
+            unsupportedMethod("Can't purchase mock view model")
+        }
+    }
+
     var restorePurchasesCallCount = 0
         private set
     override fun restorePurchases() {
         restorePurchasesCallCount++
+        if (allowsPurchases) {
+            simulateActionInProgress()
+        } else {
+            unsupportedMethod("Can't restore purchases")
+        }
+    }
+
+    var handleRestorePurchasesCallCount = 0
+        private set
+    override suspend fun handleRestorePurchases() {
+        handleRestorePurchasesCallCount++
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {
@@ -543,5 +616,6 @@ internal class MockViewModel(
 
     private companion object {
         const val fakePurchaseDelayMillis: Long = 2000
+        private const val MILLIS_2025_01_25 = 1737763200000
     }
 }

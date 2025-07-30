@@ -35,6 +35,7 @@ private class PaywallActivityLauncherAPI {
             offering = offering,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
+            edgeToEdge = true,
         )
         activityLauncher.launch(offeringIdentifier)
         activityLauncher.launch(
@@ -45,6 +46,7 @@ private class PaywallActivityLauncherAPI {
             offeringIdentifier = offeringIdentifier,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
+            edgeToEdge = true,
         )
         activityLauncher.launchIfNeeded("requiredEntitlementIdentifier")
         activityLauncher.launchIfNeeded(
@@ -61,12 +63,14 @@ private class PaywallActivityLauncherAPI {
             offering = offering,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
+            edgeToEdge = true,
         )
         activityLauncher.launchIfNeeded(
             requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
             offering = offering,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
+            edgeToEdge = true,
             paywallDisplayCallback = paywallDisplayCallback,
         )
         activityLauncher.launchIfNeeded(
@@ -83,12 +87,14 @@ private class PaywallActivityLauncherAPI {
             offeringIdentifier = offeringIdentifier,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
+            edgeToEdge = true,
         )
         activityLauncher.launchIfNeeded(
             requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
             offeringIdentifier = offeringIdentifier,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
+            edgeToEdge = true,
             paywallDisplayCallback = paywallDisplayCallback,
         )
         activityLauncher.launchIfNeeded {

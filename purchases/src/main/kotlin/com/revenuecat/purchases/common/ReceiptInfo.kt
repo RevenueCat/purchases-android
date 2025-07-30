@@ -1,20 +1,24 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ReplacementMode
+import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 
 @SuppressWarnings("LongParameterList")
-internal class ReceiptInfo(
+internal class ReceiptInfo
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val productIDs: List<String>,
     val presentedOfferingContext: PresentedOfferingContext? = null,
     val subscriptionOptionId: String? = null,
     val storeProduct: StoreProduct? = null,
 
-    val price: Double? = storeProduct?.price?.amountMicros?.div(MICROS_MULTIPLIER.toDouble()),
+    val price: Double? = storeProduct?.price?.amountMicros?.div(MICRO_MULTIPLIER),
     val currency: String? = storeProduct?.price?.currencyCode,
     val replacementMode: ReplacementMode? = null,
 ) {

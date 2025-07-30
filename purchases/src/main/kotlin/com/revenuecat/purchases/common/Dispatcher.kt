@@ -65,8 +65,8 @@ internal open class Dispatcher(
                 val commandHandlingExceptions = Runnable {
                     try {
                         command.run()
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        errorLog("Exception running command: $e")
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                        errorLog { "Exception running command: $e" }
                         // We propagate the exception to the main thread to be sure it's not swallowed.
                         mainHandler?.post {
                             throw e

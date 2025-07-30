@@ -28,6 +28,7 @@ class BillingFactoryTest {
             mockDiagnosticsTracker,
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 
@@ -46,6 +47,7 @@ class BillingFactoryTest {
             diagnosticsTrackerIfEnabled = null,
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 }

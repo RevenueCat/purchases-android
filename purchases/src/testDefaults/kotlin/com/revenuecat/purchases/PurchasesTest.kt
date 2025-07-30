@@ -20,9 +20,11 @@ import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
@@ -34,6 +36,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
@@ -47,7 +50,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
@@ -113,6 +115,64 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(purchases.appUserID).isEqualTo(appUserId)
     }
 
+    // region storefrontCountryCode
+
+    @Test
+    fun `getting storefront country code calls billing store with correct parameters`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront")
+        }
+
+        var storefrontCountryCode: String? = null
+        purchases.getStorefrontCountryCodeWith { storefrontCountryCode = it }
+
+        assertThat(storefrontCountryCode).isEqualTo("test-storefront")
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `if already there, getting storefront country code does not calls billing store`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("test-storefront-should-not-be-called")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("test-storefront")
+        verify(exactly = 1) { mockBillingAbstract.getStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `if getting storefront fails, it propagates failure`() {
+        every { mockBillingAbstract.getStorefront(any(), captureLambda()) }.answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+
+        var error: PurchasesError? = null
+        purchases.getStorefrontCountryCodeWith(
+            onError = { error = it },
+            onSuccess = { fail("Should error") }
+        )
+
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    // endregion storefrontCountryCode
+
     // region purchasing
 
     @Test
@@ -123,7 +183,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -169,7 +229,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -359,7 +419,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         verify(exactly = 1) {
             mockCompletion.onReceived(any(), any())
-            mockCustomerInfoHelper.retrieveCustomerInfo(appUserID, any(), any(), any(), any())
+            mockCustomerInfoHelper.retrieveCustomerInfo(appUserID, any(), any(), any(), false, any())
         }
     }
 
@@ -526,6 +586,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground = false,
                 allowSharingPlayStoreAccount = false,
+                false,
                 any(),
             )
         }
@@ -563,7 +624,8 @@ internal class PurchasesTest : BasePurchasesTest() {
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
                 allowSharingPlayStoreAccount = false,
-                null,
+                false,
+                callback = null,
             )
         }
     }
@@ -1151,8 +1213,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun historicalPurchasesPassedToBackend() {
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
-        val inAppTransactions = getMockedPurchaseHistoryList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
-        val subTransactions = getMockedPurchaseHistoryList(subProductId, subPurchaseToken, ProductType.SUBS)
+        val inAppTransactions = getMockedPurchaseList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
+        val subTransactions = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS)
 
         every {
             mockBillingAbstract.queryAllPurchases(
@@ -1237,8 +1299,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         } answers {
             capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseHistoryList(productId, purchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseHistoryList(productIdSub, purchaseTokenSub, ProductType.SUBS)
+                    getMockedPurchaseList(productId, purchaseToken, ProductType.INAPP) +
+                        getMockedPurchaseList(productIdSub, purchaseTokenSub, ProductType.SUBS)
                 )
             }
         }
@@ -1311,7 +1373,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockPaywallEventsManager.track(event) } just Runs
+        every { mockEventsManager.track(event) } just Runs
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
         purchases.track(event)
         assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
@@ -1319,7 +1381,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `track close event clears cache`() {
-        every { mockPaywallEventsManager.track(any()) } just Runs
+        every { mockEventsManager.track(any()) } just Runs
         val impressionEvent = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
@@ -1337,10 +1399,10 @@ internal class PurchasesTest : BasePurchasesTest() {
         val event = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }
-        every { mockPaywallEventsManager.track(event) } just Runs
+        every { mockEventsManager.track(event) } just Runs
 
         purchases.track(event)
-        verify(exactly = 1) { mockPaywallEventsManager.track(event) }
+        verify(exactly = 1) { mockEventsManager.track(event) }
     }
 
     // endregion track events
@@ -1508,16 +1570,89 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(receivedError).isEqualTo(expectedError)
     }
 
+    // region parseAsWebPurchaseRedemption
+
+    @Test
+    fun `parseAsWebPurchaseRedemption returns value if a valid web purchase redemption link`() {
+        val redemptionLink = Purchases.parseAsWebPurchaseRedemption("rc-1111://redeem_web_purchase?redemption_token=1234")
+        assertThat(redemptionLink).isNotNull
+    }
+
+    @Test
+    fun `parseAsWebPurchaseRedemption does not return value if not a web purchase redemption link`() {
+        val redemptionLink = Purchases.parseAsWebPurchaseRedemption("rc-1111://another_link?redemption_token=1234")
+        assertThat(redemptionLink).isNull()
+    }
+
+    @Test
+    fun `parseAsWebPurchaseRedemption does not return value if not a link`() {
+        val redemptionLink = Purchases.parseAsWebPurchaseRedemption("invalid_link")
+        assertThat(redemptionLink).isNull()
+    }
+
+    // endregion parseAsWebPurchaseRedemption
+
+    // region redeemWebPurchase
+
+    @Test
+    fun `redeemWebPurchase is successful if helper returns success`() {
+        val redemptionLink = WebPurchaseRedemption("redemption_token")
+        val slot = slot<RedeemWebPurchaseListener>()
+        every { mockWebPurchasesRedemptionHelper.handleRedeemWebPurchase(redemptionLink, capture(slot)) } answers {
+            slot.captured.handleResult(RedeemWebPurchaseListener.Result.Success(mockInfo))
+        }
+        var result: RedeemWebPurchaseListener.Result? = null
+        purchases.redeemWebPurchase(redemptionLink) {
+            result = it
+        }
+        assertThat(result).isEqualTo(RedeemWebPurchaseListener.Result.Success(mockInfo))
+    }
+
+    @Test
+    fun `redeemWebPurchase errors if helper returns error`() {
+        val redemptionLink = WebPurchaseRedemption("redemption_token")
+        val slot = slot<RedeemWebPurchaseListener>()
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
+        every { mockWebPurchasesRedemptionHelper.handleRedeemWebPurchase(redemptionLink, capture(slot)) } answers {
+            slot.captured.handleResult(RedeemWebPurchaseListener.Result.Error(expectedError))
+        }
+        var result: RedeemWebPurchaseListener.Result? = null
+        purchases.redeemWebPurchase(redemptionLink) {
+            result = it
+        }
+        assertThat(result).isEqualTo(RedeemWebPurchaseListener.Result.Error(expectedError))
+    }
+
+    // endregion redeemWebPurchase
+
+    // region Paywall fonts
+
+    @Test
+    fun `getCachedFontFileOrStartDownload returns correct file if found`() {
+        val expectedFontFamily = DownloadedFontFamily(
+            family = "test-family",
+            fonts = emptyList(),
+        )
+        val fontInfo = UiConfig.AppConfig.FontsConfig.FontInfo.Name(value = "test-value")
+        every { mockFontLoader.getCachedFontFamilyOrStartDownload(fontInfo) } returns expectedFontFamily
+
+        val result = purchases.getCachedFontFamilyOrStartDownload(fontInfo)
+
+        assertThat(result).isEqualTo(expectedFontFamily)
+    }
+
+    // endregion Paywall fonts
+
     // region Private Methods
 
-    private fun getMockedPurchaseHistoryList(
+    private fun getMockedPurchaseList(
         productId: String,
         purchaseToken: String,
         productType: ProductType
     ): List<StoreTransaction> {
-        val purchaseHistoryRecordWrapper =
+        val purchaseRecordWrapper =
             getMockedStoreTransaction(productId, purchaseToken, productType)
-        return listOf(purchaseHistoryRecordWrapper)
+        return listOf(purchaseRecordWrapper)
     }
 
     private fun mockQueryingProductDetails(
@@ -1579,7 +1714,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,

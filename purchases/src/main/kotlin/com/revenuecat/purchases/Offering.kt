@@ -6,6 +6,8 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import dev.drewhamilton.poko.Poko
 
 /**
  * An offering is a collection of [Package] available for the user to purchase.
@@ -15,13 +17,49 @@ import com.revenuecat.purchases.paywalls.PaywallData
  * @property availablePackages Array of [Package] objects available for purchase.
  * @property metadata Offering metadata defined in RevenueCat dashboard.
  */
-data class Offering @JvmOverloads constructor(
+@Suppress("UnsafeOptInUsageError")
+@Poko
+class Offering
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val identifier: String,
     val serverDescription: String,
     val metadata: Map<String, Any>,
     val availablePackages: List<Package>,
+    @InternalRevenueCatAPI
     val paywall: PaywallData? = null,
+    @InternalRevenueCatAPI
+    val paywallComponents: PaywallComponents? = null,
 ) {
+    @OptIn(InternalRevenueCatAPI::class)
+    constructor(
+        identifier: String,
+        serverDescription: String,
+        metadata: Map<String, Any>,
+        availablePackages: List<Package>,
+    ) : this(
+        identifier = identifier,
+        serverDescription = serverDescription,
+        metadata = metadata,
+        availablePackages = availablePackages,
+        paywall = null,
+        paywallComponents = null,
+    )
+
+    @InternalRevenueCatAPI
+    @Poko
+    class PaywallComponents(
+        val uiConfig: UiConfig,
+        val data: PaywallComponentsData,
+    )
+
+    /**
+     * Whether the offering contains a paywall.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    @get:JvmName("hasPaywall")
+    val hasPaywall: Boolean
+        get() = paywall != null || paywallComponents != null
 
     /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.

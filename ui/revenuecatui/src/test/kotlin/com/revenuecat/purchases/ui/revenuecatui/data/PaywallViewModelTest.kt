@@ -3,9 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import android.app.Activity
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -14,19 +15,35 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
+import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -41,6 +58,7 @@ import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -48,13 +66,33 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URL
 import java.util.Date
 import java.util.UUID
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
+    private val defaultLocaleIdentifier = LocaleId("en_US")
+    private val localizations = nonEmptyMapOf(
+        defaultLocaleIdentifier to nonEmptyMapOf(
+            LocalizationKey("dummy_text") to LocalizationData.Text("dummy text"),
+        )
+    )
+    private val emptyPaywallComponentsData = PaywallComponentsData(
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                // Need to have at least one PackageComponent for the PaywallState to be valid.
+                stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                stickyFooter = null,
+            ),
+        ),
+        componentsLocalizations = localizations,
+        defaultLocaleIdentifier = defaultLocaleIdentifier,
+    )
 
     private lateinit var purchases: PurchasesType
     private lateinit var customerInfo: CustomerInfo
@@ -425,7 +463,32 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `updateState does update if different state`() {
+    fun `updateState does update if paywallsOptions identity changes`() {
+        val options1 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .setMode(PaywallMode.FULL_SCREEN)
+            .build()
+        val options2 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .setMode(PaywallMode.FOOTER)
+            .build()
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            options1,
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options1)
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options2)
+        coVerify(exactly = 2) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `updateState does not update if paywallsOptions identity does not change`() {
         val options1 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
             .setListener(listener)
             .build()
@@ -444,20 +507,17 @@ class PaywallViewModelTest {
         model.updateOptions(options1)
         coVerify(exactly = 1) { purchases.awaitOfferings() }
         model.updateOptions(options2)
-        coVerify(exactly = 2) { purchases.awaitOfferings() }
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
     }
 
     @Test
     fun `Should load default offering`() {
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -465,12 +525,13 @@ class PaywallViewModelTest {
         val expectedPaywall = defaultOffering.paywall!!
 
         verifyPaywall(state, expectedPaywall)
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.monthly))
-            .isTrue
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.annual))
-            .isFalse
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.lifetime))
-            .isTrue
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.monthly })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.annual })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.lifetime })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.size).isEqualTo(3)
     }
 
     @Test
@@ -479,10 +540,7 @@ class PaywallViewModelTest {
             PurchasesError(PurchasesErrorCode.NetworkError
         ))
 
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
@@ -502,10 +560,7 @@ class PaywallViewModelTest {
             mapOf(),
         )
 
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
@@ -526,7 +581,7 @@ class PaywallViewModelTest {
         coVerify(exactly = 0) { purchases.awaitOfferings() }
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -537,11 +592,71 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `Should load paywall components if using components paywall in full screen mode`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        // Act
+        val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN)
+
+        // Assert
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `Should load fallback paywall if using components paywall in footer mode`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        // Act
+        val model = create(offering = offering, mode = PaywallMode.FOOTER)
+
+        // Assert
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        assertThat(
+            (model.state.value as PaywallState.Loaded.Legacy).templateConfiguration.packages.all.size
+        ).isEqualTo(2)
+    }
+
+    @Test
+    fun `Should load fallback paywall if using components paywall in footer condensed mode`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        // Act
+        val model = create(offering = offering, mode = PaywallMode.FOOTER_CONDENSED)
+
+        // Assert
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        assertThat(
+            (model.state.value as PaywallState.Loaded.Legacy).templateConfiguration.packages.all.size
+        ).isEqualTo(2)
+    }
+
+    @Test
     fun `selectPackage`() {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -558,7 +673,7 @@ class PaywallViewModelTest {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -588,11 +703,79 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `handlePackagePurchase purchases selected package`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(selectedPackage = TestData.Packages.monthly)
+        val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+        assertThat(dismissInvoked).isFalse
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert
+        coVerify { purchases.awaitPurchase(any()) }
+        verifyOrder {
+            listener.onPurchaseStarted(selectedPackage)
+            listener.onPurchaseCompleted(customerInfo, transaction)
+        }
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `handlePackagePurchase purchases provided package`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(selectedPackage = TestData.Packages.monthly)
+        val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
+        val expectedPackage = TestData.Packages.quarterly
+        assertThat(selectedPackage).isNotEqualTo(expectedPackage)
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+        assertThat(dismissInvoked).isFalse
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = expectedPackage)
+
+        // Assert
+        coVerify { purchases.awaitPurchase(any()) }
+        verifyOrder {
+            listener.onPurchaseStarted(expectedPackage)
+            listener.onPurchaseCompleted(customerInfo, transaction)
+        }
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
     fun `purchasePackage fails`() {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -620,11 +803,44 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `handlePackagePurchase fails`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(selectedPackage = TestData.Packages.monthly)
+        val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert
+        coVerify { purchases.awaitPurchase(any()) }
+        verifyOrder {
+            listener.onPurchaseStarted(selectedPackage)
+            listener.onPurchaseError(expectedError)
+        }
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+    }
+
+    @Test
     fun `restorePurchases`() {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -649,6 +865,35 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun handleRestorePurchases(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coEvery {
+            purchases.awaitRestore()
+        } returns customerInfo
+
+        // Act
+        model.handleRestorePurchases()
+
+        // Assert
+        coVerify { purchases.awaitRestore() }
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreCompleted(customerInfo)
+        }
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
     fun `restorePurchases calls onDismiss if shouldDisplayBlock condition false`() {
         val model = create {
             false
@@ -660,6 +905,31 @@ class PaywallViewModelTest {
 
         model.restorePurchases()
 
+        assertThat(dismissInvoked).isTrue()
+    }
+
+    @Test
+    fun `handleRestorePurchases calls onDismiss if shouldDisplayBlock condition false`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(
+            offering = offering,
+            shouldDisplayBlock = { false }
+        )
+        coEvery {
+            purchases.awaitRestore()
+        } returns customerInfo
+
+        // Act
+        model.handleRestorePurchases()
+
+        // Assert
         assertThat(dismissInvoked).isTrue()
     }
 
@@ -678,13 +948,38 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isFalse()
     }
 
+    @Test
+    fun `handleRestorePurchases does not call onDismiss if shouldDisplayBlock condition true`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(
+            offering = offering,
+            shouldDisplayBlock = { true }
+        )
+        coEvery {
+            purchases.awaitRestore()
+        } returns customerInfo
+
+        // Act
+        model.handleRestorePurchases()
+
+        // Assert
+        assertThat(dismissInvoked).isFalse()
+    }
+
 
     @Test
     fun `restorePurchases fails`() {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -711,11 +1006,41 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `handleRestorePurchases fails`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        coEvery {
+            purchases.awaitRestore()
+        } throws PurchasesException(expectedError)
+
+        // Act
+        model.handleRestorePurchases()
+
+        // Assert
+        coVerify { purchases.awaitRestore() }
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreError(expectedError)
+        }
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+    }
+
+    @Test
     fun `clearActionError`() {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -786,12 +1111,15 @@ class PaywallViewModelTest {
         model.closePaywall()
         verify(exactly = 1) {
             purchases.track(
-                withArg {
-                    assertThat(it.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
-                    assertThat(it.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
-                    assertThat(it.data.displayMode).isEqualTo("full_screen")
-                    assertThat(it.data.darkMode).isFalse
-                    assertThat(it.type).isEqualTo(PaywallEventType.CLOSE)
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    assertThat(paywallEvent.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
+                    assertThat(paywallEvent.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
+                    assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
+                    assertThat(paywallEvent.data.darkMode).isFalse
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CLOSE)
                 }
             )
         }
@@ -823,6 +1151,41 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `handlePackagePurchase cancellation tracks cancel event`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering).apply {
+            val state = state.value as PaywallState.Loaded.Components
+            state.update(selectedPackage = TestData.Packages.monthly)
+            trackPaywallImpressionIfNeeded()
+        }
+        val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert
+        verifyEventTracked(
+            eventType = PaywallEventType.CANCEL,
+            times = 1,
+            offeringIdentifier = offering.identifier,
+            paywallRevision = offering.paywallComponents!!.data.revision
+        )
+        assertThat(model.actionError.value).isNull()
+        verify(exactly = 0) { listener.onPurchaseError(any()) }
+        verify(exactly = 1) { listener.onPurchaseCancelled() }
+    }
+
+    @Test
     fun `purchase errors other than cancellation do not track cancel event`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
@@ -833,6 +1196,30 @@ class PaywallViewModelTest {
 
         model.purchaseSelectedPackage(activity)
 
+        verifyNoEventsOfTypeTracked(PaywallEventType.CANCEL)
+    }
+
+    @Test
+    fun `handlePackagePurchase errors other than cancellation do not track cancel event`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        model.trackPaywallImpressionIfNeeded()
+        val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert
         verifyNoEventsOfTypeTracked(PaywallEventType.CANCEL)
     }
 
@@ -856,14 +1243,10 @@ class PaywallViewModelTest {
 
     private fun create(
         offering: Offering? = null,
-        activeSubscriptions: Set<String> = setOf(),
-        nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
         customPurchaseLogic: PurchaseLogic? = null,
-        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
+        mode: PaywallMode = PaywallMode.default,
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
-        mockActiveSubscriptions(activeSubscriptions)
-        mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
-
         return PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
@@ -871,6 +1254,7 @@ class PaywallViewModelTest {
                 .setListener(listener)
                 .setOffering(offering)
                 .setPurchaseLogic(customPurchaseLogic)
+                .setMode(mode)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -878,34 +1262,8 @@ class PaywallViewModelTest {
         )
     }
 
-    private fun mockActiveSubscriptions(subscriptions: Set<String>) {
-        every { customerInfo.activeSubscriptions } returns subscriptions
-    }
-
-    private fun mockNonSubscriptionTransactions(productIdentifiers: Set<String>) {
-        every { customerInfo.nonSubscriptionTransactions } returns productIdentifiers
-            .map {
-                Transaction(
-                    UUID.randomUUID().toString(),
-                    UUID.randomUUID().toString(),
-                    it,
-                    it,
-                    Date()
-                )
-            }
-    }
-
-    /**
-     * Note: this is O(n), for testing only
-     */
-    private fun TemplateConfiguration.PackageConfiguration.packageIsCurrentlySubscribed(
-        rcPackage: Package,
-    ): Boolean {
-        return all.first { it.rcPackage.identifier == rcPackage.identifier }.currentlySubscribed
-    }
-
     private fun verifyPaywall(
-        state: PaywallState.Loaded,
+        state: PaywallState.Loaded.Legacy,
         expectedPaywall: PaywallData,
     ) {
         assertThat(state.selectedPackage.value.rcPackage.identifier)
@@ -915,15 +1273,23 @@ class PaywallViewModelTest {
         assertThat(state.templateConfiguration.packages.all).hasSameSizeAs(expectedPaywall.config.packageIds)
     }
 
-    private fun verifyEventTracked(eventType: PaywallEventType, times: Int) {
+    private fun verifyEventTracked(
+        eventType: PaywallEventType,
+        times: Int,
+        offeringIdentifier: String = defaultOffering.identifier,
+        paywallRevision: Int = defaultOffering.paywall!!.revision,
+    ) {
         verify(exactly = times) {
             purchases.track(
-                withArg {
-                    assertThat(it.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
-                    assertThat(it.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
-                    assertThat(it.data.displayMode).isEqualTo("full_screen")
-                    assertThat(it.data.darkMode).isFalse
-                    assertThat(it.type).isEqualTo(eventType)
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    assertThat(paywallEvent.data.offeringIdentifier).isEqualTo(offeringIdentifier)
+                    assertThat(paywallEvent.data.paywallRevision).isEqualTo(paywallRevision)
+                    assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
+                    assertThat(paywallEvent.data.darkMode).isFalse
+                    assertThat(paywallEvent.type).isEqualTo(eventType)
                 }
             )
         }
@@ -932,8 +1298,10 @@ class PaywallViewModelTest {
     private fun verifyNoEventsOfTypeTracked(eventType: PaywallEventType) {
         verify(exactly = 0) {
             purchases.track(
-                withArg {
-                    assertThat(it.type).isEqualTo(eventType)
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(eventType)
                 }
             )
         }

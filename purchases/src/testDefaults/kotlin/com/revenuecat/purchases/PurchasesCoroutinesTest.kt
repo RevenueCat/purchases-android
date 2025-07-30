@@ -33,6 +33,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
                 any(),
                 any(),
                 any(),
+                true,
                 any(),
             )
         }
@@ -51,6 +52,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
                 any(),
                 any(),
                 any(),
+                true,
                 any(),
             )
         }
@@ -76,6 +78,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
                 any(),
                 any(),
                 any(),
+                true,
                 any(),
             )
         }

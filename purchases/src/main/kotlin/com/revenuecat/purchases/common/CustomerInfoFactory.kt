@@ -3,12 +3,15 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
+import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.utils.Iso8601Utils
+import com.revenuecat.purchases.utils.SerializationException
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONException
@@ -21,6 +24,7 @@ import java.util.Date
  * @throws [JSONException] If the json is invalid.
  */
 internal object CustomerInfoFactory {
+
     @Throws(JSONException::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
         return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
@@ -87,6 +91,27 @@ internal object CustomerInfoFactory {
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate,
         )
+    }
+
+    fun parseSubscriptionInfos(subscriberJSONObject: JSONObject, requestDate: Date): Map<String, SubscriptionInfo> {
+        val subscriptionMap = mutableMapOf<String, SubscriptionInfo>()
+        val subscriptions = subscriberJSONObject.getJSONObject("subscriptions")
+        try {
+            subscriptions.keys().forEach { productId ->
+                val subscriptionJSONObject = subscriptions.getJSONObject(productId)
+                val subscriptionInfoResponse = JsonProvider.defaultJson.decodeFromString<SubscriptionInfoResponse>(
+                    subscriptionJSONObject.toString(),
+                )
+                subscriptionMap[productId] = SubscriptionInfo(productId, requestDate, subscriptionInfoResponse)
+            }
+        } catch (s: SerializationException) {
+            errorLog(s) { "Error deserializing subscription information" }
+            emptyMap<String, SubscriptionInfo>()
+        } catch (i: IllegalArgumentException) {
+            errorLog(i) { "Error deserializing subscription information. The input is not a SubscriptionInfo" }
+            emptyMap<String, SubscriptionInfo>()
+        }
+        return subscriptionMap
     }
 
     /**

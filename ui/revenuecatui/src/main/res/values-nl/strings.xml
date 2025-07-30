@@ -19,4 +19,5 @@
     <string name="continue_cta">Doorgaan</string>
     <string name="default_offer_details_with_intro_offer">Start uw proefperiode van {{ sub_offer_duration }} en daarna {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Geen browser geïnstalleerd. Link kon niet worden geopend.</string>
+    <string name="cannot_open_link">Ongeldige link. Kon niet worden geopend.</string>
 </resources>

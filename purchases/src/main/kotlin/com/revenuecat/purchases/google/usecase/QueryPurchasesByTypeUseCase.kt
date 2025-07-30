@@ -57,7 +57,7 @@ internal class QueryPurchasesByTypeUseCase(
                     )
                 }
             } ?: run {
-                errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchasesByType"))
+                errorLog { PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchasesByType") }
                 val devErrorResponseCode = BillingResult.newBuilder()
                     .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
                     .build()
@@ -80,19 +80,20 @@ internal class QueryPurchasesByTypeUseCase(
         val requestStartTime = useCaseParams.dateProvider.now
         billingClient.queryPurchasesAsync(queryParams) { billingResult, purchases ->
             if (hasResponded.getAndSet(true)) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_PURCHASES_RESPONSE.format(billingResult.responseCode),
-                )
+                log(LogIntent.GOOGLE_ERROR) {
+                    OfferingStrings.EXTRA_QUERY_PURCHASES_RESPONSE.format(billingResult.responseCode)
+                }
                 return@queryPurchasesAsync
             }
-            trackGoogleQueryPurchasesRequestIfNeeded(productType, billingResult, requestStartTime)
+            val foundProductIds = purchases.flatMap { it.products }
+            trackGoogleQueryPurchasesRequestIfNeeded(productType, foundProductIds, billingResult, requestStartTime)
             listener.onQueryPurchasesResponse(billingResult, purchases)
         }
     }
 
     private fun trackGoogleQueryPurchasesRequestIfNeeded(
         @ProductType productType: String,
+        foundProductIds: List<String>,
         billingResult: BillingResult,
         requestStartTime: Date,
     ) {
@@ -101,6 +102,7 @@ internal class QueryPurchasesByTypeUseCase(
             billingResult.responseCode,
             billingResult.debugMessage,
             responseTime = Duration.between(requestStartTime, useCaseParams.dateProvider.now),
+            foundProductIds,
         )
     }
 

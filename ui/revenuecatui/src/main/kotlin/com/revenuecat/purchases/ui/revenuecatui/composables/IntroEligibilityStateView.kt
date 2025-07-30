@@ -45,6 +45,8 @@ internal fun IntroEligibilityStateView(
             fontWeight = fontWeight,
             textAlign = textAlign,
             allowLinks = allowLinks,
+            textFillMaxWidth = true,
+            applyFontSizeToParagraph = false,
             modifier = modifier,
         )
     }

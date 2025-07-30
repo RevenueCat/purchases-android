@@ -32,6 +32,7 @@ internal class BackendHelper(
                         body,
                         postFieldsToSign,
                         authenticationHeaders,
+                        fallbackBaseURLs = appConfig.fallbackBaseURLs,
                     )
                 }
 
@@ -59,7 +60,7 @@ internal class BackendHelper(
         delay: Delay = Delay.NONE,
     ) {
         if (dispatcher.isClosed()) {
-            errorLog("Enqueuing operation in closed dispatcher.")
+            errorLog { "Enqueuing operation in closed dispatcher." }
         } else {
             dispatcher.enqueue(call, delay)
         }

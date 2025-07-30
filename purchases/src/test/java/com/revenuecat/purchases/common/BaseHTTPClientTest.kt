@@ -6,7 +6,6 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -65,14 +64,16 @@ internal abstract class BaseHTTPClientTest {
         dateProvider: DateProvider = DefaultDateProvider(),
         eTagManager: ETagManager = mockETagManager,
         signingManager: SigningManager? = null,
-        storefrontProvider: StorefrontProvider = mockStorefrontProvider
+        storefrontProvider: StorefrontProvider = mockStorefrontProvider,
+        localeProvider: LocaleProvider = DefaultLocaleProvider()
     ) = HTTPClient(
         appConfig,
         eTagManager,
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
         storefrontProvider,
-        dateProvider
+        dateProvider,
+        localeProvider = localeProvider
     )
 
     protected fun createAppConfig(
@@ -82,6 +83,7 @@ internal abstract class BaseHTTPClientTest {
         platformInfo: PlatformInfo = expectedPlatformInfo,
         proxyURL: URL? = baseURL,
         store: Store = Store.PLAY_STORE,
+        isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
         forceServerErrors: Boolean = false,
         forceSigningErrors: Boolean = false,
@@ -93,6 +95,7 @@ internal abstract class BaseHTTPClientTest {
             platformInfo = platformInfo,
             proxyURL = proxyURL,
             store = store,
+            isDebugBuild = isDebugBuild,
             dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
             forceServerErrors = forceServerErrors,
@@ -104,14 +107,15 @@ internal abstract class BaseHTTPClientTest {
         endpoint: Endpoint,
         expectedResult: HTTPResult,
         verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
-        requestDateHeader: Date? = null
+        requestDateHeader: Date? = null,
+        server: MockWebServer = this.server,
     ) {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                "/v1${endpoint.getPath()}",
+                urlPath = endpoint.getPath(),
                 refreshETag = false,
                 requestDate = requestDateHeader,
                 verificationResult = verificationResult

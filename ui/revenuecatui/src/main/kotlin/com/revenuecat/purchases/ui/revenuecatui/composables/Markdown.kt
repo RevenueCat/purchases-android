@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,18 +10,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -30,6 +27,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -55,11 +54,18 @@ import org.commonmark.parser.Parser
 
 // Inspired by https://github.com/ErikHellman/MarkdownComposer/blob/master/app/src/main/java/se/hellsoft/markdowncomposer/MarkdownComposer.kt
 
-private const val TAG_URL = "url"
 private val parser = Parser.builder()
     .extensions(listOf(StrikethroughExtension.create()))
     .build()
 
+/**
+ * @param allowLinks If true, links will be decorated and clickable.
+ * @param textFillMaxWidth If true, the text will fill the maximum width available. This was used by paywalls V1 and
+ * left to avoid unintended UI changes.
+ * @param applyFontSizeToParagraph If true, the provided [fontSize] will be applied to the annotated string used to
+ * build a Markdown paragraph from the [text]. This was not the case in Paywalls V1, but is needed for Paywalls V2.
+ * (See `TextComponentViewTests` for more info.)
+ */
 @SuppressWarnings("LongParameterList")
 @Composable
 internal fun Markdown(
@@ -67,9 +73,15 @@ internal fun Markdown(
     modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
     style: TextStyle = TextStyle.Default,
+    fontSize: TextUnit = TextUnit.Unspecified,
     fontWeight: FontWeight? = null,
+    fontFamily: FontFamily? = null,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     textAlign: TextAlign? = null,
     allowLinks: Boolean = true,
+    // The below parameters are used to avoid unintended changes to V1 paywalls.
+    textFillMaxWidth: Boolean = false,
+    applyFontSizeToParagraph: Boolean = true,
 ) {
     val root = parser.parse(text) as Document
 
@@ -84,8 +96,21 @@ internal fun Markdown(
 
     Column(
         verticalArrangement = Arrangement.spacedBy(paragraphPadding),
+        horizontalAlignment = horizontalAlignment,
+        modifier = modifier,
     ) {
-        MDDocument(root, color, style, fontWeight, textAlign, allowLinks, modifier)
+        MDDocument(
+            root,
+            color,
+            style,
+            fontSize,
+            fontWeight,
+            fontFamily,
+            textAlign,
+            allowLinks,
+            textFillMaxWidth,
+            applyFontSizeToParagraph,
+        )
     }
 }
 
@@ -95,12 +120,26 @@ private fun MDDocument(
     document: Document,
     color: Color,
     style: TextStyle,
+    fontSize: TextUnit,
     fontWeight: FontWeight?,
+    fontFamily: FontFamily?,
     textAlign: TextAlign?,
     allowLinks: Boolean,
-    modifier: Modifier,
+    textFillMaxWidth: Boolean,
+    applyFontSizeToParagraph: Boolean,
 ) {
-    MDBlockChildren(document, color, style, fontWeight, textAlign, allowLinks, modifier)
+    MDBlockChildren(
+        document,
+        color,
+        style,
+        fontSize,
+        fontWeight,
+        fontFamily,
+        textAlign,
+        allowLinks,
+        textFillMaxWidth,
+        applyFontSizeToParagraph,
+    )
 }
 
 @SuppressWarnings("LongParameterList", "MagicNumber")
@@ -109,9 +148,13 @@ private fun MDHeading(
     heading: Heading,
     color: Color,
     style: TextStyle,
+    fontSize: TextUnit,
     fontWeight: FontWeight?,
+    fontFamily: FontFamily?,
     textAlign: TextAlign?,
     allowLinks: Boolean,
+    textFillMaxWidth: Boolean,
+    applyFontSizeToParagraph: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val overriddenStyle = when (heading.level) {
@@ -123,7 +166,18 @@ private fun MDHeading(
         6 -> MaterialTheme.typography.titleSmall
         else -> {
             // Invalid header...
-            MDBlockChildren(heading, color, style, fontWeight, textAlign, allowLinks, modifier)
+            MDBlockChildren(
+                heading,
+                color,
+                style,
+                fontSize,
+                fontWeight,
+                fontFamily,
+                textAlign,
+                allowLinks,
+                textFillMaxWidth,
+                applyFontSizeToParagraph,
+            )
             return
         }
     }
@@ -131,9 +185,18 @@ private fun MDHeading(
     val padding = if (heading.parent is Document) 8.dp else 0.dp
     Box(modifier = modifier.padding(bottom = padding)) {
         val text = buildAnnotatedString {
-            appendMarkdownChildren(heading, color, allowLinks)
+            appendMarkdownChildren(heading, color, allowLinks, baseFontWeight = fontWeight)
         }
-        MarkdownText(text, color, overriddenStyle, fontWeight, textAlign, allowLinks, modifier)
+        MarkdownText(
+            text,
+            color,
+            overriddenStyle,
+            TextUnit.Unspecified,
+            fontWeight,
+            fontFamily,
+            textAlign,
+            textFillMaxWidth,
+        )
     }
 }
 
@@ -143,22 +206,39 @@ private fun MDParagraph(
     paragraph: Paragraph,
     color: Color,
     style: TextStyle,
+    fontSize: TextUnit,
     fontWeight: FontWeight?,
+    fontFamily: FontFamily?,
     textAlign: TextAlign?,
     allowLinks: Boolean,
-    modifier: Modifier = Modifier,
+    textFillMaxWidth: Boolean,
+    applyFontSizeToParagraph: Boolean,
 ) {
-    Box(modifier = modifier) {
+    Box {
         val styledText = buildAnnotatedString {
             pushStyle(
                 style
-                    .copy(fontWeight = fontWeight)
+                    .copy(
+                        color = color,
+                        fontWeight = fontWeight,
+                        fontSize = if (applyFontSizeToParagraph) fontSize else style.fontSize,
+                        fontFamily = fontFamily,
+                    )
                     .toSpanStyle(),
             )
-            appendMarkdownChildren(paragraph as Node, color, allowLinks)
+            appendMarkdownChildren(paragraph as Node, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
-        MarkdownText(styledText, color, style, fontWeight, textAlign, allowLinks, modifier)
+        MarkdownText(
+            styledText,
+            color,
+            style,
+            fontSize,
+            fontWeight,
+            fontFamily,
+            textAlign,
+            textFillMaxWidth,
+        )
     }
 }
 
@@ -168,28 +248,41 @@ private fun MDBulletList(
     bulletList: BulletList,
     color: Color,
     style: TextStyle,
+    fontSize: TextUnit,
     fontWeight: FontWeight?,
+    fontFamily: FontFamily?,
     textAlign: TextAlign?,
     allowLinks: Boolean,
-    modifier: Modifier = Modifier,
+    textFillMaxWidth: Boolean,
 ) {
     val marker = bulletList.bulletMarker
     MDListItems(
         bulletList,
         color = color,
         style = style,
+        fontSize = fontSize,
         fontWeight = fontWeight,
+        fontFamily = fontFamily,
         textAlign = textAlign,
         allowLinks = allowLinks,
-        modifier = modifier,
+        textFillMaxWidth = textFillMaxWidth,
     ) {
         val text = buildAnnotatedString {
             pushStyle(MaterialTheme.typography.bodyLarge.toSpanStyle())
             append("$marker ")
-            appendMarkdownChildren(it, color, allowLinks)
+            appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
-        MarkdownText(text, color, style, fontWeight, textAlign, allowLinks, modifier)
+        MarkdownText(
+            text,
+            color,
+            style,
+            fontSize,
+            fontWeight,
+            fontFamily,
+            textAlign,
+            textFillMaxWidth,
+        )
     }
 }
 
@@ -199,10 +292,12 @@ private fun MDOrderedList(
     orderedList: OrderedList,
     color: Color,
     style: TextStyle,
+    fontSize: TextUnit,
     fontWeight: FontWeight?,
+    fontFamily: FontFamily?,
     textAlign: TextAlign?,
     allowLinks: Boolean,
-    modifier: Modifier = Modifier,
+    textFillMaxWidth: Boolean,
 ) {
     var number = orderedList.startNumber
     val delimiter = orderedList.delimiter
@@ -210,18 +305,29 @@ private fun MDOrderedList(
         orderedList,
         color = color,
         style = style,
+        fontSize = fontSize,
         fontWeight = fontWeight,
+        fontFamily = fontFamily,
         textAlign = textAlign,
         allowLinks = allowLinks,
-        modifier = modifier,
+        textFillMaxWidth = textFillMaxWidth,
     ) {
         val text = buildAnnotatedString {
             pushStyle(style.toSpanStyle())
             append("${number++}$delimiter ")
-            appendMarkdownChildren(it, color, allowLinks)
+            appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
-        MarkdownText(text, color, style, fontWeight, textAlign, allowLinks, modifier)
+        MarkdownText(
+            text,
+            color,
+            style,
+            fontSize,
+            fontWeight,
+            fontFamily,
+            textAlign,
+            textFillMaxWidth,
+        )
     }
 }
 
@@ -231,9 +337,12 @@ private fun MDListItems(
     listBlock: ListBlock,
     color: Color,
     style: TextStyle,
+    fontSize: TextUnit,
     fontWeight: FontWeight?,
+    fontFamily: FontFamily?,
     textAlign: TextAlign?,
     allowLinks: Boolean,
+    textFillMaxWidth: Boolean,
     modifier: Modifier = Modifier,
     item: @Composable (node: Node) -> Unit,
 ) {
@@ -245,8 +354,30 @@ private fun MDListItems(
             var child = listItem.firstChild
             while (child != null) {
                 when (child) {
-                    is BulletList -> MDBulletList(child, color, style, fontWeight, textAlign, allowLinks, modifier)
-                    is OrderedList -> MDOrderedList(child, color, style, fontWeight, textAlign, allowLinks, modifier)
+                    is BulletList ->
+                        MDBulletList(
+                            child,
+                            color,
+                            style,
+                            fontSize,
+                            fontWeight,
+                            fontFamily,
+                            textAlign,
+                            allowLinks,
+                            textFillMaxWidth,
+                        )
+                    is OrderedList ->
+                        MDOrderedList(
+                            child,
+                            color,
+                            style,
+                            fontSize,
+                            fontWeight,
+                            fontFamily,
+                            textAlign,
+                            allowLinks,
+                            textFillMaxWidth,
+                        )
                     else -> item(child)
                 }
                 child = child.next
@@ -257,7 +388,13 @@ private fun MDListItems(
 }
 
 @Composable
-private fun MDBlockQuote(blockQuote: BlockQuote, color: Color, allowLinks: Boolean, modifier: Modifier = Modifier) {
+private fun MDBlockQuote(
+    blockQuote: BlockQuote,
+    color: Color,
+    allowLinks: Boolean,
+    baseFontWeight: FontWeight?,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .drawBehind {
@@ -275,7 +412,7 @@ private fun MDBlockQuote(blockQuote: BlockQuote, color: Color, allowLinks: Boole
                 MaterialTheme.typography.bodyLarge.toSpanStyle()
                     .plus(SpanStyle(fontStyle = FontStyle.Italic)),
             )
-            appendMarkdownChildren(blockQuote, color, allowLinks)
+            appendMarkdownChildren(blockQuote, color, allowLinks, baseFontWeight)
             pop()
         }
         Text(text, modifier)
@@ -300,20 +437,65 @@ private fun MDBlockChildren(
     parent: Node,
     color: Color,
     style: TextStyle,
+    fontSize: TextUnit,
     fontWeight: FontWeight?,
+    fontFamily: FontFamily?,
     textAlign: TextAlign?,
     allowLinks: Boolean,
-    modifier: Modifier,
+    textFillMaxWidth: Boolean,
+    applyFontSizeToParagraph: Boolean,
 ) {
     var child = parent.firstChild
     while (child != null) {
         when (child) {
-            is BlockQuote -> MDBlockQuote(child, color, allowLinks, modifier)
-            is Heading -> MDHeading(child, color, style, fontWeight, textAlign, allowLinks, modifier)
-            is Paragraph -> MDParagraph(child, color, style, fontWeight, textAlign, allowLinks, modifier)
-            is FencedCodeBlock -> MDFencedCodeBlock(child, modifier)
-            is BulletList -> MDBulletList(child, color, style, fontWeight, textAlign, allowLinks, modifier)
-            is OrderedList -> MDOrderedList(child, color, style, fontWeight, textAlign, allowLinks, modifier)
+            is BlockQuote -> MDBlockQuote(child, color, allowLinks, baseFontWeight = fontWeight)
+            is Heading -> MDHeading(
+                child,
+                color,
+                style,
+                fontSize,
+                fontWeight,
+                fontFamily,
+                textAlign,
+                allowLinks,
+                textFillMaxWidth,
+                applyFontSizeToParagraph,
+            )
+            is Paragraph -> MDParagraph(
+                child,
+                color,
+                style,
+                fontSize,
+                fontWeight,
+                fontFamily,
+                textAlign,
+                allowLinks,
+                textFillMaxWidth,
+                applyFontSizeToParagraph,
+            )
+            is FencedCodeBlock -> MDFencedCodeBlock(child)
+            is BulletList -> MDBulletList(
+                child,
+                color,
+                style,
+                fontSize,
+                fontWeight,
+                fontFamily,
+                textAlign,
+                allowLinks,
+                textFillMaxWidth,
+            )
+            is OrderedList -> MDOrderedList(
+                child,
+                color,
+                style,
+                fontSize,
+                fontWeight,
+                fontFamily,
+                textAlign,
+                allowLinks,
+                textFillMaxWidth,
+            )
         }
         child = child.next
     }
@@ -323,20 +505,26 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     parent: Node,
     color: Color,
     allowLinks: Boolean,
+    baseFontWeight: FontWeight?,
 ) {
     var child = parent.firstChild
     while (child != null) {
         when (child) {
-            is Paragraph -> appendMarkdownChildren(child, color, allowLinks)
+            is Paragraph -> appendMarkdownChildren(child, color, allowLinks, baseFontWeight)
             is Text -> append(child.literal)
             is Emphasis -> {
                 pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
-                appendMarkdownChildren(child, color, allowLinks)
+                appendMarkdownChildren(child, color, allowLinks, baseFontWeight)
                 pop()
             }
             is StrongEmphasis -> {
-                pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-                appendMarkdownChildren(child, color, allowLinks)
+                val biggerWeight = if ((baseFontWeight?.weight ?: 0) > FontWeight.Bold.weight) {
+                    baseFontWeight
+                } else {
+                    FontWeight.Bold
+                }
+                pushStyle(SpanStyle(fontWeight = biggerWeight))
+                appendMarkdownChildren(child, color, allowLinks, biggerWeight)
                 pop()
             }
             is Code -> {
@@ -350,18 +538,16 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
             is Link -> {
                 if (allowLinks) {
                     val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
-                    pushStyle(underline)
-                    pushStringAnnotation(TAG_URL, child.destination)
-                    appendMarkdownChildren(child, color, allowLinks = true)
-                    pop()
-                    pop()
+                    withLink(LinkAnnotation.Url(child.destination, TextLinkStyles(underline))) {
+                        appendMarkdownChildren(child, color, allowLinks = true, baseFontWeight = baseFontWeight)
+                    }
                 } else {
-                    appendMarkdownChildren(child, color, allowLinks = false)
+                    appendMarkdownChildren(child, color, allowLinks = false, baseFontWeight = baseFontWeight)
                 }
             }
             is Strikethrough -> {
                 pushStyle(TextStyle(textDecoration = TextDecoration.LineThrough).toSpanStyle())
-                appendMarkdownChildren(child, color, allowLinks)
+                appendMarkdownChildren(child, color, allowLinks, baseFontWeight = baseFontWeight)
                 pop()
             }
         }
@@ -375,36 +561,24 @@ private fun MarkdownText(
     text: AnnotatedString,
     color: Color,
     style: TextStyle,
+    fontSize: TextUnit,
     fontWeight: FontWeight?,
+    fontFamily: FontFamily?,
     textAlign: TextAlign?,
-    allowLinks: Boolean,
+    textFillMaxWidth: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-    val uriHandler = LocalUriHandler.current
-
     Text(
         text = text,
         color = color,
         style = style,
+        fontSize = fontSize,
         fontWeight = fontWeight,
+        fontFamily = fontFamily,
         textAlign = textAlign,
         modifier = modifier
-            .fillMaxWidth()
-            .conditional(allowLinks) {
-                pointerInput(Unit) {
-                    detectTapGestures { offset ->
-                        layoutResult.value?.let { layoutResult ->
-                            val position = layoutResult.getOffsetForPosition(offset)
-                            text.getStringAnnotations(position, position)
-                                .firstOrNull { it.tag == TAG_URL }
-                                ?.let {
-                                    uriHandler.openUri(it.item)
-                                }
-                        }
-                    }
-                }
+            .conditional(textFillMaxWidth) {
+                fillMaxWidth()
             },
-        onTextLayout = { layoutResult.value = it },
     )
 }

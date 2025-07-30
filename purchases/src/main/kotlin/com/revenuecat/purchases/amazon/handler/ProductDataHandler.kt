@@ -45,7 +45,7 @@ internal class ProductDataHandler(
         onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        log(LogIntent.DEBUG, AmazonStrings.REQUESTING_PRODUCTS.format(skus.joinToString()))
+        log(LogIntent.DEBUG) { AmazonStrings.REQUESTING_PRODUCTS.format(skus.joinToString()) }
 
         synchronized(this) { productDataCache.toMap() }.let { productDataCache ->
             if (productDataCache.keys.containsAll(skus)) {
@@ -65,10 +65,10 @@ internal class ProductDataHandler(
     override fun onProductDataResponse(response: ProductDataResponse) {
         // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
         try {
-            log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_FINISHED.format(response.requestStatus.name))
+            log(LogIntent.DEBUG) { AmazonStrings.PRODUCTS_REQUEST_FINISHED.format(response.requestStatus.name) }
 
             if (response.unavailableSkus.isNotEmpty()) {
-                log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_UNAVAILABLE.format(response.unavailableSkus))
+                log(LogIntent.DEBUG) { AmazonStrings.PRODUCTS_REQUEST_UNAVAILABLE.format(response.unavailableSkus) }
             }
 
             val requestId = response.requestId
@@ -85,7 +85,7 @@ internal class ProductDataHandler(
                 handleUnsuccessfulProductDataResponse(response, request.onError)
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            errorLog("Exception in onProductDataResponse", e)
+            errorLog(e) { "Exception in onProductDataResponse" }
             throw e
         }
     }
@@ -95,10 +95,10 @@ internal class ProductDataHandler(
         marketplace: String,
         onReceive: StoreProductsCallback,
     ) {
-        log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA.format(productData))
+        log(LogIntent.DEBUG) { AmazonStrings.RETRIEVED_PRODUCT_DATA.format(productData) }
 
         if (productData.isEmpty()) {
-            log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA_EMPTY)
+            log(LogIntent.DEBUG) { AmazonStrings.RETRIEVED_PRODUCT_DATA_EMPTY }
         }
 
         val storeProducts = productData.values.mapNotNull { it.toStoreProduct(marketplace) }

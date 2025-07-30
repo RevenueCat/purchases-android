@@ -47,7 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
 
 @Composable
 internal fun PurchaseButton(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
     horizontalPadding: Dp = UIConstant.defaultHorizontalPadding,
@@ -150,7 +150,7 @@ private fun PurchaseButton(
                         fontWeight = FontWeight.SemiBold,
                         allowLinks = false,
                         modifier = Modifier
-                            .padding(vertical = UIConstant.defaultVerticalSpacing / 3)
+                            .padding(vertical = UIConstant.defaultVerticalSpacing * 2 / 3)
                             .alpha(labelOpacity),
                     )
                 }
@@ -199,7 +199,7 @@ private fun BoxScope.LoadingSpinner(shouldShow: Boolean, colors: TemplateConfigu
 @Composable
 private fun PurchaseButtonPreview() {
     val viewModel = MockViewModel(offering = TestData.template2Offering, allowsPurchases = true)
-    val state = viewModel.loadedState()
+    val state = viewModel.loadedLegacyState()
 
     if (state != null) {
         PurchaseButton(

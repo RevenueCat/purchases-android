@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.paywalls.PaywallData
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class OfferingAPI {
@@ -22,21 +21,13 @@ private class OfferingAPI {
             val p2: Package = getPackage("")
             val metadata: Map<String, Any> = metadata
             val metadataString: String = getMetadataString("key", "default")
-            val paywall: PaywallData? = paywall
+            var hasPaywall: Boolean = hasPaywall
 
             Offering(
                 identifier = identifier,
                 serverDescription = serverDescription,
                 metadata = metadata,
                 availablePackages = availablePackages,
-            )
-
-            Offering(
-                identifier = identifier,
-                serverDescription = serverDescription,
-                metadata = metadata,
-                availablePackages = availablePackages,
-                paywall = paywall,
             )
         }
     }

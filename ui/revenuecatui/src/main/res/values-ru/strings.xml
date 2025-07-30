@@ -19,4 +19,5 @@
     <string name="continue_cta">Продолжить</string>
     <string name="default_offer_details_with_intro_offer">Начните пробную версию на {{ sub_offer_duration }}, затем {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Браузер не установлен. Ссылка не может быть открыта.</string>
+    <string name="cannot_open_link">Неверная ссылка. Не удалось открыть.</string>
 </resources>

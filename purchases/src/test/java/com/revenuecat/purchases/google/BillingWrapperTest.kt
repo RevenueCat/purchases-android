@@ -19,6 +19,7 @@ import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.QueryProductDetailsResult
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -34,6 +35,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -48,16 +50,16 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.BillingStrings
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockInstallmentPlandetails
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
-import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
+import com.revenuecat.purchases.utils.mockQueryPurchases
 import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
 import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
-import com.revenuecat.purchases.utils.verifyQueryPurchaseHistoryCalledWithType
+import com.revenuecat.purchases.utils.verifyQueryPurchasesCalledWithType
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearStaticMockk
@@ -338,7 +340,7 @@ class BillingWrapperTest {
 
         val storeProduct = createStoreProductWithoutOffers()
         val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
-        val oldPurchase = mockPurchaseHistoryRecordWrapper()
+        val oldPurchase = mockPurchaseRecordWrapper()
         val replaceInfo = ReplaceProductInfo(oldPurchase, GoogleReplacementMode.DEFERRED)
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
@@ -485,7 +487,7 @@ class BillingWrapperTest {
 
         val productId = "product_a"
 
-        val replaceProductInfo = ReplaceProductInfo(mockPurchaseHistoryRecordWrapper())
+        val replaceProductInfo = ReplaceProductInfo(mockPurchaseRecordWrapper())
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
@@ -560,9 +562,6 @@ class BillingWrapperTest {
             oneTimePurchaseOfferDetails = oneTimePurchaseOfferDetails,
             subscriptionOfferDetails = null
         )
-        every {
-            oneTimePurchaseOfferDetails.zza()
-        } returns productId
         
         val storeProduct = productDetails.toInAppStoreProduct()!!
         val isPersonalizedPrice = true
@@ -1094,9 +1093,9 @@ class BillingWrapperTest {
 
     @Test
     fun `getting all purchases gets both subs and inapps`() {
-        val builder = mockClient.mockQueryPurchaseHistory(
+        val builder = mockClient.mockQueryPurchases(
             billingClientOKResult,
-            listOf(stubPurchaseHistoryRecord())
+            listOf(stubGooglePurchase())
         )
 
         var receivedPurchases = listOf<StoreTransaction>()
@@ -1109,8 +1108,8 @@ class BillingWrapperTest {
         )
 
         assertThat(receivedPurchases.size).isNotZero
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, builder)
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, builder)
+        mockClient.verifyQueryPurchasesCalledWithType(subsGoogleProductType, builder)
+        mockClient.verifyQueryPurchasesCalledWithType(inAppGoogleProductType, builder)
     }
 
     @Test
@@ -1356,7 +1355,7 @@ class BillingWrapperTest {
                 capture(slot)
             )
         } answers {
-            slot.captured.onProductDetailsResponse(result, emptyList())
+            slot.captured.onProductDetailsResponse(result, QueryProductDetailsResult.create(emptyList(), emptyList()))
         }
 
         wrapper.queryProductDetailsAsync(
@@ -1368,6 +1367,7 @@ class BillingWrapperTest {
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+                setOf("test-sku"),
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
@@ -1391,7 +1391,7 @@ class BillingWrapperTest {
                 capture(slot)
             )
         } answers {
-            slot.captured.onProductDetailsResponse(result, emptyList())
+            slot.captured.onProductDetailsResponse(result, QueryProductDetailsResult.create(emptyList(), emptyList()))
         }
 
         wrapper.queryProductDetailsAsync(
@@ -1403,6 +1403,7 @@ class BillingWrapperTest {
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+                setOf("test-sku"),
                 BillingClient.ProductType.SUBS,
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR,
                 billingDebugMessage = "test-debug-message",
@@ -1424,6 +1425,114 @@ class BillingWrapperTest {
                 billingDebugMessage = ""
             )
         }
+    }
+
+    @Test
+    fun `startConnectionOnMainThread tracks diagnostics call with correct parameters`() {
+        // Arrange, Act, Assert
+        // Our test setup() method calls startConnectionOnMainThread().
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingStartConnection() }
+    }
+
+    @Test
+    fun `onBillingSetupFinished tracks diagnostics call with correct parameters`() {
+        // Arrange
+        every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
+        // BillingClient is not connected, to check pendingRequestCount.
+        every { mockClient.isReady } returns false
+        val billingResult = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.OK)
+            .setDebugMessage("test-debug-message")
+            .build()
+        val expectedResponseCode = billingResult.responseCode
+        val expectedDebugMessage = billingResult.debugMessage
+        // We expect this to be capped at 100, even though we have 200 pending requests.
+        val expectedPendingRequestCount = 100
+
+        // Act
+        repeat(200) {
+            wrapper.queryProductDetailsAsync(
+                productType = ProductType.SUBS,
+                productIds = setOf("product_a"),
+                onReceive = { },
+                onError = { fail("shouldn't be an error") }
+            )
+        }
+        wrapper.onBillingSetupFinished(billingResult)
+
+        // Assert
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(
+                responseCode = expectedResponseCode,
+                debugMessage = expectedDebugMessage,
+                pendingRequestCount = expectedPendingRequestCount,
+            )
+        }
+    }
+
+    @Test
+    fun `onBillingServiceDisconnected tracks diagnostics call with correct parameters`() {
+        // Arrange, Act
+        wrapper.onBillingServiceDisconnected()
+
+        // Assert
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() }
+    }
+
+    @Test
+    fun `make a purchase tracks start purchase event`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+
+        val storeProduct = createStoreProductWithoutOffers()
+        val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
+        val replaceSkuInfo = mockReplaceSkuInfo()
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            replaceSkuInfo,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted(
+                productId = purchasingData.productId,
+                oldProductId = replaceSkuInfo.oldPurchase.productIds.first(),
+                hasIntroTrial = false,
+                hasIntroPrice = false,
+            )
+        }
+    }
+
+    @Test
+    fun `tracks purchase update received event`() {
+        val purchases = listOf(stubGooglePurchase())
+        every {
+            mockPurchasesListener.onPurchasesUpdated(any())
+        } just Runs
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList()
+        )
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(
+                productIds = listOf(purchases.first().firstProductId),
+                purchaseStatuses = listOf("PURCHASED"),
+                billingResponseCode = BillingClient.BillingResponseCode.OK,
+                billingDebugMessage = "",
+            )
+        }
+
     }
 
     // endregion diagnostics tracking
@@ -1538,20 +1647,76 @@ class BillingWrapperTest {
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
+    // region findPurchaseInActivePurchases
+
+    @Test
+    fun `findPurchaseInActivePurchases finds purchase in active purchases`() {
+        val oldPurchase = stubGooglePurchase()
+        val purchases = listOf(oldPurchase)
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList()
+        )
+
+        var foundPurchase: StoreTransaction? = null
+        wrapper.findPurchaseInActivePurchases(
+            appUserID = "test-app-user-id",
+            productType = ProductType.SUBS,
+            productId = oldPurchase.firstProductId,
+            onCompletion = { foundPurchase = it },
+            onError = { fail("Shouldn't be an error: $it") }
+        )
+
+        assertThat(foundPurchase).isNotNull
+        assertThat(foundPurchase!!.purchaseToken).isEqualTo(oldPurchase.purchaseToken)
+    }
+
+    @Test
+    fun `findPurchaseInActivePurchases does not find purchase if not in active purchases`() {
+        val oldPurchase = stubGooglePurchase()
+        val purchases = listOf(oldPurchase)
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList()
+        )
+
+        var error: PurchasesError? = null
+        wrapper.findPurchaseInActivePurchases(
+            appUserID = "test-app-user-id",
+            productType = ProductType.SUBS,
+            productId = "unpurchased-product-id",
+            onCompletion = { fail("Should be an error") },
+            onError = { error = it }
+        )
+
+        assertThat(error).isNotNull
+        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(error!!.underlyingErrorMessage).isEqualTo(
+            PurchaseStrings.NO_EXISTING_PURCHASE.format("unpurchased-product-id")
+        )
+    }
+
+    // endregion findPurchaseInActivePurchases
 
     // endregion
 
-    private fun mockPurchaseHistoryRecordWrapper(): StoreTransaction {
-        val oldPurchase = stubPurchaseHistoryRecord(
+    private fun mockPurchaseRecordWrapper(): StoreTransaction {
+        val oldPurchase = stubGooglePurchase(
             productIds = listOf("product_b"),
             purchaseToken = "atoken"
         )
 
-        return oldPurchase.toStoreTransaction(type = ProductType.SUBS)
+        return oldPurchase.toStoreTransaction(productType = ProductType.SUBS)
     }
 
     private fun mockReplaceSkuInfo(): ReplaceProductInfo {
-        val oldPurchase = mockPurchaseHistoryRecordWrapper()
+        val oldPurchase = mockPurchaseRecordWrapper()
         return ReplaceProductInfo(oldPurchase, GoogleReplacementMode.CHARGE_FULL_PRICE)
     }
 
@@ -1625,16 +1790,18 @@ class BillingWrapperTest {
 
     private fun mockDiagnosticsTracker() {
         every {
-            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any(), any())
         } just Runs
         every {
-            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any())
-        } just Runs
-        every {
-            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any(), any())
         } just Runs
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
+        every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
+        every { mockDiagnosticsTracker.trackGooglePurchaseStarted(any(), any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(any(), any(), any(), any()) } just runs
     }
 }

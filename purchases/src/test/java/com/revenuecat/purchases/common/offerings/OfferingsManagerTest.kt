@@ -1,10 +1,13 @@
 package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
@@ -14,6 +17,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -36,6 +40,8 @@ class OfferingsManagerTest {
     private lateinit var backend: Backend
     private lateinit var offeringsFactory: OfferingsFactory
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
+    private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
+    private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -47,14 +53,21 @@ class OfferingsManagerTest {
         offeringImagePreDownloader = mockk<OfferingImagePreDownloader>().apply {
             every { preDownloadOfferingImages(any()) } just Runs
         }
+        mockDiagnosticsTracker = mockk()
+        mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
+            every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
+        }
 
         mockBackendResponseSuccess()
+        mockDiagnosticsTracker()
 
         offeringsManager = OfferingsManager(
             cache,
             backend,
             offeringsFactory,
             offeringImagePreDownloader,
+            mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
         )
     }
 
@@ -321,7 +334,7 @@ class OfferingsManagerTest {
 
         assertThat(purchasesError).isNotNull
         verify(exactly = 1) {
-            cache.clearOfferingsCacheTimestamp()
+            cache.forceCacheStale()
         }
     }
 
@@ -383,7 +396,7 @@ class OfferingsManagerTest {
         )
 
         assertThat(receivedError).isEqualTo(expectedError)
-        verify(exactly = 1) { cache.clearOfferingsCacheTimestamp() }
+        verify(exactly = 1) { cache.forceCacheStale() }
     }
 
     // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
@@ -414,7 +427,7 @@ class OfferingsManagerTest {
 
         assertThat(receivedError).isEqualTo(expectedError)
 
-        verify(exactly = 1) { cache.clearOfferingsCacheTimestamp() }
+        verify(exactly = 1) { cache.forceCacheStale() }
     }
 
     // endregion getOfferings
@@ -486,10 +499,232 @@ class OfferingsManagerTest {
 
     // endregion pre download offering images
 
+    // region pre download font files
+
+    @Test
+    fun `getOfferings pre downloads font files for offerings`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {}
+        )
+
+        verify(exactly = 1) {
+            mockOfferingFontPreDownloader.preDownloadOfferingFontsIfNeeded(testOfferings)
+        }
+    }
+
+    // endregion pre download font files
+
+    // region Get Offerings diagnostics
+
+    @Test
+    fun `getOfferings tracks start event`() {
+        mockOfferingsFactory()
+        every { cache.cachedOfferings } returns null
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsStarted()
+        }
+    }
+
+    @Test
+    fun `getOfferings tracks result event on success with NOT_FOUND cache`() {
+        mockOfferingsFactory(
+            requestedProductIds = setOf(productId),
+            notFoundProductIds = emptySet()
+        )
+        every { cache.cachedOfferings } returns null
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                requestedProductIds = setOf(productId),
+                notFoundProductIds = emptySet(),
+                errorMessage = null,
+                errorCode = null,
+                verificationResult = null,
+                cacheStatus = DiagnosticsTracker.CacheStatus.NOT_FOUND,
+                responseTime = any()
+            )
+        }
+    }
+
+
+    @Test
+    fun `getOfferings tracks result event on error with NOT_FOUND cache`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        mockBackendResponseError(error = expectedError, isServerError = false)
+        every { cache.cachedOfferings } returns null
+        every { cache.cachedOfferingsResponse } returns null
+        mockDeviceCache(wasSuccessful = false)
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { },
+            onSuccess = { fail("should be error") }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                requestedProductIds = null,
+                notFoundProductIds = null,
+                errorMessage = expectedError.message,
+                errorCode = expectedError.code.code,
+                verificationResult = null,
+                cacheStatus = DiagnosticsTracker.CacheStatus.NOT_FOUND,
+                responseTime = any()
+            )
+        }
+    }
+
+    @Test
+    fun `getOfferings with fetchCurrent tracks result event on success`() {
+        mockOfferingsFactory(
+            requestedProductIds = setOf(productId),
+            notFoundProductIds = emptySet()
+        )
+        every { cache.cachedOfferings } returns null
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { },
+            fetchCurrent = true
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                requestedProductIds = setOf(productId),
+                notFoundProductIds = emptySet(),
+                errorMessage = null,
+                errorCode = null,
+                verificationResult = null,
+                cacheStatus = DiagnosticsTracker.CacheStatus.NOT_CHECKED,
+                responseTime = any()
+            )
+        }
+    }
+
+    @Test
+    fun `getOfferings with fetchCurrent tracks result event on error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        mockBackendResponseError(error = expectedError, isServerError = false)
+        every { cache.cachedOfferings } returns null
+        mockDeviceCache(wasSuccessful = false)
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { },
+            onSuccess = { fail("should be error") },
+            fetchCurrent = true
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                requestedProductIds = null,
+                notFoundProductIds = null,
+                errorMessage = expectedError.message,
+                errorCode = expectedError.code.code,
+                verificationResult = null,
+                cacheStatus = DiagnosticsTracker.CacheStatus.NOT_CHECKED,
+                responseTime = any()
+            )
+        }
+    }
+
+    @Test
+    fun `getOfferings tracks result event on success from STALE cache`() {
+        mockOfferingsFactory(
+            requestedProductIds = setOf(productId),
+            notFoundProductIds = emptySet()
+        )
+        every { cache.cachedOfferings } returns testOfferings
+        mockDeviceCache()
+        mockCacheStale(offeringsStale = true)
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                requestedProductIds = null,
+                notFoundProductIds = null,
+                errorMessage = null,
+                errorCode = null,
+                verificationResult = null,
+                cacheStatus = DiagnosticsTracker.CacheStatus.STALE,
+                responseTime = any()
+            )
+        }
+    }
+
+    @Test
+    fun `getOfferings tracks result event on success from VALID cache`() {
+        mockOfferingsFactory(
+            requestedProductIds = setOf(productId),
+            notFoundProductIds = emptySet()
+        )
+        every { cache.cachedOfferings } returns testOfferings
+        mockDeviceCache()
+        mockCacheStale(offeringsStale = false)
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { }
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                requestedProductIds = null,
+                notFoundProductIds = null,
+                errorMessage = null,
+                errorCode = null,
+                verificationResult = null,
+                cacheStatus = DiagnosticsTracker.CacheStatus.VALID,
+                responseTime = any()
+            )
+        }
+    }
+
+    // endregion
+
     // region helpers
 
     private fun mockOfferingsFactory(
         offerings: Offerings = testOfferings,
+        requestedProductIds: Set<String> = setOf(productId),
+        notFoundProductIds: Set<String> = emptySet(),
         error: PurchasesError? = null
     ) {
         if (error == null) {
@@ -500,7 +735,7 @@ class OfferingsManagerTest {
                     onSuccess = captureLambda()
                 )
             } answers {
-                lambda<(Offerings) -> Unit>().captured.invoke(offerings)
+                lambda<(OfferingsResultData) -> Unit>().captured.invoke(OfferingsResultData(offerings, requestedProductIds, notFoundProductIds))
             }
         } else {
             every {
@@ -547,9 +782,20 @@ class OfferingsManagerTest {
         if (wasSuccessful) {
             every { cache.cacheOfferings(any(), any()) } just Runs
         } else {
-            every { cache.clearOfferingsCacheTimestamp() } just Runs
+            every { cache.forceCacheStale() } just Runs
         }
     }
 
     // endregion helpers
+
+    private fun mockDiagnosticsTracker() {
+        every { mockDiagnosticsTracker.trackGetOfferingsStarted() } just runs
+        every { mockDiagnosticsTracker.trackGetOfferingsResult(any(), any(), any(), any(), any(), any(), any()) } just runs
+    }
+
+    private fun Offerings.copy(current: Offering?): Offerings =
+        Offerings(
+            current = current,
+            all = this.all,
+        )
 }

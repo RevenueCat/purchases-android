@@ -5,9 +5,10 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.models.TestStoreProduct
+import dev.drewhamilton.poko.Poko
 
-data class PurchaseParams(val builder: Builder) {
+@Poko
+class PurchaseParams(val builder: Builder) {
 
     val isPersonalizedPrice: Boolean?
     val oldProductId: String?
@@ -37,7 +38,7 @@ data class PurchaseParams(val builder: Builder) {
      *
      * If a [Package] or [StoreProduct] is passed in, the [defaultOption] will be purchased. [defaultOption] is
      * selected via the following logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" or "rc-customer-center" tag
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      */
@@ -57,17 +58,6 @@ data class PurchaseParams(val builder: Builder) {
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
             this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
-
-        private fun ensureNoTestProduct(storeProduct: StoreProduct) {
-            if (storeProduct is TestStoreProduct) {
-                throw PurchasesException(
-                    PurchasesError(
-                        PurchasesErrorCode.ProductNotAvailableForPurchaseError,
-                        "Cannot purchase $storeProduct",
-                    ),
-                )
-            }
-        }
 
         constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
             this(
@@ -133,10 +123,6 @@ data class PurchaseParams(val builder: Builder) {
         }
 
         open fun build(): PurchaseParams {
-            product?.let {
-                ensureNoTestProduct(it)
-            }
-
             return PurchaseParams(this)
         }
     }

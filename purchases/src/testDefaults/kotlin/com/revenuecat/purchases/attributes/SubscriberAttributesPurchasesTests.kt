@@ -9,13 +9,11 @@ import com.revenuecat.purchases.PostPendingTransactionsHelper
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesOrchestrator
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
-import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -27,8 +25,10 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.SyncDispatcher
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
 import io.mockk.clearMocks
 import io.mockk.every
@@ -54,6 +54,8 @@ class SubscriberAttributesPurchasesTests {
     private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
+    private val fontLoaderMock = mockk<FontLoader>()
+    private val virtualCurrencyManagerMock = mockk<VirtualCurrencyManager>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -71,6 +73,7 @@ class SubscriberAttributesPurchasesTests {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         val identityManager = mockk<IdentityManager>(relaxed = true).apply {
             every { currentAppUserID } returns appUserId
@@ -99,17 +102,20 @@ class SubscriberAttributesPurchasesTests {
             customerInfoHelper = customerInfoHelperMock,
             customerInfoUpdateHandler = customerInfoUpdateHandlerMock,
             diagnosticsSynchronizer = null,
+            diagnosticsTrackerIfEnabled = null,
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
             postTransactionWithProductDetailsHelper = postTransactionHelper,
             postPendingTransactionsHelper = postPendingTransactionsHelper,
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock,
-            paywallEventsManager = null,
+            eventsManager = null,
             paywallPresentedCache = PaywallPresentedCache(),
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
+            fontLoader = fontLoaderMock,
+            virtualCurrencyManager = virtualCurrencyManagerMock,
         )
 
         underTest = Purchases(purchasesOrchestrator)
@@ -117,7 +123,7 @@ class SubscriberAttributesPurchasesTests {
 
     @After
     fun tearDown() {
-        clearMocks(customerInfoHelperMock, customerInfoUpdateHandlerMock, offeringsManagerMock)
+        clearMocks(customerInfoHelperMock, customerInfoUpdateHandlerMock, offeringsManagerMock, fontLoaderMock)
     }
 
     @Test
@@ -314,6 +320,20 @@ class SubscriberAttributesPurchasesTests {
     fun `setFirebaseAppInstanceID`() {
         integrationIDTest(SubscriberAttributeKey.IntegrationIds.FirebaseAppInstanceId) { parameter ->
             underTest.setFirebaseAppInstanceID(parameter)
+        }
+    }
+
+    @Test
+    fun `setTenjinAnalyticsInstallationID`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.TenjinAnalyticsInstallationId) { parameter ->
+            underTest.setTenjinAnalyticsInstallationID(parameter)
+        }
+    }
+
+    @Test
+    fun `setPostHogUserId`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.PostHogUserId) { parameter ->
+            underTest.setPostHogUserId(parameter)
         }
     }
 

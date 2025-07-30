@@ -137,11 +137,11 @@ class FileHelperTest {
     }
 
     @Test
-    fun `readFilePerLines returns stream with correct content`() {
+    fun `readFilePerLines returns sequence with correct content`() {
         createTestFileWithContents("first line\nsecond line\nthird line\nfourth line")
         val receivedValues = mutableListOf<String>()
-        fileHelper.readFilePerLines(testFilePath) { stream ->
-            stream.forEach {
+        fileHelper.readFilePerLines(testFilePath) { sequence ->
+            sequence.forEach {
                 receivedValues.add(it)
             }
         }
@@ -149,11 +149,11 @@ class FileHelperTest {
     }
 
     @Test
-    fun `readFilePerLines stream can be limited correctly`() {
+    fun `readFilePerLines sequence can be limited correctly`() {
         createTestFileWithContents("first line\nsecond line\nthird line\nfourth line")
         val receivedValues = mutableListOf<String>()
-        fileHelper.readFilePerLines(testFilePath) { stream ->
-            stream.limit(2).forEach {
+        fileHelper.readFilePerLines(testFilePath) { sequence ->
+            sequence.take(2).forEach {
                 receivedValues.add(it)
             }
         }

@@ -19,4 +19,5 @@
     <string name="continue_cta">Weitermachen</string>
     <string name="default_offer_details_with_intro_offer">Starten Sie Ihre Testversion für {{ sub_offer_duration }} und dann für {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Kein Browser installiert. Link konnte nicht geöffnet werden.</string>
+    <string name="cannot_open_link">Ungültiger Link. Konnte nicht geöffnet werden.</string>
 </resources>

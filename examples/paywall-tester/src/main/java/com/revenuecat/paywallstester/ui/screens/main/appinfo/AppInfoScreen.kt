@@ -1,73 +1,133 @@
 package com.revenuecat.paywallstester.ui.screens.main.appinfo
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.paywallstester.Constants
+import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-private const val BOTTOM_SHEET_MAX_HEIGHT_PERCENTAGE = 0.9f
+private const val TAG = "CustomerCenterTest"
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@SuppressWarnings("LongMethod")
 @Composable
-fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>()) {
+fun AppInfoScreen(
+    viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
+        factory = AppInfoScreenViewModelImpl.Factory,
+    ),
+) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
-    var isCustomerCenterBottomSheetVisible by remember { mutableStateOf(false) }
+    var isCustomerCenterVisible by rememberSaveable { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
+    var showApiKeyDialog by remember { mutableStateOf(false) }
+    var lastCustomAction by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+
+    // Use remember to cache the listener across recompositions
+    val customerCenterListener = remember {
+        createCustomerCenterListener { actionIdentifier, purchaseIdentifier ->
+            val message = "Custom Action: $actionIdentifier" +
+                if (purchaseIdentifier != null) " (Product: $purchaseIdentifier)" else ""
+            lastCustomAction = message
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    if (isCustomerCenterVisible) {
+        CustomerCenter(
+            modifier = Modifier.fillMaxSize(),
+            options = CustomerCenterOptions.Builder()
+                .setListener(customerCenterListener)
+                .build(),
+        ) {
+            isCustomerCenterVisible = false
+        }
+        return
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val currentUserID = viewModel.state.collectAsState().value ?: "No user logged in"
+        val state by viewModel.state.collectAsState()
+        val currentUserID by remember { derivedStateOf { state.appUserID } }
+        val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
         Text(text = "Current user ID: $currentUserID")
+        Text(text = "Current API key: $currentApiKeyDescription")
+        lastCustomAction?.let { action ->
+            Text(
+                text = "Last custom action: $action",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         Button(onClick = { showLogInDialog = true }) {
             Text(text = "Log in")
         }
         Button(onClick = { viewModel.logOut() }) {
             Text(text = "Log out")
         }
+        Button(onClick = { showApiKeyDialog = true }) {
+            Text(text = "Switch API key")
+        }
         Button(onClick = { isDebugBottomSheetVisible = true }) {
             Text(text = "Show debug view")
         }
-        Button(onClick = { isCustomerCenterBottomSheetVisible = true }) {
+        Button(onClick = {
+            isCustomerCenterVisible = true
+        }) {
             Text(text = "Show customer center")
         }
     }
 
     if (showLogInDialog) {
         LoginDialog(viewModel) { showLogInDialog = false }
+    }
+    if (showApiKeyDialog) {
+        ApiKeyDialog(
+            onApiKeyClick = {
+                viewModel.switchApiKey(it)
+                showApiKeyDialog = false
+            },
+        ) { showApiKeyDialog = false }
     }
 
     DebugRevenueCatBottomSheet(
@@ -76,19 +136,6 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
         isVisible = isDebugBottomSheetVisible,
         onDismissCallback = { isDebugBottomSheetVisible = false },
     )
-
-    if (isCustomerCenterBottomSheetVisible) {
-        val customerCenterSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { isCustomerCenterBottomSheetVisible = false },
-            modifier = Modifier.fillMaxHeight(BOTTOM_SHEET_MAX_HEIGHT_PERCENTAGE),
-            sheetState = customerCenterSheetState,
-        ) {
-            // CustomerCenter WIP: Uncomment when ready
-            // CustomerCenter(modifier = Modifier.fillMaxSize())
-            Text("CustomerCenter disabled. Uncomment when ready.")
-        }
-    }
 }
 
 @Composable
@@ -132,17 +179,116 @@ private fun LoginDialog(viewModel: AppInfoScreenViewModel, onDismissed: () -> Un
     }
 }
 
+@Composable
+private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Unit) {
+    Dialog(onDismissRequest = { onDismissed() }) {
+        Surface(shape = MaterialTheme.shapes.medium) {
+            Column(Modifier.padding(all = 16.dp)) {
+                ApiKeyButton(
+                    label = Constants.GOOGLE_API_KEY_A_LABEL,
+                    apiKey = Constants.GOOGLE_API_KEY_A,
+                    onClick = onApiKeyClick,
+                )
+
+                ApiKeyButton(
+                    label = Constants.GOOGLE_API_KEY_B_LABEL,
+                    apiKey = Constants.GOOGLE_API_KEY_B,
+                    onClick = onApiKeyClick,
+                )
+
+                Spacer(Modifier.size(4.dp))
+                Row(
+                    Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth(),
+                    Arrangement.spacedBy(8.dp, Alignment.End),
+                ) {
+                    TextButton(onClick = { onDismissed() }) {
+                        Text("CANCEL")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ApiKeyButton(label: String, apiKey: String, onClick: (String) -> Unit) {
+    TextButton(onClick = { onClick(apiKey) }) {
+        Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+            )
+            Text(text = apiKey)
+        }
+    }
+}
+
 @Suppress("EmptyFunctionBlock")
 @Preview(showBackground = true)
 @Composable
 fun AppInfoScreenPreview() {
     AppInfoScreen(
         viewModel = object : AppInfoScreenViewModel {
-            override val state: StateFlow<String?>
-                get() = MutableStateFlow("test-user-id")
+            override val state: StateFlow<UiState>
+                get() = MutableStateFlow(UiState(appUserID = "test-user-id", apiKeyDescription = "test-api-key"))
 
             override fun logIn(newAppUserId: String) { }
             override fun logOut() { }
+            override fun switchApiKey(newApiKey: String) { }
         },
     )
+}
+
+@Preview
+@Composable
+private fun ApiKeyDialog_Preview() {
+    ApiKeyDialog(
+        onApiKeyClick = {},
+        onDismissed = {},
+    )
+}
+
+private fun createCustomerCenterListener(
+    onCustomAction: (actionIdentifier: String, purchaseIdentifier: String?) -> Unit = { _, _ -> },
+): CustomerCenterListener {
+    return object : CustomerCenterListener {
+        override fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
+            Log.d(TAG, "Local listener: onManagementOptionSelected called with action: $action")
+        }
+
+        override fun onRestoreStarted() {
+            Log.d(TAG, "Local listener: onRestoreStarted called")
+        }
+
+        override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+            Log.d(
+                TAG,
+                "Local listener: onRestoreCompleted called with customer info: " +
+                    customerInfo.originalAppUserId,
+            )
+        }
+
+        override fun onRestoreFailed(error: PurchasesError) {
+            Log.d(TAG, "Local listener: onRestoreFailed called with error: ${error.message}")
+        }
+
+        override fun onShowingManageSubscriptions() {
+            Log.d(TAG, "Local listener: onShowingManageSubscriptions called")
+        }
+
+        override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
+            Log.d(TAG, "Local listener: onFeedbackSurveyCompleted called with option ID: $feedbackSurveyOptionId")
+        }
+
+        override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
+            Log.d(
+                TAG,
+                "Local listener: onCustomActionSelected called with action: $actionIdentifier, " +
+                    "purchaseIdentifier: $purchaseIdentifier",
+            )
+            onCustomAction(actionIdentifier, purchaseIdentifier)
+        }
+    }
 }

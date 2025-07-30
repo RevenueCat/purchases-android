@@ -71,6 +71,7 @@ final class EntitlementInfoAPI {
             case AMAZON:
             case RC_BILLING:
             case EXTERNAL:
+            case PADDLE:
         }
     }
 
@@ -79,6 +80,7 @@ final class EntitlementInfoAPI {
             case NORMAL:
             case INTRO:
             case TRIAL:
+            case PREPAID:
         }
     }
 

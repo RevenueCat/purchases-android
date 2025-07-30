@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.utils.pricePerDay
 import com.revenuecat.purchases.utils.pricePerMonth
 import com.revenuecat.purchases.utils.pricePerWeek
 import com.revenuecat.purchases.utils.pricePerYear
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 import java.util.Locale
 
@@ -11,7 +13,8 @@ import java.util.Locale
  * Encapsulates how a user pays for a subscription at a given point in time.
  */
 @Parcelize
-data class PricingPhase(
+@Poko
+class PricingPhase(
     /**
      * Billing period for which the [PricingPhase] applies.
      */
@@ -55,6 +58,16 @@ data class PricingPhase(
                 null
             }
         }
+
+    /**
+     * Gives the price of the [PricingPhase] in the given locale in a daily recurrence. This means that for example,
+     * if the period is weekly, the price will be divided by 7. It uses a currency formatter to format the price in
+     * the given locale. Note that this value may be an approximation.
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    @JvmOverloads
+    fun pricePerDay(locale: Locale = Locale.getDefault()): Price =
+        price.pricePerDay(billingPeriod, locale)
 
     /**
      * Gives the price of the [PricingPhase] in the given locale in a weekly recurrence. This means that for example,

@@ -161,7 +161,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                "/v1${endpoint.getPath()}",
+                urlPath = endpoint.getPath(),
                 refreshETag = false,
                 requestDate = Date(1234567890L),
                 verificationResult = VerificationResult.VERIFIED
@@ -188,7 +188,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
         verify(exactly = 1) {
             mockSigningManager.verifyResponse(
-                "/v1${endpoint.getPath()}",
+                urlPath = endpoint.getPath(),
                 "test-signature",
                 "test-nonce",
                 "{\"test-key\":\"test-value\"}",

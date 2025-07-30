@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.emerge)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -53,12 +54,23 @@ emerge {
     apiToken.set(System.getenv("EMERGE_API_TOKEN"))
 
     vcs {
-        sha.set(System.getenv("CIRCLE_SHA1"))
+        sha.set(Runtime.getRuntime().exec(arrayOf("git", "rev-parse", "HEAD")).inputReader().readText().trim())
+        branchName.set(
+            Runtime.getRuntime()
+                .exec(arrayOf("git", "rev-parse", "--abbrev-ref", "HEAD"))
+                .inputReader().readText().trim(),
+        )
         val prNum = System.getenv("CIRCLE_PULL_REQUEST")
             .takeUnless { prUrl -> prUrl.isNullOrEmpty() }
             ?.takeIf { prUrl -> prUrl.contains('/') }
             ?.split('/')
             ?.lastOrNull()
+            // Extract the PR number from the merge queue branch name.
+            ?: "^gh-readonly-queue\\/([^/]+)\\/pr-(\\d+)-([0-9a-f]+)\$".toRegex(RegexOption.MULTILINE)
+                .matchEntire(branchName.get())
+                ?.groupValues
+                ?.get(2)
+
         if (prNum != null) {
             prNumber.set(prNum)
         } else {
@@ -77,7 +89,6 @@ dependencies {
 
     androidTestImplementation(libs.emerge.snapshots)
 
-    implementation(platform(libs.kotlin.bom))
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)

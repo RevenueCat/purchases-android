@@ -6,18 +6,29 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.between
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import org.json.JSONObject
+import java.util.Date
+import kotlin.time.Duration
 
+@Suppress("LongParameterList")
 internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,
     private val backend: Backend,
     private val offeringsFactory: OfferingsFactory,
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val offeringFontPreDownloader: OfferingFontPreDownloader,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
@@ -28,25 +39,61 @@ internal class OfferingsManager(
         onSuccess: ((Offerings) -> Unit)? = null,
         fetchCurrent: Boolean = false,
     ) {
-        val cachedOfferings = offeringsCache.cachedOfferings
-        if (cachedOfferings == null) {
-            log(LogIntent.DEBUG, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
-            fetchAndCacheOfferings(appUserID, appInBackground, onError, onSuccess)
-        } else if (fetchCurrent) {
-            log(LogIntent.DEBUG, OfferingStrings.FORCE_OFFERINGS_FETCHING_NETWORK)
-            fetchAndCacheOfferings(appUserID, appInBackground, onError, onSuccess)
-        } else {
-            log(LogIntent.DEBUG, OfferingStrings.VENDING_OFFERINGS_CACHE)
-            dispatch {
-                onSuccess?.invoke(cachedOfferings)
+        trackGetOfferingsStartedIfNeeded()
+        val startTime = dateProvider.now
+        val onErrorWithTracking: (PurchasesError, DiagnosticsTracker.CacheStatus) -> Unit = { error, cacheStatus ->
+            trackGetOfferingsResultIfNeeded(startTime, cacheStatus, error, null, null)
+            onError?.invoke(error)
+        }
+        val onSuccessWithTracking: (OfferingsResultData, DiagnosticsTracker.CacheStatus) -> Unit =
+            { result, cacheStatus ->
+                trackGetOfferingsResultIfNeeded(
+                    startTime,
+                    cacheStatus,
+                    null,
+                    result.requestedProductIds,
+                    result.notFoundProductIds,
+                )
+                onSuccess?.invoke(result.offerings)
             }
-            if (offeringsCache.isOfferingsCacheStale(appInBackground)) {
-                log(
-                    LogIntent.DEBUG,
+
+        val cachedOfferings = offeringsCache.cachedOfferings
+        if (fetchCurrent) {
+            log(LogIntent.DEBUG) { OfferingStrings.FORCE_OFFERINGS_FETCHING_NETWORK }
+            fetchAndCacheOfferings(
+                appUserID,
+                appInBackground,
+                { onErrorWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_CHECKED) },
+                { onSuccessWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_CHECKED) },
+            )
+        } else if (cachedOfferings == null) {
+            log(LogIntent.DEBUG) { OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK }
+            fetchAndCacheOfferings(
+                appUserID,
+                appInBackground,
+                { onErrorWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_FOUND) },
+                { onSuccessWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_FOUND) },
+            )
+        } else {
+            log(LogIntent.DEBUG) { OfferingStrings.VENDING_OFFERINGS_CACHE }
+
+            val isCacheStale = offeringsCache.isOfferingsCacheStale(appInBackground)
+            trackGetOfferingsResultIfNeeded(
+                startTime,
+                if (isCacheStale) DiagnosticsTracker.CacheStatus.STALE else DiagnosticsTracker.CacheStatus.VALID,
+                null,
+                null,
+                null,
+            )
+            dispatch { onSuccess?.invoke(cachedOfferings) }
+            if (isCacheStale) {
+                log(LogIntent.DEBUG) {
                     if (appInBackground) {
                         OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                    } else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND,
-                )
+                    } else {
+                        OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
+                    }
+                }
                 fetchAndCacheOfferings(appUserID, appInBackground)
             }
         }
@@ -54,7 +101,7 @@ internal class OfferingsManager(
 
     fun onAppForeground(appUserID: String) {
         if (offeringsCache.isOfferingsCacheStale(appInBackground = false)) {
-            log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
+            log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND }
             fetchAndCacheOfferings(appUserID, appInBackground = false)
         }
     }
@@ -63,9 +110,9 @@ internal class OfferingsManager(
         appUserID: String,
         appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
-        onSuccess: ((Offerings) -> Unit)? = null,
+        onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
-        log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK)
+        log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
         backend.getOfferings(
             appUserID,
             appInBackground,
@@ -78,7 +125,7 @@ internal class OfferingsManager(
                     if (cachedOfferingsResponse == null) {
                         handleErrorFetchingOfferings(backendError, onError)
                     } else {
-                        warnLog(OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE)
+                        warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
                         createAndCacheOfferings(cachedOfferingsResponse, onError, onSuccess)
                     }
                 } else {
@@ -91,20 +138,21 @@ internal class OfferingsManager(
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
         onError: ((PurchasesError) -> Unit)? = null,
-        onSuccess: ((Offerings) -> Unit)? = null,
+        onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
         offeringsFactory.createOfferings(
             offeringsJSON,
             onError = { error ->
                 handleErrorFetchingOfferings(error, onError)
             },
-            onSuccess = { offerings ->
-                offerings.current?.let {
+            onSuccess = { offeringsResultData ->
+                offeringsResultData.offerings.current?.let {
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
                 }
-                offeringsCache.cacheOfferings(offerings, offeringsJSON)
+                offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
+                offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
                 dispatch {
-                    onSuccess?.invoke(offerings)
+                    onSuccess?.invoke(offeringsResultData)
                 }
             },
         )
@@ -120,12 +168,11 @@ internal class OfferingsManager(
         )
             .contains(error.code)
 
-        log(
-            if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR,
-            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error),
-        )
+        log(if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR) {
+            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error)
+        }
 
-        offeringsCache.clearOfferingsCacheTimestamp()
+        offeringsCache.forceCacheStale()
         dispatch {
             onError?.invoke(error)
         }
@@ -138,5 +185,30 @@ internal class OfferingsManager(
         } else {
             action()
         }
+    }
+
+    private fun trackGetOfferingsStartedIfNeeded() {
+        diagnosticsTrackerIfEnabled?.trackGetOfferingsStarted()
+    }
+
+    private fun trackGetOfferingsResultIfNeeded(
+        startTime: Date,
+        cacheStatus: DiagnosticsTracker.CacheStatus,
+        error: PurchasesError?,
+        requestedProductIds: Set<String>?,
+        notFoundProductIds: Set<String>?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val responseTime = Duration.between(startTime, dateProvider.now)
+        diagnosticsTrackerIfEnabled.trackGetOfferingsResult(
+            requestedProductIds = requestedProductIds,
+            notFoundProductIds = notFoundProductIds,
+            errorMessage = error?.message,
+            errorCode = error?.code?.code,
+            // WIP Add verification result property once we expose verification result in Offerings object
+            verificationResult = null,
+            cacheStatus = cacheStatus,
+            responseTime = responseTime,
+        )
     }
 }

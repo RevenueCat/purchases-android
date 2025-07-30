@@ -19,4 +19,5 @@
     <string name="continue_cta">ďalej</string>
     <string name="default_offer_details_with_intro_offer">Začnite skúšobnú verziu {{ sub_offer_duration }}, potom {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Nie je nainštalovaný prehliadač. Odkaz sa nepodarilo otvoriť.</string>
+    <string name="cannot_open_link">Neplatný odkaz. Nedalo sa otvoriť.</string>
 </resources>

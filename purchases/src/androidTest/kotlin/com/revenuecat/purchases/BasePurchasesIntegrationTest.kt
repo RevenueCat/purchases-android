@@ -44,7 +44,7 @@ open class BasePurchasesIntegrationTest {
     protected open val initialForceServerErrors: Boolean = false
     protected open val initialForceSigningErrors: Boolean = false
 
-    protected val testTimeout = 5.seconds
+    protected val testTimeout = 10.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
     protected val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
@@ -168,6 +168,10 @@ open class BasePurchasesIntegrationTest {
         runBlocking(activity.lifecycleScope.coroutineContext) {
             testBody()
         }
+    }
+
+    protected fun isRunningLoadShedderIntegrationTests(): Boolean {
+        return Constants.isRunningLoadShedderIntegrationTests.toBoolean()
     }
 
     private fun clearAllSharedPreferences(context: Context) {

@@ -1,20 +1,22 @@
 package com.revenuecat.purchases.customercenter
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.EmptyStringToNullSerializer
 import com.revenuecat.purchases.paywalls.PaywallColor
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 typealias RCColor = PaywallColor
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @Serializable
 internal class CustomerCenterRoot(
     @SerialName("customer_center") val customerCenter: CustomerCenterConfigData,
 )
 
-@ExperimentalPreviewRevenueCatPurchasesAPI
+@InternalRevenueCatAPI
 @Serializable
 data class CustomerCenterConfigData(
     @Serializable(with = ScreenMapSerializer::class) val screens: Map<Screen.ScreenType, Screen>,
@@ -30,6 +32,25 @@ data class CustomerCenterConfigData(
         val locale: String,
         @SerialName("localized_strings") val localizedStrings: Map<String, String>,
     ) {
+        enum class VariableName(val identifier: String) {
+            PRICE("price"),
+            SUB_OFFER_DURATION("sub_offer_duration"),
+            SUB_OFFER_DURATION_2("sub_offer_duration_2"),
+            SUB_OFFER_PRICE("sub_offer_price"),
+            SUB_OFFER_PRICE_2("sub_offer_price_2"),
+            ;
+
+            companion object {
+                private val valueMap by lazy {
+                    values().associateBy { it.identifier }
+                }
+
+                fun valueOfIdentifier(identifier: String): VariableName? {
+                    return valueMap[identifier]
+                }
+            }
+        }
+
         @Serializable
         enum class CommonLocalizedString {
             @SerialName("no_thanks")
@@ -136,6 +157,99 @@ data class CustomerCenterConfigData(
 
             @SerialName("purchases_not_recovered")
             PURCHASES_NOT_RECOVERED,
+
+            @SerialName("purchases_not_found")
+            PURCHASES_NOT_FOUND,
+
+            @SerialName("purchases_restoring")
+            PURCHASES_RESTORING,
+
+            @SerialName("manage_subscription")
+            MANAGE_SUBSCRIPTION,
+
+            @SerialName("you_have_promo")
+            YOU_HAVE_PROMO,
+
+            @SerialName("you_have_lifetime")
+            YOU_HAVE_LIFETIME,
+
+            @SerialName("web_subscription_manage")
+            WEB_SUBSCRIPTION_MANAGE,
+
+            @SerialName("free")
+            FREE,
+
+            @SerialName("never")
+            NEVER,
+
+            @SerialName("free_trial_then_price")
+            FREE_TRIAL_THEN_PRICE,
+
+            @SerialName("single_payment_then_price")
+            SINGLE_PAYMENT_THEN_PRICE,
+
+            @SerialName("discounted_recurring_then_price")
+            DISCOUNTED_RECURRING_THEN_PRICE,
+
+            @SerialName("free_trial_single_payment_then_price")
+            FREE_TRIAL_SINGLE_PAYMENT_THEN_PRICE,
+
+            @SerialName("free_trial_discounted_then_price")
+            FREE_TRIAL_DISCOUNTED_THEN_PRICE,
+
+            @SerialName("done")
+            DONE,
+
+            @SerialName("renews_on_date_for_price")
+            RENEWS_ON_DATE_FOR_PRICE,
+
+            @SerialName("renews_on_date")
+            RENEWS_ON_DATE,
+
+            @SerialName("purchase_info_expired_on_date")
+            PURCHASE_INFO_EXPIRED_ON_DATE,
+
+            @SerialName("purchase_info_expires_on_date")
+            PURCHASE_INFO_EXPIRES_ON_DATE,
+
+            @SerialName("active")
+            ACTIVE,
+
+            @SerialName("badge_cancelled")
+            BADGE_CANCELLED,
+
+            @SerialName("badge_free_trial")
+            BADGE_FREE_TRIAL,
+
+            @SerialName("badge_free_trial_cancelled")
+            BADGE_FREE_TRIAL_CANCELLED,
+
+            @SerialName("badge_lifetime")
+            BADGE_LIFETIME,
+
+            @SerialName("app_store")
+            APP_STORE,
+
+            @SerialName("mac_app_store")
+            MAC_APP_STORE,
+
+            @SerialName("google_play_store")
+            GOOGLE_PLAY_STORE,
+
+            @SerialName("amazon_store")
+            AMAZON_STORE,
+
+            @SerialName("web_store")
+            WEB_STORE,
+
+            @SerialName("unknown_store")
+            UNKNOWN_STORE,
+
+            @SerialName("card_store_promotional")
+            CARD_STORE_PROMOTIONAL,
+
+            @SerialName("resubscribe")
+            RESUBSCRIBE,
             ;
 
             val defaultValue: String
@@ -171,18 +285,57 @@ data class CustomerCenterConfigData(
                     APPLE_SUBSCRIPTION_MANAGE ->
                         "You can manage your subscription by using the App Store app on an Apple device."
                     GOOGLE_SUBSCRIPTION_MANAGE ->
-                        "You can manage your subscription by using the Play Store app on an Android device"
+                        "You have an active subscription from the Google Play Store"
                     AMAZON_SUBSCRIPTION_MANAGE ->
-                        "You can manage your subscription in the Amazon Appstore app on an Amazon device."
+                        "You have an active subscription from the Amazon Appstore. " +
+                            "You can manage your subscription in the Amazon Appstore app."
                     GOING_TO_CHECK_PURCHASES ->
-                        "Let’s take a look! We’re going to check your account for missing purchases."
+                        "Let's take a look! We're going to check your account for missing purchases."
                     CHECK_PAST_PURCHASES -> "Check past purchases"
-                    PURCHASES_RECOVERED -> "Purchases recovered!"
+                    PURCHASES_RECOVERED -> "Purchases restored"
                     PURCHASES_RECOVERED_EXPLANATION ->
-                        "We applied the previously purchased items to your account. Sorry for the inconvenience."
+                        "We restored your past purchases and applied them to your account."
                     PURCHASES_NOT_RECOVERED ->
-                        "We couldn't find any additional purchases under this account. " +
-                            "Contact support for assistance if you think this is an error."
+                        "We could not find any purchases with your account. " +
+                            "If you think this is an error, please contact support."
+                    PURCHASES_NOT_FOUND -> "No past purchases"
+                    PURCHASES_RESTORING -> "Restoring..."
+                    MANAGE_SUBSCRIPTION -> "Manage your subscription"
+                    YOU_HAVE_PROMO -> "You've been granted a subscription that doesn't renew"
+                    YOU_HAVE_LIFETIME -> "Your active lifetime subscription"
+                    WEB_SUBSCRIPTION_MANAGE ->
+                        "You have an active subscription that was purchased on the web. " +
+                            "You can manage your subscription using the button below."
+                    FREE -> "Free"
+                    NEVER -> "Never"
+                    FREE_TRIAL_THEN_PRICE -> "First {{ sub_offer_duration }} free, then {{ price }}"
+                    SINGLE_PAYMENT_THEN_PRICE -> "{{ sub_offer_duration }} for {{ sub_offer_price }}, then {{ price }}"
+                    DISCOUNTED_RECURRING_THEN_PRICE ->
+                        "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}"
+                    FREE_TRIAL_SINGLE_PAYMENT_THEN_PRICE ->
+                        "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for" +
+                            " {{ sub_offer_price_2 }}, and {{ price }} thereafter"
+                    FREE_TRIAL_DISCOUNTED_THEN_PRICE ->
+                        "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} " +
+                            "during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
+                    DONE -> "Done"
+                    RENEWS_ON_DATE_FOR_PRICE -> "Your next charge is {{ price }} on {{ date }}."
+                    RENEWS_ON_DATE -> "Renews on {{ date }}"
+                    PURCHASE_INFO_EXPIRED_ON_DATE -> "Expired on {{ date }}"
+                    PURCHASE_INFO_EXPIRES_ON_DATE -> "Expires on {{ date }}"
+                    ACTIVE -> "Active"
+                    BADGE_CANCELLED -> "Cancelled"
+                    BADGE_FREE_TRIAL -> "Free Trial"
+                    BADGE_FREE_TRIAL_CANCELLED -> "Cancelled Trial"
+                    BADGE_LIFETIME -> "Lifetime"
+                    APP_STORE -> "App Store"
+                    MAC_APP_STORE -> "Mac App Store"
+                    GOOGLE_PLAY_STORE -> "Google Play Store"
+                    AMAZON_STORE -> "Amazon Store"
+                    WEB_STORE -> "Web"
+                    UNKNOWN_STORE -> "Unknown"
+                    CARD_STORE_PROMOTIONAL -> "Via Support"
+                    RESUBSCRIBE -> "Resubscribe"
                 }
         }
 
@@ -198,6 +351,9 @@ data class CustomerCenterConfigData(
         val type: PathType,
         @SerialName("promotional_offer") val promotionalOffer: PathDetail.PromotionalOffer? = null,
         @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
+        val url: String? = null,
+        @SerialName("open_method") val openMethod: OpenMethod? = null,
+        @SerialName("action_identifier") val actionIdentifier: String? = null,
     ) {
         @Serializable
         sealed class PathDetail {
@@ -207,7 +363,45 @@ data class CustomerCenterConfigData(
                 val eligible: Boolean,
                 val title: String,
                 val subtitle: String,
-            ) : PathDetail()
+                @SerialName("product_mapping") val productMapping: Map<String, String>,
+                @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion> =
+                    emptyMap(),
+            ) : PathDetail() {
+                @Deprecated(
+                    "Use constructor with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
+                    ),
+                )
+                constructor(
+                    androidOfferId: String,
+                    eligible: Boolean,
+                    title: String,
+                    subtitle: String,
+                    productMapping: Map<String, String>,
+                ) : this(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+
+                @Deprecated(
+                    "Use copy with crossProductPromotions parameter",
+                    ReplaceWith(
+                        "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
+                    ),
+                )
+                fun copy(
+                    androidOfferId: String = this.androidOfferId,
+                    eligible: Boolean = this.eligible,
+                    title: String = this.title,
+                    subtitle: String = this.subtitle,
+                    productMapping: Map<String, String> = this.productMapping,
+                ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+
+                @Serializable
+                @Poko
+                class CrossProductPromotion(
+                    @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
+                    @SerialName("target_product_id") val targetProductId: String,
+                )
+            }
 
             @Serializable
             data class FeedbackSurvey(
@@ -229,7 +423,15 @@ data class CustomerCenterConfigData(
             REFUND_REQUEST,
             CHANGE_PLANS,
             CANCEL,
+            CUSTOM_URL,
+            CUSTOM_ACTION,
             UNKNOWN,
+        }
+
+        @Serializable
+        enum class OpenMethod {
+            IN_APP,
+            EXTERNAL,
         }
     }
 
@@ -270,6 +472,17 @@ data class CustomerCenterConfigData(
 
     @Serializable
     data class Support(
-        @Serializable(with = EmptyStringToNullSerializer::class) val email: String? = null,
+        @Serializable(with = EmptyStringToNullSerializer::class)
+        val email: String? = null,
+        @SerialName("should_warn_customer_to_update")
+        val shouldWarnCustomerToUpdate: Boolean? = null,
     )
+
+    fun getManagementScreen(): CustomerCenterConfigData.Screen? {
+        return screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]
+    }
+
+    fun getNoActiveScreen(): CustomerCenterConfigData.Screen? {
+        return screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]
+    }
 }

@@ -23,6 +23,7 @@ class PurchasesFactoryTest {
     private val applicationMock = mockk<Context>()
     private val contextMock = mockk<Context>().apply {
         every { applicationContext } returns applicationMock
+        every { isDeviceProtectedStorage } returns false
     }
     private val apiKeyValidatorMock = mockk<APIKeyValidator>()
 
@@ -30,9 +31,11 @@ class PurchasesFactoryTest {
 
     @Before
     fun setup() {
-        purchasesFactory = PurchasesFactory(apiKeyValidatorMock)
+        purchasesFactory = PurchasesFactory(isDebugBuild = { true }, apiKeyValidatorMock)
 
-        every { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) } just runs
+        every {
+            apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
+        } returns APIKeyValidator.ValidationResult.VALID
     }
 
     @After

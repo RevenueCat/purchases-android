@@ -102,6 +102,5 @@ internal val testOffering: Offering
             availablePackages = listOf(
                 Package("package_id", PackageType.ANNUAL, storeProduct, "offering_id"),
             ),
-            paywall = null,
         )
     }

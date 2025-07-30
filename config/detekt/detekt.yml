@@ -19,3 +19,23 @@ style:
   UnusedPrivateMember:
     active: true
     ignoreAnnotated: [ 'Preview' ]
+complexity:
+  LongMethod:
+    ignoreAnnotated: [ 'Preview' ]
+  LongParameterList:
+    ignoreAnnotated: [ 'Poko' ]
+  TooManyFunctions:
+    ignoreAnnotatedFunctions: [ 'Preview' ]
+libraries:
+  active: true
+  ForbiddenPublicDataClass:
+    excludes: [ '**/examples/**' ]
+    ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
+  LibraryEntitiesShouldNotBePublic:
+    active: false
+    excludes: [ '**/examples/**' ]
+  LibraryCodeMustSpecifyReturnType:
+    excludes: [ '**/examples/**' ]
+Compose:
+  CompositionLocalAllowlist:
+    allowedCompositionLocals: LocalPreviewImageLoader

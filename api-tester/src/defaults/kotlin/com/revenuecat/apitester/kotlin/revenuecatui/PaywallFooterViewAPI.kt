@@ -6,13 +6,13 @@ import android.widget.FrameLayout
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
-import com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView
+import com.revenuecat.purchases.ui.revenuecatui.views.OriginalTemplatePaywallFooterView
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PaywallFooterViewAPI {
 
     fun checkType(context: Context) {
-        val paywallFooterView: FrameLayout = PaywallFooterView(context)
+        val paywallFooterView: FrameLayout = OriginalTemplatePaywallFooterView(context)
     }
 
     @Suppress("LongParameterList")
@@ -26,18 +26,18 @@ private class PaywallFooterViewAPI {
         condensed: Boolean,
         dismissHandler: () -> Unit,
     ) {
-        PaywallFooterView(context)
-        PaywallFooterView(context, attrs)
-        PaywallFooterView(context, attrs, defStyleAttr)
-        PaywallFooterView(context, offering)
-        PaywallFooterView(context, offering, listener)
-        PaywallFooterView(context, offering, listener, fontProvider)
-        PaywallFooterView(context, offering, listener, fontProvider, condensed)
-        PaywallFooterView(context, offering, listener, fontProvider, condensed, dismissHandler)
+        OriginalTemplatePaywallFooterView(context)
+        OriginalTemplatePaywallFooterView(context, attrs)
+        OriginalTemplatePaywallFooterView(context, attrs, defStyleAttr)
+        OriginalTemplatePaywallFooterView(context, offering)
+        OriginalTemplatePaywallFooterView(context, offering, listener)
+        OriginalTemplatePaywallFooterView(context, offering, listener, fontProvider)
+        OriginalTemplatePaywallFooterView(context, offering, listener, fontProvider, condensed)
+        OriginalTemplatePaywallFooterView(context, offering, listener, fontProvider, condensed, dismissHandler)
     }
 
     fun checkMethods(
-        paywallFooterView: PaywallFooterView,
+        paywallFooterView: OriginalTemplatePaywallFooterView,
         paywallListener: PaywallListener,
         dismissHandler: () -> Unit,
     ) {

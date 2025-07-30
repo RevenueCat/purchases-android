@@ -1,8 +1,8 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
-import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
+import java.io.Serializable
 
 typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 
@@ -16,13 +16,36 @@ typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 class PurchasesError(
     val code: PurchasesErrorCode,
     val underlyingErrorMessage: String? = null,
-) : Parcelable {
+) : Parcelable, Serializable {
+
+    companion object {
+        private const val serialVersionUID = 81719171L
+    }
+
     // Message explaining the error
-    @IgnoredOnParcel
-    val message: String = code.description
+    val message: String
+        get() = code.description
 
     override fun toString(): String {
         return "PurchasesError(code=$code, underlyingErrorMessage=$underlyingErrorMessage, message='$message')"
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as PurchasesError
+
+        if (code != other.code) return false
+        if (underlyingErrorMessage != other.underlyingErrorMessage) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = code.hashCode()
+        result = 31 * result + (underlyingErrorMessage?.hashCode() ?: 0)
+        return result
     }
 }
 

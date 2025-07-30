@@ -41,44 +41,42 @@ internal class GoogleDeviceIdentifiersFetcher(
             val adInfo = AdvertisingIdClient.getAdvertisingIdInfo(applicationContext)
             if (!adInfo.isLimitAdTrackingEnabled) {
                 if (adInfo.id == noPermissionAdvertisingIdValue) {
-                    log(
-                        LogIntent.WARNING,
-                        AttributionStrings.GOOGLE_PLAY_ADVERTISING_ID_NOT_AVAILABLE,
-                    )
+                    log(LogIntent.WARNING) {
+                        AttributionStrings.GOOGLE_PLAY_ADVERTISING_ID_NOT_AVAILABLE
+                    }
                 } else {
                     advertisingID = adInfo.id
                 }
             }
         } catch (e: GooglePlayServicesNotAvailableException) {
-            log(
-                LogIntent.GOOGLE_ERROR,
+            log(LogIntent.GOOGLE_ERROR) {
                 AttributionStrings.GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage),
-            )
+                    .format(e.localizedMessage)
+            }
         } catch (e: GooglePlayServicesRepairableException) {
-            log(
-                LogIntent.GOOGLE_ERROR,
+            log(LogIntent.GOOGLE_ERROR) {
                 AttributionStrings.GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage),
-            )
+                    .format(e.localizedMessage)
+            }
         } catch (e: TimeoutException) {
-            log(
-                LogIntent.GOOGLE_ERROR,
+            log(LogIntent.GOOGLE_ERROR) {
                 AttributionStrings.TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage),
-            )
+                    .format(e.localizedMessage)
+            }
         } catch (e: IOException) {
-            log(
-                LogIntent.GOOGLE_ERROR,
+            log(LogIntent.GOOGLE_ERROR) {
                 AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage),
-            )
+                    .format(e.localizedMessage)
+            }
         } catch (@Suppress("TooGenericExceptionCaught") e: NullPointerException) {
-            log(
-                LogIntent.GOOGLE_ERROR,
+            log(LogIntent.GOOGLE_ERROR) {
                 AttributionStrings.NULL_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage),
-            )
+                    .format(e.localizedMessage)
+            }
+        } catch (@Suppress("SwallowedException") e: NoSuchMethodError) {
+            log(LogIntent.GOOGLE_ERROR) {
+                AttributionStrings.NO_SUCH_METHOD_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+            }
         }
         return advertisingID
     }

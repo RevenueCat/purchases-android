@@ -12,14 +12,14 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenState
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModel
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModelImpl
-import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
+import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 
 @Composable
@@ -32,7 +32,7 @@ fun PaywallFooterScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        when (val state = viewModel.state.collectAsState().value) {
+        when (val state = viewModel.state.collectAsStateWithLifecycle().value) {
             is PaywallScreenState.Loading -> {
                 Text(text = "Loading...")
             }
@@ -40,7 +40,7 @@ fun PaywallFooterScreen(
                 Text(text = "Error: ${state.errorMessage}")
             }
             is PaywallScreenState.Loaded -> {
-                PaywallFooter(
+                OriginalTemplatePaywallFooter(
                     options = PaywallOptions.Builder(dismissRequest)
                         .setOffering(state.offering)
                         .setListener(viewModel)

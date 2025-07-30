@@ -1,3 +1,848 @@
+## 9.1.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Resubscribe if cancelled (#2487) via Cesar de la Vega (@vegaro)
+### Virtual Currency
+#### 🐞 Bugfixes
+* Update VC Caching Log Message (#2552) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Update design of No Active subscriptions screen in Customer Center (#2559) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2561) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2560) via RevenueCat Git Bot (@RCGitBot)
+* Bump danger from 9.5.1 to 9.5.3 (#2556) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.227.2 to 2.228.0 (#2557) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `9a29f63` to `7d97553` (#2558) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2555) via RevenueCat Git Bot (@RCGitBot)
+* Bump nokogiri from 1.18.8 to 1.18.9 (#2553) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2551) via RevenueCat Git Bot (@RCGitBot)
+* Fix paywall tester so customer center doesn't close when changing to dark mode (#2550) via Cesar de la Vega (@vegaro)
+
+## 9.1.1
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2544) via RevenueCat Git Bot (@RCGitBot)
+* Expose Virtual Currency Constructors with @InternalRevenueCatAPI (#2543) via Will Taylor (@fire-at-will)
+* Expose API key validation result to BillingFactory (#2542) via Toni Rico (@tonidero)
+
+## 9.1.0
+## RevenueCat SDK
+### Virtual Currency
+#### ✨ New Features
+* Virtual Currency Support (#2519) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* PaywallActivityLauncher: Add `edgeToEdge` parameter to display paywall in full screen (#2530) via Toni Rico (@tonidero)
+#### 🐞 Bugfixes
+* Remove logic to avoid repurchasing already subscribed products (#2492) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Dont run VC tests on load shedder integration tests (#2538) via Will Taylor (@fire-at-will)
+* Introduces `CompatComposeView` to handle scenarios where the view tree is not set up (#2527) via JayShortway (@JayShortway)
+
+## 9.0.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix upgrades/downgrades after BC8 update (#2532) via Toni Rico (@tonidero)
+### 📦 Dependency Updates
+* [RENOVATE] Update build-dependencies (#2515) via RevenueCat Git Bot (@RCGitBot)
+* [RENOVATE] Update build-dependencies (#2472) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Make PaywallActivity not consume insets in Android 16+ (#2520) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Add CLAUDE.md (#2522) via Cesar de la Vega (@vegaro)
+* Update kotlin version in README (#2524) via Cesar de la Vega (@vegaro)
+* Increase compile/target SDK version to 35 (#2525) via Toni Rico (@tonidero)
+* Fix snapshot deployment (#2526) via Toni Rico (@tonidero)
+* Update CircleCI android orb (#2521) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2517) via RevenueCat Git Bot (@RCGitBot)
+* Improve v9 migration docs (#2514) via Toni Rico (@tonidero)
+* Bump AGP to 8.10.1 and Gradle to 8.14.2 (#2440) via Jaewoong Eum (@skydoves)
+* Fixes compilation of the CEC sample app. (#2512) via JayShortway (@JayShortway)
+
+## 9.0.0
+## RevenueCat SDK
+This release updates the SDK to use Google Play Billing Library 8. This version of the Billing Library removed APIs to query for expired subscriptions and consumed one-time products, aside from other improvements. You can check the full list of changes here: https://developer.android.com/google/play/billing/release-notes#8-0-0
+
+Additionally, we've also updated Kotlin to 2.0.21 and our new minimum version is Kotlin 1.8.0+. If you were using an older version of Kotlin, you will need to update it.
+
+Regarding API changes, we've also removed data classes from our public APIs. This means that for classes that were previously data classes, the `copy` function and `componentN` functions (destructuring declarations) have been removed. `equals` and `hashCode` functions still work as before.
+
+### Play Billing Library 8: No expired subscriptions or consumed one-time products
+
+Play Billing Library 8 removed the ability to query for expired subscriptions and consumed one-time products. This means that the RevenueCat SDK will no longer be able to send purchase information from these purchases. There are 2 cases where this can have an impact:
+- If you have consumed one time purchases in Google Play that need to be restored (for example, in order to grant a lifetime entitlement). In these cases, the SDK will not be able to find these purchases and will not be able to restore them and grant the entitlements. This can especially be a problem if you're using anonymous ids and don't have your own account system. Please make sure your products are correctly configured as non-consumables in the RevenueCat dashboard to avoid consuming them in the first place if you intend to make them behave as lifetime purchases.
+- (Only relevant if you recently integrated RevenueCat before upgrading to v9, and do not (yet) have all your transactions imported). The SDK will not be able to send purchase information from these expired subscriptions and consumed one time purchases to our backend, so we might miss this data in our customer profile/targeting. We can still ingest historical data from these purchases through a backend historical import. See [docs](https://www.revenuecat.com/docs/migrating-to-revenuecat/migrating-existing-subscriptions). This case doesn't affect developers that have all transactions in RevenueCat, which is true for the vast majority.
+
+### Bumped minimum Kotlin version
+
+RevenueCat SDK v9 bumps Kotlin to 2.0.21, with a minimum Kotlin version of 1.8.0.
+
+### Using the SDK with your own IAP code (previously Observer Mode)
+
+Using the SDK with your own IAP code is still supported in v9. Other than updating the SDK version, there are no changes required. Just make sure the version of the Play Billing Library is also version 8.0.0+.
+
+### 💥 Breaking Changes
+* Removes data classes from public API (#2498) via JayShortway (@JayShortway)
+* Marks `PaywallData` and `PaywallColor` as `InternalRevenueCatAPI`. (#2507) via JayShortway (@JayShortway)
+* BC8 migration (#2506) via Toni Rico (@tonidero)
+* Update to kotlin 2.0.21 while keeping language compatibility (#2493) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Update CustomEntitlementComputation sample app kotlin version (#2510) via Toni Rico (@tonidero)
+* Fix `Switch` component previews (#2509) via Toni Rico (@tonidero)
+* Add V9 migration guide (#2508) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2499) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.22.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(purchases): Add setPostHogUserId() method to Purchases API (#2495) via Hussain Mustafa (@hussain-mustafa990)
+### 🐞 Bugfixes
+* Improves button progress indicator size calculation. (#2485) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* Revert "BC8 migration (#2477)" (#2501) via Toni Rico (@tonidero)
+* Add codelab instructions on README file (#2489) via Jaewoong Eum (@skydoves)
+* Use collectAsStateWithLifecycle instead of collectAsState in Compose (#2488) via Jaewoong Eum (@skydoves)
+* Improve Composable stabilities (#2478) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2486) via RevenueCat Git Bot (@RCGitBot)
+* BC8 migration (#2477) via Toni Rico (@tonidero)
+* Fixes building sample apps with SNAPSHOT dependencies (#2483) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2484) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.21.0
+## RevenueCat SDK
+### ✨ New Features
+* Add `managementURL` to `SubscriptionInfo` (#2468) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* Use subscription's managementURL instead of CustomerInfo's in Customer Center (#2473) via Cesar de la Vega (@vegaro)
+* Issue when loading promotional offers when products are missing base plans (#2471) via Cesar de la Vega (@vegaro)
+* Purchases the right package when a purchase button is inside a package component (#2469) via JayShortway (@JayShortway)
+* fix potential infinite loop in paywalls (#2462) via Antonio Pallares (@ajpallares)
+
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Support multi purchases in Customer Center (#2431) via Cesar de la Vega (@vegaro)
+#### 🐞 Bugfixes
+* Use Material TopAppBar in Customer Center (#2459) via Cesar de la Vega (@vegaro)
+* Redo navigation in Customer Center (#2458) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Migrates publishing to Maven Central Portal. (#2476) via JayShortway (@JayShortway)
+* Introduce the Compose compiler metrics option for the ui package (#2474) via Jaewoong Eum (@skydoves)
+* Update workflows/issue-notifications.yml@v2 (#2475) via Josh Holtz (@joshdholtz)
+* Configure Renovate (#2470) via RevenueCat Git Bot (@RCGitBot)
+* Add GitHub Issue Action Ack (#2467) via Josh Holtz (@joshdholtz)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2448) via RevenueCat Git Bot (@RCGitBot)
+* Improve paywall error logs (#2461) via Toni Rico (@tonidero)
+* [EXTERNAL] Improve logger performance with message lambdas (#2456) via @landarskiy (#2460) via JayShortway (@JayShortway)
+* [Paywalls] Ignores `sheet.background` property in schema (#2451) via JayShortway (@JayShortway)
+
+## 8.20.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fixes `OutOfMemoryError` caused by printing large `Offerings` objects. (#2452) via JayShortway (@JayShortway)
+* [Paywalls] Margin no longer decreases icon size (#2447) via JayShortway (@JayShortway)
+* `getOfferings()` returns fresh Offerings and Products when the locale has changed (#2438) via JayShortway (@JayShortway)
+
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Redo Customer Center subscription card and action buttons (#2430) via Cesar de la Vega (@vegaro)
+#### 🐞 Bugfixes
+* Clean up paths logic in Customer Center (#2439) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Paywalls] Tab toggle supports gradient colors (#2453) via JayShortway (@JayShortway)
+* Introduce Baseline Profiles for increasing SDK startup performance (#2437) via Jaewoong Eum (@skydoves)
+* Support spaces in template IDs when recording Paywall screenshots (#2449) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2444) via RevenueCat Git Bot (@RCGitBot)
+* Use script instead of gradle for metalava apiDump and apiCheck (#2445) via Cesar de la Vega (@vegaro)
+* Clean up `ExperimentalPreviewRevenueCatPurchasesAPI` (#2434) via Cesar de la Vega (@vegaro)
+* Remove assertion on strings in Customer Center test (#2433) via Cesar de la Vega (@vegaro)
+* Some Metalava updates (#2442) via JayShortway (@JayShortway)
+* [Paywalls] Ensures bottom window insets are applied to the sheet. (#2441) via JayShortway (@JayShortway)
+* [Paywalls] Buttons can now open sheets (#2436) via JayShortway (@JayShortway)
+* [Paywalls] Correctly deserializes the `Sheet` destination in Button components (#2435) via JayShortway (@JayShortway)
+* Include commit hash in commit message for paywall-rendering-validation (#2432) via Antonio Pallares (@ajpallares)
+* Update `PaywallTester` colors (#2429) via Cesar de la Vega (@vegaro)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2426) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane from 2.227.1 to 2.227.2 (#2392) via dependabot[bot] (@dependabot[bot])
+
+## 8.19.2
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls] Fix Bold text in Markdown on higher Weights Text composables (#2421) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Add coroutines dependency to core SDK (#2423) via Toni Rico (@tonidero)
+* [Paywalls] Add `font_weight_int` to `TextComponent` (#2419) via Toni Rico (@tonidero)
+* [Paywalls V2] Downloadable fonts (#2414) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2412) via RevenueCat Git Bot (@RCGitBot)
+* Use new resource format for cross validation screenshots and fix lint (#2413) via Josh Holtz (@joshdholtz)
+
+## 8.19.1
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Fix display of wrong product information when not using entitlements (#2415) via Cesar de la Vega (@vegaro)
+
+## 🔄 Other Changes
+* Update Java in .sdkmanrc to 21.0.6 (#2395) via Cesar de la Vega (@vegaro)
+
+## 8.19.0
+## RevenueCat SDK
+### ✨ New Features
+* Add Paddle Store Type (#2353) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls V2] Support missing packages in paywalls (#2408) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2410) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2407) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.18.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix `Transaction` `isSandbox` parsing (#2404) via Toni Rico (@tonidero)
+* Fix downgrade of constraint layout version (#2396) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls v2] The `ButtonComponentView`'s progress indicator now takes margin into account (#2401) via JayShortway (@JayShortway)
+* Correctly translates variables when a fuzzy match is required. (#2402) via JayShortway (@JayShortway)
+### Customer Center
+#### ✨ New Features
+* Add support for cross product promotional offers (#2385) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2403) via RevenueCat Git Bot (@RCGitBot)
+* [Paywalls V2] Support stroke color and width in Carousel indicator (#2398) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2400) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2397) via RevenueCat Git Bot (@RCGitBot)
+* Use SideEffect for refreshing vm states inside InternalPaywall (#2393) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2394) via RevenueCat Git Bot (@RCGitBot)
+* Bump nokogiri from 1.18.6 to 1.18.8 (#2371) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2390) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2388) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.17.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Handles configuring while the device is locked (#2077) via JayShortway (@JayShortway)
+* [EXTERNAL] fix: Optional property deserialisation error (#2376) by @thomas-coldwell (#2377) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls v2] Avoid image cropping when combining single-sided margin with Fixed size constraint (#2380) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* Fix pre commit hook (#2384) via Cesar de la Vega (@vegaro)
+* Fixes pre-commit script (#2386) via JayShortway (@JayShortway)
+* Update pre-commit hooks rule for checking metalava (#2378) via Jaewoong Eum (@skydoves)
+* [Paywalls v2] Adds design as reviewer of the paywall template screenshot PRs. (#2383) via JayShortway (@JayShortway)
+* [Diagnostics] add host parameter to http_request_performed event (#2369) via Antonio Pallares (@ajpallares)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2381) via RevenueCat Git Bot (@RCGitBot)
+* Use fallback API hosts when receiving server down response (#2368) via Antonio Pallares (@ajpallares)
+* Fixes a typo: matalava -> metalava. (#2375) via JayShortway (@JayShortway)
+* Introduce Metalava for tracking the public API surfaces (#2370) via Jaewoong Eum (@skydoves)
+* Add Purchases Coroutine extensions for Result (#2358) via Jaewoong Eum (@skydoves)
+* [Paywalls v2] Supports purchase buttons inside packages (#2372) via JayShortway (@JayShortway)
+* [Paywalls v2] Adds some more tests asserting top window insets behavior. (#2374) via JayShortway (@JayShortway)
+* Do not fail the build if `local.properties` does not exist. (#2373) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2342) via RevenueCat Git Bot (@RCGitBot)
+* [Paywalls V2] Avoids re-parsing the component tree to handle window insets (#2258) via JayShortway (@JayShortway)
+* Migrate Constants to local.properties for the custom entitlement sample project (#2357) via Jaewoong Eum (@skydoves)
+* Adjusts precision of some Emerge Snapshots (#2348) via JayShortway (@JayShortway)
+* [Paywalls v2] Records and pushes template screenshots to paywall-rendering-validation (#2365) via JayShortway (@JayShortway)
+* Remove redundant Kotlin bom dependencies (#2363) via Jaewoong Eum (@skydoves)
+
+## 8.17.0
+## RevenueCat SDK
+### ✨ New Features
+* Add async storefront country code apis (#2361) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Product name truncation issue in Customer Center on Android (#2364) via Cesar de la Vega (@vegaro)
+
+## 8.16.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Add missing response fields to `CustomerInfo`. Including transaction Prices (#2128) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls v2] Fixes timeline layout when width is Fit (#2354) via JayShortway (@JayShortway)
+* [Paywalls V2] Improves fuzzy matching locale when the region doesn't match (#2355) via JayShortway (@JayShortway)
+* [Paywalls V2] Norwegian Bokmål and Norwegian Nynorsk fall back to Norwegian. (#2329) via JayShortway (@JayShortway)
+### Customer Center
+#### 🐞 Bugfixes
+* Clean up on restoring functionality in customer center (#2316) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Paywalls v2] Adds the unsupported Background type to the error message (#2350) via JayShortway (@JayShortway)
+* [Paywalls v2] Uses a fixed date for template previews to avoid daily changes. (#2351) via JayShortway (@JayShortway)
+* [Paywalls v2] Adds a default case to `Background` and `ButtonComponent` (#2347) via JayShortway (@JayShortway)
+* [Paywalls v2] Improves `PaywallComponentsTemplatePreviewRecorder` stability (#2352) via JayShortway (@JayShortway)
+* [Paywalls v2] Adds a default case to most enums and sealed types (#2346) via JayShortway (@JayShortway)
+* Adds `EnumDeserializerWithDefault` and `SealedDeserializerWithDefault` (#2345) via JayShortway (@JayShortway)
+* [Paywalls V2] Renders template previews in a fixed resolution using Paparazzi (#2214) via JayShortway (@JayShortway)
+* Bump fastlane from 2.227.0 to 2.227.1 (#2344) via dependabot[bot] (@dependabot[bot])
+* Migrate root gradle file to KTS (#2343) via Jaewoong Eum (@skydoves)
+* Migrate tester modules to KTS format (#2340) via Jaewoong Eum (@skydoves)
+* Introduce purchases-bom package (#2339) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2338) via RevenueCat Git Bot (@RCGitBot)
+* [Diagnostics] Removes Android 7 requirement (#2335) via JayShortway (@JayShortway)
+* [Paywalls v2] Fixes `update-paywall-preview-resources-submodule` CI job (#2337) via JayShortway (@JayShortway)
+* Make purchases module to transitive dependency for the ui module (#2334) via Jaewoong Eum (@skydoves)
+* Migrate settings.gradle to KTS and add the dependency resolutions (#2328) via Jaewoong Eum (@skydoves)
+
+## 8.16.0
+## RevenueCat SDK
+### 📦 Dependency Updates
+* Remove redundant kotlin stdlib dependencies (#2310) via Jaewoong Eum (@skydoves)
+### Customer Center
+#### 🐞 Bugfixes
+* fix: Check eligible for promo offers (#2325) via Facundo Menzella (@facumenzella)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* [Paywalls v2] Supports custom fonts in `assets/fonts` (#2320) via JayShortway (@JayShortway)
+#### 🐞 Bugfixes
+* [Paywalls v2] Ignores already-consumed window insets. (#2326) via JayShortway (@JayShortway)
+### Customer Center
+#### 🐞 Bugfixes
+* Reload customer center after successful promo (#2317) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Fix PurchasesIntegrationTest  (#2330) via Cesar de la Vega (@vegaro)
+* Migrate Groovy to KTS for purchases-ui module (#2323) via Jaewoong Eum (@skydoves)
+* Add `X-Is-Backgrounded` header to all requests (#2321) via Toni Rico (@tonidero)
+* Clean up libs.versions.toml (#2318) via Jaewoong Eum (@skydoves)
+* feat: Change default copy for web_subscription_manage #4921 (#2298) via Facundo Menzella (@facumenzella)
+* Improve Korean translation (#2319) via Jaewoong Eum (@skydoves)
+* [Paywalls V2] Renders images in template previews (#2311) via JayShortway (@JayShortway)
+* [Paywalls V2] Removes Git LFS and adds submodule for paywall preview resources (#2315) via JayShortway (@JayShortway)
+* [Paywalls V2] Make `radialGradient` use bigger size for radius calculation (#2314) via Toni Rico (@tonidero)
+* Migrate purchases Gradle module to KTS (#2313) via Jaewoong Eum (@skydoves)
+* Attempts to have Emerge Snapshots handle merge queue branches. (#2309) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2306) via RevenueCat Git Bot (@RCGitBot)
+* Use coil-base instead of coil-compose for purchases package (#2307) via Jaewoong Eum (@skydoves)
+* Fix load shedder backend integration tests (#2308) via Toni Rico (@tonidero)
+* [Paywalls V2] Fixes the update-paywall-templates job (#2305) via JayShortway (@JayShortway)
+* [Paywalls V2] Adjusts CI to support images in template previews (#2302) via JayShortway (@JayShortway)
+* [Diagnostics] Sync diagnostics if file reaches lower limit (#2304) via Toni Rico (@tonidero)
+* Wrap Billing client crash with ours with more information (#2296) via Toni Rico (@tonidero)
+
+## 8.15.1
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls V2] Fuzzy-matches language without region (#2287) via JayShortway (@JayShortway)
+* [Paywalls V2] Avoids adding spurious digits to per-period prices (#2277) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* [Diagnostics] Add Google event missing properties (#2294) via Antonio Pallares (@ajpallares)
+* [Diagnostics] add `PURCHASE_STARTED` and `PURCHASE_RESULT` events (#2291) via Antonio Pallares (@ajpallares)
+* [Diagnostics] add GET_CUSTOMER_INFO_STARTED and GET_CUSTOMER_INFO_RESULT events (#2289) via Antonio Pallares (@ajpallares)
+* Bump fastlane-plugin-revenuecat_internal from `05ef095` to `9a29f63` (#2281) via dependabot[bot] (@dependabot[bot])
+* [Diagnostics] Add amazon event missing properties (#2290) via Toni Rico (@tonidero)
+* Bump fastlane from 2.226.0 to 2.227.0 (#2257) via dependabot[bot] (@dependabot[bot])
+* [Diagnostics] Add restore purchases events (#2288) via Toni Rico (@tonidero)
+* [Diagnostics] Add sync purchases started and result events (#2286) via Toni Rico (@tonidero)
+* [Diagnostics] Add `amazon_purchase_attempt` event (#2285) via Toni Rico (@tonidero)
+* [Diagnostics] add GET_PRODUCTS_STARTED and GET_PRODUCTS_RESULT events (#2283) via Antonio Pallares (@ajpallares)
+* Bump nokogiri from 1.17.2 to 1.18.4 (#2284) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2282) via RevenueCat Git Bot (@RCGitBot)
+* [Diagnostics] add `GET_OFFERINGS_STARTED` and `GET_OFFERINGS_RESULT` events (#2280) via Antonio Pallares (@ajpallares)
+* [Diagnostics] Add google purchase started and update received events (#2279) via Toni Rico (@tonidero)
+* Downgrades Emerge Snapshots SDK to 1.3.0. (#2278) via JayShortway (@JayShortway)
+* [Diagnostics] add `is_retry` to `http_request_performed` event (#2276) via Antonio Pallares (@ajpallares)
+* [Diagnostics] Tracks BillingClient connected/disconnected events. (#2267) via JayShortway (@JayShortway)
+* [Diagnostics] add `no_entitlement_mapping_available` reason to error_entering_offline_entitlements_mode` event (#2274) via Antonio Pallares (@ajpallares)
+
+## 8.15.0
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix landscape mode in Paywalls v1 Template 3 (#2265) via Josh Holtz (@joshdholtz)
+### Customer Center
+#### ✨ New Features
+* feat: Introduce `CustomerCenterView` for hybrid usage (#2170) via Cesar de la Vega (@vegaro)
+* Add `onManagementOptionSelected` to `CustomerCenterListener` (#2270) via Cesar de la Vega (@vegaro)
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls V2] Ignores missing font alias if it's blank. (#2271) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes badges not being overriden (#2266) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* [Diagnostics] Add play_store_version and play_services_version to all google events (#2269) via Toni Rico (@tonidero)
+* [Diagnostics] Add `id` and `app_session_id` to events (#2268) via Toni Rico (@tonidero)
+* Uploads Paparazzi screenshots to Emerge. (#2232) via JayShortway (@JayShortway)
+
+## 8.14.3
+### 🔄 Other Changes
+* Allows configuring `showInAppMessagesAutomatically` and `pendingTransactionsForPrepaidPlansEnabled` in customEntitlementComputation mode (#2260) via JayShortway (@JayShortway)
+* [Paywalls V2] Tweaks the `MissingPackage` error message. (#2256) via JayShortway (@JayShortway)
+* [Paywalls V2] Avoids re-parsing the component tree to find packages and tabs (#2252) via JayShortway (@JayShortway)
+* [EXTERNAL] Set metaspace size to avoid "Daemon disappeared" failures (#2237) contributed by @runningcode (#2255) via Toni Rico (@tonidero)
+* [Paywalls V2] Timeline component fixes (#2253) via Toni Rico (@tonidero)
+* Updates Gemfile.lock (#2254) via RevenueCat Git Bot (@RCGitBot)
+* Update fastlane plugin (#2251) via Toni Rico (@tonidero)
+* [Paywalls V2] Refactors `StyleFactory` (#2247) via JayShortway (@JayShortway)
+* Add refresh button to PaywallTester app (#2244) via Toni Rico (@tonidero)
+
+## 8.14.2
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* [Paywalls V2] Considers script when matching locales (#2245) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* [Paywalls V2] Reorganizes stack arrangement logic (#2238) via JayShortway (@JayShortway)
+
+## 8.14.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: Remove API dependency with Coil (#2229) via Toni Rico (@tonidero)
+* Set default interfaces compiler flag to `all-compatibility` (#2227) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Prevent Paywalls V1 Template 7 from defaulting empty badge to showing percent off (#2222) via Josh Holtz (@joshdholtz)
+* Fixes inconsistent package ordering on tiered paywalls (template 7) (#2221) via JayShortway (@JayShortway)
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix background painting outside composable (#2236) via Toni Rico (@tonidero)
+* [Paywalls V2] Avoids the theme from influencing the text color (#2235) via JayShortway (@JayShortway)
+* [Paywalls V2] Handles potential locale id inconsistency between strings and variables (#2234) via JayShortway (@JayShortway)
+* [Paywalls V2] Disable all buttons when any action is in progress (#2219) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes locales without region and `X-Preferred-Locales` (#2230) via JayShortway (@JayShortway)
+* [Paywalls V2] Fix CarouselComponent peek (#2228) via Toni Rico (@tonidero)
+### Customer Center
+#### 🐞 Bugfixes
+* Fix `CustomerCenterActivity` colors on dark mode (#2225) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2233) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2226) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.14.0
+## RevenueCat SDK
+### ✨ New Features
+* Add `hasPaywall` property to `Offering` (#2212) via Antonio Pallares (@ajpallares)
+### 🐞 Bugfixes
+* Fix empty options in NoActive subscriptions screen (#2168) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Create `CustomerCenterListener` (#2199) via Cesar de la Vega (@vegaro)
+#### 🐞 Bugfixes
+* Reload Customer Center after a successful restore (#2203) via Cesar de la Vega (@vegaro)
+* Fixes CustomerCenter state not refreshing when reopening (#2202) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Improves PaywallsTester multi-API-key support (#2218) via JayShortway (@JayShortway)
+* [EXTERNAL] Bump Emerge Gradle Plugin and Snaphsots version (#2211) via @runningcode (#2217) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates Compose previews of all templates (#2207) via RevenueCat Git Bot (@RCGitBot)
+* [Paywalls V2] Enables template previews again (#2215) via JayShortway (@JayShortway)
+* Adds support for switching between 2 API keys to PaywallsTester (#2213) via JayShortway (@JayShortway)
+* Adds a `LocalPreviewImageLoader` `CompositionLocal`. (#2201) via JayShortway (@JayShortway)
+* Logs from RevenueCatUI are now tagged with `[Purchases]` too. (#2206) via JayShortway (@JayShortway)
+* [Paywalls V2] Ignores template previews for now. (#2209) via JayShortway (@JayShortway)
+* [Paywalls V2] Some more template previews optimizations (#2208) via JayShortway (@JayShortway)
+* chore: Delete key from customer center survey event (#2204) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Extract ImageLoader to use a single one (#2146) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds progress indicator to buttons (#2198) via JayShortway (@JayShortway)
+* Avoids triggering "unscheduled" workflows when triggering workflows via the CircleCI API (#2200) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds a note on publishing to the missing paywall error. (#2193) via JayShortway (@JayShortway)
+* Adds X-Kotlin-Version header. (#2197) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds docs on ignored arguments for Paywalls V2 in more places. (#2195) via JayShortway (@JayShortway)
+* chore: Add backend integration test for events (#2189) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Adds CI job to update template previews (#2192) via JayShortway (@JayShortway)
+
+## 8.13.0
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Creates a `ShowCustomerCenter ` contract for displaying as an Activity (#2181) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Paywalls V2] Adds template previews (#2184) via JayShortway (@JayShortway)
+* Removes Intent.FLAG_ACTIVITY_NEW_TASK when starting CustomerCenterActivity (#2190) via Cesar de la Vega (@vegaro)
+* chore: Introduce preview for no active subscriptions (#2188) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Allow manual scrolling if auto-advance is enabled (#2182) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds `visible` property to all components (#2172) via JayShortway (@JayShortway)
+
+## 8.12.2
+## RevenueCatUI SDK
+#### 🐞 Bugfixes
+* Fix issue with release minification with Emerge's annotation  (#2176) via Toni Rico (@tonidero)
+### Customer Center
+#### 🐞 Bugfixes
+* fix: Track customer center events (#2178) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Enable paywall tester minification (#2177) via Toni Rico (@tonidero)
+
+## 8.12.1
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Fix promotional offer not being displayed (#2173) via Cesar de la Vega (@vegaro)
+* Fix back button dismissing the Customer Center (#2171) via Cesar de la Vega (@vegaro)
+
+## 8.12.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: Add prepaid as a period type (#2141) via Greenie (@greenietea)
+
+## RevenueCatUI SDK
+### Paywalls v2
+#### ✨ New Features
+* [Paywalls V2] Adds support for Paywalls V2! (#2127) via JayShortway (@JayShortway)
+### Customer Center
+#### ✨ New Features
+* Adds support for  `CustomerCenter` (#2156) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Paywalls V2] Deprecate PaywallFooter in favor of OriginalTemplatePaywallFooter (#2111) via Toni Rico (@tonidero)
+* feat: Filter CANCEL from help path if lifetime (#2140) via Facundo Menzella (@facumenzella)
+* fix: Localize Restore Purchases Dialog (#2139) via Facundo Menzella (@facumenzella)
+* fix: Hide contact support if there's no email (#2135) via Facundo Menzella (@facumenzella)
+* feat: Track IMPRESSION and SURVER_OPTION_CHOSEN for CustomerCenter (#2124) via Facundo Menzella (@facumenzella)
+* fix: Use TextButton instead of outline for Promotionals (#2138) via Facundo Menzella (@facumenzella)
+* Rename carousel slide to page (#2144) via Josh Holtz (@joshdholtz)
+* [Paywalls V2] Make border draw on top of the image overlay (#2165) via Toni Rico (@tonidero)
+* [Paywalls V2] Gradients Reloaded: Makes linear gradients match CSS even more closely (#2166) via JayShortway (@JayShortway)
+* [Paywalls V2] Fix wrong spacers in Stack when some children are Fill (#2164) via Toni Rico (@tonidero)
+* chore: Unify Json encoding with JsonHelper (#2160) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Fixes the top system bar padding being applied to all children in a vertical container (#2162) via JayShortway (@JayShortway)
+* [Paywalls V2] Refactor to use a single ImageLoader singleton in RevenueCatUI (#2161) via Toni Rico (@tonidero)
+* [Paywalls V2] Apply stack margins to overlay badges (#2158) via Toni Rico (@tonidero)
+* [Paywalls V2] Disables the click handler for the selected package (#2159) via JayShortway (@JayShortway)
+* [Paywalls V2] Change stack distribution system to use spacers instead of custom arrangements (#2154) via Toni Rico (@tonidero)
+* [Paywalls V2] Fixes empty stacks not showing up. (#2157) via JayShortway (@JayShortway)
+* Explicitly sets the `defaults` flavor as the default. (#2155) via JayShortway (@JayShortway)
+* Updates on no active purchases screen (#2150) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Fix issue with sizing of stacks with nested badges (#2152) via Toni Rico (@tonidero)
+* [Paywalls V2] Fix issue with shadows overlapping long edgeToEdge badges (#2149) via Toni Rico (@tonidero)
+* [Paywalls V2] Adjusts the convex/concave offset to 10% of the image height (#2151) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes variables for multi month periods (#2148) via JayShortway (@JayShortway)
+* [Paywalls V2] Correctly handles variables for lifetime products (#2145) via JayShortway (@JayShortway)
+* [Paywalls V2] Add shadows to badge previews (#2147) via Toni Rico (@tonidero)
+* [Paywalls V2] Predownload paywall low res images (#2143) via Toni Rico (@tonidero)
+* [Paywalls V2] Makes linear gradients consistent with CSS (#2142) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds edge-to-edge support (#2137) via JayShortway (@JayShortway)
+* [Paywalls V2] Make root stack component use all the available space by default (#2136) via Toni Rico (@tonidero)
+* [Paywalls V2] Avoids a crash if a package is missing (#2130) via JayShortway (@JayShortway)
+* [Paywalls V2] Fix stack clipping issues (#2126) via Toni Rico (@tonidero)
+* fix: Address typo and wrong doc for CustomerCenter events (#2133) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Fix merge conflict (#2134) via Toni Rico (@tonidero)
+* [Paywalls V2] Actually ignores the font provider for V2. (#2129) via JayShortway (@JayShortway)
+* Rename `PromotionalOfferView` to `PromotionalOfferScreen` (#2132) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Support background images in StackComponent, CarouselComponent, TabsComponent (#2131) via Toni Rico (@tonidero)
+* [Paywalls V2] Support scroll orientation in StackComponent (#2108) via Toni Rico (@tonidero)
+* [Paywalls V2] Correctly selects packages on tabs (#2122) via JayShortway (@JayShortway)
+* Revamp UI in Customer Center (#2123) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Remove cursive as a generic font (#2118) via Josh Holtz (@joshdholtz)
+* Publishes PaywallsTester to Internal testing track on every commit to `main` (#2100) via JayShortway (@JayShortway)
+* Fixes `X` in promo offer not dismissing the promo (#2110) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Published version of PaywallTester now uses the Paywalls V2 Alpha RC project (#2093) via JayShortway (@JayShortway)
+* [Paywalls V2] New overrides structure (#2120) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds `TabsComponent` samples and tests (#2115) via JayShortway (@JayShortway)
+* Ignores `RestorePurchasesDialog` previews using `IgnoreEmergeSnapshot` (#2116) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Adds `TabsComponentView` (#2114) via JayShortway (@JayShortway)
+* Fixes "View field header collides with a variable" data binding error in PurchaseTester (#2119) via JayShortway (@JayShortway)
+* feat: Add support for tracking customer center events (#2117) via Facundo Menzella (@facumenzella)
+* [Paywalls V2] Adds `TabsComponentStyle` (#2113) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds deserialization of `TabsComponent` (#2101) via JayShortway (@JayShortway)
+* [Paywalls V2] Implements Variables V2 (#2099) via JayShortway (@JayShortway)
+* refactor: Introduce EventsManager to track events for different features (#2096) via Facundo Menzella (@facumenzella)
+* Rename to Web Billing (#2094) via Antonio Borrero Granell (@antoniobg)
+* [Paywalls V2] Fixes shadows drawing behind transparent components (#2112) via JayShortway (@JayShortway)
+* Fix title not being reset after closing Feedback Survey (#2109) via Cesar de la Vega (@vegaro)
+* Support for opening custom urls in Customer Center (#2107) via Cesar de la Vega (@vegaro)
+* Prices in accept promotional offer button (#2104) via Cesar de la Vega (@vegaro)
+* Customer Center use remote appearance config (#2102) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Use original paywall fallback when trying to use Footer modes in a Components paywall (#2106) via Toni Rico (@tonidero)
+* [Paywalls V2] Add more `ImageComponentView` preview tests (#2103) via Toni Rico (@tonidero)
+* [Paywalls V2] Add CarouselComponent page indicator animation (#2105) via Toni Rico (@tonidero)
+* [Paywalls V2] Add `CarouselComponentView` (#2095) via Toni Rico (@tonidero)
+* [Paywalls V2] Add `CarouselComponent` infrastructure (#2092) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds new price calculations needed for Variables V2 (#2098) via JayShortway (@JayShortway)
+* [Paywalls V2] Preparation for Variables V2 (#2097) via JayShortway (@JayShortway)
+* Promotional offers (#2011) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] No longer provides the entire `UiConfig` to `StyleFactory` (#2091) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds support for custom fonts (#2090) via JayShortway (@JayShortway)
+* feat: Add basic customer center events (#2075) via Facundo Menzella (@facumenzella)
+* Add support to manage non-Google purchases in Customer Center (#2067) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Add `TimelineComponentView` (#2083) via Toni Rico (@tonidero)
+* [Paywalls V2] Process `TimelineComponent` overrides and state (#2082) via Toni Rico (@tonidero)
+* [Paywalls V2] Cleans up after implementing color aliases (#2087) via JayShortway (@JayShortway)
+* [Paywalls V2] Implements color aliases for backgrounds (#2086) via JayShortway (@JayShortway)
+* `PaywallTesterApp` is no longer wrapped in a `Surface` (#2089) via JayShortway (@JayShortway)
+* [Paywalls V2] Implements color aliases for shadows (#2085) via JayShortway (@JayShortway)
+* [Paywalls V2] Implements color aliases for borders (#2084) via JayShortway (@JayShortway)
+* [Paywalls V2] Implements color aliases for `TextComponent` (#2080) via JayShortway (@JayShortway)
+* [Paywalls V2] Add `TimelineComponent` network parsing (#2047) via Toni Rico (@tonidero)
+* [Paywalls V2] Implements color aliases for `ImageComponent` (#2079) via JayShortway (@JayShortway)
+* [Paywalls V2] Implements color aliases for `IconComponent`  (#2078) via JayShortway (@JayShortway)
+* Build `SubscriptionDetailsView` using `CustomerInfo` (#2057) via Cesar de la Vega (@vegaro)
+* Some Material 3 updates to the `ManageSubscriptionsView` (#2072) via JayShortway (@JayShortway)
+* [Paywalls V2] Implements color aliases for `StackComponent` (#2076) via JayShortway (@JayShortway)
+* Fixes compilation of `IconComponentView`. (#2073) via JayShortway (@JayShortway)
+* [Paywalls V2] Make `edgeToEdge` top/bottom badge extend to entire stack background (#2070) via Toni Rico (@tonidero)
+* [Paywalls V2] Parses `UiConfig` (#2068) via JayShortway (@JayShortway)
+* [Paywalls V2] Add `IconComponent` (#2071) via Toni Rico (@tonidero)
+* [Paywalls V2] Badge: Handle main stack border width correctly in overlay and nested badge styles (#2069) via Toni Rico (@tonidero)
+* [Paywalls V2] Add `edgeToEdge` badge trailing/leading style layout (#2054) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds support for fallback components (#2064) via JayShortway (@JayShortway)
+
+## 8.11.0
+## RevenueCat SDK
+### ✨ New Features
+* Add `subscriptionsByProductIdentifier` to `CustomerInfo` (#2052) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* Fix `OwnershipType` enum serialization (#2061) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Allow repurchasing custom packages (#2044) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* [Paywalls V2] Do not attempt to purchase if currently subscribed (#2062) via JayShortway (@JayShortway)
+* [Trusted Entitlements] Enable `Trusted Entitlements` by default (#2050) via Toni Rico (@tonidero)
+* [Trusted Entitlements] Do not clear CustomerInfo upon enabling Trusted Entitlements (#2049) via Toni Rico (@tonidero)
+* [Paywalls V2] Removes `MaskShape.Pill` in favor of `MaskShape.Circle`. (#2063) via JayShortway (@JayShortway)
+* [Paywalls V2] Font sizes are integers now. (#2059) via JayShortway (@JayShortway)
+* [Paywalls V2] Handles intro offer eligibility overrides (#2058) via JayShortway (@JayShortway)
+* [Paywalls V2] Implements `Convex` and `Concave` image masks (#2055) via JayShortway (@JayShortway)
+* [Paywalls V2] Add new `ImageComponent` properties (#2056) via Toni Rico (@tonidero)
+* [Paywalls V2] Add `Badge`'s `nested` style layout (#2041) via Toni Rico (@tonidero)
+* [Paywalls V2] Add `Badge`'s `edgeToEdge` `Top`/`Bottom` alignment style layout (#2039) via Toni Rico (@tonidero)
+* [Paywalls V2] Various `PaywallViewModel` fixes and tests (#2051) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes minimum spacing when distribution is `SPACE_BETWEEN`, `SPACE_AROUND` or `SPACE_EVENLY` (#2053) via JayShortway (@JayShortway)
+* [Paywalls V2] Correctly determines when to show or hide decimals for prices (#2048) via JayShortway (@JayShortway)
+* [Paywalls V2] `TextComponentView` uses the correct `Package` for variable values (#2042) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds Custom Tabs to support in-app browser URL destinations (#2035) via JayShortway (@JayShortway)
+* Update `agp` to 8.8.0 (#2045) via Toni Rico (@tonidero)
+* [Paywalls V2] Add `Badge`'s `overlay` style layout (#2009) via Toni Rico (@tonidero)
+* [Paywalls V2] Implements all button actions (#2034) via JayShortway (@JayShortway)
+* Convert error message property into computed property (#2038) via Toni Rico (@tonidero)
+
+## 8.10.8
+## RevenueCat SDK
+### 📦 Dependency Updates
+* Updates the Play Billing Library to 7.1.1. (#2032) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* [Paywalls V2] Fixes click consumption in text buttons (#2033) via JayShortway (@JayShortway)
+* [Paywalls V2] Handles gradient percentages in the 0..100 range (#2030) via JayShortway (@JayShortway)
+* [Paywalls V2] Add `Badge` property to StackComponent (#2003) via Toni Rico (@tonidero)
+* [Paywalls V2] Improves image previews (#2029) via JayShortway (@JayShortway)
+* Make `PurchasesError` `java.io.Serializable` (#2031) via Toni Rico (@tonidero)
+* [Paywalls V2] Fixes `ImageComponentView` size when axes are Fit and Fixed (#2024) via JayShortway (@JayShortway)
+* [Paywalls V2] Image backgrounds support `fit_mode` and `color_overlay` (#2021) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes various rendering issues (#2020) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes various deserialization issues (#2018) via JayShortway (@JayShortway)
+* [Paywalls V2] Simplifies validation of `PaywallComponentsData` (#2017) via JayShortway (@JayShortway)
+* [Paywalls V2] Moves click handling from `ButtonComponentStyle` to `ButtonComponentView` (#2016) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PackageComponentView` (#2014) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ImageComponentState` and override functionality (#2012) via JayShortway (@JayShortway)
+
+## 8.10.7
+## RevenueCat SDK
+### 🐞 Bugfixes
+* improvements for fr translations (#2019) via Andy Boedo (@aboedo)
+
+### 🔄 Other Changes
+* Feedback Surveys (#2010) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Fixes previews (#2015) via JayShortway (@JayShortway)
+* [Paywalls V2] Moves validation logic to the Loading phase (#2007) via JayShortway (@JayShortway)
+* Add Cancel subscriptions support  (#2008) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Localizations are kept in a NonEmptyMap (#2001) via JayShortway (@JayShortway)
+* [Paywalls V2] `TextComponentState` handles locale changes (#2000) via JayShortway (@JayShortway)
+* [Paywalls V2] Some minor cleanup (#1994) via JayShortway (@JayShortway)
+* [Paywalls V2] `StackComponentView` handles overrides with `StackComponentState` (#1993) via JayShortway (@JayShortway)
+* Customer Center restores [CC-2] (#1999) via Cesar de la Vega (@vegaro)
+* [Paywalls V2] Add more image component previews to test parent being smaller than image size (#2004) via Toni Rico (@tonidero)
+* [Paywalls V2] Add `PurchaseButtonComponent` support (#2002) via Toni Rico (@tonidero)
+* Build Customer Center from JSON (#1998) via Cesar de la Vega (@vegaro)
+* Fix missing import after PR merge conflict (#1997) via Toni Rico (@tonidero)
+* [Paywalls V2] Add `StickyFooterComponentView` (#1991) via Toni Rico (@tonidero)
+* [Paywalls V2] `TextComponentView` handles overrides with `TextComponentState` (#1989) via JayShortway (@JayShortway)
+
+## 8.10.6
+## RevenueCat SDK
+### 📦 Dependency Updates
+* Bump fastlane from 2.225.0 to 2.226.0 (#1973) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `3b1e7cf` to `4ee8579` (#1980) via dependabot[bot] (@dependabot[bot])
+
+### 🔄 Other Changes
+* [Paywalls V2] Fixes previews of `ButtonComponentView`, `StackComponentView` and `TextComponentView` (#1992) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds a `FLAG_PAYWALL_COMPONENTS` build flag (#1990) via JayShortway (@JayShortway)
+* [Paywalls V2] Moves more state to `PaywallState` (#1988) via JayShortway (@JayShortway)
+* [PaywallsV2] Improve `ButtonComponentView` to handle disabling the button and add `PurchasePackage` action (#1984) via Toni Rico (@tonidero)
+* [Paywalls V2] `TextComponentStyle` no longer needs a Composable context (#1986) via JayShortway (@JayShortway)
+* Make web redemption link APIs stable (#1985) via Toni Rico (@tonidero)
+* [WEB-1757] Handle new backend error codes that may show in the redemption endpoint (#1987) via Toni Rico (@tonidero)
+* [Paywalls V2] Stack background, borders and shadows update depending on the theme (#1982) via JayShortway (@JayShortway)
+* [Paywalls V2] Fixes `TextComponentView`'s  font size (#1981) via JayShortway (@JayShortway)
+* [Paywalls V2] Various minor fixes (#1979) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds support to PaywallsTester (#1978) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PaywallComponentsData` to `Offering` (#1977) via JayShortway (@JayShortway)
+* Parse web redemption link strings more defensively (#1976) via Toni Rico (@tonidero)
+* Add web redemption parse method for strings to support hybrids (#1972) via Toni Rico (@tonidero)
+
+## 8.10.5
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix multi-tier template to allow optional header image (#1971) via Josh Holtz (@joshdholtz)
+
+### 🔄 Other Changes
+* [Paywalls V2] Adds first version of `LoadedPaywallComponents` (#1970) via JayShortway (@JayShortway)
+* [Paywalls V2] Add `ButtonComponentView` (#1963) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds `PaywallState.Loaded.Components` (#1969) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds image background tests (#1967) via JayShortway (@JayShortway)
+* [Paywalls V2] `TextComponentView` updates when the theme changes (#1966) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds a `StyleFactory` (#1965) via JayShortway (@JayShortway)
+* [EXTERNAL] fix: update polish translations (#1919) via @radko93 (#1964) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ImageComponentView` (#1959) via Toni Rico (@tonidero)
+* WebPurchaseRedemption: Rename `AlreadyRedeemed` result to `PurchaseBelongsToOtherUser` (#1962) via Toni Rico (@tonidero)
+* [Paywalls V2] Extends support for blurred shadows to all Android versions (#1957) via JayShortway (@JayShortway)
+
+## 8.10.4
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Paywalls: Update Finnish "restore" localization (#1918) via Jeffrey Bunn (@Jethro87)
+
+### 🔄 Other Changes
+* [Paywalls V2] Adds `StackComponentView` (#1956) via JayShortway (@JayShortway)
+* Avoid generating documentation for symbols annotated with `@InternalRevenueCatAPI` (#1958) via JayShortway (@JayShortway)
+* [Paywalls V2] Preparation for `StackComponentView` (#1954) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds borders and image backgrounds (#1953) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds support for shadows (#1952) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds override system via `PresentedPartial` (#1948) via JayShortway (@JayShortway)
+* Add reachability tests to integration tests (#1955) via Toni Rico (@tonidero)
+* [Paywalls V2] Add support for markdown in text component (#1951) via Toni Rico (@tonidero)
+* Modify intent extension API to parse redemption links to mimick iOS (#1949) via Toni Rico (@tonidero)
+* [Paywalls V2] Adds `TextComponentView` (#1941) via JayShortway (@JayShortway)
+
+## 8.10.3
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Uses `Sequence` instead of `Stream` to avoid errors due to unavailable Java 8 APIs (#1943) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* Increase integration test timeout (#1946) via Toni Rico (@tonidero)
+* Removes `@RequiresApi(N)` from `FileHelper` and related classes (#1944) via JayShortway (@JayShortway)
+* [Paywalls V2] Minimizes Java API (#1942) via JayShortway (@JayShortway)
+* [Paywalls V2] Makes `TextComponent` public (#1939) via JayShortway (@JayShortway)
+* Introduces an `@InternalRevenueCatAPI` annotation (#1938) via JayShortway (@JayShortway)
+* [Paywalls V2] Moves any non-component file to a new `common` package. (#1937) via JayShortway (@JayShortway)
+* [Paywalls V2] `LocalizationKey` is an inline value class now. (#1936) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PaywallComponentsData` (#1935) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `StickyFooterComponent` (#1934) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PurchaseButtonComponent` (#1933) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PackageComponent` (#1932) via JayShortway (@JayShortway)
+* Ensure the correct error message is shown when failing to open a Uri in paywalls (#1922) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ButtonComponent` (#1931) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `StackComponent` (#1930) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ComponentOverrides` (#1929) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ImageComponent` (#1928) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `TextComponent` (#1927) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds all enum properties (#1926) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `SizeConstraints`, `Size`, `Padding` and `Shadow` properties (#1925) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `CornerRadiuses`, `Shape` and `MaskShape` properties (#1924) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ImageUrls` and `ColorInfo` properties (#1923) via JayShortway (@JayShortway)
+
+## 8.10.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Catch `NoSuchMethodError` on Ads library (#1914) via Cesar de la Vega (@vegaro)
+
+## 8.10.1
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Handle `IllegalArgumentException` when opening a Uri in the paywalls (#1904) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Create sample web purchase redemption app (#1908) via Toni Rico (@tonidero)
+* Add extra error cases for web purchases redemptions (#1899) via Toni Rico (@tonidero)
+* Use new web redemption endpoint (#1903) via Toni Rico (@tonidero)
+
+## 8.10.0
+## RevenueCat SDK
+### ✨ New Features
+* Add `tenjinAnalyticsInstallationId` setter property (#1897) via Toni Rico (@tonidero)
+### 🐞 Bugfixes
+* [Fix] Consider a network error as not successfully synced for paywall events (#1900) via Mark Villacampa (@MarkVillacampa)
+
+### 🔄 Other Changes
+* [Paywalls] Synchronize paywall events on app backgrounding and after a purchase (#1901) via Mark Villacampa (@MarkVillacampa)
+* Dispatcher catches and rethrows Throwable instead of Exception to avoid swallowing errors (#1894) via JayShortway (@JayShortway)
+
+## 8.9.0
+## RevenueCat SDK
+### ✨ New Features
+* [Experimental] Web purchase redemption (#1889) via Toni Rico (@tonidero)
+### 🐞 Bugfixes
+* Keeps the org.json package. (#1891) via JayShortway (@JayShortway)
+### 📦 Dependency Updates
+* Bump rexml from 3.3.8 to 3.3.9 (#1892) via dependabot[bot] (@dependabot[bot])
+* Bump danger from 9.5.0 to 9.5.1 (#1885) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.224.0 to 2.225.0 (#1884) via dependabot[bot] (@dependabot[bot])
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix application of modifiers in `Markdown` component (#1893) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* [CI] Allow publishing snapshot releases manually from branches (#1888) via Toni Rico (@tonidero)
+* Detekt auto-fixes (#1886) via Toni Rico (@tonidero)
+
+## 8.8.2
+### 🔄 Other Changes
+* Adds X-Is-Debug-Build header (#1873) via JayShortway (@JayShortway)
+
+## 8.8.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Save SDK configuration on paywall activity so it can reconfigure automatically (#1872) via Toni Rico (@tonidero)
+### 📦 Dependency Updates
+* Bump fastlane from 2.223.1 to 2.224.0 (#1870) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `5b2e35c` to `3b1e7cf` (#1865) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.222.0 to 2.223.1 (#1860) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `55a0455` to `5b2e35c` (#1858) via dependabot[bot] (@dependabot[bot])
+
+### 🔄 Other Changes
+* [CustomerCenter] Fix help path deserializing when unknown type (#1869) via Toni Rico (@tonidero)
+* [CustomerCenter] Create `CustomerCenter` composable and view model with some initial UI (#1867) via Toni Rico (@tonidero)
+* [CustomerCenter] Add networking layer and models (#1859) via Toni Rico (@tonidero)
+* [CustomerCenter] Adds SubscriptionDetailsView (#1863) via JayShortway (@JayShortway)
+
 ## 8.8.0
 ## RevenueCat SDK
 ### ✨ New Features

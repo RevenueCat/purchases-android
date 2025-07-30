@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="OK">좋아요</string>
+    <string name="OK">확인</string>
     <string name="all_plans">모든 구독</string>
-    <string name="privacy">은둔</string>
-    <string name="privacy_policy">개인 정보 정책</string>
-    <string name="restore">복원하다</string>
-    <string name="restore_purchases">구매를 복원</string>
-    <string name="terms">자귀</string>
-    <string name="terms_and_conditions">이용약관</string>
+    <string name="privacy">개인정보 방침</string>
+    <string name="privacy_policy">개인정보 처리방침</string>
+    <string name="restore">복구</string>
+    <string name="restore_purchases">구매 항목 복구</string>
+    <string name="terms">약관</string>
+    <string name="terms_and_conditions">이용 약관</string>
     <string name="annual">연간</string>
     <string name="semester">6개월</string>
-    <string name="quarter">3 개월</string>
-    <string name="bimonthly">2 개월</string>
-    <string name="monthly">월간 간행물</string>
-    <string name="weekly">주간</string>
-    <string name="lifetime">일생</string>
+    <string name="quarter">3개월</string>
+    <string name="bimonthly">2개월</string>
+    <string name="monthly">매달</string>
+    <string name="weekly">매주</string>
+    <string name="lifetime">영구적</string>
     <string name="package_discount">%1$d%% 할인</string>
-    <string name="continue_cta">계속하다</string>
-    <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} 무료 체험을 시작한 후 {{ total_price_and_per_month }}를 시작하세요.</string>
-    <string name="no_browser_cannot_open_link">브라우저가 설치되어 있지 않습니다. 링크를 열 수 없습니다.</string>
+    <string name="continue_cta">계속</string>
+    <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} 무료 체험을 시작한 후, {{ total_price_and_per_month }}을(를) 시작하세요.</string>
+    <string name="no_browser_cannot_open_link">브라우저가 설치되어 있지 않아 링크를 열 수 없습니다.</string>
+    <string name="cannot_open_link">링크가 유효하지 않아 열 수 없습니다.</string>
 </resources>

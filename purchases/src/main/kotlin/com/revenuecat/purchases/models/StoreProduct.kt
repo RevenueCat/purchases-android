@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.utils.pricePerDay
 import com.revenuecat.purchases.utils.pricePerMonth
 import com.revenuecat.purchases.utils.pricePerWeek
 import com.revenuecat.purchases.utils.pricePerYear
@@ -133,6 +134,18 @@ interface StoreProduct {
      * Creates a copy of this `StoreProduct` with the specified `presentedOfferingContext` set.
      */
     fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct
+
+    /**
+     * Null for INAPP products. The price of the [StoreProduct] in the given locale in a daily recurrence.
+     * This means that, for example, if the period is weekly, the price will be divided by 7.
+     * It uses a currency formatter to format the price in the given locale.
+     * Note that this value may be an approximation.
+     * For Google subscriptions, this value will use the basePlan to calculate the value.
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    fun pricePerDay(locale: Locale = Locale.getDefault()): Price? {
+        return period?.let { price.pricePerDay(it, locale) }
+    }
 
     /**
      * Null for INAPP products. The price of the [StoreProduct] in the given locale in a weekly recurrence.
