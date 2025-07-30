@@ -223,6 +223,9 @@ data class CustomerCenterConfigData(
             @SerialName("badge_free_trial_cancelled")
             BADGE_FREE_TRIAL_CANCELLED,
 
+            @SerialName("badge_lifetime")
+            BADGE_LIFETIME,
+
             @SerialName("app_store")
             APP_STORE,
 
@@ -323,6 +326,7 @@ data class CustomerCenterConfigData(
                     BADGE_CANCELLED -> "Cancelled"
                     BADGE_FREE_TRIAL -> "Free Trial"
                     BADGE_FREE_TRIAL_CANCELLED -> "Cancelled Trial"
+                    BADGE_LIFETIME -> "Lifetime"
                     APP_STORE -> "App Store"
                     MAC_APP_STORE -> "Mac App Store"
                     GOOGLE_PLAY_STORE -> "Google Play Store"
