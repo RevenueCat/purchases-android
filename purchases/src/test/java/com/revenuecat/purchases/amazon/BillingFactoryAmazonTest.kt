@@ -36,6 +36,7 @@ class BillingFactoryAmazonTest {
             stateProvider = PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             backend = mockBackend,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 
@@ -56,6 +57,7 @@ class BillingFactoryAmazonTest {
             stateProvider = PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             backend = mockBackend,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 }

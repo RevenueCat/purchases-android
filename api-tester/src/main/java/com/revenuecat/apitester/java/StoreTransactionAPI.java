@@ -74,7 +74,6 @@ final class StoreTransactionAPI {
             case GOOGLE_PURCHASE:
             case GOOGLE_RESTORED_PURCHASE:
             case AMAZON_PURCHASE:
-            case TEST_PURCHASE:
         }
     }
 }

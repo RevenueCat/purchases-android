@@ -72,7 +72,6 @@ private class StoreTransactionAPI {
             PurchaseType.GOOGLE_PURCHASE,
             PurchaseType.GOOGLE_RESTORED_PURCHASE,
             PurchaseType.AMAZON_PURCHASE,
-            PurchaseType.TEST_PURCHASE,
             -> {}
         }.exhaustive
     }

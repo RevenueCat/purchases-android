@@ -244,7 +244,7 @@ internal class TestStoreBillingWrapper(
             },
             presentedOfferingContext = presentedOfferingContext,
             storeUserID = null,
-            purchaseType = PurchaseType.TEST_PURCHASE,
+            purchaseType = PurchaseType.GOOGLE_PURCHASE, // We need to specify a new purchase type for the test store
             marketplace = null,
             subscriptionOptionId = product.defaultOption?.id,
             replacementMode = null,

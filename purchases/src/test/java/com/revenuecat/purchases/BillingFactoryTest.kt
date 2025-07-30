@@ -31,6 +31,7 @@ class BillingFactoryTest {
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             backend = mockBackend,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 
@@ -51,6 +52,7 @@ class BillingFactoryTest {
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             backend = mockBackend,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 }

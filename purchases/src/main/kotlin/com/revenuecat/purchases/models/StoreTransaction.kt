@@ -210,5 +210,4 @@ enum class PurchaseType {
     GOOGLE_PURCHASE,
     GOOGLE_RESTORED_PURCHASE,
     AMAZON_PURCHASE,
-    TEST_PURCHASE,
 }

@@ -97,7 +97,6 @@ private class EntitlementInfoAPI {
             Store.RC_BILLING,
             Store.EXTERNAL,
             Store.PADDLE,
-            Store.TEST_STORE,
             -> {}
         }.exhaustive
     }

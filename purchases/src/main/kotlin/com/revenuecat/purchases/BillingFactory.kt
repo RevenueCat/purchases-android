@@ -25,7 +25,16 @@ internal object BillingFactory {
         stateProvider: PurchasesStateProvider,
         pendingTransactionsForPrepaidPlansEnabled: Boolean,
         backend: Backend,
+        apiKeyValidationResult: APIKeyValidator.ValidationResult,
     ): BillingAbstract {
+        if (apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE) {
+            return TestStoreBillingWrapper(
+                deviceCache = cache,
+                mainHandler = Handler(application.mainLooper),
+                purchasesStateProvider = stateProvider,
+                backend = backend,
+            )
+        }
         return when (store) {
             Store.PLAY_STORE -> BillingWrapper(
                 BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
@@ -50,12 +59,6 @@ internal object BillingFactory {
                     throw e
                 }
             }
-            Store.TEST_STORE -> TestStoreBillingWrapper(
-                deviceCache = cache,
-                mainHandler = Handler(application.mainLooper),
-                purchasesStateProvider = stateProvider,
-                backend = backend,
-            )
             else -> {
                 errorLog { "Incompatible store ($store) used" }
                 throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")

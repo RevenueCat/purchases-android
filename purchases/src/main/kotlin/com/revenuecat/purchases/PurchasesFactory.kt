@@ -77,7 +77,7 @@ internal class PurchasesFactory(
             val finalStore = if (
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && BuildConfig.ENABLE_TEST_STORE
             ) {
-                Store.TEST_STORE
+                Store.UNKNOWN_STORE // We should add a new store when we fully support the test store.
             } else {
                 store
             }
@@ -194,6 +194,7 @@ internal class PurchasesFactory(
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
                 backend,
+                apiKeyValidationResult,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
@@ -277,7 +278,7 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 diagnosticsTracker,
             )
-            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
+            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore, apiKeyValidationResult)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             @Suppress("ComplexCondition")
