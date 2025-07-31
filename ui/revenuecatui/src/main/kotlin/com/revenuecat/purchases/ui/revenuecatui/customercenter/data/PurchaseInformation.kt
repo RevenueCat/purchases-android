@@ -49,7 +49,7 @@ internal data class PurchaseInformation(
         transaction: TransactionDetails,
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
-        localization: CustomerCenterConfigData.Localization? = null,
+        localization: CustomerCenterConfigData.Localization,
     ) : this(
         title = determineTitle(entitlementInfo, subscribedProduct, transaction, localization),
         expirationOrRenewal = determineExpirationOrRenewal(entitlementInfo, transaction, dateFormatter, locale),
