@@ -103,6 +103,16 @@ private fun determinePrice(
     subscribedProduct: StoreProduct?,
     transaction: TransactionDetails,
 ): PriceDetails {
+    transaction.price?.let { price ->
+        // Sandbox transactions have 0 price, so we check the price of the product in that case
+        if (!transaction.isSandbox) {
+            return if (price.amountMicros == 0L) {
+                PriceDetails.Free
+            } else {
+                PriceDetails.Paid(price.formatted)
+            }
+        }
+    }
     return entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
         PriceDetails.Free
     } else {
