@@ -15,6 +15,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -335,6 +336,21 @@ internal class PurchasesOrchestrator(
     fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
+        if (BuildConfig.ENABLE_TEST_STORE &&
+            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE
+        ) {
+            log(LogIntent.DEBUG) { RestoreStrings.SYNC_PURCHASES_TEST_STORE }
+            getCustomerInfo(object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    listener?.onSuccess(customerInfo)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    listener?.onError(error)
+                }
+            })
+            return
+        }
         syncPurchasesHelper.syncPurchases(
             isRestore = this.allowSharingPlayStoreAccount,
             appInBackground = this.state.appInBackground,
@@ -476,6 +492,13 @@ internal class PurchasesOrchestrator(
         log(LogIntent.DEBUG) { RestoreStrings.RESTORING_PURCHASE }
         if (!allowSharingPlayStoreAccount) {
             log(LogIntent.WARNING) { RestoreStrings.SHARING_ACC_RESTORE_FALSE }
+        }
+        if (BuildConfig.ENABLE_TEST_STORE &&
+            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE
+        ) {
+            log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_TEST_STORE }
+            getCustomerInfo(callback)
+            return
         }
 
         val startTime = dateProvider.now

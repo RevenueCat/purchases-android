@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Store
@@ -18,6 +19,7 @@ internal class AppConfig(
     proxyURL: URL?,
     val store: Store,
     val isDebugBuild: Boolean,
+    val apiKeyValidationResult: APIKeyValidator.ValidationResult,
     val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
     private val runningTests: Boolean = false,
@@ -81,6 +83,7 @@ internal class AppConfig(
         if (baseURL != other.baseURL) return false
         if (showInAppMessagesAutomatically != other.showInAppMessagesAutomatically) return false
         if (isAppBackgrounded != other.isAppBackgrounded) return false
+        if (apiKeyValidationResult != other.apiKeyValidationResult) return false
 
         return true
     }
@@ -99,6 +102,7 @@ internal class AppConfig(
         result = 31 * result + baseURL.hashCode()
         result = 31 * result + showInAppMessagesAutomatically.hashCode()
         result = 31 * result + isAppBackgrounded.hashCode()
+        result = 31 * result + apiKeyValidationResult.hashCode()
         return result
     }
 
@@ -113,6 +117,7 @@ internal class AppConfig(
             "packageName='$packageName', " +
             "finishTransactions=$finishTransactions, " +
             "showInAppMessagesAutomatically=$showInAppMessagesAutomatically, " +
+            "apiKeyValidationResult=$apiKeyValidationResult, " +
             "baseURL=$baseURL)"
     }
 }

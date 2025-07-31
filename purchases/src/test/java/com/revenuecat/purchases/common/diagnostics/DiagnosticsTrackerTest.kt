@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.diagnostics
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
@@ -897,6 +898,7 @@ class DiagnosticsTrackerTest {
             proxyURL = null,
             store = store,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 

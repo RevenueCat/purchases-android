@@ -91,6 +91,7 @@ internal class PurchasesFactory(
                 proxyURL,
                 finalStore,
                 isDebugBuild(),
+                apiKeyValidationResult,
                 dangerousSettings,
                 runningIntegrationTests,
                 forceServerErrors,

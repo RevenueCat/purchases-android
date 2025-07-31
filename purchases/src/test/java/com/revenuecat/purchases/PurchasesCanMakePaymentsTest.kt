@@ -121,6 +121,7 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
             null,
             Store.AMAZON,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         Purchases.canMakePayments(mockContext, listOf()) {
             assertThat(it).isTrue()
