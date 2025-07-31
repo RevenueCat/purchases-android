@@ -257,10 +257,10 @@ jobs:
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-defaults-debug
+            find . -path ./build/test-results-defaults-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-debug/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-defaults-debug
       - store_artifacts:
           path: build/reports
 
@@ -286,10 +286,10 @@ jobs:
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-defaults-release
+            find . -path ./build/test-results-defaults-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-release/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-defaults-release
       - store_artifacts:
           path: build/reports
 
@@ -307,10 +307,12 @@ jobs:
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-cec-debug
+            find . -path ./build/test-results-cec-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-debug/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-cec-debug
+      - store_artifacts:
+          path: build/reports
 
   test_cec_release:
     <<: *android-executor
@@ -326,10 +328,27 @@ jobs:
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-cec-release
+            find . -path ./build/test-results-cec-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-release/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-cec-release
+      - store_artifacts:
+          path: build/reports
+
+  test_dokka_hide_internal:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run dokka-hide-internal Tests
+          command: ./gradlew :dokka-hide-internal:test --parallel --no-daemon
+      - store_test_results:
+          path: dokka-hide-internal/build/test-results/test
+      - store_artifacts:
+          path: build/reports
 
   detekt:
     <<: *android-executor
@@ -899,6 +918,10 @@ workflows:
           requires:
             - prepare-tests
       - assemble-paywall-tester-release:
+          requires:
+            - prepare-tests
+      - test_dokka_hide_internal:
+          <<: *release-branches
           requires:
             - prepare-tests
       - run-backend-integration-tests:
