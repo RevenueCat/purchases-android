@@ -106,7 +106,7 @@ private fun determinePrice(
         transaction.store == Store.PROMOTIONAL -> PriceDetails.Free
 
         transaction.price?.amountMicros?.let { it > 0L } == true -> {
-            PriceDetails.Paid(transaction.price!!.formatted)
+            transaction.price?.let { PriceDetails.Paid(it.formatted) } ?: PriceDetails.Unknown
         }
 
         // In sandbox, we don't know if the price is actually free or not (it's always 0)
