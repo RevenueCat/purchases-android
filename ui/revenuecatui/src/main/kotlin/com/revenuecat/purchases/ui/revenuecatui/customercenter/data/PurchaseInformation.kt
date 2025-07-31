@@ -113,7 +113,6 @@ private fun determineTitle(
     }
 
     return subscribedProduct?.title
-        ?: entitlementInfo?.identifier
         ?: when (transaction) {
             is TransactionDetails.Subscription ->
                 localization.commonLocalizedString(
