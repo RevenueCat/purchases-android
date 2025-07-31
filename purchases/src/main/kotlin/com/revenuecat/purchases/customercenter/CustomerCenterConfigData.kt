@@ -251,11 +251,11 @@ data class CustomerCenterConfigData(
             @SerialName("resubscribe")
             RESUBSCRIBE,
 
-            @SerialName("generic_subscription")
-            GENERIC_SUBSCRIPTION,
+            @SerialName("type_subscription")
+            TYPE_SUBSCRIPTION,
 
-            @SerialName("generic_one_time_purchase")
-            GENERIC_ONE_TIME_PURCHASE,
+            @SerialName("type_one_time_purchase")
+            TYPE_ONE_TIME_PURCHASE,
             ;
 
             val defaultValue: String
@@ -342,8 +342,8 @@ data class CustomerCenterConfigData(
                     UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                     RESUBSCRIBE -> "Resubscribe"
-                    GENERIC_SUBSCRIPTION -> "Subscription"
-                    GENERIC_ONE_TIME_PURCHASE -> "One time purchase"
+                    TYPE_SUBSCRIPTION -> "Subscription"
+                    TYPE_ONE_TIME_PURCHASE -> "One time purchase"
                 }
         }
 

@@ -117,11 +117,11 @@ private fun determineTitle(
         ?: when (transaction) {
             is TransactionDetails.Subscription ->
                 localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.GENERIC_SUBSCRIPTION,
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_SUBSCRIPTION,
                 )
             is TransactionDetails.NonSubscription ->
                 localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.GENERIC_ONE_TIME_PURCHASE,
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_ONE_TIME_PURCHASE,
                 )
         }
 }
