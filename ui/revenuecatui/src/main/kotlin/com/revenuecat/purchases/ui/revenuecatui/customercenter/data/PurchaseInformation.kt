@@ -49,8 +49,9 @@ internal data class PurchaseInformation(
         transaction: TransactionDetails,
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
+        localization: CustomerCenterConfigData.Localization? = null,
     ) : this(
-        title = determineTitle(entitlementInfo, subscribedProduct, transaction),
+        title = determineTitle(entitlementInfo, subscribedProduct, transaction, localization),
         expirationOrRenewal = determineExpirationOrRenewal(entitlementInfo, transaction, dateFormatter, locale),
         product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
@@ -105,11 +106,24 @@ private fun determineTitle(
     entitlementInfo: EntitlementInfo?,
     subscribedProduct: StoreProduct?,
     transaction: TransactionDetails,
+    localization: CustomerCenterConfigData.Localization,
 ): String {
     if (transaction.store == Store.PROMOTIONAL && entitlementInfo != null) {
         return entitlementInfo.identifier
     }
-    return subscribedProduct?.title ?: transaction.productIdentifier
+
+    return subscribedProduct?.title
+        ?: entitlementInfo?.identifier
+        ?: when (transaction) {
+            is TransactionDetails.Subscription ->
+                localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.GENERIC_SUBSCRIPTION,
+                )
+            is TransactionDetails.NonSubscription ->
+                localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.GENERIC_ONE_TIME_PURCHASE,
+                )
+        }
 }
 
 private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): PriceDetails {

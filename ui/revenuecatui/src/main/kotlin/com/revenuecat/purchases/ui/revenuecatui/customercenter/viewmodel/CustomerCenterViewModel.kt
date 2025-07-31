@@ -475,6 +475,7 @@ internal class CustomerCenterViewModelImpl(
     private suspend fun loadPurchases(
         dateFormatter: DateFormatter,
         locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
     ): List<PurchaseInformation> {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
@@ -494,6 +495,7 @@ internal class CustomerCenterViewModelImpl(
                         entitlement,
                         dateFormatter,
                         locale,
+                        localization,
                     )
                 }
             } else {
@@ -513,6 +515,7 @@ internal class CustomerCenterViewModelImpl(
                     entitlement,
                     dateFormatter,
                     locale,
+                    localization,
                 ),
             )
         } else {
@@ -558,6 +561,7 @@ internal class CustomerCenterViewModelImpl(
         entitlement: EntitlementInfo?,
         dateFormatter: DateFormatter,
         locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
     ): PurchaseInformation {
         val product = if (transaction.store == Store.PLAY_STORE) {
             purchases.awaitGetProduct(
@@ -581,6 +585,7 @@ internal class CustomerCenterViewModelImpl(
             transaction = transaction,
             dateFormatter = dateFormatter,
             locale = locale,
+            localization = localization,
         )
     }
 
@@ -763,7 +768,7 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchases = loadPurchases(dateFormatter, locale)
+            val purchases = loadPurchases(dateFormatter, locale, customerCenterConfigData.localization)
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
                 purchases,

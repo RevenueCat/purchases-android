@@ -219,7 +219,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "test_product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -261,7 +261,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "test_product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -303,7 +303,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "test_product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -435,7 +435,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
@@ -478,7 +478,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
@@ -521,7 +521,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
@@ -564,7 +564,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
@@ -607,7 +607,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
@@ -650,7 +650,7 @@ class PurchaseInformationTest {
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "test_entitlement",
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
@@ -715,6 +715,40 @@ class PurchaseInformationTest {
             expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
             managementURL = Uri.parse(MANAGEMENT_URL),
         )
+    }
+
+    @Test
+    fun `test PurchaseInformation with no entitlement and no subscribed product shows user-friendly fallback`() {
+        val subscriptionTransaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.technical.id",
+            expiresDate = null
+        )
+        val subscriptionPurchaseInfo = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = null,
+            transaction = subscriptionTransaction,
+            dateFormatter = dateFormatter,
+            locale = locale
+        )
+
+        assertThat(subscriptionPurchaseInfo.title).isEqualTo("Subscription")
+
+        val nonSubscriptionTransaction = createNonSubscriptionTransactionDetails(
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.technical.id"
+        )
+        val nonSubscriptionPurchaseInfo = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = null,
+            transaction = nonSubscriptionTransaction,
+            dateFormatter = dateFormatter,
+            locale = locale
+        )
+
+        assertThat(nonSubscriptionPurchaseInfo.title).isEqualTo("One time purchase")
     }
 
     private fun assertPurchaseInformation(
@@ -789,6 +823,16 @@ class PurchaseInformationTest {
             productPlanIdentifier = productPlanIdentifier,
             isTrial = isTrial,
             managementURL = managementURL
+        )
+    }
+
+    private fun createNonSubscriptionTransactionDetails(
+        store: Store,
+        productIdentifier: String,
+    ): TransactionDetails.NonSubscription {
+        return TransactionDetails.NonSubscription(
+            productIdentifier = productIdentifier,
+            store = store,
         )
     }
 
