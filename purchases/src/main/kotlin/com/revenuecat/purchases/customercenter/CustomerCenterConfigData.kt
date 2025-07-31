@@ -224,6 +224,9 @@ data class CustomerCenterConfigData(
             @SerialName("badge_free_trial_cancelled")
             BADGE_FREE_TRIAL_CANCELLED,
 
+            @SerialName("badge_lifetime")
+            BADGE_LIFETIME,
+
             @SerialName("app_store")
             APP_STORE,
 
@@ -324,6 +327,7 @@ data class CustomerCenterConfigData(
                     BADGE_CANCELLED -> "Cancelled"
                     BADGE_FREE_TRIAL -> "Free Trial"
                     BADGE_FREE_TRIAL_CANCELLED -> "Cancelled Trial"
+                    BADGE_LIFETIME -> "Lifetime"
                     APP_STORE -> "App Store"
                     MAC_APP_STORE -> "Mac App Store"
                     GOOGLE_PLAY_STORE -> "Google Play Store"
@@ -349,6 +353,7 @@ data class CustomerCenterConfigData(
         @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
         val url: String? = null,
         @SerialName("open_method") val openMethod: OpenMethod? = null,
+        @SerialName("action_identifier") val actionIdentifier: String? = null,
     ) {
         @Serializable
         sealed class PathDetail {
@@ -419,6 +424,7 @@ data class CustomerCenterConfigData(
             CHANGE_PLANS,
             CANCEL,
             CUSTOM_URL,
+            CUSTOM_ACTION,
             UNKNOWN,
         }
 

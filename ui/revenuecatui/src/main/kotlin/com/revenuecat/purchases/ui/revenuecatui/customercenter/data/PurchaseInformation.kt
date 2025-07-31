@@ -36,6 +36,11 @@ internal data class PurchaseInformation(
      * until the end of the billing period.
      */
     val isCancelled: Boolean,
+    /**
+     * Indicates whether this is a lifetime purchase.
+     * This is true for promotional lifetime purchases or non-subscription purchases attached to an entitlement.
+     */
+    val isLifetime: Boolean,
 ) {
 
     constructor(
@@ -63,6 +68,7 @@ internal data class PurchaseInformation(
             },
         isTrial = determineTrialStatus(entitlementInfo, transaction),
         isCancelled = determineCancellationStatus(entitlementInfo, transaction),
+        isLifetime = determineLifetimeStatus(entitlementInfo, transaction),
     )
 
     fun renewalString(
@@ -182,6 +188,19 @@ private fun determineCancellationStatus(
     } ?: false
 
     return entitlementCancelled || transactionCancelled
+}
+
+private fun determineLifetimeStatus(
+    entitlementInfo: EntitlementInfo?,
+    transaction: TransactionDetails,
+): Boolean {
+    val isPromotionalLifetime = entitlementInfo?.isPromotionalLifetime() == true
+
+    val isNonSubscriptionWithEntitlement = transaction !is TransactionDetails.Subscription &&
+        transaction.store != Store.PROMOTIONAL &&
+        entitlementInfo != null
+
+    return isPromotionalLifetime || isNonSubscriptionWithEntitlement
 }
 
 internal sealed class PriceDetails {

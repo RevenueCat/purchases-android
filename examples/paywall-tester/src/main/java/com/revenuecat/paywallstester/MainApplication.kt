@@ -50,6 +50,14 @@ class MainApplication : Application() {
                             feedbackSurveyOptionId,
                     )
                 }
+
+                override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
+                    Log.d(
+                        TAG,
+                        "CustomerCenterListener: onCustomActionSelected called with action: $actionIdentifier, " +
+                            "purchaseIdentifier: $purchaseIdentifier",
+                    )
+                }
             }
     }
 }

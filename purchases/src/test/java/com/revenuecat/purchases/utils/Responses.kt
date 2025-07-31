@@ -322,6 +322,109 @@ object Responses {
           "virtual_currencies": {}
         }
     """.removeJSONFormatting()
+
+    val validWebBillingProductsResponse = """
+        {
+            "product_details": [
+                {
+                    "current_price": {
+                        "amount": 999,
+                        "amount_micros": 9990000,
+                        "currency": "EUR"
+                    },
+                    "default_purchase_option_id": "base_option",
+                    "default_subscription_option_id": null,
+                    "description": "A test monthly subscription product",
+                    "identifier": "product1",
+                    "normal_period_duration": "P1M",
+                    "product_type": "subscription",
+                    "purchase_options": {
+                        "base_option": {
+                            "base": {
+                                "cycle_count": 1,
+                                "period_duration": "P1M",
+                                "price": {
+                                    "amount": 999,
+                                    "amount_micros": 9990000,
+                                    "currency": "EUR"
+                                }
+                            },
+                            "id": "base_option",
+                            "intro_price": null,
+                            "price_id": "test_price_id",
+                            "trial": null
+                        }
+                    },
+                    "subscription_options": {
+                        "base_option": {
+                            "base": {
+                                "cycle_count": 1,
+                                "period_duration": "P1M",
+                                "price": {
+                                    "amount": 999,
+                                    "amount_micros": 9990000,
+                                    "currency": "EUR"
+                                }
+                            },
+                            "id": "base_option",
+                            "intro_price": null,
+                            "price_id": "test_price_id",
+                            "trial": null
+                        }
+                    },
+                    "title": "Test Monthly Subscription"
+                },
+                {
+                    "current_price": {
+                        "amount": 999,
+                        "amount_micros": 9990000,
+                        "currency": "EUR"
+                    },
+                    "default_purchase_option_id": "base_option",
+                    "default_subscription_option_id": null,
+                    "description": "A test monthly subscription product",
+                    "identifier": "product2",
+                    "normal_period_duration": "P1M",
+                    "product_type": "subscription",
+                    "purchase_options": {
+                        "base_option": {
+                            "base": {
+                                "cycle_count": 1,
+                                "period_duration": "P1M",
+                                "price": {
+                                    "amount": 999,
+                                    "amount_micros": 9990000,
+                                    "currency": "EUR"
+                                }
+                            },
+                            "id": "base_option",
+                            "intro_price": null,
+                            "price_id": "test_price_id",
+                            "trial": null
+                        }
+                    },
+                    "subscription_options": {
+                        "base_option": {
+                            "base": {
+                                "cycle_count": 1,
+                                "period_duration": "P1M",
+                                "price": {
+                                    "amount": 999,
+                                    "amount_micros": 9990000,
+                                    "currency": "EUR"
+                                }
+                            },
+                            "id": "base_option",
+                            "intro_price": null,
+                            "price_id": "test_price_id",
+                            "trial": null
+                        }
+                    },
+                    "title": "Test Monthly Subscription"
+                }
+            ]
+        }
+    """.removeJSONFormatting()
 }
 
 private fun String.removeJSONFormatting(): String = JSONObject(this).toString()
