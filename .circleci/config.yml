@@ -262,11 +262,7 @@ jobs:
       - store_test_results:
           path: build/test-results-defaults-debug
       - store_artifacts:
-          path: build/test-results-defaults-debug
-          destination: defaults-debug-test-results
-      - store_artifacts:
           path: build/reports
-          destination: defaults-debug-test-reports
 
   test_defaults_release:
     <<: *android-executor
@@ -295,11 +291,7 @@ jobs:
       - store_test_results:
           path: build/test-results-defaults-release
       - store_artifacts:
-          path: build/test-results-defaults-release
-          destination: defaults-release-test-results
-      - store_artifacts:
           path: build/reports
-          destination: defaults-release-test-reports
 
   test_cec_debug:
     <<: *android-executor
@@ -320,11 +312,7 @@ jobs:
       - store_test_results:
           path: build/test-results-cec-debug
       - store_artifacts:
-          path: build/test-results-cec-debug
-          destination: cec-debug-test-results
-      - store_artifacts:
           path: build/reports
-          destination: cec-debug-test-reports
 
   test_cec_release:
     <<: *android-executor
@@ -345,61 +333,7 @@ jobs:
       - store_test_results:
           path: build/test-results-cec-release
       - store_artifacts:
-          path: build/test-results-cec-release
-          destination: cec-release-test-results
-      - store_artifacts:
           path: build/reports
-          destination: cec-release-test-reports
-
-  test_other_modules:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run Other Module Tests
-          command: ./gradlew :integration-tests:test :test-apps:testpurchasesandroidcompatibility:test :test-apps:testpurchasesuiandroidcompatibility:test :examples:paywall-tester:test :examples:purchase-tester:test :examples:web-purchase-redemption-sample:test --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results-other
-            find . -type f -regex ".*/build/test-results/.*xml" -not -path "./build/test-results-other/*" -exec cp --parents {} build/test-results-other/ \;
-      - store_test_results:
-          path: build/test-results-other
-      - store_artifacts:
-          path: build/test-results-other
-          destination: other-modules-test-results
-      - store_artifacts:
-          path: build/reports
-          destination: other-modules-test-reports
-
-  test_legacy_comparison:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - checkout-submodule:
-          path: upstream/paywall-preview-resources
-      - install-sdkman
-      - android/accept_licenses
-      - android-dependencies
-      - android/restore_build_cache
-      - run:
-          name: Run Tests
-          command: ./gradlew lint test
-      - run:
-          name: Consolidate artifacts
-          command: |
-              mkdir -p build/test-results/
-              find . -type f -regex ".*/build/test-results/.*xml" -not -path "./build/test-results/*" -exec cp --parents {} build/test-results/ \;
-      - android/save_build_cache
-      - store_artifacts:
-          path: build/reports
-      - store_test_results:
-          path: build/test-results
 
   test_dokka_hide_internal:
     <<: *android-executor
@@ -414,11 +348,7 @@ jobs:
       - store_test_results:
           path: dokka-hide-internal/build/test-results/test
       - store_artifacts:
-          path: dokka-hide-internal/build/test-results/test
-          destination: dokka-hide-internal-test-results
-      - store_artifacts:
-          path: dokka-hide-internal/build/reports
-          destination: dokka-hide-internal-test-reports
+          path: build/reports
 
   detekt:
     <<: *android-executor
@@ -972,12 +902,90 @@ workflows:
       - test_cec_release:
           requires:
             - prepare-tests
-      - test_legacy_comparison:
+      - verify-compatibility:
+          requires:
+            - prepare-tests
+      - lint:
+          requires:
+            - prepare-tests
+      - detekt:
+          requires:
+            - prepare-tests
+      - metalava:
+          requires:
+            - prepare-tests
+      - assemble-purchase-tester:
+          requires:
+            - prepare-tests
+      - assemble-paywall-tester-release:
           requires:
             - prepare-tests
       - test_dokka_hide_internal:
+          <<: *release-branches
           requires:
             - prepare-tests
+      - run-backend-integration-tests:
+          requires:
+            - prepare-tests
+      - record-and-upload-paparazzi-revenuecatui-snapshots:
+          requires:
+            - prepare-tests
+      - run-revenuecatui-ui-tests:
+          requires:
+            - prepare-tests
+      - emerge_purchases_ui_snapshot_tests:
+          requires:
+            - prepare-tests
+      - integration-tests-build: *release-branches
+      - purchases-integration-tests-build: *release-branches
+      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
+          <<: *release-branches
+      - run-firebase-tests-purchases-integration-test:
+          requires:
+            - purchases-integration-tests-build
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          <<: *release-branches
+          context:
+            - slack-secrets
+      - run-firebase-tests:
+          requires:
+            - integration-tests-build
+      - hold:
+          type: approval
+          requires:
+            - test_defaults_debug
+            - test_defaults_release
+            - test_cec_debug
+            - test_cec_release
+            - assemble-purchase-tester
+            - assemble-paywall-tester-release
+            - run-backend-integration-tests
+            - run-revenuecatui-ui-tests
+            - run-firebase-tests
+            - run-firebase-tests-purchases-integration-test
+            - run-firebase-tests-purchases-load-shedder-integration-test
+            - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
+            - verify-compatibility
+          <<: *release-branches
+      - revenuecat/tag-current-branch:
+          requires:
+            - hold
+          <<: *release-branches
+      - deploy:
+          <<: *release-tags
+          context: maven-central-publishing
+      - docs-deploy: *release-tags
+      - publish-purchase-tester-release:
+          requires:
+            - deploy
+            - docs-deploy
+          <<: *release-tags
+      - publish-paywall-tester-release:
+          track: "alpha"
+          requires:
+              - deploy
+              - docs-deploy
+          <<: *release-tags
 
   on-main-branch:
     when:
