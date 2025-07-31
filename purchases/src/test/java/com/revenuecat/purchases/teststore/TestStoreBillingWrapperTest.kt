@@ -116,32 +116,6 @@ class TestStoreBillingWrapperTest {
     }
 
     @Test
-    fun `queryAllPurchases returns empty list`() {
-        var result: List<*>? = null
-        
-        testStoreBilling.queryAllPurchases(
-            appUserID = "test_user",
-            onReceivePurchaseHistory = { result = it },
-            onReceivePurchaseHistoryError = { }
-        )
-        
-        assertThat(result).isEmpty()
-    }
-
-    @Test
-    fun `queryPurchases returns empty map`() {
-        var result: Map<*, *>? = null
-        
-        testStoreBilling.queryPurchases(
-            appUserID = "test_user",
-            onSuccess = { result = it },
-            onError = { }
-        )
-        
-        assertThat(result).isEmpty()
-    }
-
-    @Test
     fun `getStorefront returns US`() {
         var result: String? = null
         
@@ -276,155 +250,45 @@ class TestStoreBillingWrapperTest {
     }
 
     @Test
-    fun `queryAllPurchases returns cached purchases after successful purchase`() {
-        // Given
-        val activity = mockk<Activity>()
-        val productId = "test_product_cache"
-        
-        // Mock product response from backend
-        val productResponse = createMockProductResponse(productId)
-        val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
-        val purchasingData = product.purchasingData
-        val billingResponse = WebBillingProductsResponse(listOf(productResponse))
-        
-        every { deviceCache.getCachedAppUserID() } returns "test_user"
-        every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
-            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
-            onSuccess(billingResponse)
-        }
-        
-        // Mock dialog helper to simulate successful purchase
-        every { 
-            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } answers {
-            val onPositiveClicked = arg<() -> Unit>(6)
-            onPositiveClicked()
-        }
-        
-        // When - make purchase
-        testStoreBilling.makePurchaseAsync(
-            activity = activity,
-            appUserID = "test_user",
-            purchasingData = purchasingData,
-            replaceProductInfo = null,
-            presentedOfferingContext = null,
-            isPersonalizedPrice = null
-        )
-        
-        // Then - verify purchase was cached
+    fun `queryAllPurchases returns empty list`() {
         var cachedPurchases: List<StoreTransaction>? = null
         testStoreBilling.queryAllPurchases(
             appUserID = "test_user",
             onReceivePurchaseHistory = { cachedPurchases = it },
-            onReceivePurchaseHistoryError = { }
+            onReceivePurchaseHistoryError = { fail("Expected success") }
         )
         
         assertThat(cachedPurchases).isNotNull()
-        assertThat(cachedPurchases).hasSize(1)
-        assertThat(cachedPurchases?.first()?.productIds).containsExactly(productId)
+        assertThat(cachedPurchases).hasSize(0)
     }
 
     @Test
-    fun `queryPurchases returns cached purchases as map after successful purchase`() {
-        // Given
-        val activity = mockk<Activity>()
-        val productId = "test_product_map"
-        
-        // Mock product response from backend
-        val productResponse = createMockProductResponse(productId)
-        val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
-        val purchasingData = product.purchasingData
-        val billingResponse = WebBillingProductsResponse(listOf(productResponse))
-        
-        every { deviceCache.getCachedAppUserID() } returns "test_user"
-        every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
-            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
-            onSuccess(billingResponse)
-        }
-        
-        // Mock dialog helper to simulate successful purchase
-        every { 
-            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } answers {
-            val onPositiveClicked = arg<() -> Unit>(6)
-            onPositiveClicked()
-        }
-        
-        // When - make purchase
-        testStoreBilling.makePurchaseAsync(
-            activity = activity,
-            appUserID = "test_user",
-            purchasingData = purchasingData,
-            replaceProductInfo = null,
-            presentedOfferingContext = null,
-            isPersonalizedPrice = null
-        )
-        
-        // Then - verify purchase was cached as map
+    fun `queryPurchases returns empty map`() {
         var cachedPurchases: Map<String, StoreTransaction>? = null
         testStoreBilling.queryPurchases(
             appUserID = "test_user",
             onSuccess = { cachedPurchases = it },
-            onError = { }
-        )
-        
-        assertThat(cachedPurchases).isNotNull()
-        assertThat(cachedPurchases).hasSize(1)
-        val purchase = cachedPurchases?.values?.first()
-        assertThat(purchase?.productIds).containsExactly(productId)
-        assertThat(purchase?.type).isEqualTo(ProductType.SUBS)
-    }
-
-    @Test
-    fun `findPurchaseInActivePurchases finds cached purchase by product ID and type`() {
-        // Given
-        val activity = mockk<Activity>()
-        val productId = "test_product_find"
-
-        // Mock product response from backend
-        val productResponse = createMockProductResponse(productId)
-        val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
-        val purchasingData = product.purchasingData
-        val billingResponse = WebBillingProductsResponse(listOf(productResponse))
-        
-        every { deviceCache.getCachedAppUserID() } returns "test_user"
-        every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
-            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
-            onSuccess(billingResponse)
-        }
-        
-        // Mock dialog helper to simulate successful purchase
-        every { 
-            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } answers {
-            val onPositiveClicked = arg<() -> Unit>(6)
-            onPositiveClicked()
-        }
-        
-        // When - make purchase first
-        testStoreBilling.makePurchaseAsync(
-            activity = activity,
-            appUserID = "test_user",
-            purchasingData = purchasingData,
-            replaceProductInfo = null,
-            presentedOfferingContext = null,
-            isPersonalizedPrice = null
-        )
-        
-        // Then - find the cached purchase
-        var foundPurchase: StoreTransaction? = null
-
-        testStoreBilling.findPurchaseInActivePurchases(
-            appUserID = "test_user",
-            productType = ProductType.SUBS,
-            productId = productId,
-            onCompletion = { foundPurchase = it },
             onError = { fail("Should succeed") }
         )
         
-        assertThat(foundPurchase).isNotNull()
-        assertThat(foundPurchase?.productIds).containsExactly(productId)
-        assertThat(foundPurchase?.type).isEqualTo(ProductType.SUBS)
+        assertThat(cachedPurchases).isNotNull()
+        assertThat(cachedPurchases).hasSize(0)
+    }
+
+    @Test
+    fun `findPurchaseInActivePurchases returns error`() {
+        var error: PurchasesError? = null
+        testStoreBilling.findPurchaseInActivePurchases(
+            appUserID = "test_user",
+            productType = ProductType.SUBS,
+            productId = "test-product-id",
+            onCompletion = { fail("Should error") },
+            onError = { error = it }
+        )
+        
+        assertThat(error).isNotNull()
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
+        assertThat(error?.underlyingErrorMessage).isEqualTo("No active purchase found for product: test-product-id")
     }
 
     @Test
@@ -449,76 +313,6 @@ class TestStoreBillingWrapperTest {
         assertThat(errorFound).isNotNull()
         assertThat(errorFound?.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
         assertThat(errorFound?.underlyingErrorMessage).contains(nonExistentProductId)
-    }
-
-    @Test
-    fun `cache persists multiple purchases with different tokens`() {
-        // Given
-        val activity = mockk<Activity>()
-        val productId1 = "test_product_multi_1"
-        val productId2 = "test_product_multi_2"
-        
-        // Mock product responses from backend
-        val productResponse1 = createMockProductResponse(productId1)
-        val product1 = TestStoreProductConverter.convertToStoreProduct(productResponse1)
-        val purchasingData1 = product1.purchasingData
-        val productResponse2 = createMockProductResponse(productId2)
-        val product2 = TestStoreProductConverter.convertToStoreProduct(productResponse2)
-        val purchasingData2 = product2.purchasingData
-        
-        every { deviceCache.getCachedAppUserID() } returns "test_user"
-        
-        // Mock backend responses for each product
-        every { backend.getWebBillingProducts(any(), setOf(productId1), any(), any()) } answers {
-            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
-            onSuccess(WebBillingProductsResponse(listOf(productResponse1)))
-        }
-        
-        every { backend.getWebBillingProducts(any(), setOf(productId2), any(), any()) } answers {
-            val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
-            onSuccess(WebBillingProductsResponse(listOf(productResponse2)))
-        }
-        
-        // Mock dialog helper to always accept
-        every { 
-            purchaseDialogHelper.showDialog(any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } answers {
-            val onPositiveClicked = arg<() -> Unit>(6)
-            onPositiveClicked()
-        }
-        
-        // When - make two purchases
-        testStoreBilling.makePurchaseAsync(
-            activity = activity,
-            appUserID = "test_user",
-            purchasingData = purchasingData1,
-            replaceProductInfo = null,
-            presentedOfferingContext = null,
-            isPersonalizedPrice = null
-        )
-        
-        testStoreBilling.makePurchaseAsync(
-            activity = activity,
-            appUserID = "test_user",
-            purchasingData = purchasingData2,
-            replaceProductInfo = null,
-            presentedOfferingContext = null,
-            isPersonalizedPrice = null
-        )
-        
-        // Then - verify both purchases are cached
-        var cachedPurchases: List<StoreTransaction>? = null
-        testStoreBilling.queryAllPurchases(
-            appUserID = "test_user",
-            onReceivePurchaseHistory = { cachedPurchases = it },
-            onReceivePurchaseHistoryError = { }
-        )
-        
-        assertThat(cachedPurchases).isNotNull()
-        assertThat(cachedPurchases).hasSize(2)
-        
-        val productIds = cachedPurchases?.flatMap { it.productIds } ?: emptyList()
-        assertThat(productIds).containsExactlyInAnyOrder(productId1, productId2)
     }
 
     private inner class TestPurchasesListener : BillingAbstract.PurchasesUpdatedListener {

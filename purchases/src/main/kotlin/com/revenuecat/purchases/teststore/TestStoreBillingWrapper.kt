@@ -40,8 +40,6 @@ internal class TestStoreBillingWrapper(
     @Volatile
     private var connected = false
 
-    private val purchaseCache = mutableMapOf<String, StoreTransaction>()
-
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
         mainHandler.postDelayed({
             startConnection()
@@ -64,8 +62,8 @@ internal class TestStoreBillingWrapper(
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
-        debugLog { "TestStoreBillingAbstract: queryAllPurchases - returning cached purchases" }
-        onReceivePurchaseHistory(purchaseCache.values.toList())
+        debugLog { "TestStoreBillingAbstract: queryAllPurchases - returning empty list" }
+        onReceivePurchaseHistory(emptyList())
     }
 
     override fun queryProductDetailsAsync(
@@ -109,22 +107,14 @@ internal class TestStoreBillingWrapper(
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        debugLog { "TestStoreBillingAbstract: findPurchaseInActivePurchases for product: $productId" }
+        debugLog { "TestStoreBillingAbstract: findPurchaseInActivePurchases for product: $productId will always fail" }
 
-        val purchase = purchaseCache.values.find { transaction ->
-            transaction.productIds.contains(productId) && transaction.type == productType
-        }
-
-        if (purchase != null) {
-            onCompletion(purchase)
-        } else {
-            onError(
-                PurchasesError(
-                    PurchasesErrorCode.PurchaseNotAllowedError,
-                    "No active purchase found for product: $productId",
-                ),
-            )
-        }
+        onError(
+            PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                "No active purchase found for product: $productId",
+            ),
+        )
     }
 
     override fun makePurchaseAsync(
@@ -154,8 +144,8 @@ internal class TestStoreBillingWrapper(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        debugLog { "TestStoreBillingAbstract: queryPurchases - returning cached purchases" }
-        onSuccess(purchaseCache)
+        debugLog { "TestStoreBillingAbstract: queryPurchases - returning empty map" }
+        onSuccess(emptyMap())
     }
 
     override fun showInAppMessagesIfNeeded(
@@ -249,8 +239,6 @@ internal class TestStoreBillingWrapper(
             subscriptionOptionId = product.defaultOption?.id,
             replacementMode = null,
         )
-
-        purchaseCache[purchaseToken] = storeTransaction
 
         purchasesUpdatedListener?.onPurchasesUpdated(listOf(storeTransaction))
     }
