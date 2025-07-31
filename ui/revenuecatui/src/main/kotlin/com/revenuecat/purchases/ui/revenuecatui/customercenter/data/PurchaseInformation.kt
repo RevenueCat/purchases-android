@@ -55,11 +55,7 @@ internal data class PurchaseInformation(
         expirationOrRenewal = determineExpirationOrRenewal(entitlementInfo, transaction, dateFormatter, locale),
         product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
-        pricePaid = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
-            PriceDetails.Free
-        } else {
-            subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
-        },
+        pricePaid = determinePrice(entitlementInfo, subscribedProduct, transaction),
         isSubscription = transaction is TransactionDetails.Subscription && transaction.store != Store.PROMOTIONAL,
         managementURL = (transaction as? TransactionDetails.Subscription)?.managementURL,
         isExpired = entitlementInfo?.isActive?.let { !it }
@@ -99,6 +95,18 @@ internal data class PurchaseInformation(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_INFO_EXPIRES_ON_DATE,
             ).replace("{{ date }}", expirationDate)
         }
+    }
+}
+
+private fun determinePrice(
+    entitlementInfo: EntitlementInfo?,
+    subscribedProduct: StoreProduct?,
+    transaction: TransactionDetails,
+): PriceDetails {
+    return entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
+        PriceDetails.Free
+    } else {
+        subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
     }
 }
 
