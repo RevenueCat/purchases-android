@@ -55,7 +55,7 @@ internal data class PurchaseInformation(
         expirationOrRenewal = determineExpirationOrRenewal(entitlementInfo, transaction, dateFormatter, locale),
         product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
-        pricePaid = determinePrice(entitlementInfo, subscribedProduct, transaction),
+        pricePaid = determinePrice(subscribedProduct, transaction),
         isSubscription = transaction is TransactionDetails.Subscription && transaction.store != Store.PROMOTIONAL,
         managementURL = (transaction as? TransactionDetails.Subscription)?.managementURL,
         isExpired = entitlementInfo?.isActive?.let { !it }
@@ -99,24 +99,31 @@ internal data class PurchaseInformation(
 }
 
 private fun determinePrice(
-    entitlementInfo: EntitlementInfo?,
     subscribedProduct: StoreProduct?,
     transaction: TransactionDetails,
 ): PriceDetails {
-    transaction.price?.let { price ->
-        // Sandbox transactions have 0 price, so we check the price of the product in that case
-        if (!transaction.isSandbox) {
-            return if (price.amountMicros == 0L) {
+    return when {
+        transaction.store == Store.PROMOTIONAL -> PriceDetails.Free
+
+        transaction.price?.amountMicros?.let { it > 0L } == true -> {
+            PriceDetails.Paid(transaction.price!!.formatted)
+        }
+
+        // In sandbox, we don't know if the price is actually free or not (it's always 0)
+        // So we fall back to the product price.
+        transaction.price?.amountMicros == 0L && !transaction.isSandbox -> {
+            PriceDetails.Free
+        }
+
+        subscribedProduct != null -> {
+            if (subscribedProduct.price.amountMicros == 0L) {
                 PriceDetails.Free
             } else {
-                PriceDetails.Paid(price.formatted)
+                PriceDetails.Paid(subscribedProduct.price.formatted)
             }
         }
-    }
-    return entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
-        PriceDetails.Free
-    } else {
-        subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
+
+        else -> PriceDetails.Unknown
     }
 }
 
@@ -141,16 +148,6 @@ private fun determineTitle(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_ONE_TIME_PURCHASE,
                 )
         }
-}
-
-private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): PriceDetails {
-    return subscribedProduct?.let {
-        PriceDetails.Paid(it.price.formatted)
-    } ?: if (store == Store.PROMOTIONAL) {
-        PriceDetails.Free
-    } else {
-        PriceDetails.Unknown
-    }
 }
 
 private fun EntitlementInfo.expirationDate(dateFormatter: DateFormatter, locale: Locale): String? {
