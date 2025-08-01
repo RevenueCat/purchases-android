@@ -3,10 +3,9 @@ package com.revenuecat.paywallstester.ui.screens.main
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -109,13 +108,10 @@ private fun MainNavHost(
 private fun BottomBarNavigation(
     navController: NavHostController,
 ) {
-    BottomNavigation(
-        backgroundColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-    ) {
+    NavigationBar {
         val currentRoute = currentRoute(navController)
         bottomNavigationItems.forEach { screen ->
-            BottomNavigationItem(
+            NavigationBarItem(
                 icon = {
                     Icon(
                         painterResource(id = screen.iconResourceId),
