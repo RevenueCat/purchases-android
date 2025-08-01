@@ -370,11 +370,8 @@ jobs:
       - install-sdkman
       - android/restore_gradle_cache
       - run:
-          name: Validate binary compatibility (Defaults)
-          command: ./gradlew metalavaCheckCompatibilityDefaultsRelease
-      - run:
-          name: Validate binary compatibility (CustomEntitlementComputation)
-          command: ./gradlew metalavaCheckCompatibilityCustomEntitlementComputationRelease
+          name: Validate binary compatibility
+          command: ./scripts/api-check.sh
       - android/save_gradle_cache
 
   docs-deploy:
