@@ -1,5 +1,7 @@
 package com.revenuecat.paywallstester.ui.screens.main
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
@@ -32,14 +34,14 @@ fun MainScreen(
 ) {
     Scaffold(
         bottomBar = { BottomBarNavigation(navController) },
-    ) {
+    ) { paddingValues ->
         MainNavHost(
-            navController,
-            navigateToPaywallScreen,
-            navigateToPaywallFooterScreen,
-            navigateToPaywallCondensedFooterScreen,
-            navigateToPaywallByPlacementScreen,
-            Modifier.padding(it),
+            navController = navController,
+            navigateToPaywallScreen = navigateToPaywallScreen,
+            navigateToPaywallFooterScreen = navigateToPaywallFooterScreen,
+            navigateToPaywallCondensedFooterScreen = navigateToPaywallCondensedFooterScreen,
+            navigateToPaywallByPlacementScreen = navigateToPaywallByPlacementScreen,
+            contentPadding = paddingValues,
         )
     }
 }
@@ -69,18 +71,25 @@ private fun MainNavHost(
     navigateToPaywallFooterScreen: (Offering?) -> Unit,
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navigateToPaywallByPlacementScreen: (String) -> Unit,
-    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues,
 ) {
     NavHost(
         navController,
         startDestination = Tab.Paywalls.route,
-        modifier = modifier,
     ) {
         composable(Tab.AppInfo.route) {
-            AppInfoScreen()
+            AppInfoScreen(
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding),
+            )
         }
         composable(Tab.Paywalls.route) {
-            PaywallsScreen()
+            PaywallsScreen(
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding),
+            )
         }
         composable(Tab.Offerings.route) {
             OfferingsScreen(
@@ -88,6 +97,9 @@ private fun MainNavHost(
                 tappedOnOfferingFooter = { offering -> navigateToPaywallFooterScreen(offering) },
                 tappedOnOfferingCondensedFooter = { offering -> navigateToPaywallCondensedFooterScreen(offering) },
                 tappedOnOfferingByPlacement = { placementId -> navigateToPaywallByPlacementScreen(placementId) },
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding),
             )
         }
     }

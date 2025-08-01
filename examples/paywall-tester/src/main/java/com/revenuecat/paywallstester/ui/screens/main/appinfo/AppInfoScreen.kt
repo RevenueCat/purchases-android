@@ -48,6 +48,7 @@ private const val TAG = "CustomerCenterTest"
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
+    modifier: Modifier = Modifier,
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
         factory = AppInfoScreenViewModelImpl.Factory,
     ),
@@ -83,7 +84,7 @@ fun AppInfoScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
