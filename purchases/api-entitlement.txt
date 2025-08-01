@@ -171,7 +171,7 @@ package com.revenuecat.purchases {
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface ExperimentalPreviewRevenueCatPurchasesAPI {
   }
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="This is an internal RevenueCat API that may change frequently and without warning. " + "No compatibility guarantees are provided. It is strongly discouraged to use this API.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.TYPEALIAS}) public @interface InternalRevenueCatAPI {
+  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="This is an internal RevenueCat API that may change frequently and without warning. " + "No compatibility guarantees are provided. It is strongly discouraged to use this API.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.TYPEALIAS, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface InternalRevenueCatAPI {
   }
 
   public final class ListenerConversionsCommonKt {
@@ -762,7 +762,16 @@ package com.revenuecat.purchases.common.events {
 
 package com.revenuecat.purchases.customercenter {
 
+  @dev.drewhamilton.poko.Poko public final class CustomActionData {
+    ctor public CustomActionData(String actionIdentifier, String? purchaseIdentifier);
+    method public String getActionIdentifier();
+    method public String? getPurchaseIdentifier();
+    property public final String actionIdentifier;
+    property public final String? purchaseIdentifier;
+  }
+
   public interface CustomerCenterListener {
+    method public default void onCustomActionSelected(String actionIdentifier, String? purchaseIdentifier);
     method public default void onFeedbackSurveyCompleted(String feedbackSurveyOptionId);
     method public default void onManagementOptionSelected(com.revenuecat.purchases.customercenter.CustomerCenterManagementOption action);
     method public default void onRestoreCompleted(com.revenuecat.purchases.CustomerInfo customerInfo);
@@ -776,6 +785,14 @@ package com.revenuecat.purchases.customercenter {
 
   public static final class CustomerCenterManagementOption.Cancel implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
     field public static final com.revenuecat.purchases.customercenter.CustomerCenterManagementOption.Cancel INSTANCE;
+  }
+
+  @dev.drewhamilton.poko.Poko public static final class CustomerCenterManagementOption.CustomAction implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
+    ctor public CustomerCenterManagementOption.CustomAction(String actionIdentifier, String? purchaseIdentifier);
+    method public String getActionIdentifier();
+    method public String? getPurchaseIdentifier();
+    property public final String actionIdentifier;
+    property public final String? purchaseIdentifier;
   }
 
   public static final class CustomerCenterManagementOption.CustomUrl implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
@@ -811,6 +828,11 @@ package com.revenuecat.purchases.interfaces {
   public interface GetStorefrontCallback {
     method public void onError(com.revenuecat.purchases.PurchasesError error);
     method public void onReceived(String storefrontCountryCode);
+  }
+
+  public interface GetVirtualCurrenciesCallback {
+    method public void onError(com.revenuecat.purchases.PurchasesError error);
+    method public void onReceived(com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies virtualCurrencies);
   }
 
   public interface LogInCallback {
@@ -1339,14 +1361,16 @@ package com.revenuecat.purchases.models {
 
   public final class TestStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
     ctor @Deprecated public TestStoreProduct(String id, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
-    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period);
+    ctor @Deprecated public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, optional com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase);
     method public String component1();
     method public String component2();
     method public String component3();
     method public String component4();
     method public com.revenuecat.purchases.models.Price component5();
     method public com.revenuecat.purchases.models.Period? component6();
-    method public com.revenuecat.purchases.models.TestStoreProduct copy(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.Period? freeTrialPeriod, com.revenuecat.purchases.models.Price? introPrice);
+    method public com.revenuecat.purchases.models.TestStoreProduct copy(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase);
     method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
     method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public com.revenuecat.purchases.models.SubscriptionOption? getDefaultOption();
@@ -1690,6 +1714,27 @@ package com.revenuecat.purchases.utils {
 
   public final class LocaleExtensionsKt {
     method public static java.util.List<java.util.Locale> getDefaultLocales();
+  }
+
+}
+
+package com.revenuecat.purchases.virtualcurrencies {
+
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public final class VirtualCurrencies implements android.os.Parcelable {
+    method public operator com.revenuecat.purchases.virtualcurrencies.VirtualCurrency? get(String code);
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.virtualcurrencies.VirtualCurrency> getAll();
+    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.virtualcurrencies.VirtualCurrency> all;
+  }
+
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public final class VirtualCurrency implements android.os.Parcelable {
+    method public int getBalance();
+    method public String getCode();
+    method public String getName();
+    method public String? getServerDescription();
+    property public final int balance;
+    property public final String code;
+    property public final String name;
+    property public final String? serverDescription;
   }
 
 }
