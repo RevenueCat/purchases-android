@@ -1,3 +1,7 @@
+## 8.22.1
+### 🔄 Other Changes
+* Expose getStorefront APIs in CustomEntitlementComputation flavor (#2579)
+
 ## 8.22.0
 ## RevenueCat SDK
 ### ✨ New Features
