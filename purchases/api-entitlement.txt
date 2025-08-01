@@ -27,6 +27,7 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitPurchaseResult(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.PurchaseParams purchaseParams, kotlin.coroutines.Continuation<? super kotlin.Result<? extends com.revenuecat.purchases.PurchaseResult>>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitRestore(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
     method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitRestoreResult(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super kotlin.Result<? extends com.revenuecat.purchases.CustomerInfo>>);
+    method public static suspend Object? awaitStorefrontCountryCode(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.lang.String>);
   }
 
   @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class CustomerInfo implements android.os.Parcelable com.revenuecat.purchases.models.RawDataContainer<org.json.JSONObject> {
@@ -177,6 +178,7 @@ package com.revenuecat.purchases {
     method public static void getOfferingsWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.Offerings,kotlin.Unit> onSuccess);
     method public static void getProductsWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType? type, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onGetStoreProducts);
     method public static void getProductsWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onGetStoreProducts);
+    method public static void getStorefrontCountryCodeWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.lang.String,kotlin.Unit> onSuccess);
     method public static void purchaseWith(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.PurchaseParams purchaseParams, optional kotlin.jvm.functions.Function2<? super com.revenuecat.purchases.PurchasesError,? super java.lang.Boolean,kotlin.Unit> onError, kotlin.jvm.functions.Function2<? super com.revenuecat.purchases.models.StoreTransaction?,? super com.revenuecat.purchases.CustomerInfo,kotlin.Unit> onSuccess);
     method public static void restorePurchasesWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,kotlin.Unit> onSuccess);
   }
@@ -395,6 +397,7 @@ package com.revenuecat.purchases {
     method public static java.net.URL? getProxyURL();
     method public static com.revenuecat.purchases.Purchases getSharedInstance();
     method @kotlin.jvm.Synchronized public String? getStorefrontCountryCode();
+    method public void getStorefrontCountryCode(com.revenuecat.purchases.interfaces.GetStorefrontCallback callback);
     method @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? getUpdatedCustomerInfoListener();
     method public static boolean isConfigured();
     method public void purchase(com.revenuecat.purchases.PurchaseParams purchaseParams, com.revenuecat.purchases.interfaces.PurchaseCallback callback);

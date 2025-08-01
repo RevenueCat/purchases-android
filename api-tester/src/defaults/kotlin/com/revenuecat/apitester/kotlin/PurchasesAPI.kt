@@ -24,7 +24,6 @@ import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitRestoreResult
-import com.revenuecat.purchases.awaitStorefrontCountryCode
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -35,8 +34,10 @@ import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getStorefrontCountryCodeWith
+import com.revenuecat.purchases.getVirtualCurrenciesWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -78,10 +79,6 @@ private class PurchasesAPI {
             override fun onSuccess(status: AmazonLWAConsentStatus) {}
             override fun onError(error: PurchasesError) {}
         }
-        val getStorefrontCallback = object : GetStorefrontCallback {
-            override fun onReceived(storefrontCountryCode: String) {}
-            override fun onError(error: PurchasesError) {}
-        }
 
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback)
         purchases.getAmazonLWAConsentStatus(getAmazonLWAConsentStatusCallback)
@@ -108,9 +105,6 @@ private class PurchasesAPI {
 
         val store: Store = purchases.store
 
-        val countryCode = purchases.storefrontCountryCode
-        purchases.getStorefrontCountryCode(getStorefrontCallback)
-
         val configuration: PurchasesConfiguration = purchases.currentConfiguration
 
         purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
@@ -122,10 +116,6 @@ private class PurchasesAPI {
     fun checkListenerConversions(
         purchases: Purchases,
     ) {
-        purchases.getStorefrontCountryCodeWith(
-            onError = { _: PurchasesError -> },
-            onSuccess = { _: String -> },
-        )
         purchases.logInWith(
             "",
             onError = { _: PurchasesError -> },
@@ -168,7 +158,6 @@ private class PurchasesAPI {
     suspend fun checkCoroutines(
         purchases: Purchases,
     ) {
-        val storefrontCountryCode: String = purchases.awaitStorefrontCountryCode()
         val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
         val customerInfoFetchPolicy: CustomerInfo =
             purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)

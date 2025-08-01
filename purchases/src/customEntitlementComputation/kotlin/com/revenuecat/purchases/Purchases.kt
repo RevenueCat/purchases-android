@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -178,6 +179,14 @@ class Purchases internal constructor(
      */
     fun switchUser(newAppUserID: String) {
         purchasesOrchestrator.switchUser(newAppUserID)
+    }
+
+    /**
+     * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+     * If there is any error, it will return null and log said error.
+     */
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        purchasesOrchestrator.getStorefrontCountryCode(callback)
     }
     //endregion
 
