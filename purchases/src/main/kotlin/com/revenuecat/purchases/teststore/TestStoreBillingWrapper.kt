@@ -212,11 +212,12 @@ internal class TestStoreBillingWrapper(
         product: StoreProduct,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
-        val purchaseToken = UUID.randomUUID().toString()
         val purchaseTime = Date().time
 
+        val purchaseToken = "test_${purchaseTime}_${UUID.randomUUID()}"
+
         val storeTransaction = StoreTransaction(
-            orderId = "test_order_${UUID.randomUUID()}",
+            orderId = purchaseToken,
             productIds = listOf(product.id),
             type = product.type,
             purchaseTime = purchaseTime,
@@ -225,12 +226,11 @@ internal class TestStoreBillingWrapper(
             isAutoRenewing = product.type == ProductType.SUBS,
             signature = null,
             originalJson = JSONObject().apply {
-                put("orderId", "test_order_${UUID.randomUUID()}")
+                put("orderId", purchaseToken)
                 put("productId", product.id)
                 put("purchaseTime", purchaseTime)
                 put("purchaseToken", purchaseToken)
                 put("purchaseState", PurchaseState.PURCHASED.ordinal)
-                put("test_store", true)
             },
             presentedOfferingContext = presentedOfferingContext,
             storeUserID = null,
