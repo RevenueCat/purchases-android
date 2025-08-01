@@ -55,6 +55,8 @@ class Purchases internal constructor(
     val currentConfiguration: PurchasesConfiguration
         get() = purchasesOrchestrator.currentConfiguration
 
+    val testApiToRemove: Boolean = true
+
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
      * outside of the Purchases SDK.
