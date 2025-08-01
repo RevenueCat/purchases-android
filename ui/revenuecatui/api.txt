@@ -337,12 +337,16 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts {
 
 package com.revenuecat.purchases.ui.revenuecatui.views {
 
-  public final class CustomerCenterView extends androidx.compose.ui.platform.AbstractComposeView {
+  public final class CustomerCenterView extends androidx.compose.ui.platform.AbstractComposeView implements androidx.lifecycle.LifecycleOwner androidx.savedstate.SavedStateRegistryOwner androidx.lifecycle.ViewModelStoreOwner {
     ctor public CustomerCenterView(android.content.Context context);
     ctor public CustomerCenterView(android.content.Context context, android.util.AttributeSet? attrs);
     ctor public CustomerCenterView(android.content.Context context, android.util.AttributeSet? attrs, int defStyleAttr);
     ctor public CustomerCenterView(android.content.Context context, optional kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
     method @androidx.compose.runtime.Composable public void Content();
+    method public androidx.lifecycle.Lifecycle getLifecycle();
+    method public androidx.savedstate.SavedStateRegistry getSavedStateRegistry();
+    method public androidx.lifecycle.ViewModelStore getViewModelStore();
+    method public void onBackPressed();
     method public void setDismissHandler(kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
   }
 
@@ -372,7 +376,7 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     ctor @Deprecated public PaywallFooterView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, optional com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, optional boolean condensed, optional kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
   }
 
-  public final class PaywallView extends androidx.compose.ui.platform.AbstractComposeView {
+  public final class PaywallView extends androidx.compose.ui.platform.AbstractComposeView implements androidx.lifecycle.LifecycleOwner androidx.savedstate.SavedStateRegistryOwner androidx.lifecycle.ViewModelStoreOwner {
     ctor public PaywallView(android.content.Context context);
     ctor public PaywallView(android.content.Context context, android.util.AttributeSet? attrs);
     ctor public PaywallView(android.content.Context context, android.util.AttributeSet? attrs, int defStyleAttr);
@@ -382,6 +386,10 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     ctor public PaywallView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, optional com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, optional Boolean? shouldDisplayDismissButton);
     ctor public PaywallView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, optional com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, optional Boolean? shouldDisplayDismissButton, optional kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
     method @androidx.compose.runtime.Composable public void Content();
+    method public androidx.lifecycle.Lifecycle getLifecycle();
+    method public androidx.savedstate.SavedStateRegistry getSavedStateRegistry();
+    method public androidx.lifecycle.ViewModelStore getViewModelStore();
+    method public void onBackPressed();
     method public void setDismissHandler(kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
     method public void setDisplayDismissButton(boolean shouldDisplayDismissButton);
     method public void setFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider);
