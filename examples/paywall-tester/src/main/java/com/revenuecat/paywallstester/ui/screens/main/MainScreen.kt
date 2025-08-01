@@ -1,10 +1,11 @@
 package com.revenuecat.paywallstester.ui.screens.main
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,14 +33,14 @@ fun MainScreen(
 ) {
     Scaffold(
         bottomBar = { BottomBarNavigation(navController) },
-    ) {
+    ) { paddingValues ->
         MainNavHost(
-            navController,
-            navigateToPaywallScreen,
-            navigateToPaywallFooterScreen,
-            navigateToPaywallCondensedFooterScreen,
-            navigateToPaywallByPlacementScreen,
-            Modifier.padding(it),
+            navController = navController,
+            navigateToPaywallScreen = navigateToPaywallScreen,
+            navigateToPaywallFooterScreen = navigateToPaywallFooterScreen,
+            navigateToPaywallCondensedFooterScreen = navigateToPaywallCondensedFooterScreen,
+            navigateToPaywallByPlacementScreen = navigateToPaywallByPlacementScreen,
+            contentPadding = paddingValues,
         )
     }
 }
@@ -69,18 +70,25 @@ private fun MainNavHost(
     navigateToPaywallFooterScreen: (Offering?) -> Unit,
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navigateToPaywallByPlacementScreen: (String) -> Unit,
-    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues,
 ) {
     NavHost(
         navController,
         startDestination = Tab.Paywalls.route,
-        modifier = modifier,
     ) {
         composable(Tab.AppInfo.route) {
-            AppInfoScreen()
+            AppInfoScreen(
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding),
+            )
         }
         composable(Tab.Paywalls.route) {
-            PaywallsScreen()
+            PaywallsScreen(
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding),
+            )
         }
         composable(Tab.Offerings.route) {
             OfferingsScreen(
@@ -88,6 +96,9 @@ private fun MainNavHost(
                 tappedOnOfferingFooter = { offering -> navigateToPaywallFooterScreen(offering) },
                 tappedOnOfferingCondensedFooter = { offering -> navigateToPaywallCondensedFooterScreen(offering) },
                 tappedOnOfferingByPlacement = { placementId -> navigateToPaywallByPlacementScreen(placementId) },
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding),
             )
         }
     }
@@ -97,13 +108,10 @@ private fun MainNavHost(
 private fun BottomBarNavigation(
     navController: NavHostController,
 ) {
-    BottomNavigation(
-        backgroundColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-    ) {
+    NavigationBar {
         val currentRoute = currentRoute(navController)
         bottomNavigationItems.forEach { screen ->
-            BottomNavigationItem(
+            NavigationBarItem(
                 icon = {
                     Icon(
                         painterResource(id = screen.iconResourceId),
