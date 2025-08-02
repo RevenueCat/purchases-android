@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -40,7 +41,10 @@ class AmazonOfferingsTest {
     private val storeProductMonthly = stubStoreProductForAmazon(monthlyTermSku, period = monthlyPeriod)
     private  val storeProductAnnual = stubStoreProductForAmazon(annualTermSku, period = annualPeriod)
 
-    private val offeringsParser = OfferingParserFactory.createOfferingParser(Store.AMAZON)
+    private val offeringsParser = OfferingParserFactory.createOfferingParser(
+        Store.AMAZON,
+        apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+    )
 
     @Test
     fun `createPackage returns null if packageJson productIdentifier doesnt match any sub StoreProduct id`() {

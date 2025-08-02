@@ -1,10 +1,11 @@
 package com.revenuecat.purchases.utils
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.TestStoreProduct
 import org.json.JSONObject
@@ -14,7 +15,6 @@ import org.json.JSONObject
  * v2 Paywall templates.
  */
 @Suppress("UnusedPrivateClass", "unused", "LongMethod")
-@OptIn(InternalRevenueCatAPI::class)
 private class PreviewOfferingParser : OfferingParser() {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
@@ -42,7 +42,16 @@ private class PreviewOfferingParser : OfferingParser() {
                 price = Price(amountMicros = 67_990_000, currencyCode = "USD", formatted = "$67.99"),
                 description = "Annual",
                 period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
-                freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                freeTrialPricingPhase = PricingPhase(
+                    billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                    billingCycleCount = 1,
+                    price = Price(
+                        amountMicros = 0L,
+                        currencyCode = "USD",
+                        formatted = "Free",
+                    ),
+                ),
             )
 
             PackageType.SIX_MONTH -> TestStoreProduct(
@@ -61,8 +70,22 @@ private class PreviewOfferingParser : OfferingParser() {
                 price = Price(amountMicros = 23_990_000, currencyCode = "USD", formatted = "$23.99"),
                 description = "3 month",
                 period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
-                freeTrialPeriod = Period(value = 2, unit = Period.Unit.WEEK, iso8601 = "P2W"),
-                introPrice = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
+                freeTrialPricingPhase = PricingPhase(
+                    billingPeriod = Period(value = 2, unit = Period.Unit.WEEK, iso8601 = "P2W"),
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                    billingCycleCount = 1,
+                    price = Price(
+                        amountMicros = 0L,
+                        currencyCode = "USD",
+                        formatted = "Free",
+                    ),
+                ),
+                introPricePricingPhase = PricingPhase(
+                    billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                    billingCycleCount = 1,
+                    price = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
+                ),
             )
 
             PackageType.TWO_MONTH -> TestStoreProduct(
@@ -72,7 +95,12 @@ private class PreviewOfferingParser : OfferingParser() {
                 price = Price(amountMicros = 15_990_000, currencyCode = "USD", formatted = "$15.99"),
                 description = "2 month",
                 period = Period(value = 2, unit = Period.Unit.MONTH, iso8601 = "P2M"),
-                introPrice = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
+                introPricePricingPhase = PricingPhase(
+                    billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                    billingCycleCount = 1,
+                    price = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
+                ),
             )
 
             PackageType.MONTHLY -> TestStoreProduct(

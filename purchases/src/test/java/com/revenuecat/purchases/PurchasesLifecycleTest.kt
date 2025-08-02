@@ -174,6 +174,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
             proxyURL = null,
             Store.AMAZON,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 
