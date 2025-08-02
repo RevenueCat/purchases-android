@@ -2,12 +2,22 @@
     <string name="app_name">Purchase Tester</string>
     <string name="offering_fragment_transition">OfferingFragmentTransition</string>
     <string name="sdk_configuration">SDK Configuration</string>
+    <string name="sdk_configuration_description">Configure RevenueCat SDK settings</string>
     <string name="api_key">API Key</string>
+    <string name="api_key_placeholder">Enter your API key</string>
     <string name="proxy_url_optional">Proxy URL (optional)</string>
+    <string name="proxy_url">Proxy URL</string>
     <string name="entitlement_verification">Entitlement verification</string>
+    <string name="user_id_login">Login with User ID</string>
+    <string name="user_id_login_placeholder">Enter your user ID</string>
+    <string name="purchase_revenuecat_provider">Recommended for subscription management</string>
+    <string name="purchase_my_app_provider">Handle purchases directly</string>
     <string name="store">Store</string>
     <string name="google">Google</string>
+    <string name="google_play">Google Play Store</string>
+    <string name="login_screen_revenuecat">Auth Step</string>
     <string name="amazon">Amazon</string>
+    <string name="amazon_store">Amazon Appstore</string>
     <string name="revenuecat">RevenueCat</string>
     <string name="continue_text">Continue</string>
     <string name="loving_cat">😻</string>
@@ -24,4 +34,6 @@
     <string name="find_placement">Find Placement</string>
     <string name="purchases_completed_by">Purchases are completed by</string>
     <string name="my_app">My app</string>
+    <string name="reset_sdk">Reset SDK</string>
+    <string name="random_user_login">Continue as random user</string>
 </resources>

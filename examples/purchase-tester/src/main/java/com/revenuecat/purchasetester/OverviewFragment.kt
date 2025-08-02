@@ -35,8 +35,9 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases_sample.R
-import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
+import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
+import com.revenuecat.purchasetester.utils.DataStoreUtils
+import com.revenuecat.purchasetester.utils.configurationDataStore
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
