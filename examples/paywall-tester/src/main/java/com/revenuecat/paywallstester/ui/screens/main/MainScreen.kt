@@ -1,6 +1,5 @@
 package com.revenuecat.paywallstester.ui.screens.main
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -23,12 +22,14 @@ import com.revenuecat.paywallstester.ui.screens.main.offerings.OfferingsScreen
 import com.revenuecat.paywallstester.ui.screens.main.paywalls.PaywallsScreen
 import com.revenuecat.purchases.Offering
 
+@SuppressWarnings("LongParameterList")
 @Composable
 fun MainScreen(
     navigateToPaywallScreen: (Offering?) -> Unit,
     navigateToPaywallFooterScreen: (Offering?) -> Unit,
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navigateToPaywallByPlacementScreen: (String) -> Unit,
+    navigateToCustomerCenterScreen: () -> Unit,
     navController: NavHostController = rememberNavController(),
 ) {
     Scaffold(
@@ -40,7 +41,9 @@ fun MainScreen(
             navigateToPaywallFooterScreen = navigateToPaywallFooterScreen,
             navigateToPaywallCondensedFooterScreen = navigateToPaywallCondensedFooterScreen,
             navigateToPaywallByPlacementScreen = navigateToPaywallByPlacementScreen,
-            contentPadding = paddingValues,
+            navigateToCustomerCenterScreen = navigateToCustomerCenterScreen,
+            modifier = Modifier.padding(paddingValues)
+                .consumeWindowInsets(paddingValues),
         )
     }
 }
@@ -53,6 +56,7 @@ fun MainScreenPreview() {
         navigateToPaywallFooterScreen = {},
         navigateToPaywallCondensedFooterScreen = {},
         navigateToPaywallByPlacementScreen = {},
+        navigateToCustomerCenterScreen = {},
     )
 }
 
@@ -70,25 +74,21 @@ private fun MainNavHost(
     navigateToPaywallFooterScreen: (Offering?) -> Unit,
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navigateToPaywallByPlacementScreen: (String) -> Unit,
-    contentPadding: PaddingValues,
+    navigateToCustomerCenterScreen: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     NavHost(
         navController,
         startDestination = Tab.Paywalls.route,
+        modifier = modifier,
     ) {
         composable(Tab.AppInfo.route) {
             AppInfoScreen(
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .consumeWindowInsets(contentPadding),
+                tappedOnCustomerCenter = navigateToCustomerCenterScreen,
             )
         }
         composable(Tab.Paywalls.route) {
-            PaywallsScreen(
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .consumeWindowInsets(contentPadding),
-            )
+            PaywallsScreen()
         }
         composable(Tab.Offerings.route) {
             OfferingsScreen(
@@ -96,9 +96,6 @@ private fun MainNavHost(
                 tappedOnOfferingFooter = { offering -> navigateToPaywallFooterScreen(offering) },
                 tappedOnOfferingCondensedFooter = { offering -> navigateToPaywallCondensedFooterScreen(offering) },
                 tappedOnOfferingByPlacement = { placementId -> navigateToPaywallByPlacementScreen(placementId) },
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .consumeWindowInsets(contentPadding),
             )
         }
     }
