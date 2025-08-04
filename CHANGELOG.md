@@ -135,6 +135,10 @@ Using the SDK with your own IAP code is still supported in v9. Other than updati
 * Add V9 migration guide (#2508) via Toni Rico (@tonidero)
 * [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2499) via RevenueCat Git Bot (@RCGitBot)
 
+## 8.22.1
+### 🔄 Other Changes
+* Expose getStorefront APIs in CustomEntitlementComputation flavor (#2579)
+
 ## 8.22.0
 ## RevenueCat SDK
 ### ✨ New Features
