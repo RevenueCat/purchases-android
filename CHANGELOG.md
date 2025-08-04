@@ -73,7 +73,7 @@
 ## RevenueCat SDK
 
 > [!WARNING]  
-> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as non-consumables if needed. If not, our SDK will consume those purchases, and they won't be able to be restored starting on this version.
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as non-consumables if needed. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
 > Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
 
 This release updates the SDK to use Google Play Billing Library 8. This version of the Billing Library removed APIs to query for expired subscriptions and consumed one-time products, aside from other improvements. You can check the full list of changes here: https://developer.android.com/google/play/billing/release-notes#8-0-0
