@@ -409,6 +409,7 @@ internal open class BasePurchasesTest {
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
+        apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -418,6 +419,7 @@ internal open class BasePurchasesTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = apiKeyValidationResult,
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
                 customEntitlementComputation = customEntitlementComputation,

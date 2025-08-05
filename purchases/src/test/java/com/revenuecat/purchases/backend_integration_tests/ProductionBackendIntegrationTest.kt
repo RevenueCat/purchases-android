@@ -226,8 +226,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             fail("Expected management screen")
             assertThat(managementScreen.type).isEqualTo(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)
             assertThat(managementScreen.paths.size).isEqualTo(4)
-            val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map {
-                it.name.lowercase()
+            val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { values ->
+                values.name.lowercase()
             }.toTypedArray()
             assertThat(it.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
             assertThat(it.support.email).isNull()

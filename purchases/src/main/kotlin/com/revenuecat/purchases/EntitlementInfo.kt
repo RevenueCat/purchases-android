@@ -236,7 +236,6 @@ enum class Store {
      */
     @SerialName("paddle")
     PADDLE,
-
     ;
 
     internal companion object {
