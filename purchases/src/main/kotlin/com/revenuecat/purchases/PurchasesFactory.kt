@@ -59,11 +59,8 @@ import java.util.concurrent.ThreadFactory
 internal class PurchasesFactory(
     private val isDebugBuild: IsDebugBuildProvider,
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
+    private val isTestStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_TEST_STORE },
 ) {
-
-    private fun isTestStoreEnabled(): Boolean {
-        return BuildConfig.ENABLE_TEST_STORE
-    }
 
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
