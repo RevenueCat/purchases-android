@@ -5,13 +5,16 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.PlatformInfo
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -24,6 +27,7 @@ class PurchasesFactoryTest {
     private val contextMock = mockk<Context>().apply {
         every { applicationContext } returns applicationMock
         every { isDeviceProtectedStorage } returns false
+        every { checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns PackageManager.PERMISSION_GRANTED
     }
     private val apiKeyValidatorMock = mockk<APIKeyValidator>()
 
@@ -92,6 +96,35 @@ class PurchasesFactoryTest {
         } returns applicationContextMock
         purchasesFactory.validateConfiguration(configuration)
         verify(exactly = 1) { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) }
+    }
+
+    @Test
+    fun `configuring SDK with test store api key in release mode throws exception`() {
+        purchasesFactory = PurchasesFactory(isDebugBuild = { false }, apiKeyValidatorMock)
+
+        every {
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+        } returns PackageManager.PERMISSION_GRANTED
+        every {
+            applicationMock.applicationContext
+        } returns mockk()
+        every {
+            apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
+        } returns APIKeyValidator.ValidationResult.TEST_STORE
+
+        try {
+            purchasesFactory.createPurchases(
+                createConfiguration(),
+                PlatformInfo("test-flavor", "test-version"),
+                proxyURL = null,
+            )
+            fail("Expected error")
+        } catch (e: PurchasesException) {
+            assertThat(e.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+            assertThat(e.underlyingErrorMessage).isEqualTo(
+                "Please configure the Play Store/Amazon store app on the RevenueCat dashboard and use its corresponding API key before releasing."
+            )
+        }
     }
 
     private fun createConfiguration(testApiKey: String = "fakeApiKey"): PurchasesConfiguration {

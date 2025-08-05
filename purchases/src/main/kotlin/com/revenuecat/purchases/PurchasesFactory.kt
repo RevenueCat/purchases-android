@@ -61,6 +61,10 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
+    private fun isTestStoreEnabled(): Boolean {
+        return BuildConfig.ENABLE_TEST_STORE
+    }
+
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
@@ -75,7 +79,7 @@ internal class PurchasesFactory(
 
         with(configuration) {
             val finalStore = if (
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && BuildConfig.ENABLE_TEST_STORE
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && isTestStoreEnabled()
             ) {
                 Store.UNKNOWN_STORE // We should add a new store when we fully support the test store.
             } else {
@@ -409,9 +413,23 @@ internal class PurchasesFactory(
 
             require(apiKey.isNotBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
+            val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
+
+            if (!isDebugBuild() &&
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && isTestStoreEnabled()
+            ) {
+                throw PurchasesException(
+                    PurchasesError(
+                        code = PurchasesErrorCode.ConfigurationError,
+                        underlyingErrorMessage = "Please configure the Play Store/Amazon store app on the " +
+                            "RevenueCat dashboard and use its corresponding API key before releasing.",
+                    ),
+                )
+            }
+
             require(context.applicationContext is Application) { "Needs an application context." }
 
-            return apiKeyValidator.validateAndLog(apiKey, store)
+            return apiKeyValidationResult
         }
     }
 
