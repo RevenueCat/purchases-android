@@ -62,7 +62,7 @@ internal object TestStoreProductConverter {
             }
 
             val trialPhase = purchaseOption.trial
-            if (trialPhase?.periodDuration != null && trialPhase.cycleCount != null && basePhase.price != null) {
+            if (trialPhase?.periodDuration != null) {
                 freeTrialPricingPhase = PricingPhase(
                     billingPeriod = Period.create(trialPhase.periodDuration),
                     recurrenceMode = RecurrenceMode.FINITE_RECURRING,
@@ -72,7 +72,7 @@ internal object TestStoreProductConverter {
             }
 
             val introPhase = purchaseOption.introPrice
-            if (introPhase?.price != null && introPhase.periodDuration != null && introPhase.cycleCount != null) {
+            if (introPhase?.price != null && introPhase.periodDuration != null) {
                 val priceObj = introPhase.price
                 introPricePricingPhase = PricingPhase(
                     billingPeriod = Period.create(introPhase.periodDuration),
