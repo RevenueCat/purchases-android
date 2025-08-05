@@ -2,7 +2,12 @@
 
 exit_code=0
 
-./gradlew metalavaCheckCompatibilityDefaultsRelease || exit_code=$?
-./gradlew metalavaCheckCompatibilityCustomEntitlementComputationRelease || exit_code=$?
+# Run the api-dump.sh script to generate the API dump
+./scripts/api-dump.sh || exit_code=$?
+# Check if there are any dirty changes in git
+if ! git diff --quiet; then
+  echo "API dump has changes, run the scripts/api-dump.sh script to generate the API dump, review and commit them."
+  exit_code=1
+fi
 
 exit $exit_code

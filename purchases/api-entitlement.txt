@@ -27,6 +27,7 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitPurchaseResult(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.PurchaseParams purchaseParams, kotlin.coroutines.Continuation<? super kotlin.Result<? extends com.revenuecat.purchases.PurchaseResult>>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitRestore(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
     method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitRestoreResult(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super kotlin.Result<? extends com.revenuecat.purchases.CustomerInfo>>);
+    method public static suspend Object? awaitStorefrontCountryCode(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.lang.String>);
   }
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class CustomerInfo implements android.os.Parcelable com.revenuecat.purchases.models.RawDataContainer<org.json.JSONObject> {
@@ -142,13 +143,14 @@ package com.revenuecat.purchases {
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface ExperimentalPreviewRevenueCatPurchasesAPI {
   }
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="This is an internal RevenueCat API that may change frequently and without warning. " + "No compatibility guarantees are provided. It is strongly discouraged to use this API.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.TYPEALIAS}) public @interface InternalRevenueCatAPI {
+  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="This is an internal RevenueCat API that may change frequently and without warning. " + "No compatibility guarantees are provided. It is strongly discouraged to use this API.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.TYPEALIAS, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface InternalRevenueCatAPI {
   }
 
   public final class ListenerConversionsCommonKt {
     method public static void getOfferingsWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.Offerings,kotlin.Unit> onSuccess);
     method public static void getProductsWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType? type, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onGetStoreProducts);
     method public static void getProductsWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onGetStoreProducts);
+    method public static void getStorefrontCountryCodeWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.lang.String,kotlin.Unit> onSuccess);
     method public static void purchaseWith(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.PurchaseParams purchaseParams, optional kotlin.jvm.functions.Function2<? super com.revenuecat.purchases.PurchasesError,? super java.lang.Boolean,kotlin.Unit> onError, kotlin.jvm.functions.Function2<? super com.revenuecat.purchases.models.StoreTransaction?,? super com.revenuecat.purchases.CustomerInfo,kotlin.Unit> onSuccess);
     method public static void restorePurchasesWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,kotlin.Unit> onSuccess);
   }
@@ -335,6 +337,7 @@ package com.revenuecat.purchases {
     method public static java.net.URL? getProxyURL();
     method public static com.revenuecat.purchases.Purchases getSharedInstance();
     method @kotlin.jvm.Synchronized public String? getStorefrontCountryCode();
+    method public void getStorefrontCountryCode(com.revenuecat.purchases.interfaces.GetStorefrontCallback callback);
     method @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? getUpdatedCustomerInfoListener();
     method public static boolean isConfigured();
     method public void purchase(com.revenuecat.purchases.PurchaseParams purchaseParams, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
@@ -670,7 +673,16 @@ package com.revenuecat.purchases.common {
 
 package com.revenuecat.purchases.customercenter {
 
+  @dev.drewhamilton.poko.Poko public final class CustomActionData {
+    ctor public CustomActionData(String actionIdentifier, String? purchaseIdentifier);
+    method public String getActionIdentifier();
+    method public String? getPurchaseIdentifier();
+    property public final String actionIdentifier;
+    property public final String? purchaseIdentifier;
+  }
+
   public interface CustomerCenterListener {
+    method public default void onCustomActionSelected(String actionIdentifier, String? purchaseIdentifier);
     method public default void onFeedbackSurveyCompleted(String feedbackSurveyOptionId);
     method public default void onManagementOptionSelected(com.revenuecat.purchases.customercenter.CustomerCenterManagementOption action);
     method public default void onRestoreCompleted(com.revenuecat.purchases.CustomerInfo customerInfo);
@@ -684,6 +696,14 @@ package com.revenuecat.purchases.customercenter {
 
   public static final class CustomerCenterManagementOption.Cancel implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
     field public static final com.revenuecat.purchases.customercenter.CustomerCenterManagementOption.Cancel INSTANCE;
+  }
+
+  @dev.drewhamilton.poko.Poko public static final class CustomerCenterManagementOption.CustomAction implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
+    ctor public CustomerCenterManagementOption.CustomAction(String actionIdentifier, String? purchaseIdentifier);
+    method public String getActionIdentifier();
+    method public String? getPurchaseIdentifier();
+    property public final String actionIdentifier;
+    property public final String? purchaseIdentifier;
   }
 
   @dev.drewhamilton.poko.Poko public static final class CustomerCenterManagementOption.CustomUrl implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
@@ -717,6 +737,11 @@ package com.revenuecat.purchases.interfaces {
   public interface GetStorefrontCallback {
     method public void onError(com.revenuecat.purchases.PurchasesError error);
     method public void onReceived(String storefrontCountryCode);
+  }
+
+  public interface GetVirtualCurrenciesCallback {
+    method public void onError(com.revenuecat.purchases.PurchasesError error);
+    method public void onReceived(com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies virtualCurrencies);
   }
 
   public interface LogInCallback {
@@ -1175,7 +1200,9 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko public final class TestStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
     ctor @Deprecated public TestStoreProduct(String id, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
-    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period);
+    ctor @Deprecated public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, optional com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase);
     method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
     method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public com.revenuecat.purchases.models.SubscriptionOption? getDefaultOption();
@@ -1245,6 +1272,27 @@ package com.revenuecat.purchases.utils {
 
   public final class LocaleExtensionsKt {
     method public static java.util.List<java.util.Locale> getDefaultLocales();
+  }
+
+}
+
+package com.revenuecat.purchases.virtualcurrencies {
+
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public final class VirtualCurrencies implements android.os.Parcelable {
+    method public operator com.revenuecat.purchases.virtualcurrencies.VirtualCurrency? get(String code);
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.virtualcurrencies.VirtualCurrency> getAll();
+    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.virtualcurrencies.VirtualCurrency> all;
+  }
+
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public final class VirtualCurrency implements android.os.Parcelable {
+    method public int getBalance();
+    method public String getCode();
+    method public String getName();
+    method public String? getServerDescription();
+    property public final int balance;
+    property public final String code;
+    property public final String name;
+    property public final String? serverDescription;
   }
 
 }
