@@ -267,9 +267,7 @@ private fun CustomerCenterScaffold(
     }
 
     Scaffold(
-        modifier = Modifier.applyIfNotNull(scrollBehavior) {
-            modifier.nestedScroll(it.nestedScrollConnection)
-        },
+        modifier = modifier.applyIfNotNull(scrollBehavior) { nestedScroll(it.nestedScrollConnection) },
         topBar = {
             CustomerCenterTopBar(
                 scaffoldConfig = scaffoldConfig,

@@ -1,7 +1,6 @@
 package com.revenuecat.paywallstester.ui.screens.main.appinfo
 
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,68 +21,34 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
-import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.customercenter.CustomerCenterListener
-import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-
-private const val TAG = "CustomerCenterTest"
 
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
+    modifier: Modifier = Modifier,
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
         factory = AppInfoScreenViewModelImpl.Factory,
     ),
+    tappedOnCustomerCenter: () -> Unit,
 ) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
-    var isCustomerCenterVisible by rememberSaveable { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
-    var lastCustomAction by remember { mutableStateOf<String?>(null) }
-
-    val context = LocalContext.current
-
-    // Use remember to cache the listener across recompositions
-    val customerCenterListener = remember {
-        createCustomerCenterListener { actionIdentifier, purchaseIdentifier ->
-            val message = "Custom Action: $actionIdentifier" +
-                if (purchaseIdentifier != null) " (Product: $purchaseIdentifier)" else ""
-            lastCustomAction = message
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    if (isCustomerCenterVisible) {
-        CustomerCenter(
-            modifier = Modifier.fillMaxSize(),
-            options = CustomerCenterOptions.Builder()
-                .setListener(customerCenterListener)
-                .build(),
-        ) {
-            isCustomerCenterVisible = false
-        }
-        return
-    }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -92,13 +57,6 @@ fun AppInfoScreen(
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
         Text(text = "Current user ID: $currentUserID")
         Text(text = "Current API key: $currentApiKeyDescription")
-        lastCustomAction?.let { action ->
-            Text(
-                text = "Last custom action: $action",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
         Button(onClick = { showLogInDialog = true }) {
             Text(text = "Log in")
         }
@@ -112,7 +70,7 @@ fun AppInfoScreen(
             Text(text = "Show debug view")
         }
         Button(onClick = {
-            isCustomerCenterVisible = true
+            tappedOnCustomerCenter()
         }) {
             Text(text = "Show customer center")
         }
@@ -238,6 +196,7 @@ fun AppInfoScreenPreview() {
             override fun logOut() { }
             override fun switchApiKey(newApiKey: String) { }
         },
+        tappedOnCustomerCenter = {},
     )
 }
 
@@ -248,47 +207,4 @@ private fun ApiKeyDialog_Preview() {
         onApiKeyClick = {},
         onDismissed = {},
     )
-}
-
-private fun createCustomerCenterListener(
-    onCustomAction: (actionIdentifier: String, purchaseIdentifier: String?) -> Unit = { _, _ -> },
-): CustomerCenterListener {
-    return object : CustomerCenterListener {
-        override fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
-            Log.d(TAG, "Local listener: onManagementOptionSelected called with action: $action")
-        }
-
-        override fun onRestoreStarted() {
-            Log.d(TAG, "Local listener: onRestoreStarted called")
-        }
-
-        override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-            Log.d(
-                TAG,
-                "Local listener: onRestoreCompleted called with customer info: " +
-                    customerInfo.originalAppUserId,
-            )
-        }
-
-        override fun onRestoreFailed(error: PurchasesError) {
-            Log.d(TAG, "Local listener: onRestoreFailed called with error: ${error.message}")
-        }
-
-        override fun onShowingManageSubscriptions() {
-            Log.d(TAG, "Local listener: onShowingManageSubscriptions called")
-        }
-
-        override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
-            Log.d(TAG, "Local listener: onFeedbackSurveyCompleted called with option ID: $feedbackSurveyOptionId")
-        }
-
-        override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
-            Log.d(
-                TAG,
-                "Local listener: onCustomActionSelected called with action: $actionIdentifier, " +
-                    "purchaseIdentifier: $purchaseIdentifier",
-            )
-            onCustomAction(actionIdentifier, purchaseIdentifier)
-        }
-    }
 }
