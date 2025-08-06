@@ -27,14 +27,14 @@ class APIKeyValidatorTest {
     }
 
     @Test
-    fun `Validation result is test store`() {
+    fun `Validation result is simulated store`() {
         assertValidation(
-            APIKeyValidator.ValidationResult.TEST_STORE,
+            APIKeyValidator.ValidationResult.SIMULATED_STORE,
             "test_1a2b3c4d5e6f7h",
             Store.PLAY_STORE
         )
         assertValidation(
-            APIKeyValidator.ValidationResult.TEST_STORE,
+            APIKeyValidator.ValidationResult.SIMULATED_STORE,
             "test_1a2b3c4d5e6f7h",
             Store.AMAZON
         )

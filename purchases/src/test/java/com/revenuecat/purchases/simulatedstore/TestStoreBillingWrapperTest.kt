@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.teststore
+package com.revenuecat.purchases.simulatedstore
 
 import android.app.Activity
 import android.os.Handler
@@ -41,7 +41,7 @@ class TestStoreBillingWrapperTest {
     private lateinit var urlConnectionFactory: UrlConnectionFactory
     private lateinit var backend: Backend
     private lateinit var purchaseDialogHelper: AlertDialogHelper
-    private lateinit var testStoreBilling: TestStoreBillingWrapper
+    private lateinit var testStoreBilling: SimulatedStoreBillingWrapper
     private lateinit var stateListener: BillingAbstract.StateListener
     private lateinit var purchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener
 
@@ -70,7 +70,7 @@ class TestStoreBillingWrapperTest {
             true
         }
         
-        testStoreBilling = TestStoreBillingWrapper(
+        testStoreBilling = SimulatedStoreBillingWrapper(
             deviceCache = deviceCache,
             mainHandler = mainHandler,
             purchasesStateProvider = purchasesStateProvider,
@@ -136,7 +136,7 @@ class TestStoreBillingWrapperTest {
         
         // Mock product response from backend
         val productResponse = createMockProductResponse(productId)
-        val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val product = SimulatedStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
         val billingResponse = WebBillingProductsResponse(listOf(productResponse))
         
@@ -183,7 +183,7 @@ class TestStoreBillingWrapperTest {
         
         // Mock product response from backend
         val productResponse = createMockProductResponse(productId)
-        val product = TestStoreProductConverter.convertToStoreProduct(productResponse)
+        val product = SimulatedStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
         val billingResponse = WebBillingProductsResponse(listOf(productResponse))
         

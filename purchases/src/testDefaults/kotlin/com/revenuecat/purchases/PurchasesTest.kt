@@ -1644,12 +1644,12 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // endregion Paywall fonts
 
-    // region Test store
+    // region Simulated store
 
-//    Uncomment tests when removing BuildConfig.ENABLE_TEST_STORE
+//    Uncomment tests when removing BuildConfig.ENABLE_SIMULATED_STORE
 //    @Test
-//    fun `syncing transactions on test store does not sync purchases`() {
-//        buildPurchases(anonymous = false, apiKeyValidationResult = APIKeyValidator.ValidationResult.TEST_STORE)
+//    fun `syncing transactions on simulated store does not sync purchases`() {
+//        buildPurchases(anonymous = false, apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE)
 //
 //        var receivedCustomerInfo: CustomerInfo? = null
 //        purchases.syncPurchases(object: SyncPurchasesCallback {
@@ -1667,8 +1667,8 @@ internal class PurchasesTest : BasePurchasesTest() {
 //    }
 //
 //    @Test
-//    fun `restore transactions on test store does not restore purchases`() {
-//        buildPurchases(anonymous = false, apiKeyValidationResult = APIKeyValidator.ValidationResult.TEST_STORE)
+//    fun `restore transactions on simulated store does not restore purchases`() {
+//        buildPurchases(anonymous = false, apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE)
 //
 //        var receivedCustomerInfo: CustomerInfo? = null
 //        purchases.restorePurchases(object: ReceiveCustomerInfoCallback {
@@ -1685,7 +1685,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 //        assertThat(receivedCustomerInfo).isNotNull
 //    }
 
-    // endregion Test store
+    // endregion Simulated store
 
     // region Private Methods
 

@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.teststore
+package com.revenuecat.purchases.simulatedstore
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -6,7 +6,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
@@ -17,13 +16,13 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class TestStoreOfferingParserTest {
 
-    private lateinit var parser: TestStoreOfferingParser
+    private lateinit var parser: SimulatedStoreOfferingParser
     private lateinit var mockProduct1: StoreProduct
     private lateinit var mockProduct2: StoreProduct
 
     @Before
     fun setup() {
-        parser = TestStoreOfferingParser()
+        parser = SimulatedStoreOfferingParser()
         mockProduct1 = mockk(relaxed = true) {
             every { copyWithPresentedOfferingContext(any()) } returns this@mockk
         }

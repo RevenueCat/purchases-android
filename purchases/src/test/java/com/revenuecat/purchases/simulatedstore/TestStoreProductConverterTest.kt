@@ -1,7 +1,6 @@
-package com.revenuecat.purchases.teststore
+package com.revenuecat.purchases.simulatedstore
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.networking.WebBillingPhase
@@ -374,6 +373,6 @@ class TestStoreProductConverterTest {
         productResponse: WebBillingProductResponse,
         locale: Locale = testLocale
     ): TestStoreProduct {
-        return TestStoreProductConverter.convertToStoreProduct(productResponse, locale)
+        return SimulatedStoreProductConverter.convertToStoreProduct(productResponse, locale)
     }
 }

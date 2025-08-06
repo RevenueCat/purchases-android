@@ -59,7 +59,7 @@ import java.util.concurrent.ThreadFactory
 internal class PurchasesFactory(
     private val isDebugBuild: IsDebugBuildProvider,
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
-    private val isTestStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_TEST_STORE },
+    private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
 ) {
 
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
@@ -76,9 +76,9 @@ internal class PurchasesFactory(
 
         with(configuration) {
             val finalStore = if (
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && isTestStoreEnabled()
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE && isSimulatedStoreEnabled()
             ) {
-                Store.UNKNOWN_STORE // We should add a new store when we fully support the test store.
+                Store.UNKNOWN_STORE // We should add a new store when we fully support the simulated store.
             } else {
                 store
             }
@@ -413,7 +413,7 @@ internal class PurchasesFactory(
             val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
 
             if (!isDebugBuild() &&
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE && isTestStoreEnabled()
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE && isSimulatedStoreEnabled()
             ) {
                 throw PurchasesException(
                     PurchasesError(

@@ -336,10 +336,10 @@ internal class PurchasesOrchestrator(
     fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
-        if (BuildConfig.ENABLE_TEST_STORE &&
-            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE
+        if (BuildConfig.ENABLE_SIMULATED_STORE &&
+            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
         ) {
-            log(LogIntent.DEBUG) { RestoreStrings.SYNC_PURCHASES_TEST_STORE }
+            log(LogIntent.DEBUG) { RestoreStrings.SYNC_PURCHASES_SIMULATED_STORE }
             getCustomerInfo(object : ReceiveCustomerInfoCallback {
                 override fun onReceived(customerInfo: CustomerInfo) {
                     listener?.onSuccess(customerInfo)
@@ -493,10 +493,10 @@ internal class PurchasesOrchestrator(
         if (!allowSharingPlayStoreAccount) {
             log(LogIntent.WARNING) { RestoreStrings.SHARING_ACC_RESTORE_FALSE }
         }
-        if (BuildConfig.ENABLE_TEST_STORE &&
-            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE
+        if (BuildConfig.ENABLE_SIMULATED_STORE &&
+            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
         ) {
-            log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_TEST_STORE }
+            log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_SIMULATED_STORE }
             getCustomerInfo(callback)
             return
         }
