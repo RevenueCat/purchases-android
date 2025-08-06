@@ -33,7 +33,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class TestStoreBillingWrapperTest {
+class SimulatedStoreBillingWrapperTest {
 
     private lateinit var deviceCache: DeviceCache
     private lateinit var mainHandler: Handler
@@ -56,7 +56,7 @@ class TestStoreBillingWrapperTest {
         stateListener = mockk()
         
         // Create actual listener object for testing purchase flows
-        purchasesUpdatedListener = TestPurchasesListener()
+        purchasesUpdatedListener = this@TestStoreBillingWrapperTest.TestPurchasesListener()
         
         every { mainHandler.postDelayed(any(), any()) } answers {
             val runnable = firstArg<Runnable>()
@@ -167,7 +167,7 @@ class TestStoreBillingWrapperTest {
         )
         
         // Then
-        val listenerImpl = purchasesUpdatedListener as TestPurchasesListener
+        val listenerImpl = purchasesUpdatedListener as com.revenuecat.purchases.simulatedstore.TestStoreBillingWrapperTest.TestPurchasesListener
         assertThat(listenerImpl.lastError).isNotNull()
         assertThat(listenerImpl.lastError?.code).isEqualTo(PurchasesErrorCode.PurchaseCancelledError)
         assertThat(listenerImpl.lastError?.underlyingErrorMessage).isEqualTo("Purchase cancelled by user")
@@ -214,7 +214,7 @@ class TestStoreBillingWrapperTest {
         )
         
         // Then
-        val listenerImpl = purchasesUpdatedListener as TestPurchasesListener
+        val listenerImpl = purchasesUpdatedListener as com.revenuecat.purchases.simulatedstore.TestStoreBillingWrapperTest.TestPurchasesListener
         assertThat(listenerImpl.lastPurchases).isNotNull()
         assertThat(listenerImpl.lastPurchases).hasSize(1)
         

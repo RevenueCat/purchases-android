@@ -14,7 +14,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class TestStoreOfferingParserTest {
+class SimulatedStoreOfferingParserTest {
 
     private lateinit var parser: SimulatedStoreOfferingParser
     private lateinit var mockProduct1: StoreProduct
