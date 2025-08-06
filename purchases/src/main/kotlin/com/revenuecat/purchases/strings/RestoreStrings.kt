@@ -14,9 +14,9 @@ internal object RestoreStrings {
     const val SHARING_ACC_RESTORE_FALSE = "allowSharingPlayStoreAccount is set to false and restorePurchases " +
         "has been called. This will 'alias' any app user id's sharing the same receipt. " +
         "Are you sure you want to do this? More info here: https://errors.rev.cat/allowsSharingPlayStoreAccount"
-    const val RESTORE_PURCHASES_SIMULATED_STORE = "Restoring purchases not available in simulated store. " +
+    const val RESTORE_PURCHASES_SIMULATED_STORE = "Restoring purchases not available in test store. " +
         "Returning current CustomerInfo."
-    const val SYNC_PURCHASES_SIMULATED_STORE = "Syncing purchases not available in simulated store. " +
+    const val SYNC_PURCHASES_SIMULATED_STORE = "Syncing purchases not available in test store. " +
         "Returning current CustomerInfo."
     const val QUERYING_PURCHASE_HISTORY = "Querying purchase history for type %s"
     const val QUERYING_SUBS_ERROR = "Error when querying subscriptions. %s"

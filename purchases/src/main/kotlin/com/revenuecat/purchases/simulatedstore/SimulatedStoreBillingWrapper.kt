@@ -97,7 +97,7 @@ internal class SimulatedStoreBillingWrapper(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        debugLog { "SimulatedStoreBillingAbstract: consumeAndSave - no-op for simulated store" }
+        debugLog { "SimulatedStoreBillingAbstract: consumeAndSave - no-op for test store" }
     }
 
     override fun findPurchaseInActivePurchases(
@@ -155,7 +155,7 @@ internal class SimulatedStoreBillingWrapper(
         inAppMessageTypes: List<InAppMessageType>,
         subscriptionStatusChange: () -> Unit,
     ) {
-        debugLog { "SimulatedStoreBillingAbstract: showInAppMessagesIfNeeded - no-op for simulated store" }
+        debugLog { "SimulatedStoreBillingAbstract: showInAppMessagesIfNeeded - no-op for test store" }
     }
 
     override fun getStorefront(
@@ -183,10 +183,10 @@ internal class SimulatedStoreBillingWrapper(
 
         dialogHelper.showDialog(
             activity = activity,
-            title = "Simulated Store Purchase",
+            title = "Test Store Purchase",
             message = message,
-            positiveButtonText = "Simulated valid Purchase",
-            negativeButtonText = "Simulated failed Purchase",
+            positiveButtonText = "Test valid Purchase",
+            negativeButtonText = "Test failed Purchase",
             neutralButtonText = "Cancel",
             onPositiveButtonClicked = {
                 completePurchase(product, presentedOfferingContext)
@@ -195,7 +195,7 @@ internal class SimulatedStoreBillingWrapper(
                 purchasesUpdatedListener?.onPurchasesFailedToUpdate(
                     PurchasesError(
                         PurchasesErrorCode.ProductNotAvailableForPurchaseError,
-                        "Simulated purchase failure: no real transaction occurred",
+                        "Test purchase failure: no real transaction occurred",
                     ),
                 )
             },
