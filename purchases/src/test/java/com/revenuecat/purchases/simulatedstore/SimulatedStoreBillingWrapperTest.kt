@@ -56,7 +56,7 @@ class SimulatedStoreBillingWrapperTest {
         stateListener = mockk()
         
         // Create actual listener object for testing purchase flows
-        purchasesUpdatedListener = this@TestStoreBillingWrapperTest.TestPurchasesListener()
+        purchasesUpdatedListener = this@SimulatedStoreBillingWrapperTest.TestPurchasesListener()
         
         every { mainHandler.postDelayed(any(), any()) } answers {
             val runnable = firstArg<Runnable>()
@@ -167,7 +167,7 @@ class SimulatedStoreBillingWrapperTest {
         )
         
         // Then
-        val listenerImpl = purchasesUpdatedListener as com.revenuecat.purchases.simulatedstore.TestStoreBillingWrapperTest.TestPurchasesListener
+        val listenerImpl = purchasesUpdatedListener as SimulatedStoreBillingWrapperTest.TestPurchasesListener
         assertThat(listenerImpl.lastError).isNotNull()
         assertThat(listenerImpl.lastError?.code).isEqualTo(PurchasesErrorCode.PurchaseCancelledError)
         assertThat(listenerImpl.lastError?.underlyingErrorMessage).isEqualTo("Purchase cancelled by user")
@@ -214,7 +214,7 @@ class SimulatedStoreBillingWrapperTest {
         )
         
         // Then
-        val listenerImpl = purchasesUpdatedListener as com.revenuecat.purchases.simulatedstore.TestStoreBillingWrapperTest.TestPurchasesListener
+        val listenerImpl = purchasesUpdatedListener as SimulatedStoreBillingWrapperTest.TestPurchasesListener
         assertThat(listenerImpl.lastPurchases).isNotNull()
         assertThat(listenerImpl.lastPurchases).hasSize(1)
         
