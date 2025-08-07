@@ -67,6 +67,9 @@ internal typealias PostReceiptDataErrorCallback = (
 internal typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 
 /** @suppress */
+internal typealias AliasCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
+
+/** @suppress */
 internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
@@ -124,6 +127,9 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var aliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<AliasCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
@@ -453,6 +459,57 @@ internal class Backend(
         }
         synchronized(this@Backend) {
             identifyCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+        }
+    }
+
+    fun aliasUsers(
+        oldAppUserID: String,
+        newAppUserID: String,
+        onSuccessHandler: () -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val cacheKey = listOfNotNull(
+            oldAppUserID,
+            newAppUserID,
+        )
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                val body = mapOf(
+                    APP_USER_ID to oldAppUserID,
+                    NEW_APP_USER_ID to newAppUserID,
+                )
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    Endpoint.AliasUsers(oldAppUserID),
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    aliasCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                if (result.isSuccessful()) {
+                    synchronized(this@Backend) {
+                        aliasCallbacks.remove(cacheKey)
+                    }?.forEach { (onSuccessHandler, _) ->
+                        onSuccessHandler()
+                    }
+                } else {
+                    onError(result.toPurchasesError().also { errorLog(it) })
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            aliasCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
         }
     }
 
