@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.teststore
+package com.revenuecat.purchases.simulatedstore
 
 import android.app.Activity
 import android.os.Handler
@@ -29,7 +29,7 @@ import java.util.Date
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
-internal class TestStoreBillingWrapper(
+internal class SimulatedStoreBillingWrapper(
     private val deviceCache: DeviceCache,
     private val mainHandler: Handler,
     purchasesStateProvider: PurchasesStateProvider,
@@ -47,13 +47,13 @@ internal class TestStoreBillingWrapper(
     }
 
     override fun startConnection() {
-        debugLog { "TestStoreBillingAbstract: Starting connection" }
+        debugLog { "SimulatedStoreBillingAbstract: Starting connection" }
         connected = true
         stateListener?.onConnected()
     }
 
     override fun endConnection() {
-        debugLog { "TestStoreBillingAbstract: Ending connection" }
+        debugLog { "SimulatedStoreBillingAbstract: Ending connection" }
         connected = false
     }
 
@@ -62,7 +62,7 @@ internal class TestStoreBillingWrapper(
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
-        debugLog { "TestStoreBillingAbstract: queryAllPurchases - returning empty list" }
+        debugLog { "SimulatedStoreBillingAbstract: queryAllPurchases - returning empty list" }
         onReceivePurchaseHistory(emptyList())
     }
 
@@ -72,7 +72,7 @@ internal class TestStoreBillingWrapper(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        debugLog { "TestStoreBillingAbstract: queryProductDetailsAsync for products: $productIds" }
+        debugLog { "SimulatedStoreBillingAbstract: queryProductDetailsAsync for products: $productIds" }
 
         backend.getWebBillingProducts(
             appUserID = deviceCache.getCachedAppUserID() ?: "",
@@ -80,7 +80,7 @@ internal class TestStoreBillingWrapper(
             onSuccess = { response ->
                 try {
                     val storeProducts = response.productDetails.map { productResponse ->
-                        TestStoreProductConverter.convertToStoreProduct(productResponse)
+                        SimulatedStoreProductConverter.convertToStoreProduct(productResponse)
                     }
                     onReceive(storeProducts)
                 } catch (e: PurchasesException) {
@@ -97,7 +97,7 @@ internal class TestStoreBillingWrapper(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        debugLog { "TestStoreBillingAbstract: consumeAndSave - no-op for test store" }
+        debugLog { "SimulatedStoreBillingAbstract: consumeAndSave - no-op for test store" }
     }
 
     override fun findPurchaseInActivePurchases(
@@ -107,7 +107,9 @@ internal class TestStoreBillingWrapper(
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        debugLog { "TestStoreBillingAbstract: findPurchaseInActivePurchases for product: $productId will always fail" }
+        debugLog {
+            "SimulatedStoreBillingAbstract: findPurchaseInActivePurchases for product: $productId will always fail"
+        }
 
         onError(
             PurchasesError(
@@ -125,15 +127,15 @@ internal class TestStoreBillingWrapper(
         presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
     ) {
-        debugLog { "TestStoreBillingAbstract: makePurchaseAsync for product: ${purchasingData.productId}" }
-        val testStorePurchasingData = purchasingData as? TestStorePurchasingData
+        debugLog { "SimulatedStoreBillingAbstract: makePurchaseAsync for product: ${purchasingData.productId}" }
+        val simulatedStorePurchasingData = purchasingData as? SimulatedStorePurchasingData
             ?: throw PurchasesException(
                 PurchasesError(
                     PurchasesErrorCode.ProductNotAvailableForPurchaseError,
-                    "Purchasing data is not a valid TestStorePurchasingData: ${purchasingData.productId}",
+                    "Purchasing data is not a valid SimulatedStorePurchasingData: ${purchasingData.productId}",
                 ),
             )
-        val storeProduct = testStorePurchasingData.storeProduct
+        val storeProduct = simulatedStorePurchasingData.storeProduct
         showPurchaseDialog(activity, storeProduct, presentedOfferingContext)
     }
 
@@ -144,7 +146,7 @@ internal class TestStoreBillingWrapper(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        debugLog { "TestStoreBillingAbstract: queryPurchases - returning empty map" }
+        debugLog { "SimulatedStoreBillingAbstract: queryPurchases - returning empty map" }
         onSuccess(emptyMap())
     }
 
@@ -153,14 +155,14 @@ internal class TestStoreBillingWrapper(
         inAppMessageTypes: List<InAppMessageType>,
         subscriptionStatusChange: () -> Unit,
     ) {
-        debugLog { "TestStoreBillingAbstract: showInAppMessagesIfNeeded - no-op for test store" }
+        debugLog { "SimulatedStoreBillingAbstract: showInAppMessagesIfNeeded - no-op for test store" }
     }
 
     override fun getStorefront(
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {
-        debugLog { "TestStoreBillingAbstract: getStorefront - returning US by default" }
+        debugLog { "SimulatedStoreBillingAbstract: getStorefront - returning US by default" }
         onSuccess("US")
     }
 
@@ -193,7 +195,7 @@ internal class TestStoreBillingWrapper(
                 purchasesUpdatedListener?.onPurchasesFailedToUpdate(
                     PurchasesError(
                         PurchasesErrorCode.ProductNotAvailableForPurchaseError,
-                        "Simulated test purchase failure: no real transaction occurred",
+                        "Test purchase failure: no real transaction occurred",
                     ),
                 )
             },
@@ -234,7 +236,7 @@ internal class TestStoreBillingWrapper(
             },
             presentedOfferingContext = presentedOfferingContext,
             storeUserID = null,
-            purchaseType = PurchaseType.GOOGLE_PURCHASE, // We need to specify a new purchase type for the test store
+            purchaseType = PurchaseType.GOOGLE_PURCHASE, // WIP: Specify a new purchase type for the simulated store
             marketplace = null,
             subscriptionOptionId = product.defaultOption?.id,
             replacementMode = null,

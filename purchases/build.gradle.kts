@@ -45,8 +45,8 @@ android {
 
         buildConfigField(
             type = "boolean",
-            name = "ENABLE_TEST_STORE",
-            value = (localProperties["ENABLE_TEST_STORE"] as? String ?: "false").toString(),
+            name = "ENABLE_SIMULATED_STORE",
+            value = (localProperties["ENABLE_SIMULATED_STORE"] as? String ?: "false").toString(),
         )
 
         packagingOptions.resources.excludes.addAll(

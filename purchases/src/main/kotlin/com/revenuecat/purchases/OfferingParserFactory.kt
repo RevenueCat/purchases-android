@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.teststore.TestStoreOfferingParser
+import com.revenuecat.purchases.simulatedstore.SimulatedStoreOfferingParser
 
 internal object OfferingParserFactory {
 
@@ -11,8 +11,8 @@ internal object OfferingParserFactory {
         store: Store,
         apiKeyValidationResult: APIKeyValidator.ValidationResult,
     ): OfferingParser {
-        if (apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE) {
-            return TestStoreOfferingParser()
+        if (apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
+            return SimulatedStoreOfferingParser()
         }
         return when (store) {
             Store.PLAY_STORE -> GoogleOfferingParser()

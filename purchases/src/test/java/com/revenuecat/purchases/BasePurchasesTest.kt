@@ -408,6 +408,7 @@ internal open class BasePurchasesTest {
         customEntitlementComputation: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
         apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
+        enableSimulatedStore: Boolean = false,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -453,6 +454,7 @@ internal open class BasePurchasesTest {
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
             virtualCurrencyManager = mockVirtualCurrencyManager,
+            isSimulatedStoreEnabled = { enableSimulatedStore },
         )
 
         purchases = Purchases(

@@ -24,7 +24,7 @@ internal class APIKeyValidator {
         GOOGLE_KEY_AMAZON_STORE,
         AMAZON_KEY_GOOGLE_STORE,
         LEGACY,
-        TEST_STORE,
+        SIMULATED_STORE,
         OTHER_PLATFORM,
     }
 
@@ -37,7 +37,7 @@ internal class APIKeyValidator {
     private fun validate(apiKey: String, configuredStore: Store): ValidationResult {
         val apiKeyPlatform = getApiKeyPlatform(apiKey)
         return when {
-            apiKeyPlatform == APIKeyPlatform.TEST -> ValidationResult.TEST_STORE
+            apiKeyPlatform == APIKeyPlatform.TEST -> ValidationResult.SIMULATED_STORE
             apiKeyPlatform == APIKeyPlatform.GOOGLE && configuredStore == Store.PLAY_STORE -> ValidationResult.VALID
             apiKeyPlatform == APIKeyPlatform.AMAZON && configuredStore == Store.AMAZON -> ValidationResult.VALID
             apiKeyPlatform == APIKeyPlatform.GOOGLE && configuredStore == Store.AMAZON -> {
@@ -58,7 +58,7 @@ internal class APIKeyValidator {
             ValidationResult.GOOGLE_KEY_AMAZON_STORE -> errorLog { ConfigureStrings.GOOGLE_API_KEY_AMAZON_STORE }
             ValidationResult.LEGACY -> debugLog { ConfigureStrings.LEGACY_API_KEY }
             ValidationResult.OTHER_PLATFORM -> errorLog { ConfigureStrings.INVALID_API_KEY }
-            ValidationResult.TEST_STORE -> warnLog { ConfigureStrings.TEST_STORE_API_KEY }
+            ValidationResult.SIMULATED_STORE -> warnLog { ConfigureStrings.SIMULATED_STORE_API_KEY }
             ValidationResult.VALID -> {}
         }
     }
