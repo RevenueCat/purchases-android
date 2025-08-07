@@ -10,7 +10,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.teststore.TestStoreBillingWrapper
+import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
 internal object BillingFactory {
 
@@ -27,8 +27,8 @@ internal object BillingFactory {
         backend: Backend,
         apiKeyValidationResult: APIKeyValidator.ValidationResult,
     ): BillingAbstract {
-        if (apiKeyValidationResult == APIKeyValidator.ValidationResult.TEST_STORE) {
-            return TestStoreBillingWrapper(
+        if (apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
+            return SimulatedStoreBillingWrapper(
                 deviceCache = cache,
                 mainHandler = Handler(application.mainLooper),
                 purchasesStateProvider = stateProvider,

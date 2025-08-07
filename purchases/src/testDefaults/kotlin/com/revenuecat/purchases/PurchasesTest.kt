@@ -1645,48 +1645,55 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // endregion Paywall fonts
 
-    // region Test store
+    // region Simulated store
 
-//    Uncomment tests when removing BuildConfig.ENABLE_TEST_STORE
-//    @Test
-//    fun `syncing transactions on test store does not sync purchases`() {
-//        buildPurchases(anonymous = false, apiKeyValidationResult = APIKeyValidator.ValidationResult.TEST_STORE)
-//
-//        var receivedCustomerInfo: CustomerInfo? = null
-//        purchases.syncPurchases(object: SyncPurchasesCallback {
-//            override fun onSuccess(customerInfo: CustomerInfo) {
-//                receivedCustomerInfo = customerInfo
-//            }
-//
-//            override fun onError(error: PurchasesError) {
-//                fail("Expected succeess. Got $error")
-//            }
-//        })
-//
-//        verify(exactly = 0) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
-//        assertThat(receivedCustomerInfo).isNotNull
-//    }
-//
-//    @Test
-//    fun `restore transactions on test store does not restore purchases`() {
-//        buildPurchases(anonymous = false, apiKeyValidationResult = APIKeyValidator.ValidationResult.TEST_STORE)
-//
-//        var receivedCustomerInfo: CustomerInfo? = null
-//        purchases.restorePurchases(object: ReceiveCustomerInfoCallback {
-//            override fun onReceived(customerInfo: CustomerInfo) {
-//                receivedCustomerInfo = customerInfo
-//            }
-//
-//            override fun onError(error: PurchasesError) {
-//                fail("Expected succeess. Got $error")
-//            }
-//        })
-//
-//        verify(exactly = 0) { mockBillingAbstract.queryAllPurchases(any(), any(), any()) }
-//        assertThat(receivedCustomerInfo).isNotNull
-//    }
+    @Test
+    fun `syncing transactions on simulated store does not sync purchases`() {
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
 
-    // endregion Test store
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.syncPurchases(object: SyncPurchasesCallback {
+            override fun onSuccess(customerInfo: CustomerInfo) {
+                receivedCustomerInfo = customerInfo
+            }
+
+            override fun onError(error: PurchasesError) {
+                fail("Expected succeess. Got $error")
+            }
+        })
+
+        verify(exactly = 0) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
+        assertThat(receivedCustomerInfo).isNotNull
+    }
+
+    @Test
+    fun `restore transactions on simulated store does not restore purchases`() {
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.restorePurchases(object: ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) {
+                receivedCustomerInfo = customerInfo
+            }
+
+            override fun onError(error: PurchasesError) {
+                fail("Expected succeess. Got $error")
+            }
+        })
+
+        verify(exactly = 0) { mockBillingAbstract.queryAllPurchases(any(), any(), any()) }
+        assertThat(receivedCustomerInfo).isNotNull
+    }
+
+    // endregion Simulated store
 
     // region Private Methods
 

@@ -1,6 +1,6 @@
 @file:JvmSynthetic
 
-package com.revenuecat.purchases.teststore
+package com.revenuecat.purchases.simulatedstore
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -14,7 +14,7 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.utils.PriceFactory
 import java.util.Locale
 
-internal object TestStoreProductConverter {
+internal object SimulatedStoreProductConverter {
 
     @JvmSynthetic
     @Suppress("LongMethod")

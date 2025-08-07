@@ -97,11 +97,11 @@ class PurchasesFactoryTest {
     }
 
     @Test
-    fun `configuring SDK with test store api key in release mode throws exception`() {
+    fun `configuring SDK with simulated store api key in release mode throws exception`() {
         purchasesFactory = PurchasesFactory(
             isDebugBuild = { false },
             apiKeyValidator = apiKeyValidatorMock,
-            isTestStoreEnabled = { true },
+            isSimulatedStoreEnabled = { true },
         )
 
         every {
@@ -112,7 +112,7 @@ class PurchasesFactoryTest {
         } returns mockk()
         every {
             apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
-        } returns APIKeyValidator.ValidationResult.TEST_STORE
+        } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
 
         try {
             purchasesFactory.createPurchases(
