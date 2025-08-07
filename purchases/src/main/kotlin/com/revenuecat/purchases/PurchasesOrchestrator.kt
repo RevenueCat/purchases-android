@@ -623,6 +623,7 @@ internal class PurchasesOrchestrator(
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
+                blockstoreHelper.storeUserIdIfNeeded()
                 updateAllCaches(identityManager.currentAppUserID, callback)
             }
         }
