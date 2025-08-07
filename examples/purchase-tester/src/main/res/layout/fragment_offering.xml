@@ -63,12 +63,11 @@
                         app:layout_constraintStart_toStartOf="@+id/offering_details_server_description"
                         app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
 
-                <androidx.recyclerview.widget.RecyclerView
+                <androidx.compose.ui.platform.ComposeView
                         android:id="@+id/offering__details_packages_recycler"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_tiny"
-                        tools:listitem="@layout/package_card"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/offering_details_packages_header" />
