@@ -1277,7 +1277,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
-                any()
+                any(),
+                callback = any(),
             )
         }
     }

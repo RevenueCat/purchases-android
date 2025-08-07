@@ -207,7 +207,13 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
         every {
-            customerInfoHelperMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, any())
+            customerInfoHelperMock.retrieveCustomerInfo(
+                appUserId,
+                CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground = false,
+                allowSharingPlayStoreAccount = any(),
+                callback = any(),
+            )
         } just Runs
         every {
             offeringsManagerMock.onAppForeground(appUserId)

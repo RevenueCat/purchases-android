@@ -261,6 +261,15 @@ internal class PurchasesOrchestrator(
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                     appInBackground = false,
                     allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                    callback = object : ReceiveCustomerInfoCallback {
+                        override fun onReceived(customerInfo: CustomerInfo) {
+                            blockstoreHelper.storeUserIdIfNeeded(customerInfo)
+                        }
+
+                        override fun onError(error: PurchasesError) {
+                            // no-op
+                        }
+                    },
                 )
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
@@ -270,9 +279,6 @@ internal class PurchasesOrchestrator(
             flushPaywallEvents()
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
-            }
-            if (firstTimeInForeground) {
-                blockstoreHelper.storeUserIdIfNeeded()
             }
         }
     }
@@ -623,7 +629,6 @@ internal class PurchasesOrchestrator(
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
-                blockstoreHelper.storeUserIdIfNeeded()
                 updateAllCaches(identityManager.currentAppUserID, callback)
             }
         }
@@ -1139,6 +1144,7 @@ internal class PurchasesOrchestrator(
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+                blockstoreHelper.storeUserIdIfNeeded(info)
                 getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
                     dispatch {
                         purchaseCallback.onCompleted(storeTransaction, info)

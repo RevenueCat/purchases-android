@@ -140,7 +140,7 @@ internal open class BasePurchasesTest {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
 
-        every { mockBlockstoreHelper.storeUserIdIfNeeded() } just Runs
+        every { mockBlockstoreHelper.storeUserIdIfNeeded(any()) } just Runs
         every {
             mockBlockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded(captureLambda())
         } answers {

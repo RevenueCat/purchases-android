@@ -7,6 +7,7 @@ import com.google.android.gms.auth.blockstore.DeleteBytesRequest
 import com.google.android.gms.auth.blockstore.RetrieveBytesRequest
 import com.google.android.gms.auth.blockstore.RetrieveBytesResponse.BlockstoreData
 import com.google.android.gms.auth.blockstore.StoreBytesData
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -32,8 +33,8 @@ internal class BlockstoreHelper(
         const val BLOCKSTORE_MAX_ENTRIES = 16
     }
 
-    fun storeUserIdIfNeeded() {
-        if (!identityManager.currentUserIsAnonymous()) return
+    fun storeUserIdIfNeeded(customerInfo: CustomerInfo) {
+        if (!identityManager.currentUserIsAnonymous() || customerInfo.allPurchasedProductIds.isEmpty()) return
         ioScope.launch {
             val blockstoreData = try {
                 getBlockstoreData()
