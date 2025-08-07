@@ -76,9 +76,15 @@ internal data class PurchaseInformation(
             PriceDetails.Free, PriceDetails.Unknown -> localization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.RENEWS_ON_DATE,
             ).replace("{{ date }}", renewalDate)
-            is PriceDetails.Paid -> localization.commonLocalizedString(
-                CustomerCenterConfigData.Localization.CommonLocalizedString.RENEWS_ON_DATE_FOR_PRICE,
-            ).replace("{{ date }}", renewalDate).replace("{{ price }}", pricePaid.price)
+            is PriceDetails.Paid -> {
+                val lastChargeText = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.LAST_CHARGE_WAS,
+                ).replace("{{ price }}", pricePaid.price)
+                val nextBillingText = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.NEXT_BILLING_DATE_ON,
+                ).replace("{{ date }}", renewalDate)
+                "$lastChargeText\n$nextBillingText"
+            }
         }
     }
 
