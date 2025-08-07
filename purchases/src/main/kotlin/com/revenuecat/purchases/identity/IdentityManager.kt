@@ -3,6 +3,7 @@ package com.revenuecat.purchases.identity
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
@@ -21,6 +22,9 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import java.util.Locale
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class IdentityManager(
@@ -63,6 +67,32 @@ internal class IdentityManager(
 
         enqueue {
             deviceCache.cleanupOldAttributionData()
+        }
+    }
+
+    suspend fun aliasOldUserIdToCurrentOne(
+        oldAppUserID: String,
+    ): CustomerInfo {
+        val newAppUserID = currentAppUserID
+        return suspendCoroutine { continuation ->
+            backend.logIn(
+                appUserID = oldAppUserID,
+                newAppUserID = newAppUserID,
+                onSuccessHandler = { customerInfo, _ ->
+                    synchronized(this@IdentityManager) {
+                        log(LogIntent.USER) {
+                            IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
+                        }
+                        offeringsCache.clearCache()
+                        deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
+                        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+                    }
+                    continuation.resume(customerInfo)
+                },
+                onErrorHandler = { error ->
+                    continuation.resumeWithException(PurchasesException(error))
+                },
+            )
         }
     }
 

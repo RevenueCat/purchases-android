@@ -3,6 +3,7 @@ package com.revenuecat.purchases.strings
 internal object IdentityStrings {
     const val LOGGING_IN = "Logging in from %s -> %s"
     const val LOG_IN_SUCCESSFUL = "Logged in successfully as %s. Created: %s"
+    const val ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL = "Alias old user ID %s to current user ID %s successful."
     const val LOG_IN_ERROR_MISSING_APP_USER_ID = "Error logging in: appUserID can't be null, empty or blank"
     const val IDENTIFYING_APP_USER_ID = "Identifying App User ID: %s"
     const val EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS = "Identifying with empty App User ID will be " +
