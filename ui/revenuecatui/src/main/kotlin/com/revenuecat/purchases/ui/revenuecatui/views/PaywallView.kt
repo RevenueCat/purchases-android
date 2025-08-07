@@ -45,7 +45,7 @@ class PaywallView : CompatComposeView {
     ) : super(context) {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
-        setOfferingId(offering?.identifier)
+        this.initialOfferingId = offering?.identifier
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
         this.initialFontProvider = fontProvider
         init(context, null)
