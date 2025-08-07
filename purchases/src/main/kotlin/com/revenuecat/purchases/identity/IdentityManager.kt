@@ -72,22 +72,22 @@ internal class IdentityManager(
 
     suspend fun aliasOldUserIdToCurrentOne(
         oldAppUserID: String,
-    ): CustomerInfo {
+    ) {
         val newAppUserID = currentAppUserID
         return suspendCoroutine { continuation ->
-            backend.logIn(
-                appUserID = oldAppUserID,
+            backend.aliasUsers(
+                oldAppUserID = oldAppUserID,
                 newAppUserID = newAppUserID,
-                onSuccessHandler = { customerInfo, _ ->
+                onSuccessHandler = {
                     synchronized(this@IdentityManager) {
                         log(LogIntent.USER) {
                             IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
                         }
                         offeringsCache.clearCache()
-                        deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
+                        deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
-                    continuation.resume(customerInfo)
+                    continuation.resume(Unit)
                 },
                 onErrorHandler = { error ->
                     continuation.resumeWithException(PurchasesException(error))

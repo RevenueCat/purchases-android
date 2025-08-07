@@ -52,8 +52,6 @@ internal class BlockstoreHelper(
         }
     }
 
-    // $RCAnonymousID:213df519d1c2434a9fc5b79b5ac73002
-
     fun recoverAndAliasBlockstoreUserIfNeeded(callback: () -> Unit) {
         val callCompletion = {
             mainScope.launch {
