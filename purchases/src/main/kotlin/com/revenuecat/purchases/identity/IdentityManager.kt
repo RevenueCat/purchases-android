@@ -70,7 +70,7 @@ internal class IdentityManager(
         }
     }
 
-    suspend fun aliasOldUserIdToCurrentOne(
+    suspend fun aliasCurrentUserIdTo(
         oldAppUserID: String,
     ) {
         val newAppUserID = currentAppUserID

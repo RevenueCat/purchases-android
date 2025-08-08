@@ -4,7 +4,6 @@ import android.content.SharedPreferences.Editor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -634,10 +633,10 @@ class IdentityManagerTests {
     }
     // endregion
 
-    // region aliasUsers
+    // region aliasCurrentUserIdTo
 
     @Test
-    fun `aliasUsers finishes successfully and clears proper caches`() = runTest {
+    fun `aliasCurrentUserIdTo finishes successfully and clears proper caches`() = runTest {
         val oldAppUserID = "test-old-app-user-id"
         val newAppUserId = "test-new-app-user-id"
 
@@ -655,7 +654,7 @@ class IdentityManagerTests {
             lambda<() -> Unit>().captured.invoke()
         }
 
-        identityManager.aliasOldUserIdToCurrentOne(oldAppUserID)
+        identityManager.aliasCurrentUserIdTo(oldAppUserID)
 
         verify(exactly = 1) {
             mockBackend.aliasUsers(
@@ -671,7 +670,7 @@ class IdentityManagerTests {
     }
 
     @Test
-    fun `aliasUsers finishes with errors`() = runTest {
+    fun `aliasCurrentUserIdTo finishes with errors`() = runTest {
         val oldAppUserID = "test-old-app-user-id"
         val newAppUserId = "test-new-app-user-id"
 
@@ -689,7 +688,7 @@ class IdentityManagerTests {
         }
 
         try {
-            identityManager.aliasOldUserIdToCurrentOne(oldAppUserID)
+            identityManager.aliasCurrentUserIdTo(oldAppUserID)
             fail("Expected an error")
         } catch (e: PurchasesException) {
             assertThat(e.code).isEqualTo(PurchasesErrorCode.NetworkError)
@@ -708,7 +707,7 @@ class IdentityManagerTests {
         verify(exactly = 0) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
 
-    // endregion aliasUsers
+    // endregion aliasCurrentUserIdTo
 
     // region helper functions
 

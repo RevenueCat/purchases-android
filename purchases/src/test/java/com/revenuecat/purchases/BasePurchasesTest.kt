@@ -142,12 +142,12 @@ internal open class BasePurchasesTest {
 
         every { mockBlockstoreHelper.storeUserIdIfNeeded(any()) } just Runs
         every {
-            mockBlockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded(captureLambda())
+            mockBlockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded(captureLambda())
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
         every {
-            mockBlockstoreHelper.clearBlockstoreUserIdBackupIfNeeded(captureLambda())
+            mockBlockstoreHelper.clearUserIdBackupIfNeeded(captureLambda())
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }

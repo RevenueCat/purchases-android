@@ -29,7 +29,7 @@ internal class BlockstoreHelper(
 ) {
 
     private companion object {
-        const val BLOCKSTORE_USER_ID_KEY = "revenuecat_blockstore_user_id"
+        const val BLOCKSTORE_USER_ID_KEY = "com.revenuecat.purchases.app_user_id"
         const val BLOCKSTORE_MAX_ENTRIES = 16
     }
 
@@ -39,22 +39,20 @@ internal class BlockstoreHelper(
             val blockstoreData = try {
                 getBlockstoreData()
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                errorLog { "Failed to retrieve Block store data. Will not store userId. Error: ${e.message}" }
+                errorLog(e) { "Failed to retrieve Block store data. Will not store userId. Error: ${e.message}" }
                 return@launch
             }
             val currentUserId = identityManager.currentAppUserID
-            if (shouldStoreBlockstoreUserId(blockstoreData)) {
-                try {
-                    storeBlockstoreUserId(currentUserId)
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                    errorLog { "Failed to store user Id in Block store: $e" }
-                }
+            try {
+                storeUserIdIfNeeded(blockstoreData, currentUserId)
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                errorLog(e) { "Failed to store user Id in Block store: ${e.message}" }
             }
         }
     }
 
-    fun recoverAndAliasBlockstoreUserIfNeeded(callback: () -> Unit) {
-        val callCompletion = {
+    fun aliasCurrentAndStoredUserIdsIfNeeded(callback: () -> Unit) {
+        fun callCompletion() {
             mainScope.launch {
                 callback()
             }
@@ -67,7 +65,7 @@ internal class BlockstoreHelper(
             val blockstoreData = try {
                 getBlockstoreData()
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                errorLog { "Failed to retrieve Block store data. Will not recover userId. Error: ${e.message}" }
+                errorLog(e) { "Failed to retrieve Block store data. Will not recover userId. Error: ${e.message}" }
                 callCompletion()
                 return@launch
             }
@@ -79,12 +77,13 @@ internal class BlockstoreHelper(
             }
             try {
                 debugLog { "Aliasing Blockstore user ID: $blockstoreUserId with current UserID" }
-                identityManager.aliasOldUserIdToCurrentOne(
+                identityManager.aliasCurrentUserIdTo(
                     oldAppUserID = blockstoreUserId,
                 )
             } catch (e: PurchasesException) {
-                errorLog {
+                errorLog(e) {
                     "Failed to alias Block store user ID: ${e.message}. " +
+                        "Underlying error: ${e.underlyingErrorMessage}. " +
                         "Any purchases on previous anonymous user will not be recovered."
                 }
                 callCompletion()
@@ -94,7 +93,7 @@ internal class BlockstoreHelper(
         }
     }
 
-    fun clearBlockstoreUserIdBackupIfNeeded(callback: () -> Unit) {
+    fun clearUserIdBackupIfNeeded(callback: () -> Unit) {
         val request = DeleteBytesRequest.Builder()
             .setKeys(listOf(BLOCKSTORE_USER_ID_KEY))
             .build()
@@ -104,7 +103,7 @@ internal class BlockstoreHelper(
                 callback()
             }
             .addOnFailureListener {
-                errorLog { "Tried to clear Block store cached UserID but failed: $it" }
+                errorLog(it) { "Tried to clear Block store cached UserID but failed: ${it.message}" }
                 callback()
             }
     }
@@ -120,11 +119,14 @@ internal class BlockstoreHelper(
         }
     }
 
-    private fun shouldStoreBlockstoreUserId(blockstoreDataMap: Map<String, BlockstoreData>): Boolean {
-        return blockstoreDataMap[BLOCKSTORE_USER_ID_KEY] == null && blockstoreDataMap.size < BLOCKSTORE_MAX_ENTRIES
-    }
-
-    private suspend fun storeBlockstoreUserId(userId: String): Int {
+    // Stores the given userId in the Blockstore and returns the number of bytes stored.
+    private suspend fun storeUserIdIfNeeded(
+        blockstoreDataMap: Map<String, BlockstoreData>,
+        userId: String,
+    ): Int {
+        if (blockstoreDataMap[BLOCKSTORE_USER_ID_KEY] != null || blockstoreDataMap.size >= BLOCKSTORE_MAX_ENTRIES) {
+            return 0
+        }
         debugLog { "Store UserID: $userId in Block store." }
         val storeRequest = StoreBytesData.Builder()
             .setBytes(userId.toByteArray())

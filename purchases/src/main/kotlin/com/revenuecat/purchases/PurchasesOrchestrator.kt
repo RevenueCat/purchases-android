@@ -543,7 +543,7 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             billing.queryAllPurchases(
                 appUserID,
                 onReceivePurchaseHistory = { allPurchases ->
@@ -589,7 +589,7 @@ internal class PurchasesOrchestrator(
         callback: LogInCallback? = null,
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            blockstoreHelper.clearBlockstoreUserIdBackupIfNeeded {
+            blockstoreHelper.clearUserIdBackupIfNeeded {
                 identityManager.logIn(
                     newAppUserID,
                     onSuccess = { customerInfo, created ->
@@ -1143,7 +1143,7 @@ internal class PurchasesOrchestrator(
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
-            blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+            blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
                 blockstoreHelper.storeUserIdIfNeeded(info)
                 getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
                     dispatch {

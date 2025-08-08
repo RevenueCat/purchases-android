@@ -44,6 +44,7 @@ class BlockstoreHelperTest {
     private lateinit var blockstoreHelper: BlockstoreHelper
     
     private val testAnonymousUserId = "\$RCAnonymousID:test_anonymous_id"
+    private val expectedKey = "com.revenuecat.purchases.app_user_id"
 
     @Before
     fun setup() {
@@ -197,7 +198,7 @@ class BlockstoreHelperTest {
         }
         
         val existingBlockstoreData = mockk<RetrieveBytesResponse.BlockstoreData>()
-        val blockstoreMap = mapOf("revenuecat_blockstore_user_id" to existingBlockstoreData)
+        val blockstoreMap = mapOf(expectedKey to existingBlockstoreData)
         
         val mockRetrieveResponse = mockk<RetrieveBytesResponse> {
             every { blockstoreDataMap } returns blockstoreMap
@@ -221,14 +222,14 @@ class BlockstoreHelperTest {
 
     // endregion storeUserIdIfNeeded
 
-    // region recoverAndAliasBlockstoreUserIfNeeded
+    // region aliasCurrentAndStoredUserIdsIfNeeded
 
     @Test
-    fun `recoverAndAliasBlockstoreUserIfNeeded calls callback immediately when user is not anonymous`() {
+    fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback immediately when user is not anonymous`() {
         every { mockIdentityManager.currentUserIsAnonymous() } returns false
         
         var callbackCalled = false
-        blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
@@ -239,7 +240,7 @@ class BlockstoreHelperTest {
     }
 
     @Test
-    fun `recoverAndAliasBlockstoreUserIfNeeded calls callback when retrieval fails`() = runTest {
+    fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback when retrieval fails`() = runTest {
         every { mockIdentityManager.currentUserIsAnonymous() } returns true
         
         val mockRetrieveTask = mockk<Task<RetrieveBytesResponse>>()
@@ -250,7 +251,7 @@ class BlockstoreHelperTest {
         every { mockRetrieveTask.addOnFailureListener(capture(retrieveFailureSlot)) } returns mockRetrieveTask
         
         var callbackCalled = false
-        blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
@@ -262,7 +263,7 @@ class BlockstoreHelperTest {
     }
 
     @Test
-    fun `recoverAndAliasBlockstoreUserIfNeeded calls callback when no stored user ID found`() = runTest {
+    fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback when no stored user ID found`() = runTest {
         every { mockIdentityManager.currentUserIsAnonymous() } returns true
         every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
         
@@ -277,7 +278,7 @@ class BlockstoreHelperTest {
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
-        blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
@@ -289,14 +290,14 @@ class BlockstoreHelperTest {
     }
 
     @Test
-    fun `recoverAndAliasBlockstoreUserIfNeeded calls callback when stored user ID matches current`() = runTest {
+    fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback when stored user ID matches current`() = runTest {
         every { mockIdentityManager.currentUserIsAnonymous() } returns true
         every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
         
         val mockBlockstoreData = mockk<RetrieveBytesResponse.BlockstoreData> {
             every { bytes } returns testAnonymousUserId.toByteArray()
         }
-        val blockstoreMap = mapOf("revenuecat_blockstore_user_id" to mockBlockstoreData)
+        val blockstoreMap = mapOf(expectedKey to mockBlockstoreData)
         
         val mockRetrieveResponse = mockk<RetrieveBytesResponse> {
             every { blockstoreDataMap } returns blockstoreMap
@@ -309,7 +310,7 @@ class BlockstoreHelperTest {
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
-        blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
@@ -321,17 +322,17 @@ class BlockstoreHelperTest {
     }
 
     @Test
-    fun `recoverAndAliasBlockstoreUserIfNeeded aliases different user ID successfully`() = runTest {
+    fun `aliasCurrentAndStoredUserIdsIfNeeded aliases different user ID successfully`() = runTest {
         val storedUserId = "stored_user_id"
         
         every { mockIdentityManager.currentUserIsAnonymous() } returns true
         every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
-        coEvery { mockIdentityManager.aliasOldUserIdToCurrentOne(storedUserId) } just Runs
+        coEvery { mockIdentityManager.aliasCurrentUserIdTo(storedUserId) } just Runs
         
         val mockBlockstoreData = mockk<RetrieveBytesResponse.BlockstoreData> {
             every { bytes } returns storedUserId.toByteArray()
         }
-        val blockstoreMap = mapOf("revenuecat_blockstore_user_id" to mockBlockstoreData)
+        val blockstoreMap = mapOf(expectedKey to mockBlockstoreData)
         
         val mockRetrieveResponse = mockk<RetrieveBytesResponse> {
             every { blockstoreDataMap } returns blockstoreMap
@@ -344,7 +345,7 @@ class BlockstoreHelperTest {
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
-        blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
@@ -353,22 +354,22 @@ class BlockstoreHelperTest {
         testScope.advanceUntilIdle()
 
         assertThat(callbackCalled).isTrue()
-        coVerify(exactly = 1) { mockIdentityManager.aliasOldUserIdToCurrentOne(storedUserId) }
+        coVerify(exactly = 1) { mockIdentityManager.aliasCurrentUserIdTo(storedUserId) }
     }
 
     @Test
-    fun `recoverAndAliasBlockstoreUserIfNeeded handles alias failure gracefully`() = runTest {
+    fun `aliasCurrentAndStoredUserIdsIfNeeded handles alias failure gracefully`() = runTest {
         val storedUserId = "stored_user_id"
         
         every { mockIdentityManager.currentUserIsAnonymous() } returns true
         every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
-        coEvery { mockIdentityManager.aliasOldUserIdToCurrentOne(storedUserId) } throws 
+        coEvery { mockIdentityManager.aliasCurrentUserIdTo(storedUserId) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.InvalidAppUserIdError, "Test error"))
         
         val mockBlockstoreData = mockk<RetrieveBytesResponse.BlockstoreData> {
             every { bytes } returns storedUserId.toByteArray()
         }
-        val blockstoreMap = mapOf("revenuecat_blockstore_user_id" to mockBlockstoreData)
+        val blockstoreMap = mapOf(expectedKey to mockBlockstoreData)
         
         val mockRetrieveResponse = mockk<RetrieveBytesResponse> {
             every { blockstoreDataMap } returns blockstoreMap
@@ -381,7 +382,7 @@ class BlockstoreHelperTest {
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
-        blockstoreHelper.recoverAndAliasBlockstoreUserIfNeeded {
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
@@ -392,12 +393,12 @@ class BlockstoreHelperTest {
         assertThat(callbackCalled).isTrue()
     }
 
-    // endregion recoverAndAliasBlockstoreUserIfNeeded
+    // endregion aliasCurrentAndStoredUserIdsIfNeeded
 
-    // region clearBlockstoreUserIdBackupIfNeeded
+    // region clearUserIdBackupIfNeeded
 
     @Test
-    fun `clearBlockstoreUserIdBackupIfNeeded calls delete and handles success`() {
+    fun `clearUserIdBackupIfNeeded calls delete and handles success`() {
         val mockDeleteTask = mockk<Task<Boolean>>()
         every { mockBlockstoreClient.deleteBytes(any()) } returns mockDeleteTask
         
@@ -406,7 +407,7 @@ class BlockstoreHelperTest {
         every { mockDeleteTask.addOnFailureListener(any()) } returns mockDeleteTask
         
         var callbackCalled = false
-        blockstoreHelper.clearBlockstoreUserIdBackupIfNeeded {
+        blockstoreHelper.clearUserIdBackupIfNeeded {
             callbackCalled = true
         }
         
@@ -417,11 +418,11 @@ class BlockstoreHelperTest {
         val deleteRequestSlot = slot<DeleteBytesRequest>()
         verify(exactly = 1) { mockBlockstoreClient.deleteBytes(capture(deleteRequestSlot)) }
         
-        assertThat(deleteRequestSlot.captured.keys).containsExactly("revenuecat_blockstore_user_id")
+        assertThat(deleteRequestSlot.captured.keys).containsExactly(expectedKey)
     }
 
     @Test
-    fun `clearBlockstoreUserIdBackupIfNeeded calls delete and handles failure`() {
+    fun `clearUserIdBackupIfNeeded calls delete and handles failure`() {
         val mockDeleteTask = mockk<Task<Boolean>>()
         every { mockBlockstoreClient.deleteBytes(any()) } returns mockDeleteTask
         
@@ -430,7 +431,7 @@ class BlockstoreHelperTest {
         every { mockDeleteTask.addOnFailureListener(capture(deleteFailureSlot)) } returns mockDeleteTask
         
         var callbackCalled = false
-        blockstoreHelper.clearBlockstoreUserIdBackupIfNeeded {
+        blockstoreHelper.clearUserIdBackupIfNeeded {
             callbackCalled = true
         }
         
@@ -440,5 +441,5 @@ class BlockstoreHelperTest {
         verify(exactly = 1) { mockBlockstoreClient.deleteBytes(any()) }
     }
 
-    // endregion clearBlockstoreUserIdBackupIfNeeded
+    // endregion clearUserIdBackupIfNeeded
 }
