@@ -250,6 +250,9 @@ data class CustomerCenterConfigData(
 
             @SerialName("resubscribe")
             RESUBSCRIBE,
+
+            @SerialName("subscribe")
+            SUBSCRIBE,
             ;
 
             val defaultValue: String
@@ -336,6 +339,7 @@ data class CustomerCenterConfigData(
                     UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                     RESUBSCRIBE -> "Resubscribe"
+                    SUBSCRIBE -> "Subscribe"
                 }
         }
 
@@ -456,11 +460,27 @@ data class CustomerCenterConfigData(
     }
 
     @Serializable
+    data class ScreenOffering(
+        val type: ScreenOfferingType,
+        @SerialName("offering_id") val offeringId: String? = null,
+    ) {
+        @Serializable
+        enum class ScreenOfferingType(val value: String) {
+            @SerialName("CURRENT")
+            CURRENT("CURRENT"),
+
+            @SerialName("SPECIFIC")
+            SPECIFIC("SPECIFIC"),
+        }
+    }
+
+    @Serializable
     data class Screen(
         val type: ScreenType,
         val title: String,
         @Serializable(with = EmptyStringToNullSerializer::class) val subtitle: String? = null,
         @Serializable(with = HelpPathsSerializer::class) val paths: List<HelpPath>,
+        val offering: ScreenOffering? = null,
     ) {
         @Serializable
         enum class ScreenType {
