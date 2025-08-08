@@ -16,6 +16,9 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath() = pathTemplate
     }
+    data class AliasUsers(val userId: String) : Endpoint("/v1/subscribers/%s/alias", "alias_users") {
+        override fun getPath() = pathTemplate.format(Uri.encode(userId))
+    }
     object PostDiagnostics : Endpoint("/v1/diagnostics", "post_diagnostics") {
         override fun getPath() = pathTemplate
     }
@@ -81,6 +84,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostPaywallEvents,
             is GetCustomerCenterConfig,
             is WebBillingGetProducts,
+            is AliasUsers,
             ->
                 false
         }
@@ -102,6 +106,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             GetProductEntitlementMapping,
             is GetCustomerCenterConfig,
             is WebBillingGetProducts,
+            is AliasUsers,
             ->
                 false
         }
@@ -124,6 +129,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetCustomerCenterConfig,
             is GetVirtualCurrencies,
             is WebBillingGetProducts,
+            is AliasUsers,
             ->
                 false
         }
