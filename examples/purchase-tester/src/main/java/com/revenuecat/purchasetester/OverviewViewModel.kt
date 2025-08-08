@@ -1,11 +1,14 @@
 package com.revenuecat.purchasetester
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.auth.blockstore.Blockstore
+import com.google.android.gms.auth.blockstore.DeleteBytesRequest
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Purchases
@@ -73,6 +76,16 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
             interactionHandler.displayError(it)
             isRestoring.value = false
         })
+    }
+
+    fun onBlockStoreClearClicked(context: Context) {
+        val blockstoreClient = Blockstore.getClient(context)
+        val request = DeleteBytesRequest.Builder()
+            .setDeleteAll(true)
+            .build()
+        blockstoreClient.deleteBytes(request)
+            .addOnSuccessListener { Log.d("PurchaseTester", "Blockstore cleared") }
+            .addOnFailureListener { Log.e("PurchaseTester", "Blockstore failed to clear: $it") }
     }
 
     fun onCardClicked() = interactionHandler.toggleCard()

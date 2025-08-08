@@ -212,6 +212,16 @@
 
                         </LinearLayout>
 
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/block_store_clear_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:text="Clear Block Store"
+                                android:onClick="@{() -> viewModel.onBlockStoreClearClicked(context)}"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@id/customer_info_actions" />
+
                         <LinearLayout
                                 android:id="@+id/vc_actions"
                                 android:orientation="horizontal"
@@ -221,7 +231,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_actions">
+                                app:layout_constraintTop_toBottomOf="@+id/block_store_clear_button">
 
                             <com.google.android.material.button.MaterialButton
                                     android:id="@+id/customer_info_fetch_vcs_button"
