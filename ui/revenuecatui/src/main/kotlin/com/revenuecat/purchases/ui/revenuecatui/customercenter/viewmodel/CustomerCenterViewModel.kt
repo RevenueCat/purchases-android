@@ -16,8 +16,10 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -31,11 +33,15 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
+import com.revenuecat.purchases.customercenter.resolveOffering
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
@@ -88,6 +94,8 @@ internal interface CustomerCenterViewModel {
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(context: Context, originalPath: HelpPath)
     fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit)
+
+    @InternalRevenueCatAPI
     suspend fun loadCustomerCenter()
     fun openURL(
         context: Context,
@@ -105,6 +113,8 @@ internal interface CustomerCenterViewModel {
 
     // tracks customer center impression the first time is shown
     fun trackImpressionIfNeeded()
+
+    fun showPaywall(context: Context)
 }
 
 internal sealed class TransactionDetails(
@@ -753,6 +763,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    @InternalRevenueCatAPI
     override suspend fun loadCustomerCenter() {
         _state.update { state ->
             if (state !is CustomerCenterState.Loading) {
@@ -764,11 +775,26 @@ internal class CustomerCenterViewModelImpl(
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchases = loadPurchases(dateFormatter, locale)
+
+            // Resolve NO_ACTIVE screen offering if it exists
+            var noActiveScreenOffering: com.revenuecat.purchases.Offering? = null
+            customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
+                noActiveScreen.resolveOffering(
+                    onError = { error ->
+                        Logger.d("Failed to resolve NO_ACTIVE screen offering: $error")
+                    },
+                    onSuccess = { offering ->
+                        noActiveScreenOffering = offering
+                    },
+                )
+            }
+
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
                 purchases,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
+                noActiveScreenOffering = noActiveScreenOffering,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
@@ -1042,6 +1068,69 @@ internal class CustomerCenterViewModelImpl(
             customActionData.actionIdentifier,
             customActionData.purchaseIdentifier,
         )
+    }
+
+    override fun showPaywall(context: Context) {
+        val currentState = _state.value
+        if (currentState !is CustomerCenterState.Success) return
+
+        val offering = currentState.noActiveScreenOffering
+        if (offering != null) {
+            launchPaywallActivity(context, offering)
+        } else {
+            // Fallback to current offering if no screen-specific offering is configured
+            tryFallbackToCurrentOffering(context)
+        }
+    }
+
+    private fun tryFallbackToCurrentOffering(context: Context) {
+        Purchases.sharedInstance.getOfferingsWith(
+            onError = { error ->
+                handlePaywallError("Failed to get current offering: ${error.message}", error.code)
+            },
+            onSuccess = { offerings ->
+                val currentOffering = offerings.current
+                if (currentOffering != null) {
+                    Logger.d("Falling back to current offering: ${currentOffering.identifier}")
+                    launchPaywallActivity(context, currentOffering)
+                } else {
+                    handlePaywallError(
+                        "No offering available for paywall presentation",
+                        PurchasesErrorCode.ConfigurationError,
+                    )
+                }
+            },
+        )
+    }
+
+    private fun launchPaywallActivity(context: Context, offering: com.revenuecat.purchases.Offering) {
+        try {
+            Logger.d("Showing paywall for offering: ${offering.identifier}")
+
+            val paywallArgs = PaywallActivityArgs(
+                offeringId = offering.identifier,
+                shouldDisplayDismissButton = true,
+            )
+
+            val intent = Intent(context, PaywallActivity::class.java).apply {
+                putExtra(PaywallActivity.ARGS_EXTRA, paywallArgs)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            context.startActivity(intent)
+            Logger.d("Successfully launched paywall for offering: ${offering.identifier}")
+        } catch (e: ActivityNotFoundException) {
+            handlePaywallError("PaywallActivity not found: ${e.message}", PurchasesErrorCode.ConfigurationError)
+        } catch (e: SecurityException) {
+            handlePaywallError("Security error launching paywall: ${e.message}", PurchasesErrorCode.UnknownError)
+        } catch (e: IllegalArgumentException) {
+            handlePaywallError("Invalid argument for paywall: ${e.message}", PurchasesErrorCode.UnknownError)
+        }
+    }
+
+    private fun handlePaywallError(message: String, errorCode: PurchasesErrorCode) {
+        Logger.e(message)
+        _actionError.value = PurchasesError(errorCode, message)
     }
 
     private fun SubscriptionInfo.asTransactionDetails() = TransactionDetails.Subscription(

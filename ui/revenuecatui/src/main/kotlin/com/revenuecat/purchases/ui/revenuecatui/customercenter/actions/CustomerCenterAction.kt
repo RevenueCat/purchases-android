@@ -19,4 +19,5 @@ internal sealed class CustomerCenterAction {
     data class OpenURL(val url: String) : CustomerCenterAction()
     data class CustomActionSelected(val customActionData: CustomActionData) : CustomerCenterAction()
     object NavigationButtonPressed : CustomerCenterAction()
+    object ShowPaywall : CustomerCenterAction()
 }
