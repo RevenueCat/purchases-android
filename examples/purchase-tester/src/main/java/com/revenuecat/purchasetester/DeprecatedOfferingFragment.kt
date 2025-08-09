@@ -22,8 +22,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
-import com.revenuecat.purchases_sample.R
-import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import com.revenuecat.purchasetester.databinding.FragmentOfferingBinding
 
 @SuppressWarnings("TooManyFunctions")
 class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.PackageCardAdapterListener {
