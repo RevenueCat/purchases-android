@@ -510,6 +510,7 @@ class StyleFactoryTests {
         val component = TabsComponent(
             tabs = listOf(
                 TabsComponent.Tab(
+                    id = "0",
                     stack = StackComponent(
                         components = listOf(
                             StackComponent(
@@ -519,6 +520,7 @@ class StyleFactoryTests {
                     )
                 ),
                 TabsComponent.Tab(
+                    id = "1",
                     stack = StackComponent(
                         components = listOf(
                             StackComponent(
@@ -533,12 +535,14 @@ class StyleFactoryTests {
                     components = listOf(
                         TabControlButtonComponent(
                             tabIndex = 0,
+                            tabId = "0",
                             stack = StackComponent(
                                 components = emptyList()
                             )
                         ),
                         TabControlButtonComponent(
                             tabIndex = 1,
+                            tabId = "1",
                             stack = StackComponent(
                                 components = emptyList()
                             )
@@ -572,6 +576,7 @@ class StyleFactoryTests {
         val component = TabsComponent(
             tabs = listOf(
                 TabsComponent.Tab(
+                    id = "0",
                     stack = StackComponent(
                         components = listOf(
                             StackComponent(
@@ -581,6 +586,7 @@ class StyleFactoryTests {
                     )
                 ),
                 TabsComponent.Tab(
+                    id = "1",
                     stack = StackComponent(
                         components = listOf(
                             StackComponent(
