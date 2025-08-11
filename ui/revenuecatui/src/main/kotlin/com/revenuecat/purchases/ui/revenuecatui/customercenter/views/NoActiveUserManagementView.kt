@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
@@ -42,7 +43,7 @@ internal fun NoActiveUserManagementView(
     contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
     supportedPaths: List<HelpPath>,
-    offering: com.revenuecat.purchases.Offering?,
+    offering: Offering?,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

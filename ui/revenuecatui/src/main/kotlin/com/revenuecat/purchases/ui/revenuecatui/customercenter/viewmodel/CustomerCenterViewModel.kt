@@ -17,6 +17,7 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
@@ -1100,7 +1101,7 @@ internal class CustomerCenterViewModelImpl(
         )
     }
 
-    private fun launchPaywallActivity(context: Context, offering: com.revenuecat.purchases.Offering) {
+    private fun launchPaywallActivity(context: Context, offering: Offering) {
         try {
             Logger.d("Showing paywall for offering: ${offering.identifier}")
 
