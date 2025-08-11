@@ -74,6 +74,7 @@ class ScreenOfferingExtensionsTest {
         var errorReceived: PurchasesError? = null
 
         screen.resolveOffering(
+            purchases = mockPurchases,
             onError = { error -> errorReceived = error },
             onSuccess = { offering -> resultOffering = offering }
         )
@@ -105,6 +106,7 @@ class ScreenOfferingExtensionsTest {
         var errorReceived: PurchasesError? = null
 
         screen.resolveOffering(
+            purchases = mockPurchases,
             onError = { error -> errorReceived = error },
             onSuccess = { offering -> resultOffering = offering }
         )
@@ -136,6 +138,7 @@ class ScreenOfferingExtensionsTest {
         var errorReceived: PurchasesError? = null
 
         screen.resolveOffering(
+            purchases = mockPurchases,
             onError = { error -> errorReceived = error },
             onSuccess = { offering -> resultOffering = offering }
         )
@@ -167,6 +170,7 @@ class ScreenOfferingExtensionsTest {
         var errorReceived: PurchasesError? = null
 
         screen.resolveOffering(
+            purchases = mockPurchases,
             onError = { error -> errorReceived = error },
             onSuccess = { offering -> resultOffering = offering }
         )
@@ -188,6 +192,7 @@ class ScreenOfferingExtensionsTest {
         var errorReceived: PurchasesError? = null
 
         screen.resolveOffering(
+            purchases = mockPurchases,
             onError = { error -> errorReceived = error },
             onSuccess = { offering -> resultOffering = offering }
         )
@@ -220,6 +225,7 @@ class ScreenOfferingExtensionsTest {
         var errorReceived: PurchasesError? = null
 
         screen.resolveOffering(
+            purchases = mockPurchases,
             onError = { error -> errorReceived = error },
             onSuccess = { offering -> resultOffering = offering }
         )

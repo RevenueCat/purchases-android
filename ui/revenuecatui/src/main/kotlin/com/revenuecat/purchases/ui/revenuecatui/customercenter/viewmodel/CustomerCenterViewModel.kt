@@ -33,7 +33,6 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
-import com.revenuecat.purchases.customercenter.resolveOffering
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
@@ -50,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSuspend
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
@@ -774,24 +774,21 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchases = loadPurchases(dateFormatter, locale)
+            val purchaseInformationList = loadPurchases(dateFormatter, locale)
 
             // Resolve NO_ACTIVE screen offering if it exists
-            var noActiveScreenOffering: com.revenuecat.purchases.Offering? = null
-            customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
-                noActiveScreen.resolveOffering(
-                    onError = { error ->
-                        Logger.d("Failed to resolve NO_ACTIVE screen offering: $error")
-                    },
-                    onSuccess = { offering ->
-                        noActiveScreenOffering = offering
-                    },
-                )
+            val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
+                try {
+                    noActiveScreen.resolveOfferingSuspend(purchases)
+                } catch (e: PurchasesException) {
+                    Logger.d("Failed to resolve NO_ACTIVE screen offering: $e")
+                    null
+                }
             }
 
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
-                purchases,
+                purchaseInformationList,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,

@@ -8,6 +8,7 @@ import com.revenuecat.purchases.getOfferingsWith
 
 @InternalRevenueCatAPI
 fun CustomerCenterConfigData.Screen.resolveOffering(
+    purchases: Purchases,
     onError: (error: PurchasesError) -> Unit = {},
     onSuccess: (offering: Offering?) -> Unit,
 ) {
@@ -18,7 +19,7 @@ fun CustomerCenterConfigData.Screen.resolveOffering(
         return
     }
 
-    Purchases.sharedInstance.getOfferingsWith(
+    purchases.getOfferingsWith(
         onError = onError,
         onSuccess = { offerings ->
             val resolvedOffering = when (screenOffering.type) {
