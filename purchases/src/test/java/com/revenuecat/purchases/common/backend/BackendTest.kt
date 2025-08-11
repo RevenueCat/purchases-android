@@ -24,12 +24,12 @@ import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.networking.WebBillingPhase
 import com.revenuecat.purchases.common.networking.WebBillingPrice
 import com.revenuecat.purchases.common.networking.WebBillingProductResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.WebBillingPurchaseOption
-import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.common.toMap
@@ -52,13 +52,13 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import io.mockk.every
-import kotlinx.serialization.SerializationException
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
 import org.json.JSONArray
@@ -97,6 +97,7 @@ class BackendTest {
         receivedIsServerError = null
         receivedVirtualCurrencies = null
         receivedWebBillingProductsResponse = null
+        receivedAliasUsersCallCount = 0
     }
 
     @After
@@ -166,6 +167,7 @@ class BackendTest {
     private var receivedCustomerInfoCreated: Boolean? = null
     private var receivedVirtualCurrencies: VirtualCurrencies? = null
     private var receivedWebBillingProductsResponse: WebBillingProductsResponse? = null
+    private var receivedAliasUsersCallCount: Int = 0
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
@@ -226,6 +228,14 @@ class BackendTest {
     }
 
     private val onReceiveWebBillingProductsErrorHandler: (PurchasesError) -> Unit = { error ->
+        this@BackendTest.receivedError = error
+    }
+
+    private val onReceiveAliasUsersSuccessHandler: () -> Unit = {
+        this@BackendTest.receivedAliasUsersCallCount += 1
+    }
+
+    private val onReceiveAliasUsersErrorHandler: (PurchasesError) -> Unit = { error ->
         this@BackendTest.receivedError = error
     }
 
@@ -2861,6 +2871,113 @@ class BackendTest {
     }
     // endregion WebBilling Products
 
+    // region Alias Users
+
+    @Test
+    fun getAliasUsersCallsProperURL() {
+        postAliasUsers(responseCode = 200)
+
+        assertThat(receivedAliasUsersCallCount).isEqualTo(1)
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.AliasUsers("test-old-app-user-id"),
+                body = mapOf("app_user_id" to "test-old-app-user-id", "new_app_user_id" to "test-new-app-user-id"),
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders
+            )
+        }
+    }
+
+    @Test
+    fun `getAliasUsers calls success handler for successful request`() {
+        mockAliasUsersResponse(
+            Endpoint.AliasUsers(appUserID),
+            200,
+            null,
+            body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
+            true,
+        )
+        var successCalled = false
+        backend.aliasUsers(appUserID, "test-new-user-id",
+            { successCalled = true },
+            { error -> fail("expected success $error", error) }
+        )
+        assertTrue(successCalled)
+    }
+
+    @Test
+    fun getAliasUsersProductsFailsIf40X() {
+        val failureCode = 400
+
+        postAliasUsers(responseCode = failureCode)
+
+        assertThat(receivedAliasUsersCallCount).isEqualTo(0)
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun getAliasUsersProductsFailsIf50X() {
+        val failureCode = 500
+
+        postAliasUsers(responseCode = failureCode)
+
+        assertThat(receivedAliasUsersCallCount).isEqualTo(0)
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun `getAliasUsers calls error handler when a Network error occurs`() {
+        mockAliasUsersResponse(
+            Endpoint.AliasUsers(appUserID),
+            200,
+            IOException(),
+            body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id")
+        )
+        var errorCalled = false
+        backend.aliasUsers(
+            appUserID,
+            "test-new-user-id",
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `given multiple getAliasUsers calls for same subscriber same body, only one is triggered`() {
+        mockAliasUsersResponse(
+            Endpoint.AliasUsers(appUserID),
+            200,
+            null,
+            body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.aliasUsers(appUserID, newAppUserID = "test-new-user-id", onSuccessHandler = {
+            lock.countDown()
+        }, onErrorHandler = onReceiveAliasUsersErrorHandler)
+        asyncBackend.aliasUsers(appUserID, newAppUserID = "test-new-user-id", onSuccessHandler = {
+            lock.countDown()
+        }, onErrorHandler = onReceiveAliasUsersErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.AliasUsers(appUserID),
+                body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+    // endregion AliasUsers
+
     // region helpers
 
     private fun mockResponse(
@@ -3054,6 +3171,27 @@ class BackendTest {
         return productsResponse
     }
 
+    private fun postAliasUsers(
+        responseCode: Int,
+        oldAppUserID: String = "test-old-app-user-id",
+        newAppUserID: String = "test-new-app-user-id",
+        clientException: Exception? = null,
+    ) {
+        mockAliasUsersResponse(
+            Endpoint.AliasUsers(oldAppUserID),
+            responseCode,
+            clientException,
+            body = mapOf("app_user_id" to oldAppUserID, "new_app_user_id" to newAppUserID),
+        )
+
+        backend.aliasUsers(
+            oldAppUserID,
+            newAppUserID,
+            onReceiveAliasUsersSuccessHandler,
+            onReceiveAliasUsersErrorHandler,
+        )
+    }
+
     private fun mockGetVirtualCurrenciesResponse(
         endpoint: Endpoint,
         body: Map<String, Any?>?,
@@ -3132,6 +3270,36 @@ class BackendTest {
         }
 
         return response
+    }
+
+    private fun mockAliasUsersResponse(
+        endpoint: Endpoint,
+        responseCode: Int,
+        clientException: Exception?,
+        body: Map<String, String>?,
+        delayed: Boolean = false,
+        baseURL: URL = mockBaseURL
+    ) {
+        val result = HTTPResult.createResult(responseCode, "{}")
+
+        val everyMockedCall = every {
+            mockClient.performRequest(
+                eq(baseURL),
+                eq(endpoint),
+                body,
+                any(),
+                capture(headersSlot)
+            )
+        }
+
+        if (clientException == null) {
+            everyMockedCall answers {
+                if (delayed) Thread.sleep(200)
+                result
+            }
+        } else {
+            everyMockedCall throws clientException
+        }
     }
 
     // endregion
