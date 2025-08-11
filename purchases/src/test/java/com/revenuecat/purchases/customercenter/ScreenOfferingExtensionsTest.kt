@@ -7,6 +7,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -66,7 +67,7 @@ class ScreenOfferingExtensionsTest {
         every { 
             mockPurchases.getOfferings(any()) 
         } answers {
-            val callback = arg<com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback>(0)
+            val callback = arg<ReceiveOfferingsCallback>(0)
             callback.onReceived(mockOfferings)
         }
 
@@ -98,7 +99,7 @@ class ScreenOfferingExtensionsTest {
         every { 
             mockPurchases.getOfferings(any()) 
         } answers {
-            val callback = arg<com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback>(0)
+            val callback = arg<ReceiveOfferingsCallback>(0)
             callback.onReceived(mockOfferings)
         }
 
@@ -130,7 +131,7 @@ class ScreenOfferingExtensionsTest {
         every { 
             mockPurchases.getOfferings(any()) 
         } answers {
-            val callback = arg<com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback>(0)
+            val callback = arg<ReceiveOfferingsCallback>(0)
             callback.onReceived(mockOfferings)
         }
 
@@ -162,7 +163,7 @@ class ScreenOfferingExtensionsTest {
         every { 
             mockPurchases.getOfferings(any()) 
         } answers {
-            val callback = arg<com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback>(0)
+            val callback = arg<ReceiveOfferingsCallback>(0)
             callback.onReceived(mockOfferings)
         }
 
@@ -217,7 +218,7 @@ class ScreenOfferingExtensionsTest {
         every { 
             mockPurchases.getOfferings(any()) 
         } answers {
-            val callback = arg<com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback>(0)
+            val callback = arg<ReceiveOfferingsCallback>(0)
             callback.onError(expectedError)
         }
 
