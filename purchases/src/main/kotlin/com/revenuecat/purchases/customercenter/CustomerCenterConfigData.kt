@@ -250,6 +250,18 @@ data class CustomerCenterConfigData(
 
             @SerialName("resubscribe")
             RESUBSCRIBE,
+
+            @SerialName("type_subscription")
+            TYPE_SUBSCRIPTION,
+
+            @SerialName("type_one_time_purchase")
+            TYPE_ONE_TIME_PURCHASE,
+
+            @SerialName("last_charge_was")
+            LAST_CHARGE_WAS,
+
+            @SerialName("next_billing_date_on")
+            NEXT_BILLING_DATE_ON,
             ;
 
             val defaultValue: String
@@ -336,6 +348,10 @@ data class CustomerCenterConfigData(
                     UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                     RESUBSCRIBE -> "Resubscribe"
+                    TYPE_SUBSCRIPTION -> "Subscription"
+                    TYPE_ONE_TIME_PURCHASE -> "One time purchase"
+                    LAST_CHARGE_WAS -> "Last charge: {{ price }}"
+                    NEXT_BILLING_DATE_ON -> "Next billing date: {{ date }}"
                 }
         }
 
