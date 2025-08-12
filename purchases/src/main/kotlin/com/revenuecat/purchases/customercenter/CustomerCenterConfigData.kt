@@ -253,6 +253,12 @@ data class CustomerCenterConfigData(
 
             @SerialName("subscribe")
             SUBSCRIBE,
+
+            @SerialName("next_billing_date_on")
+            NEXT_BILLING_DATE_ON,
+
+            @SerialName("last_charge_was")
+            LAST_CHARGE_WAS,
             ;
 
             val defaultValue: String
@@ -340,6 +346,8 @@ data class CustomerCenterConfigData(
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                     RESUBSCRIBE -> "Resubscribe"
                     SUBSCRIBE -> "Subscribe"
+                    NEXT_BILLING_DATE_ON -> "Next billing date: {{ date }}"
+                    LAST_CHARGE_WAS -> "Last charge: {{ price }}"
                 }
         }
 
