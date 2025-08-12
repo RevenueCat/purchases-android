@@ -229,7 +229,15 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { values ->
                 values.name.lowercase()
             }.toTypedArray()
-            assertThat(it.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
+            val actualKeys = it.localization.localizedStrings.keys
+            val expectedKeys = expectedLocalizationKeys.toList()
+            val missingKeys = expectedKeys - actualKeys
+
+            if (missingKeys.isNotEmpty()) {
+                fail<Unit>("Expected localized strings to contain all keys: $expectedKeys. " +
+                    "Actual keys: $actualKeys. " +
+                    "Missing keys: $missingKeys")
+            }
             assertThat(it.support.email).isNull()
         }
 
