@@ -251,6 +251,12 @@ data class CustomerCenterConfigData(
             @SerialName("resubscribe")
             RESUBSCRIBE,
 
+            @SerialName("type_one_time_purchase")
+            TYPE_ONE_TIME_PURCHASE,
+
+            @SerialName("type_subscription")
+            TYPE_SUBSCRIPTION,
+
             @SerialName("subscribe")
             SUBSCRIBE,
 
@@ -345,6 +351,8 @@ data class CustomerCenterConfigData(
                     UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                     RESUBSCRIBE -> "Resubscribe"
+                    TYPE_ONE_TIME_PURCHASE -> "One-time purchase"
+                    TYPE_SUBSCRIPTION -> "Subscription"
                     SUBSCRIBE -> "Subscribe"
                     NEXT_BILLING_DATE_ON -> "Next billing date: {{ date }}"
                     LAST_CHARGE_WAS -> "Last charge: {{ price }}"
