@@ -256,6 +256,9 @@ data class CustomerCenterConfigData(
             @SerialName("type_one_time_purchase")
             TYPE_ONE_TIME_PURCHASE,
 
+            @SerialName("buy_subscription")
+            BUY_SUBSCRIPTION,
+
             @SerialName("last_charge_was")
             LAST_CHARGE_WAS,
 
@@ -349,6 +352,7 @@ data class CustomerCenterConfigData(
                     RESUBSCRIBE -> "Resubscribe"
                     TYPE_SUBSCRIPTION -> "Subscription"
                     TYPE_ONE_TIME_PURCHASE -> "One time purchase"
+                    BUY_SUBSCRIPTION -> "Buy Subscription"
                     LAST_CHARGE_WAS -> "Last charge: {{ price }}"
                     NEXT_BILLING_DATE_ON -> "Next billing date: {{ date }}"
                 }
@@ -471,11 +475,27 @@ data class CustomerCenterConfigData(
     }
 
     @Serializable
+    data class ScreenOffering(
+        val type: ScreenOfferingType,
+        @SerialName("offering_id") val offeringId: String? = null,
+    ) {
+        @Serializable
+        enum class ScreenOfferingType(val value: String) {
+            @SerialName("CURRENT")
+            CURRENT("CURRENT"),
+
+            @SerialName("SPECIFIC")
+            SPECIFIC("SPECIFIC"),
+        }
+    }
+
+    @Serializable
     data class Screen(
         val type: ScreenType,
         val title: String,
         @Serializable(with = EmptyStringToNullSerializer::class) val subtitle: String? = null,
         @Serializable(with = HelpPathsSerializer::class) val paths: List<HelpPath>,
+        val offering: ScreenOffering? = null,
     ) {
         @Serializable
         enum class ScreenType {
