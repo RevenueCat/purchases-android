@@ -257,7 +257,7 @@ data class CustomerCenterConfigData(
             @SerialName("type_subscription")
             TYPE_SUBSCRIPTION,
 
-            @SerialName("subscribe")
+            @SerialName("buy_subscription")
             SUBSCRIBE,
 
             @SerialName("next_billing_date_on")
