@@ -36,6 +36,7 @@ import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEv
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
@@ -121,6 +122,8 @@ internal interface CustomerCenterViewModel {
 internal sealed class TransactionDetails(
     open val productIdentifier: String,
     open val store: Store,
+    open val price: Price?,
+    open val isSandbox: Boolean,
 ) {
     data class Subscription(
         override val productIdentifier: String,
@@ -131,12 +134,16 @@ internal sealed class TransactionDetails(
         val expiresDate: Date?,
         val isTrial: Boolean,
         val managementURL: Uri?,
-    ) : TransactionDetails(productIdentifier, store)
+        override val price: Price?,
+        override val isSandbox: Boolean,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
 
     data class NonSubscription(
         override val productIdentifier: String,
         override val store: Store,
-    ) : TransactionDetails(productIdentifier, store)
+        override val price: Price?,
+        override val isSandbox: Boolean,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
 }
 
 @Suppress("TooManyFunctions", "LargeClass")
@@ -486,6 +493,7 @@ internal class CustomerCenterViewModelImpl(
     private suspend fun loadPurchases(
         dateFormatter: DateFormatter,
         locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
     ): List<PurchaseInformation> {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
@@ -505,6 +513,7 @@ internal class CustomerCenterViewModelImpl(
                         entitlement,
                         dateFormatter,
                         locale,
+                        localization,
                     )
                 }
             } else {
@@ -524,6 +533,7 @@ internal class CustomerCenterViewModelImpl(
                     entitlement,
                     dateFormatter,
                     locale,
+                    localization,
                 ),
             )
         } else {
@@ -551,6 +561,8 @@ internal class CustomerCenterViewModelImpl(
                 is Transaction -> TransactionDetails.NonSubscription(
                     productIdentifier = it.productIdentifier,
                     store = it.store,
+                    price = it.price,
+                    isSandbox = it.isSandbox,
                 )
 
                 else -> null
@@ -569,6 +581,7 @@ internal class CustomerCenterViewModelImpl(
         entitlement: EntitlementInfo?,
         dateFormatter: DateFormatter,
         locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
     ): PurchaseInformation {
         val product = if (transaction.store == Store.PLAY_STORE) {
             purchases.awaitGetProduct(
@@ -592,6 +605,7 @@ internal class CustomerCenterViewModelImpl(
             transaction = transaction,
             dateFormatter = dateFormatter,
             locale = locale,
+            localization = localization,
         )
     }
 
@@ -775,7 +789,7 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformationList = loadPurchases(dateFormatter, locale)
+            val purchaseInformationList = loadPurchases(dateFormatter, locale, customerCenterConfigData.localization)
 
             // Resolve NO_ACTIVE screen offering if it exists
             val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
@@ -786,7 +800,6 @@ internal class CustomerCenterViewModelImpl(
                     null
                 }
             }
-
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
                 purchaseInformationList,
@@ -1140,5 +1153,7 @@ internal class CustomerCenterViewModelImpl(
         expiresDate = expiresDate,
         isTrial = periodType == PeriodType.TRIAL,
         managementURL = managementURL,
+        price = price,
+        isSandbox = isSandbox,
     )
 }

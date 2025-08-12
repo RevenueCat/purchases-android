@@ -62,7 +62,7 @@ internal fun NoActiveUserManagementView(
             SettingsButton(
                 onClick = { onAction(CustomerCenterAction.ShowPaywall) },
                 title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.SUBSCRIBE,
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.BUY_SUBSCRIPTION,
                 ),
                 style = SettingsButtonStyle.FILLED,
                 modifier = Modifier.padding(

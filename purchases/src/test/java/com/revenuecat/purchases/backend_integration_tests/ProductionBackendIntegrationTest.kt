@@ -222,22 +222,13 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             error("Expected customer center config data")
         }
         customerCenterConfigData?.let {
-            val managementScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?:
-            fail("Expected management screen")
+            val managementScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?: fail("Expected management screen")
             assertThat(managementScreen.type).isEqualTo(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)
             assertThat(managementScreen.paths.size).isEqualTo(4)
             val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { values ->
                 values.name.lowercase()
             }.toTypedArray()
-            val actualKeys = it.localization.localizedStrings.keys
-            val expectedKeys = expectedLocalizationKeys.toList()
-            val missingKeys = expectedKeys - actualKeys
-
-            if (missingKeys.isNotEmpty()) {
-                fail<Unit>("Expected localized strings to contain all keys: $expectedKeys. " +
-                    "Actual keys: $actualKeys. " +
-                    "Missing keys: $missingKeys")
-            }
+            assertThat(it.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
             assertThat(it.support.email).isNull()
         }
 

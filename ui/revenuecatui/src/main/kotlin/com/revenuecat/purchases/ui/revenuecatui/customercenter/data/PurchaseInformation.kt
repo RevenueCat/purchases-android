@@ -49,16 +49,13 @@ internal data class PurchaseInformation(
         transaction: TransactionDetails,
         dateFormatter: DateFormatter = DefaultDateFormatter(),
         locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
     ) : this(
-        title = determineTitle(entitlementInfo, subscribedProduct, transaction),
+        title = determineTitle(entitlementInfo, subscribedProduct, transaction, localization),
         expirationOrRenewal = determineExpirationOrRenewal(entitlementInfo, transaction, dateFormatter, locale),
         product = subscribedProduct,
         store = entitlementInfo?.store ?: transaction.store,
-        pricePaid = entitlementInfo?.priceBestEffort(subscribedProduct) ?: if (transaction.store == Store.PROMOTIONAL) {
-            PriceDetails.Free
-        } else {
-            subscribedProduct?.let { PriceDetails.Paid(it.price.formatted) } ?: PriceDetails.Unknown
-        },
+        pricePaid = determinePrice(subscribedProduct, transaction),
         isSubscription = transaction is TransactionDetails.Subscription && transaction.store != Store.PROMOTIONAL,
         managementURL = (transaction as? TransactionDetails.Subscription)?.managementURL,
         isExpired = entitlementInfo?.isActive?.let { !it }
@@ -79,9 +76,15 @@ internal data class PurchaseInformation(
             PriceDetails.Free, PriceDetails.Unknown -> localization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.RENEWS_ON_DATE,
             ).replace("{{ date }}", renewalDate)
-            is PriceDetails.Paid -> localization.commonLocalizedString(
-                CustomerCenterConfigData.Localization.CommonLocalizedString.RENEWS_ON_DATE_FOR_PRICE,
-            ).replace("{{ date }}", renewalDate).replace("{{ price }}", pricePaid.price)
+            is PriceDetails.Paid -> {
+                val lastChargeText = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.LAST_CHARGE_WAS,
+                ).replace("{{ price }}", pricePaid.price)
+                val nextBillingText = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.NEXT_BILLING_DATE_ON,
+                ).replace("{{ date }}", renewalDate)
+                "$lastChargeText\n$nextBillingText"
+            }
         }
     }
 
@@ -101,25 +104,56 @@ internal data class PurchaseInformation(
     }
 }
 
+private fun determinePrice(
+    subscribedProduct: StoreProduct?,
+    transaction: TransactionDetails,
+): PriceDetails {
+    return when {
+        transaction.store == Store.PROMOTIONAL -> PriceDetails.Free
+
+        transaction.price?.amountMicros?.let { it > 0L } == true -> {
+            transaction.price?.let { PriceDetails.Paid(it.formatted) } ?: PriceDetails.Unknown
+        }
+
+        // In sandbox, we don't know if the price is actually free or not (it's always 0)
+        // So we fall back to the product price.
+        transaction.price?.amountMicros == 0L && !transaction.isSandbox -> {
+            PriceDetails.Free
+        }
+
+        subscribedProduct != null -> {
+            if (subscribedProduct.price.amountMicros == 0L) {
+                PriceDetails.Free
+            } else {
+                PriceDetails.Paid(subscribedProduct.price.formatted)
+            }
+        }
+
+        else -> PriceDetails.Unknown
+    }
+}
+
 private fun determineTitle(
     entitlementInfo: EntitlementInfo?,
     subscribedProduct: StoreProduct?,
     transaction: TransactionDetails,
+    localization: CustomerCenterConfigData.Localization,
 ): String {
     if (transaction.store == Store.PROMOTIONAL && entitlementInfo != null) {
         return entitlementInfo.identifier
     }
-    return subscribedProduct?.title ?: transaction.productIdentifier
-}
 
-private fun EntitlementInfo.priceBestEffort(subscribedProduct: StoreProduct?): PriceDetails {
-    return subscribedProduct?.let {
-        PriceDetails.Paid(it.price.formatted)
-    } ?: if (store == Store.PROMOTIONAL) {
-        PriceDetails.Free
-    } else {
-        PriceDetails.Unknown
-    }
+    return subscribedProduct?.title
+        ?: when (transaction) {
+            is TransactionDetails.Subscription ->
+                localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_SUBSCRIPTION,
+                )
+            is TransactionDetails.NonSubscription ->
+                localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_ONE_TIME_PURCHASE,
+                )
+        }
 }
 
 private fun EntitlementInfo.expirationDate(dateFormatter: DateFormatter, locale: Locale): String? {
