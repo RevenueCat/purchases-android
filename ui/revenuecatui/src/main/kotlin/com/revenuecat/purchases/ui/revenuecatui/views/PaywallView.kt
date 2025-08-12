@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModelStore
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -50,6 +51,24 @@ class PaywallView : CompatComposeView {
         this.initialFontProvider = fontProvider
         init(context, null)
     }
+
+    private var _viewModelStore = ViewModelStore()
+
+    @Suppress("LongParameterList")
+    internal constructor(
+        context: Context,
+        offering: Offering?,
+        listener: PaywallListener?,
+        fontProvider: FontProvider?,
+        shouldDisplayDismissButton: Boolean?,
+        vmStore: ViewModelStore,
+        dismissHandler: (() -> Unit)?,
+    ) : this(context, offering, listener, fontProvider, shouldDisplayDismissButton, dismissHandler) {
+        _viewModelStore = vmStore
+    }
+
+    override val viewModelStore: ViewModelStore
+        get() = _viewModelStore
 
     private val paywallOptionsState = mutableStateOf(
         PaywallOptions.Builder {
