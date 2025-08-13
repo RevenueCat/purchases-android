@@ -487,6 +487,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @Suppress("LongMethod")
     fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
