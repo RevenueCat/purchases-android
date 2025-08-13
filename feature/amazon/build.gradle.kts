@@ -31,3 +31,7 @@ dependencies {
 
     implementation(libs.amazon.appstore.sdk)
 }
+
+tasks.withType<AbstractTestTask>().configureEach {
+    failOnNoDiscoveredTests = false
+}

@@ -236,3 +236,20 @@ suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
         )
     }
 }
+
+/**
+ * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+ * If there is any error, it will return null and log said error.
+ * Coroutine friendly version of [Purchases.getStorefrontCountryCode].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
+ * @return The Store country code in ISO-3166-1 alpha2.
+ */
+suspend fun Purchases.awaitStorefrontCountryCode(): String {
+    return suspendCoroutine { continuation ->
+        getStorefrontCountryCodeWith(
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}

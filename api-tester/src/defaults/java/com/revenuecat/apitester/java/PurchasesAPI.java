@@ -21,7 +21,6 @@ import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
-import com.revenuecat.purchases.interfaces.GetStorefrontCallback;
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
@@ -90,16 +89,6 @@ final class PurchasesAPI {
             }
         };
 
-        final GetStorefrontCallback getStorefrontCallback = new GetStorefrontCallback() {
-            @Override
-            public void onReceived(@NonNull String storefrontCountryCode) {
-            }
-
-            @Override
-            public void onError(@NonNull PurchasesError error) {
-            }
-        };
-
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback);
         purchases.syncPurchases();
         purchases.syncPurchases(syncPurchasesCallback);
@@ -123,9 +112,6 @@ final class PurchasesAPI {
         purchases.onAppForegrounded();
 
         final Store store = purchases.getStore();
-
-        final String storefrontCountryCode = purchases.getStorefrontCountryCode();
-        purchases.getStorefrontCountryCode(getStorefrontCallback);
 
         final PurchasesConfiguration configuration = purchases.getCurrentConfiguration();
 

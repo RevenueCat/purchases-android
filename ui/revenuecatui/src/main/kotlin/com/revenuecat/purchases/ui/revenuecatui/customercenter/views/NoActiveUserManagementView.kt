@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
@@ -29,6 +30,8 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingVertical
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
@@ -40,6 +43,7 @@ internal fun NoActiveUserManagementView(
     contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
     supportedPaths: List<HelpPath>,
+    offering: Offering?,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -52,6 +56,22 @@ internal fun NoActiveUserManagementView(
                 end = ManagementViewHorizontalPadding,
             ),
         )
+
+        // Subscribe button if offering is available
+        offering?.let {
+            SettingsButton(
+                onClick = { onAction(CustomerCenterAction.ShowPaywall) },
+                title = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.BUY_SUBSCRIPTION,
+                ),
+                style = SettingsButtonStyle.FILLED,
+                modifier = Modifier.padding(
+                    top = ManagementViewHorizontalPadding,
+                    start = ManagementViewHorizontalPadding,
+                    end = ManagementViewHorizontalPadding,
+                ),
+            )
+        }
 
         ManageSubscriptionsButtonsView(
             associatedPurchaseInformation = null,
@@ -127,6 +147,7 @@ private fun NoActiveUserManagementView_Preview() {
                 contactEmail = "support@example.com",
                 localization = testData.localization,
                 supportedPaths = noActiveScreen.paths,
+                offering = null, // No offering in preview
                 onAction = { },
             )
         }

@@ -407,6 +407,8 @@ internal open class BasePurchasesTest {
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
+        apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
+        enableSimulatedStore: Boolean = false,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -416,6 +418,7 @@ internal open class BasePurchasesTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = apiKeyValidationResult,
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
                 customEntitlementComputation = customEntitlementComputation,
@@ -451,6 +454,7 @@ internal open class BasePurchasesTest {
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
             virtualCurrencyManager = mockVirtualCurrencyManager,
+            isSimulatedStoreEnabled = { enableSimulatedStore },
         )
 
         purchases = Purchases(

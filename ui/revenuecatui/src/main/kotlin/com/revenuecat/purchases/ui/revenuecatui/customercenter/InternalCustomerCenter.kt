@@ -139,7 +139,11 @@ internal fun InternalCustomerCenter(
                         viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
                     }
                 }
+                is CustomerCenterAction.CustomActionSelected -> {
+                    viewModel.onCustomActionSelected(action.customActionData)
+                }
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
+                is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
             }
         },
     )
@@ -264,9 +268,7 @@ private fun CustomerCenterScaffold(
     }
 
     Scaffold(
-        modifier = Modifier.applyIfNotNull(scrollBehavior) {
-            modifier.nestedScroll(it.nestedScrollConnection)
-        },
+        modifier = modifier.applyIfNotNull(scrollBehavior) { nestedScroll(it.nestedScrollConnection) },
         topBar = {
             CustomerCenterTopBar(
                 scaffoldConfig = scaffoldConfig,
@@ -478,8 +480,9 @@ private fun MainScreenContent(
                 screenSubtitle = noActiveScreen.subtitle,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                noActiveScreen.paths,
-                onAction,
+                supportedPaths = noActiveScreen.paths,
+                offering = (state as? CustomerCenterState.Success)?.noActiveScreenOffering,
+                onAction = onAction,
             )
         } ?: run {
             // Fallback with a restore button

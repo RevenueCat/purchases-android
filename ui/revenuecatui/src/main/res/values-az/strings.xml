@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OK">OK</string>
+    <string name="restore_purchases">Satın almaları bərpa et</string>
+    <string name="restore">Bərpa et</string>
+    <string name="terms_and_conditions">Şərtlər və qaydalar</string>
+    <string name="terms">Şərtlər</string>
+    <string name="privacy_policy">Məxfilik siyasəti</string>
+    <string name="privacy">Məxfilik</string>
+    <string name="continue_cta">Davam et</string>
+    <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} sınaq müddətinizi başladın, sonra {{ total_price_and_per_month }}.</string>
+    <string name="package_discount">%1$d%% endirim</string>
+    <string name="all_plans">Bütün planlar</string>
+    <string name="annual">İllik</string>
+    <string name="semester">6 ay</string>
+    <string name="quarter">3 ay</string>
+    <string name="bimonthly">2 ay</string>
+    <string name="monthly">Aylıq</string>
+    <string name="weekly">Həftəlik</string>
+    <string name="lifetime">Ömürlük</string>
+    <string name="no_browser_cannot_open_link">Brauzer quraşdırılmayıb. Link açıla bilmədi.</string>
+    <string name="cannot_open_link">Link səhvdir. Açıla bilmədi.</string>
+</resources>
