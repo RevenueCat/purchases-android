@@ -117,6 +117,11 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
     }
 }
 
+tasks.withType<Test> {
+    // Disabling verification in tests until Amazon publishes a version of their SDK compiled with a modern JDK.
+    jvmArgs("-noverify")
+}
+
 fun obtainTestApplicationId(): String =
     if (project.hasProperty("testApplicationId")) {
         project.properties["testApplicationId"] as String
@@ -251,13 +256,5 @@ baselineProfile {
     filter {
         include("com.revenuecat.purchases.**")
         exclude("com.revenuecat.purchases.ui.revenuecatui.**")
-    }
-}
-
-// Remove afterEvaluate
-// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
-afterEvaluate {
-    dependencies {
-        add("kover", project(":feature:amazon"))
     }
 }
