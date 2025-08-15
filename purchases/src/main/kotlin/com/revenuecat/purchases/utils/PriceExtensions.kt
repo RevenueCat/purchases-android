@@ -25,6 +25,7 @@ internal fun Price.pricePerYear(billingPeriod: Period, locale: Locale): Price {
     return pricePerPeriod(billingPeriod.valueInYears, locale)
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 private fun Price.pricePerPeriod(units: Double, locale: Locale): Price {
     val value = amountMicros / units
     return PriceFactory.createPrice(value.toLong(), currencyCode, locale)

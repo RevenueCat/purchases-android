@@ -30,7 +30,7 @@ private class PreviewOfferingParser : OfferingParser() {
                 id = "com.revenuecat.lifetime_product",
                 name = "Lifetime",
                 title = "Lifetime (App name)",
-                price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1,000"),
+                price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1,000.00"),
                 description = "Lifetime",
                 period = null,
             )

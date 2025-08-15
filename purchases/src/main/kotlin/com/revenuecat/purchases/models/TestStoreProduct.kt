@@ -66,7 +66,7 @@ class TestStoreProduct(
                 billingPeriod = it,
                 recurrenceMode = RecurrenceMode.FINITE_RECURRING,
                 billingCycleCount = 1,
-                price = Price(amountMicros = 0, currencyCode = price.currencyCode, formatted = "Free"),
+                price = Price(amountMicros = 0, currencyCode = price.currencyCode, formatted = "$0.00"),
             )
         },
         introPrice?.let {

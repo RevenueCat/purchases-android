@@ -9,11 +9,11 @@ import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
 
-internal object PriceFactory {
+@InternalRevenueCatAPI
+object PriceFactory {
 
     @JvmSynthetic
-    @OptIn(InternalRevenueCatAPI::class)
-    internal fun createPrice(
+    fun createPrice(
         amountMicros: Long,
         currencyCode: String,
         locale: Locale,
