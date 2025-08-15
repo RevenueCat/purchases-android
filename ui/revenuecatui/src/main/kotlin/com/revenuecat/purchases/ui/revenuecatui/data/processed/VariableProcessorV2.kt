@@ -100,7 +100,8 @@ internal object VariableProcessorV2 {
         // "Context":
         packageContext: PackageContext,
         rcPackage: Package,
-        locale: Locale,
+        currencyLocale: Locale,
+        dateLocale: Locale,
         date: Date,
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
@@ -111,7 +112,8 @@ internal object VariableProcessorV2 {
             variableDataProvider = variableDataProvider,
             packageContext = packageContext,
             rcPackage = rcPackage,
-            locale = locale,
+            currencyLocale = currencyLocale,
+            dateLocale = dateLocale,
             date = date,
         )
     }
@@ -153,7 +155,8 @@ internal object VariableProcessorV2 {
         // "Context":
         packageContext: PackageContext,
         rcPackage: Package,
-        locale: Locale,
+        currencyLocale: Locale,
+        dateLocale: Locale,
         date: Date,
     ): String {
         val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
@@ -167,11 +170,12 @@ internal object VariableProcessorV2 {
                 variableDataProvider = variableDataProvider,
                 packageContext = packageContext,
                 rcPackage = rcPackage,
-                locale = locale,
+                currencyLocale = currencyLocale,
+                dateLocale = dateLocale,
                 date = date,
             )?.let { processedVariable ->
                 functions.fold(processedVariable) { accumulator, function ->
-                    accumulator.processFunction(function, locale)
+                    accumulator.processFunction(function, currencyLocale)
                 }
             }
 
@@ -262,26 +266,27 @@ internal object VariableProcessorV2 {
         // "Context":
         packageContext: PackageContext,
         rcPackage: Package,
-        locale: Locale,
+        currencyLocale: Locale,
+        dateLocale: Locale,
         date: Date,
     ): String? = when (this) {
         Variable.PRODUCT_CURRENCY_CODE -> rcPackage.product.price.currencyCode
         Variable.PRODUCT_CURRENCY_SYMBOL ->
             Currency
                 .getInstance(rcPackage.product.price.currencyCode)
-                .getSymbol(locale)
+                .getSymbol(currencyLocale)
 
         Variable.PRODUCT_PERIODLY -> rcPackage.productPeriodly(localizedVariableKeys)
 
         Variable.PRODUCT_PRICE -> variableDataProvider.localizedPrice(
             rcPackage = rcPackage,
-            locale = locale,
+            locale = currencyLocale,
             showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
         )
 
         Variable.PRODUCT_PRICE_PER_PERIOD -> variableDataProvider.localizedPrice(
             rcPackage = rcPackage,
-            locale = locale,
+            locale = currencyLocale,
             showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
         ).let { price ->
             val period = rcPackage.productPeriod(localizedVariableKeys)
@@ -294,7 +299,7 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED -> variableDataProvider.localizedPrice(
             rcPackage = rcPackage,
-            locale = locale,
+            locale = currencyLocale,
             showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
         ).let { price ->
             val period = rcPackage.productPeriodAbbreviated(localizedVariableKeys)
@@ -308,13 +313,13 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PRICE_PER_DAY -> when {
             rcPackage.isLifetime -> variableDataProvider.localizedPrice(
                 rcPackage = rcPackage,
-                locale = locale,
+                locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
             )
 
             else -> variableDataProvider.localizedPricePerDay(
                 rcPackage = rcPackage,
-                locale = locale,
+                locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
             )
         }
@@ -322,13 +327,13 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PRICE_PER_WEEK -> when {
             rcPackage.isLifetime -> variableDataProvider.localizedPrice(
                 rcPackage = rcPackage,
-                locale = locale,
+                locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
             )
 
             else -> variableDataProvider.localizedPricePerWeek(
                 rcPackage = rcPackage,
-                locale = locale,
+                locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
             )
         }
@@ -336,13 +341,13 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PRICE_PER_MONTH -> when {
             rcPackage.isLifetime -> variableDataProvider.localizedPrice(
                 rcPackage = rcPackage,
-                locale = locale,
+                locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
             )
 
             else -> variableDataProvider.localizedPricePerMonth(
                 rcPackage = rcPackage,
-                locale = locale,
+                locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
             )
         }
@@ -350,13 +355,13 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PRICE_PER_YEAR -> when {
             rcPackage.isLifetime -> variableDataProvider.localizedPrice(
                 rcPackage = rcPackage,
-                locale = locale,
+                locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
             )
 
             else -> variableDataProvider.localizedPricePerYear(
                 rcPackage = rcPackage,
-                locale = locale,
+                locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
             )
         }
@@ -370,16 +375,16 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PERIOD_WITH_UNIT -> rcPackage.productPeriodWithUnit(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PRICE -> rcPackage.firstIntroOffer?.productOfferPrice(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PRICE_PER_DAY ->
-            rcPackage.firstIntroOffer?.productOfferPricePerDay(locale, localizedVariableKeys)
+            rcPackage.firstIntroOffer?.productOfferPricePerDay(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_WEEK ->
-            rcPackage.firstIntroOffer?.productOfferPricePerWeek(locale, localizedVariableKeys)
+            rcPackage.firstIntroOffer?.productOfferPricePerWeek(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_MONTH ->
-            rcPackage.firstIntroOffer?.productOfferPricePerMonth(locale, localizedVariableKeys)
+            rcPackage.firstIntroOffer?.productOfferPricePerMonth(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_YEAR ->
-            rcPackage.firstIntroOffer?.productOfferPricePerYear(locale, localizedVariableKeys)
+            rcPackage.firstIntroOffer?.productOfferPricePerYear(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PERIOD -> rcPackage.firstIntroOffer?.productOfferPeriod(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED ->
@@ -392,7 +397,7 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_OFFER_PERIOD_WITH_UNIT ->
             rcPackage.firstIntroOffer?.productOfferPeriodWithUnit(localizedVariableKeys)
 
-        Variable.PRODUCT_OFFER_END_DATE -> rcPackage.firstIntroOffer?.productOfferEndDate(locale, date)
+        Variable.PRODUCT_OFFER_END_DATE -> rcPackage.firstIntroOffer?.productOfferEndDate(dateLocale, date)
         Variable.PRODUCT_SECONDARY_OFFER_PRICE -> rcPackage.secondIntroOffer?.productOfferPrice(localizedVariableKeys)
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD -> rcPackage.secondIntroOffer?.productOfferPeriod(localizedVariableKeys)
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED ->

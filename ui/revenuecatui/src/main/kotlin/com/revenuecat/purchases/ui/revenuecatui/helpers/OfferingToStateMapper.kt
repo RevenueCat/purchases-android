@@ -31,7 +31,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 import java.util.Date
-import kotlin.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 
 @Suppress("ReturnCount")
@@ -330,6 +329,7 @@ internal fun Offering.toComponentsPaywallState(
         variableDataProvider = validationResult.variableDataProvider,
         offering = this,
         locales = validationResult.locales,
+        storefrontCountryCode = storefrontCountryCode,
         dateProvider = dateProvider,
         packages = validationResult.packages,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,

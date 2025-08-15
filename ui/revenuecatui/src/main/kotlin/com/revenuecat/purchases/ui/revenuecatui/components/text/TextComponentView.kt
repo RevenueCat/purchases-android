@@ -113,7 +113,8 @@ private fun rememberProcessedText(
     val processedText by remember(state, textState) {
         derivedStateOf {
             textState.applicablePackage?.let { packageToUse ->
-                val locale = state.locale.toJavaLocale()
+                val dateLocale = state.locale.toJavaLocale()
+                val currencyLocale = state.currencyLocale.toJavaLocale()
 
                 val introEligibility = packageToUse.introEligibility
 
@@ -139,7 +140,8 @@ private fun rememberProcessedText(
                     variableDataProvider = state.variableDataProvider,
                     packageContext = variableContext,
                     rcPackage = packageToUse,
-                    locale = locale,
+                    currencyLocale = currencyLocale,
+                    dateLocale = dateLocale,
                     date = state.currentDate,
                 )
             } ?: textState.text

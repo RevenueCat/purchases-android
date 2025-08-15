@@ -29,7 +29,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import java.util.Date
+import java.util.Locale
 import android.os.LocaleList as FrameworkLocaleList
+
 @Stable
 internal sealed interface PaywallState {
 
@@ -91,6 +93,7 @@ internal sealed interface PaywallState {
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
+            private val storefrontCountryCode: String?,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
@@ -143,7 +146,40 @@ internal sealed interface PaywallState {
 
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
+            private val availableDeviceLocalesByCountry: Map<String?, List<Locale>> by lazy {
+                Locale.getAvailableLocales().groupBy { it.country.lowercase() }
+            }
+
+            /**
+             * The locale to use for the paywall's localized content, such as text.
+             */
             val locale by derivedStateOf { localeId.toComposeLocale() }
+
+            /**
+             * The locale to use when formatting currencies. This corresponds to the user's storefront country, to
+             * avoid discrepancies between calculated prices (per period) and the price coming directly from the store.
+             */
+            val currencyLocale by derivedStateOf {
+                if (storefrontCountryCode.isNullOrBlank()) {
+                    locale
+                } else {
+                    val deviceLanguageCode = locale.language.lowercase()
+
+                    // We find all available device locales with the same country as the storefront country.
+                    val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> =
+                        availableDeviceLocalesByCountry[storefrontCountryCode.lowercase()]
+                            ?.associateBy { it.language.lowercase() }
+                            ?: emptyMap()
+
+                    // We pick the one with the same language as the device if available. If not, we just pick the
+                    // first. If the list is empty, we build our own Locale.
+                    val javaLocale = availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
+                        ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
+                        ?: Locale.forLanguageTag("$deviceLanguageCode-${storefrontCountryCode.uppercase()}")
+
+                    javaLocale.toComposeLocale()
+                }
+            }
 
             private val selectedPackageByTab = mutableStateMapOf<Int, Package?>().apply {
                 putAll(
