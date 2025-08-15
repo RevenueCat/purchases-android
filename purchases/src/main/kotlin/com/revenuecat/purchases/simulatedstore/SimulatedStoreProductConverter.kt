@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.simulatedstore
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -19,6 +20,7 @@ internal object SimulatedStoreProductConverter {
     @JvmSynthetic
     @Suppress("LongMethod")
     @Throws(PurchasesException::class)
+    @OptIn(InternalRevenueCatAPI::class)
     fun convertToStoreProduct(
         productResponse: WebBillingProductResponse,
         locale: Locale = Locale.getDefault(),
