@@ -13,7 +13,7 @@ internal sealed class OfferingSelection {
     data class OfferingType(val offeringType: Offering) : OfferingSelection()
 
     @Immutable
-    data class OfferingId(val offeringId: String) : OfferingSelection()
+    data class OfferingInfo(val offeringInfo: OfferingPresentationInfo) : OfferingSelection()
 
     @Immutable
     object None : OfferingSelection()
@@ -21,14 +21,14 @@ internal sealed class OfferingSelection {
     val offering: Offering?
         get() = when (this) {
             is OfferingType -> offeringType
-            is OfferingId -> null
+            is OfferingInfo -> null
             None -> null
         }
 
     val offeringIdentifier: String?
         get() = when (this) {
             is OfferingType -> offeringType.identifier
-            is OfferingId -> offeringId
+            is OfferingInfo -> offeringInfo.offeringId
             None -> null
         }
 }
@@ -116,8 +116,8 @@ class PaywallOptions internal constructor(
                 ?: OfferingSelection.None
         }
 
-        internal fun setOfferingId(offeringId: String?) = apply {
-            this.offeringSelection = offeringId?.let { OfferingSelection.OfferingId(it) }
+        internal fun setOfferingInfo(offeringInfo: OfferingPresentationInfo?) = apply {
+            this.offeringSelection = offeringInfo?.let { OfferingSelection.OfferingInfo(it) }
                 ?: OfferingSelection.None
         }
 

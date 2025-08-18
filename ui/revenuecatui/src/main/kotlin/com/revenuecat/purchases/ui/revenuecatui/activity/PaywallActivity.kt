@@ -119,7 +119,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             enableEdgeToEdge()
         }
         val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
-            .setOfferingId(args?.offeringId)
+            .setOfferingInfo(args?.offeringInfo)
             .setFontProvider(getFontProvider())
             .setShouldDisplayDismissButton(args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON)
             .setListener(this)

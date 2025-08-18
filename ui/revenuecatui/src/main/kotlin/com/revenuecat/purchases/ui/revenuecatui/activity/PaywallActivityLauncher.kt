@@ -7,7 +7,10 @@ import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.ui.revenuecatui.OfferingPresentationInfo
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
@@ -64,7 +67,12 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
-                offeringId = offering?.identifier,
+                offeringInfo = offering?.let {
+                    OfferingPresentationInfo(
+                        offeringId = it.identifier,
+                        presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                    )
+                },
                 fontProvider = fontProvider,
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
                 edgeToEdge = edgeToEdge,
@@ -86,6 +94,15 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
      * Default is true for Android 15+, false otherwise.
      */
+    @Deprecated(
+        message = "Use launch with presented offering context instead",
+        replaceWith = ReplaceWith(
+            expression = "launch(" +
+                "offeringIdentifier, presentedOfferingContext, fontProvider, shouldDisplayDismissButton, edgeToEdge" +
+                ")",
+            imports = ["com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher"],
+        ),
+    )
     @JvmSynthetic
     fun launch(
         offeringIdentifier: String,
@@ -95,7 +112,32 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
-                offeringId = offeringIdentifier,
+                offeringInfo = OfferingPresentationInfo(
+                    offeringId = offeringIdentifier,
+                    presentedOfferingContext = null,
+                ),
+                fontProvider = fontProvider,
+                shouldDisplayDismissButton = shouldDisplayDismissButton,
+                edgeToEdge = edgeToEdge,
+            ),
+        )
+    }
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    fun launch(
+        offeringIdentifier: String,
+        presentedOfferingContext: PresentedOfferingContext,
+        fontProvider: ParcelizableFontProvider? = null,
+        shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        edgeToEdge: Boolean = defaultEdgeToEdge,
+    ) {
+        activityResultLauncher.launch(
+            PaywallActivityArgs(
+                offeringInfo = OfferingPresentationInfo(
+                    offeringId = offeringIdentifier,
+                    presentedOfferingContext = presentedOfferingContext,
+                ),
                 fontProvider = fontProvider,
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
                 edgeToEdge = edgeToEdge,
@@ -133,7 +175,12 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringId = offering?.identifier,
+                        offeringInfo = offering?.let {
+                            OfferingPresentationInfo(
+                                offeringId = it.identifier,
+                                presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                            )
+                        },
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
@@ -160,6 +207,16 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * Default is true for Android 15+, false otherwise.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
+    @Deprecated(
+        message = "Use launchIfNeeded with presented offering context instead",
+        replaceWith = ReplaceWith(
+            expression = "launchIfNeeded(" +
+                "requiredEntitlementIdentifier, offeringIdentifier, presentedOfferingContext, fontProvider, " +
+                "shouldDisplayDismissButton, edgeToEdge, paywallDisplayCallback" +
+                ")",
+            imports = ["com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher"],
+        ),
+    )
     @Suppress("LongParameterList")
     @JvmSynthetic
     fun launchIfNeeded(
@@ -177,7 +234,42 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringId = offeringIdentifier,
+                        offeringInfo = OfferingPresentationInfo(
+                            offeringId = offeringIdentifier,
+                            presentedOfferingContext = null,
+                        ),
+                        fontProvider = fontProvider,
+                        shouldDisplayDismissButton = shouldDisplayDismissButton,
+                        edgeToEdge = edgeToEdge,
+                    ),
+                )
+            }
+        }
+    }
+
+    @Suppress("LongParameterList")
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    fun launchIfNeeded(
+        requiredEntitlementIdentifier: String,
+        offeringIdentifier: String,
+        presentedOfferingContext: PresentedOfferingContext,
+        fontProvider: ParcelizableFontProvider? = null,
+        shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        edgeToEdge: Boolean = defaultEdgeToEdge,
+        paywallDisplayCallback: PaywallDisplayCallback? = null,
+    ) {
+        val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
+        shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
+            paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
+            if (shouldDisplay) {
+                launchPaywallWithArgs(
+                    PaywallActivityArgs(
+                        requiredEntitlementIdentifier = requiredEntitlementIdentifier,
+                        offeringInfo = OfferingPresentationInfo(
+                            offeringId = offeringIdentifier,
+                            presentedOfferingContext = presentedOfferingContext,
+                        ),
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
@@ -210,7 +302,12 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
             if (shouldDisplay) {
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
-                        offeringId = offering?.identifier,
+                        offeringInfo = offering?.let {
+                            OfferingPresentationInfo(
+                                offeringId = it.identifier,
+                                presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                            )
+                        },
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,

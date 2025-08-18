@@ -7,10 +7,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.OfferingPresentationInfo
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -45,7 +48,12 @@ class PaywallView : CompatComposeView {
     ) : super(context) {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
-        setOfferingId(offering?.identifier)
+        offering?.let {
+            setOfferingInfo(
+                offeringId = it.identifier,
+                presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+            )
+        }
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
         this.initialFontProvider = fontProvider
         init(context, null)
@@ -56,7 +64,7 @@ class PaywallView : CompatComposeView {
             dismissHandler?.invoke()
         }.build(),
     )
-    private var initialOfferingId: String? = null
+    private var initialOfferingInfo: OfferingPresentationInfo? = null
     private var initialFontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
@@ -103,13 +111,37 @@ class PaywallView : CompatComposeView {
     /**
      * Sets the offering id to be used to display the Paywall. If not set, the default one will be used.
      */
+    @Deprecated(
+        message = "Use setOfferingInfo instead.",
+        replaceWith = ReplaceWith("setOfferingInfo(offeringId, presentedOfferingContext)"),
+    )
     fun setOfferingId(offeringId: String?) {
         val offeringSelection = if (offeringId == null) {
             OfferingSelection.None
         } else {
-            OfferingSelection.OfferingId(offeringId)
+            OfferingSelection.OfferingInfo(
+                OfferingPresentationInfo(
+                    offeringId = offeringId,
+                    presentedOfferingContext = null,
+                ),
+            )
         }
         paywallOptions = paywallOptions.copy(offeringSelection = offeringSelection)
+    }
+
+    @InternalRevenueCatAPI
+    fun setOfferingInfo(
+        offeringId: String,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
+        paywallOptions = paywallOptions.copy(
+            offeringSelection = OfferingSelection.OfferingInfo(
+                OfferingPresentationInfo(
+                    offeringId = offeringId,
+                    presentedOfferingContext = presentedOfferingContext,
+                ),
+            ),
+        )
     }
 
     /**
@@ -137,7 +169,7 @@ class PaywallView : CompatComposeView {
         paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
             .setListener(internalListener)
             .setFontProvider(initialFontProvider)
-            .setOfferingId(initialOfferingId)
+            .setOfferingInfo(initialOfferingInfo)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
             .build()
     }
@@ -146,7 +178,13 @@ class PaywallView : CompatComposeView {
     private fun parseAttributes(context: Context, attrs: AttributeSet?) {
         val (offeringId, fontProvider, shouldDisplayDismissButton, _) =
             PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallView) ?: return
-        setOfferingId(offeringId)
+        this.initialOfferingInfo = offeringId?.let {
+            OfferingPresentationInfo(
+                offeringId = offeringId,
+                // WIP: We do not support presentedOfferingContext when using the view in XML layouts.
+                presentedOfferingContext = null,
+            )
+        }
         this.initialFontProvider = fontProvider
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
     }
