@@ -487,6 +487,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @Suppress("LongMethod")
     fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
@@ -535,6 +536,7 @@ internal class PurchasesOrchestrator(
             appUserID,
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isEmpty()) {
+                    log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_NO_PURCHASES_FOUND }
                     getCustomerInfo(callbackWithTracking)
                 } else {
                     allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
