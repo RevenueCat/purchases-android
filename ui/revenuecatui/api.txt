@@ -118,7 +118,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
 
 package com.revenuecat.purchases.ui.revenuecatui.activity {
 
-  public final class PaywallActivityLauncher {
+  @androidx.compose.runtime.Immutable public final class PaywallActivityLauncher {
     ctor public PaywallActivityLauncher(androidx.activity.result.ActivityResultCaller resultCaller, com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler resultHandler);
     method public void launch();
     method public void launch(optional com.revenuecat.purchases.Offering? offering);
@@ -144,26 +144,26 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
     method public void onPaywallDisplayResult(boolean wasDisplayed);
   }
 
-  public abstract sealed class PaywallResult implements android.os.Parcelable {
+  @androidx.compose.runtime.Stable public abstract sealed class PaywallResult implements android.os.Parcelable {
   }
 
   @kotlinx.parcelize.Parcelize public static final class PaywallResult.Cancelled extends com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult implements android.os.Parcelable {
     field public static final com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult.Cancelled INSTANCE;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallResult.Error extends com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult implements android.os.Parcelable {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallResult.Error extends com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult implements android.os.Parcelable {
     ctor public PaywallResult.Error(com.revenuecat.purchases.PurchasesError error);
     method public com.revenuecat.purchases.PurchasesError getError();
     property public final com.revenuecat.purchases.PurchasesError error;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallResult.Purchased extends com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult implements android.os.Parcelable {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallResult.Purchased extends com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult implements android.os.Parcelable {
     ctor public PaywallResult.Purchased(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public com.revenuecat.purchases.CustomerInfo getCustomerInfo();
     property public final com.revenuecat.purchases.CustomerInfo customerInfo;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallResult.Restored extends com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult implements android.os.Parcelable {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallResult.Restored extends com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult implements android.os.Parcelable {
     ctor public PaywallResult.Restored(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public com.revenuecat.purchases.CustomerInfo getCustomerInfo();
     property public final com.revenuecat.purchases.CustomerInfo customerInfo;
@@ -245,12 +245,12 @@ package com.revenuecat.purchases.ui.revenuecatui.extensions {
 
 package com.revenuecat.purchases.ui.revenuecatui.fonts {
 
-  public final class CustomFontProvider implements com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider {
+  @androidx.compose.runtime.Immutable public final class CustomFontProvider implements com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider {
     ctor public CustomFontProvider(androidx.compose.ui.text.font.FontFamily fontFamily);
     method public androidx.compose.ui.text.font.FontFamily getFont(com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType type);
   }
 
-  public final class CustomParcelizableFontProvider implements com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider {
+  @androidx.compose.runtime.Immutable public final class CustomParcelizableFontProvider implements com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider {
     ctor public CustomParcelizableFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFontFamily fontFamily);
     method public com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFontFamily getFont(com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType type);
   }
@@ -259,7 +259,7 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts {
     method public androidx.compose.ui.text.font.FontFamily? getFont(com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType type);
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class GoogleFontProvider implements android.os.Parcelable {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class GoogleFontProvider implements android.os.Parcelable {
     ctor public GoogleFontProvider(@ArrayRes int certificates, optional String providerAuthority, optional String providerPackage);
     method public int getCertificates();
     method public String getProviderAuthority();
@@ -274,10 +274,10 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts {
     method public com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFontFamily? getFont(com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType type);
   }
 
-  public abstract sealed class PaywallFont implements android.os.Parcelable {
+  @androidx.compose.runtime.Stable public abstract sealed class PaywallFont implements android.os.Parcelable {
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallFont.AssetFont extends com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallFont.AssetFont extends com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont {
     ctor public PaywallFont.AssetFont(String path, optional @kotlinx.parcelize.TypeParceler androidx.compose.ui.text.font.FontWeight fontWeight, optional int fontStyle);
     method public int getFontStyle();
     method public androidx.compose.ui.text.font.FontWeight getFontWeight();
@@ -287,7 +287,7 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts {
     property public final String path;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallFont.GoogleFont extends com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallFont.GoogleFont extends com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont {
     ctor public PaywallFont.GoogleFont(String fontName, com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider fontProvider, optional @kotlinx.parcelize.TypeParceler androidx.compose.ui.text.font.FontWeight fontWeight, optional int fontStyle);
     method public String getFontName();
     method public com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider getFontProvider();
@@ -299,7 +299,7 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts {
     property public final androidx.compose.ui.text.font.FontWeight fontWeight;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallFont.ResourceFont extends com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PaywallFont.ResourceFont extends com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont {
     ctor public PaywallFont.ResourceFont(@FontRes int resourceId, optional @kotlinx.parcelize.TypeParceler androidx.compose.ui.text.font.FontWeight fontWeight, optional int fontStyle);
     method public int getFontStyle();
     method public androidx.compose.ui.text.font.FontWeight getFontWeight();
@@ -309,7 +309,7 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts {
     property public final int resourceId;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class PaywallFontFamily implements android.os.Parcelable {
+  @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class PaywallFontFamily implements android.os.Parcelable {
     ctor public PaywallFontFamily(java.util.List<? extends com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont> fonts);
     method public java.util.List<com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont> getFonts();
     property public final java.util.List<com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont> fonts;
