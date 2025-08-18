@@ -18,6 +18,7 @@ import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
@@ -172,10 +173,13 @@ internal sealed interface PaywallState {
                             ?: emptyMap()
 
                     // We pick the one with the same language as the device if available. If not, we just pick the
-                    // first. If the list is empty, we build our own Locale.
+                    // first. If the list is empty, we use the device locale with the storefront country.
                     val javaLocale = availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
                         ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
-                        ?: Locale.forLanguageTag("$deviceLanguageCode-${storefrontCountryCode.uppercase()}")
+                        ?: Locale.Builder()
+                            .setLocale(locale.toJavaLocale())
+                            .setRegion(storefrontCountryCode.uppercase())
+                            .build()
 
                     javaLocale.toComposeLocale()
                 }
