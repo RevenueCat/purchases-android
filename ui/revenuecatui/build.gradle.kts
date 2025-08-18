@@ -96,9 +96,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
             val composeMetricsDir = "${project.buildDir.absolutePath}/compose_metrics"
             freeCompilerArgs.addAll(
                 listOf(
-                "-P", "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=$composeMetricsDir",
-                "-P", "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=$composeMetricsDir",
-            )
+                    "-P",
+                    "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=$composeMetricsDir",
+                    "-P",
+                    "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=$composeMetricsDir",
+                ),
             )
         }
     }
