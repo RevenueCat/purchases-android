@@ -91,12 +91,14 @@ metalava {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
+    compilerOptions {
         if (project.findProperty("revenuecat.enableComposeCompilerReports") == "true") {
             val composeMetricsDir = "${project.buildDir.absolutePath}/compose_metrics"
-            freeCompilerArgs += listOf(
+            freeCompilerArgs.addAll(
+                listOf(
                 "-P", "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=$composeMetricsDir",
                 "-P", "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=$composeMetricsDir",
+            )
             )
         }
     }
