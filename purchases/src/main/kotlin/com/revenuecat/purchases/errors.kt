@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import java.io.Serializable
 
@@ -13,6 +14,7 @@ typealias PurchasesErrorCallback = (PurchasesError) -> Unit
  * error that originated this.
  */
 @Parcelize
+@Immutable
 class PurchasesError(
     val code: PurchasesErrorCode,
     val underlyingErrorMessage: String? = null,

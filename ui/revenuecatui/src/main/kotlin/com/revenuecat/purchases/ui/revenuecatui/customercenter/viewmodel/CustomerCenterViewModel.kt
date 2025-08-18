@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
@@ -119,12 +121,15 @@ internal interface CustomerCenterViewModel {
     fun showPaywall(context: Context)
 }
 
+@Stable
 internal sealed class TransactionDetails(
     open val productIdentifier: String,
     open val store: Store,
     open val price: Price?,
     open val isSandbox: Boolean,
 ) {
+
+    @Immutable
     data class Subscription(
         override val productIdentifier: String,
         val productPlanIdentifier: String?,
@@ -138,6 +143,7 @@ internal sealed class TransactionDetails(
         override val isSandbox: Boolean,
     ) : TransactionDetails(productIdentifier, store, price, isSandbox)
 
+    @Immutable
     data class NonSubscription(
         override val productIdentifier: String,
         override val store: Store,

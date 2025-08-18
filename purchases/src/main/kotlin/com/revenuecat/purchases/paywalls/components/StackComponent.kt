@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -26,6 +27,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("stack")
+@Immutable
 class StackComponent(
     @get:JvmSynthetic
     val components: List<PaywallComponent>,
@@ -73,6 +75,7 @@ class StackComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class PartialStackComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,

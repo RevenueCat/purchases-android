@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.fonts
 
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 
@@ -9,4 +10,5 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 @Poko
+@Immutable
 class PaywallFontFamily(val fonts: List<PaywallFont>) : Parcelable

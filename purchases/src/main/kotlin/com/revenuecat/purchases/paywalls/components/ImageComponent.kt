@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -24,6 +25,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("image")
+@Immutable
 class ImageComponent(
     @get:JvmSynthetic
     val source: ThemeImageUrls,
@@ -59,6 +61,7 @@ class ImageComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class PartialImageComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,
