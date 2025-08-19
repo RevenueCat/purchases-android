@@ -143,6 +143,7 @@ internal fun InternalCustomerCenter(
                     viewModel.onCustomActionSelected(action.customActionData)
                 }
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
+                is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
             }
         },
     )
@@ -479,8 +480,9 @@ private fun MainScreenContent(
                 screenSubtitle = noActiveScreen.subtitle,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                noActiveScreen.paths,
-                onAction,
+                supportedPaths = noActiveScreen.paths,
+                offering = (state as? CustomerCenterState.Success)?.noActiveScreenOffering,
+                onAction = onAction,
             )
         } ?: run {
             // Fallback with a restore button
