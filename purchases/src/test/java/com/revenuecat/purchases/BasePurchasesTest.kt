@@ -14,6 +14,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
+import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -84,6 +85,7 @@ internal open class BasePurchasesTest {
     internal val mockLifecycle = mockk<Lifecycle>()
     internal val mockFontLoader = mockk<FontLoader>()
     internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
+    private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected lateinit var appConfig: AppConfig
@@ -140,6 +142,18 @@ internal open class BasePurchasesTest {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
 
+        every { mockBlockstoreHelper.storeUserIdIfNeeded(any()) } just Runs
+        every {
+            mockBlockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+        every {
+            mockBlockstoreHelper.clearUserIdBackupIfNeeded(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
         every { mockLifecycle.addObserver(any()) } just Runs
         every { mockLifecycle.removeObserver(any()) } just Runs
 
@@ -165,6 +179,7 @@ internal open class BasePurchasesTest {
             mockLifecycleOwner,
             mockLifecycle,
             mockFontLoader,
+            mockBlockstoreHelper,
         )
     }
 
@@ -457,6 +472,7 @@ internal open class BasePurchasesTest {
             fontLoader = mockFontLoader,
             virtualCurrencyManager = mockVirtualCurrencyManager,
             isSimulatedStoreEnabled = { enableSimulatedStore },
+            blockstoreHelper = mockBlockstoreHelper,
         )
 
         purchases = Purchases(
