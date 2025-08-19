@@ -16,6 +16,7 @@ android {
         }
         create("customEntitlementComputation") {
             dimension = "apis"
+            missingDimensionStrategy("apis", "defaults")
         }
     }
 
