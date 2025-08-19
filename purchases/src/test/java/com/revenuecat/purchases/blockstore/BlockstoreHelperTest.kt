@@ -386,7 +386,9 @@ class BlockstoreHelperTest {
         blockstoreHelper.clearUserIdBackupIfNeeded {
             callbackCalled = true
         }
-        
+
+        testScope.advanceUntilIdle()
+
         deleteSuccessSlot.captured.onSuccess(true)
         
         assertThat(callbackCalled).isTrue()
@@ -410,7 +412,9 @@ class BlockstoreHelperTest {
         blockstoreHelper.clearUserIdBackupIfNeeded {
             callbackCalled = true
         }
-        
+
+        testScope.advanceUntilIdle()
+
         deleteFailureSlot.captured.onFailure(RuntimeException("Test error"))
         
         assertThat(callbackCalled).isTrue()

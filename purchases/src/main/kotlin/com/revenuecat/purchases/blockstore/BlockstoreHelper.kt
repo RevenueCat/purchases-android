@@ -14,17 +14,20 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.identity.IdentityManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-internal class BlockstoreHelper(
+internal class BlockstoreHelper
+@OptIn(ExperimentalCoroutinesApi::class)
+constructor(
     applicationContext: Context,
     private val identityManager: IdentityManager,
     private val blockstoreClient: BlockstoreClient = Blockstore.getClient(applicationContext),
-    private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1)),
     private val mainScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
 ) {
 
@@ -50,7 +53,6 @@ internal class BlockstoreHelper(
             }
             try {
                 storeUserIdIfNeeded(blockstoreData, currentUserId)
-                debugLog { "Block store: User ID: $currentUserId stored in Block store." }
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 errorLog(e) { "Failed to store user Id in Block store: ${e.message}" }
             }
@@ -103,15 +105,17 @@ internal class BlockstoreHelper(
         val request = DeleteBytesRequest.Builder()
             .setKeys(listOf(BLOCKSTORE_USER_ID_KEY))
             .build()
-        blockstoreClient.deleteBytes(request)
-            .addOnSuccessListener {
-                debugLog { "Block store cached UserID cleared if any" }
-                callback()
-            }
-            .addOnFailureListener {
-                errorLog(it) { "Tried to clear Block store cached UserID but failed: ${it.message}" }
-                callback()
-            }
+        ioScope.launch {
+            blockstoreClient.deleteBytes(request)
+                .addOnSuccessListener {
+                    debugLog { "Block store cached UserID cleared if any" }
+                    callback()
+                }
+                .addOnFailureListener {
+                    errorLog(it) { "Tried to clear Block store cached UserID but failed: ${it.message}" }
+                    callback()
+                }
+        }
     }
 
     private suspend fun getBlockstoreData(): Map<String, BlockstoreData> {
@@ -147,7 +151,10 @@ internal class BlockstoreHelper(
             .build()
         suspendCoroutine { cont ->
             blockstoreClient.storeBytes(storeRequest)
-                .addOnSuccessListener { cont.resume(Unit) }
+                .addOnSuccessListener {
+                    debugLog { "Block store: User ID: $userId stored in Block store." }
+                    cont.resume(Unit)
+                }
                 .addOnFailureListener { cont.resumeWithException(it) }
         }
     }
