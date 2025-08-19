@@ -85,6 +85,14 @@ class IdentityManagerTests {
     }
 
     @Test
+    fun testIsUserIdAnonymousWorksAsExpected() {
+        assertThat(IdentityManager.isUserIDAnonymous(stubAnonymousID)).isTrue()
+        assertThat(IdentityManager.isUserIDAnonymous("")).isFalse()
+        assertThat(IdentityManager.isUserIDAnonymous("test-user-id")).isFalse()
+        assertThat(IdentityManager.isUserIDAnonymous("\$RCAnonymousID:12345678901234567890123456789012")).isTrue()
+    }
+
+    @Test
     fun testConfigureWithAnonymousUserIDGeneratesAnAppUserID() {
         mockCleanCaches()
         identityManager.configure(null)

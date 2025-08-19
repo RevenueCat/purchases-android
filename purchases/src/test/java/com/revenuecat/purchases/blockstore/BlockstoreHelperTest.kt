@@ -43,13 +43,15 @@ class BlockstoreHelperTest {
     
     private lateinit var blockstoreHelper: BlockstoreHelper
     
-    private val testAnonymousUserId = "\$RCAnonymousID:test_anonymous_id"
+    private val testAnonymousUserId = "\$RCAnonymousID:00000000000000000000000000000000"
     private val expectedKey = "com.revenuecat.purchases.app_user_id"
 
     @Before
     fun setup() {
         mockContext = mockk()
-        mockIdentityManager = mockk()
+        mockIdentityManager = mockk<IdentityManager>().apply {
+            every { currentAppUserID } returns testAnonymousUserId
+        }
         mockBlockstoreClient = mockk()
         testScope = TestScope()
         
@@ -66,7 +68,7 @@ class BlockstoreHelperTest {
 
     @Test
     fun `storeUserIdIfNeeded does nothing when current user is not anonymous`() {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns false
+        every { mockIdentityManager.currentAppUserID } returns "not-anonymous-user-id"
         
         val mockCustomerInfo = mockk<CustomerInfo> {
             every { allPurchasedProductIds } returns setOf("product1")
@@ -79,8 +81,6 @@ class BlockstoreHelperTest {
 
     @Test
     fun `storeUserIdIfNeeded does nothing when user has no purchases`() {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        
         val mockCustomerInfo = mockk<CustomerInfo> {
             every { allPurchasedProductIds } returns emptySet()
         }
@@ -92,9 +92,6 @@ class BlockstoreHelperTest {
 
     @Test
     fun `storeUserIdIfNeeded stores user ID when conditions are met`() = runTest {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
-        
         val mockCustomerInfo = mockk<CustomerInfo> {
             every { allPurchasedProductIds } returns setOf("product1")
         }
@@ -130,9 +127,6 @@ class BlockstoreHelperTest {
 
     @Test
     fun `storeUserIdIfNeeded handles retrieval failure gracefully`() = runTest {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
-        
         val mockCustomerInfo = mockk<CustomerInfo> {
             every { allPurchasedProductIds } returns setOf("product1")
         }
@@ -156,9 +150,6 @@ class BlockstoreHelperTest {
 
     @Test
     fun `storeUserIdIfNeeded does not store when blockstore is full`() = runTest {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
-        
         val mockCustomerInfo = mockk<CustomerInfo> {
             every { allPurchasedProductIds } returns setOf("product1")
         }
@@ -190,9 +181,6 @@ class BlockstoreHelperTest {
 
     @Test
     fun `storeUserIdIfNeeded does not store when user ID already exists`() = runTest {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
-        
         val mockCustomerInfo = mockk<CustomerInfo> {
             every { allPurchasedProductIds } returns setOf("product1")
         }
@@ -226,7 +214,7 @@ class BlockstoreHelperTest {
 
     @Test
     fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback immediately when user is not anonymous`() {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns false
+        every { mockIdentityManager.currentAppUserID } returns "not-anonymous-user-id"
         
         var callbackCalled = false
         blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
@@ -241,8 +229,6 @@ class BlockstoreHelperTest {
 
     @Test
     fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback when retrieval fails`() = runTest {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        
         val mockRetrieveTask = mockk<Task<RetrieveBytesResponse>>()
         every { mockBlockstoreClient.retrieveBytes(any()) } returns mockRetrieveTask
         
@@ -264,9 +250,6 @@ class BlockstoreHelperTest {
 
     @Test
     fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback when no stored user ID found`() = runTest {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
-        
         val mockRetrieveResponse = mockk<RetrieveBytesResponse> {
             every { blockstoreDataMap } returns emptyMap()
         }
@@ -291,9 +274,6 @@ class BlockstoreHelperTest {
 
     @Test
     fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback when stored user ID matches current`() = runTest {
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
-        
         val mockBlockstoreData = mockk<RetrieveBytesResponse.BlockstoreData> {
             every { bytes } returns testAnonymousUserId.toByteArray()
         }
@@ -325,8 +305,6 @@ class BlockstoreHelperTest {
     fun `aliasCurrentAndStoredUserIdsIfNeeded aliases different user ID successfully`() = runTest {
         val storedUserId = "stored_user_id"
         
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
         coEvery { mockIdentityManager.aliasCurrentUserIdTo(storedUserId) } just Runs
         
         val mockBlockstoreData = mockk<RetrieveBytesResponse.BlockstoreData> {
@@ -361,8 +339,6 @@ class BlockstoreHelperTest {
     fun `aliasCurrentAndStoredUserIdsIfNeeded handles alias failure gracefully`() = runTest {
         val storedUserId = "stored_user_id"
         
-        every { mockIdentityManager.currentUserIsAnonymous() } returns true
-        every { mockIdentityManager.currentAppUserID } returns testAnonymousUserId
         coEvery { mockIdentityManager.aliasCurrentUserIdTo(storedUserId) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.InvalidAppUserIdError, "Test error"))
         

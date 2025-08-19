@@ -34,7 +34,13 @@ internal class BlockstoreHelper(
     }
 
     fun storeUserIdIfNeeded(customerInfo: CustomerInfo) {
-        if (!identityManager.currentUserIsAnonymous() || customerInfo.allPurchasedProductIds.isEmpty()) return
+        val currentUserId = identityManager.currentAppUserID
+        if (
+            !IdentityManager.isUserIDAnonymous(currentUserId) ||
+            customerInfo.allPurchasedProductIds.isEmpty()
+        ) {
+            return
+        }
         ioScope.launch {
             val blockstoreData = try {
                 getBlockstoreData()
@@ -42,9 +48,9 @@ internal class BlockstoreHelper(
                 errorLog(e) { "Failed to retrieve Block store data. Will not store userId. Error: ${e.message}" }
                 return@launch
             }
-            val currentUserId = identityManager.currentAppUserID
             try {
                 storeUserIdIfNeeded(blockstoreData, currentUserId)
+                debugLog { "Block store: User ID: $currentUserId stored in Block store." }
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 errorLog(e) { "Failed to store user Id in Block store: ${e.message}" }
             }
@@ -57,7 +63,8 @@ internal class BlockstoreHelper(
                 callback()
             }
         }
-        if (!identityManager.currentUserIsAnonymous()) {
+        val currentUserId = identityManager.currentAppUserID
+        if (!IdentityManager.isUserIDAnonymous(currentUserId)) {
             callCompletion()
             return
         }
@@ -69,7 +76,6 @@ internal class BlockstoreHelper(
                 callCompletion()
                 return@launch
             }
-            val currentUserId = identityManager.currentAppUserID
             val blockstoreUserId = blockstoreData[BLOCKSTORE_USER_ID_KEY]?.bytes?.let { String(it) }
             if (blockstoreUserId == null || blockstoreUserId == currentUserId) {
                 callCompletion()
@@ -120,22 +126,28 @@ internal class BlockstoreHelper(
     }
 
     // Stores the given userId in the Blockstore and returns the number of bytes stored.
+    @Suppress("ReturnCount")
     private suspend fun storeUserIdIfNeeded(
         blockstoreDataMap: Map<String, BlockstoreData>,
         userId: String,
-    ): Int {
-        if (blockstoreDataMap[BLOCKSTORE_USER_ID_KEY] != null || blockstoreDataMap.size >= BLOCKSTORE_MAX_ENTRIES) {
-            return 0
+    ) {
+        if (blockstoreDataMap[BLOCKSTORE_USER_ID_KEY] != null) {
+            debugLog { "Block store: Not storing user id since there is one already present." }
+            return
         }
-        debugLog { "Store UserID: $userId in Block store." }
+        if (blockstoreDataMap.size >= BLOCKSTORE_MAX_ENTRIES) {
+            debugLog { "Block store: Not storing user id since block store is already full." }
+            return
+        }
+        debugLog { "Block store: Storing UserID: $userId in Block store." }
         val storeRequest = StoreBytesData.Builder()
             .setBytes(userId.toByteArray())
             .setKey(BLOCKSTORE_USER_ID_KEY)
             .setShouldBackupToCloud(true)
             .build()
-        return suspendCoroutine { cont ->
+        suspendCoroutine { cont ->
             blockstoreClient.storeBytes(storeRequest)
-                .addOnSuccessListener { cont.resume(it) }
+                .addOnSuccessListener { cont.resume(Unit) }
                 .addOnFailureListener { cont.resumeWithException(it) }
         }
     }

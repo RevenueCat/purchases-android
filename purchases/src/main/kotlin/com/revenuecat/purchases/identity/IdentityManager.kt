@@ -36,11 +36,16 @@ internal class IdentityManager(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
 ) {
+    companion object {
+        private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+
+        fun isUserIDAnonymous(appUserID: String): Boolean {
+            return anonymousIdRegex.matches(appUserID)
+        }
+    }
 
     val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
-
-    private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
 
     // region Public functions
 
@@ -193,10 +198,6 @@ internal class IdentityManager(
         return customerInfo != null &&
             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
             backend.verificationMode != SignatureVerificationMode.Disabled
-    }
-
-    private fun isUserIDAnonymous(appUserID: String): Boolean {
-        return anonymousIdRegex.matches(appUserID)
     }
 
     private fun generateRandomID(): String {
