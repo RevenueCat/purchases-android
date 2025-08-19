@@ -16,6 +16,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.api.BuildConfig
+import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -136,6 +137,7 @@ internal class PurchasesOrchestrator(
     private val virtualCurrencyManager: VirtualCurrencyManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
+    private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -259,6 +261,15 @@ internal class PurchasesOrchestrator(
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                     appInBackground = false,
                     allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                    callback = object : ReceiveCustomerInfoCallback {
+                        override fun onReceived(customerInfo: CustomerInfo) {
+                            blockstoreHelper.storeUserIdIfNeeded(customerInfo)
+                        }
+
+                        override fun onError(error: PurchasesError) {
+                            // no-op
+                        }
+                    },
                 )
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
@@ -532,44 +543,46 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        billing.queryAllPurchases(
-            appUserID,
-            onReceivePurchaseHistory = { allPurchases ->
-                if (allPurchases.isEmpty()) {
-                    log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_NO_PURCHASES_FOUND }
-                    getCustomerInfo(callbackWithTracking)
-                } else {
-                    allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-                        sortedByTime.forEach { purchase ->
-                            postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                                purchase = purchase,
-                                storeProduct = null,
-                                isRestore = true,
-                                appUserID = appUserID,
-                                initiationSource = PostReceiptInitiationSource.RESTORE,
-                                onSuccess = { _, info ->
-                                    log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
-                                    if (sortedByTime.last() == purchase) {
-                                        dispatch { callbackWithTracking.onReceived(info) }
-                                    }
-                                },
-                                onError = { _, error ->
-                                    log(LogIntent.RC_ERROR) {
-                                        RestoreStrings.RESTORING_PURCHASE_ERROR.format(purchase, error)
-                                    }
-                                    if (sortedByTime.last() == purchase) {
-                                        dispatch { callbackWithTracking.onError(error) }
-                                    }
-                                },
-                            )
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+            billing.queryAllPurchases(
+                appUserID,
+                onReceivePurchaseHistory = { allPurchases ->
+                    if (allPurchases.isEmpty()) {
+                        log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_NO_PURCHASES_FOUND }
+                        getCustomerInfo(callbackWithTracking)
+                    } else {
+                        allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+                            sortedByTime.forEach { purchase ->
+                                postReceiptHelper.postTransactionAndConsumeIfNeeded(
+                                    purchase = purchase,
+                                    storeProduct = null,
+                                    isRestore = true,
+                                    appUserID = appUserID,
+                                    initiationSource = PostReceiptInitiationSource.RESTORE,
+                                    onSuccess = { _, info ->
+                                        log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { callbackWithTracking.onReceived(info) }
+                                        }
+                                    },
+                                    onError = { _, error ->
+                                        log(LogIntent.RC_ERROR) {
+                                            RestoreStrings.RESTORING_PURCHASE_ERROR.format(purchase, error)
+                                        }
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { callbackWithTracking.onError(error) }
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
-                }
-            },
-            onReceivePurchaseHistoryError = { error ->
-                dispatch { callbackWithTracking.onError(error) }
-            },
-        )
+                },
+                onReceivePurchaseHistoryError = { error ->
+                    dispatch { callbackWithTracking.onError(error) }
+                },
+            )
+        }
     }
 
     fun logIn(
@@ -577,19 +590,21 @@ internal class PurchasesOrchestrator(
         callback: LogInCallback? = null,
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.logIn(
-                newAppUserID,
-                onSuccess = { customerInfo, created ->
-                    dispatch {
-                        callback?.onReceived(customerInfo, created)
-                        customerInfoUpdateHandler.notifyListeners(customerInfo)
-                    }
-                    offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-                },
-                onError = { error ->
-                    dispatch { callback?.onError(error) }
-                },
-            )
+            blockstoreHelper.clearUserIdBackupIfNeeded {
+                identityManager.logIn(
+                    newAppUserID,
+                    onSuccess = { customerInfo, created ->
+                        dispatch {
+                            callback?.onReceived(customerInfo, created)
+                            customerInfoUpdateHandler.notifyListeners(customerInfo)
+                        }
+                        offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                    },
+                    onError = { error ->
+                        dispatch { callback?.onError(error) }
+                    },
+                )
+            }
         }
             ?: customerInfoHelper.retrieveCustomerInfo(
                 identityManager.currentAppUserID,
@@ -1129,9 +1144,12 @@ internal class PurchasesOrchestrator(
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
-            getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
-                dispatch {
-                    purchaseCallback.onCompleted(storeTransaction, info)
+            blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+                blockstoreHelper.storeUserIdIfNeeded(info)
+                getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
+                    dispatch {
+                        purchaseCallback.onCompleted(storeTransaction, info)
+                    }
                 }
             }
         }
