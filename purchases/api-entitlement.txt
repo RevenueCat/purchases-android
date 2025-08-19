@@ -454,7 +454,7 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode.Builder showInAppMessagesAutomatically(boolean enabled);
   }
 
-  @kotlinx.parcelize.Parcelize public final class PurchasesError implements android.os.Parcelable java.io.Serializable {
+  @androidx.compose.runtime.Immutable @kotlinx.parcelize.Parcelize public final class PurchasesError implements android.os.Parcelable java.io.Serializable {
     ctor public PurchasesError(com.revenuecat.purchases.PurchasesErrorCode code, optional String? underlyingErrorMessage);
     method public com.revenuecat.purchases.PurchasesErrorCode getCode();
     method public String getMessage();
