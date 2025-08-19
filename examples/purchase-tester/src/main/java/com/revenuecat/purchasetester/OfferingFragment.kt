@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import androidx.recyclerview.widget.LinearLayoutManager
+import com.revenuecat.purchasetester.ui.PackageList
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.Offerings
@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @SuppressWarnings("TooManyFunctions")
-class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
+class OfferingFragment : Fragment() {
 
     lateinit var binding: FragmentOfferingBinding
 
@@ -80,18 +80,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         val offering = offerings.getOffering(offeringId) ?: return
         binding.offering = offering
 
-        binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
-
-        binding.offeringDetailsPackagesRecycler.adapter =
-            PackageCardAdapter(
-                offering.availablePackages,
-                activeSubscriptions,
-                this,
-                isPlayStore,
+        binding.offeringDetailsPackagesRecycler.setContent {
+            PackageList(
+                packages = offering.availablePackages,
+                activeSubscriptions = activeSubscriptions,
+                onPurchasePackageClicked = ::onPurchasePackageClicked,
+                onPurchaseProductClicked = ::onPurchaseProductClicked,
+                onPurchaseSubscriptionOptionClicked = ::onPurchaseSubscriptionOptionClicked,
+                isPlayStore = isPlayStore,
             )
+        }
     }
 
-    override fun onPurchasePackageClicked(
+    fun onPurchasePackageClicked(
         cardView: View,
         currentPackage: Package,
         isUpgrade: Boolean,
@@ -104,7 +105,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    override fun onPurchaseProductClicked(
+    fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
         isUpgrade: Boolean,
@@ -117,7 +118,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    override fun onPurchaseSubscriptionOptionClicked(
+    fun onPurchaseSubscriptionOptionClicked(
         cardView: View,
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean,
