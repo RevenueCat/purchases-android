@@ -363,16 +363,21 @@ internal class PaywallViewModelImpl(
     private fun updateState() {
         viewModelScope.launch {
             try {
-                var currentOffering: Offering? = options.offeringSelection.offering
-                if (currentOffering == null) {
-                    val offerings = purchases.awaitOfferings()
-                    val presentedOfferingContext = (options.offeringSelection as? OfferingSelection.OfferingInfo)
-                        ?.offeringInfo?.presentedOfferingContext
-                    val offering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
-                        ?: offerings.current
-                    currentOffering = presentedOfferingContext?.let {
-                        offering?.copy(it)
-                    } ?: offering
+                var currentOffering: Offering? = when (val offeringSelection = options.offeringSelection) {
+                    is OfferingSelection.OfferingType -> offeringSelection.offeringType
+                    is OfferingSelection.IdAndPresentedOfferingContext -> {
+                        val offerings = purchases.awaitOfferings()
+                        val presentedOfferingContext = offeringSelection.presentedOfferingContext
+                        val offering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
+                            ?: offerings.current
+                        presentedOfferingContext?.let {
+                            offering?.copy(presentedOfferingContext)
+                        } ?: offering
+                    }
+                    is OfferingSelection.None -> {
+                        val offerings = purchases.awaitOfferings()
+                        offerings.current
+                    }
                 }
 
                 if (currentOffering == null) {
