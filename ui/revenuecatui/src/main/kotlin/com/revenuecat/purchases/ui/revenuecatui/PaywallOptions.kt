@@ -1,10 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
+import kotlinx.parcelize.Parcelize
 
 @Stable
 internal sealed class OfferingSelection {
@@ -12,8 +15,12 @@ internal sealed class OfferingSelection {
     @Immutable
     data class OfferingType(val offeringType: Offering) : OfferingSelection()
 
+    @Parcelize
     @Immutable
-    data class OfferingInfo(val offeringInfo: OfferingPresentationInfo) : OfferingSelection()
+    data class IdAndPresentedOfferingContext(
+        val offeringId: String,
+        val presentedOfferingContext: PresentedOfferingContext?,
+    ) : Parcelable, OfferingSelection()
 
     @Immutable
     object None : OfferingSelection()
@@ -21,14 +28,14 @@ internal sealed class OfferingSelection {
     val offering: Offering?
         get() = when (this) {
             is OfferingType -> offeringType
-            is OfferingInfo -> null
+            is IdAndPresentedOfferingContext -> null
             None -> null
         }
 
     val offeringIdentifier: String?
         get() = when (this) {
             is OfferingType -> offeringType.identifier
-            is OfferingInfo -> offeringInfo.offeringId
+            is IdAndPresentedOfferingContext -> offeringId
             None -> null
         }
 }
@@ -116,9 +123,10 @@ class PaywallOptions internal constructor(
                 ?: OfferingSelection.None
         }
 
-        internal fun setOfferingInfo(offeringInfo: OfferingPresentationInfo?) = apply {
-            this.offeringSelection = offeringInfo?.let { OfferingSelection.OfferingInfo(it) }
-                ?: OfferingSelection.None
+        internal fun setOfferingIdAndPresentedOfferingContext(
+            offeringInfo: OfferingSelection.IdAndPresentedOfferingContext?,
+        ) = apply {
+            this.offeringSelection = offeringInfo ?: OfferingSelection.None
         }
 
         /**
