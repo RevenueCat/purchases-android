@@ -10,7 +10,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.ui.revenuecatui.OfferingPresentationInfo
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
@@ -67,8 +67,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
-                offeringInfo = offering?.let {
-                    OfferingPresentationInfo(
+                offeringIdAndPresentedOfferingContext = offering?.let {
+                    OfferingSelection.IdAndPresentedOfferingContext(
                         offeringId = it.identifier,
                         presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
                     )
@@ -95,11 +95,9 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * Default is true for Android 15+, false otherwise.
      */
     @Deprecated(
-        message = "Use launch with presented offering context instead",
+        message = "Use launch with offering instead",
         replaceWith = ReplaceWith(
-            expression = "launch(" +
-                "offeringIdentifier, presentedOfferingContext, fontProvider, shouldDisplayDismissButton, edgeToEdge" +
-                ")",
+            expression = "launch(offering, fontProvider, shouldDisplayDismissButton, edgeToEdge)",
             imports = ["com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher"],
         ),
     )
@@ -112,7 +110,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
-                offeringInfo = OfferingPresentationInfo(
+                offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
                     offeringId = offeringIdentifier,
                     presentedOfferingContext = null,
                 ),
@@ -134,7 +132,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
-                offeringInfo = OfferingPresentationInfo(
+                offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
                     offeringId = offeringIdentifier,
                     presentedOfferingContext = presentedOfferingContext,
                 ),
@@ -175,8 +173,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringInfo = offering?.let {
-                            OfferingPresentationInfo(
+                        offeringIdAndPresentedOfferingContext = offering?.let {
+                            OfferingSelection.IdAndPresentedOfferingContext(
                                 offeringId = it.identifier,
                                 presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
                             )
@@ -208,10 +206,10 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
     @Deprecated(
-        message = "Use launchIfNeeded with presented offering context instead",
+        message = "Use launchIfNeeded with offering instead",
         replaceWith = ReplaceWith(
             expression = "launchIfNeeded(" +
-                "requiredEntitlementIdentifier, offeringIdentifier, presentedOfferingContext, fontProvider, " +
+                "requiredEntitlementIdentifier, offering, fontProvider, " +
                 "shouldDisplayDismissButton, edgeToEdge, paywallDisplayCallback" +
                 ")",
             imports = ["com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher"],
@@ -234,7 +232,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringInfo = OfferingPresentationInfo(
+                        offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
                             offeringId = offeringIdentifier,
                             presentedOfferingContext = null,
                         ),
@@ -266,7 +264,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringInfo = OfferingPresentationInfo(
+                        offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
                             offeringId = offeringIdentifier,
                             presentedOfferingContext = presentedOfferingContext,
                         ),
@@ -302,8 +300,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
             if (shouldDisplay) {
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
-                        offeringInfo = offering?.let {
-                            OfferingPresentationInfo(
+                        offeringIdAndPresentedOfferingContext = offering?.let {
+                            OfferingSelection.IdAndPresentedOfferingContext(
                                 offeringId = it.identifier,
                                 presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
                             )

@@ -14,7 +14,6 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.OfferingPresentationInfo
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -89,7 +88,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
             dismissHandler?.invoke()
         }.build(),
     )
-    private var initialOfferingInfo: OfferingPresentationInfo? = null
+    private var initialOfferingInfo: OfferingSelection.IdAndPresentedOfferingContext? = null
     private var initialFontProvider: FontProvider? = null
     private var initialCondensed: Boolean = PaywallViewAttributesReader.DEFAULT_CONDENSED
     private var dismissHandler: (() -> Unit)? = null
@@ -143,24 +142,23 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
         val offeringSelection = if (offeringId == null) {
             OfferingSelection.None
         } else {
-            OfferingSelection.OfferingInfo(
-                OfferingPresentationInfo(
-                    offeringId = offeringId,
-                    presentedOfferingContext = null,
-                ),
+            OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = offeringId,
+                presentedOfferingContext = null,
             )
         }
         paywallOptions = paywallOptions.copy(offeringSelection = offeringSelection)
     }
 
     @InternalRevenueCatAPI
-    fun setOfferingInfo(offeringId: String, presentedOfferingContext: PresentedOfferingContext) {
+    fun setOfferingIdAndPresentedOfferingContext(
+        offeringId: String,
+        presentedOfferingContext: PresentedOfferingContext,
+    ) {
         paywallOptions = paywallOptions.copy(
-            offeringSelection = OfferingSelection.OfferingInfo(
-                OfferingPresentationInfo(
-                    offeringId = offeringId,
-                    presentedOfferingContext = presentedOfferingContext,
-                ),
+            offeringSelection = OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = offeringId,
+                presentedOfferingContext = presentedOfferingContext,
             ),
         )
     }
@@ -178,7 +176,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
         paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
             .setListener(internalListener)
             .setFontProvider(initialFontProvider)
-            .setOfferingInfo(initialOfferingInfo)
+            .setOfferingIdAndPresentedOfferingContext(initialOfferingInfo)
             .build()
         addView(
             object : CompatComposeView(context) {
@@ -201,7 +199,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
         val (offeringId, fontProvider, _, condensed) =
             PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallFooterView) ?: return
         this.initialOfferingInfo = offeringId?.let {
-            OfferingPresentationInfo(
+            OfferingSelection.IdAndPresentedOfferingContext(
                 offeringId = offeringId,
                 // WIP: We do not support presentedOfferingContext when using the view in XML layouts.
                 presentedOfferingContext = null,

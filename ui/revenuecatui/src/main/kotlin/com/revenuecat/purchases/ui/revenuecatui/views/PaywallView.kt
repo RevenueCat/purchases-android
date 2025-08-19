@@ -7,13 +7,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.OfferingPresentationInfo
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -49,7 +47,7 @@ class PaywallView : CompatComposeView {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
         offering?.let {
-            setOfferingInfo(
+            setOfferingId(
                 offeringId = it.identifier,
                 presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
             )
@@ -64,7 +62,7 @@ class PaywallView : CompatComposeView {
             dismissHandler?.invoke()
         }.build(),
     )
-    private var initialOfferingInfo: OfferingPresentationInfo? = null
+    private var initialOfferingInfo: OfferingSelection.IdAndPresentedOfferingContext? = null
     private var initialFontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
@@ -109,39 +107,20 @@ class PaywallView : CompatComposeView {
     }
 
     /**
-     * Sets the offering id to be used to display the Paywall. If not set, the default one will be used.
+     * Sets the offering id and presented offering context to be used to display the Paywall.
+     * If not set, the default one will be used.
      */
-    @Deprecated(
-        message = "Use setOfferingInfo instead.",
-        replaceWith = ReplaceWith("setOfferingInfo(offeringId, presentedOfferingContext)"),
-    )
-    fun setOfferingId(offeringId: String?) {
+    @JvmOverloads
+    fun setOfferingId(offeringId: String?, presentedOfferingContext: PresentedOfferingContext? = null) {
         val offeringSelection = if (offeringId == null) {
             OfferingSelection.None
         } else {
-            OfferingSelection.OfferingInfo(
-                OfferingPresentationInfo(
-                    offeringId = offeringId,
-                    presentedOfferingContext = null,
-                ),
+            OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = offeringId,
+                presentedOfferingContext = presentedOfferingContext,
             )
         }
         paywallOptions = paywallOptions.copy(offeringSelection = offeringSelection)
-    }
-
-    @InternalRevenueCatAPI
-    fun setOfferingInfo(
-        offeringId: String,
-        presentedOfferingContext: PresentedOfferingContext?,
-    ) {
-        paywallOptions = paywallOptions.copy(
-            offeringSelection = OfferingSelection.OfferingInfo(
-                OfferingPresentationInfo(
-                    offeringId = offeringId,
-                    presentedOfferingContext = presentedOfferingContext,
-                ),
-            ),
-        )
     }
 
     /**
@@ -169,7 +148,7 @@ class PaywallView : CompatComposeView {
         paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
             .setListener(internalListener)
             .setFontProvider(initialFontProvider)
-            .setOfferingInfo(initialOfferingInfo)
+            .setOfferingIdAndPresentedOfferingContext(initialOfferingInfo)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
             .build()
     }
@@ -179,7 +158,7 @@ class PaywallView : CompatComposeView {
         val (offeringId, fontProvider, shouldDisplayDismissButton, _) =
             PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallView) ?: return
         this.initialOfferingInfo = offeringId?.let {
-            OfferingPresentationInfo(
+            OfferingSelection.IdAndPresentedOfferingContext(
                 offeringId = offeringId,
                 // WIP: We do not support presentedOfferingContext when using the view in XML layouts.
                 presentedOfferingContext = null,
