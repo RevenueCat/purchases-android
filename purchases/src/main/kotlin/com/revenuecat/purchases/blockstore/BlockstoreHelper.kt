@@ -129,7 +129,6 @@ constructor(
         }
     }
 
-    // Stores the given userId in the Blockstore and returns the number of bytes stored.
     @Suppress("ReturnCount")
     private suspend fun storeUserIdIfNeeded(
         blockstoreDataMap: Map<String, BlockstoreData>,
