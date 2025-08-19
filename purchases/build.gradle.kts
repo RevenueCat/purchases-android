@@ -143,9 +143,9 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
-    implementation(libs.compose.annotations)
     api(libs.billing)
 
+    compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
     compileOnly(libs.coil.base)
 
