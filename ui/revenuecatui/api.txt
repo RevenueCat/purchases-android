@@ -393,7 +393,8 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     method public void setDismissHandler(kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
     method public void setDisplayDismissButton(boolean shouldDisplayDismissButton);
     method public void setFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider);
-    method @Deprecated public void setOfferingId(String? offeringId);
+    method public void setOfferingId(String? offeringId);
+    method public void setOfferingId(String? offeringId, optional com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public void setPaywallListener(com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener);
   }
 
