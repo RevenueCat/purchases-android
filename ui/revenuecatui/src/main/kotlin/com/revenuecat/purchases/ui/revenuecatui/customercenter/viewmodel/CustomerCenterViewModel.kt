@@ -41,6 +41,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
@@ -1119,7 +1120,10 @@ internal class CustomerCenterViewModelImpl(
             Logger.d("Showing paywall for offering: ${offering.identifier}")
 
             val paywallArgs = PaywallActivityArgs(
-                offeringId = offering.identifier,
+                offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
+                    offeringId = offering.identifier,
+                    presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+                ),
                 shouldDisplayDismissButton = true,
             )
 
