@@ -368,8 +368,7 @@ internal class PaywallViewModelImpl(
                     is OfferingSelection.IdAndPresentedOfferingContext -> {
                         val offerings = purchases.awaitOfferings()
                         val presentedOfferingContext = offeringSelection.presentedOfferingContext
-                        val offering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
-                            ?: offerings.current
+                        val offering = offerings[offeringSelection.offeringId] ?: offerings.current
                         presentedOfferingContext?.let {
                             offering?.copy(presentedOfferingContext)
                         } ?: offering
