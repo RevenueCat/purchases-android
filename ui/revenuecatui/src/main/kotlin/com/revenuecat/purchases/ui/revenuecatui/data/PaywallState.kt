@@ -147,8 +147,19 @@ internal sealed interface PaywallState {
 
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
-            private val availableDeviceLocalesByCountry: Map<String?, List<Locale>> by lazy {
-                Locale.getAvailableLocales().groupBy { it.country.lowercase() }
+            // We find all available device locales with the same country as the storefront country.
+            private val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> by lazy {
+                if (storefrontCountryCode.isNullOrBlank()) {
+                    emptyMap()
+                } else {
+                    buildMap {
+                        Locale.getAvailableLocales().forEach { availableLocale ->
+                            if (availableLocale.country.equals(storefrontCountryCode, ignoreCase = true)) {
+                                put(availableLocale.language.lowercase(), availableLocale)
+                            }
+                        }
+                    }
+                }
             }
 
             /**
@@ -165,12 +176,6 @@ internal sealed interface PaywallState {
                     locale
                 } else {
                     val deviceLanguageCode = locale.language.lowercase()
-
-                    // We find all available device locales with the same country as the storefront country.
-                    val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> =
-                        availableDeviceLocalesByCountry[storefrontCountryCode.lowercase()]
-                            ?.associateBy { it.language.lowercase() }
-                            ?: emptyMap()
 
                     // We pick the one with the same language as the device if available. If not, we just pick the
                     // first. If the list is empty, we use the device locale with the storefront country.
