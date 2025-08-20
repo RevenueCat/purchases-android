@@ -28,6 +28,7 @@ emergeGradlePlugin = "4.3.1"
 emergeSnapshots = "1.4.1"
 espresso = "3.4.0"
 fragment = "1.6.1"
+googleBlockstore = "16.4.0"
 hamcrest = "1.3"
 recyclerview = "1.2.1"
 roboelectric = "4.15.1"
@@ -55,7 +56,7 @@ window = "1.1.0"
 junit = "1.2.1"
 uiautomator = "2.3.0"
 benchmarkMacroJunit4 = "1.3.4"
-baselineprofile = "1.4.0-beta02"
+baselineprofile = "1.4.0"
 profileinstaller = "1.4.1"
 
 [libraries]
@@ -128,6 +129,8 @@ dokka-testApi = { module = "org.jetbrains.dokka:dokka-test-api", version.ref = "
 
 emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref = "emergeSnapshots" }
 emerge-snapshots-annotations = { module = "com.emergetools.snapshots:snapshots-annotations", version.ref = "emergeSnapshots" }
+
+google-blockstore = { module = "com.google.android.gms:play-services-auth-blockstore", version.ref = "googleBlockstore" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
