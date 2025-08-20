@@ -19,6 +19,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -362,11 +363,20 @@ internal class PaywallViewModelImpl(
     private fun updateState() {
         viewModelScope.launch {
             try {
-                var currentOffering = options.offeringSelection.offering
-                if (currentOffering == null) {
-                    val offerings = purchases.awaitOfferings()
-                    currentOffering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
-                        ?: offerings.current
+                val currentOffering: Offering? = when (val offeringSelection = options.offeringSelection) {
+                    is OfferingSelection.OfferingType -> offeringSelection.offeringType
+                    is OfferingSelection.IdAndPresentedOfferingContext -> {
+                        val offerings = purchases.awaitOfferings()
+                        val presentedOfferingContext = offeringSelection.presentedOfferingContext
+                        val offering = offerings[offeringSelection.offeringId] ?: offerings.current
+                        presentedOfferingContext?.let {
+                            offering?.copy(presentedOfferingContext)
+                        } ?: offering
+                    }
+                    is OfferingSelection.None -> {
+                        val offerings = purchases.awaitOfferings()
+                        offerings.current
+                    }
                 }
 
                 if (currentOffering == null) {
