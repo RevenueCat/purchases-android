@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.app.Activity
 import android.app.Application
+import android.app.backup.BackupManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -138,6 +139,7 @@ internal class PurchasesOrchestrator(
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
+    private val backupManager: BackupManager = BackupManager(application),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -272,6 +274,8 @@ internal class PurchasesOrchestrator(
                     },
                 )
             }
+
+            backupManager.dataChanged()
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             synchronizeSubscriberAttributesIfNeeded()
