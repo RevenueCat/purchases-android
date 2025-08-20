@@ -47,7 +47,7 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
             Purchases.logHandler = PrintLnLogHandler
             return PaywallResourcesProvider()
                 .values
-                .map { paywall -> arrayOf(paywall.offering.identifier, paywall) }
+                .map { paywall -> arrayOf(paywall.offering().identifier, paywall) }
                 .toList()
         }
 

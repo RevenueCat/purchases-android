@@ -34,9 +34,15 @@ private const val INDEX_FILE_NAME = "offerings_folders.index"
 private const val OFFERINGS_JSON_FILE_NAME = "offerings.json"
 
 internal data class PaywallResources(
-    val offering: Offering,
+    val offering: () -> Offering,
     val parentFolder: String,
-)
+) {
+    // Emerge Snapshots logs the preview parameter, so we're making it a very simple string. Printing the entire object
+    // put too much strain on the garbage collector, resulting in time outs.
+    override fun toString(): String {
+        return "PaywallResources(parentFolder='$parentFolder')"
+    }
+}
 
 /**
  * A PreviewParameterProvider that parses the offerings JSON and provides each offering that has a v2 Paywall.
@@ -49,6 +55,10 @@ internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResour
     private val createOfferingsMethod = offeringParser::class.java
         .getMethod("createOfferings", JSONObject::class.java, Map::class.java)
 
+    private val packagesArray by lazy {
+        JSONObject(getResourceStream("packages.json").readBytes().decodeToString())
+            .getJSONArray("packages")
+    }
     private val offeringJsonFiles = getAllOfferingsJsonFiles()
 
     override val values = offeringJsonFiles
@@ -56,34 +66,27 @@ internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResour
         .flatMap { (folder, file) ->
             val offeringsJsonFilePath = "$folder/$file"
             val uiConfig = JSONObject(getResourceStream(offeringsJsonFilePath).readUiConfig())
-            val packagesArray = JSONObject(getResourceStream("packages.json").readBytes().decodeToString())
-                .getJSONArray("packages")
             val indices = getResourceStream(offeringsJsonFilePath).indexOfferings()
 
-            indices.mapNotNull { (start, end) ->
-                val offeringJsonString = getResourceStream(offeringsJsonFilePath).readOfferingAt(start, end)
-                val offeringJsonObject = JSONObject(offeringJsonString)
-                val hasPaywall = offeringJsonObject.optString("paywall_components").isNotBlank()
-                if (!hasPaywall) return@mapNotNull null
+            indices.map { (start, end) ->
+                PaywallResources(
+                    offering = {
+                        val offeringJsonString = getResourceStream(offeringsJsonFilePath).readOfferingAt(start, end)
+                        val offeringJsonObject = JSONObject(offeringJsonString)
 
-                offeringJsonObject.put("packages", packagesArray)
-                val offeringId = offeringJsonObject.getString("identifier")
-                val offeringsJsonObject = JSONObject()
-                    .put("current_offering_id", offeringId)
-                    .put("offerings", JSONArray().put(offeringJsonObject))
-                    .put("ui_config", uiConfig)
+                        offeringJsonObject.put("packages", packagesArray)
+                        val offeringId = offeringJsonObject.getString("identifier")
+                        val offeringsJsonObject = JSONObject()
+                            .put("current_offering_id", offeringId)
+                            .put("offerings", JSONArray().put(offeringJsonObject))
+                            .put("ui_config", uiConfig)
 
-                createOfferings(offeringsJsonObject)
-                    .current
-                    ?.takeUnless { it.paywallComponents == null }
-                    ?.let { offering ->
-                        PaywallResources(
-                            offering = offering,
-                            parentFolder = folder,
-                        )
-                    }
+                        createOfferings(offeringsJsonObject).current!!
+                    },
+                    parentFolder = folder,
+                )
             }
-        }.sortedBy { it.offering.identifier }
+        }
 
     private fun createOfferings(offeringsJsonObject: JSONObject): Offerings =
         createOfferingsMethod(offeringParser, offeringsJsonObject, emptyMap<String, List<StoreProduct>>()) as Offerings
@@ -168,11 +171,11 @@ internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResour
 internal fun PaywallComponentsTemplate_Preview(
     @PreviewParameter(PaywallResourcesProvider::class) paywall: PaywallResources,
 ) {
-    val offering = paywall.offering
+    val offering = paywall.offering()
     val parentFolder = paywall.parentFolder
     // validatePaywallComponentsDataOrNullForPreviews should only return null if the Offering has no paywallComponents,
     // but we filter those out in the PaywallResourcesProvider.
-    when (val result = offering.validatePaywallComponentsDataOrNullForPreviews()!!) {
+    when (val result = offering.validatePaywallComponentsDataOrNullForPreviews()) {
         is Result.Success -> {
             val validationResult = result.value
             val state = offering.toComponentsPaywallState(
@@ -190,9 +193,12 @@ internal fun PaywallComponentsTemplate_Preview(
         }
         is Result.Error -> {
             Column {
-                Text("Encountered validation errors:")
+                Text("Encountered validation errors for offering ${offering.identifier}:")
                 result.value.forEach { error -> Text(error.toString()) }
             }
+        }
+        null -> {
+            Text("Offering ${offering.identifier} does not have a paywall.")
         }
     }
 }
