@@ -10,6 +10,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
@@ -32,13 +33,13 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -583,6 +584,52 @@ class PaywallViewModelTest {
         if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
+        }
+
+        val expectedPaywall = offering.paywall!!
+
+        verifyPaywall(state, expectedPaywall)
+    }
+
+    @Test
+    fun `Should load selected offering with presented offering context`() {
+        val offering = TestData.template1Offering
+        val expectedPresentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = offering.identifier,
+            placementIdentifier = "test-placement-id",
+            targetingContext = PresentedOfferingContext.TargetingContext(
+                revision = 1,
+                ruleId = "test-rule-id"
+            )
+        )
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOfferingIdAndPresentedOfferingContext(OfferingSelection.IdAndPresentedOfferingContext(
+                    offeringId = offering.identifier,
+                    presentedOfferingContext = expectedPresentedOfferingContext,
+                ))
+                .setPurchaseLogic(null)
+                .setMode(PaywallMode.default)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+
+        val state = model.state.value
+        if (state !is PaywallState.Loaded.Legacy) {
+            fail("Invalid state")
+            return
+        }
+
+        assertThat(state.offering.availablePackages).allMatch {
+            it.presentedOfferingContext == expectedPresentedOfferingContext &&
+                it.product.presentedOfferingContext == expectedPresentedOfferingContext
         }
 
         val expectedPaywall = offering.paywall!!

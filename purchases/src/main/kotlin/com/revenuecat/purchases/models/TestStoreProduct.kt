@@ -8,33 +8,17 @@ import com.revenuecat.purchases.simulatedstore.SimulatedStorePurchasingData
  * A test-only [StoreProduct] implementation.
  * This can be used to create mock data for tests or Jetpack Compose previews.
  */
-data class TestStoreProduct(
+data class TestStoreProduct @JvmOverloads constructor(
     override val id: String,
     override val name: String,
     override val title: String,
     override val description: String,
     override val price: Price,
-    override val period: Period?,
+    override val period: Period? = null,
     private val freeTrialPricingPhase: PricingPhase? = null,
     private val introPricePricingPhase: PricingPhase? = null,
+    override val presentedOfferingContext: PresentedOfferingContext? = null,
 ) : StoreProduct {
-    constructor(
-        id: String,
-        name: String,
-        title: String,
-        description: String,
-        price: Price,
-        period: Period? = null,
-    ) : this(
-        id,
-        name,
-        title,
-        description,
-        price,
-        period,
-        freeTrialPricingPhase = null,
-        introPricePricingPhase = null,
-    )
 
     @Deprecated(
         "Replaced with constructor that takes pricing phases for free trial and intro price",
@@ -120,8 +104,6 @@ data class TestStoreProduct(
     )
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
-    override val presentedOfferingContext: PresentedOfferingContext?
-        get() = null
     override val sku: String
         get() = id
 
@@ -134,7 +116,17 @@ data class TestStoreProduct(
     }
 
     override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
-        return this
+        return TestStoreProduct(
+            id = id,
+            name = name,
+            title = title,
+            description = description,
+            price = price,
+            period = period,
+            freeTrialPricingPhase = freeTrialPricingPhase,
+            introPricePricingPhase = introPricePricingPhase,
+            presentedOfferingContext = presentedOfferingContext,
+        )
     }
 
     private fun buildSubscriptionOptions(): SubscriptionOptions? {

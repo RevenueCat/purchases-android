@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.paparazzi)
-    alias(libs.plugins.compose.compiler)
 }
 
 if (!(project.properties["ANDROID_VARIANT_TO_PUBLISH"] as String).contains("customEntitlementComputation")) {

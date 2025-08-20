@@ -1463,16 +1463,20 @@ package com.revenuecat.purchases.models {
 
   public final class TestStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
     ctor @Deprecated public TestStoreProduct(String id, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price);
     ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period);
     ctor @Deprecated public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
-    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, optional com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, optional com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, optional com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase, optional com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public String component1();
     method public String component2();
     method public String component3();
     method public String component4();
     method public com.revenuecat.purchases.models.Price component5();
     method public com.revenuecat.purchases.models.Period? component6();
-    method public com.revenuecat.purchases.models.TestStoreProduct copy(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase);
+    method public com.revenuecat.purchases.PresentedOfferingContext? component9();
+    method public com.revenuecat.purchases.models.TestStoreProduct copy(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
     method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public com.revenuecat.purchases.models.SubscriptionOption? getDefaultOption();

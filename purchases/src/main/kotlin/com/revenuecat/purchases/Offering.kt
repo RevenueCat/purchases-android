@@ -106,4 +106,16 @@ constructor(
     fun getMetadataString(key: String, default: String): String {
         return this.metadata[key] as? String ?: default
     }
+
+    @InternalRevenueCatAPI
+    fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
+        return Offering(
+            identifier = this.identifier,
+            serverDescription = this.serverDescription,
+            metadata = this.metadata,
+            availablePackages = this.availablePackages.map { it.copy(presentedOfferingContext) },
+            paywall = this.paywall,
+            paywallComponents = this.paywallComponents,
+        )
+    }
 }
