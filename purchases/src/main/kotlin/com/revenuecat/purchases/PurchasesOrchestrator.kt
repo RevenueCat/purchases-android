@@ -275,7 +275,6 @@ internal class PurchasesOrchestrator(
                 )
             }
 
-            backupManager.dataChanged()
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             synchronizeSubscriberAttributesIfNeeded()
