@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.revenuecat.testpurchasesandroidcompatibility"
-    compileSdk = 33 // Keeping it at 33 to test compatibility with purchases-android
+    compileSdk = 34 // Keeping it at 34 to test compatibility with purchases-android
 
     defaultConfig {
         applicationId = "com.revenuecat.testpurchasesandroidcompatibility"

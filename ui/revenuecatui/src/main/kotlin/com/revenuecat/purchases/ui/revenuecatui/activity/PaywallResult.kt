@@ -1,8 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import android.os.Parcelable
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import dev.drewhamilton.poko.Poko
@@ -11,7 +9,6 @@ import kotlinx.parcelize.Parcelize
 /**
  * Result of the paywall activity.
  */
-@Stable
 sealed class PaywallResult : Parcelable {
     /**
      * The user cancelled the paywall without purchasing.
@@ -24,7 +21,6 @@ sealed class PaywallResult : Parcelable {
      */
     @Parcelize
     @Poko
-    @Immutable
     class Purchased(val customerInfo: CustomerInfo) : PaywallResult(), Parcelable
 
     /**
@@ -33,7 +29,6 @@ sealed class PaywallResult : Parcelable {
      */
     @Parcelize
     @Poko
-    @Immutable
     class Error(val error: PurchasesError) : PaywallResult(), Parcelable
 
     /**
@@ -41,6 +36,5 @@ sealed class PaywallResult : Parcelable {
      */
     @Parcelize
     @Poko
-    @Immutable
     class Restored(val customerInfo: CustomerInfo) : PaywallResult(), Parcelable
 }
