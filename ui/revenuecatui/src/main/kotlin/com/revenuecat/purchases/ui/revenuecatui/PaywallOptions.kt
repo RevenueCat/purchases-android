@@ -1,9 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import kotlinx.parcelize.Parcelize
 
 @Stable
 internal sealed class OfferingSelection {
@@ -11,8 +14,12 @@ internal sealed class OfferingSelection {
     @Immutable
     data class OfferingType(val offeringType: Offering) : OfferingSelection()
 
+    @Parcelize
     @Immutable
-    data class OfferingId(val offeringId: String) : OfferingSelection()
+    data class IdAndPresentedOfferingContext(
+        val offeringId: String,
+        val presentedOfferingContext: PresentedOfferingContext?,
+    ) : Parcelable, OfferingSelection()
 
     @Immutable
     object None : OfferingSelection()
@@ -20,14 +27,14 @@ internal sealed class OfferingSelection {
     val offering: Offering?
         get() = when (this) {
             is OfferingType -> offeringType
-            is OfferingId -> null
+            is IdAndPresentedOfferingContext -> null
             None -> null
         }
 
     val offeringIdentifier: String?
         get() = when (this) {
             is OfferingType -> offeringType.identifier
-            is OfferingId -> offeringId
+            is IdAndPresentedOfferingContext -> offeringId
             None -> null
         }
 }
@@ -81,9 +88,10 @@ data class PaywallOptions internal constructor(
                 ?: OfferingSelection.None
         }
 
-        internal fun setOfferingId(offeringId: String?) = apply {
-            this.offeringSelection = offeringId?.let { OfferingSelection.OfferingId(it) }
-                ?: OfferingSelection.None
+        internal fun setOfferingIdAndPresentedOfferingContext(
+            idAndPresentedOfferingContext: OfferingSelection.IdAndPresentedOfferingContext?,
+        ) = apply {
+            this.offeringSelection = idAndPresentedOfferingContext ?: OfferingSelection.None
         }
 
         /**
