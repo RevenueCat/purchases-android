@@ -29,10 +29,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.8"
     }
@@ -51,6 +47,12 @@ android {
     }
 
     namespace = "com.revenuecat.api_tester_kotlin"
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+    }
 }
 
 dependencies {

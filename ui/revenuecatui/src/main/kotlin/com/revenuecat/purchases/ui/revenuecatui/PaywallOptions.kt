@@ -124,9 +124,9 @@ class PaywallOptions internal constructor(
         }
 
         internal fun setOfferingIdAndPresentedOfferingContext(
-            offeringInfo: OfferingSelection.IdAndPresentedOfferingContext?,
+            idAndPresentedOfferingContext: OfferingSelection.IdAndPresentedOfferingContext?,
         ) = apply {
-            this.offeringSelection = offeringInfo ?: OfferingSelection.None
+            this.offeringSelection = idAndPresentedOfferingContext ?: OfferingSelection.None
         }
 
         /**

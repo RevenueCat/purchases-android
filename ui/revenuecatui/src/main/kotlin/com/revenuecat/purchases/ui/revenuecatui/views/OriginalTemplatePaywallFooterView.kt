@@ -133,10 +133,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
      * Sets the offering id to be used to display the Paywall. If not set, the default one will be used.
      */
     @Deprecated(
-        "Use setOfferingInfo instead.",
-        ReplaceWith(
-            "setOfferingInfo(offeringId, presentedOfferingContext)",
-        ),
+        "You should set the offering on the constructor instead.",
     )
     fun setOfferingId(offeringId: String?) {
         val offeringSelection = if (offeringId == null) {
