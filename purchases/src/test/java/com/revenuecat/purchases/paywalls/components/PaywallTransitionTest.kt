@@ -54,7 +54,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                 Args(
                     json = """
                         {
-                          "displacementStrategy": "greedy",
+                          "displacementStrategy": "lazy",
                           "type": {
                             "type": "fade"
                           }
@@ -62,7 +62,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         """.trimIndent(),
                     expected = PaywallTransition(
                         type = PaywallTransition.TransitionType.Fade,
-                        displacementStrategy = PaywallTransition.DisplacementStrategy.GREEDY,
+                        displacementStrategy = PaywallTransition.DisplacementStrategy.LAZY,
                         animation = null
                     )
                 ),
