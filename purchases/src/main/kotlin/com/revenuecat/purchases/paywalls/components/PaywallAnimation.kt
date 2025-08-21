@@ -36,18 +36,6 @@ class PaywallAnimation(
         @SerialName("linear")
         object Linear : AnimationType()
 
-        @Serializable
-        @SerialName("bouncy")
-        object Bouncy : AnimationType()
-
-        @Serializable
-        @SerialName("smooth")
-        object Smooth : AnimationType()
-
-        @Serializable
-        @SerialName("spring")
-        object Spring : AnimationType()
-
 
         @Poko
         @Serializable
