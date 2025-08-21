@@ -61,10 +61,10 @@ class PaywallView : CompatComposeView {
         listener: PaywallListener?,
         fontProvider: FontProvider?,
         shouldDisplayDismissButton: Boolean?,
-        vmStore: ViewModelStore,
+        viewModelStore: ViewModelStore,
         dismissHandler: (() -> Unit)?,
     ) : this(context, offering, listener, fontProvider, shouldDisplayDismissButton, dismissHandler) {
-        _viewModelStore = vmStore
+        _viewModelStore = viewModelStore
     }
 
     override val viewModelStore: ViewModelStore
