@@ -49,6 +49,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.showInAppMessagesAutomatically).isTrue
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
         assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isTrue
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
     }
 
     @Test
