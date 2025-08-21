@@ -154,6 +154,8 @@ dependencies {
     compileOnly(libs.amazon.appstore.sdk)
     compileOnly(libs.coil.base)
 
+    debugImplementation(libs.androidx.annotation.experimental)
+
     dokkaPlugin(project(":dokka-hide-internal"))
 
     testImplementation(libs.coil.base)
