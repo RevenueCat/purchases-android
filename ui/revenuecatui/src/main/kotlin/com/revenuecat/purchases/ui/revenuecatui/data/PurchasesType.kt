@@ -46,6 +46,8 @@ internal interface PurchasesType {
     val storefrontCountryCode: String?
 
     val customerCenterListener: CustomerCenterListener?
+
+    val preferredUILocaleOverride: String?
 }
 
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
@@ -96,4 +98,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val customerCenterListener: CustomerCenterListener?
         get() = purchases.customerCenterListener
+
+    override val preferredUILocaleOverride: String?
+        get() = purchases.preferredUILocaleOverride
 }
