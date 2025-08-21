@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.IntOffset
 import com.revenuecat.purchases.paywalls.components.PaywallAnimation
-import com.revenuecat.purchases.paywalls.components.PaywallAnimation.*
+import com.revenuecat.purchases.paywalls.components.PaywallAnimation.AnimationType
 import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType.Fade
 import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType.FadeAndScale
@@ -71,26 +71,56 @@ private fun PaywallTransition.AnimatedVisibility(content: @Composable () -> Unit
 
 private fun PaywallTransition.enterTransition() = when (type) {
     is Fade -> fadeIn(
-        tween(animation?.msDuration ?: 300, delayMillis = animation?.msDelay ?: 0, easing = animation.easing())
+        tween(
+            animation?.msDuration ?: SensibleDefaults.DURATION,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            easing = animation.easing()
+        )
     )
 
     is FadeAndScale -> fadeIn(
-        tween(animation?.msDuration ?: 300, delayMillis = animation?.msDelay ?: 0, easing = animation.easing())
+        tween(
+            animation?.msDuration ?: SensibleDefaults.DURATION,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            easing = animation.easing()
+        )
     ) + scaleIn(
-        tween(animation?.msDuration ?: 300, delayMillis = animation?.msDelay ?: 0, easing = animation.easing())
+        tween(
+            animation?.msDuration ?: SensibleDefaults.DURATION,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            easing = animation.easing()
+        )
     )
 
     is Scale -> scaleIn(
-        tween(animation?.msDuration ?: 300, delayMillis = animation?.msDelay ?: 0, easing = animation.easing())
+        tween(
+            animation?.msDuration ?: SensibleDefaults.DURATION,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            easing = animation.easing()
+        )
     )
 
     is Slide -> slideIn(
-        tween(animation?.msDuration ?: 300, delayMillis = animation?.msDelay ?: 0, easing = animation.easing())
-    ) { IntOffset(-180, 0) }
+        tween(
+            animation?.msDuration ?: SensibleDefaults.DURATION,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            easing = animation.easing()
+        )
+    ) { IntOffset(-SensibleDefaults.X_OFFSET, 0) }
 
     else -> fadeIn(
-        tween(animation?.msDuration ?: 300, delayMillis = animation?.msDelay ?: 0, easing = animation.easing())
+        tween(
+            animation?.msDuration ?: SensibleDefaults.DURATION,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            easing = animation.easing()
+        )
     )
+}
+
+private object SensibleDefaults {
+    const val DURATION = 300
+    const val DELAY = 0
+    const val X_OFFSET = 180
 }
 
 private fun PaywallAnimation?.easing(): Easing = this?.getEasing() ?: LinearOutSlowInEasing
