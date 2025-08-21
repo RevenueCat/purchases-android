@@ -40,14 +40,10 @@ internal data class ResourceFontSpec(
  * (e.g. "sans-serif"), a font resource provided by the app, or a device font provided by the OEM.
  *
  * Determining this is relatively costly for font resources. So this abstraction allows us to perform this logic only
- * once for each one (see [determineFontSpecs]) in the validation step, before resolving the actual font where needed.
- *
- * It also allows us to defer resolving the actual font to the UI layer, as only at that time do we know the exact
- * override that's being used. We need to know this, because we need to know the [FontWeight] for which to resolve the
- * font.
+ * once for each one (see [determineFontSpecs]) in the validation step.
  */
 internal sealed interface FontSpec {
-    data class Resource(@get:JvmSynthetic val resourceFonts: List<ResourceFontSpec>) : FontSpec
+    data class Resource(@get:JvmSynthetic val fontFamily: FontFamily) : FontSpec
     data class Asset(@get:JvmSynthetic val path: String) : FontSpec
     data class Google(@get:JvmSynthetic val name: String) : FontSpec
     sealed interface Generic : FontSpec {
@@ -71,12 +67,14 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
         .filter { it.family != null }
         .groupBy { it.family!! }
         .mapValues { (_, fontInfos) ->
+            val resourceIdsSeen = mutableSetOf<Int>()
             fontInfos.mapNotNull { fontInfo ->
                 resourceProvider.getResourceIdentifier(name = fontInfo.value, type = "font")
-                    .takeIf { it != 0 }
+                    .takeIf { it != 0 && it !in resourceIdsSeen }
+                    ?.also { resourceIdsSeen.add(it) }
                     ?.let {
                         ResourceFontSpec(
-                            id = resourceProvider.getResourceIdentifier(name = fontInfo.value, type = "font"),
+                            id = it,
                             weight = fontInfo.weight,
                             style = fontInfo.style?.toComposeFontStyle(),
                         )
@@ -85,7 +83,22 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
         }
         .filterValues { it.isNotEmpty() }
         .mapValues { (_, resourceFonts) ->
-            FontSpec.Resource(resourceFonts)
+            if (resourceFonts.size == 1) {
+                resourceProvider.getXmlFontFamily(resourceFonts.first().id)?.let {
+                    return@mapValues FontSpec.Resource(it)
+                }
+            }
+            FontSpec.Resource(
+                FontFamily(
+                    resourceFonts.map { resourceFont ->
+                        Font(
+                            resId = resourceFont.id,
+                            weight = resourceFont.weight?.let { FontWeight(it) } ?: FontWeight.Normal,
+                            style = resourceFont.style ?: FontStyle.Normal,
+                        )
+                    },
+                ),
+            )
         }
 
     // Get unique FontsConfigs, and determine their FontSpec.
@@ -141,16 +154,7 @@ internal fun FontSpec.resolve(
     weight: FontWeight,
     style: FontStyle,
 ): FontFamily = when (this) {
-    is FontSpec.Resource -> {
-        val fonts = resourceFonts.map { resourceFont ->
-            Font(
-                resId = resourceFont.id,
-                weight = resourceFont.weight?.let { FontWeight(it) } ?: FontWeight.Normal,
-                style = resourceFont.style ?: FontStyle.Normal,
-            )
-        }
-        FontFamily(fonts)
-    }
+    is FontSpec.Resource -> fontFamily
     is FontSpec.Asset -> FontFamily(Font(path = path, assetManager = assets, weight = weight, style = style))
     is FontSpec.Google -> FontFamily(
         Font(googleFont = GoogleFont(name), fontProvider = GoogleFontsProvider, weight = weight, style = style),

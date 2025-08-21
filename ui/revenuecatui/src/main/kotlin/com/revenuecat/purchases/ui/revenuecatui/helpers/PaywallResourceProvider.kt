@@ -4,6 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import androidx.annotation.StringRes
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.res.FontResourcesParserCompat
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
@@ -21,6 +26,7 @@ internal interface ResourceProvider {
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
     fun getResourceIdentifier(name: String, type: String): Int
+    fun getXmlFontFamily(resourceId: Int): FontFamily?
     fun getAssetFontPath(name: String): String?
     fun getCachedFontFamilyOrStartDownload(
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
@@ -55,6 +61,36 @@ internal class PaywallResourceProvider(
     @SuppressLint("DiscouragedApi")
     override fun getResourceIdentifier(name: String, type: String): Int =
         resources.getIdentifier(name, type, packageName)
+
+    @Suppress("ReturnCount")
+    @SuppressLint("RestrictedApi") // FontResourcesParserCompat.*
+    override fun getXmlFontFamily(resourceId: Int): FontFamily? {
+        val parser = try {
+            resources.getXml(resourceId)
+        } catch (_: Resources.NotFoundException) {
+            return null
+        }
+        try {
+            val result = FontResourcesParserCompat.parse(parser, resources)
+            if (result is FontResourcesParserCompat.FontFamilyFilesResourceEntry) {
+                val fonts = result.entries.map { font ->
+                    Font(
+                        resId = font.resourceId,
+                        weight = FontWeight(font.weight),
+                        style = if (font.isItalic) FontStyle.Italic else FontStyle.Normal,
+                    )
+                }
+                return FontFamily(fonts)
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            // This can happen if the XML is malformed or not a valid font family.
+            // We log the error and return null.
+            Logger.e("Error parsing XML font family with resource ID $resourceId", e)
+        } finally {
+            parser.close()
+        }
+        return null
+    }
 
     override fun getAssetFontPath(name: String): String? {
         val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"

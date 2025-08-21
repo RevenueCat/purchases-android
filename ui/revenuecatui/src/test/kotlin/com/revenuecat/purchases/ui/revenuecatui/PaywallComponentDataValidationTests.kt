@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.FontAlias
@@ -34,7 +36,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ResourceFontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
@@ -369,9 +370,11 @@ class PaywallComponentDataValidationTests {
         val secondaryFontAlias = FontAlias("secondary")
         val tertiaryFontAlias = FontAlias("tertiary")
         val robotoFont = FontSpec.Resource(
-            resourceFonts = listOf(
-                ResourceFontSpec(id = 1, weight = 400, style = FontStyle.Normal),
-                ResourceFontSpec(id = 2, weight = 700, style = FontStyle.Italic),
+            fontFamily = FontFamily(
+                listOf(
+                    Font(resId = 1, weight = androidx.compose.ui.text.font.FontWeight(400), style = FontStyle.Normal),
+                    Font(resId = 2, weight = androidx.compose.ui.text.font.FontWeight(700), style = FontStyle.Italic),
+                )
             )
         )
         val robotoFontRegularResourceName = FontInfo.Name(
@@ -473,15 +476,109 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
+    fun `Should successfully validate with XML font family`() {
+        // Arrange
+        val primaryFontAlias = FontAlias("primary")
+        val secondaryFontAlias = FontAlias("secondary")
+        val xmlFontFamily = FontFamily(
+            listOf(
+                Font(resId = 2, weight = androidx.compose.ui.text.font.FontWeight(400), style = FontStyle.Normal),
+                Font(resId = 3, weight = androidx.compose.ui.text.font.FontWeight(700), style = FontStyle.Italic),
+            )
+        )
+        val robotoFont = FontSpec.Resource(fontFamily = xmlFontFamily)
+        val robotoFontRegularResourceName = FontInfo.Name(
+            value = "roboto",
+            family = "roboto",
+            weight = 400,
+            style = com.revenuecat.purchases.paywalls.components.properties.FontStyle.NORMAL,
+        )
+        val robotoFontBoldItalicResourceName = FontInfo.Name(
+            value = "roboto",
+            family = "roboto",
+            weight = 700,
+            style = com.revenuecat.purchases.paywalls.components.properties.FontStyle.ITALIC,
+        )
+        val uiConfig = UiConfig(
+            app = AppConfig(
+                fonts = mapOf(
+                    primaryFontAlias to FontsConfig(robotoFontRegularResourceName),
+                    secondaryFontAlias to FontsConfig(robotoFontBoldItalicResourceName),
+                ),
+            ),
+        )
+        val resourceProvider = MockResourceProvider(
+            resourceIds = mapOf(
+                "font" to mapOf(
+                    robotoFontRegularResourceName.value to 1,
+                    robotoFontBoldItalicResourceName.value to 1,
+                ),
+            ),
+            fontFamiliesByXmlResourceId = mapOf(1 to xmlFontFamily)
+        )
+        val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = LocalizationKey("key1"),
+                                color = textColor,
+                                fontName = primaryFontAlias,
+                            ),
+                            TextComponent(
+                                text = LocalizationKey("key2"),
+                                color = textColor,
+                                fontName = secondaryFontAlias,
+                            ),
+                            TestData.Components.monthlyPackageComponent,
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    LocalizationKey("key1") to LocalizationData.Text("value1"),
+                    LocalizationKey("key2") to LocalizationData.Text("value2"),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(uiConfig, data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, resourceProvider)
+
+        // Assert
+        val validatedComponents = validated as PaywallValidationResult.Components
+        assertNull(validatedComponents.errors)
+        val stack = validatedComponents.stack as StackComponentStyle
+        assertEquals(3, stack.children.size)
+        val text1 = stack.children[0] as TextComponentStyle
+        val text2 = stack.children[1] as TextComponentStyle
+        assertEquals(robotoFont, text1.fontSpec)
+        assertEquals(robotoFont, text2.fontSpec)
+    }
+
+    @Test
     fun `Should ignore MissingFontAliases errors`() {
         // Arrange
         val missingFontAlias1 = FontAlias("missing-font-1")
         val missingFontAlias2 = FontAlias("missing-font-2")
         val missingFontAlias3 = FontAlias("missing-font-3")
         val existingFontAlias = FontAlias("primary")
-        val existingFontResource = FontSpec.Resource(listOf(
-            ResourceFontSpec(id = 1, weight = 400, style = FontStyle.Normal)
-        ))
         val existingFontResourceName = FontInfo.Name("roboto")
         val uiConfig = UiConfig(
             app = AppConfig(
