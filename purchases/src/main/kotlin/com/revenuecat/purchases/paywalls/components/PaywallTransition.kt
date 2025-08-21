@@ -17,6 +17,15 @@ class PaywallTransition(
     @get:JvmSynthetic val animation: PaywallAnimation? = null,
 ) {
 
+    /**
+     * Determines how the view being animated out is displaced by the view being animated in.
+     *
+     * A [GREEDY] displacement will result in the space being taken up by the incoming view
+     * *before* it attempts to transition into the view hierarchy.
+     *
+     * A [LAZY] displacement will not do this, instead it will result in shifting the layout
+     * as the new view inserts itself.
+     */
     @Serializable
     enum class DisplacementStrategy {
         @SerialName("greedy")
