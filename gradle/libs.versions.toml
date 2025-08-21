@@ -9,6 +9,7 @@ androidxConstraintLayout = "2.1.3"
 androidxCore = "1.8.0"
 androidxNavigation = "2.5.3"
 annotation = "1.3.0"
+annotationExperimental = "1.5.1"
 appcompat = "1.4.1"
 assertJ = "3.22.0"
 browser = "1.8.0"
@@ -62,6 +63,7 @@ profileinstaller = "1.4.1"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-annotation-experimental = { module = "androidx.annotation:annotation-experimental", version.ref = "annotationExperimental" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
