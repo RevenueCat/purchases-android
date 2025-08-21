@@ -198,6 +198,10 @@ internal class PurchasesOrchestrator(
     var storefrontCountryCode: String? = null
         private set
 
+    @get:Synchronized
+    @set:Synchronized
+    var preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
+
     init {
         identityManager.configure(backingFieldAppUserID)
 
