@@ -5,8 +5,6 @@ import android.content.SharedPreferences
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /**
  * Provides an instance of SharedPreferences to be used by the RevenueCat SDK.
@@ -30,13 +28,11 @@ internal class SharedPreferencesManager(
         const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
     }
 
-    private val migrationLock = ReentrantLock()
-
     /**
      * Gets the appropriate shared preferences, performing migration if needed
      */
     fun getSharedPreferences(): SharedPreferences {
-        migrationLock.withLock {
+        synchronized(this) {
             if (shouldPerformMigration()) {
                 performMigration()
             }

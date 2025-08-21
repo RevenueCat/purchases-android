@@ -253,6 +253,7 @@ internal class PurchasesOrchestrator(
         log(LogIntent.DEBUG) { ConfigureStrings.APP_FOREGROUNDED }
         appConfig.isAppBackgrounded = false
 
+        // $RCAnonymousID:a36af41a15e844dc8786bd6f0386d4ad
         enqueue {
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
