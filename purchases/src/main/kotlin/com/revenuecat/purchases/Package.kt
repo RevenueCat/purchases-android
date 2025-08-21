@@ -43,6 +43,15 @@ class Package(
     )
     val offering: String
         get() = presentedOfferingContext.offeringIdentifier ?: ""
+
+    internal fun copy(presentedOfferingContext: PresentedOfferingContext): Package {
+        return Package(
+            identifier = this.identifier,
+            packageType = this.packageType,
+            product = this.product.copyWithPresentedOfferingContext(presentedOfferingContext),
+            presentedOfferingContext = presentedOfferingContext,
+        )
+    }
 }
 
 /**

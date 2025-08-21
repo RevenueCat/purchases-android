@@ -35,6 +35,7 @@ class PurchaseInformationTest {
 
     private val dateFormatter = mockk<DateFormatter>()
     private val locale = Locale.US
+    private val localization = CustomerCenterConfigTestData.customerCenterData().localization
 
     @Test
     fun `test PurchaseInformation with active Google subscription and entitlement`() {
@@ -71,6 +72,7 @@ class PurchaseInformationTest {
             transaction = transaction,
             dateFormatter = dateFormatter,
             locale = locale,
+            localization = localization,
         )
 
         assertPurchaseInformation(
@@ -121,7 +123,8 @@ class PurchaseInformationTest {
             subscribedProduct = storeProduct,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
@@ -172,7 +175,8 @@ class PurchaseInformationTest {
             subscribedProduct = storeProduct,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
@@ -214,12 +218,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "test_product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -256,12 +261,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "test_product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -298,12 +304,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "test_product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.APP_STORE,
             product = null,
@@ -343,6 +350,7 @@ class PurchaseInformationTest {
             transaction = transaction,
             dateFormatter = dateFormatter,
             locale = locale,
+            localization = localization,
         )
 
         assertPurchaseInformation(
@@ -387,7 +395,8 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
@@ -430,12 +439,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
@@ -473,12 +483,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
@@ -516,12 +527,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.STRIPE,
             product = null,
@@ -559,12 +571,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
@@ -602,12 +615,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
@@ -645,12 +659,13 @@ class PurchaseInformationTest {
             subscribedProduct = null,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
             purchaseInformation,
-            title = "com.revenuecat.product",
+            title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
             product = null,
@@ -699,7 +714,8 @@ class PurchaseInformationTest {
             subscribedProduct = storeProduct,
             transaction = transaction,
             dateFormatter = dateFormatter,
-            locale = locale
+            locale = locale,
+            localization = localization
         )
 
         assertPurchaseInformation(
@@ -715,6 +731,388 @@ class PurchaseInformationTest {
             expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
             managementURL = Uri.parse(MANAGEMENT_URL),
         )
+    }
+
+    @Test
+    fun `test PurchaseInformation with no entitlement and no subscribed product shows user-friendly fallback`() {
+        val subscriptionTransaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.technical.id",
+            expiresDate = null
+        )
+        val subscriptionPurchaseInfo = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = null,
+            transaction = subscriptionTransaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertThat(subscriptionPurchaseInfo.title).isEqualTo("Subscription")
+
+        val nonSubscriptionTransaction = createNonSubscriptionTransactionDetails(
+            store = Store.STRIPE,
+            productIdentifier = "com.revenuecat.technical.id"
+        )
+        val nonSubscriptionPurchaseInfo = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = null,
+            transaction = nonSubscriptionTransaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertThat(nonSubscriptionPurchaseInfo.title).isEqualTo("One time purchase")
+    }
+
+    @Test
+    fun `test sandbox transaction with zero price falls back to product price`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+        
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            expiresDate = expiresDate,
+            price = Price("$0.00", 0L, "USD"),
+            isSandbox = true
+        )
+
+        val storeProduct = TestStoreProduct(
+            "test_product",
+            "name",
+            "Monthly Product",
+            "description",
+            Price("$9.99", 9_990_000, "USD"),
+            Period(1, Period.Unit.MONTH, "P1M")
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertThat(purchaseInformation.pricePaid).isEqualTo(PriceDetails.Paid("$9.99"))
+    }
+
+    @Test
+    fun `test non-sandbox transaction with zero price shows as free`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+        
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            expiresDate = expiresDate,
+            price = Price("$0.00", 0L, "USD"),
+            isSandbox = false
+        )
+
+        val storeProduct = TestStoreProduct(
+            "test_product",
+            "name",
+            "Monthly Product",
+            "description",
+            Price("$9.99", 9_990_000, "USD"),
+            Period(1, Period.Unit.MONTH, "P1M")
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertThat(purchaseInformation.pricePaid).isEqualTo(PriceDetails.Free)
+    }
+
+    @Test
+    fun `test non-sandbox transaction with price shows transaction price`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+        
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            expiresDate = expiresDate,
+            price = Price("$4.99", 4_990_000, "USD"),
+            isSandbox = false
+        )
+
+        val storeProduct = TestStoreProduct(
+            "test_product",
+            "name",
+            "Monthly Product",
+            "description",
+            Price("$9.99", 9_990_000, "USD"),
+            Period(1, Period.Unit.MONTH, "P1M")
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertThat(purchaseInformation.pricePaid).isEqualTo(PriceDetails.Paid("$4.99"))
+    }
+
+    @Test
+    fun `test sandbox transaction with non-zero price shows transaction price`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+        
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            expiresDate = expiresDate,
+            price = Price("$4.99", 4_990_000, "USD"),
+            isSandbox = true
+        )
+
+        val storeProduct = TestStoreProduct(
+            "test_product",
+            "name",
+            "Monthly Product",
+            "description",
+            Price("$9.99", 9_990_000, "USD"),
+            Period(1, Period.Unit.MONTH, "P1M")
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertThat(purchaseInformation.pricePaid).isEqualTo(PriceDetails.Paid("$4.99"))
+    }
+
+    @Test
+    fun `test one-time purchase with product shows product information`() {
+        val transaction = createNonSubscriptionTransactionDetails(
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            price = Price("$9.99", 9_990_000, "USD"),
+            isSandbox = false
+        )
+
+        val storeProduct = TestStoreProduct(
+            "test_product",
+            "name",
+            "One-time Product",
+            "description",
+            Price("$9.99", 9_990_000, "USD"),
+            null
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "One-time Product",
+            price = PriceDetails.Paid("$9.99"),
+            store = Store.PLAY_STORE,
+            product = storeProduct,
+            isSubscription = false,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            expirationOrRenewal = null,
+            managementURL = null
+        )
+    }
+
+    @Test
+    fun `test one-time purchase without product shows fallback title`() {
+        val transaction = createNonSubscriptionTransactionDetails(
+            store = Store.APP_STORE,
+            productIdentifier = "test_product",
+            price = Price("$4.99", 4_990_000, "USD"),
+            isSandbox = false
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = null,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "One time purchase",
+            price = PriceDetails.Paid("$4.99"),
+            store = Store.APP_STORE,
+            product = null,
+            isSubscription = false,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            expirationOrRenewal = null,
+            managementURL = null
+        )
+    }
+
+    @Test
+    fun `test one-time purchase with zero price shows as free`() {
+        val transaction = createNonSubscriptionTransactionDetails(
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            price = Price("$0.00", 0L, "USD"),
+            isSandbox = false
+        )
+
+        val storeProduct = TestStoreProduct(
+            "test_product",
+            "name",
+            "Free Product",
+            "description",
+            Price("$0.00", 0L, "USD"),
+            null
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Free Product",
+            price = PriceDetails.Free,
+            store = Store.PLAY_STORE,
+            product = storeProduct,
+            isSubscription = false,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            expirationOrRenewal = null,
+            managementURL = null
+        )
+    }
+
+    @Test
+    fun `test one-time purchase sandbox with zero price falls back to product price`() {
+        val transaction = createNonSubscriptionTransactionDetails(
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            price = Price("$0.00", 0L, "USD"),
+            isSandbox = true
+        )
+
+        val storeProduct = TestStoreProduct(
+            "test_product",
+            "name",
+            "Premium Feature",
+            "description",
+            Price("$2.99", 2_990_000, "USD"),
+            null
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Premium Feature",
+            price = PriceDetails.Paid("$2.99"),
+            store = Store.PLAY_STORE,
+            product = storeProduct,
+            isSubscription = false,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            expirationOrRenewal = null,
+            managementURL = null
+        )
+    }
+
+    @Test
+    fun `test one-time purchase without price shows unknown`() {
+        val transaction = createNonSubscriptionTransactionDetails(
+            store = Store.PLAY_STORE,
+            productIdentifier = "test_product",
+            price = null,
+            isSandbox = false
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = null,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "One time purchase",
+            price = PriceDetails.Unknown,
+            store = Store.PLAY_STORE,
+            product = null,
+            isSubscription = false,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            expirationOrRenewal = null,
+            managementURL = null
+        )
+    }
+
+    @Test
+    fun `test lifetime purchase shows as lifetime`() {
+        assertThat(CustomerCenterConfigTestData.purchaseInformationLifetime.isLifetime).isTrue()
+    }
+
+    @Test
+    fun `test subscription purchase shows as not lifetime`() {
+        assertThat(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.isLifetime).isFalse()
     }
 
     private fun assertPurchaseInformation(
@@ -778,7 +1176,9 @@ class PurchaseInformationTest {
         expiresDate: Date?,
         productPlanIdentifier: String? = null,
         isTrial: Boolean = false,
-        managementURL: Uri? = Uri.parse(MANAGEMENT_URL)
+        managementURL: Uri? = Uri.parse(MANAGEMENT_URL),
+        price: Price? = null,
+        isSandbox: Boolean = false
     ): TransactionDetails.Subscription {
         return TransactionDetails.Subscription(
             productIdentifier = productIdentifier,
@@ -788,7 +1188,23 @@ class PurchaseInformationTest {
             expiresDate = expiresDate,
             productPlanIdentifier = productPlanIdentifier,
             isTrial = isTrial,
-            managementURL = managementURL
+            managementURL = managementURL,
+            price = price,
+            isSandbox = isSandbox
+        )
+    }
+
+    private fun createNonSubscriptionTransactionDetails(
+        store: Store,
+        productIdentifier: String,
+        price: Price? = null,
+        isSandbox: Boolean = false
+    ): TransactionDetails.NonSubscription {
+        return TransactionDetails.NonSubscription(
+            productIdentifier = productIdentifier,
+            store = store,
+            price = price,
+            isSandbox = isSandbox
         )
     }
 

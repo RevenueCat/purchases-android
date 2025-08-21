@@ -15,6 +15,8 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
+import com.revenuecat.purchases.api.BuildConfig
+import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -53,6 +55,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -85,6 +88,8 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -129,7 +134,10 @@ internal class PurchasesOrchestrator(
             offlineEntitlementsManager,
             customerInfoUpdateHandler,
         ),
+    private val virtualCurrencyManager: VirtualCurrencyManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
+    private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
+    private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -253,6 +261,15 @@ internal class PurchasesOrchestrator(
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                     appInBackground = false,
                     allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                    callback = object : ReceiveCustomerInfoCallback {
+                        override fun onReceived(customerInfo: CustomerInfo) {
+                            blockstoreHelper.storeUserIdIfNeeded(customerInfo)
+                        }
+
+                        override fun onError(error: PurchasesError) {
+                            // no-op
+                        }
+                    },
                 )
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
@@ -331,6 +348,21 @@ internal class PurchasesOrchestrator(
     fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
+        if (isSimulatedStoreEnabled() &&
+            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
+        ) {
+            log(LogIntent.DEBUG) { RestoreStrings.SYNC_PURCHASES_SIMULATED_STORE }
+            getCustomerInfo(object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    listener?.onSuccess(customerInfo)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    listener?.onError(error)
+                }
+            })
+            return
+        }
         syncPurchasesHelper.syncPurchases(
             isRestore = this.allowSharingPlayStoreAccount,
             appInBackground = this.state.appInBackground,
@@ -466,12 +498,20 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @Suppress("LongMethod")
     fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.RESTORING_PURCHASE }
         if (!allowSharingPlayStoreAccount) {
             log(LogIntent.WARNING) { RestoreStrings.SHARING_ACC_RESTORE_FALSE }
+        }
+        if (isSimulatedStoreEnabled() &&
+            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
+        ) {
+            log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_SIMULATED_STORE }
+            getCustomerInfo(callback)
+            return
         }
 
         val startTime = dateProvider.now
@@ -503,43 +543,46 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        billing.queryAllPurchases(
-            appUserID,
-            onReceivePurchaseHistory = { allPurchases ->
-                if (allPurchases.isEmpty()) {
-                    getCustomerInfo(callbackWithTracking)
-                } else {
-                    allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-                        sortedByTime.forEach { purchase ->
-                            postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                                purchase = purchase,
-                                storeProduct = null,
-                                isRestore = true,
-                                appUserID = appUserID,
-                                initiationSource = PostReceiptInitiationSource.RESTORE,
-                                onSuccess = { _, info ->
-                                    log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
-                                    if (sortedByTime.last() == purchase) {
-                                        dispatch { callbackWithTracking.onReceived(info) }
-                                    }
-                                },
-                                onError = { _, error ->
-                                    log(LogIntent.RC_ERROR) {
-                                        RestoreStrings.RESTORING_PURCHASE_ERROR.format(purchase, error)
-                                    }
-                                    if (sortedByTime.last() == purchase) {
-                                        dispatch { callbackWithTracking.onError(error) }
-                                    }
-                                },
-                            )
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+            billing.queryAllPurchases(
+                appUserID,
+                onReceivePurchaseHistory = { allPurchases ->
+                    if (allPurchases.isEmpty()) {
+                        log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_NO_PURCHASES_FOUND }
+                        getCustomerInfo(callbackWithTracking)
+                    } else {
+                        allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+                            sortedByTime.forEach { purchase ->
+                                postReceiptHelper.postTransactionAndConsumeIfNeeded(
+                                    purchase = purchase,
+                                    storeProduct = null,
+                                    isRestore = true,
+                                    appUserID = appUserID,
+                                    initiationSource = PostReceiptInitiationSource.RESTORE,
+                                    onSuccess = { _, info ->
+                                        log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { callbackWithTracking.onReceived(info) }
+                                        }
+                                    },
+                                    onError = { _, error ->
+                                        log(LogIntent.RC_ERROR) {
+                                            RestoreStrings.RESTORING_PURCHASE_ERROR.format(purchase, error)
+                                        }
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { callbackWithTracking.onError(error) }
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
-                }
-            },
-            onReceivePurchaseHistoryError = { error ->
-                dispatch { callbackWithTracking.onError(error) }
-            },
-        )
+                },
+                onReceivePurchaseHistoryError = { error ->
+                    dispatch { callbackWithTracking.onError(error) }
+                },
+            )
+        }
     }
 
     fun logIn(
@@ -547,19 +590,21 @@ internal class PurchasesOrchestrator(
         callback: LogInCallback? = null,
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.logIn(
-                newAppUserID,
-                onSuccess = { customerInfo, created ->
-                    dispatch {
-                        callback?.onReceived(customerInfo, created)
-                        customerInfoUpdateHandler.notifyListeners(customerInfo)
-                    }
-                    offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-                },
-                onError = { error ->
-                    dispatch { callback?.onError(error) }
-                },
-            )
+            blockstoreHelper.clearUserIdBackupIfNeeded {
+                identityManager.logIn(
+                    newAppUserID,
+                    onSuccess = { customerInfo, created ->
+                        dispatch {
+                            callback?.onReceived(customerInfo, created)
+                            customerInfoUpdateHandler.notifyListeners(customerInfo)
+                        }
+                        offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                    },
+                    onError = { error ->
+                        dispatch { callback?.onError(error) }
+                    },
+                )
+            }
         }
             ?: customerInfoHelper.retrieveCustomerInfo(
                 identityManager.currentAppUserID,
@@ -912,6 +957,21 @@ internal class PurchasesOrchestrator(
     }
 
     //endregion
+
+    // region Virtual Currencies
+    fun getVirtualCurrencies(
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        virtualCurrencyManager.virtualCurrencies(callback = callback)
+    }
+
+    fun invalidateVirtualCurrenciesCache() {
+        virtualCurrencyManager.invalidateVirtualCurrenciesCache()
+    }
+
+    val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = virtualCurrencyManager.cachedVirtualCurrencies()
+
     //endregion
 
     // region Custom entitlements computation
@@ -1084,9 +1144,12 @@ internal class PurchasesOrchestrator(
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
-            getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
-                dispatch {
-                    purchaseCallback.onCompleted(storeTransaction, info)
+            blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+                blockstoreHelper.storeUserIdIfNeeded(info)
+                getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
+                    dispatch {
+                        purchaseCallback.onCompleted(storeTransaction, info)
+                    }
                 }
             }
         }
@@ -1122,7 +1185,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun startPurchase(
+    private fun startPurchase(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1174,7 +1237,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun startProductChange(
+    private fun startProductChange(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1242,62 +1305,6 @@ internal class PurchasesOrchestrator(
                 errorLog(it)
             }
             getAndClearAllPurchaseCallbacks().forEach { it.dispatch(operationInProgressError) }
-        }
-    }
-
-    fun startDeprecatedProductChange(
-        activity: Activity,
-        purchasingData: PurchasingData,
-        presentedOfferingContext: PresentedOfferingContext?,
-        oldProductId: String,
-        googleReplacementMode: GoogleReplacementMode?,
-        listener: ProductChangeCallback,
-    ) {
-        if (purchasingData.productType != ProductType.SUBS) {
-            getAndClearProductChangeCallback()
-            listener.dispatch(
-                PurchasesError(
-                    PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE,
-                ).also { errorLog(it) },
-            )
-            return
-        }
-
-        log(LogIntent.PURCHASE) {
-            PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $purchasingData ${
-                    presentedOfferingContext?.offeringIdentifier?.let {
-                        PurchaseStrings.OFFERING + "$it"
-                    }
-                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
-
-            )
-        }
-        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
-        synchronized(this@PurchasesOrchestrator) {
-            if (!appConfig.finishTransactions) {
-                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
-            }
-            if (state.deprecatedProductChangeCallback == null) {
-                state = state.copy(deprecatedProductChangeCallback = listener)
-                userPurchasing = identityManager.currentAppUserID
-            }
-        }
-        userPurchasing?.let { appUserID ->
-            replaceOldPurchaseWithNewProduct(
-                purchasingData,
-                oldProductId,
-                googleReplacementMode,
-                activity,
-                appUserID,
-                presentedOfferingContext,
-                null,
-                listener,
-            )
-        } ?: run {
-            getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
         }
     }
 

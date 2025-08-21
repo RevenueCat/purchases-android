@@ -119,6 +119,17 @@
                                 bind:header="@{`All Entitlements: `}"
                                 bind:detail="@{viewModel.allEntitlements}"/>
 
+                        <include
+                                android:id="@+id/customer_info_virtual_currencies"
+                                layout="@layout/row_view"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_all_entitlements"
+                                bind:header="@{`Virtual Currencies: `}"
+                                bind:detail="@{viewModel.formattedVirtualCurrencies}"/>
+
                         <LinearLayout
                                 android:id="@+id/customer_info_subscriber_attribute_actions"
                                 android:orientation="horizontal"
@@ -201,6 +212,67 @@
 
                         </LinearLayout>
 
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/block_store_clear_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:text="Clear Block Store"
+                                android:onClick="@{() -> viewModel.onBlockStoreClearClicked(context)}"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@id/customer_info_actions" />
+
+                        <LinearLayout
+                                android:id="@+id/vc_actions"
+                                android:orientation="horizontal"
+                                android:layout_gravity="center"
+                                android:layout_marginBottom="@dimen/padding_medium"
+                                android:layout_marginEnd="@dimen/padding_large"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@+id/block_store_clear_button">
+
+                            <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/customer_info_fetch_vcs_button"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="@dimen/padding_tiny"
+                                    android:onClick="@{() -> viewModel.onFetchVCsClicked()}"
+                                    android:text="Fetch + Log VCs" />
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/customer_info_invalidate_vcs_cache_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:onClick="@{() -> viewModel.onInvalidateVirtualCurrenciesCache()}"
+                                android:text="Invalidate VC Cache" />
+        
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                                android:id="@+id/vc_actions2"
+                                android:orientation="horizontal"
+                                android:layout_gravity="center"
+                                android:layout_marginBottom="@dimen/padding_medium"
+                                android:layout_marginEnd="@dimen/padding_large"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@+id/vc_actions">
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/customer_info_fetch_vc_cache_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:onClick="@{() -> viewModel.onFetchVCCache()}"
+                                android:text="Log VC Cache" />
+
+                        </LinearLayout>
+
                         <androidx.constraintlayout.widget.Barrier
                                 android:id="@+id/customer_info_card_barrier"
                                 android:layout_width="wrap_content"
@@ -215,7 +287,7 @@
                                 android:visibility="gone"
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_all_entitlements"
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_virtual_currencies"
                                 app:layout_constraintVertical_bias="0">
 
                             <include

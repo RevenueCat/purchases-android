@@ -1,22 +1,21 @@
 ## RevenueCat SDK
-### 🐞 Bugfixes
-* Fix upgrades/downgrades after BC8 update (#2532) via Toni Rico (@tonidero)
 ### 📦 Dependency Updates
-* [RENOVATE] Update build-dependencies (#2515) via RevenueCat Git Bot (@RCGitBot)
-* [RENOVATE] Update build-dependencies (#2472) via RevenueCat Git Bot (@RCGitBot)
+* [RENOVATE] Update dependency gradle to v9 (#2589) via RevenueCat Git Bot (@RCGitBot)
 
 ## RevenueCatUI SDK
-### Paywallv2
+### Customer Center
+#### ✨ New Features
+* Show a subscribe button in customer center when there are no subscriptions (#2596) via Facundo Menzella (@facumenzella)
 #### 🐞 Bugfixes
-* Make PaywallActivity not consume insets in Android 16+ (#2520) via Toni Rico (@tonidero)
+* Fix title and price of non-Google purchases in Customer Center (#2576) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Add CLAUDE.md (#2522) via Cesar de la Vega (@vegaro)
-* Update kotlin version in README (#2524) via Cesar de la Vega (@vegaro)
-* Increase compile/target SDK version to 35 (#2525) via Toni Rico (@tonidero)
-* Fix snapshot deployment (#2526) via Toni Rico (@tonidero)
-* Update CircleCI android orb (#2521) via Toni Rico (@tonidero)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2517) via RevenueCat Git Bot (@RCGitBot)
-* Improve v9 migration docs (#2514) via Toni Rico (@tonidero)
-* Bump AGP to 8.10.1 and Gradle to 8.14.2 (#2440) via Jaewoong Eum (@skydoves)
-* Fixes compilation of the CEC sample app. (#2512) via JayShortway (@JayShortway)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2598) via RevenueCat Git Bot (@RCGitBot)
+* Add alias users backend call (#2594) via Toni Rico (@tonidero)
+* Rename TestStore to SimulatedStore (#2591) via Toni Rico (@tonidero)
+* Fail configure call if using test api key in release builds (#2590) via Toni Rico (@tonidero)
+* Support test store (#2554) via Toni Rico (@tonidero)
+* Fix insets in Paywall Tester (#2584) via Cesar de la Vega (@vegaro)
+* Add 8.22.1 to CHANGELOG (#2582) via Toni Rico (@tonidero)
+* Add warning on V9 CHANGELOG (#2586) via Toni Rico (@tonidero)
+* Change metalava job to diff dump generated dump files (#2585) via Toni Rico (@tonidero)

@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts
 
 import android.os.Parcelable
 import androidx.annotation.FontRes
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont.GoogleFont
@@ -13,12 +15,14 @@ import kotlinx.parcelize.TypeParceler
 /**
  * Represents a font. You can create either a [GoogleFont] or a [ResourceFont].
  */
+@Stable
 sealed class PaywallFont : Parcelable {
     /**
      * Represents a downloadable Google Font.
      */
     @Parcelize
     @Poko
+    @Immutable
     class GoogleFont(
         /**
          * Name of the Google font you want to use.
@@ -42,6 +46,7 @@ sealed class PaywallFont : Parcelable {
 
     @Parcelize
     @Poko
+    @Immutable
     class ResourceFont(
         /**
          * The resource ID of the font file in font resources.
@@ -62,6 +67,7 @@ sealed class PaywallFont : Parcelable {
 
     @Parcelize
     @Poko
+    @Immutable
     class AssetFont(
         /**
          * Full path starting from the assets directory (i.e. dir/myfont.ttf for assets/dir/myfont.ttf).

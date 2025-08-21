@@ -109,6 +109,7 @@ private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
 @Suppress("LongMethod")
 @Composable
 fun PaywallsScreen(
+    modifier: Modifier = Modifier,
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
 ) {
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
@@ -126,7 +127,7 @@ fun PaywallsScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.testTag("paywall_screen"),
+        modifier = modifier.testTag("paywall_screen"),
     ) {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)

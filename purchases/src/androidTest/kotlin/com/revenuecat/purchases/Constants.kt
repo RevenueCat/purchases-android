@@ -9,4 +9,6 @@ object Constants {
 
     // comma separated list of active entitlements to verify
     const val activeEntitlementIdsToVerify = "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
+
+    const val isRunningLoadShedderIntegrationTests = "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS"
 }

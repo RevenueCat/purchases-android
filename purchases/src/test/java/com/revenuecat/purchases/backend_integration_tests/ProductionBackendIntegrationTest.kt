@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.backend_integration_tests
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.events.BackendEvent
@@ -45,7 +44,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         assertThat(error).isNull()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.GetProductEntitlementMapping.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.GetProductEntitlementMapping.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -92,7 +91,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.GetOfferings("test-user-id").getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.GetOfferings("test-user-id").getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -134,7 +133,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -159,7 +158,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningPerformed()
@@ -198,7 +197,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.PostPaywallEvents.getPath()}", any())
+            sharedPreferencesEditor.putString(Endpoint.PostPaywallEvents.getPath(), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -223,12 +222,11 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             error("Expected customer center config data")
         }
         customerCenterConfigData?.let {
-            val managementScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?:
-            fail("Expected management screen")
+            val managementScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?: fail("Expected management screen")
             assertThat(managementScreen.type).isEqualTo(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)
             assertThat(managementScreen.paths.size).isEqualTo(4)
-            val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map {
-                it.name.lowercase()
+            val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { values ->
+                values.name.lowercase()
             }.toTypedArray()
             assertThat(it.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
             assertThat(it.support.email).isNull()

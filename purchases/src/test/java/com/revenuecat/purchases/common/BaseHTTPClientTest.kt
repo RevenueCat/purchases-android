@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
@@ -96,6 +97,7 @@ internal abstract class BaseHTTPClientTest {
             proxyURL = proxyURL,
             store = store,
             isDebugBuild = isDebugBuild,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
             forceServerErrors = forceServerErrors,
@@ -115,7 +117,7 @@ internal abstract class BaseHTTPClientTest {
                 expectedResult.responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                "/v1${endpoint.getPath()}",
+                urlPath = endpoint.getPath(),
                 refreshETag = false,
                 requestDate = requestDateHeader,
                 verificationResult = verificationResult

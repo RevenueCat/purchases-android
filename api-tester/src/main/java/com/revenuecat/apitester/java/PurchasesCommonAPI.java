@@ -20,6 +20,7 @@ import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback;
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
@@ -59,6 +60,15 @@ final class PurchasesCommonAPI {
             public void onError(@NonNull PurchasesError error) {
             }
         };
+        final GetStorefrontCallback getStorefrontCallback = new GetStorefrontCallback() {
+            @Override
+            public void onReceived(@NonNull String storefrontCountryCode) {
+            }
+
+            @Override
+            public void onError(@NonNull PurchasesError error) {
+            }
+        };
 
         purchases.getOfferings(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
@@ -71,6 +81,9 @@ final class PurchasesCommonAPI {
         final UpdatedCustomerInfoListener updatedCustomerInfoListener = purchases.getUpdatedCustomerInfoListener();
         purchases.setUpdatedCustomerInfoListener((CustomerInfo customerInfo) -> {
         });
+
+        final String storefrontCountryCode = purchases.getStorefrontCountryCode();
+        purchases.getStorefrontCountryCode(getStorefrontCallback);
 
         final List<InAppMessageType> inAppMessageTypeList = new ArrayList<>();
         purchases.showInAppMessagesIfNeeded(activity);

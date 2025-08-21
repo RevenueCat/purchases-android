@@ -365,6 +365,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
             paywallComponents = null,
         ),
         locales = paywallLocales.map { LocaleId(it) }.toNonEmptySetOrNull()!!,
+        storefrontCountryCode = "US",
         dateProvider = { Date() },
         packages = PaywallState.Loaded.Components.AvailablePackages(
             packagesOutsideTabs = emptyList(),

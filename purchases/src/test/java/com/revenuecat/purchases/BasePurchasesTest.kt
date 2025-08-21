@@ -13,6 +13,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
+import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -43,6 +44,7 @@ import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
 import io.mockk.clearMocks
 import io.mockk.every
@@ -80,6 +82,8 @@ internal open class BasePurchasesTest {
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
     internal val mockFontLoader = mockk<FontLoader>()
+    internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
+    private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected lateinit var appConfig: AppConfig
@@ -136,6 +140,18 @@ internal open class BasePurchasesTest {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
 
+        every { mockBlockstoreHelper.storeUserIdIfNeeded(any()) } just Runs
+        every {
+            mockBlockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+        every {
+            mockBlockstoreHelper.clearUserIdBackupIfNeeded(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
         every { mockLifecycle.addObserver(any()) } just Runs
         every { mockLifecycle.removeObserver(any()) } just Runs
 
@@ -161,6 +177,7 @@ internal open class BasePurchasesTest {
             mockLifecycleOwner,
             mockLifecycle,
             mockFontLoader,
+            mockBlockstoreHelper,
         )
     }
 
@@ -405,6 +422,8 @@ internal open class BasePurchasesTest {
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
+        apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
+        enableSimulatedStore: Boolean = false,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -414,6 +433,7 @@ internal open class BasePurchasesTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = apiKeyValidationResult,
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
                 customEntitlementComputation = customEntitlementComputation,
@@ -448,8 +468,14 @@ internal open class BasePurchasesTest {
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
+            virtualCurrencyManager = mockVirtualCurrencyManager,
+            isSimulatedStoreEnabled = { enableSimulatedStore },
+            blockstoreHelper = mockBlockstoreHelper,
         )
-        purchases = Purchases(purchasesOrchestrator)
+
+        purchases = Purchases(
+            purchasesOrchestrator = purchasesOrchestrator,
+        )
         Purchases.sharedInstance = purchases
         purchasesOrchestrator.state = purchasesOrchestrator.state.copy(appInBackground = false)
     }

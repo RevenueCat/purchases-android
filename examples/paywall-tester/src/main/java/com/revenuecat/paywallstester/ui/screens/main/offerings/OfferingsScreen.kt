@@ -50,16 +50,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+@SuppressWarnings("LongParameterList")
 @Composable
 fun OfferingsScreen(
     tappedOnOffering: (Offering) -> Unit,
     tappedOnOfferingFooter: (Offering) -> Unit,
     tappedOnOfferingCondensedFooter: (Offering) -> Unit,
     tappedOnOfferingByPlacement: (String) -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: OfferingsViewModel = viewModel<OfferingsViewModelImpl>(),
 ) {
     when (val state = viewModel.offeringsState.collectAsStateWithLifecycle().value) {
-        is OfferingsState.Error -> ErrorOfferingsScreen(errorState = state)
+        is OfferingsState.Error -> ErrorOfferingsScreen(errorState = state, modifier)
         is OfferingsState.Loaded -> OfferingsListScreen(
             offeringsState = state,
             tappedOnNavigateToOffering = tappedOnOffering,
@@ -67,14 +69,19 @@ fun OfferingsScreen(
             tappedOnNavigateToOfferingCondensedFooter = tappedOnOfferingCondensedFooter,
             tappedOnNavigateToOfferingByPlacement = tappedOnOfferingByPlacement,
             tappedOnReloadOfferings = { viewModel.refreshOfferings() },
+            modifier,
         )
-        OfferingsState.Loading -> LoadingOfferingsScreen()
+        OfferingsState.Loading -> LoadingOfferingsScreen(modifier)
     }
 }
 
 @Composable
-private fun ErrorOfferingsScreen(errorState: OfferingsState.Error) {
+private fun ErrorOfferingsScreen(
+    errorState: OfferingsState.Error,
+    modifier: Modifier = Modifier,
+) {
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -83,8 +90,11 @@ private fun ErrorOfferingsScreen(errorState: OfferingsState.Error) {
 }
 
 @Composable
-private fun LoadingOfferingsScreen() {
+private fun LoadingOfferingsScreen(
+    modifier: Modifier = Modifier,
+) {
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -102,13 +112,14 @@ private fun OfferingsListScreen(
     tappedOnNavigateToOfferingCondensedFooter: (Offering) -> Unit,
     tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
     tappedOnReloadOfferings: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
 
     val showDialog = remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
         LazyColumn {
             item {
                 Box(modifier = Modifier.fillMaxWidth()) {

@@ -27,6 +27,20 @@ class APIKeyValidatorTest {
     }
 
     @Test
+    fun `Validation result is simulated store`() {
+        assertValidation(
+            APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            "test_1a2b3c4d5e6f7h",
+            Store.PLAY_STORE
+        )
+        assertValidation(
+            APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            "test_1a2b3c4d5e6f7h",
+            Store.AMAZON
+        )
+    }
+
+    @Test
     fun `Validation result is legacy`() {
         assertValidation(APIKeyValidator.ValidationResult.LEGACY, "1a2b3c4d5e6f7h", Store.PLAY_STORE)
     }
@@ -48,7 +62,7 @@ class APIKeyValidatorTest {
 
     private fun assertValidation(expected: APIKeyValidator.ValidationResult, apiKey: String, store: Store) {
         val validator = APIKeyValidator()
-        val validationResult = validator.validate(apiKey, store)
+        val validationResult = validator.validateAndLog(apiKey, store)
         assertThat(validationResult).isEqualTo(expected)
     }
 }

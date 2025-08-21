@@ -21,12 +21,13 @@ import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
-import com.revenuecat.purchases.interfaces.GetStorefrontCallback;
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -88,16 +89,6 @@ final class PurchasesAPI {
             }
         };
 
-        final GetStorefrontCallback getStorefrontCallback = new GetStorefrontCallback() {
-            @Override
-            public void onReceived(@NonNull String storefrontCountryCode) {
-            }
-
-            @Override
-            public void onError(@NonNull PurchasesError error) {
-            }
-        };
-
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback);
         purchases.syncPurchases();
         purchases.syncPurchases(syncPurchasesCallback);
@@ -122,13 +113,22 @@ final class PurchasesAPI {
 
         final Store store = purchases.getStore();
 
-        final String storefrontCountryCode = purchases.getStorefrontCountryCode();
-        purchases.getStorefrontCountryCode(getStorefrontCallback);
-
         final PurchasesConfiguration configuration = purchases.getCurrentConfiguration();
 
         final WebPurchaseRedemption webPurchaseRedemption1 = Purchases.parseAsWebPurchaseRedemption(intent);
         final WebPurchaseRedemption webPurchaseRedemption2 = Purchases.parseAsWebPurchaseRedemption("");
+
+        final GetVirtualCurrenciesCallback getVirtualCurrenciesCallback = new GetVirtualCurrenciesCallback() {
+            @Override
+            public void onReceived(@NonNull VirtualCurrencies virtualCurrencies) {}
+
+            @Override
+            public void onError(@NonNull PurchasesError error) {}
+        };
+
+        purchases.getVirtualCurrencies(getVirtualCurrenciesCallback);
+        purchases.invalidateVirtualCurrenciesCache();
+        VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {

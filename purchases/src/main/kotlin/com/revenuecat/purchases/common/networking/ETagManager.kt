@@ -72,7 +72,7 @@ internal class ETagManager(
         responseCode: Int,
         payload: String,
         eTagHeader: String?,
-        urlPathWithVersion: String,
+        urlPath: String,
         refreshETag: Boolean,
         requestDate: Date?,
         verificationResult: VerificationResult,
@@ -86,7 +86,7 @@ internal class ETagManager(
         )
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
-                val storedResult = getStoredResult(urlPathWithVersion)?.let { storedResult ->
+                val storedResult = getStoredResult(urlPath)?.let { storedResult ->
                     storedResult.copy(
                         // This assumes we won't store verification failures in the cache and we will clear the cache
                         // when enabling verification.
@@ -103,7 +103,7 @@ internal class ETagManager(
                     }
             }
 
-            storeBackendResultIfNoError(urlPathWithVersion, resultFromBackend, eTagInResponse)
+            storeBackendResultIfNoError(urlPath, resultFromBackend, eTagInResponse)
         }
         return resultFromBackend
     }
