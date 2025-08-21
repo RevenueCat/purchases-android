@@ -14,6 +14,7 @@ assertJ = "3.22.0"
 browser = "1.8.0"
 billing = "8.0.0"
 composeBom = "2024.09.00"
+composeAnnotation = "1.9.0"
 coil = "2.4.0"
 coreTesting = "2.0.0"
 commonmark = "0.21.0"
@@ -114,6 +115,7 @@ compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-ui-util = { module = "androidx.compose.ui:ui-util" }
 compose-window-size = { module = "androidx.compose.material3:material3-window-size-class" }
+compose-annotations = { module = "androidx.compose.runtime:runtime-annotation", version.ref = "composeAnnotation" }
 
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }

@@ -151,6 +151,7 @@ dependencies {
     implementation(libs.coroutines.core)
     api(libs.billing)
 
+    compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
     compileOnly(libs.coil.base)
 

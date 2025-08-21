@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
@@ -19,6 +21,7 @@ import kotlinx.serialization.encoding.Encoder
 @Poko
 @Serializable
 @SerialName("button")
+@Immutable
 class ButtonComponent(
     @get:JvmSynthetic val action: Action,
     @get:JvmSynthetic val stack: StackComponent,
@@ -26,6 +29,7 @@ class ButtonComponent(
 
     @InternalRevenueCatAPI
     @Serializable(with = ActionSerializer::class)
+    @Stable
     sealed interface Action {
         // SerialNames are handled by the ActionSerializer.
 
@@ -39,11 +43,13 @@ class ButtonComponent(
         object NavigateBack : Action
 
         @Serializable
+        @Immutable
         data class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action
     }
 
     @InternalRevenueCatAPI
     @Serializable
+    @Stable
     sealed interface Destination {
         // SerialNames are handled by the ActionSerializer.
 
@@ -54,24 +60,28 @@ class ButtonComponent(
         object CustomerCenter : Destination
 
         @Serializable
+        @Immutable
         data class PrivacyPolicy(
             @get:JvmSynthetic val urlLid: LocalizationKey,
             @get:JvmSynthetic val method: UrlMethod,
         ) : Destination
 
         @Serializable
+        @Immutable
         data class Terms(
             @get:JvmSynthetic val urlLid: LocalizationKey,
             @get:JvmSynthetic val method: UrlMethod,
         ) : Destination
 
         @Serializable
+        @Immutable
         data class Url(
             @get:JvmSynthetic val urlLid: LocalizationKey,
             @get:JvmSynthetic val method: UrlMethod,
         ) : Destination
 
         @Serializable
+        @Immutable
         data class Sheet(
             @get:JvmSynthetic val id: String,
             @get:JvmSynthetic val name: String?,

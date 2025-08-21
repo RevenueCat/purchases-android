@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.CarouselComponent.PageControl
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -22,6 +23,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("carousel")
+@Immutable
 class CarouselComponent(
     @get:JvmSynthetic
     val pages: List<StackComponent>,
@@ -91,6 +93,7 @@ class CarouselComponent(
 
     @Poko
     @Serializable
+    @Immutable
     class PageControl(
         @get:JvmSynthetic
         val position: Position,
@@ -145,6 +148,7 @@ class CarouselComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class PartialCarouselComponent(
     @get:JvmSynthetic
     val visible: Boolean? = null,

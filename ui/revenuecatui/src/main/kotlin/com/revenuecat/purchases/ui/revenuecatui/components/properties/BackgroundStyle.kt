@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,10 +61,13 @@ internal sealed interface BackgroundStyle {
 /**
  * Background properties with resolved colors.
  */
+@Stable
 internal sealed interface BackgroundStyles {
     @JvmInline
+    @Immutable
     value class Color(@get:JvmSynthetic val color: ColorStyles) : BackgroundStyles
 
+    @Immutable
     data class Image(
         @get:JvmSynthetic val sources: ThemeImageUrls,
         @get:JvmSynthetic val contentScale: ContentScale,
