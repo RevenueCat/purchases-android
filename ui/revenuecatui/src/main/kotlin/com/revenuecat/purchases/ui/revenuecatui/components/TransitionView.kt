@@ -93,8 +93,8 @@ private fun PaywallTransition.enterTransition() = when (type) {
     )
 }
 
-private fun PaywallAnimation?.easing(): Easing = this?.easing() ?: LinearOutSlowInEasing
-private fun PaywallAnimation.easing(): Easing = when (type) {
+private fun PaywallAnimation?.easing(): Easing = this?.getEasing() ?: LinearOutSlowInEasing
+private fun PaywallAnimation.getEasing(): Easing = when (type) {
     is AnimationType.EaseIn -> FastOutSlowInEasing
     is AnimationType.EaseOut -> FastOutLinearInEasing
     is AnimationType.EaseInOut -> LinearOutSlowInEasing
