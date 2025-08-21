@@ -63,27 +63,21 @@ internal class SharedPreferencesManager(
      * Performs the migration from legacy shared preferences to RevenueCat-specific ones
      */
     private fun performMigration() {
-        try {
-            log(
-                LogIntent.DEBUG,
-            ) { "Starting shared preferences migration from legacy to RevenueCat-specific preferences" }
+        log(
+            LogIntent.DEBUG,
+        ) { "Starting shared preferences migration from legacy to RevenueCat-specific preferences" }
 
-            val revenueCatKeys = getRevenueCatKeysToMigrate()
+        val revenueCatKeys = getRevenueCatKeysToMigrate()
 
-            val legacyPrefs = legacySharedPreferences
-            val revenueCatPrefs = revenueCatSharedPreferences
-            revenueCatPrefs.edit(commit = true) {
-                var migratedCount = 0
-                for (key in revenueCatKeys) {
-                    if (migratePreferenceValue(legacyPrefs, this, key)) {
-                        migratedCount++
-                    }
+        val legacyPrefs = legacySharedPreferences
+        val revenueCatPrefs = revenueCatSharedPreferences
+        revenueCatPrefs.edit(commit = true) {
+            var migratedCount = 0
+            for (key in revenueCatKeys) {
+                if (migratePreferenceValue(legacyPrefs, this, key)) {
+                    migratedCount++
                 }
             }
-        } catch (e: java.lang.IllegalStateException) {
-            errorLog(e) { "Failed to perform shared preferences migration due to invalid state" }
-        } catch (e: java.io.IOException) {
-            errorLog(e) { "Failed to perform shared preferences migration due to IO error" }
         }
     }
 
