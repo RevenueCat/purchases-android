@@ -1,0 +1,54 @@
+package com.revenuecat.purchases.paywalls.components
+
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonClassDiscriminator
+
+@InternalRevenueCatAPI
+@Poko
+@Serializable
+class PaywallTransition(
+    @get:JvmSynthetic val type: TransitionType = TransitionType.Fade,
+    @get:JvmSynthetic val displacementStrategy: DisplacementStrategy,
+    @get:JvmSynthetic val animation: PaywallAnimation? = null,
+) {
+
+    @Serializable
+    enum class DisplacementStrategy {
+        @SerialName("greedy")
+        GREEDY,
+
+        @SerialName("lazy")
+        LAZY
+    }
+
+    @InternalRevenueCatAPI
+    @Serializable
+    @JsonClassDiscriminator("type")
+    sealed class TransitionType {
+        @Serializable
+        @SerialName("fade")
+        object Fade : TransitionType()
+
+        @Serializable
+        @SerialName("fade_and_scale")
+        object FadeAndScale : TransitionType()
+
+        @Serializable
+        @SerialName("scale")
+        object Scale : TransitionType()
+
+        @Serializable
+        @SerialName("slide")
+        object Slide : TransitionType()
+
+        @Poko
+        @Serializable
+        @SerialName("custom")
+        class Custom(
+            @get:JvmSynthetic val value: String,
+        ) : TransitionType()
+    }
+}
