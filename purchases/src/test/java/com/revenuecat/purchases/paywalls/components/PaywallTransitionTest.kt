@@ -27,12 +27,12 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                     json = """
                         {
                           "animation": {
-                            "msDelay": 1500,
+                            "ms_delay": 1500,
                             "type": {
                               "type": "ease_in_out"
                             }
                           },
-                          "displacementStrategy": "greedy",
+                          "displacement_strategy": "greedy",
                           "type": {
                             "type": "fade_and_scale"
                           }
@@ -54,7 +54,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                 Args(
                     json = """
                         {
-                          "displacementStrategy": "lazy",
+                          "displacement_strategy": "lazy",
                           "type": {
                             "type": "fade"
                           }
@@ -73,13 +73,13 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                     json = """
                         {
                           "animation": {
-                            "msDelay": 1500,
+                            "ms_delay": 1500,
                             "type": {
                               "type": "custom",
                               "value": "some random animation"
                             }
                           },
-                          "displacementStrategy": "greedy",
+                          "displacement_strategy": "greedy",
                           "type": {
                             "type": "custom",
                             "value": "some random transition"
@@ -101,16 +101,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
     }
 
     @Test
-    fun `Should properly deserialize PackageComponent as PackageComponent`() {
-        // Arrange, Act
-        val actual = JsonTools.json.decodeFromString<PaywallTransition>(args.json)
-
-        // Assert
-        assert(actual == args.expected)
-    }
-
-    @Test
-    fun `Should properly deserialize PackageComponent as PaywallComponent`() {
+    fun `Should properly deserialize PaywallTransition`() {
         // Arrange, Act
         val actual = JsonTools.json.decodeFromString<PaywallTransition>(args.json)
 

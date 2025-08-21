@@ -12,8 +12,12 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 @SerialName("animation")
 class PaywallAnimation(
     @get:JvmSynthetic val type: AnimationType,
-    @get:JvmSynthetic val msDelay: Int?,
-    @get:JvmSynthetic val msDuration: Int?
+    @get:JvmSynthetic
+    @SerialName("ms_delay")
+    val msDelay: Int?,
+    @get:JvmSynthetic
+    @SerialName("ms_duration")
+    val msDuration: Int?
 ) {
 
     @InternalRevenueCatAPI
@@ -29,7 +33,7 @@ class PaywallAnimation(
         object EaseInOut : AnimationType()
 
         @Serializable
-        @SerialName("easeOut")
+        @SerialName("ease_out")
         object EaseOut : AnimationType()
 
         @Serializable

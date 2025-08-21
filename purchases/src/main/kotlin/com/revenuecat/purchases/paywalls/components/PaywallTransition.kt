@@ -11,7 +11,9 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 @Serializable
 class PaywallTransition(
     @get:JvmSynthetic val type: TransitionType = TransitionType.Fade,
-    @get:JvmSynthetic val displacementStrategy: DisplacementStrategy,
+    @get:JvmSynthetic
+    @SerialName("displacement_strategy")
+    val displacementStrategy: DisplacementStrategy,
     @get:JvmSynthetic val animation: PaywallAnimation? = null,
 ) {
 
