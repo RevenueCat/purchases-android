@@ -79,6 +79,10 @@ internal class SharedPreferencesManager(
                 }
             }
         }
+
+        log(
+            LogIntent.DEBUG,
+        ) { "Finished shared preferences migration from legacy to RevenueCat-specific preferences" }
     }
 
     private fun getRevenueCatKeysToMigrate(): List<String> {
