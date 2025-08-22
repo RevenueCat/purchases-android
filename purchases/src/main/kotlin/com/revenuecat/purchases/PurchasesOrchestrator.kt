@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.app.Activity
 import android.app.Application
+import android.app.backup.BackupManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -138,6 +139,7 @@ internal class PurchasesOrchestrator(
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
+    private val backupManager: BackupManager = BackupManager(application),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -599,6 +601,7 @@ internal class PurchasesOrchestrator(
                             customerInfoUpdateHandler.notifyListeners(customerInfo)
                         }
                         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                        backupManager.dataChanged()
                     },
                     onError = { error ->
                         dispatch { callback?.onError(error) }
@@ -631,6 +634,7 @@ internal class PurchasesOrchestrator(
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
                 updateAllCaches(identityManager.currentAppUserID, callback)
+                backupManager.dataChanged()
             }
         }
     }
@@ -1144,6 +1148,9 @@ internal class PurchasesOrchestrator(
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
+            // This lets the backup manager know a change in data happened that would be good to backup.
+            // In this case, we want to make sure that if there is a purchase, we make sure to
+            backupManager.dataChanged()
             blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
                 blockstoreHelper.storeUserIdIfNeeded(info)
                 getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->

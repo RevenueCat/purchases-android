@@ -746,6 +746,16 @@ package com.revenuecat.purchases.amazon {
 
 }
 
+package com.revenuecat.purchases.backup {
+
+  public final class RevenueCatProactiveBackupAgent extends android.app.backup.BackupAgentHelper {
+    ctor public RevenueCatProactiveBackupAgent();
+    method public void onBackup(android.os.ParcelFileDescriptor? oldState, android.app.backup.BackupDataOutput? data, android.os.ParcelFileDescriptor? newState);
+    method public void onRestore(android.app.backup.BackupDataInput? data, long appVersionCode, android.os.ParcelFileDescriptor? newState);
+  }
+
+}
+
 package com.revenuecat.purchases.common {
 
   @dev.drewhamilton.poko.Poko public final class PlatformInfo {

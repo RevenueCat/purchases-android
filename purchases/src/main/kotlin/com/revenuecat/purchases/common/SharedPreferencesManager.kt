@@ -23,7 +23,6 @@ internal class SharedPreferencesManager(
 ) {
 
     companion object {
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val REVENUECAT_PREFS_FILE_NAME = "com_revenuecat_purchases_preferences"
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
