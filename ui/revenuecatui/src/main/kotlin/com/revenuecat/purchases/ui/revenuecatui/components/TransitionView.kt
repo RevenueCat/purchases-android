@@ -29,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.PaywallTransition.Transition
 import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType.Scale
 import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType.Slide
 
+@Suppress("ModifierMissing")
 @Composable
 fun TransitionView(transition: PaywallTransition?, content: @Composable () -> Unit) {
     if (transition == null) {
@@ -56,6 +57,7 @@ private fun Modifier.hidden(): Modifier = this.layout { measurable, constraints 
     }
 }
 
+@Suppress("ModifierMissing")
 @Composable
 private fun PaywallTransition.AnimatedVisibility(content: @Composable () -> Unit) {
     var shouldShow by remember(this) { mutableStateOf(false) }
