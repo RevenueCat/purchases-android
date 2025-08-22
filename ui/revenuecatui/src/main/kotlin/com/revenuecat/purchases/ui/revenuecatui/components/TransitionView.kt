@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -69,12 +70,13 @@ private fun PaywallTransition.AnimatedVisibility(content: @Composable () -> Unit
     }
 }
 
-private fun PaywallTransition.enterTransition() = when (type) {
+@Suppress("CyclomaticComplexMethod")
+private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
     is Fade -> fadeIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
-            easing = animation.easing()
+            easing = animation.easing(),
         )
     )
 
@@ -82,13 +84,13 @@ private fun PaywallTransition.enterTransition() = when (type) {
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
-            easing = animation.easing()
+            easing = animation.easing(),
         )
     ) + scaleIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
-            easing = animation.easing()
+            easing = animation.easing(),
         )
     )
 
@@ -96,7 +98,7 @@ private fun PaywallTransition.enterTransition() = when (type) {
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
-            easing = animation.easing()
+            easing = animation.easing(),
         )
     )
 
@@ -104,7 +106,7 @@ private fun PaywallTransition.enterTransition() = when (type) {
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
-            easing = animation.easing()
+            easing = animation.easing(),
         )
     ) { IntOffset(-SensibleDefaults.X_OFFSET, SensibleDefaults.ZERO) }
 
@@ -112,7 +114,7 @@ private fun PaywallTransition.enterTransition() = when (type) {
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
-            easing = animation.easing()
+            easing = animation.easing(),
         )
     )
 }
