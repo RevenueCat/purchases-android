@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -18,6 +19,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("timeline")
+@Immutable
 class TimelineComponent(
     @get:JvmSynthetic
     @SerialName("item_spacing")
@@ -55,6 +57,7 @@ class TimelineComponent(
 
     @Poko
     @Serializable
+    @Immutable
     class Item(
         @get:JvmSynthetic
         val title: TextComponent,
@@ -72,6 +75,7 @@ class TimelineComponent(
 
     @Poko
     @Serializable
+    @Immutable
     class Connector(
         @get:JvmSynthetic
         val width: Int,
@@ -86,6 +90,7 @@ class TimelineComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class PartialTimelineComponent(
     @get:JvmSynthetic
     val visible: Boolean? = null,
@@ -112,6 +117,7 @@ class PartialTimelineComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class PartialTimelineComponentItem(
     @get:JvmSynthetic
     val visible: Boolean? = null,

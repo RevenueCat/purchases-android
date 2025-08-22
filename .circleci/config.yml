@@ -918,7 +918,6 @@ workflows:
           requires:
             - prepare-tests
       - test_dokka_hide_internal:
-          <<: *release-branches
           requires:
             - prepare-tests
       - run-backend-integration-tests:

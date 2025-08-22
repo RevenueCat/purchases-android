@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -32,6 +33,7 @@ import kotlinx.serialization.json.int
 @Poko
 @Serializable
 @SerialName("text")
+@Immutable
 class TextComponent
 @Suppress("LongParameterList")
 constructor(
@@ -74,6 +76,7 @@ constructor(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class PartialTextComponent
 @Suppress("LongParameterList")
 constructor(

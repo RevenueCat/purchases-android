@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
@@ -41,6 +43,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
@@ -119,12 +122,15 @@ internal interface CustomerCenterViewModel {
     fun showPaywall(context: Context)
 }
 
+@Stable
 internal sealed class TransactionDetails(
     open val productIdentifier: String,
     open val store: Store,
     open val price: Price?,
     open val isSandbox: Boolean,
 ) {
+
+    @Immutable
     data class Subscription(
         override val productIdentifier: String,
         val productPlanIdentifier: String?,
@@ -138,6 +144,7 @@ internal sealed class TransactionDetails(
         override val isSandbox: Boolean,
     ) : TransactionDetails(productIdentifier, store, price, isSandbox)
 
+    @Immutable
     data class NonSubscription(
         override val productIdentifier: String,
         override val store: Store,
@@ -1119,7 +1126,10 @@ internal class CustomerCenterViewModelImpl(
             Logger.d("Showing paywall for offering: ${offering.identifier}")
 
             val paywallArgs = PaywallActivityArgs(
-                offeringId = offering.identifier,
+                offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
+                    offeringId = offering.identifier,
+                    presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+                ),
                 shouldDisplayDismissButton = true,
             )
 

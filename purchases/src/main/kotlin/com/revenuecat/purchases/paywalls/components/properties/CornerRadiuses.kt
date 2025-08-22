@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import androidx.annotation.IntRange
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
@@ -11,6 +13,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @InternalRevenueCatAPI
+@Stable
 @Serializable(with = CornerRadiusesSerializer::class)
 sealed interface CornerRadiuses {
 
@@ -18,6 +21,7 @@ sealed interface CornerRadiuses {
      * Contains radius values for 4 corners, in dp.
      */
     @Poko
+    @Immutable
     @Serializable
     class Dp(
         /**
@@ -67,6 +71,7 @@ sealed interface CornerRadiuses {
      * Contains radius values for 4 corners, in percentages.
      */
     @Poko
+    @Immutable
     @Serializable
     class Percentage(
         /**
