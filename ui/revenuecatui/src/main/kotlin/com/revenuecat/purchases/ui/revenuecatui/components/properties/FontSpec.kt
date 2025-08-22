@@ -29,12 +29,6 @@ private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs,
 )
 
-private data class ResourceFontSpec(
-    val id: Int,
-    val weight: Int?,
-    val style: FontStyle?,
-)
-
 /**
  * A `FontSpec` is a more detailed version of [FontInfo]. A [FontInfo.Name] can be resolved to a generic font
  * (e.g. "sans-serif"), a font resource provided by the app, or a device font provided by the OEM.
@@ -62,48 +56,16 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
 ): Map<FontAlias, FontSpec> {
     val resourceFontFamilies = values
         .toSet()
-        .map { it.android }
-        .filterIsInstance<FontInfo.Name>()
-        .mapNotNull { fontInfo -> fontInfo.family?.let { family -> fontInfo to family } }
-        .groupBy({ it.second }, { it.first })
-        .mapValues { (_, fontInfos) ->
-            val resourceNamesSeen = mutableSetOf<String>()
-            fontInfos.mapNotNull { fontInfo ->
-                if (fontInfo.value in resourceNamesSeen) {
-                    null
-                } else {
-                    resourceProvider.getResourceIdentifier(name = fontInfo.value, type = "font")
-                        .takeIf { it != 0 }
-                        ?.also { resourceNamesSeen.add(fontInfo.value) }
-                        ?.let {
-                            ResourceFontSpec(
-                                id = it,
-                                weight = fontInfo.weight,
-                                style = fontInfo.style?.toComposeFontStyle(),
-                            )
-                        }
-                }
-            }
+        .mapNotNull { fontsConfig ->
+            val fontInfo = fontsConfig.android as? FontInfo.Name
+            fontInfo?.family?.let { family -> family to fontInfo }
         }
-        .filterValues { it.isNotEmpty() }
-        .mapValues { (_, resourceFonts) ->
-            if (resourceFonts.size == 1) {
-                resourceProvider.getXmlFontFamily(resourceFonts.first().id)?.let {
-                    return@mapValues FontSpec.Resource(it)
-                }
+        .groupBy({ (family, _) -> family }, { (_, fontInfo) -> fontInfo })
+        .mapNotNull { (family, fontInfos) ->
+            fontInfos.toFontSpecResource(resourceProvider)?.let {
+                family to it
             }
-            FontSpec.Resource(
-                FontFamily(
-                    resourceFonts.map { resourceFont ->
-                        Font(
-                            resId = resourceFont.id,
-                            weight = resourceFont.weight?.let { FontWeight(it) } ?: FontWeight.Normal,
-                            style = resourceFont.style ?: FontStyle.Normal,
-                        )
-                    },
-                ),
-            )
-        }
+        }.associateBy({ it.first }, { it.second })
 
     // Get unique FontsConfigs, and determine their FontSpec.
     val configToSpec: Map<FontsConfig, FontSpec> = values.toSet().associateWith { fontsConfig ->
@@ -111,6 +73,50 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
     }
     // Create a map of FontAliases to FontSpecs.
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
+}
+
+private fun List<FontInfo.Name>.toFontSpecResource(
+    resourceProvider: ResourceProvider,
+): FontSpec.Resource? {
+    val fontResourceData = toFontResourceIdAndData(resourceProvider)
+    return if (fontResourceData.isEmpty()) {
+        null
+    } else {
+        if (fontResourceData.size == 1) {
+            resourceProvider.getXmlFontFamily(fontResourceData.first().first)?.let {
+                return FontSpec.Resource(it)
+            }
+        }
+        FontSpec.Resource(
+            FontFamily(
+                fontResourceData.map { resourceFont ->
+                    Font(
+                        resId = resourceFont.first,
+                        weight = resourceFont.second?.let { FontWeight(it) } ?: FontWeight.Normal,
+                        style = resourceFont.third ?: FontStyle.Normal,
+                    )
+                },
+            ),
+        )
+    }
+}
+
+private fun List<FontInfo.Name>.toFontResourceIdAndData(
+    resourceProvider: ResourceProvider,
+): List<Triple<Int, Int?, FontStyle?>> {
+    val resourceNamesSeen = mutableSetOf<String>()
+    return mapNotNull { fontInfo ->
+        if (fontInfo.value in resourceNamesSeen) {
+            null
+        } else {
+            resourceProvider.getResourceIdentifier(name = fontInfo.value, type = "font")
+                .takeIf { it != 0 }
+                ?.also { resourceNamesSeen.add(fontInfo.value) }
+                ?.let {
+                    Triple(it, fontInfo.weight, fontInfo.style?.toComposeFontStyle())
+                }
+        }
+    }
 }
 
 /**
