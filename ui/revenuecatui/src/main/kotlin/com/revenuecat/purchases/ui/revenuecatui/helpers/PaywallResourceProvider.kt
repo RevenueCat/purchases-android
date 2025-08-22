@@ -4,9 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import androidx.annotation.StringRes
+import androidx.compose.ui.text.font.FontFamily
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.ui.revenuecatui.utils.FontFamilyXmlParser
 import java.util.Locale
 
 /**
@@ -21,6 +23,7 @@ internal interface ResourceProvider {
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
     fun getResourceIdentifier(name: String, type: String): Int
+    fun getXmlFontFamily(resourceId: Int): FontFamily?
     fun getAssetFontPath(name: String): String?
     fun getCachedFontFamilyOrStartDownload(
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
@@ -56,6 +59,26 @@ internal class PaywallResourceProvider(
     override fun getResourceIdentifier(name: String, type: String): Int =
         resources.getIdentifier(name, type, packageName)
 
+    @Suppress("ReturnCount")
+    override fun getXmlFontFamily(resourceId: Int): FontFamily? {
+        val parser = try {
+            resources.getXml(resourceId)
+        } catch (_: Resources.NotFoundException) {
+            return null
+        }
+        return try {
+            FontFamilyXmlParser.parse(parser)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            // This can happen if the XML is malformed or not a valid font family.
+            // We log the error and return null.
+            val resourceName = resources.getResourceEntryNameOrNull(resourceId)
+            Logger.e("Error parsing XML font family with resource ID ${resourceName ?: resourceId}", e)
+            null
+        } finally {
+            parser.close()
+        }
+    }
+
     override fun getAssetFontPath(name: String): String? {
         val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
 
@@ -83,3 +106,10 @@ internal fun Context.toResourceProvider(): ResourceProvider {
 private fun Context.applicationName(): String {
     return applicationInfo.loadLabel(packageManager).toString()
 }
+
+private fun Resources.getResourceEntryNameOrNull(resourceId: Int): String? =
+    try {
+        getResourceEntryName(resourceId)
+    } catch (_: Resources.NotFoundException) {
+        null
+    }
