@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.Manifest
 import android.app.Activity
 import android.app.Application
+import android.app.backup.BackupManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.test.platform.app.InstrumentationRegistry
@@ -77,6 +78,7 @@ internal open class BasePurchasesTest {
     internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
+    protected val mockBackupManager = mockk<BackupManager>()
     internal val mockEventsManager = mockk<EventsManager>()
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
@@ -151,6 +153,7 @@ internal open class BasePurchasesTest {
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
+        every { mockBackupManager.dataChanged() } just Runs
 
         every { mockLifecycle.addObserver(any()) } just Runs
         every { mockLifecycle.removeObserver(any()) } just Runs
@@ -178,6 +181,7 @@ internal open class BasePurchasesTest {
             mockLifecycle,
             mockFontLoader,
             mockBlockstoreHelper,
+            mockBackupManager,
         )
     }
 
@@ -471,6 +475,7 @@ internal open class BasePurchasesTest {
             virtualCurrencyManager = mockVirtualCurrencyManager,
             isSimulatedStoreEnabled = { enableSimulatedStore },
             blockstoreHelper = mockBlockstoreHelper,
+            backupManager = mockBackupManager,
         )
 
         purchases = Purchases(

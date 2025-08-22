@@ -525,6 +525,28 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `login called with different appUserID notifies backup manager`() {
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
+        }
+    }
+
+    @Test
     fun `login successful with new appUserID calls customer info updater to update delegate if changed`() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
@@ -593,6 +615,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
         verify(exactly = 1) {
             mockOfferingsManager.fetchAndCacheOfferings(appUserID, false, any(), any())
+        }
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
         }
     }
 
