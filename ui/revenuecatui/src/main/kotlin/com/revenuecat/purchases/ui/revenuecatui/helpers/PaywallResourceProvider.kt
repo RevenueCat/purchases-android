@@ -8,7 +8,7 @@ import androidx.compose.ui.text.font.FontFamily
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
-import com.revenuecat.purchases.ui.revenuecatui.utils.FontFamilyXMLParser
+import com.revenuecat.purchases.ui.revenuecatui.utils.FontFamilyXmlParser
 import java.util.Locale
 
 /**
@@ -67,11 +67,12 @@ internal class PaywallResourceProvider(
             return null
         }
         return try {
-            FontFamilyXMLParser.parse(parser)
+            FontFamilyXmlParser.parse(parser)
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             // This can happen if the XML is malformed or not a valid font family.
             // We log the error and return null.
-            Logger.e("Error parsing XML font family with resource ID $resourceId", e)
+            val resourceName = resources.getResourceEntryNameOrNull(resourceId)
+            Logger.e("Error parsing XML font family with resource ID ${resourceName ?: resourceId}", e)
             null
         } finally {
             parser.close()
@@ -105,3 +106,10 @@ internal fun Context.toResourceProvider(): ResourceProvider {
 private fun Context.applicationName(): String {
     return applicationInfo.loadLabel(packageManager).toString()
 }
+
+private fun Resources.getResourceEntryNameOrNull(resourceId: Int): String? =
+    try {
+        getResourceEntryName(resourceId)
+    } catch (_: Resources.NotFoundException) {
+        null
+    }

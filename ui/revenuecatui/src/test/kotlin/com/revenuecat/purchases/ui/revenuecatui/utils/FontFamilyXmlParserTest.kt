@@ -3,22 +3,23 @@ package com.revenuecat.purchases.ui.revenuecatui.utils
 import android.content.res.XmlResourceParser
 import androidx.compose.ui.text.font.FontStyle
 import org.assertj.core.api.Assertions.assertThat
+import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.StringReader
 
-class FontFamilyXMLParserTest {
+class FontFamilyXmlParserTest {
 
     @Test
     fun `parseXmlData returns empty list for empty XML`() {
         val xmlContent = """<?xml version="1.0" encoding="utf-8"?>
             <font-family xmlns:android="http://schemas.android.com/apk/res/android">
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(xmlContent)
-        val result = FontFamilyXMLParser.parseXmlData(parser)
-        
+        val result = FontFamilyXmlParser.parseXmlData(parser)
+
         assertThat(result).isEmpty()
     }
 
@@ -28,14 +29,14 @@ class FontFamilyXMLParserTest {
             <font-family xmlns:app="http://schemas.android.com/apk/res-auto">
                 <font app:fontStyle="normal" app:fontWeight="400" app:font="@font/regular" />
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(xmlContent, mapOf("@font/regular" to 123))
-        val result = FontFamilyXMLParser.parseXmlData(parser)
-        
+        val result = FontFamilyXmlParser.parseXmlData(parser)
+
         assertThat(result).hasSize(1)
-        assertThat(result[0].first).isEqualTo(123) // resId
-        assertThat(result[0].second).isEqualTo(400) // weight
-        assertThat(result[0].third).isEqualTo(FontStyle.Normal) // style
+        assertThat(result[0].resId).isEqualTo(123) // resId
+        assertThat(result[0].weight).isEqualTo(400) // weight
+        assertThat(result[0].style).isEqualTo(FontStyle.Normal) // style
     }
 
     @Test
@@ -44,14 +45,14 @@ class FontFamilyXMLParserTest {
             <font-family xmlns:android="http://schemas.android.com/apk/res/android">
                 <font android:fontStyle="italic" android:fontWeight="700" android:font="@font/bold_italic" />
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(xmlContent, mapOf("@font/bold_italic" to 456))
-        val result = FontFamilyXMLParser.parseXmlData(parser)
-        
+        val result = FontFamilyXmlParser.parseXmlData(parser)
+
         assertThat(result).hasSize(1)
-        assertThat(result[0].first).isEqualTo(456)
-        assertThat(result[0].second).isEqualTo(700)
-        assertThat(result[0].third).isEqualTo(FontStyle.Italic)
+        assertThat(result[0].resId).isEqualTo(456)
+        assertThat(result[0].weight).isEqualTo(700)
+        assertThat(result[0].style).isEqualTo(FontStyle.Italic)
     }
 
     @Test
@@ -62,7 +63,7 @@ class FontFamilyXMLParserTest {
                 <font app:fontStyle="italic" app:fontWeight="700" app:font="@font/italic" />
                 <font app:fontStyle="normal" app:fontWeight="600" app:font="@font/semibold" />
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(
             xmlContent,
             mapOf(
@@ -71,12 +72,12 @@ class FontFamilyXMLParserTest {
                 "@font/semibold" to 300
             )
         )
-        val result = FontFamilyXMLParser.parseXmlData(parser)
-        
+        val result = FontFamilyXmlParser.parseXmlData(parser)
+
         assertThat(result).hasSize(3)
-        assertThat(result[0]).isEqualTo(Triple(100, 400, FontStyle.Normal))
-        assertThat(result[1]).isEqualTo(Triple(200, 700, FontStyle.Italic))
-        assertThat(result[2]).isEqualTo(Triple(300, 600, FontStyle.Normal))
+        assertThat(result[0]).isEqualTo(ParsedFont(100, 400, FontStyle.Normal))
+        assertThat(result[1]).isEqualTo(ParsedFont(200, 700, FontStyle.Italic))
+        assertThat(result[2]).isEqualTo(ParsedFont(300, 600, FontStyle.Normal))
     }
 
     @Test
@@ -85,14 +86,14 @@ class FontFamilyXMLParserTest {
             <font-family xmlns:app="http://schemas.android.com/apk/res-auto">
                 <font app:font="@font/regular" />
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(xmlContent, mapOf("@font/regular" to 789))
-        val result = FontFamilyXMLParser.parseXmlData(parser)
-        
+        val result = FontFamilyXmlParser.parseXmlData(parser)
+
         assertThat(result).hasSize(1)
-        assertThat(result[0].first).isEqualTo(789)
-        assertThat(result[0].second).isEqualTo(400) // default weight
-        assertThat(result[0].third).isEqualTo(FontStyle.Normal) // default style
+        assertThat(result[0].resId).isEqualTo(789)
+        assertThat(result[0].weight).isEqualTo(400) // default weight
+        assertThat(result[0].style).isEqualTo(FontStyle.Normal) // default style
     }
 
     @Test
@@ -101,10 +102,10 @@ class FontFamilyXMLParserTest {
             <font-family xmlns:app="http://schemas.android.com/apk/res-auto">
                 <font app:fontStyle="normal" app:fontWeight="400" />
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(xmlContent) // no resource mapping
-        val result = FontFamilyXMLParser.parseXmlData(parser)
-        
+        val result = FontFamilyXmlParser.parseXmlData(parser)
+
         assertThat(result).isEmpty()
     }
 
@@ -116,14 +117,14 @@ class FontFamilyXMLParserTest {
                 xmlns:android="http://schemas.android.com/apk/res/android">
                 <font android:fontStyle="normal" android:fontWeight="400" android:font="@font/regular" />
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(xmlContent, mapOf("@font/regular" to 999))
-        val result = FontFamilyXMLParser.parseXmlData(parser)
-        
+        val result = FontFamilyXmlParser.parseXmlData(parser)
+
         assertThat(result).hasSize(1)
-        assertThat(result[0].first).isEqualTo(999)
-        assertThat(result[0].second).isEqualTo(400)
-        assertThat(result[0].third).isEqualTo(FontStyle.Normal)
+        assertThat(result[0].resId).isEqualTo(999)
+        assertThat(result[0].weight).isEqualTo(400)
+        assertThat(result[0].style).isEqualTo(FontStyle.Normal)
     }
 
     @Test
@@ -131,10 +132,10 @@ class FontFamilyXMLParserTest {
         val xmlContent = """<?xml version="1.0" encoding="utf-8"?>
             <font-family xmlns:android="http://schemas.android.com/apk/res/android">
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(xmlContent)
-        val result = FontFamilyXMLParser.parse(parser)
-        
+        val result = FontFamilyXmlParser.parse(parser)
+
         assertThat(result).isNull()
     }
 
@@ -144,16 +145,16 @@ class FontFamilyXMLParserTest {
             <font-family xmlns:app="http://schemas.android.com/apk/res-auto">
                 <font app:fontStyle="normal" app:fontWeight="400" app:font="@font/regular" />
             </font-family>"""
-        
+
         val parser = TestXmlResourceParser(xmlContent, mapOf("@font/regular" to 123))
-        val result = FontFamilyXMLParser.parse(parser)
-        
+        val result = FontFamilyXmlParser.parse(parser)
+
         assertThat(result).isNotNull()
     }
 
     // Test implementation of XmlResourceParser that uses real XML parsing
     private class TestXmlResourceParser(
-        xmlContent: String,
+        @Language("xml") xmlContent: String,
         private val resourceMap: Map<String, Int> = emptyMap()
     ) : XmlResourceParser {
         
