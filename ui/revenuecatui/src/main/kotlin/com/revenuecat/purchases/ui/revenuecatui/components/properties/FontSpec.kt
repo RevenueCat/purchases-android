@@ -29,7 +29,7 @@ private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs,
 )
 
-internal data class ResourceFontSpec(
+private data class ResourceFontSpec(
     val id: Int,
     val weight: Int?,
     val style: FontStyle?,
