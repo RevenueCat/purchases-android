@@ -67,18 +67,22 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
         .mapNotNull { fontInfo -> fontInfo.family?.let { family -> fontInfo to family } }
         .groupBy({ it.second }, { it.first })
         .mapValues { (_, fontInfos) ->
-            val resourceIdsSeen = mutableSetOf<Int>()
+            val resourceNamesSeen = mutableSetOf<String>()
             fontInfos.mapNotNull { fontInfo ->
-                resourceProvider.getResourceIdentifier(name = fontInfo.value, type = "font")
-                    .takeIf { it != 0 && it !in resourceIdsSeen }
-                    ?.also { resourceIdsSeen.add(it) }
-                    ?.let {
-                        ResourceFontSpec(
-                            id = it,
-                            weight = fontInfo.weight,
-                            style = fontInfo.style?.toComposeFontStyle(),
-                        )
-                    }
+                if (fontInfo.value in resourceNamesSeen) {
+                    null
+                } else {
+                    resourceProvider.getResourceIdentifier(name = fontInfo.value, type = "font")
+                        .takeIf { it != 0 }
+                        ?.also { resourceNamesSeen.add(fontInfo.value) }
+                        ?.let {
+                            ResourceFontSpec(
+                                id = it,
+                                weight = fontInfo.weight,
+                                style = fontInfo.style?.toComposeFontStyle(),
+                            )
+                        }
+                }
             }
         }
         .filterValues { it.isNotEmpty() }
