@@ -64,8 +64,8 @@ internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
         .toSet()
         .map { it.android }
         .filterIsInstance<FontInfo.Name>()
-        .filter { it.family != null }
-        .groupBy { it.family!! }
+        .mapNotNull { fontInfo -> fontInfo.family?.let { family -> fontInfo to family } }
+        .groupBy({ it.second }, { it.first })
         .mapValues { (_, fontInfos) ->
             val resourceIdsSeen = mutableSetOf<Int>()
             fontInfos.mapNotNull { fontInfo ->
