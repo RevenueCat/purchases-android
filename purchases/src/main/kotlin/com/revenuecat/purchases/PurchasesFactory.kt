@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
-import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
 import com.revenuecat.purchases.api.BuildConfig
@@ -17,6 +16,7 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
@@ -114,7 +114,7 @@ internal class PurchasesFactory(
             }
 
             val prefs = try {
-                PreferenceManager.getDefaultSharedPreferences(contextForStorage)
+                SharedPreferencesManager(contextForStorage).getSharedPreferences()
             } catch (e: IllegalStateException) {
                 @Suppress("MaxLineLength")
                 if (!UserManagerCompat.isUserUnlocked(context)) {
