@@ -32,7 +32,7 @@ class PaywallTransition(
         GREEDY,
 
         @SerialName("lazy")
-        LAZY
+        LAZY,
     }
 
     @InternalRevenueCatAPI
