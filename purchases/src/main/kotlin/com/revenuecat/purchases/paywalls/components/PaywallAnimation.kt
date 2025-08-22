@@ -17,7 +17,7 @@ class PaywallAnimation(
     val msDelay: Int?,
     @get:JvmSynthetic
     @SerialName("ms_duration")
-    val msDuration: Int?
+    val msDuration: Int?,
 ) {
 
     @InternalRevenueCatAPI
@@ -39,7 +39,6 @@ class PaywallAnimation(
         @Serializable
         @SerialName("linear")
         object Linear : AnimationType()
-
 
         @Poko
         @Serializable

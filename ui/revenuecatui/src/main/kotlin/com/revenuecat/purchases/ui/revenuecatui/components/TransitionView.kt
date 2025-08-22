@@ -66,7 +66,7 @@ private fun PaywallTransition.AnimatedVisibility(content: @Composable () -> Unit
     }
     AnimatedVisibility(
         visible = shouldShow,
-        enter = enterTransition()
+        enter = enterTransition(),
     ) {
         content()
     }
@@ -79,7 +79,7 @@ private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing(),
-        )
+        ),
     )
 
     is FadeAndScale -> fadeIn(
@@ -87,13 +87,13 @@ private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing(),
-        )
+        ),
     ) + scaleIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing(),
-        )
+        ),
     )
 
     is Scale -> scaleIn(
@@ -101,7 +101,7 @@ private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing(),
-        )
+        ),
     )
 
     is Slide -> slideIn(
@@ -109,7 +109,7 @@ private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing(),
-        )
+        ),
     ) { IntOffset(-SensibleDefaults.X_OFFSET, SensibleDefaults.ZERO) }
 
     else -> fadeIn(
@@ -117,7 +117,7 @@ private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing(),
-        )
+        ),
     )
 }
 
