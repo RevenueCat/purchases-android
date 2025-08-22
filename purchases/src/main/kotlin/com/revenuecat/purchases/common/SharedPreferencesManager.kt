@@ -17,7 +17,9 @@ internal class SharedPreferencesManager(
         REVENUECAT_PREFS_FILE_NAME,
         Context.MODE_PRIVATE,
     ),
-    private val legacySharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context),
+    private val legacySharedPreferences: Lazy<SharedPreferences> = lazy {
+        PreferenceManager.getDefaultSharedPreferences(context)
+    },
 ) {
 
     companion object {
@@ -26,6 +28,12 @@ internal class SharedPreferencesManager(
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val EXPECTED_VERSION_KEY = "com.revenuecat.purchases.shared_preferences_version"
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val EXPECTED_VERSION = 1
     }
 
     /**
@@ -33,8 +41,12 @@ internal class SharedPreferencesManager(
      */
     fun getSharedPreferences(): SharedPreferences {
         synchronized(this) {
-            if (shouldPerformMigration()) {
+            val alreadyHasVersion = hasRevenueCatVersion()
+            if (shouldPerformMigration(alreadyHasVersion)) {
                 performMigration()
+                updateSharedPreferencesVersion()
+            } else if (!alreadyHasVersion) {
+                updateSharedPreferencesVersion()
             }
         }
         return revenueCatSharedPreferences
@@ -44,17 +56,8 @@ internal class SharedPreferencesManager(
      * Checks if migration should be performed by checking if RevenueCat preferences are empty
      * and legacy preferences contain RevenueCat data
      */
-    private fun shouldPerformMigration(): Boolean {
-        val revenueCatPrefs = revenueCatSharedPreferences
-        val legacyPrefs = legacySharedPreferences
-
-        // If RevenueCat preferences already have data, no migration needed
-        if (revenueCatPrefs.all.isNotEmpty()) {
-            return false
-        }
-
-        // Check if legacy preferences contain any RevenueCat data
-        return legacyPrefs.all.keys.any { key ->
+    private fun shouldPerformMigration(alreadyHasVersion: Boolean): Boolean {
+        return !alreadyHasVersion && legacySharedPreferences.value.all.keys.any { key ->
             key.startsWith(SHARED_PREFERENCES_PREFIX)
         }
     }
@@ -71,12 +74,9 @@ internal class SharedPreferencesManager(
 
         val legacyPrefs = legacySharedPreferences
         val revenueCatPrefs = revenueCatSharedPreferences
-        revenueCatPrefs.edit(commit = true) {
-            var migratedCount = 0
+        revenueCatPrefs.edit {
             for (key in revenueCatKeys) {
-                if (migratePreferenceValue(legacyPrefs, this, key)) {
-                    migratedCount++
-                }
+                migratePreferenceValue(legacyPrefs.value, this, key)
             }
         }
 
@@ -86,7 +86,7 @@ internal class SharedPreferencesManager(
     }
 
     private fun getRevenueCatKeysToMigrate(): List<String> {
-        val legacyPrefs = legacySharedPreferences
+        val legacyPrefs = legacySharedPreferences.value
         val revenueCatKeys = legacyPrefs.all.keys.filter { key ->
             key.startsWith(SHARED_PREFERENCES_PREFIX)
         }
@@ -138,6 +138,16 @@ internal class SharedPreferencesManager(
         } catch (e: java.lang.ClassCastException) {
             errorLog(e) { "Failed to migrate preference with key due to type casting: $key" }
             false
+        }
+    }
+
+    private fun hasRevenueCatVersion(): Boolean {
+        return revenueCatSharedPreferences.contains(EXPECTED_VERSION_KEY)
+    }
+
+    private fun updateSharedPreferencesVersion() {
+        revenueCatSharedPreferences.edit {
+            putInt(EXPECTED_VERSION_KEY, EXPECTED_VERSION)
         }
     }
 }

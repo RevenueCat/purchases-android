@@ -3,7 +3,9 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -14,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import kotlin.concurrent.thread
 
 @RunWith(RobolectricTestRunner::class)
 class SharedPreferencesManagerTest {
@@ -41,7 +44,8 @@ class SharedPreferencesManagerTest {
         every { mockContext.getSharedPreferences(SharedPreferencesManager.REVENUECAT_PREFS_FILE_NAME, Context.MODE_PRIVATE) } returns mockRevenueCatPrefs
         every { mockLegacyPrefs.edit() } returns mockLegacyEditor
         every { mockRevenueCatPrefs.edit() } returns mockRevenueCatEditor
-        every { mockRevenueCatEditor.commit() } returns true
+        every { mockRevenueCatEditor.apply() } just Runs
+        every { mockRevenueCatPrefs.contains(SharedPreferencesManager.EXPECTED_VERSION_KEY) } returns false
 
         mockkStatic(PreferenceManager::class)
         every { PreferenceManager.getDefaultSharedPreferences(mockContext) } returns mockLegacyPrefs
@@ -53,39 +57,45 @@ class SharedPreferencesManagerTest {
     }
 
     @Test
-    fun `getSharedPreferences returns RevenueCat preferences when no migration needed`() {
-        // RevenueCat preferences have existing data
-        every { mockRevenueCatPrefs.all } returns mapOf("existing.key" to "existing.value")
+    fun `getSharedPreferences returns RevenueCat preferences when already has expected version`() {
+        // RevenueCat preferences have version
+        every { mockRevenueCatPrefs.contains(SharedPreferencesManager.EXPECTED_VERSION_KEY) } returns true
         every { mockLegacyPrefs.all } returns mapOf(REVENUECAT_KEY_1 to "value1")
 
         val manager = SharedPreferencesManager(mockContext)
         val result = manager.getSharedPreferences()
 
         assertThat(result).isSameAs(mockRevenueCatPrefs)
-        // No migration should occur
+        // No migration should occur but should set the version
+        verify(exactly = 0) { mockRevenueCatEditor.putInt(any(), any()) }
         verify(exactly = 0) { mockRevenueCatEditor.putString(any(), any()) }
-        verify(exactly = 0) { mockRevenueCatEditor.commit() }
+        verify(exactly = 0) { mockRevenueCatEditor.apply() }
     }
 
     @Test
     fun `getSharedPreferences returns RevenueCat preferences when legacy has no RevenueCat data`() {
-        // RevenueCat preferences are empty, but legacy has no RevenueCat data
-        every { mockRevenueCatPrefs.all } returns emptyMap()
+        // RevenueCat preferences do not have version, but legacy has no RevenueCat data
+        every { mockRevenueCatPrefs.contains(SharedPreferencesManager.EXPECTED_VERSION_KEY) } returns false
         every { mockLegacyPrefs.all } returns mapOf(NON_REVENUECAT_KEY to "value")
 
         val manager = SharedPreferencesManager(mockContext)
         val result = manager.getSharedPreferences()
 
         assertThat(result).isSameAs(mockRevenueCatPrefs)
-        // No migration should occur
+        // No migration should occur but should set the version
+        verify(exactly = 1) {
+            mockRevenueCatEditor.putInt(
+                SharedPreferencesManager.EXPECTED_VERSION_KEY,
+                SharedPreferencesManager.EXPECTED_VERSION
+            )
+        }
         verify(exactly = 0) { mockRevenueCatEditor.putString(any(), any()) }
-        verify(exactly = 0) { mockRevenueCatEditor.commit() }
+        verify(exactly = 1) { mockRevenueCatEditor.apply() }
     }
 
     @Test
-    fun `getSharedPreferences performs migration when RevenueCat prefs are empty and legacy has RevenueCat data`() {
+    fun `getSharedPreferences performs migration when RevenueCat prefs do not have version and legacy has RevenueCat data`() {
         // RevenueCat preferences are empty, legacy has RevenueCat data
-        every { mockRevenueCatPrefs.all } returns emptyMap()
         every { mockLegacyPrefs.all } returns mapOf(
             REVENUECAT_KEY_1 to "string_value",
             NON_REVENUECAT_KEY to "should_not_migrate"
@@ -96,9 +106,15 @@ class SharedPreferencesManagerTest {
 
         assertThat(result).isSameAs(mockRevenueCatPrefs)
         // Migration should occur for RevenueCat keys only
+        verify(exactly = 1) {
+            mockRevenueCatEditor.putInt(
+                SharedPreferencesManager.EXPECTED_VERSION_KEY,
+                SharedPreferencesManager.EXPECTED_VERSION,
+            )
+        }
         verify { mockRevenueCatEditor.putString(REVENUECAT_KEY_1, "string_value") }
         verify(exactly = 0) { mockRevenueCatEditor.putString(NON_REVENUECAT_KEY, any()) }
-        verify { mockRevenueCatEditor.commit() }
+        verify { mockRevenueCatEditor.apply() }
     }
 
     @Test
@@ -123,36 +139,46 @@ class SharedPreferencesManagerTest {
         verify { mockRevenueCatEditor.putInt("com.revenuecat.purchases.int_key", 456) }
         verify { mockRevenueCatEditor.putFloat("com.revenuecat.purchases.float_key", 78.9f) }
         verify { mockRevenueCatEditor.putStringSet("com.revenuecat.purchases.set_key", setOf("a", "b", "c")) }
-        verify { mockRevenueCatEditor.commit() }
+        verify { mockRevenueCatEditor.apply() }
     }
 
     @Test
     fun `getSharedPreferences handles concurrent access safely`() {
         // Test that multiple calls work correctly - first call should trigger migration
-        every { mockRevenueCatPrefs.all } returnsMany listOf(
-            emptyMap(), // First call - empty, triggers migration
-            mapOf(REVENUECAT_KEY_1 to "value1") // After migration - has data, no more migration
+        every { mockRevenueCatPrefs.contains(SharedPreferencesManager.EXPECTED_VERSION_KEY) } returnsMany listOf(
+            false, // First call - false, triggers migration
+            true // After migration - true, no more migration
         )
         every { mockLegacyPrefs.all } returns mapOf(REVENUECAT_KEY_1 to "value1")
 
         val manager = SharedPreferencesManager(mockContext)
-        
-        val result1 = manager.getSharedPreferences()
-        val result2 = manager.getSharedPreferences()
+
+        var result1: SharedPreferences? = null
+        val thread1 = thread { result1 = manager.getSharedPreferences() }
+
+        var result2: SharedPreferences? = null
+        val thread2 = thread { result2 = manager.getSharedPreferences() }
+
+        thread1.join()
+        thread2.join()
 
         assertThat(result1).isSameAs(mockRevenueCatPrefs)
         assertThat(result2).isSameAs(mockRevenueCatPrefs)
         
         // Migration should only happen once during the first call
+        verify(exactly = 1) {
+            mockRevenueCatEditor.putInt(
+                SharedPreferencesManager.EXPECTED_VERSION_KEY,
+                SharedPreferencesManager.EXPECTED_VERSION,
+            )
+        }
         verify(exactly = 1) { mockRevenueCatEditor.putString(REVENUECAT_KEY_1, "value1") }
-        verify(exactly = 1) { mockRevenueCatEditor.commit() }
+        verify(exactly = 2) { mockRevenueCatEditor.apply() } // One for the expected version, another for the actual migration
     }
 
     @Test
     fun `getSharedPreferences handles migration failure gracefully`() {
-        every { mockRevenueCatPrefs.all } returns emptyMap()
         every { mockLegacyPrefs.all } returns mapOf(REVENUECAT_KEY_1 to "value1")
-        every { mockRevenueCatEditor.commit() } returns false
 
         val manager = SharedPreferencesManager(mockContext)
         val result = manager.getSharedPreferences()
@@ -160,6 +186,6 @@ class SharedPreferencesManagerTest {
         // Should still return the RevenueCat preferences even if migration fails
         assertThat(result).isSameAs(mockRevenueCatPrefs)
         verify { mockRevenueCatEditor.putString(REVENUECAT_KEY_1, "value1") }
-        verify { mockRevenueCatEditor.commit() }
+        verify { mockRevenueCatEditor.apply() }
     }
 }
