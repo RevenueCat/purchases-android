@@ -4,14 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import androidx.annotation.StringRes
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.core.content.res.FontResourcesParserCompat
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.ui.revenuecatui.utils.FontFamilyXMLParser
 import java.util.Locale
 
 /**
@@ -63,33 +60,22 @@ internal class PaywallResourceProvider(
         resources.getIdentifier(name, type, packageName)
 
     @Suppress("ReturnCount")
-    @SuppressLint("RestrictedApi") // FontResourcesParserCompat.*
     override fun getXmlFontFamily(resourceId: Int): FontFamily? {
         val parser = try {
             resources.getXml(resourceId)
         } catch (_: Resources.NotFoundException) {
             return null
         }
-        try {
-            val result = FontResourcesParserCompat.parse(parser, resources)
-            if (result is FontResourcesParserCompat.FontFamilyFilesResourceEntry) {
-                val fonts = result.entries.map { font ->
-                    Font(
-                        resId = font.resourceId,
-                        weight = FontWeight(font.weight),
-                        style = if (font.isItalic) FontStyle.Italic else FontStyle.Normal,
-                    )
-                }
-                return FontFamily(fonts)
-            }
+        return try {
+            FontFamilyXMLParser.parse(parser)
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             // This can happen if the XML is malformed or not a valid font family.
             // We log the error and return null.
             Logger.e("Error parsing XML font family with resource ID $resourceId", e)
+            null
         } finally {
             parser.close()
         }
-        return null
     }
 
     override fun getAssetFontPath(name: String): String? {
