@@ -31,7 +31,7 @@ import com.revenuecat.purchases.paywalls.components.PaywallTransition.Transition
 
 @Suppress("ModifierMissing")
 @Composable
-fun TransitionView(transition: PaywallTransition?, content: @Composable () -> Unit) {
+internal fun TransitionView(transition: PaywallTransition?, content: @Composable () -> Unit) {
     if (transition == null) {
         content()
     } else {

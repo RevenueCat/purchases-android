@@ -37,16 +37,16 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                             "type": "fade_and_scale"
                           }
                         }
-                        """.trimIndent(),
+                    """.trimIndent(),
                     expected = PaywallTransition(
                         type = PaywallTransition.TransitionType.FadeAndScale,
                         displacementStrategy = PaywallTransition.DisplacementStrategy.GREEDY,
                         animation = PaywallAnimation(
                             type = PaywallAnimation.AnimationType.EaseInOut,
                             msDelay = 1500,
-                            msDuration = null
-                        )
-                    )
+                            msDuration = null,
+                        ),
+                    ),
                 ),
             ),
             arrayOf(
@@ -59,12 +59,12 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                             "type": "fade"
                           }
                         }
-                        """.trimIndent(),
+                    """.trimIndent(),
                     expected = PaywallTransition(
                         type = PaywallTransition.TransitionType.Fade,
                         displacementStrategy = PaywallTransition.DisplacementStrategy.LAZY,
-                        animation = null
-                    )
+                        animation = null,
+                    ),
                 ),
             ),
             arrayOf(
@@ -85,16 +85,16 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                             "value": "some random transition"
                           }
                         }
-                        """.trimIndent(),
+                    """.trimIndent(),
                     expected = PaywallTransition(
                         type = PaywallTransition.TransitionType.Custom("some random transition"),
                         displacementStrategy = PaywallTransition.DisplacementStrategy.GREEDY,
                         animation = PaywallAnimation(
                             type = PaywallAnimation.AnimationType.Custom("some random animation"),
                             msDelay = 1500,
-                            msDuration = null
-                        )
-                    )
+                            msDuration = null,
+                        ),
+                    ),
                 ),
             ),
         )

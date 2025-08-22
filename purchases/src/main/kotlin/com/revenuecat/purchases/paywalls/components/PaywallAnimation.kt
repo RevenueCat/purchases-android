@@ -2,10 +2,12 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
 
+@Suppress("unused")
 @InternalRevenueCatAPI
 @Poko
 @Serializable
@@ -20,6 +22,7 @@ class PaywallAnimation(
     val msDuration: Int?,
 ) {
 
+    @OptIn(ExperimentalSerializationApi::class)
     @InternalRevenueCatAPI
     @Serializable
     @JsonClassDiscriminator("type")

@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -26,6 +27,7 @@ class PaywallTransition(
      * A [LAZY] displacement will not do this, instead it will result in shifting the layout
      * as the new view inserts itself.
      */
+    @InternalRevenueCatAPI
     @Serializable
     enum class DisplacementStrategy {
         @SerialName("greedy")
@@ -35,6 +37,7 @@ class PaywallTransition(
         LAZY,
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     @InternalRevenueCatAPI
     @Serializable
     @JsonClassDiscriminator("type")
