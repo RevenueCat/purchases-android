@@ -73,7 +73,7 @@ private fun PaywallTransition.enterTransition() = when (type) {
     is Fade -> fadeIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
-            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing()
         )
     )
@@ -81,13 +81,13 @@ private fun PaywallTransition.enterTransition() = when (type) {
     is FadeAndScale -> fadeIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
-            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing()
         )
     ) + scaleIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
-            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing()
         )
     )
@@ -95,7 +95,7 @@ private fun PaywallTransition.enterTransition() = when (type) {
     is Scale -> scaleIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
-            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing()
         )
     )
@@ -103,15 +103,15 @@ private fun PaywallTransition.enterTransition() = when (type) {
     is Slide -> slideIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
-            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing()
         )
-    ) { IntOffset(-SensibleDefaults.X_OFFSET, 0) }
+    ) { IntOffset(-SensibleDefaults.X_OFFSET, SensibleDefaults.ZERO) }
 
     else -> fadeIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
-            delayMillis = animation?.msDelay ?: SensibleDefaults.DELAY,
+            delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing()
         )
     )
@@ -119,7 +119,7 @@ private fun PaywallTransition.enterTransition() = when (type) {
 
 private object SensibleDefaults {
     const val DURATION = 300
-    const val DELAY = 0
+    const val ZERO = 0
     const val X_OFFSET = 180
 }
 
