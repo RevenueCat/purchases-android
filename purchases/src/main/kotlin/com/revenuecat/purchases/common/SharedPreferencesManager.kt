@@ -40,25 +40,21 @@ internal class SharedPreferencesManager(
      * Gets the appropriate shared preferences, performing migration if needed
      */
     fun getSharedPreferences(): SharedPreferences {
-        synchronized(this) {
-            val alreadyHasVersion = hasRevenueCatVersion()
-            if (shouldPerformMigration(alreadyHasVersion)) {
-                performMigration()
-                updateSharedPreferencesVersion()
-            } else if (!alreadyHasVersion) {
-                updateSharedPreferencesVersion()
-            }
-        }
+        synchronized(this) { ensureMigrated() }
         return revenueCatSharedPreferences
     }
 
-    /**
-     * Checks if migration should be performed by checking if RevenueCat preferences are empty
-     * and legacy preferences contain RevenueCat data
-     */
-    private fun shouldPerformMigration(alreadyHasVersion: Boolean): Boolean {
-        return !alreadyHasVersion && legacySharedPreferences.value.all.keys.any { key ->
-            key.startsWith(SHARED_PREFERENCES_PREFIX)
+    private fun ensureMigrated() {
+        val alreadyHasVersion = hasRevenueCatVersion()
+        if (!alreadyHasVersion) {
+            if (legacySharedPreferences.value.all.keys.any {
+                        key ->
+                    key.startsWith(SHARED_PREFERENCES_PREFIX)
+                }
+            ) {
+                performMigration()
+            }
+            updateSharedPreferencesVersion()
         }
     }
 
