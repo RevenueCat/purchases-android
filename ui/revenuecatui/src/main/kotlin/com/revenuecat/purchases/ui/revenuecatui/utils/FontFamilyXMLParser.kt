@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.utils
 
 import android.content.res.XmlResourceParser
+import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -14,17 +15,35 @@ internal object FontFamilyXMLParser {
     private const val defaultFontWeight = 400
 
     fun parse(parser: XmlResourceParser): FontFamily? {
-        try {
-            val fonts = mutableListOf<Font>()
+        val parsedFonts = parseXmlData(parser)
+        return if (parsedFonts.isNotEmpty()) {
+            FontFamily(
+                parsedFonts.map { (resId, weight, style) ->
+                    Font(
+                        resId = resId,
+                        weight = FontWeight(weight),
+                        style = style,
+                    )
+                },
+            )
+        } else {
+            null
+        }
+    }
+
+    @VisibleForTesting
+    internal fun parseXmlData(parser: XmlResourceParser): List<Triple<Int, Int, FontStyle>> {
+        return try {
+            val parsedFonts = mutableListOf<Triple<Int, Int, FontStyle>>()
 
             var eventType = parser.eventType
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 when (eventType) {
                     XmlPullParser.START_TAG -> {
                         if (parser.name == "font") {
-                            val font = parseFont(parser)
-                            if (font != null) {
-                                fonts.add(font)
+                            val parsedFont = parseFontData(parser)
+                            if (parsedFont != null) {
+                                parsedFonts.add(parsedFont)
                             }
                         }
                     }
@@ -32,29 +51,21 @@ internal object FontFamilyXMLParser {
                 eventType = parser.next()
             }
 
-            return if (fonts.isNotEmpty()) {
-                FontFamily(fonts)
-            } else {
-                null
-            }
+            parsedFonts
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             Logger.e("Error parsing XML font family", e)
-            return null
+            emptyList()
         }
     }
 
-    private fun parseFont(parser: XmlResourceParser): Font? {
+    private fun parseFontData(parser: XmlResourceParser): Triple<Int, Int, FontStyle>? {
         val fontResId = getFontResourceId(parser)
         if (fontResId == unrecognizedValue) return null
 
         val fontWeight = getFontWeight(parser)
         val fontStyle = getFontStyle(parser)
 
-        return Font(
-            resId = fontResId,
-            weight = FontWeight(fontWeight),
-            style = fontStyle,
-        )
+        return Triple(fontResId, fontWeight, fontStyle)
     }
 
     private fun getFontResourceId(parser: XmlResourceParser): Int {
