@@ -57,8 +57,6 @@
 * Expose API key validation result to BillingFactory (#2542) via Toni Rico (@tonidero)
 * Dont run VC tests on load shedder integration tests (#2538) via Will Taylor (@fire-at-will)
 * Introduces `CompatComposeView` to handle scenarios where the view tree is not set up (#2527) via JayShortway (@JayShortway)
-* [RENOVATE] Update build-dependencies (#2515) via RevenueCat Git Bot (@RCGitBot)
-* [RENOVATE] Update build-dependencies (#2472) via RevenueCat Git Bot (@RCGitBot)
 * Increase compile/target SDK version to 35 (#2525) via Toni Rico (@tonidero)
 * Fix snapshot deployment (#2526) via Toni Rico (@tonidero)
 * Update CircleCI android orb (#2521) via Toni Rico (@tonidero)
@@ -66,4 +64,3 @@
 * Fixes compilation of the CEC sample app. (#2512) via JayShortway (@JayShortway)
 * Update CustomEntitlementComputation sample app kotlin version (#2510) via Toni Rico (@tonidero)
 * Fix `Switch` component previews (#2509) via Toni Rico (@tonidero)
-        
