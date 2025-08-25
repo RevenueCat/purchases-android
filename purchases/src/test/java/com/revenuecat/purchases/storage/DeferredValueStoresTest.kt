@@ -24,6 +24,30 @@ class DeferredValueStoresTest : CoroutineTest() {
     }
 
     @Test
+    fun `getOrPut shared deferred invocation`() = runTest {
+        var intCallCount = 0
+        var keyCallCount = 0
+
+        for (i in 1..100) {
+            subject.integer.getOrPut {
+                async {
+                    intCallCount++
+                    1
+                }
+            }.await()
+
+            subject.keyed.getOrPut("X") {
+                async {
+                    keyCallCount++
+                    1
+                }
+            }.await()
+        }
+        assertThat(intCallCount).isEqualTo(1)
+        assertThat(keyCallCount).isEqualTo(1)
+    }
+
+    @Test
     fun `getOrPut retrieves stored value from single value store`() = runTest {
         subject.integer.getOrPut { async { 44 } }.await()
         subject.integer.getOrPut {
