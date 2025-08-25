@@ -280,10 +280,10 @@ platform :android do
 
       run_firebase_integration_tests(app_name)
     rescue => exception
-      send_slack_load_shedder_integration_test(success: false)
+#       send_slack_load_shedder_integration_test(success: false)
       raise
     else
-      send_slack_load_shedder_integration_test(success: true)
+#       send_slack_load_shedder_integration_test(success: true)
     end
   end
 
