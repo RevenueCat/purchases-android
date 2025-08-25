@@ -11,7 +11,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.amazonProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases_sample.databinding.PackageCardBinding
+import com.revenuecat.purchasetester.databinding.PackageCardBinding
 
 class DeprecatedPackageCardAdapter(
     private val packages: List<Package>,
