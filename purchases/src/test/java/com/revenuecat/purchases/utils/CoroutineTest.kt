@@ -12,7 +12,6 @@ import org.junit.runner.Description
 import kotlin.reflect.KClass
 
 /**
- * Unit test that includes the [com.revenuecat.purchases.storage.CoroutineTestRule] for convenience.
  * If your test doesn't need to extend any other test, you can use this to include the rule automatically.
  * Alternatively, just include the contents of this class in your own test to get the same functionality.
  */
