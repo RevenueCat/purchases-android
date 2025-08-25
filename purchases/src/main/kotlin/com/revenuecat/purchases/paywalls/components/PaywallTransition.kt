@@ -44,6 +44,12 @@ class PaywallTransition(
         LAZY,
     }
 
+    /**
+     * Defines the type of transition to use for paywall transitions.
+     *
+     * [NOTE] This is a sealed class and not an enum because we see a future where we may want
+     * to pass back more verbose instructions to the view layer than a simple enum case
+     */
     @InternalRevenueCatAPI
     @Serializable(with = TransitionTypeDeserializer::class)
     sealed class TransitionType {
