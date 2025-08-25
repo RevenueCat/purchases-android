@@ -99,6 +99,7 @@ class TabsComponentViewTests {
         ).mapIndexed { index, (unselectedKey, selectedKey) ->
             TabControlButtonComponent(
                 tabIndex = index,
+                tabId = "$index",
                 stack = StackComponent(
                     components = listOf(
                         TextComponent(
@@ -129,8 +130,11 @@ class TabsComponentViewTests {
 
         val tabsComponent = TabsComponent(
             // Mapping tabControlButtons to make sure we have as many tabs as tab control buttons.
-            tabs = tabControlButtons.map {
-                TabsComponent.Tab(StackComponent(components = listOf(TabControlComponent)))
+            tabs = tabControlButtons.mapIndexed { index, _ ->
+                TabsComponent.Tab(
+                    id = "$index",
+                    stack = StackComponent(components = listOf(TabControlComponent))
+                )
             },
             control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = tabControlButtons))
         )
@@ -254,9 +258,10 @@ class TabsComponentViewTests {
             unselectedKeyTab0 to selectedKeyTab0,
             unselectedKeyTab1 to selectedKeyTab1,
             unselectedKeyTab2 to selectedKeyTab2,
-        ).map { (unselectedKey, selectedKey) ->
+        ).mapIndexed { index, (unselectedKey, selectedKey) ->
             TabsComponent.Tab(
-                StackComponent(
+                id = "$index",
+                stack = StackComponent(
                     components = listOf(
                         TabControlComponent,
                         TextComponent(
@@ -281,6 +286,7 @@ class TabsComponentViewTests {
         ).mapIndexed { index, tabControlKey ->
             TabControlButtonComponent(
                 tabIndex = index,
+                tabId = "$index",
                 stack = StackComponent(
                     components = listOf(
                         TextComponent(
@@ -552,7 +558,7 @@ class TabsComponentViewTests {
             0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne),
         ) +
             // Adding an extra tab without any packages
-            Tab(components = listOf())
+            Tab(id = "2", components = listOf())
         val tabControlButtonKeys = List(tabs.size) { index ->
             LocalizationKey("tab_control_button_$index")
         }
@@ -561,6 +567,7 @@ class TabsComponentViewTests {
             List(tabs.size) { index ->
                 TabControlButtonComponent(
                     tabIndex = index,
+                    tabId = "$index",
                     stack = StackComponent(
                         components = listOf(
                             TextComponent(
@@ -637,7 +644,7 @@ class TabsComponentViewTests {
                 0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
             ) +
                 // Adding an extra tab without any packages
-                Tab(components = listOf())
+                Tab(id = "2", components = listOf())
             val tabControlButtonKeys = List(tabs.size) { index ->
                 LocalizationKey("tab_control_button_$index")
             }
@@ -646,6 +653,7 @@ class TabsComponentViewTests {
                 List(tabs.size) { index ->
                     TabControlButtonComponent(
                         tabIndex = index,
+                        tabId = "$index",
                         stack = StackComponent(
                             components = listOf(
                                 TextComponent(
@@ -762,7 +770,7 @@ class TabsComponentViewTests {
                 0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
             ) +
                 // Adding an extra tab without any packages
-                Tab(components = listOf())
+                Tab(id = "2", components = listOf())
             val tabControlButtonKeys = List(tabs.size) { index ->
                 LocalizationKey("tab_control_button_$index")
             }
@@ -771,6 +779,7 @@ class TabsComponentViewTests {
                 List(tabs.size) { index ->
                     TabControlButtonComponent(
                         tabIndex = index,
+                        tabId = "$index",
                         stack = StackComponent(
                             components = listOf(
                                 TextComponent(
@@ -1072,9 +1081,10 @@ class TabsComponentViewTests {
         )
 
     private fun tabs(vararg tabsBySelectedByDefaultIndex: Pair<Int?, List<Package>>): List<TabsComponent.Tab> =
-        tabsBySelectedByDefaultIndex.map { (selectedByDefaultIndex, packagesOnThisTab) ->
+        tabsBySelectedByDefaultIndex.mapIndexed { index, (selectedByDefaultIndex, packagesOnThisTab) ->
             TabsComponent.Tab(
-                StackComponent(
+                id = "$index",
+                stack = StackComponent(
                     components = listOf(
                         TabControlComponent
                     ) + packagesOnThisTab.mapIndexed { index, pkg ->
@@ -1088,9 +1098,10 @@ class TabsComponentViewTests {
         }
 
     @Suppress("TestFunctionName")
-    private fun Tab(components: List<PaywallComponent>): TabsComponent.Tab =
+    private fun Tab(id: String, components: List<PaywallComponent>): TabsComponent.Tab =
         TabsComponent.Tab(
-            StackComponent(
+            id = id,
+            stack = StackComponent(
                 components = listOf(TabControlComponent) + components
             )
         )
