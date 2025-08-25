@@ -67,7 +67,6 @@ class PaywallTransition(
     }
 }
 
-
 @OptIn(InternalRevenueCatAPI::class)
 internal object DisplacementStrategyDeserializer : EnumDeserializerWithDefault<PaywallTransition.DisplacementStrategy>(
     defaultValue = PaywallTransition.DisplacementStrategy.GREEDY,
