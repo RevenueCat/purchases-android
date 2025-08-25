@@ -400,7 +400,31 @@ internal class PaywallViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        return LocaleListCompat.getDefault()
+        val preferredLocale = purchases.preferredUILocaleOverride
+        if (preferredLocale == null) {
+            return LocaleListCompat.getDefault()
+        }
+
+        return try {
+            val locale = createLocaleFromString(preferredLocale)
+            LocaleListCompat.create(locale)
+        } catch (e: IllegalArgumentException) {
+            Logger.w("Invalid preferred locale format: $preferredLocale. Using system default.", e)
+            LocaleListCompat.getDefault()
+        }
+    }
+
+    private fun createLocaleFromString(localeString: String): Locale {
+        return if (localeString.contains('_')) {
+            val parts = localeString.split('_', limit = 2)
+            if (parts.size >= 2) {
+                Locale(parts[0], parts[1])
+            } else {
+                Locale(parts[0])
+            }
+        } else {
+            Locale(localeString)
+        }
     }
 
     private fun calculateState(
