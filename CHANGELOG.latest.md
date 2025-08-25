@@ -13,6 +13,7 @@
 * Add support for az-AZ locale (#2575) via Franco Correa (@francocorreasosa)
 * PaywallActivityLauncher: Add `edgeToEdge` parameter to display paywall in full screen (#2530) via Toni Rico (@tonidero)
 #### 🐞 Bugfixes
+* Fix embedded font family loading (#2624) via Toni Rico (@tonidero)
 * Fixes price formatting discrepancies on Paywalls for `{{ product.price_per_[day|week|month|year] }}` (#2604) via JayShortway (@JayShortway)
 * Remove logic to avoid repurchasing already subscribed products (#2492) via Toni Rico (@tonidero)
 * Make PaywallActivity not consume insets in Android 16+ (#2520) via Toni Rico (@tonidero)
@@ -28,6 +29,8 @@
 * Resubscribe if cancelled (#2487) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
+* Fix integration tests shared preferences file (#2629) via Toni Rico (@tonidero)
+* Migrate RC SharedPreferences data to a separate file (#2621) via Toni Rico (@tonidero)
 * Override presented offering context paywalls without offering (#2612) via Toni Rico (@tonidero)
 * Add APIs for hybrid SDKs to set presentedOfferingContext (#2610) via Toni Rico (@tonidero)
 * Bump Baseline Profiles to 1.4.0 and update profiles (#2611) via Jaewoong Eum (@skydoves)
