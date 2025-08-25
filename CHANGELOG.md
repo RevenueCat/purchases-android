@@ -61,7 +61,6 @@
 * Increase compile/target SDK version to 35 (#2525) via Toni Rico (@tonidero)
 * Fix snapshot deployment (#2526) via Toni Rico (@tonidero)
 * Update CircleCI android orb (#2521) via Toni Rico (@tonidero)
-* Bump AGP to 8.10.1 and Gradle to 8.14.2 (#2440) via Jaewoong Eum (@skydoves)
 * Fixes compilation of the CEC sample app. (#2512) via JayShortway (@JayShortway)
 * Update CustomEntitlementComputation sample app kotlin version (#2510) via Toni Rico (@tonidero)
 * Fix `Switch` component previews (#2509) via Toni Rico (@tonidero)
