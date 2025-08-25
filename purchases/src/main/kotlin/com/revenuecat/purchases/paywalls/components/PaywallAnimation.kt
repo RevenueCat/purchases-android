@@ -7,6 +7,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
 
+/**
+ * Defines an animation to be used for paywall transitions.
+ *
+ * @property type The type of animation to use like ease in, ease out, etc.
+ * @property msDelay The delay in milliseconds before the animation starts.
+ * @property msDuration The duration in milliseconds of the animation.
+ */
 @Suppress("unused")
 @InternalRevenueCatAPI
 @Poko

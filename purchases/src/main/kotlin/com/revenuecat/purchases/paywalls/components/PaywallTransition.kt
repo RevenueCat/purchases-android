@@ -7,6 +7,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
 
+/**
+ * Defines how a paywall screen is transitioned when it initially appears.
+ *
+ * @property type The type of transition to use. Defaults to [TransitionType.Fade].
+ * @property displacementStrategy Determines how/when the view hierarchy is displaced by the view being animated in.
+ * @property animation Additional animation configuration for the transition.
+ */
 @InternalRevenueCatAPI
 @Poko
 @Serializable
