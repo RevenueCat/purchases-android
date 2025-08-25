@@ -45,7 +45,7 @@ internal object VariableProcessor {
         executeAndReplaceWith: (String) -> String?,
     ): String {
         var resultString = string
-        REGEX.findAll(string).toList().reversed().forEach { matchResult ->
+        REGEX.findAll(string).toList().asReversed().forEach { matchResult ->
             val variableString = matchResult.value
             val variableWithoutBraces = variableString.substring(2, variableString.length - 2).trim()
             val replacement = executeAndReplaceWith(variableWithoutBraces)
