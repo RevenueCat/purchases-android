@@ -1,4 +1,3 @@
-## 8.23.0
 > [!NOTE]  
 > This release brings all non-breaking changes between SDK versions 9.0.0 and 9.3.2 to major 8, so developers that don't/can't use major 9, can still get the latest updates.
 
