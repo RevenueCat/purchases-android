@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
@@ -10,6 +11,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class Badge(
     @get:JvmSynthetic val stack: StackComponent,
     @get:JvmSynthetic val style: Style,

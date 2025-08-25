@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.revenuecat.testpurchasesandroidcompatibility"
-    compileSdk = 33 // Keeping it at 33 to test compatibility with purchases-android
+    compileSdk = 34 // Keeping it at 34 to test compatibility with purchases-android
 
     defaultConfig {
         applicationId = "com.revenuecat.testpurchasesandroidcompatibility"
@@ -30,8 +30,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
     }
 }
 

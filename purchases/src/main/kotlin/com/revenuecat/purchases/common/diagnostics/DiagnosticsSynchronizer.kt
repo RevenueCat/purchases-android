@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.common.diagnostics
 
-import android.content.Context
-import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
@@ -30,12 +28,6 @@ internal class DiagnosticsSynchronizer(
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_EVENTS_TO_SYNC_PER_REQUEST: Int = 200
-
-        fun initializeSharedPreferences(context: Context): SharedPreferences =
-            context.getSharedPreferences(
-                "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
-                Context.MODE_PRIVATE,
-            )
     }
 
     val isSyncing = AtomicBoolean(false)

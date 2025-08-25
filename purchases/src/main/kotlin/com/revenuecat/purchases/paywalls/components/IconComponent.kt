@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.IconComponent.Formats
 import com.revenuecat.purchases.paywalls.components.IconComponent.IconBackground
@@ -20,6 +21,7 @@ import kotlinx.serialization.Serializable
 @Suppress("LongParameterList")
 @InternalRevenueCatAPI
 @Poko
+@Immutable
 @Serializable
 @SerialName("icon")
 class IconComponent(
@@ -50,6 +52,7 @@ class IconComponent(
 
     @Poko
     @Serializable
+    @Immutable
     class Formats(
         @get:JvmSynthetic
         val webp: String,
@@ -57,6 +60,7 @@ class IconComponent(
 
     @Poko
     @Serializable
+    @Immutable
     class IconBackground(
         @get:JvmSynthetic
         val color: ColorScheme,
@@ -73,6 +77,7 @@ class IconComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class PartialIconComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,

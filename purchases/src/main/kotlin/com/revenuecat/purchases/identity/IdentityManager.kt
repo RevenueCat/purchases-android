@@ -3,6 +3,7 @@ package com.revenuecat.purchases.identity
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
@@ -21,6 +22,9 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import java.util.Locale
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class IdentityManager(
@@ -32,11 +36,16 @@ internal class IdentityManager(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
 ) {
+    companion object {
+        private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+
+        fun isUserIDAnonymous(appUserID: String): Boolean {
+            return anonymousIdRegex.matches(appUserID)
+        }
+    }
 
     val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
-
-    private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
 
     // region Public functions
 
@@ -63,6 +72,32 @@ internal class IdentityManager(
 
         enqueue {
             deviceCache.cleanupOldAttributionData()
+        }
+    }
+
+    suspend fun aliasCurrentUserIdTo(
+        oldAppUserID: String,
+    ) {
+        val newAppUserID = currentAppUserID
+        return suspendCoroutine { continuation ->
+            backend.aliasUsers(
+                oldAppUserID = oldAppUserID,
+                newAppUserID = newAppUserID,
+                onSuccessHandler = {
+                    synchronized(this@IdentityManager) {
+                        log(LogIntent.USER) {
+                            IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
+                        }
+                        offeringsCache.clearCache()
+                        deviceCache.clearCustomerInfoCache(newAppUserID)
+                        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+                    }
+                    continuation.resume(Unit)
+                },
+                onErrorHandler = { error ->
+                    continuation.resumeWithException(PurchasesException(error))
+                },
+            )
         }
     }
 
@@ -163,10 +198,6 @@ internal class IdentityManager(
         return customerInfo != null &&
             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
             backend.verificationMode != SignatureVerificationMode.Disabled
-    }
-
-    private fun isUserIDAnonymous(appUserID: String): Boolean {
-        return anonymousIdRegex.matches(appUserID)
     }
 
     private fun generateRandomID(): String {
