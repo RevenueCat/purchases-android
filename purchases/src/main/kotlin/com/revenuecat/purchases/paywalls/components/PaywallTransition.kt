@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonClassDiscriminator
 
 /**
  * Defines how a paywall screen is transitioned when it initially appears.
@@ -35,7 +35,7 @@ class PaywallTransition(
      * as the new view inserts itself.
      */
     @InternalRevenueCatAPI
-    @Serializable
+    @Serializable(with = DisplacementStrategyDeserializer::class)
     enum class DisplacementStrategy {
         @SerialName("greedy")
         GREEDY,
@@ -44,32 +44,43 @@ class PaywallTransition(
         LAZY,
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     @InternalRevenueCatAPI
-    @Serializable
-    @JsonClassDiscriminator("type")
+    @Serializable(with = TransitionTypeDeserializer::class)
     sealed class TransitionType {
         @Serializable
-        @SerialName("fade")
         object Fade : TransitionType()
 
         @Serializable
-        @SerialName("fade_and_scale")
         object FadeAndScale : TransitionType()
 
         @Serializable
-        @SerialName("scale")
         object Scale : TransitionType()
 
         @Serializable
-        @SerialName("slide")
         object Slide : TransitionType()
-
-        @Poko
-        @Serializable
-        @SerialName("custom")
-        class Custom(
-            @get:JvmSynthetic val value: String,
-        ) : TransitionType()
     }
 }
+
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object DisplacementStrategyDeserializer : EnumDeserializerWithDefault<PaywallTransition.DisplacementStrategy>(
+    defaultValue = PaywallTransition.DisplacementStrategy.GREEDY,
+    typeForValue = { value ->
+        when (value) {
+            PaywallTransition.DisplacementStrategy.GREEDY -> "greedy"
+            PaywallTransition.DisplacementStrategy.LAZY -> "lazy"
+        }
+    },
+)
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object TransitionTypeDeserializer : SealedDeserializerWithDefault<PaywallTransition.TransitionType>(
+    serialName = "TransitionType",
+    serializerByType = mapOf(
+        "fade" to { PaywallTransition.TransitionType.Fade.serializer() },
+        "fade_and_scale" to { PaywallTransition.TransitionType.FadeAndScale.serializer() },
+        "scale" to { PaywallTransition.TransitionType.Scale.serializer() },
+        "slide" to { PaywallTransition.TransitionType.Slide.serializer() },
+    ),
+    defaultValue = { PaywallTransition.TransitionType.Fade },
+)

@@ -1,11 +1,10 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonClassDiscriminator
 
 /**
  * Defines an animation to be used for paywall transitions.
@@ -29,32 +28,31 @@ class PaywallAnimation(
     val msDuration: Int?,
 ) {
 
-    @OptIn(ExperimentalSerializationApi::class)
     @InternalRevenueCatAPI
-    @Serializable
-    @JsonClassDiscriminator("type")
+    @Serializable(with = AnimationTypeDeserializer::class)
     sealed class AnimationType {
         @Serializable
-        @SerialName("ease_in")
         object EaseIn : AnimationType()
 
         @Serializable
-        @SerialName("ease_in_out")
         object EaseInOut : AnimationType()
 
         @Serializable
-        @SerialName("ease_out")
         object EaseOut : AnimationType()
 
         @Serializable
-        @SerialName("linear")
         object Linear : AnimationType()
-
-        @Poko
-        @Serializable
-        @SerialName("custom")
-        class Custom(
-            @get:JvmSynthetic val value: String,
-        ) : AnimationType()
     }
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object AnimationTypeDeserializer : SealedDeserializerWithDefault<PaywallAnimation.AnimationType>(
+    serialName = "AnimationType",
+    serializerByType = mapOf(
+        "ease_in" to { PaywallAnimation.AnimationType.EaseIn.serializer() },
+        "ease_out" to { PaywallAnimation.AnimationType.EaseOut.serializer() },
+        "ease_in_out" to { PaywallAnimation.AnimationType.EaseInOut.serializer() },
+        "linear" to { PaywallAnimation.AnimationType.Linear.serializer() },
+    ),
+    defaultValue = { PaywallAnimation.AnimationType.EaseInOut },
+)

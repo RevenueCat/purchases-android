@@ -68,7 +68,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                 ),
             ),
             arrayOf(
-                "custom custom",
+                "custom custom -> default serialization take effect",
                 Args(
                     json = """
                         {
@@ -87,10 +87,10 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         }
                     """.trimIndent(),
                     expected = PaywallTransition(
-                        type = PaywallTransition.TransitionType.Custom("some random transition"),
+                        type = PaywallTransition.TransitionType.Fade,
                         displacementStrategy = PaywallTransition.DisplacementStrategy.GREEDY,
                         animation = PaywallAnimation(
-                            type = PaywallAnimation.AnimationType.Custom("some random animation"),
+                            type = PaywallAnimation.AnimationType.EaseInOut,
                             msDelay = 1500,
                             msDuration = null,
                         ),
