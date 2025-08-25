@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
+import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
@@ -15,6 +16,8 @@ internal data class ButtonComponentStyle(
     val stackComponentStyle: StackComponentStyle,
     @get:JvmSynthetic
     val action: Action,
+    @get:JvmSynthetic
+    val transition: PaywallTransition? = null,
 ) : ComponentStyle {
 
     internal sealed interface Action {

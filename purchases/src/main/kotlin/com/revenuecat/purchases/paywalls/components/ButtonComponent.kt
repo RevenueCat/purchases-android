@@ -25,6 +25,7 @@ import kotlinx.serialization.encoding.Encoder
 class ButtonComponent(
     @get:JvmSynthetic val action: Action,
     @get:JvmSynthetic val stack: StackComponent,
+    @get:JvmSynthetic val transition: PaywallTransition? = null,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
