@@ -38,7 +38,7 @@ class PaywallAnimation(
         EASE_IN,
         EASE_OUT,
         EASE_IN_OUT,
-        LINEAR;
+        LINEAR,
     }
 }
 
@@ -46,5 +46,5 @@ class PaywallAnimation(
 object AnimationTypeAsObjectSerializer : EnumAsObjectSerializer<PaywallAnimation.AnimationType>(
     enumClass = PaywallAnimation.AnimationType::class,
     defaultValue = PaywallAnimation.AnimationType.EASE_IN_OUT,
-    keyName = "type"
+    keyName = "type",
 )

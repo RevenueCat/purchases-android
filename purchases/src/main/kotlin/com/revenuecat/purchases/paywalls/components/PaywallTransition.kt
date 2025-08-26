@@ -73,5 +73,5 @@ internal object DisplacementStrategyDeserializer : EnumDeserializerWithDefault<P
 object TransitionTypeAsObjectSerializer : EnumAsObjectSerializer<PaywallTransition.TransitionType>(
     enumClass = PaywallTransition.TransitionType::class,
     defaultValue = PaywallTransition.TransitionType.FADE,
-    keyName = "type"
+    keyName = "type",
 )
