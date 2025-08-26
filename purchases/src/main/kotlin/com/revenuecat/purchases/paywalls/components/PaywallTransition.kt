@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.EnumAsObjectSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
-import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 /**
  * Defines how a paywall screen is transitioned when it initially appears.
  *
- * @property type The type of transition to use. Defaults to [TransitionType.Fade].
+ * @property type The type of transition to use. Defaults to [TransitionType.FADE].
  * @property displacementStrategy Determines how/when the view hierarchy is displaced by the view being animated in.
  * @property animation Additional animation configuration for the transition.
  */
@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 class PaywallTransition(
-    @get:JvmSynthetic val type: TransitionType = TransitionType.Fade,
+    @get:JvmSynthetic val type: TransitionType = TransitionType.FADE,
     @get:JvmSynthetic
     @SerialName("displacement_strategy")
     val displacementStrategy: DisplacementStrategy,
@@ -34,7 +34,6 @@ class PaywallTransition(
      * A [LAZY] displacement will not do this, instead it will result in shifting the layout
      * as the new view inserts itself.
      */
-    @InternalRevenueCatAPI
     @Serializable(with = DisplacementStrategyDeserializer::class)
     enum class DisplacementStrategy {
         @SerialName("greedy")
@@ -44,26 +43,19 @@ class PaywallTransition(
         LAZY,
     }
 
+
     /**
-     * Defines the type of transition to use for paywall transitions.
+     * Defines the available types of transitions for a paywall screen.
      *
-     * [NOTE] This is a sealed class and not an enum because we see a future where we may want
-     * to pass back more verbose instructions to the view layer than a simple enum case
+     * [NOTE] This is serialized as an object instead of a top level enum so that it can be expanded
+     * later to include user defined transitions if we choose to go there
      */
-    @InternalRevenueCatAPI
-    @Serializable(with = TransitionTypeDeserializer::class)
-    sealed class TransitionType {
-        @Serializable
-        object Fade : TransitionType()
-
-        @Serializable
-        object FadeAndScale : TransitionType()
-
-        @Serializable
-        object Scale : TransitionType()
-
-        @Serializable
-        object Slide : TransitionType()
+    @Serializable(with = TransitionTypeAsObjectSerializer::class)
+    enum class TransitionType {
+        FADE,
+        FADE_AND_SCALE,
+        SCALE,
+        SLIDE,
     }
 }
 
@@ -79,13 +71,8 @@ internal object DisplacementStrategyDeserializer : EnumDeserializerWithDefault<P
 )
 
 @OptIn(InternalRevenueCatAPI::class)
-internal object TransitionTypeDeserializer : SealedDeserializerWithDefault<PaywallTransition.TransitionType>(
-    serialName = "TransitionType",
-    serializerByType = mapOf(
-        "fade" to { PaywallTransition.TransitionType.Fade.serializer() },
-        "fade_and_scale" to { PaywallTransition.TransitionType.FadeAndScale.serializer() },
-        "scale" to { PaywallTransition.TransitionType.Scale.serializer() },
-        "slide" to { PaywallTransition.TransitionType.Slide.serializer() },
-    ),
-    defaultValue = { PaywallTransition.TransitionType.Fade },
+object TransitionTypeAsObjectSerializer : EnumAsObjectSerializer<PaywallTransition.TransitionType>(
+    enumClass = PaywallTransition.TransitionType::class,
+    defaultValue = PaywallTransition.TransitionType.FADE,
+    keyName = "type"
 )

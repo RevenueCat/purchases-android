@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.EnumAsObjectSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -28,37 +28,24 @@ class PaywallAnimation(
     val msDuration: Int?,
 ) {
 
-    /**
-     * Defines the type of animation to use for paywall transitions.
-     *
-     * [NOTE] This is a sealed class and not an enum because we see a future where we may want
-     * to pass back more verbose instructions to the view layer than a simple enum case
-     */
+    /* Defines the types of animations a the paywall can use
+    *
+    * [NOTE] This is serialized as an object instead of a top level enum so that it can be expanded
+    * later to include user defined transitions if we choose to go there
+    */
     @InternalRevenueCatAPI
-    @Serializable(with = AnimationTypeDeserializer::class)
-    sealed class AnimationType {
-        @Serializable
-        object EaseIn : AnimationType()
-
-        @Serializable
-        object EaseInOut : AnimationType()
-
-        @Serializable
-        object EaseOut : AnimationType()
-
-        @Serializable
-        object Linear : AnimationType()
+    @Serializable(with = AnimationTypeAsObjectSerializer::class)
+    enum class AnimationType {
+        EASE_IN,
+        EASE_OUT,
+        EASE_IN_OUT,
+        LINEAR;
     }
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-internal object AnimationTypeDeserializer : SealedDeserializerWithDefault<PaywallAnimation.AnimationType>(
-    serialName = "AnimationType",
-    serializerByType = mapOf(
-        "ease_in" to { PaywallAnimation.AnimationType.EaseIn.serializer() },
-        "ease_out" to { PaywallAnimation.AnimationType.EaseOut.serializer() },
-        "ease_in_out" to { PaywallAnimation.AnimationType.EaseInOut.serializer() },
-        "linear" to { PaywallAnimation.AnimationType.Linear.serializer() },
-    ),
-    defaultValue = { PaywallAnimation.AnimationType.EaseInOut },
+object AnimationTypeAsObjectSerializer : EnumAsObjectSerializer<PaywallAnimation.AnimationType>(
+    enumClass = PaywallAnimation.AnimationType::class,
+    defaultValue = PaywallAnimation.AnimationType.EASE_IN_OUT,
+    keyName = "type"
 )
