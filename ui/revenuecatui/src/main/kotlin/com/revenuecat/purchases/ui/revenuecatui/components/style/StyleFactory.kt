@@ -424,6 +424,7 @@ internal class StyleFactory(
             ButtonComponentStyle(
                 stackComponentStyle = stack,
                 action = action,
+                transition = component.transition,
             )
         }
     }
