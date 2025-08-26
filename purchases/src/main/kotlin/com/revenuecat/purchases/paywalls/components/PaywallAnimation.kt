@@ -28,11 +28,11 @@ class PaywallAnimation(
     val msDuration: Int?,
 ) {
 
-    /* Defines the types of animations a the paywall can use
-    *
-    * [NOTE] This is serialized as an object instead of a top level enum so that it can be expanded
-    * later to include user defined transitions if we choose to go there
-    */
+    /** Defines the types of animations a the paywall can use
+     *
+     * [NOTE] This is serialized as an object instead of a top level enum so that it can be expanded
+     * later to include user defined transitions if we choose to go there
+     */
     @Serializable(with = AnimationTypeAsObjectSerializer::class)
     enum class AnimationType {
         EASE_IN,

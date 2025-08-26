@@ -43,7 +43,6 @@ class PaywallTransition(
         LAZY,
     }
 
-
     /**
      * Defines the available types of transitions for a paywall screen.
      *
