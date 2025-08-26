@@ -39,10 +39,10 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         }
                     """.trimIndent(),
                     expected = PaywallTransition(
-                        type = PaywallTransition.TransitionType.FadeAndScale,
+                        type = PaywallTransition.TransitionType.FADE_AND_SCALE,
                         displacementStrategy = PaywallTransition.DisplacementStrategy.GREEDY,
                         animation = PaywallAnimation(
-                            type = PaywallAnimation.AnimationType.EaseInOut,
+                            type = PaywallAnimation.AnimationType.EASE_IN_OUT,
                             msDelay = 1500,
                             msDuration = null,
                         ),
@@ -61,7 +61,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         }
                     """.trimIndent(),
                     expected = PaywallTransition(
-                        type = PaywallTransition.TransitionType.Fade,
+                        type = PaywallTransition.TransitionType.FADE,
                         displacementStrategy = PaywallTransition.DisplacementStrategy.LAZY,
                         animation = null,
                     ),
@@ -87,10 +87,10 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         }
                     """.trimIndent(),
                     expected = PaywallTransition(
-                        type = PaywallTransition.TransitionType.Fade,
+                        type = PaywallTransition.TransitionType.FADE,
                         displacementStrategy = PaywallTransition.DisplacementStrategy.GREEDY,
                         animation = PaywallAnimation(
-                            type = PaywallAnimation.AnimationType.EaseInOut,
+                            type = PaywallAnimation.AnimationType.EASE_IN_OUT,
                             msDelay = 1500,
                             msDuration = null,
                         ),
