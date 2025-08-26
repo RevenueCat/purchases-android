@@ -24,11 +24,7 @@ import androidx.compose.ui.unit.IntOffset
 import com.revenuecat.purchases.paywalls.components.PaywallAnimation
 import com.revenuecat.purchases.paywalls.components.PaywallAnimation.AnimationType
 import com.revenuecat.purchases.paywalls.components.PaywallTransition
-import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType.Fade
-import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType.FadeAndScale
-import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType.Scale
-import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType.Slide
-
+import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType
 @Suppress("ModifierMissing")
 @Composable
 internal fun TransitionView(transition: PaywallTransition?, content: @Composable () -> Unit) {
@@ -74,7 +70,7 @@ private fun PaywallTransition.AnimatedVisibility(content: @Composable () -> Unit
 
 @Suppress("CyclomaticComplexMethod")
 private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
-    is Fade -> fadeIn(
+    TransitionType.FADE -> fadeIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
@@ -82,7 +78,7 @@ private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
         ),
     )
 
-    is FadeAndScale -> fadeIn(
+    TransitionType.FADE_AND_SCALE -> fadeIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
@@ -96,7 +92,7 @@ private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
         ),
     )
 
-    is Scale -> scaleIn(
+    TransitionType.SCALE -> scaleIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
@@ -104,21 +100,13 @@ private fun PaywallTransition.enterTransition(): EnterTransition = when (type) {
         ),
     )
 
-    is Slide -> slideIn(
+    TransitionType.SLIDE -> slideIn(
         tween(
             animation?.msDuration ?: SensibleDefaults.DURATION,
             delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
             easing = animation.easing(),
         ),
     ) { IntOffset(-SensibleDefaults.X_OFFSET, SensibleDefaults.ZERO) }
-
-    else -> fadeIn(
-        tween(
-            animation?.msDuration ?: SensibleDefaults.DURATION,
-            delayMillis = animation?.msDelay ?: SensibleDefaults.ZERO,
-            easing = animation.easing(),
-        ),
-    )
 }
 
 private object SensibleDefaults {
@@ -129,9 +117,8 @@ private object SensibleDefaults {
 
 private fun PaywallAnimation?.easing(): Easing = this?.getEasing() ?: LinearOutSlowInEasing
 private fun PaywallAnimation.getEasing(): Easing = when (type) {
-    is AnimationType.EaseIn -> FastOutSlowInEasing
-    is AnimationType.EaseOut -> FastOutLinearInEasing
-    is AnimationType.EaseInOut -> LinearOutSlowInEasing
-    is AnimationType.Linear -> LinearEasing
-    else -> LinearOutSlowInEasing
+    AnimationType.EASE_IN -> FastOutSlowInEasing
+    AnimationType.EASE_OUT -> FastOutLinearInEasing
+    AnimationType.EASE_IN_OUT -> LinearOutSlowInEasing
+    AnimationType.LINEAR -> LinearEasing
 }
