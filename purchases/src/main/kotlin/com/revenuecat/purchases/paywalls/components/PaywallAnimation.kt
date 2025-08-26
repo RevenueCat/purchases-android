@@ -33,7 +33,6 @@ class PaywallAnimation(
     * [NOTE] This is serialized as an object instead of a top level enum so that it can be expanded
     * later to include user defined transitions if we choose to go there
     */
-    @InternalRevenueCatAPI
     @Serializable(with = AnimationTypeAsObjectSerializer::class)
     enum class AnimationType {
         EASE_IN,
