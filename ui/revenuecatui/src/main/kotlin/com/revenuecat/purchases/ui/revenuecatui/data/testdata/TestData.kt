@@ -5,6 +5,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
@@ -417,6 +418,7 @@ internal class MockResourceProvider(
     private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
     private val assetPaths: List<String> = emptyList(),
     private val downloadedFilesByUrl: Map<String, DownloadedFontFamily> = emptyMap(),
+    private val fontFamiliesByXmlResourceId: Map<Int, FontFamily> = emptyMap(),
 ) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
@@ -449,6 +451,10 @@ internal class MockResourceProvider(
 
     override fun getResourceIdentifier(name: String, type: String): Int =
         resourceIds[type]?.get(name) ?: 0
+
+    override fun getXmlFontFamily(resourceId: Int): FontFamily? {
+        return fontFamiliesByXmlResourceId[resourceId]
+    }
 
     override fun getAssetFontPath(name: String): String? {
         val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
