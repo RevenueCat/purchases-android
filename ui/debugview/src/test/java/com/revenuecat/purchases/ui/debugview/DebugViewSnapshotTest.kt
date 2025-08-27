@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.Paparazzi
+import app.cash.paparazzi.detectEnvironment
 import com.android.ide.common.rendering.api.SessionParams
 import com.revenuecat.purchases.ui.debugview.models.SettingGroupState
 import com.revenuecat.purchases.ui.debugview.models.SettingScreenState
@@ -28,6 +29,9 @@ class DebugViewSnapshotTest {
     @get:Rule
     val paparazzi = Paparazzi(
         renderingMode = SessionParams.RenderingMode.V_SCROLL,
+        // This is needed because of https://github.com/cashapp/paparazzi/issues/1866.
+        // We should remove once Paparazzi 2.0 is released.
+        environment = detectEnvironment().copy(compileSdkVersion = 34),
     )
 
     private lateinit var notConfiguredStateFlow: MutableStateFlow<SettingScreenState>
