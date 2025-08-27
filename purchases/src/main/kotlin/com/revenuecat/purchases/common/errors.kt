@@ -32,6 +32,7 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidSubscriberAttributes(7263),
     BackendInvalidSubscriberAttributesBody(7264),
     BackendSubscriberAttributesAreBeingUpdated(7629),
+    BackendPaymentNotComplete(7651),
     BackendRequestAlreadyInProgress(7638),
     BackendProductIDsMalformed(7662),
     BackendInvalidWebRedemptionToken(7849),
@@ -108,6 +109,7 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendRequestAlreadyInProgress,
         BackendErrorCode.BackendSubscriberAttributesAreBeingUpdated,
         -> PurchasesErrorCode.OperationAlreadyInProgressError
+        BackendErrorCode.BackendPaymentNotComplete -> PurchasesErrorCode.PaymentPendingError
         BackendErrorCode.BackendCouldNotCreateAlias -> PurchasesErrorCode.ConfigurationError
         BackendErrorCode.BackendProductIDsMalformed -> PurchasesErrorCode.UnsupportedError
         BackendErrorCode.BackendInvalidWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError

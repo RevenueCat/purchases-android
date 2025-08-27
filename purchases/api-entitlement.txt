@@ -1275,6 +1275,18 @@ package com.revenuecat.purchases.models {
 
 }
 
+package com.revenuecat.purchases.paywalls.components {
+
+  public final class AnimationTypeAsObjectSerializer extends com.revenuecat.purchases.utils.serializers.EnumAsObjectSerializer<com.revenuecat.purchases.paywalls.components.PaywallAnimation.AnimationType> {
+    field public static final com.revenuecat.purchases.paywalls.components.AnimationTypeAsObjectSerializer INSTANCE;
+  }
+
+  public final class TransitionTypeAsObjectSerializer extends com.revenuecat.purchases.utils.serializers.EnumAsObjectSerializer<com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType> {
+    field public static final com.revenuecat.purchases.paywalls.components.TransitionTypeAsObjectSerializer INSTANCE;
+  }
+
+}
+
 package com.revenuecat.purchases.utils {
 
   public final class Iso8601Utils {
@@ -1285,6 +1297,18 @@ package com.revenuecat.purchases.utils {
 
   public final class LocaleExtensionsKt {
     method public static java.util.List<java.util.Locale> getDefaultLocales();
+  }
+
+}
+
+package com.revenuecat.purchases.utils.serializers {
+
+  public class EnumAsObjectSerializer<T extends java.lang.Enum<T>> implements kotlinx.serialization.KSerializer<T> {
+    ctor public EnumAsObjectSerializer(kotlin.reflect.KClass<T> enumClass, T defaultValue, String keyName);
+    method public T deserialize(kotlinx.serialization.encoding.Decoder decoder);
+    method public kotlinx.serialization.descriptors.SerialDescriptor getDescriptor();
+    method public void serialize(kotlinx.serialization.encoding.Encoder encoder, T value);
+    property public kotlinx.serialization.descriptors.SerialDescriptor descriptor;
   }
 
 }
