@@ -478,6 +478,7 @@ data class CustomerCenterConfigData(
     data class ScreenOffering(
         val type: ScreenOfferingType,
         @SerialName("offering_id") val offeringId: String? = null,
+        @SerialName("button_text") val buttonText: String? = null,
     ) {
         @Serializable
         enum class ScreenOfferingType(val value: String) {
