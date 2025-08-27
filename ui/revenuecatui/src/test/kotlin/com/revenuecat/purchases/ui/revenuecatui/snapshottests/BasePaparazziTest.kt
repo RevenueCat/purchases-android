@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
+import app.cash.paparazzi.detectEnvironment
 import com.android.resources.NightMode
 import com.android.resources.ScreenOrientation
 import org.junit.Rule
@@ -37,6 +38,7 @@ abstract class BasePaparazziTest(testConfig: TestConfig) {
     @get:Rule
     val paparazzi = Paparazzi(
         deviceConfig = testConfig.deviceConfig,
+        environment = detectEnvironment().copy(compileSdkVersion = 34),
     )
 
     companion object {
