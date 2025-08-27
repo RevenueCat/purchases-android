@@ -39,10 +39,7 @@ internal class SharedPreferencesManager(
      * Gets the appropriate shared preferences, performing migration if needed
      */
     fun getSharedPreferences(): SharedPreferences {
-        synchronized(this) {
-            debugLog { "TESTING: SHARED PREFERENCES: ${revenueCatSharedPreferences.all}" }
-            ensureMigrated()
-        }
+        synchronized(this) { ensureMigrated() }
         return revenueCatSharedPreferences
     }
 
