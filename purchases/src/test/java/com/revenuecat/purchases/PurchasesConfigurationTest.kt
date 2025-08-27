@@ -132,6 +132,19 @@ class PurchasesConfigurationTest {
     }
 
     @Test
+    fun `PurchasesConfiguration sets preferredUILocaleOverride correctly`() {
+        val localeOverride = "de_DE"
+        val purchasesConfiguration = builder.preferredUILocaleOverride(localeOverride).build()
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isEqualTo(localeOverride)
+    }
+
+    @Test
+    fun `PurchasesConfiguration handles null preferredUILocaleOverride`() {
+        val purchasesConfiguration = builder.preferredUILocaleOverride(null).build()
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
+    }
+
+    @Test
     fun `PurchasesConfiguration does not use application context if provided with device-protected storage context`() {
         // Arrange
         every { context.applicationContext } returns applicationContext
