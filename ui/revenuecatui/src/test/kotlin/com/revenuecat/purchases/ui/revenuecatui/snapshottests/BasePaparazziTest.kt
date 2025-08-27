@@ -38,6 +38,8 @@ abstract class BasePaparazziTest(testConfig: TestConfig) {
     @get:Rule
     val paparazzi = Paparazzi(
         deviceConfig = testConfig.deviceConfig,
+        // This is needed because of https://github.com/cashapp/paparazzi/issues/1866.
+        // We should remove once Paparazzi 2.0 is released.
         environment = detectEnvironment().copy(compileSdkVersion = 34),
     )
 
