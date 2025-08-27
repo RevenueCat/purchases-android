@@ -27,3 +27,13 @@ internal suspend fun CustomerCenterConfigData.Screen.resolveOfferingSuspend(
         }
     }
 }
+
+@InternalRevenueCatAPI
+internal fun CustomerCenterConfigData.Screen.resolveButtonText(
+    localization: CustomerCenterConfigData.Localization,
+): String {
+    return offering?.buttonText
+        ?: localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.BUY_SUBSCRIPTION,
+        )
+}
