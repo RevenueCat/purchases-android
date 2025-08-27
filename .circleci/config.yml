@@ -838,10 +838,10 @@ jobs:
           at: .
       - android/restore_gradle_cache
       - run:
-          name: Verify purchases-android target SDK (33)
+          name: Verify purchases-android target SDK (34)
           command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug --no-daemon --parallel
       - run:
-          name: Verify purchases-ui target SDK (34)
+          name: Verify purchases-ui target SDK (35)
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
 workflows:

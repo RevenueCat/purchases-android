@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.revenuecat.testpurchasesandroidcompatibility"
         minSdk = 21
-        targetSdk = 33 // Keeping it at 33 to test compatibility with purchases-android
+        targetSdk = 34 // Keeping it at 33 to test compatibility with purchases-android
         versionCode = 1
         versionName = "1.0"
 
