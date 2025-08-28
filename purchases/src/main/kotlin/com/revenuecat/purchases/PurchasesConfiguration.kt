@@ -35,6 +35,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val dangerousSettings: DangerousSettings
     val verificationMode: EntitlementVerificationMode
     val pendingTransactionsForPrepaidPlansEnabled: Boolean
+    val enableIdentifierCollectionWhenUsingAttributionNetwork: Boolean
 
     init {
         this.context =
@@ -53,6 +54,8 @@ open class PurchasesConfiguration(builder: Builder) {
         this.dangerousSettings = builder.dangerousSettings
         this.showInAppMessagesAutomatically = builder.showInAppMessagesAutomatically
         this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
+        this.enableIdentifierCollectionWhenUsingAttributionNetwork =
+            builder.enableIdentifierCollectionWhenUsingAttributionNetwork
     }
 
     internal fun copy(
@@ -68,6 +71,9 @@ open class PurchasesConfiguration(builder: Builder) {
             .dangerousSettings(dangerousSettings)
             .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
             .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
+            .enableIdentifierCollectionWhenUsingAttributionNetwork(
+                enableIdentifierCollectionWhenUsingAttributionNetwork,
+            )
         if (service != null) {
             builder = builder.service(service)
         }
@@ -106,6 +112,9 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var pendingTransactionsForPrepaidPlansEnabled: Boolean = false
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var enableIdentifierCollectionWhenUsingAttributionNetwork: Boolean = true
 
         /**
          * A unique id for identifying the user
@@ -254,6 +263,21 @@ open class PurchasesConfiguration(builder: Builder) {
          */
         fun pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled: Boolean) = apply {
             this.pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled
+        }
+
+        /**
+         * Enable this setting to allow the collection of identifiers when setting the identifier for an
+         * attribution network. For example, when calling [Purchases.setAdjustID] or [Purchases.setAppsflyerID],
+         * the SDK would collect the Android advertising ID, IP and device versions, if available, and send them
+         * to RevenueCat. This is required by some attribution networks to attribute installs and re-installs.
+         *
+         * Default is enabled.
+         */
+        fun enableIdentifierCollectionWhenUsingAttributionNetwork(
+            enableIdentifierCollectionWhenUsingAttributionNetwork: Boolean,
+        ) = apply {
+            this.enableIdentifierCollectionWhenUsingAttributionNetwork =
+                enableIdentifierCollectionWhenUsingAttributionNetwork
         }
 
         /**

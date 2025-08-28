@@ -41,7 +41,8 @@ class SubscriberAttributesManagerTests {
         underTest = SubscriberAttributesManager(
             mockDeviceCache,
             mockBackend,
-            mockDeviceIdentifiersFetcher
+            mockDeviceIdentifiersFetcher,
+            enableIdentifierCollectionWhenUsingAttributionNetwork = true,
         )
     }
 
@@ -425,6 +426,40 @@ class SubscriberAttributesManagerTests {
         deviceIdentifiersSecondCallLambda?.invoke(mapOf("random-key-2" to "random-value-2"))
         assertNotNull(unsyncedAttributes)
         assertThat(unsyncedAttributes).isEqualTo(expected)
+    }
+
+    @Test
+    fun `setting attribution id does not get device identifiers if disabled`() {
+        underTest = SubscriberAttributesManager(
+            mockDeviceCache,
+            mockBackend,
+            mockDeviceIdentifiersFetcher,
+            enableIdentifierCollectionWhenUsingAttributionNetwork = false,
+        )
+
+        val mockContext = mockk<Application>(relaxed = true)
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns emptyMap()
+
+        val slot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Adjust,
+            "test-adjust-id",
+            appUserID,
+            mockContext
+        )
+
+
+        verify(exactly = 0) { mockDeviceIdentifiersFetcher.getDeviceIdentifiers(any(), any()) }
+        verify(exactly = 1) { mockDeviceCache.setAttributes(appUserID, any()) }
+        
+        val capturedAttributes = slot.captured
+        val adjustAttribute = capturedAttributes[SubscriberAttributeKey.AttributionIds.Adjust.backendKey]
+        assertThat(adjustAttribute).isNotNull
+        assertThat(adjustAttribute!!.key.backendKey).isEqualTo(SubscriberAttributeKey.AttributionIds.Adjust.backendKey)
+        assertThat(adjustAttribute.value).isEqualTo("test-adjust-id")
     }
 
     @Test
