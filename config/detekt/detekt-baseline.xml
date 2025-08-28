@@ -1,6 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
-  <ManuallySuppressedIssues/>
+  <ManuallySuppressedIssues>
+    <ID>LongMethod:VideoComponentTests.kt$VideoComponentTests$@Test fun `deserializes correctly`()</ID>
+  </ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>ComposableNaming:PaywallAPI.kt$PaywallAPI$check</ID>
     <ID>ComposableNaming:PaywallAPI.kt$PaywallAPI$checkDialog</ID>
