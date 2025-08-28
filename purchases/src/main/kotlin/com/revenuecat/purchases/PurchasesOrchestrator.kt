@@ -194,7 +194,7 @@ internal class PurchasesOrchestrator(
 
     @SuppressWarnings("MagicNumber")
     private val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60.seconds)
-    
+
     @SuppressWarnings("MagicNumber")
     private val preferredLocaleOverrideRateLimiter = RateLimiter(10, 60.seconds)
 
@@ -907,7 +907,7 @@ internal class PurchasesOrchestrator(
     }
 
     // endregion
-    
+
     /**
      * Clears the offerings cache. This will force the next offerings request to fetch from the network.
      * Useful when changing locale preferences to ensure fresh localizations are fetched.
@@ -917,10 +917,10 @@ internal class PurchasesOrchestrator(
         // This will force the next getOfferings call to fetch from network
         deviceCache.clearOfferingsResponseCache()
     }
-    
+
     /**
      * Clears the offerings cache with rate limiting to prevent excessive network requests.
-     * 
+     *
      * @return true if cache was cleared, false if rate limited
      */
     internal fun clearOfferingsCacheWithRateLimit(): Boolean {
@@ -929,14 +929,14 @@ internal class PurchasesOrchestrator(
             clearOfferingsCache()
             true
         } else {
-            log(LogIntent.DEBUG) { 
+            log(LogIntent.DEBUG) {
                 "Offerings cache clear rate limit reached: ${preferredLocaleOverrideRateLimiter.maxCallsInPeriod} " +
-                "per ${preferredLocaleOverrideRateLimiter.periodSeconds.inWholeSeconds} seconds. Cache not cleared."
+                    "per ${preferredLocaleOverrideRateLimiter.periodSeconds.inWholeSeconds} seconds. Cache not cleared."
             }
             false
         }
     }
-    
+
     // region Campaign parameters
 
     fun setMediaSource(mediaSource: String?) {

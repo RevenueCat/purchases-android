@@ -125,9 +125,12 @@ internal class PaywallViewModelImpl(
     override fun refreshStateIfLocaleChanged() {
         val currentLocaleList = getCurrentLocaleList()
         if (_lastLocaleList.value != currentLocaleList) {
-            Logger.d("PaywallViewModel locale changed from ${_lastLocaleList.value.toLanguageTags()} to ${currentLocaleList.toLanguageTags()}")
+            Logger.d(
+                "PaywallViewModel locale changed from ${_lastLocaleList.value.toLanguageTags()} " +
+                    "to ${currentLocaleList.toLanguageTags()}",
+            )
             _lastLocaleList.value = currentLocaleList
-            
+
             // If we have a Components paywall state, update its locale instead of recreating the entire state
             val currentState = _state.value
             if (currentState is PaywallState.Loaded.Components) {
@@ -444,7 +447,8 @@ internal class PaywallViewModelImpl(
             Locale(localeString)
         }
     }
-    
+
+    @Suppress("SpreadOperator")
     private fun LocaleListCompat.toFrameworkLocaleList(): android.os.LocaleList {
         val locales = Array(size()) { i -> get(i)!! }
         return android.os.LocaleList(*locales)

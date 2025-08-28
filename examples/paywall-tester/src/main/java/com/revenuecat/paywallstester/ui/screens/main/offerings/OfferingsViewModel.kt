@@ -17,7 +17,7 @@ abstract class OfferingsViewModel : ViewModel() {
     abstract val offeringsState: StateFlow<OfferingsState>
 
     abstract fun refreshOfferings()
-    
+
     abstract fun updateSearchQuery(query: String)
 }
 

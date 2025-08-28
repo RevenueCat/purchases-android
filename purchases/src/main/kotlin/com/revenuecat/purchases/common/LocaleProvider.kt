@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common
 
 import androidx.core.os.LocaleListCompat
-import java.util.Locale
 
 internal interface LocaleProvider {
     val currentLocalesLanguageTags: String
@@ -23,7 +22,7 @@ internal class DefaultLocaleProvider : LocaleProvider {
                 LocaleListCompat.getDefault().toLanguageTags()
             }
         }
-        
+
     private fun getPreferredLocaleFromPurchases(): String? {
         return try {
             val purchasesClass = Class.forName("com.revenuecat.purchases.Purchases")
@@ -33,7 +32,7 @@ internal class DefaultLocaleProvider : LocaleProvider {
             val result = getPreferredUILocaleOverrideMethod.invoke(purchasesInstance) as String?
             android.util.Log.d("DefaultLocaleProvider", "Preferred locale from Purchases: $result")
             result
-        } catch (e: Exception) {
+        } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") e: Exception) {
             // If anything fails (Purchases not configured, reflection issues, etc.), return null
             android.util.Log.d("DefaultLocaleProvider", "Failed to get preferred locale: ${e.message}")
             null
@@ -42,7 +41,7 @@ internal class DefaultLocaleProvider : LocaleProvider {
 }
 
 internal class PurchasesAwareLocaleProvider(
-    private val preferredLocaleOverrideProvider: () -> String?
+    private val preferredLocaleOverrideProvider: () -> String?,
 ) : LocaleProvider {
     override val currentLocalesLanguageTags: String
         get() {
