@@ -89,6 +89,7 @@ class VideoComponentTests {
         }
         """
 
+    @Suppress("LongMethod")
     @Test
     fun `deserializes correctly`() {
         val images = ThemeImageUrls(
