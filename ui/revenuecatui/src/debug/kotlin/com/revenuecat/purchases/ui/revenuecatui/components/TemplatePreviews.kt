@@ -19,6 +19,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
@@ -179,6 +180,7 @@ internal fun PaywallComponentsTemplate_Preview(
                 validationResult = validationResult,
                 storefrontCountryCode = "US",
                 dateProvider = { Date(MILLIS_2025_04_23) },
+                purchases = MockPurchasesType(),
             )
 
             ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current, parentFolder)) {
