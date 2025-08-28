@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
@@ -255,11 +256,32 @@ internal sealed interface PaywallState {
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackage
             }
 
-            private fun LocaleList.toLocaleId(): LocaleId =
-                // Configured locales take precedence over the default one.
-                map { it.toLocaleId() }.plus(locales.head)
-                    // Find the first locale we have a LocalizationDictionary for.
-                    .firstNotNullOf { locale -> locales.getBestMatch(locale) }
+            private fun LocaleList.toLocaleId(): LocaleId {
+                val preferredOverride = Purchases.sharedInstance.preferredUILocaleOverride
+                val deviceLocales = map { it.toLocaleId() }.plus(locales.head)
+
+                val allLocales = if (preferredOverride != null) {
+                    // Parse preferred locale override and put it first in priority
+                    val preferredLocaleId = try {
+                        // Support both "es-ES" and "es_ES" formats
+                        val normalizedLocale = preferredOverride.replace('_', '-')
+                        androidx.compose.ui.text.intl.Locale(normalizedLocale).toLocaleId()
+                    } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") e: Exception) {
+                        // Fallback to null if preferred locale string is malformed
+                        null
+                    }
+                    if (preferredLocaleId != null) {
+                        listOf(preferredLocaleId) + deviceLocales
+                    } else {
+                        deviceLocales
+                    }
+                } else {
+                    deviceLocales
+                }
+
+                // Find the first locale we have a LocalizationDictionary for.
+                return allLocales.firstNotNullOf { locale -> locales.getBestMatch(locale) }
+            }
 
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()

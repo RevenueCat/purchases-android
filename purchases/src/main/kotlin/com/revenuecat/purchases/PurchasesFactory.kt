@@ -14,8 +14,8 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
-import com.revenuecat.purchases.common.OrchestrationAwareLocaleProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.OrchestrationAwareLocaleProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -173,15 +173,15 @@ internal class PurchasesFactory(
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val cache = DeviceCache(prefs, apiKey)
-            
+
             val localeProvider = OrchestrationAwareLocaleProvider()
             val httpClient = HTTPClient(
-                appConfig, 
-                eTagManager, 
-                diagnosticsTracker, 
-                signingManager, 
-                cache, 
-                localeProvider = localeProvider
+                appConfig,
+                eTagManager,
+                diagnosticsTracker,
+                signingManager,
+                cache,
+                localeProvider = localeProvider,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -377,7 +377,7 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
                 virtualCurrencyManager = virtualCurrencyManager,
             )
-            
+
             // Inject the orchestrator into the locale provider for runtime locale changes
             localeProvider.setOrchestratorProvider { purchasesOrchestrator }
 
