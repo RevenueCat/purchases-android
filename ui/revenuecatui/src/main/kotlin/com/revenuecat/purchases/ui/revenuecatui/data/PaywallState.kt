@@ -14,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
@@ -101,6 +100,7 @@ internal sealed interface PaywallState {
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
+            private val purchases: PurchasesType,
         ) : Loaded {
 
             data class AvailablePackages(
@@ -257,7 +257,7 @@ internal sealed interface PaywallState {
             }
 
             private fun LocaleList.toLocaleId(): LocaleId {
-                val preferredOverride = Purchases.sharedInstance.preferredUILocaleOverride
+                val preferredOverride = purchases.preferredUILocaleOverride
                 val deviceLocales = map { it.toLocaleId() }.plus(locales.head)
 
                 val allLocales = if (preferredOverride != null) {

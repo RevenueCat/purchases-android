@@ -493,6 +493,7 @@ internal class PaywallViewModelImpl(
                 validationResult = validationResult,
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
+                purchases = purchases,
             )
         }
     }

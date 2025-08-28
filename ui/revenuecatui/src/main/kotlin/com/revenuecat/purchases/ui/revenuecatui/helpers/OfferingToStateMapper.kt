@@ -21,6 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -315,6 +316,7 @@ internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
+    purchases: PurchasesType,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -333,6 +335,7 @@ internal fun Offering.toComponentsPaywallState(
         dateProvider = dateProvider,
         packages = validationResult.packages,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
+        purchases = purchases,
     )
 }
 
