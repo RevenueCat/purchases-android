@@ -29,8 +29,9 @@ internal interface FileRepositoryType {
     /**
      * Prefetch files at the given urls.
      * @param urls An array of URL to fetch data from.
+     * @return The Job that is executing the prefetch
      */
-    fun prefetch(urls: List<URL>): Job?
+    fun prefetch(urls: List<URL>): Job
 
     /**
      * Create and/or get the cached file url.
@@ -65,7 +66,7 @@ internal class FileRepository(
 
     private val store = KeyedDeferredValueStore<URL, URI>()
 
-    override fun prefetch(urls: List<URL>): Job? = scope.launch {
+    override fun prefetch(urls: List<URL>) = scope.launch {
         urls.forEach { url ->
             try {
                 generateOrGetCachedFileURL(url)

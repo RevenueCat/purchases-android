@@ -69,7 +69,7 @@ class FileRepositoryTest : CoroutineTest() {
             urlConnection = factory,
         )
 
-        fileRepository.prefetch(listOf(url))?.join()
+        fileRepository.prefetch(listOf(url)).join()
 
         assertThat(factory.createdConnections.size).isEqualTo(1)
         assertThat(factory.createdConnections.first()).isEqualTo(TEST_URL)
