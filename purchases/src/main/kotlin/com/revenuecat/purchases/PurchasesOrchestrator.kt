@@ -909,36 +909,6 @@ internal class PurchasesOrchestrator(
     // endregion
 
     /**
-     * Clears the offerings cache. This will force the next offerings request to fetch from the network.
-     * Useful when changing locale preferences to ensure fresh localizations are fetched.
-     */
-    internal fun clearOfferingsCache() {
-        // Clear both local device cache and HTTP/ETag cache
-        // This will force the next getOfferings call to fetch from network
-        deviceCache.clearOfferingsResponseCache()
-        backend.clearCaches()
-    }
-
-    /**
-     * Clears the offerings cache with rate limiting to prevent excessive network requests.
-     *
-     * @return true if cache was cleared, false if rate limited
-     */
-    internal fun clearOfferingsCacheWithRateLimit(): Boolean {
-        return if (preferredLocaleOverrideRateLimiter.shouldProceed()) {
-            log(LogIntent.DEBUG) { "Clearing offerings cache" }
-            clearOfferingsCache()
-            true
-        } else {
-            log(LogIntent.DEBUG) {
-                "Offerings cache clear rate limit reached: ${preferredLocaleOverrideRateLimiter.maxCallsInPeriod} " +
-                    "per ${preferredLocaleOverrideRateLimiter.periodSeconds.inWholeSeconds} seconds. Cache not cleared."
-            }
-            false
-        }
-    }
-
-    /**
      * Fetches fresh offerings with rate limiting to prevent excessive network requests.
      *
      * @param callback Callback to handle the result
