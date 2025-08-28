@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
@@ -860,40 +861,37 @@ class Purchases internal constructor(
      */
     fun overridePreferredUILocale(localeString: String?): Boolean {
         val previousLocale = purchasesOrchestrator.preferredUILocaleOverride
+        debugLog { "overridePreferredUILocale: changing from '$previousLocale' to '$localeString'" }
         purchasesOrchestrator.preferredUILocaleOverride = localeString
 
         return if (previousLocale != localeString) {
-            clearOfferingsCacheIfPossible()
+            debugLog { "Locale changed, attempting to clear offerings cache" }
+            val cacheCleared = clearOfferingsCacheIfPossible()
+            debugLog { "Cache clear result: $cacheCleared" }
+            cacheCleared
         } else {
+            debugLog { "Locale unchanged, no cache clearing needed" }
             false // Locale didn't change, no cache clearing needed
         }
     }
 
     /**
-     * Clears the offerings cache to force fresh data on the next request.
+     * Fetches fresh offerings from the API to get updated localizations.
      * This is useful after changing the preferred locale to get paywall templates
      * with the correct localizations.
      *
      * This method is rate limited to 10 calls per 60 seconds to prevent excessive
      * network requests.
      *
-     * @return true if cache was cleared, false if rate limited
+     * @return true if fresh fetch was triggered, false if rate limited
      */
     private fun clearOfferingsCacheIfPossible(): Boolean {
-        return if (purchasesOrchestrator.clearOfferingsCacheWithRateLimit()) {
-            // Trigger a background refetch of offerings
-            getOfferings(object : ReceiveOfferingsCallback {
-                override fun onReceived(offerings: Offerings) {
-                    // Ignore callback - this is just to populate cache
-                }
-
-                override fun onError(error: PurchasesError) {
-                    // Ignore error - this is just to populate cache
-                }
-            })
-            true
-        } else {
-            false
+        return purchasesOrchestrator.fetchOfferingsWithRateLimit { offerings, error ->
+            if (offerings != null) {
+                debugLog { "Fresh offerings fetch completed successfully" }
+            } else {
+                debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+            }
         }
     }
 

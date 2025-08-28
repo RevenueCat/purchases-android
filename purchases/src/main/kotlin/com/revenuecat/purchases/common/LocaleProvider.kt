@@ -33,15 +33,15 @@ internal class PurchasesAwareLocaleProvider(
 
 internal class OrchestrationAwareLocaleProvider : LocaleProvider {
     private var orchestratorProvider: (() -> com.revenuecat.purchases.PurchasesOrchestrator?)? = null
-    
+
     fun setOrchestratorProvider(provider: () -> com.revenuecat.purchases.PurchasesOrchestrator?) {
         orchestratorProvider = provider
     }
-    
+
     override val currentLocalesLanguageTags: String
         get() {
             val preferredOverride = orchestratorProvider?.invoke()?.preferredUILocaleOverride
-            return if (preferredOverride != null) {
+            val result = if (preferredOverride != null) {
                 val defaultLocales = LocaleListCompat.getDefault().toLanguageTags()
                 if (defaultLocales.isEmpty()) {
                     preferredOverride
@@ -51,5 +51,10 @@ internal class OrchestrationAwareLocaleProvider : LocaleProvider {
             } else {
                 LocaleListCompat.getDefault().toLanguageTags()
             }
+            android.util.Log.d(
+                "OrchestrationAwareLocaleProvider",
+                "currentLocalesLanguageTags: preferredOverride='$preferredOverride' -> result='$result'",
+            )
+            return result
         }
 }
