@@ -122,7 +122,7 @@ private fun OfferingsListScreen(
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
 
     val showDialog = remember { mutableStateOf(false) }
-    
+
     // Filter offerings based on search query
     val filteredOfferings = remember(offeringsState.offerings, offeringsState.searchQuery) {
         val query = offeringsState.searchQuery.lowercase().trim()
@@ -131,8 +131,8 @@ private fun OfferingsListScreen(
         } else {
             offeringsState.offerings.all.values.filter { offering ->
                 offering.identifier.lowercase().contains(query) ||
-                offering.paywall?.templateName?.lowercase()?.contains(query) == true ||
-                offering.paywallComponents?.data?.templateName?.lowercase()?.contains(query) == true
+                    offering.paywall?.templateName?.lowercase()?.contains(query) == true ||
+                    offering.paywallComponents?.data?.templateName?.lowercase()?.contains(query) == true
             }
         }
     }
@@ -151,7 +151,7 @@ private fun OfferingsListScreen(
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "Search"
+                            contentDescription = "Search",
                         )
                     },
                     trailingIcon = {
@@ -159,14 +159,14 @@ private fun OfferingsListScreen(
                             IconButton(onClick = { onSearchQueryChange("") }) {
                                 Icon(
                                     imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear search"
+                                    contentDescription = "Clear search",
                                 )
                             }
                         }
-                    }
+                    },
                 )
             }
-            
+
             item {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -377,7 +377,7 @@ fun OfferingsScreenPreview() {
             override fun refreshOfferings() {
                 // no-op
             }
-            
+
             override fun updateSearchQuery(query: String) {
                 // no-op
             }

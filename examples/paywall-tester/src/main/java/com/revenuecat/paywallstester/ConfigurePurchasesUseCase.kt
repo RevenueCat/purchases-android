@@ -17,10 +17,10 @@ internal class ConfigurePurchasesUseCase(
 
         if (Constants.PREFERRED_UI_LOCALE_OVERRIDE.isNotEmpty()) {
             builder.preferredUILocaleOverride(
-                Constants.PREFERRED_UI_LOCALE_OVERRIDE
+                Constants.PREFERRED_UI_LOCALE_OVERRIDE,
             )
         }
-        
+
         Purchases.configure(builder.build())
     }
 }

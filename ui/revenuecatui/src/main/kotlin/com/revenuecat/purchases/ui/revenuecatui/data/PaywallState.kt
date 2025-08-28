@@ -266,25 +266,28 @@ internal sealed interface PaywallState {
                     // No override, just use the LocaleList
                     map { it.toLocaleId() }
                 }
-                
-                Logger.d("PaywallState trying to match locales: ${allPreferredLocales.map { it.value }} (preferred override: $preferredLocaleOverride)")
-                
+
+                Logger.d(
+                    "PaywallState trying to match locales: ${allPreferredLocales.map { it.value }} " +
+                        "(preferred override: $preferredLocaleOverride)",
+                )
+
                 // First try to match any of our preferred locales
-                val matchedPreferredLocale = allPreferredLocales.firstNotNullOfOrNull { locale -> 
+                val matchedPreferredLocale = allPreferredLocales.firstNotNullOfOrNull { locale ->
                     locales.getBestMatch(locale)
                 }
-                
+
                 if (matchedPreferredLocale != null) {
                     Logger.d("PaywallState matched preferred locale: ${matchedPreferredLocale.value}")
                     return matchedPreferredLocale
                 }
-                
+
                 // Only fall back to the paywall's default locale if no preferred locale matched
                 val defaultMatch = locales.getBestMatch(locales.head)
                 Logger.d("PaywallState falling back to default locale: ${locales.head.value} -> ${defaultMatch?.value}")
                 return defaultMatch ?: locales.head
             }
-            
+
             private fun getPreferredLocaleFromPurchases(): String? {
                 return try {
                     val purchasesClass = Class.forName("com.revenuecat.purchases.Purchases")
@@ -294,13 +297,13 @@ internal sealed interface PaywallState {
                     val result = getPreferredUILocaleOverrideMethod.invoke(purchasesInstance) as String?
                     Logger.d("PaywallState preferred locale from Purchases: $result")
                     result
-                } catch (e: Exception) {
+                } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") e: Exception) {
                     // If anything fails (Purchases not configured, reflection issues, etc.), return null
                     Logger.d("PaywallState failed to get preferred locale: ${e.message}")
                     null
                 }
             }
-            
+
             private fun createLocaleFromPreferredString(localeString: String): Locale {
                 return if (localeString.contains('-') || localeString.contains('_')) {
                     val parts = if (localeString.contains('-')) {

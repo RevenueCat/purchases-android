@@ -492,7 +492,6 @@ class Purchases internal constructor(
     val cachedVirtualCurrencies: VirtualCurrencies?
         get() = purchasesOrchestrator.cachedVirtualCurrencies
 
-
     /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
      * to avoid memory leaks.
@@ -843,7 +842,7 @@ class Purchases internal constructor(
     /**
      * The preferred UI locale override for RevenueCat UI components.
      * This affects both API requests and UI rendering.
-     * 
+     *
      * @return The preferred UI locale override, or null if using system default
      */
     val preferredUILocaleOverride: String?
@@ -852,24 +851,32 @@ class Purchases internal constructor(
     /**
      * Override the preferred UI locale for RevenueCat UI components at runtime.
      * This affects both API requests and UI rendering.
-     * 
-     * The locale preference is updated immediately. To refresh cached data with the new locale,
-     * call [clearOfferingsCache] or [clearOfferingsCacheIfNeeded] after setting the locale.
-     * 
+     *
+     * If the locale changes, this will automatically clear the offerings cache and trigger
+     * a background refetch to get paywall templates with the correct localizations.
+     *
      * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
+     * @return true if cache was cleared and refetch triggered, false if locale unchanged or cache clear rate limited
      */
-    private fun overridePreferredUILocale(localeString: String?) {
+    fun overridePreferredUILocale(localeString: String?): Boolean {
+        val previousLocale = purchasesOrchestrator.preferredUILocaleOverride
         purchasesOrchestrator.preferredUILocaleOverride = localeString
+        
+        return if (previousLocale != localeString) {
+            clearOfferingsCache()
+        } else {
+            false // Locale didn't change, no cache clearing needed
+        }
     }
-    
+
     /**
      * Clears the offerings cache to force fresh data on the next request.
      * This is useful after changing the preferred locale to get paywall templates
      * with the correct localizations.
-     * 
+     *
      * This method is rate limited to 10 calls per 60 seconds to prevent excessive
      * network requests.
-     * 
+     *
      * @return true if cache was cleared, false if rate limited
      */
     private fun clearOfferingsCache(): Boolean {
@@ -879,7 +886,7 @@ class Purchases internal constructor(
                 override fun onReceived(offerings: Offerings) {
                     // Ignore callback - this is just to populate cache
                 }
-                
+
                 override fun onError(error: PurchasesError) {
                     // Ignore error - this is just to populate cache
                 }
@@ -889,24 +896,7 @@ class Purchases internal constructor(
             false
         }
     }
-    
-    /**
-     * Convenience method to set preferred locale and clear offerings cache if the locale changed.
-     * Combines [overridePreferredUILocale] and [clearOfferingsCache] with change detection.
-     * 
-     * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
-     * @return true if cache was cleared and refetch triggered, false if locale unchanged or cache clear rate limited
-     */
-    fun clearOfferingsCacheIfNeeded(localeString: String?): Boolean {
-        val previousLocale = purchasesOrchestrator.preferredUILocaleOverride
-        overridePreferredUILocale(localeString)
-        
-        return if (previousLocale != localeString) {
-            clearOfferingsCache()
-        } else {
-            false // Locale didn't change, no cache clearing needed
-        }
-    }
+
 
     /**
      * Gets the StoreProduct for the given list of subscription products.

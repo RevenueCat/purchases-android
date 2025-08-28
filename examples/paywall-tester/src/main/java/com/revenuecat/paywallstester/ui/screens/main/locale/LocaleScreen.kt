@@ -2,7 +2,6 @@ package com.revenuecat.paywallstester.ui.screens.main.locale
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,12 +21,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.Purchases
 
+private const val MESSAGE_HIDE_DELAY = 4000L
+private const val LOG_DELAY = 100L
+
+@Suppress("LongMethod")
 @Composable
 fun LocaleScreen(
     modifier: Modifier = Modifier,
@@ -35,7 +37,7 @@ fun LocaleScreen(
     // Initialize selectedLocale with the current preferred locale override
     val currentPreferredLocale = Purchases.sharedInstance.preferredUILocaleOverride
     var selectedLocale by remember { mutableStateOf(currentPreferredLocale) }
-    
+
     val commonLocales = listOf(
         "en-US" to "English (US)",
         "en-GB" to "English (UK)",
@@ -51,53 +53,53 @@ fun LocaleScreen(
         "zh-TW" to "Chinese (Traditional)",
         "ru-RU" to "Russian",
         "ar-SA" to "Arabic",
-        "hi-IN" to "Hindi"
+        "hi-IN" to "Hindi",
     )
-    
+
     // If current locale is custom (not in predefined list), initialize custom input
-    var customLocaleInput by remember { 
+    var customLocaleInput by remember {
         mutableStateOf(
             if (currentPreferredLocale != null && !commonLocales.any { it.first == currentPreferredLocale }) {
                 currentPreferredLocale
             } else {
                 ""
-            }
+            },
         )
     }
 
     Column(
         modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = "Preferred UI Locale Override",
             fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp),
         )
-        
+
         Text(
             text = "Current: ${Purchases.sharedInstance.preferredUILocaleOverride ?: "System default"}",
             fontSize = 14.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             RadioButton(
                 selected = selectedLocale == null,
-                onClick = { selectedLocale = null }
+                onClick = { selectedLocale = null },
             )
             Text("System default")
         }
-        
+
         Divider()
 
         LazyColumn(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(commonLocales) { (localeCode, displayName) ->
                 Row(
@@ -105,18 +107,18 @@ fun LocaleScreen(
                         .fillMaxWidth()
                         .clickable { selectedLocale = localeCode },
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
                         selected = selectedLocale == localeCode,
-                        onClick = { selectedLocale = localeCode }
+                        onClick = { selectedLocale = localeCode },
                     )
                     Column {
                         Text(displayName)
                         Text(
                             text = localeCode,
                             fontSize = 12.sp,
-                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -124,34 +126,34 @@ fun LocaleScreen(
         }
 
         Divider()
-        
+
         Text("Custom Locale:", modifier = Modifier.padding(top = 8.dp))
         OutlinedTextField(
             value = customLocaleInput,
             onValueChange = { customLocaleInput = it },
             label = { Text("e.g. en-US, pt-BR") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             RadioButton(
                 selected = selectedLocale == customLocaleInput && customLocaleInput.isNotEmpty(),
-                onClick = { 
+                onClick = {
                     if (customLocaleInput.isNotEmpty()) {
                         selectedLocale = customLocaleInput
                     }
-                }
+                },
             )
             Text("Use custom locale")
         }
 
         var statusMessage by remember { mutableStateOf<String?>(null) }
         var isError by remember { mutableStateOf(false) }
-        
+
         statusMessage?.let { message ->
             Text(
                 text = message,
@@ -161,14 +163,14 @@ fun LocaleScreen(
                     androidx.compose.material3.MaterialTheme.colorScheme.primary
                 },
                 fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
 
         Button(
             onClick = {
-                val cacheCleared = Purchases.sharedInstance.clearOfferingsCacheIfNeeded(selectedLocale)
-                
+                val cacheCleared = Purchases.sharedInstance.overridePreferredUILocale(selectedLocale)
+
                 if (cacheCleared) {
                     statusMessage = "Locale updated and cache refreshed"
                     isError = false
@@ -177,21 +179,25 @@ fun LocaleScreen(
                     statusMessage = "Locale updated. Cache refresh rate limited - will use cached data."
                     isError = true
                 }
-                
+
                 // Hide message after 4 seconds
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     statusMessage = null
-                }, 4000)
-                
+                }, MESSAGE_HIDE_DELAY)
+
                 // Log for debugging
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     val currentOverride = Purchases.sharedInstance.preferredUILocaleOverride
-                    android.util.Log.d("LocaleScreen", "Applied locale override: $selectedLocale, current value: $currentOverride, cache cleared: $cacheCleared")
-                }, 100)
+                    android.util.Log.d(
+                        "LocaleScreen",
+                        "Applied locale override: $selectedLocale, " +
+                            "current value: $currentOverride, cache cleared: $cacheCleared",
+                    )
+                }, LOG_DELAY)
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp)
+                .padding(top = 16.dp),
         ) {
             Text("Apply Locale Override")
         }
@@ -200,6 +206,6 @@ fun LocaleScreen(
 
 @Preview(showBackground = true)
 @Composable
-fun LocaleScreenPreview() {
+private fun LocaleScreenPreview() {
     LocaleScreen()
 }
