@@ -10,12 +10,17 @@ internal class ConfigurePurchasesUseCase(
 ) {
 
     operator fun invoke(apiKey: String) {
-        Purchases.configure(
-            PurchasesConfiguration.Builder(context.applicationContext, apiKey)
-                .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
-                .appUserID(null)
-                .diagnosticsEnabled(true)
-                .build(),
-        )
+        val builder = PurchasesConfiguration.Builder(context.applicationContext, apiKey)
+            .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
+            .appUserID(null)
+            .diagnosticsEnabled(true)
+
+        if (Constants.PREFERRED_UI_LOCALE_OVERRIDE.isNotEmpty()) {
+            builder.preferredUILocaleOverride(
+                Constants.PREFERRED_UI_LOCALE_OVERRIDE
+            )
+        }
+        
+        Purchases.configure(builder.build())
     }
 }

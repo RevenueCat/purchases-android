@@ -492,27 +492,6 @@ class Purchases internal constructor(
     val cachedVirtualCurrencies: VirtualCurrencies?
         get() = purchasesOrchestrator.cachedVirtualCurrencies
 
-    /**
-     * The current preferred UI locale override, if any.
-     * This value is used by RevenueCat UI components like Paywalls and Customer Center.
-     */
-    val preferredUILocaleOverride: String?
-        get() = purchasesOrchestrator.preferredUILocaleOverride
-
-    /**
-     * Override the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
-     * This allows you to display the UI in a specific language, different from the system locale.
-     *
-     * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
-     *                     Pass null to revert to using the system default locale.
-     *
-     * **Note:** This only affects UI components from the RevenueCatUI module and requires
-     * importing RevenueCatUI in your project. The locale override will take effect the next time
-     * a paywall or customer center is displayed.
-     */
-    fun overridePreferredUILocale(localeString: String?) {
-        purchasesOrchestrator.preferredUILocaleOverride = localeString
-    }
 
     /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
@@ -860,6 +839,74 @@ class Purchases internal constructor(
         @Synchronized set(value) {
             purchasesOrchestrator.allowSharingPlayStoreAccount = value
         }
+
+    /**
+     * The preferred UI locale override for RevenueCat UI components.
+     * This affects both API requests and UI rendering.
+     * 
+     * @return The preferred UI locale override, or null if using system default
+     */
+    val preferredUILocaleOverride: String?
+        @Synchronized get() = purchasesOrchestrator.preferredUILocaleOverride
+
+    /**
+     * Override the preferred UI locale for RevenueCat UI components at runtime.
+     * This affects both API requests and UI rendering.
+     * 
+     * The locale preference is updated immediately. To refresh cached data with the new locale,
+     * call [clearOfferingsCache] or [clearOfferingsCacheIfNeeded] after setting the locale.
+     * 
+     * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
+     */
+    private fun overridePreferredUILocale(localeString: String?) {
+        purchasesOrchestrator.preferredUILocaleOverride = localeString
+    }
+    
+    /**
+     * Clears the offerings cache to force fresh data on the next request.
+     * This is useful after changing the preferred locale to get paywall templates
+     * with the correct localizations.
+     * 
+     * This method is rate limited to 10 calls per 60 seconds to prevent excessive
+     * network requests.
+     * 
+     * @return true if cache was cleared, false if rate limited
+     */
+    private fun clearOfferingsCache(): Boolean {
+        return if (purchasesOrchestrator.clearOfferingsCacheWithRateLimit()) {
+            // Trigger a background refetch of offerings
+            getOfferings(object : ReceiveOfferingsCallback {
+                override fun onReceived(offerings: Offerings) {
+                    // Ignore callback - this is just to populate cache
+                }
+                
+                override fun onError(error: PurchasesError) {
+                    // Ignore error - this is just to populate cache
+                }
+            })
+            true
+        } else {
+            false
+        }
+    }
+    
+    /**
+     * Convenience method to set preferred locale and clear offerings cache if the locale changed.
+     * Combines [overridePreferredUILocale] and [clearOfferingsCache] with change detection.
+     * 
+     * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
+     * @return true if cache was cleared and refetch triggered, false if locale unchanged or cache clear rate limited
+     */
+    fun clearOfferingsCacheIfNeeded(localeString: String?): Boolean {
+        val previousLocale = purchasesOrchestrator.preferredUILocaleOverride
+        overridePreferredUILocale(localeString)
+        
+        return if (previousLocale != localeString) {
+            clearOfferingsCache()
+        } else {
+            false // Locale didn't change, no cache clearing needed
+        }
+    }
 
     /**
      * Gets the StoreProduct for the given list of subscription products.
