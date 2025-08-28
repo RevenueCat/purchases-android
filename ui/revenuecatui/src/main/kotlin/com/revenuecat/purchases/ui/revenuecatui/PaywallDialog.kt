@@ -1,10 +1,15 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.os.Build
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,8 +19,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.hasCompactDimension
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
@@ -55,30 +64,48 @@ fun PaywallDialog(
             shouldDisplayBlock = paywallDialogOptions.shouldDisplayBlock,
         )
 
+        // This is needed because of this issue: https://issuetracker.google.com/issues/246909281.
+        // This is fixed in a newer version of Compose, but to avoid a breaking change,
+        // we are applying a workaround for now.
+        // This should be removed once we update Compose in the next major.
+        val dialogBottomPadding = if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        } else {
+            0.dp
+        }
+
         Dialog(
             onDismissRequest = {
                 dismissRequest()
                 viewModel.closePaywall()
                 paywallDialogOptions.dismissRequest?.invoke()
             },
-            properties = DialogProperties(usePlatformDefaultWidth = shouldUsePlatformDefaultWidth()),
+            properties = DialogProperties(
+                usePlatformDefaultWidth = shouldUsePlatformDefaultWidth(),
+                decorFitsSystemWindows = Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+            ),
         ) {
-            DialogScaffold(paywallOptions)
+            DialogScaffold(paywallOptions, dialogBottomPadding)
         }
     }
 }
 
 @Composable
-private fun DialogScaffold(paywallOptions: PaywallOptions) {
+private fun DialogScaffold(paywallOptions: PaywallOptions, dialogBottomPadding: Dp) {
     Scaffold(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(getDialogMaxHeightPercentage()),
+        containerColor = Color.Black.copy(alpha = 0.4f),
     ) { paddingValues ->
+        val shouldApplyDialogBottomPadding = paddingValues.calculateBottomPadding() == 0.dp &&
+            paddingValues.calculateTopPadding() == 0.dp
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .conditional(Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { padding(paddingValues) }
+                .padding(bottom = if (shouldApplyDialogBottomPadding) dialogBottomPadding else 0.dp),
         ) {
             Paywall(paywallOptions)
         }
