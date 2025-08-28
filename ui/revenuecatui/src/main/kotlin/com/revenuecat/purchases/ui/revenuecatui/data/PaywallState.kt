@@ -261,7 +261,6 @@ internal sealed interface PaywallState {
                     // Find the first locale we have a LocalizationDictionary for.
                     .firstNotNullOf { locale -> locales.getBestMatch(locale) }
 
-
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()
                     .map { info -> info.pkg.product }
