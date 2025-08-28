@@ -223,6 +223,7 @@ private class PurchasesCommonAPI {
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .store(Store.PLAY_STORE)
             .pendingTransactionsForPrepaidPlansEnabled(true)
+            .automaticDeviceIdentifierCollectionEnabled(true)
             .build()
 
         val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically
