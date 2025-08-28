@@ -196,7 +196,7 @@ internal class PurchasesOrchestrator(
     private val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60.seconds)
 
     @SuppressWarnings("MagicNumber")
-    private val preferredLocaleOverrideRateLimiter = RateLimiter(10, 60.seconds)
+    private val preferredLocaleOverrideRateLimiter = RateLimiter(2, 60.seconds)
 
     var storefrontCountryCode: String? = null
         private set
