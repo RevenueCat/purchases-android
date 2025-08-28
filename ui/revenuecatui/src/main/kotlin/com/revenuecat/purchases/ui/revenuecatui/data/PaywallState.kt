@@ -28,6 +28,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import java.util.Date
 import java.util.Locale
@@ -263,9 +264,7 @@ internal sealed interface PaywallState {
                 val allLocales = if (preferredOverride != null) {
                     // Parse preferred locale override and put it first in priority
                     val preferredLocaleId = try {
-                        // Support both "es-ES" and "es_ES" formats
-                        val normalizedLocale = preferredOverride.replace('_', '-')
-                        androidx.compose.ui.text.intl.Locale(normalizedLocale).toLocaleId()
+                        createLocaleFromString(preferredOverride).toComposeLocale().toLocaleId()
                     } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") e: Exception) {
                         // Fallback to null if preferred locale string is malformed
                         null
