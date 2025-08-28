@@ -209,6 +209,7 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesPoster,
                 attributionFetcher,
+                automaticDeviceIdentifierCollectionEnabled,
             )
 
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
