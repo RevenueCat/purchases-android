@@ -48,7 +48,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
         assertThat(purchasesConfiguration.showInAppMessagesAutomatically).isTrue
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
-        assertThat(purchasesConfiguration.enableIdentifierCollectionWhenUsingAttributionNetwork).isTrue
+        assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isTrue
     }
 
     @Test
@@ -119,9 +119,9 @@ class PurchasesConfigurationTest {
     }
 
     @Test
-    fun `PurchasesConfiguration sets enableIdentifierCollectionWhenUsingAttributionNetwork correctly`() {
-        val purchasesConfiguration = builder.enableIdentifierCollectionWhenUsingAttributionNetwork(false).build()
-        assertThat(purchasesConfiguration.enableIdentifierCollectionWhenUsingAttributionNetwork).isFalse
+    fun `PurchasesConfiguration sets automaticDeviceIdentifierCollectionEnabled correctly`() {
+        val purchasesConfiguration = builder.automaticDeviceIdentifierCollectionEnabled(false).build()
+        assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isFalse
     }
 
     @Test

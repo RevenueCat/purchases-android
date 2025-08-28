@@ -17,7 +17,7 @@ internal class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
     private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
-    private val enableIdentifierCollectionWhenUsingAttributionNetwork: Boolean,
+    private val automaticDeviceIdentifierCollectionEnabled: Boolean,
 ) {
 
     private val obtainingDeviceIdentifiersObservable = ObtainDeviceIdentifiersObservable()
@@ -183,7 +183,7 @@ internal class SubscriberAttributesManager(
             val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
             setAttributes(attributesToSet, appUserID)
         }
-        if (enableIdentifierCollectionWhenUsingAttributionNetwork) {
+        if (automaticDeviceIdentifierCollectionEnabled) {
             getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
                 setAttributes(deviceIdentifiers)
             }

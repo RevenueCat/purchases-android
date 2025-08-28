@@ -42,7 +42,7 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache,
             mockBackend,
             mockDeviceIdentifiersFetcher,
-            enableIdentifierCollectionWhenUsingAttributionNetwork = true,
+            automaticDeviceIdentifierCollectionEnabled = true,
         )
     }
 
@@ -434,7 +434,7 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache,
             mockBackend,
             mockDeviceIdentifiersFetcher,
-            enableIdentifierCollectionWhenUsingAttributionNetwork = false,
+            automaticDeviceIdentifierCollectionEnabled = false,
         )
 
         val mockContext = mockk<Application>(relaxed = true)
