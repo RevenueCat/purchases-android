@@ -371,7 +371,7 @@ package com.revenuecat.purchases {
     method @Deprecated public void getNonSubscriptionSkus(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
     method public void getOfferings(com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback listener);
     method public static com.revenuecat.purchases.common.PlatformInfo getPlatformInfo();
-    method public String? getPreferredUILocaleOverride();
+    method @kotlin.jvm.Synchronized public String? getPreferredUILocaleOverride();
     method public void getProducts(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
     method public void getProducts(java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
     method public static java.net.URL? getProxyURL();
@@ -393,7 +393,7 @@ package com.revenuecat.purchases {
     method public void logOut(optional com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback? callback);
     method @Deprecated public void onAppBackgrounded();
     method @Deprecated public void onAppForegrounded();
-    method public void overridePreferredUILocale(String? localeString);
+    method public boolean overridePreferredUILocale(String? localeString);
     method public static com.revenuecat.purchases.WebPurchaseRedemption? parseAsWebPurchaseRedemption(android.content.Intent intent);
     method public static com.revenuecat.purchases.WebPurchaseRedemption? parseAsWebPurchaseRedemption(String string);
     method public void purchase(com.revenuecat.purchases.PurchaseParams purchaseParams, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
@@ -456,7 +456,7 @@ package com.revenuecat.purchases {
     property @kotlin.jvm.Synchronized public static final com.revenuecat.purchases.LogHandler logHandler;
     property public static final com.revenuecat.purchases.LogLevel logLevel;
     property public static final com.revenuecat.purchases.common.PlatformInfo platformInfo;
-    property public final String? preferredUILocaleOverride;
+    property @kotlin.jvm.Synchronized public final String? preferredUILocaleOverride;
     property public static final java.net.URL? proxyURL;
     property @kotlin.jvm.Synchronized public final com.revenuecat.purchases.PurchasesAreCompletedBy purchasesAreCompletedBy;
     property public static final com.revenuecat.purchases.Purchases sharedInstance;
