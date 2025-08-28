@@ -255,71 +255,12 @@ internal sealed interface PaywallState {
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackage
             }
 
-            private fun LocaleList.toLocaleId(): LocaleId {
-                // First check if there's a preferred locale override from Purchases instance
-                val preferredLocaleOverride = getPreferredLocaleFromPurchases()
-                val allPreferredLocales = if (preferredLocaleOverride != null) {
-                    // If we have a preferred override, put it first followed by system locales
-                    val overrideLocale = createLocaleFromPreferredString(preferredLocaleOverride).toLocaleId()
-                    listOf(overrideLocale) + map { it.toLocaleId() }
-                } else {
-                    // No override, just use the LocaleList
-                    map { it.toLocaleId() }
-                }
+            private fun LocaleList.toLocaleId(): LocaleId =
+                // Configured locales take precedence over the default one.
+                map { it.toLocaleId() }.plus(locales.head)
+                    // Find the first locale we have a LocalizationDictionary for.
+                    .firstNotNullOf { locale -> locales.getBestMatch(locale) }
 
-                Logger.d(
-                    "PaywallState trying to match locales: ${allPreferredLocales.map { it.value }} " +
-                        "(preferred override: $preferredLocaleOverride)",
-                )
-
-                // First try to match any of our preferred locales
-                val matchedPreferredLocale = allPreferredLocales.firstNotNullOfOrNull { locale ->
-                    locales.getBestMatch(locale)
-                }
-
-                if (matchedPreferredLocale != null) {
-                    Logger.d("PaywallState matched preferred locale: ${matchedPreferredLocale.value}")
-                    return matchedPreferredLocale
-                }
-
-                // Only fall back to the paywall's default locale if no preferred locale matched
-                val defaultMatch = locales.getBestMatch(locales.head)
-                Logger.d("PaywallState falling back to default locale: ${locales.head.value} -> ${defaultMatch?.value}")
-                return defaultMatch ?: locales.head
-            }
-
-            private fun getPreferredLocaleFromPurchases(): String? {
-                return try {
-                    val purchasesClass = Class.forName("com.revenuecat.purchases.Purchases")
-                    val sharedInstanceMethod = purchasesClass.getMethod("getSharedInstance")
-                    val purchasesInstance = sharedInstanceMethod.invoke(null)
-                    val getPreferredUILocaleOverrideMethod = purchasesClass.getMethod("getPreferredUILocaleOverride")
-                    val result = getPreferredUILocaleOverrideMethod.invoke(purchasesInstance) as String?
-                    Logger.d("PaywallState preferred locale from Purchases: $result")
-                    result
-                } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") e: Exception) {
-                    // If anything fails (Purchases not configured, reflection issues, etc.), return null
-                    Logger.d("PaywallState failed to get preferred locale: ${e.message}")
-                    null
-                }
-            }
-
-            private fun createLocaleFromPreferredString(localeString: String): Locale {
-                return if (localeString.contains('-') || localeString.contains('_')) {
-                    val parts = if (localeString.contains('-')) {
-                        localeString.split('-', limit = 2)
-                    } else {
-                        localeString.split('_', limit = 2)
-                    }
-                    if (parts.size >= 2) {
-                        Locale(parts[0], parts[1])
-                    } else {
-                        Locale(parts[0])
-                    }
-                } else {
-                    Locale(localeString)
-                }
-            }
 
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()

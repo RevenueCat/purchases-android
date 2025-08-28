@@ -861,9 +861,9 @@ class Purchases internal constructor(
     fun overridePreferredUILocale(localeString: String?): Boolean {
         val previousLocale = purchasesOrchestrator.preferredUILocaleOverride
         purchasesOrchestrator.preferredUILocaleOverride = localeString
-        
+
         return if (previousLocale != localeString) {
-            clearOfferingsCache()
+            clearOfferingsCacheIfPossible()
         } else {
             false // Locale didn't change, no cache clearing needed
         }
@@ -879,7 +879,7 @@ class Purchases internal constructor(
      *
      * @return true if cache was cleared, false if rate limited
      */
-    private fun clearOfferingsCache(): Boolean {
+    private fun clearOfferingsCacheIfPossible(): Boolean {
         return if (purchasesOrchestrator.clearOfferingsCacheWithRateLimit()) {
             // Trigger a background refetch of offerings
             getOfferings(object : ReceiveOfferingsCallback {
@@ -896,7 +896,6 @@ class Purchases internal constructor(
             false
         }
     }
-
 
     /**
      * Gets the StoreProduct for the given list of subscription products.
