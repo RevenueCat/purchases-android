@@ -43,13 +43,7 @@ class PaywallTransition(
         LAZY,
     }
 
-    /**
-     * Defines the available types of transitions for a paywall screen.
-     *
-     * [NOTE] This is serialized as an object instead of a top level enum so that it can be expanded
-     * later to include user defined transitions if we choose to go there
-     */
-    @Serializable(with = TransitionTypeAsObjectSerializer::class)
+    @Serializable(with = TransitionTypeSerializer::class)
     enum class TransitionType {
         FADE,
         FADE_AND_SCALE,
@@ -70,8 +64,14 @@ internal object DisplacementStrategyDeserializer : EnumDeserializerWithDefault<P
 )
 
 @OptIn(InternalRevenueCatAPI::class)
-object TransitionTypeAsObjectSerializer : EnumAsObjectSerializer<PaywallTransition.TransitionType>(
-    enumClass = PaywallTransition.TransitionType::class,
+internal object TransitionTypeSerializer : EnumDeserializerWithDefault<PaywallTransition.TransitionType>(
     defaultValue = PaywallTransition.TransitionType.FADE,
-    keyName = "type",
+    typeForValue = { value ->
+        when (value) {
+            PaywallTransition.TransitionType.FADE -> "fade"
+            PaywallTransition.TransitionType.FADE_AND_SCALE -> "fade_and_scale"
+            PaywallTransition.TransitionType.SCALE -> "scale"
+            PaywallTransition.TransitionType.SLIDE -> "slide"
+        }
+    },
 )

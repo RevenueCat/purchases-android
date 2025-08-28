@@ -28,14 +28,10 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         {
                           "animation": {
                             "ms_delay": 1500,
-                            "type": {
-                              "type": "ease_in_out"
-                            }
+                            "type": "ease_in_out"
                           },
                           "displacement_strategy": "greedy",
-                          "type": {
-                            "type": "fade_and_scale"
-                          }
+                          "type": "fade_and_scale"
                         }
                     """.trimIndent(),
                     expected = PaywallTransition(
@@ -55,9 +51,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                     json = """
                         {
                           "displacement_strategy": "lazy",
-                          "type": {
-                            "type": "fade"
-                          }
+                          "type": "fade"
                         }
                     """.trimIndent(),
                     expected = PaywallTransition(
@@ -74,16 +68,10 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         {
                           "animation": {
                             "ms_delay": 1500,
-                            "type": {
-                              "type": "custom",
-                              "value": "some random animation"
-                            }
+                            "type": "custom"
                           },
                           "displacement_strategy": "greedy",
-                          "type": {
-                            "type": "custom",
-                            "value": "some random transition"
-                          }
+                          "type": "custom"
                         }
                     """.trimIndent(),
                     expected = PaywallTransition(

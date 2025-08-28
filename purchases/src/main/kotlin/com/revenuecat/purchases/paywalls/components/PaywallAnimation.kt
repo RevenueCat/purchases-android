@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.utils.serializers.EnumAsObjectSerializer
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,20 +20,11 @@ import kotlinx.serialization.Serializable
 @SerialName("animation")
 class PaywallAnimation(
     @get:JvmSynthetic val type: AnimationType,
-    @get:JvmSynthetic
-    @SerialName("ms_delay")
-    val msDelay: Int?,
-    @get:JvmSynthetic
-    @SerialName("ms_duration")
-    val msDuration: Int?,
+    @get:JvmSynthetic @SerialName("ms_delay") val msDelay: Int?,
+    @get:JvmSynthetic @SerialName("ms_duration") val msDuration: Int?,
 ) {
 
-    /** Defines the types of animations a the paywall can use
-     *
-     * [NOTE] This is serialized as an object instead of a top level enum so that it can be expanded
-     * later to include user defined transitions if we choose to go there
-     */
-    @Serializable(with = AnimationTypeAsObjectSerializer::class)
+    @Serializable(with = AnimationTypeSerializer::class)
     enum class AnimationType {
         EASE_IN,
         EASE_OUT,
@@ -43,8 +34,14 @@ class PaywallAnimation(
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-object AnimationTypeAsObjectSerializer : EnumAsObjectSerializer<PaywallAnimation.AnimationType>(
-    enumClass = PaywallAnimation.AnimationType::class,
+internal object AnimationTypeSerializer : EnumDeserializerWithDefault<PaywallAnimation.AnimationType>(
     defaultValue = PaywallAnimation.AnimationType.EASE_IN_OUT,
-    keyName = "type",
+    typeForValue = { value ->
+        when (value) {
+            PaywallAnimation.AnimationType.EASE_IN -> "ease_in"
+            PaywallAnimation.AnimationType.EASE_OUT -> "ease_out"
+            PaywallAnimation.AnimationType.EASE_IN_OUT -> "ease_in_out"
+            PaywallAnimation.AnimationType.LINEAR -> "linear"
+        }
+    },
 )
