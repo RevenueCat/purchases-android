@@ -52,7 +52,7 @@ internal class OrchestrationAwareLocaleProvider : LocaleProvider {
                 LocaleListCompat.getDefault().toLanguageTags()
             }
             android.util.Log.d(
-                "OrchestrationAwareLocaleProvider",
+                "OrchestrationLocale",
                 "currentLocalesLanguageTags: preferredOverride='$preferredOverride' -> result='$result'",
             )
             return result
