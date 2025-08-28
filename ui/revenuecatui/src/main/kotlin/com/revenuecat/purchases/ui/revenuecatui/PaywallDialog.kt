@@ -97,6 +97,10 @@ private fun DialogScaffold(paywallOptions: PaywallOptions, dialogBottomPadding: 
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(getDialogMaxHeightPercentage()),
+        // This is needed for Android 35+ but using an older version of Compose. In those cases,
+        // the dialog doesn't properly extend edge to edge, leaving some spacing at the bottom since we changed
+        // the decorFitsSystemWindows setting of the Dialog. This is added to mimick the dim effect that we get
+        // at the top of the dialog in this case. This should be removed once we update Compose in the next major.
         containerColor = Color.Black.copy(alpha = 0.4f),
     ) { paddingValues ->
         val shouldApplyDialogBottomPadding = paddingValues.calculateBottomPadding() == 0.dp &&
