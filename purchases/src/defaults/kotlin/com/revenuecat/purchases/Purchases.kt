@@ -865,13 +865,13 @@ class Purchases internal constructor(
         purchasesOrchestrator.preferredUILocaleOverride = localeString
 
         return if (previousLocale != localeString) {
-            debugLog { "Locale changed, attempting to clear offerings cache" }
-            val cacheCleared = clearOfferingsCacheIfPossible()
-            debugLog { "Cache clear result: $cacheCleared" }
-            cacheCleared
+            debugLog { "Locale changed, attempting to fetch fresh offerings" }
+            val fetchTriggered = fetchOfferingsIfPossible()
+            debugLog { "Fresh fetch result: $fetchTriggered" }
+            fetchTriggered
         } else {
-            debugLog { "Locale unchanged, no cache clearing needed" }
-            false // Locale didn't change, no cache clearing needed
+            debugLog { "Locale unchanged, no fresh fetch needed" }
+            false // Locale didn't change, no fresh fetch needed
         }
     }
 
@@ -880,12 +880,12 @@ class Purchases internal constructor(
      * This is useful after changing the preferred locale to get paywall templates
      * with the correct localizations.
      *
-     * This method is rate limited to 10 calls per 60 seconds to prevent excessive
+     * This method is rate limited to 2 calls per 60 seconds to prevent excessive
      * network requests.
      *
      * @return true if fresh fetch was triggered, false if rate limited
      */
-    private fun clearOfferingsCacheIfPossible(): Boolean {
+    private fun fetchOfferingsIfPossible(): Boolean {
         return purchasesOrchestrator.fetchOfferingsWithRateLimit { offerings, error ->
             if (offerings != null) {
                 debugLog { "Fresh offerings fetch completed successfully" }
