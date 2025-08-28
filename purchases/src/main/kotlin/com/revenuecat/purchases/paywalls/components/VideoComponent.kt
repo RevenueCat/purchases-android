@@ -23,7 +23,6 @@ import kotlinx.serialization.Serializable
 @SerialName("video")
 @Immutable
 class VideoComponent(
-//    val type: ComponentType,
     @get:JvmSynthetic
     val source: ThemeVideoUrls,
     @SerialName("fallback_source")
