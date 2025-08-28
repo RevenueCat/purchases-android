@@ -31,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
@@ -428,23 +429,6 @@ internal class PaywallViewModelImpl(
         } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
             Logger.w("Invalid preferred locale format: $preferredLocale. Using system default.")
             LocaleListCompat.getDefault()
-        }
-    }
-
-    private fun createLocaleFromString(localeString: String): Locale {
-        return if (localeString.contains('-') || localeString.contains('_')) {
-            val parts = if (localeString.contains('-')) {
-                localeString.split('-', limit = 2)
-            } else {
-                localeString.split('_', limit = 2)
-            }
-            if (parts.size >= 2) {
-                Locale(parts[0], parts[1])
-            } else {
-                Locale(parts[0])
-            }
-        } else {
-            Locale(localeString)
         }
     }
 
