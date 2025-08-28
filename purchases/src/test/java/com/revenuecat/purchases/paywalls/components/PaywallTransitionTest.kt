@@ -28,6 +28,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         {
                           "animation": {
                             "ms_delay": 1500,
+                            "ms_duration": 300,
                             "type": "ease_in_out"
                           },
                           "displacement_strategy": "greedy",
@@ -40,7 +41,7 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         animation = PaywallAnimation(
                             type = PaywallAnimation.AnimationType.EASE_IN_OUT,
                             msDelay = 1500,
-                            msDuration = null,
+                            msDuration = 300,
                         ),
                     ),
                 ),
@@ -67,7 +68,8 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                     json = """
                         {
                           "animation": {
-                            "ms_delay": 1500,
+                            "ms_delay": 0,
+                            "ms_duration": 100,
                             "type": "custom"
                           },
                           "displacement_strategy": "greedy",
@@ -79,8 +81,8 @@ class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private 
                         displacementStrategy = PaywallTransition.DisplacementStrategy.GREEDY,
                         animation = PaywallAnimation(
                             type = PaywallAnimation.AnimationType.EASE_IN_OUT,
-                            msDelay = 1500,
-                            msDuration = null,
+                            msDelay = 0,
+                            msDuration = 100,
                         ),
                     ),
                 ),
