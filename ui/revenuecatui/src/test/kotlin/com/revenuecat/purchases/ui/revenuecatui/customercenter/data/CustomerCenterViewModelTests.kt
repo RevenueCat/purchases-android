@@ -2078,6 +2078,7 @@ class CustomerCenterViewModelTests {
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
         every { purchases.syncPurchases() } just Runs
+        every { purchases.preferredUILocaleOverride } returns null
 
         every { configData.getManagementScreen() } returns screens[Screen.ScreenType.MANAGEMENT]
         every { configData.getNoActiveScreen() } returns screens[Screen.ScreenType.NO_ACTIVE]
