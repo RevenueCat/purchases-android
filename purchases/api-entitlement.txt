@@ -332,7 +332,6 @@ package com.revenuecat.purchases {
     method public static com.revenuecat.purchases.LogLevel getLogLevel();
     method public void getOfferings(com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback listener);
     method public static com.revenuecat.purchases.common.PlatformInfo getPlatformInfo();
-    method public String? getPreferredUILocaleOverride();
     method public void getProducts(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
     method public void getProducts(java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
     method public static java.net.URL? getProxyURL();
@@ -359,7 +358,6 @@ package com.revenuecat.purchases {
     property @kotlin.jvm.Synchronized public static final com.revenuecat.purchases.LogHandler logHandler;
     property public static final com.revenuecat.purchases.LogLevel logLevel;
     property public static final com.revenuecat.purchases.common.PlatformInfo platformInfo;
-    property public final String? preferredUILocaleOverride;
     property public static final java.net.URL? proxyURL;
     property public static final com.revenuecat.purchases.Purchases sharedInstance;
     property @kotlin.jvm.Synchronized public final String? storefrontCountryCode;
