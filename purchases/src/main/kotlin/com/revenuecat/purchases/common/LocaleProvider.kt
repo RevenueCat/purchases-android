@@ -16,16 +16,15 @@ internal class DefaultLocaleProvider : LocaleProvider {
 
     override val currentLocalesLanguageTags: String
         get() {
-            val result = if (preferredLocaleOverride != null) {
+            val result = preferredLocaleOverride?.let {
                 val defaultLocales = LocaleListCompat.getDefault().toLanguageTags()
                 if (defaultLocales.isEmpty()) {
-                    preferredLocaleOverride!!
+                    it
                 } else {
-                    "$preferredLocaleOverride,$defaultLocales"
+                    "$it,$defaultLocales"
                 }
-            } else {
-                LocaleListCompat.getDefault().toLanguageTags()
-            }
+            } ?: LocaleListCompat.getDefault().toLanguageTags()
+
             return result
         }
 }

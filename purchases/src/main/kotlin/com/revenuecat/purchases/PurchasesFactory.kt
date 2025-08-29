@@ -235,7 +235,10 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val offeringsCache = OfferingsCache(cache)
+            val offeringsCache = OfferingsCache(
+                deviceCache = cache,
+                localeProvider = localeProvider,
+            )
 
             val identityManager = IdentityManager(
                 cache,
