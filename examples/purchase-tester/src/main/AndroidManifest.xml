@@ -9,7 +9,7 @@
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
-            android:backupAgent="com.revenuecat.purchases.backup.RevenueCatProactiveBackupAgent"
+            android:backupAgent="com.revenuecat.purchases.backup.RevenueCatBackupAgent"
             android:supportsRtl="true"
             android:usesCleartextTraffic="true"
             android:theme="@style/AppTheme">

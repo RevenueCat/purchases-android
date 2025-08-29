@@ -7,7 +7,7 @@
             android:icon="@mipmap/icon"
             android:label="@string/app_name"
             android:roundIcon="@mipmap/icon_round"
-            android:backupAgent="com.revenuecat.purchases.backup.RevenueCatProactiveBackupAgent"
+            android:backupAgent="com.revenuecat.purchases.backup.RevenueCatBackupAgent"
             android:supportsRtl="true"
             android:theme="@style/Theme.Purchasesandroid">
         <activity

@@ -14,7 +14,7 @@ private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
  * A BackupAgent that proactively backs up RevenueCat's SharedPreferences. You may use this by adding the following
  * to your AndroidManifest.xml within the `<application>` tag:
  * ```
- * android:backupAgent="com.revenuecat.purchases.backup.RevenueCatProactiveBackupAgent"
+ * android:backupAgent="com.revenuecat.purchases.backup.RevenueCatBackupAgent"
  * ```
  * This will back up the SharedPreferences file used by the RevenueCat SDK, allowing it to keep the same user as
  * was previously used in the same or different device with the same Google account, removing the need for users to
@@ -29,7 +29,7 @@ private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
  * files, please make sure you add the SharedPreferences file `com_revenuecat_purchases_preferences` to your auto backup
  * configuration. See https://developer.android.com/identity/data/autobackup.
  */
-class RevenueCatProactiveBackupAgent : BackupAgentHelper() {
+class RevenueCatBackupAgent : BackupAgentHelper() {
     override fun onCreate() {
         SharedPreferencesBackupHelper(this, SharedPreferencesManager.REVENUECAT_PREFS_FILE_NAME).also {
             addHelper(REVENUECAT_PREFS_BACKUP_KEY, it)
@@ -37,12 +37,12 @@ class RevenueCatProactiveBackupAgent : BackupAgentHelper() {
     }
 
     override fun onBackup(oldState: ParcelFileDescriptor?, data: BackupDataOutput?, newState: ParcelFileDescriptor?) {
-        debugLog { "RevenueCatProactiveBackupAgent: Initiating backup" }
+        debugLog { "RevenueCatBackupAgent: Initiating backup" }
         super.onBackup(oldState, data, newState)
     }
 
     override fun onRestore(data: BackupDataInput?, appVersionCode: Long, newState: ParcelFileDescriptor?) {
-        debugLog { "RevenueCatProactiveBackupAgent: Initiating restoration" }
+        debugLog { "RevenueCatBackupAgent: Initiating restoration" }
         super.onRestore(data, appVersionCode, newState)
     }
 }
