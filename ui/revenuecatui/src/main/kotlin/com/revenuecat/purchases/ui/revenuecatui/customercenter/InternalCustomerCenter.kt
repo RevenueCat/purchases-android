@@ -476,11 +476,9 @@ private fun MainScreenContent(
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             NoActiveUserManagementView(
-                screenTitle = noActiveScreen.title,
-                screenSubtitle = noActiveScreen.subtitle,
+                screen = noActiveScreen,
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
-                supportedPaths = noActiveScreen.paths,
                 offering = (state as? CustomerCenterState.Success)?.noActiveScreenOffering,
                 onAction = onAction,
             )

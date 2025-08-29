@@ -404,6 +404,7 @@ package com.revenuecat.purchases {
     ctor public PurchasesConfiguration(com.revenuecat.purchases.PurchasesConfiguration.Builder builder);
     method public final String getApiKey();
     method public final String? getAppUserID();
+    method public final boolean getAutomaticDeviceIdentifierCollectionEnabled();
     method public final android.content.Context getContext();
     method public final com.revenuecat.purchases.DangerousSettings getDangerousSettings();
     method public final boolean getDiagnosticsEnabled();
@@ -416,6 +417,7 @@ package com.revenuecat.purchases {
     method public final com.revenuecat.purchases.EntitlementVerificationMode getVerificationMode();
     property public final String apiKey;
     property public final String? appUserID;
+    property public final boolean automaticDeviceIdentifierCollectionEnabled;
     property public final android.content.Context context;
     property public final com.revenuecat.purchases.DangerousSettings dangerousSettings;
     property public final boolean diagnosticsEnabled;
@@ -431,6 +433,7 @@ package com.revenuecat.purchases {
   public static class PurchasesConfiguration.Builder {
     ctor public PurchasesConfiguration.Builder(android.content.Context context, String apiKey);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder appUserID(String? appUserID);
+    method public final com.revenuecat.purchases.PurchasesConfiguration.Builder automaticDeviceIdentifierCollectionEnabled(boolean automaticDeviceIdentifierCollectionEnabled);
     method public com.revenuecat.purchases.PurchasesConfiguration build();
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder dangerousSettings(com.revenuecat.purchases.DangerousSettings dangerousSettings);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder diagnosticsEnabled(boolean diagnosticsEnabled);
@@ -1275,18 +1278,6 @@ package com.revenuecat.purchases.models {
 
 }
 
-package com.revenuecat.purchases.paywalls.components {
-
-  public final class AnimationTypeAsObjectSerializer extends com.revenuecat.purchases.utils.serializers.EnumAsObjectSerializer<com.revenuecat.purchases.paywalls.components.PaywallAnimation.AnimationType> {
-    field public static final com.revenuecat.purchases.paywalls.components.AnimationTypeAsObjectSerializer INSTANCE;
-  }
-
-  public final class TransitionTypeAsObjectSerializer extends com.revenuecat.purchases.utils.serializers.EnumAsObjectSerializer<com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType> {
-    field public static final com.revenuecat.purchases.paywalls.components.TransitionTypeAsObjectSerializer INSTANCE;
-  }
-
-}
-
 package com.revenuecat.purchases.utils {
 
   public final class Iso8601Utils {
@@ -1297,18 +1288,6 @@ package com.revenuecat.purchases.utils {
 
   public final class LocaleExtensionsKt {
     method public static java.util.List<java.util.Locale> getDefaultLocales();
-  }
-
-}
-
-package com.revenuecat.purchases.utils.serializers {
-
-  public class EnumAsObjectSerializer<T extends java.lang.Enum<T>> implements kotlinx.serialization.KSerializer<T> {
-    ctor public EnumAsObjectSerializer(kotlin.reflect.KClass<T> enumClass, T defaultValue, String keyName);
-    method public T deserialize(kotlinx.serialization.encoding.Decoder decoder);
-    method public kotlinx.serialization.descriptors.SerialDescriptor getDescriptor();
-    method public void serialize(kotlinx.serialization.encoding.Encoder encoder, T value);
-    property public kotlinx.serialization.descriptors.SerialDescriptor descriptor;
   }
 
 }

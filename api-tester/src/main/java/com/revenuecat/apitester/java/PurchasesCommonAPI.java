@@ -163,6 +163,7 @@ final class PurchasesCommonAPI {
                 .showInAppMessagesAutomatically(true)
                 .store(Store.APP_STORE)
                 .pendingTransactionsForPrepaidPlansEnabled(true)
+                .automaticDeviceIdentifierCollectionEnabled(true)
                 .build();
 
         final Boolean showInAppMessagesAutomatically = build.getShowInAppMessagesAutomatically();
