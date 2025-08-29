@@ -127,6 +127,7 @@ internal class PurchasesOrchestrator(
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
     private val fontLoader: FontLoader,
+    private val localeProvider: com.revenuecat.purchases.common.DefaultLocaleProvider,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -201,11 +202,21 @@ internal class PurchasesOrchestrator(
     var storefrontCountryCode: String? = null
         private set
 
+    private var _preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
+
     @get:Synchronized
     @set:Synchronized
-    var preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
+    var preferredUILocaleOverride: String?
+        get() = _preferredUILocaleOverride
+        set(value) {
+            _preferredUILocaleOverride = value
+            localeProvider.setPreferredLocaleOverride(value)
+        }
 
     init {
+        // Initialize locale provider with the initial preferred locale override
+        localeProvider.setPreferredLocaleOverride(_preferredUILocaleOverride)
+
         identityManager.configure(backingFieldAppUserID)
 
         billing.stateListener = object : BillingAbstract.StateListener {

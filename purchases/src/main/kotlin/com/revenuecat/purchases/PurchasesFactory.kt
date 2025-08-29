@@ -375,11 +375,9 @@ internal class PurchasesFactory(
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
                 fontLoader = fontLoader,
+                localeProvider = localeProvider,
                 virtualCurrencyManager = virtualCurrencyManager,
             )
-
-            // Inject the orchestrator into the locale provider for runtime locale changes
-            localeProvider.setOrchestratorProvider { purchasesOrchestrator }
 
             return Purchases(purchasesOrchestrator)
         }

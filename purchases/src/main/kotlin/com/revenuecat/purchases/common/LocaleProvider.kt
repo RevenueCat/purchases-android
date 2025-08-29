@@ -7,29 +7,25 @@ internal interface LocaleProvider {
 }
 
 internal class DefaultLocaleProvider : LocaleProvider {
-    private var orchestratorProvider: (() -> com.revenuecat.purchases.PurchasesOrchestrator?)? = null
 
-    fun setOrchestratorProvider(provider: () -> com.revenuecat.purchases.PurchasesOrchestrator?) {
-        orchestratorProvider = provider
+    private var preferredLocaleOverride: String? = null
+
+    fun setPreferredLocaleOverride(localeString: String?) {
+        preferredLocaleOverride = localeString
     }
 
     override val currentLocalesLanguageTags: String
         get() {
-            val preferredOverride = orchestratorProvider?.invoke()?.preferredUILocaleOverride
-            val result = if (preferredOverride != null) {
+            val result = if (preferredLocaleOverride != null) {
                 val defaultLocales = LocaleListCompat.getDefault().toLanguageTags()
                 if (defaultLocales.isEmpty()) {
-                    preferredOverride
+                    preferredLocaleOverride!!
                 } else {
-                    "$preferredOverride,$defaultLocales"
+                    "$preferredLocaleOverride,$defaultLocales"
                 }
             } else {
                 LocaleListCompat.getDefault().toLanguageTags()
             }
-            android.util.Log.d(
-                "DefaultLocale",
-                "currentLocalesLanguageTags: preferredOverride='$preferredOverride' -> result='$result'",
-            )
             return result
         }
 }
