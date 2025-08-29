@@ -8,7 +8,6 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
-import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
@@ -860,23 +859,7 @@ class Purchases internal constructor(
      * @return true if cache was cleared and refetch triggered, false if locale unchanged or cache clear rate limited
      */
     fun overridePreferredUILocale(localeString: String?): Boolean {
-        val previousLocale = purchasesOrchestrator.preferredUILocaleOverride
-        debugLog { "overridePreferredUILocale: changing from '$previousLocale' to '$localeString'" }
-        purchasesOrchestrator.preferredUILocaleOverride = localeString
-
-        return if (previousLocale != localeString) {
-            debugLog { "Locale changed, attempting to fetch fresh offerings" }
-            purchasesOrchestrator.fetchOfferingsWithRateLimit { offerings, error ->
-                if (offerings != null) {
-                    debugLog { "Fresh offerings fetch completed successfully" }
-                } else {
-                    debugLog { "Fresh offerings fetch failed: ${error?.message}" }
-                }
-            }
-        } else {
-            debugLog { "Locale unchanged, no fresh fetch needed" }
-            false // Locale didn't change, no fresh fetch needed
-        }
+        return purchasesOrchestrator.overridePreferredUILocale(localeString)
     }
 
     /**

@@ -139,7 +139,7 @@ class Purchases internal constructor(
      * a paywall or customer center is displayed.
      */
     fun overridePreferredUILocale(localeString: String?) {
-        purchasesOrchestrator.preferredUILocaleOverride = localeString
+        purchasesOrchestrator.overridePreferredUILocale(localeString)
     }
 
     /**
