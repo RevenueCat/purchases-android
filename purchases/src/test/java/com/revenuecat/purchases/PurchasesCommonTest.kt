@@ -1256,7 +1256,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `when making purchase, backup manager is notified of data change`() {
+    fun `when making a purchase, backup manager is notified of data change`() {
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
