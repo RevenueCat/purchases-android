@@ -1149,7 +1149,7 @@ internal class PurchasesOrchestrator(
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             // This lets the backup manager know a change in data happened that would be good to backup.
-            // In this case, we want to make sure that if there is a purchase, we make sure to
+            // In this case, we want to make sure that if there is a purchase, we schedule a backup.
             backupManager.dataChanged()
             blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
                 blockstoreHelper.storeUserIdIfNeeded(info)
