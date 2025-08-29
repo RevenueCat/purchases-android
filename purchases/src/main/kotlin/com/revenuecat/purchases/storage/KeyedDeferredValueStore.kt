@@ -11,10 +11,6 @@ open class KeyedDeferredValueStore<H, T>(
         deferred.get(key) ?: forgettingFailure(key, task).also { deferred.put(key, it) }
     }
 
-    fun replaceValue(key: H, task: () -> Deferred<T>) = synchronized(lock) {
-        forgettingFailure(key, task).also { deferred.put(key, it) }
-    }
-
     fun forgettingFailure(key: H, task: () -> Deferred<T>): Deferred<T> =
         task().apply {
             invokeOnCompletion { exception ->
