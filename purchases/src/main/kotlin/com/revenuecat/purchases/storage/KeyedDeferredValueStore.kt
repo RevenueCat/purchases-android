@@ -21,8 +21,4 @@ internal class KeyedDeferredValueStore<H, T>(
                 }
             }
         }
-
-    fun clear() = synchronized(lock) {
-        deferred.clear()
-    }
 }

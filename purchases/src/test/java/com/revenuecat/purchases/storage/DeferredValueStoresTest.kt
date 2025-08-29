@@ -52,24 +52,10 @@ class DeferredValueStoresTest : CoroutineTest() {
     }
 
     @Test
-    fun `clear removes values`() = runTest {
-        subject.getOrPut("X") {
-            async { 44 }
-        }
-
-        subject.clear()
-
-        val hash = subject.deferred["X"]?.await()
-
-        assertThat(hash).isNull()
-    }
-
-    @Test
     fun `getOrPut auto clears failed tasks`() = runTest {
         assertThrows(TestException::class) { subject.getOrPut("X") { throw TestException() }.await() }
         assertThat(subject.deferred["X"]).isNull()
     }
-
 }
 
 class TestException : Throwable()
