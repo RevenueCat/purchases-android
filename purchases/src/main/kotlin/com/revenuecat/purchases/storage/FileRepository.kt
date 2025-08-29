@@ -61,7 +61,7 @@ internal class FileRepository(
     constructor(
         context: Context,
     ) : this(
-        fileCacheManager = DeviceCache(context)
+        fileCacheManager = FileCache(context)
     )
 
     private val store = KeyedDeferredValueStore<URL, URI>()
@@ -152,7 +152,7 @@ internal class FileRepository(
     }
 }
 
-internal class DeviceCache(
+private class FileCache(
     private val context: Context,
 ) : LargeItemCacheType {
     private val cacheDir: File by lazy {
