@@ -51,7 +51,7 @@ internal interface LargeItemCacheType {
 }
 
 internal class FileRepository(
-    private val fileManager: LargeItemCacheType,
+    private val fileCacheManager: LargeItemCacheType,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     private val logHandler: LogHandler = currentLogHandler,
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
@@ -61,7 +61,7 @@ internal class FileRepository(
     constructor(
         context: Context,
     ) : this(
-        fileManager = DeviceCache(context)
+        fileCacheManager = DeviceCache(context)
     )
 
     private val store = KeyedDeferredValueStore<URL, URI>()
@@ -79,14 +79,14 @@ internal class FileRepository(
     override suspend fun generateOrGetCachedFileURL(url: URL): URI {
         return store.getOrPut(url) {
             scope.async {
-                val cachedUri = fileManager.generateLocalFilesystemURI(remoteURL = url)
+                val cachedUri = fileCacheManager.generateLocalFilesystemURI(remoteURL = url)
                     ?: {
                         val error = Error.FailedToCreateCacheDirectory(url.toString())
                         logHandler.e("FileRepository", "Failed to create cache directory for $url", error)
                         throw error
                     }()
 
-                if (fileManager.cachedContentExists(cachedUri)) {
+                if (fileCacheManager.cachedContentExists(cachedUri)) {
                     return@async cachedUri
                 }
 
@@ -123,7 +123,7 @@ internal class FileRepository(
 
     private fun saveCachedFile(uri: URI, data: InputStream) {
         try {
-            fileManager.saveData(data, uri)
+            fileCacheManager.saveData(data, uri)
         } catch (e: IOException) {
             val message = "Failed to save cached file: $uri. Error: ${e.localizedMessage}"
             logHandler.e("FileRepository", message, e)

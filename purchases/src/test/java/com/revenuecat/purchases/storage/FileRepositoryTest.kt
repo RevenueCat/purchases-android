@@ -44,7 +44,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.cachedContentExists(cacheUri) } returns true
 
         val fileRepository = FileRepository(
-            fileManager = mockCache,
+            fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
@@ -64,7 +64,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.saveData(any(), cacheUri) } just Runs
 
         val fileRepository = FileRepository(
-            fileManager = mockCache,
+            fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
@@ -84,7 +84,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.generateLocalFilesystemURI(url) } returns null
 
         val fileRepository = FileRepository(
-            fileManager = mockCache,
+            fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
@@ -102,7 +102,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.cachedContentExists(cacheUri) } returns false
 
         val fileRepository = FileRepository(
-            fileManager = mockCache,
+            fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
@@ -124,7 +124,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.saveData(any(), cacheUri) } just Runs
 
         val fileRepository = FileRepository(
-            fileManager = mockCache,
+            fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
@@ -146,7 +146,7 @@ class FileRepositoryTest : CoroutineTest() {
         } throws IOException("Failed to save data")
 
         val fileRepository = FileRepository(
-            fileManager = mockCache,
+            fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
