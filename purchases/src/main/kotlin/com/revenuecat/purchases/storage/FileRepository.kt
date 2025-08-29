@@ -21,6 +21,7 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
+import java.security.MessageDigest
 
 /**
  * A file cache.
@@ -155,6 +156,11 @@ internal class FileRepository(
 private class FileCache(
     private val context: Context,
 ) : LargeItemCacheType {
+
+    private val md: MessageDigest by lazy {
+        MessageDigest.getInstance("MD5")
+    }
+
     private val cacheDir: File by lazy {
         val dir = File(context.cacheDir, "rc_files")
         if (!dir.exists()) {
@@ -164,9 +170,8 @@ private class FileCache(
     }
 
     override fun generateLocalFilesystemURI(remoteURL: URL): URI? {
-        // Using a simple approach of taking the last path component.
-        // A more robust implementation might use a hash of the URL.
-        val fileName = File(remoteURL.path).name
+        val urlHash = md5Hex(remoteURL.toString().toByteArray())
+        val fileName = File(urlHash).name
         if (fileName.isEmpty()) return null
         return File(cacheDir, fileName).toURI()
     }
@@ -176,6 +181,9 @@ private class FileCache(
 
     override fun saveData(data: InputStream, uri: URI) =
         writeStream(data, File(uri))
+
+    private fun md5Hex(bytes: ByteArray): String =
+        md.digest(bytes).joinToString("") { "%02x".format(it) }
 
     @Throws(IOException::class)
     private fun writeStream(input: InputStream, file: File) {
