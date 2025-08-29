@@ -205,13 +205,8 @@ internal class PurchasesOrchestrator(
     private var _preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
 
     @get:Synchronized
-    @set:Synchronized
-    var preferredUILocaleOverride: String?
+    val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
-        set(value) {
-            _preferredUILocaleOverride = value
-            localeProvider.setPreferredLocaleOverride(value)
-        }
 
     init {
         // Initialize locale provider with the initial preferred locale override
@@ -452,6 +447,40 @@ internal class PurchasesOrchestrator(
             onSuccess = { callback.onSuccess(it) },
             onError = { callback.onError(it) },
         )
+    }
+
+    /**
+     * Override the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
+     * This allows you to display the UI in a specific language, different from the system locale.
+     *
+     * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
+     *                     Pass null to revert to using the system default locale.
+     *
+     * **Note:** This only affects UI components from the RevenueCatUI module and requires
+     * importing RevenueCatUI in your project. The locale override will take effect the next time
+     * a paywall or customer center is displayed.
+     *
+     * @return true if locale changed and fresh offerings fetch was triggered, false if locale unchanged or rate limited
+     */
+    fun overridePreferredUILocale(localeString: String?): Boolean {
+        val previousLocale = _preferredUILocaleOverride
+
+        if (previousLocale == localeString) {
+            debugLog { "Locale unchanged, no fresh fetch needed" }
+            return false
+        }
+
+        _preferredUILocaleOverride = localeString
+        localeProvider.setPreferredLocaleOverride(localeString)
+
+        debugLog { "Locale changed, attempting to fetch fresh offerings" }
+        return fetchOfferingsWithRateLimit { offerings, error ->
+            if (offerings != null) {
+                debugLog { "Fresh offerings fetch completed successfully" }
+            } else {
+                debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+            }
+        }
     }
 
     fun getOfferings(
