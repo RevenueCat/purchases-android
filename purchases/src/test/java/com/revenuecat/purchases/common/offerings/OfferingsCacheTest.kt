@@ -41,7 +41,7 @@ class OfferingsCacheTest {
                 get() = currentDate
         }
 
-        offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider)
+        offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider())
     }
 
     @Test
