@@ -128,21 +128,6 @@ class Purchases internal constructor(
     }
 
     /**
-     * Override the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
-     * This allows you to display the UI in a specific language, different from the system locale.
-     *
-     * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
-     *                     Pass null to revert to using the system default locale.
-     *
-     * **Note:** This only affects UI components from the RevenueCatUI module and requires
-     * importing RevenueCatUI in your project. The locale override will take effect the next time
-     * a paywall or customer center is displayed.
-     */
-    fun overridePreferredUILocale(localeString: String?) {
-        purchasesOrchestrator.overridePreferredUILocale(localeString)
-    }
-
-    /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
      * to avoid memory leaks.
      */
