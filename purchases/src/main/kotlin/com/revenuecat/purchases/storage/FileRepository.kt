@@ -61,7 +61,7 @@ internal class FileRepository(
     constructor(
         context: Context,
     ) : this(
-        fileCacheManager = FileCache(context)
+        fileCacheManager = FileCache(context),
     )
 
     private val store = KeyedDeferredValueStore<URL, URI>()
