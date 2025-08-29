@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.offerings
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.FakeLocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.utils.add
@@ -41,7 +42,7 @@ class OfferingsCacheTest {
                 get() = currentDate
         }
 
-        offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider())
+        offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = DefaultLocaleProvider())
     }
 
     @Test

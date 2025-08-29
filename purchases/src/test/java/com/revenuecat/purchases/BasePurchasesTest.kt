@@ -17,6 +17,7 @@ import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -468,7 +469,7 @@ internal open class BasePurchasesTest {
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
-            localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider(),
+            localeProvider = DefaultLocaleProvider(),
             virtualCurrencyManager = mockVirtualCurrencyManager,
             isSimulatedStoreEnabled = { enableSimulatedStore },
             blockstoreHelper = mockBlockstoreHelper,

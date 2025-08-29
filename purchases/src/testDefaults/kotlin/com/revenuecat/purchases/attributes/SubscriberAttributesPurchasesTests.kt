@@ -19,6 +19,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offerings.OfferingsManager
@@ -117,7 +118,7 @@ class SubscriberAttributesPurchasesTests {
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
             fontLoader = fontLoaderMock,
-            localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider(),
+            localeProvider = DefaultLocaleProvider(),
             virtualCurrencyManager = virtualCurrencyManagerMock,
         )
 
