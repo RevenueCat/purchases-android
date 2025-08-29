@@ -54,7 +54,7 @@ internal class FileRepository(
     private val fileManager: LargeItemCacheType,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     private val logHandler: LogHandler = currentLogHandler,
-    private val urlConnection: UrlConnectionFactory = DefaultUrlConnectionFactory(),
+    private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
 ) : FileRepositoryType {
 
     // Convenience constructor for Android
@@ -103,7 +103,7 @@ internal class FileRepository(
                 verboseLog { "Downloading remote font from $url" }
                 var connection: UrlConnection? = null
                 try {
-                    connection = urlConnection.createConnection(url.toString())
+                    connection = urlConnectionFactory.createConnection(url.toString())
 
                     if (connection.responseCode != HttpURLConnection.HTTP_OK) {
                         throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")

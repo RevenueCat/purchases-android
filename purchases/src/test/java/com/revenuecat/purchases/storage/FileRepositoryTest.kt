@@ -46,7 +46,7 @@ class FileRepositoryTest : CoroutineTest() {
         val fileRepository = FileRepository(
             fileManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
-            urlConnection = factory,
+            urlConnectionFactory = factory,
         )
 
         val result = fileRepository.generateOrGetCachedFileURL(url)
@@ -66,7 +66,7 @@ class FileRepositoryTest : CoroutineTest() {
         val fileRepository = FileRepository(
             fileManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
-            urlConnection = factory,
+            urlConnectionFactory = factory,
         )
 
         fileRepository.prefetch(listOf(url)).join()
@@ -86,7 +86,7 @@ class FileRepositoryTest : CoroutineTest() {
         val fileRepository = FileRepository(
             fileManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
-            urlConnection = factory,
+            urlConnectionFactory = factory,
         )
 
         assertThrows(FileRepository.Error.FailedToCreateCacheDirectory::class) {
@@ -104,7 +104,7 @@ class FileRepositoryTest : CoroutineTest() {
         val fileRepository = FileRepository(
             fileManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
-            urlConnection = factory,
+            urlConnectionFactory = factory,
         )
 
         assertThrows(FileRepository.Error.FailedToFetchFileFromRemoteSource::class) {
@@ -126,7 +126,7 @@ class FileRepositoryTest : CoroutineTest() {
         val fileRepository = FileRepository(
             fileManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
-            urlConnection = factory,
+            urlConnectionFactory = factory,
         )
 
         val result = fileRepository.generateOrGetCachedFileURL(url)
@@ -148,7 +148,7 @@ class FileRepositoryTest : CoroutineTest() {
         val fileRepository = FileRepository(
             fileManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
-            urlConnection = factory,
+            urlConnectionFactory = factory,
         )
 
         assertThrows(FileRepository.Error.FailedToSaveCachedFile::class) {
