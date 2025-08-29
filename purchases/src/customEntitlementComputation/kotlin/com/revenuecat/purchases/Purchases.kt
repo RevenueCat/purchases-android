@@ -128,13 +128,6 @@ class Purchases internal constructor(
     }
 
     /**
-     * The current preferred UI locale override, if any.
-     * This value is used by RevenueCat UI components like Paywalls and Customer Center.
-     */
-    val preferredUILocaleOverride: String?
-        get() = purchasesOrchestrator.preferredUILocaleOverride
-
-    /**
      * Override the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
      * This allows you to display the UI in a specific language, different from the system locale.
      *
