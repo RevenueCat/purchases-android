@@ -866,32 +866,16 @@ class Purchases internal constructor(
 
         return if (previousLocale != localeString) {
             debugLog { "Locale changed, attempting to fetch fresh offerings" }
-            val fetchTriggered = fetchOfferingsIfPossible()
-            debugLog { "Fresh fetch result: $fetchTriggered" }
-            fetchTriggered
+            purchasesOrchestrator.fetchOfferingsWithRateLimit { offerings, error ->
+                if (offerings != null) {
+                    debugLog { "Fresh offerings fetch completed successfully" }
+                } else {
+                    debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+                }
+            }
         } else {
             debugLog { "Locale unchanged, no fresh fetch needed" }
             false // Locale didn't change, no fresh fetch needed
-        }
-    }
-
-    /**
-     * Fetches fresh offerings from the API to get updated localizations.
-     * This is useful after changing the preferred locale to get paywall templates
-     * with the correct localizations.
-     *
-     * This method is rate limited to 2 calls per 60 seconds to prevent excessive
-     * network requests.
-     *
-     * @return true if fresh fetch was triggered, false if rate limited
-     */
-    private fun fetchOfferingsIfPossible(): Boolean {
-        return purchasesOrchestrator.fetchOfferingsWithRateLimit { offerings, error ->
-            if (offerings != null) {
-                debugLog { "Fresh offerings fetch completed successfully" }
-            } else {
-                debugLog { "Fresh offerings fetch failed: ${error?.message}" }
-            }
         }
     }
 
