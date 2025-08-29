@@ -468,6 +468,7 @@ internal open class BasePurchasesTest {
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
+            localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider(),
             virtualCurrencyManager = mockVirtualCurrencyManager,
             isSimulatedStoreEnabled = { enableSimulatedStore },
             blockstoreHelper = mockBlockstoreHelper,

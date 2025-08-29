@@ -46,7 +46,7 @@ internal class HTTPClient(
     private val storefrontProvider: StorefrontProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
-    private val localeProvider: LocaleProvider,
+    private val localeProvider: LocaleProvider = DefaultLocaleProvider(),
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {

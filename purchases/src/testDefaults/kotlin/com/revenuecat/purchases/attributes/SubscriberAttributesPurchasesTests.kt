@@ -117,6 +117,7 @@ class SubscriberAttributesPurchasesTests {
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
             fontLoader = fontLoaderMock,
+            localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider(),
             virtualCurrencyManager = virtualCurrencyManagerMock,
         )
 
