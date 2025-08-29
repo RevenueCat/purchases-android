@@ -15,7 +15,7 @@ private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
  * ```
  * android:backupAgent="com.revenuecat.purchases.backup.RevenueCatBackupAgent"
  * ```
- * This will back up the SharedPreferences file used by the RevenueCat SDK, allowing it to keep the same user as
+ * This will backup the SharedPreferences file used by the RevenueCat SDK, allowing it to keep the same user as
  * was previously used in the same or different device with the same Google account, removing the need for users to
  * restore purchases.
  *
@@ -23,8 +23,8 @@ private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
  * - This backup may not work on all devices, as it's ultimately controlled by the Android system and the user settings.
  * See https://developer.android.com/identity/data/keyvaluebackup for more details on how key-value backup works
  * and how to test it.
- * - Setting the back up agent in your AndroidManifest would disable auto backup for your app, if it was enabled.
- * If you want to use auto backup to also back up your app's data or have your own Backup Agent to backup some of your
+ * - Setting the backup agent in your AndroidManifest would disable auto backup for your app, if it was enabled.
+ * If you want to use auto backup to also backup your app's data or have your own Backup Agent to backup some of your
  * files, please make sure you add the SharedPreferences file `com_revenuecat_purchases_preferences` to your auto backup
  * configuration. See https://developer.android.com/identity/data/autobackup.
  */
