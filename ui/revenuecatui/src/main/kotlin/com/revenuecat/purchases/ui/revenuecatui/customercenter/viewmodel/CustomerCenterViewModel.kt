@@ -57,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSuspend
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
@@ -879,7 +880,18 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        return LocaleListCompat.getDefault()
+        val preferredLocale = purchases.preferredUILocaleOverride
+        if (preferredLocale == null) {
+            return LocaleListCompat.getDefault()
+        }
+
+        return try {
+            val locale = createLocaleFromString(preferredLocale)
+            LocaleListCompat.create(locale)
+        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+            Logger.w("Invalid preferred locale format: $preferredLocale. Using system default.")
+            LocaleListCompat.getDefault()
+        }
     }
 
     private fun displayFeedbackSurvey(

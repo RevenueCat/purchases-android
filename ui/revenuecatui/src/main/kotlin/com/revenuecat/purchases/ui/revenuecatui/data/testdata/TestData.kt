@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.loadedLegacy
@@ -504,6 +505,7 @@ internal class MockViewModel(
                 validationResult = validated,
                 storefrontCountryCode = null,
                 dateProvider = { Date(MILLIS_2025_01_25) },
+                purchases = MockPurchasesType(),
             )
         },
     )

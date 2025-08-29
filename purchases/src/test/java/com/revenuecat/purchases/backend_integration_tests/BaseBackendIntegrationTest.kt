@@ -6,6 +6,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
@@ -100,7 +101,7 @@ internal abstract class BaseBackendIntegrationTest {
         eTagManager = ETagManager(mockk(), lazy { sharedPreferences })
         signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
         deviceCache = DeviceCache(sharedPreferences, apiKey())
-        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, deviceCache)
+        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, deviceCache, localeProvider = DefaultLocaleProvider())
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
     }

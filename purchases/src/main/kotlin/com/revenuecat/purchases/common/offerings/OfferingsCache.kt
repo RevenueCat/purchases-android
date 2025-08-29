@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.offerings
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
-import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
@@ -16,7 +15,7 @@ internal class OfferingsCache(
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
         dateProvider = dateProvider,
     ),
-    private val localeProvider: LocaleProvider = DefaultLocaleProvider(),
+    private val localeProvider: LocaleProvider,
 ) {
 
     private var cachedLanguageTags: String? = null

@@ -7,6 +7,24 @@ internal interface LocaleProvider {
 }
 
 internal class DefaultLocaleProvider : LocaleProvider {
+
+    private var preferredLocaleOverride: String? = null
+
+    fun setPreferredLocaleOverride(localeString: String?) {
+        preferredLocaleOverride = localeString
+    }
+
     override val currentLocalesLanguageTags: String
-        get() = LocaleListCompat.getDefault().toLanguageTags()
+        get() {
+            val result = preferredLocaleOverride?.let {
+                val defaultLocales = LocaleListCompat.getDefault().toLanguageTags()
+                if (defaultLocales.isEmpty()) {
+                    it
+                } else {
+                    "$it,$defaultLocales"
+                }
+            } ?: LocaleListCompat.getDefault().toLanguageTags()
+
+            return result
+        }
 }
