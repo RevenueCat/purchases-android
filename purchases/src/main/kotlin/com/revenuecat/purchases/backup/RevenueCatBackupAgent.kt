@@ -5,7 +5,6 @@ import android.app.backup.BackupDataInput
 import android.app.backup.BackupDataOutput
 import android.app.backup.SharedPreferencesBackupHelper
 import android.os.ParcelFileDescriptor
-import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.debugLog
 
 private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
@@ -30,8 +29,12 @@ private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
  * configuration. See https://developer.android.com/identity/data/autobackup.
  */
 class RevenueCatBackupAgent : BackupAgentHelper() {
+    companion object {
+        const val REVENUECAT_PREFS_FILE_NAME = "com_revenuecat_purchases_preferences"
+    }
+
     override fun onCreate() {
-        SharedPreferencesBackupHelper(this, SharedPreferencesManager.REVENUECAT_PREFS_FILE_NAME).also {
+        SharedPreferencesBackupHelper(this, REVENUECAT_PREFS_FILE_NAME).also {
             addHelper(REVENUECAT_PREFS_BACKUP_KEY, it)
         }
     }
