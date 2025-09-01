@@ -92,6 +92,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = LocaleId("en_US"),
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -125,6 +126,7 @@ class PaywallComponentDataValidationTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -159,6 +161,7 @@ class PaywallComponentDataValidationTests {
             // We have no localizations.
             componentsLocalizations = emptyMap(),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -228,6 +231,7 @@ class PaywallComponentDataValidationTests {
                 ),
                 componentsLocalizations = localizations,
                 defaultLocaleIdentifier = defaultLocale,
+                deepLinkID = "deepLinkId"
             )
             val offering = Offering(
                 identifier = "identifier",
@@ -291,6 +295,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -346,6 +351,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -450,6 +456,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -549,6 +556,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -629,6 +637,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -691,6 +700,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -763,6 +773,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -819,6 +830,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -886,6 +898,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -941,6 +954,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -986,6 +1000,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",
@@ -1032,6 +1047,7 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             defaultLocaleIdentifier = defaultLocale,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",

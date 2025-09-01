@@ -75,6 +75,7 @@ internal fun FakePaywallState(
         ),
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleIdentifier,
+        deepLinkID = "deepLinkId"
     )
     val offering = Offering(
         identifier = "identifier",

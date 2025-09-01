@@ -347,6 +347,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                 ),
             ),
             defaultLocaleIdentifier = LocaleId("en_US"),
+            deepLinkID = "deepLinkId"
         ),
     )
 }

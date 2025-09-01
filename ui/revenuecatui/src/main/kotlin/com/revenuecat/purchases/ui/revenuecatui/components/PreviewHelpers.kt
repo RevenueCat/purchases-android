@@ -99,6 +99,7 @@ internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallSta
             ),
         ),
         defaultLocaleIdentifier = LocaleId("en_US"),
+        deepLinkID = "deepLinkID"
     )
     val offering = Offering(
         identifier = "identifier",

@@ -93,6 +93,7 @@ class PaywallViewModelTest {
         ),
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleIdentifier,
+        deepLinkID = "deepLinkId"
     )
 
     private lateinit var purchases: PurchasesType

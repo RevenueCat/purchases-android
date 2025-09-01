@@ -157,6 +157,7 @@ class PaywallActionTests {
         ),
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocale,
+        deepLinkID = "deepLinkId"
     )
 
     @Suppress("TestFunctionName")

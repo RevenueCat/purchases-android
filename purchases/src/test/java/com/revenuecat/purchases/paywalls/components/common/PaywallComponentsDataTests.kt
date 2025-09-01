@@ -69,7 +69,8 @@ internal class PaywallComponentsDataTests(
                             }
                           },
                           "default_locale": "en_US",
-                          "revision": 123
+                          "revision": 123,
+                          "deep_link_id": "deep-link-id-1"
                         }
 
                         """.trimIndent(),
@@ -101,7 +102,8 @@ internal class PaywallComponentsDataTests(
                             )
                         ),
                         defaultLocaleIdentifier = LocaleId("en_US"),
-                        revision = 123
+                        revision = 123,
+                        deepLinkID = "deep-link-id-1"
                     )
                 ),
             ),
@@ -134,7 +136,8 @@ internal class PaywallComponentsDataTests(
                               "ZvS4Ck5hGM": "Hello"
                             }
                           },
-                          "default_locale": "en_US"
+                          "default_locale": "en_US",
+                          "deep_link_id": "deep-link-id-2"
                         }
 
                         """.trimIndent(),
@@ -159,7 +162,8 @@ internal class PaywallComponentsDataTests(
                             )
                         ),
                         defaultLocaleIdentifier = LocaleId("en_US"),
-                        revision = 0
+                        revision = 0,
+                        deepLinkID = "deep-link-id-2"
                     )
                 ),
             ),
@@ -208,7 +212,8 @@ internal class PaywallComponentsDataTests(
                       "PH",
                       "TH"
                     ]
-                  }
+                  },
+                  "deep_link_id": "deep-link-id-3"
                 }""".trimIndent(),
                     expected = PaywallComponentsData(
                         templateName = "components",
@@ -239,6 +244,7 @@ internal class PaywallComponentsDataTests(
                             "PH",
                             "TH",
                         ),
+                        deepLinkID = "deep-link-id-3"
                     )
                 ),
             ),

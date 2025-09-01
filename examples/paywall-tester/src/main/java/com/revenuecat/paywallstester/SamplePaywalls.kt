@@ -938,6 +938,7 @@ object SamplePaywalls {
                     ),
                 ),
                 defaultLocaleIdentifier = LocaleId("en_US"),
+                deepLinkID = "deepLinkId"
             ),
         )
     }

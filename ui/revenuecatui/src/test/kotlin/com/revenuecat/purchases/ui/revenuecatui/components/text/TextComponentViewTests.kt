@@ -403,6 +403,7 @@ class TextComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = offeringId,
@@ -572,6 +573,7 @@ class TextComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = offeringId,
@@ -775,6 +777,7 @@ class TextComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocaleIdentifier,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = offeringId,
@@ -857,6 +860,7 @@ class TextComponentViewTests {
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             zeroDecimalPlaceCountries = listOf(countryWithoutDecimals),
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = offeringId,

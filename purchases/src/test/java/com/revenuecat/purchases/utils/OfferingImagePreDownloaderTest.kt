@@ -355,6 +355,7 @@ class OfferingImagePreDownloaderTest {
                     ),
                     componentsLocalizations = mapOf(),
                     defaultLocaleIdentifier = LocaleId("en_US"),
+                    deepLinkID = "deepLinkID",
                 )
             )
         }

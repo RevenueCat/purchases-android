@@ -161,6 +161,7 @@ class PackageComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocaleIdentifier,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = offeringId,
@@ -291,6 +292,7 @@ class PackageComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocaleIdentifier,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = offeringId,

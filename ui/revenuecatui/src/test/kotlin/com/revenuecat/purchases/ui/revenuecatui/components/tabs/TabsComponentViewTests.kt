@@ -150,6 +150,7 @@ class TabsComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocaleIdentifier,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "offering-id",
@@ -326,6 +327,7 @@ class TabsComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocaleIdentifier,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "offering-id",
@@ -1153,6 +1155,7 @@ class TabsComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocaleId,
+            deepLinkID = "deepLinkId"
         )
 
     @Suppress("TestFunctionName")

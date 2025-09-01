@@ -1443,6 +1443,7 @@ internal class TextComponentViewVariablesTests(
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
+            deepLinkID = "deepLinkId"
         )
 
         val offering = Offering(

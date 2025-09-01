@@ -353,6 +353,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
             ),
         ),
         defaultLocaleIdentifier = LocaleId("en_US"),
+        deepLinkID = "deepLinkID"
     )
     val offering = Offering(
         identifier = "id",
@@ -439,6 +440,7 @@ private fun previewHelloWorldPaywallState(): PaywallState.Loaded.Components {
             ),
         ),
         defaultLocaleIdentifier = LocaleId("en_US"),
+        deepLinkID = "deepLinkID"
     )
     val offering = Offering(
         identifier = "id",

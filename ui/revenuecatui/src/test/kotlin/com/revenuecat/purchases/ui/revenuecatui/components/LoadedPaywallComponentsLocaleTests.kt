@@ -76,6 +76,7 @@ internal class LoadedPaywallComponentsLocaleTests {
                 ),
             ),
             defaultLocaleIdentifier = LocaleId("en_US"),
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "identifier",

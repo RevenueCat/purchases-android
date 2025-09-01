@@ -335,6 +335,7 @@ class StackComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "offering-id",
@@ -667,6 +668,7 @@ class StackComponentViewTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
+            deepLinkID = "deepLinkId"
         )
         val offering = Offering(
             identifier = "offering-id",
