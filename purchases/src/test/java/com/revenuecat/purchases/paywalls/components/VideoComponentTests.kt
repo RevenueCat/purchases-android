@@ -22,7 +22,7 @@ class VideoComponentTests {
     @Language("json")
     val json = """
         {
-          "autoplay": true,
+          "auto_play": true,
           "color_overlay": {
             "light": {
               "type": "alias",

@@ -33,6 +33,7 @@ class VideoComponent(
     @SerialName("show_controls")
     @get:JvmSynthetic
     val showControls: Boolean,
+    @SerialName("auto_play")
     @get:JvmSynthetic
     val autoplay: Boolean,
     @get:JvmSynthetic
@@ -79,6 +80,7 @@ class PartialVideoComponent(
     @SerialName("show_controls")
     @get:JvmSynthetic
     val showControls: Boolean? = null,
+    @SerialName("auto_play")
     @get:JvmSynthetic
     val autoplay: Boolean? = null,
     @get:JvmSynthetic
