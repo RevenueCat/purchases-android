@@ -203,9 +203,9 @@ internal class PurchasesOrchestrator(
     var storefrontCountryCode: String? = null
         private set
 
+    @Volatile
     private var _preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
 
-    @get:Synchronized
     val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
 
@@ -469,8 +469,10 @@ internal class PurchasesOrchestrator(
             return false
         }
 
-        _preferredUILocaleOverride = localeString
-        localeProvider.setPreferredLocaleOverride(localeString)
+        synchronized(this) {
+            _preferredUILocaleOverride = localeString
+            localeProvider.setPreferredLocaleOverride(localeString)
+        }
 
         debugLog { "Locale changed, attempting to fetch fresh offerings" }
         return fetchOfferingsWithRateLimit { offerings, error ->
