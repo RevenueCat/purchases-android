@@ -38,7 +38,6 @@ internal sealed class PaywallValidationError : Throwable() {
             is AllLocalizationsMissing -> message
             is AllVariableLocalizationsMissing -> message
             is MissingPackage -> message
-            is MissingAllPackages -> message
             is MissingColorAlias -> message
             is AliasedColorIsAlias -> message
             is MissingFontAlias -> message
@@ -92,14 +91,6 @@ internal sealed class PaywallValidationError : Throwable() {
         override val message: String =
             PaywallValidationErrorStrings.MISSING_PACKAGE
                 .format(missingPackageId, offeringId, allPackageIds.joinToString())
-    }
-    data class MissingAllPackages(
-        val offeringId: String,
-        val allPackageIds: Collection<String>,
-    ) : PaywallValidationError() {
-        override val message: String =
-            PaywallValidationErrorStrings.MISSING_ALL_PACKAGES
-                .format(offeringId, allPackageIds.joinToString())
     }
     data class MissingColorAlias(
         val alias: ColorAlias,
