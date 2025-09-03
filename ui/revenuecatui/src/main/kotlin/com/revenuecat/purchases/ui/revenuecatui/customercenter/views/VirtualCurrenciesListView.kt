@@ -107,49 +107,6 @@ internal fun VirtualCurrenciesListView(
 }
 
 @Composable
-private fun ShowAllVirtualCurrenciesRow(
-    localization: CustomerCenterConfigData.Localization,
-    onAction: (CustomerCenterAction) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(
-            topStart = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
-            topEnd = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
-            bottomStart = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
-            bottomEnd = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
-        ),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onAction(CustomerCenterAction.ShowAllVirtualCurrencies) }
-                .padding(
-                    horizontal = CustomerCenterConstants.Card.CARD_PADDING,
-                    vertical = 12.dp
-                ),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.SEE_ALL_VIRTUAL_CURRENCIES
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-
-@Composable
 private fun VirtualCurrencyRow(
     virtualCurrencyName: String,
     virtualCurrencyCode: String,
@@ -203,6 +160,49 @@ private fun VirtualCurrencyRow(
             )
 
             Text(text = formatBalance(balance))
+        }
+    }
+}
+
+@Composable
+private fun ShowAllVirtualCurrenciesRow(
+    localization: CustomerCenterConfigData.Localization,
+    onAction: (CustomerCenterAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(
+            topStart = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            topEnd = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            bottomStart = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+            bottomEnd = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+        ),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onAction(CustomerCenterAction.ShowAllVirtualCurrencies) }
+                .padding(
+                    horizontal = CustomerCenterConstants.Card.CARD_PADDING,
+                    vertical = 12.dp
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SEE_ALL_VIRTUAL_CURRENCIES
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
