@@ -39,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.createGoogleStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.helpers.stubGoogleSubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.helpers.stubPricingPhase
 import com.revenuecat.purchases.ui.revenuecatui.helpers.subtract
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearMocks
@@ -2079,6 +2080,8 @@ class CustomerCenterViewModelTests {
         every { purchases.track(any()) } just Runs
         every { purchases.syncPurchases() } just Runs
         every { purchases.preferredUILocaleOverride } returns null
+        coEvery { purchases.awaitGetVirtualCurrencies() } returns mockk()
+        every { purchases.invalidateVirtualCurrenciesCache() } just Runs
 
         every { configData.getManagementScreen() } returns screens[Screen.ScreenType.MANAGEMENT]
         every { configData.getNoActiveScreen() } returns screens[Screen.ScreenType.NO_ACTIVE]
@@ -2087,6 +2090,9 @@ class CustomerCenterViewModelTests {
             localizedStrings = mapOf(
                 "cancel" to "Cancel",
             )
+        )
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = false
         )
 
         every { customerInfo.managementURL } returns null
@@ -2387,6 +2393,49 @@ class CustomerCenterViewModelTests {
         return mockk<PurchaseInformation>().apply {
             every { product } returns mockProduct
         }
+    }
+
+    @Test
+    fun `loadCustomerCenter loads virtual currencies when displayVirtualCurrencies is true`(): Unit = runBlocking {
+        setupPurchasesMock()
+        
+        val mockVirtualCurrencies = mockk<VirtualCurrencies>()
+        coEvery { purchases.awaitGetVirtualCurrencies() } returns mockVirtualCurrencies
+        every { purchases.invalidateVirtualCurrenciesCache() } just Runs
+        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = true)
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.virtualCurrencies).isEqualTo(mockVirtualCurrencies)
+        verify(exactly = 1) { purchases.invalidateVirtualCurrenciesCache() }
+        coVerify(exactly = 1) { purchases.awaitGetVirtualCurrencies() }
+    }
+
+    @Test
+    fun `loadCustomerCenter does not load virtual currencies when displayVirtualCurrencies is false`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = false)
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.virtualCurrencies).isNull()
+        verify(exactly = 0) { purchases.invalidateVirtualCurrenciesCache() }
+        coVerify(exactly = 0) { purchases.awaitGetVirtualCurrencies() }
+    }
+
+    @Test
+    fun `loadCustomerCenter does not load virtual currencies when displayVirtualCurrencies is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = null)
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.virtualCurrencies).isNull()
+        verify(exactly = 0) { purchases.invalidateVirtualCurrenciesCache() }
+        coVerify(exactly = 0) { purchases.awaitGetVirtualCurrencies() }
     }
 
 }

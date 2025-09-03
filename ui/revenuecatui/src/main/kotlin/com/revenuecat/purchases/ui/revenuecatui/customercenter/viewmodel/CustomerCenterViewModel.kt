@@ -62,6 +62,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -798,6 +799,13 @@ internal class CustomerCenterViewModelImpl(
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformationList = loadPurchases(dateFormatter, locale, customerCenterConfigData.localization)
+            val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
+                purchases.invalidateVirtualCurrenciesCache()
+                purchases.awaitGetVirtualCurrencies()
+            } else {
+                null
+            }
+
 
             // Resolve NO_ACTIVE screen offering if it exists
             val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
@@ -814,6 +822,7 @@ internal class CustomerCenterViewModelImpl(
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
+                virtualCurrencies = virtualCurrencies
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 

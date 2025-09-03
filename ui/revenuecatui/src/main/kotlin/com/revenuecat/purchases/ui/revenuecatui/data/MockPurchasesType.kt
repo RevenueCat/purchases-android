@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 /**
  * Mock implementation of [PurchasesType] for previews and test data
@@ -38,6 +39,13 @@ internal class MockPurchasesType(
     }
     override suspend fun awaitGetProduct(productId: String, basePlan: String?): StoreProduct? {
         throw NotImplementedError("Mock implementation for previews only")
+    }
+    override suspend fun awaitGetVirtualCurrencies(): VirtualCurrencies {
+        throw NotImplementedError("Mock implementation for previews only")
+    }
+
+    override fun invalidateVirtualCurrenciesCache() {
+        // No-op for mock
     }
     override fun track(event: FeatureEvent) {
         // No-op for mock

@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetProducts
+import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 /**
  * Abstraction over [Purchases] that can be mocked.
@@ -36,6 +38,10 @@ internal interface PurchasesType {
     suspend fun awaitCustomerCenterConfigData(): CustomerCenterConfigData
 
     suspend fun awaitGetProduct(productId: String, basePlan: String?): StoreProduct?
+
+    suspend fun awaitGetVirtualCurrencies(): VirtualCurrencies
+
+    fun invalidateVirtualCurrenciesCache()
 
     fun track(event: FeatureEvent)
 
@@ -80,6 +86,14 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         } else {
             products.firstOrNull { it.googleProduct?.basePlanId == basePlan }
         }
+    }
+
+    override suspend fun awaitGetVirtualCurrencies(): VirtualCurrencies {
+        return purchases.awaitGetVirtualCurrencies()
+    }
+
+    override fun invalidateVirtualCurrenciesCache() {
+        purchases.invalidateVirtualCurrenciesCache()
     }
 
     override fun track(event: FeatureEvent) {
