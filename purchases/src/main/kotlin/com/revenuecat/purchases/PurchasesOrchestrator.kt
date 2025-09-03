@@ -462,19 +462,21 @@ internal class PurchasesOrchestrator(
      * importing RevenueCatUI in your project. The locale override will take effect the next time
      * a paywall or customer center is displayed.
      */
-    fun overridePreferredUILocale(localeString: String?) {
+    fun overridePreferredUILocale(localeString: String?): Boolean {
         val previousLocale = _preferredUILocaleOverride
 
         if (previousLocale == localeString) {
-            return
+            debugLog { "Locale unchanged, no fresh fetch needed" }
+            return false
         }
 
         _preferredUILocaleOverride = localeString
         localeProvider.setPreferredLocaleOverride(localeString)
 
-        fetchOfferingsWithRateLimit { offerings, error ->
+        debugLog { "Locale changed, attempting to fetch fresh offerings" }
+        return fetchOfferingsWithRateLimit { offerings, error ->
             if (offerings != null) {
-                verboseLog { "Fresh offerings fetch completed successfully" }
+                debugLog { "Fresh offerings fetch completed successfully" }
             } else {
                 debugLog { "Fresh offerings fetch failed: ${error?.message}" }
             }

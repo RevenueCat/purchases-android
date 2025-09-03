@@ -857,8 +857,8 @@ class Purchases internal constructor(
      *
      * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
      */
-    fun overridePreferredUILocale(localeString: String?) {
-        purchasesOrchestrator.overridePreferredUILocale(localeString)
+    fun overridePreferredUILocale(localeString: String?): Boolean {
+        return purchasesOrchestrator.overridePreferredUILocale(localeString)
     }
 
     /**

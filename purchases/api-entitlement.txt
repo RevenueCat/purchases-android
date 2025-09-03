@@ -340,7 +340,6 @@ package com.revenuecat.purchases {
     method public void getStorefrontCountryCode(com.revenuecat.purchases.interfaces.GetStorefrontCallback callback);
     method @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? getUpdatedCustomerInfoListener();
     method public static boolean isConfigured();
-    method public void overridePreferredUILocale(String? localeString);
     method public void purchase(com.revenuecat.purchases.PurchaseParams purchaseParams, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
     method public void removeUpdatedCustomerInfoListener();
     method public void restorePurchases(com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
