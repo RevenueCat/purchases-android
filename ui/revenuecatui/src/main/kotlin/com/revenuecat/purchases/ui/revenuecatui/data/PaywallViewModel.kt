@@ -415,8 +415,8 @@ internal class PaywallViewModelImpl(
             val locale = createLocaleFromString(preferredLocale)
             val localeList = LocaleListCompat.create(locale)
             localeList
-        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
-            Logger.w("Invalid preferred locale format: $preferredLocale. Using system default.")
+        } catch (e: IllegalArgumentException) {
+            Logger.e("Invalid preferred locale format: $preferredLocale. Using system default.", e)
             LocaleListCompat.getDefault()
         }
     }
