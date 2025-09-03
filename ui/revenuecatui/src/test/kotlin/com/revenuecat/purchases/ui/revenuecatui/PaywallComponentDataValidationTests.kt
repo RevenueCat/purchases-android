@@ -962,7 +962,7 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
-    fun `Should fail to validate if no package component is found`() {
+    fun `Should not fail to validate if no package component is found`() {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
@@ -999,12 +999,7 @@ class PaywallComponentDataValidationTests {
         val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
 
         // Assert
-        assertNotNull(validated.errors)
-        assertEquals(validated.errors?.size, 1)
-        assertEquals(validated.errors?.first(), PaywallValidationError.MissingAllPackages(
-            offeringId = "identifier",
-            allPackageIds = listOf(TestData.Packages.annual.identifier, TestData.Packages.lifetime.identifier)
-        ))
+        assertNull(validated.errors)
     }
 
     @Test
