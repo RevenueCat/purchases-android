@@ -36,6 +36,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val verificationMode: EntitlementVerificationMode
     val pendingTransactionsForPrepaidPlansEnabled: Boolean
     val automaticDeviceIdentifierCollectionEnabled: Boolean
+    val preferredUILocaleOverride: String?
 
     init {
         this.context =
@@ -56,6 +57,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
         this.automaticDeviceIdentifierCollectionEnabled =
             builder.automaticDeviceIdentifierCollectionEnabled
+        this.preferredUILocaleOverride = builder.preferredUILocaleOverride
     }
 
     internal fun copy(
@@ -74,6 +76,7 @@ open class PurchasesConfiguration(builder: Builder) {
             .automaticDeviceIdentifierCollectionEnabled(
                 automaticDeviceIdentifierCollectionEnabled,
             )
+            .preferredUILocaleOverride(preferredUILocaleOverride)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -115,6 +118,9 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var automaticDeviceIdentifierCollectionEnabled: Boolean = true
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var preferredUILocaleOverride: String? = null
 
         /**
          * A unique id for identifying the user
@@ -281,6 +287,20 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * Sets the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
+         * This allows you to override the system locale and display the UI in a specific language.
+         *
+         * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
+         *                     Pass null to use the system default locale.
+         *
+         * **Note:** This only affects UI components from the RevenueCatUI module and requires
+         * importing RevenueCatUI in your project.
+         */
+        fun preferredUILocaleOverride(localeString: String?) = apply {
+            this.preferredUILocaleOverride = localeString
+        }
+
+        /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
         open fun build(): PurchasesConfiguration {
@@ -303,6 +323,8 @@ open class PurchasesConfiguration(builder: Builder) {
         if (dangerousSettings != other.dangerousSettings) return false
         if (verificationMode != other.verificationMode) return false
         if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
+        if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
+        if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
 
         return true
     }
@@ -317,6 +339,8 @@ open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + dangerousSettings.hashCode()
         result = 31 * result + verificationMode.hashCode()
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
+        result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
+        result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
         return result
     }
 }

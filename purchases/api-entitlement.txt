@@ -410,6 +410,7 @@ package com.revenuecat.purchases {
     method public final boolean getDiagnosticsEnabled();
     method @Deprecated public final boolean getObserverMode();
     method public final boolean getPendingTransactionsForPrepaidPlansEnabled();
+    method public final String? getPreferredUILocaleOverride();
     method public final com.revenuecat.purchases.PurchasesAreCompletedBy getPurchasesAreCompletedBy();
     method public final java.util.concurrent.ExecutorService? getService();
     method public final boolean getShowInAppMessagesAutomatically();
@@ -423,6 +424,7 @@ package com.revenuecat.purchases {
     property public final boolean diagnosticsEnabled;
     property @Deprecated public final boolean observerMode;
     property public final boolean pendingTransactionsForPrepaidPlansEnabled;
+    property public final String? preferredUILocaleOverride;
     property public final com.revenuecat.purchases.PurchasesAreCompletedBy purchasesAreCompletedBy;
     property public final java.util.concurrent.ExecutorService? service;
     property public final boolean showInAppMessagesAutomatically;
@@ -441,6 +443,7 @@ package com.revenuecat.purchases {
     method @Deprecated @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.PurchasesConfiguration.Builder informationalVerificationModeAndDiagnosticsEnabled(boolean enabled);
     method @Deprecated public final com.revenuecat.purchases.PurchasesConfiguration.Builder observerMode(boolean observerMode);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder pendingTransactionsForPrepaidPlansEnabled(boolean pendingTransactionsForPrepaidPlansEnabled);
+    method public final com.revenuecat.purchases.PurchasesConfiguration.Builder preferredUILocaleOverride(String? localeString);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder purchasesAreCompletedBy(com.revenuecat.purchases.PurchasesAreCompletedBy purchasesAreCompletedBy);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder service(java.util.concurrent.ExecutorService service);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder showInAppMessagesAutomatically(boolean showInAppMessagesAutomatically);
