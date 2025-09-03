@@ -8,13 +8,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Surface
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -73,58 +74,79 @@ internal fun VirtualCurrenciesListView(
             ),
         )
 
-        Surface(
-            shape = RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE),
-            color = MaterialTheme.colorScheme.surface,
-        ) {
-            Column {
-                displayedCurrencies.forEachIndexed { index, currency ->
-                    VirtualCurrencyRow(
-                        virtualCurrencyName = currency.name,
-                        virtualCurrencyCode = currency.code,
-                        balance = currency.balance,
-                        modifier = Modifier.padding(
-                            horizontal = CustomerCenterConstants.Card.CARD_PADDING,
-                            vertical = 12.dp
-                        )
-                    )
-
-                    if (index < displayedCurrencies.size - 1 || displayShowAllButton) {
-                        HorizontalDivider(
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-                            modifier = Modifier.padding(horizontal = CustomerCenterConstants.Card.CARD_PADDING)
-                        )
-                    }
-                }
-
-                if (displayShowAllButton) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onAction(CustomerCenterAction.ShowAllVirtualCurrencies) }
-                            .padding(
-                                horizontal = CustomerCenterConstants.Card.CARD_PADDING,
-                                vertical = 12.dp
-                            ),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = localization.commonLocalizedString(
-                                CustomerCenterConfigData.Localization.CommonLocalizedString.SEE_ALL_VIRTUAL_CURRENCIES
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+        displayedCurrencies.forEachIndexed { index, currency ->
+            if (index > 0) {
+                Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
             }
+
+            val totalItems = displayedCurrencies.size + if (displayShowAllButton) 1 else 0
+            val position = when {
+                totalItems == 1 -> ButtonPosition.SINGLE
+                index == 0 -> ButtonPosition.FIRST
+                index == displayedCurrencies.size - 1 && !displayShowAllButton -> ButtonPosition.LAST
+                else -> ButtonPosition.MIDDLE
+            }
+
+            VirtualCurrencyRow(
+                virtualCurrencyName = currency.name,
+                virtualCurrencyCode = currency.code,
+                balance = currency.balance,
+                position = position
+            )
+        }
+
+        if (displayShowAllButton) {
+            Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
+            
+            ShowAllVirtualCurrenciesRow(
+                localization = localization,
+                onAction = onAction,
+                position = ButtonPosition.LAST
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShowAllVirtualCurrenciesRow(
+    localization: CustomerCenterConfigData.Localization,
+    onAction: (CustomerCenterAction) -> Unit,
+    position: ButtonPosition,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(
+            topStart = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            topEnd = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            bottomStart = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+            bottomEnd = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+        ),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onAction(CustomerCenterAction.ShowAllVirtualCurrencies) }
+                .padding(
+                    horizontal = CustomerCenterConstants.Card.CARD_PADDING,
+                    vertical = 12.dp
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SEE_ALL_VIRTUAL_CURRENCIES
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
@@ -134,6 +156,7 @@ private fun VirtualCurrencyRow(
     virtualCurrencyName: String,
     virtualCurrencyCode: String,
     balance: Int,
+    position: ButtonPosition,
     modifier: Modifier = Modifier,
 ) {
     fun formatBalance(number: Int) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -145,18 +168,44 @@ private fun VirtualCurrencyRow(
         number.toString()
     }
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "$virtualCurrencyName ($virtualCurrencyCode)",
-            textAlign = TextAlign.Start,
-            maxLines = 2
+    val shape = when (position) {
+        ButtonPosition.SINGLE -> RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE)
+        ButtonPosition.FIRST -> RoundedCornerShape(
+            topStart = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+            topEnd = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+            bottomStart = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            bottomEnd = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
         )
+        ButtonPosition.LAST -> RoundedCornerShape(
+            topStart = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            topEnd = CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE,
+            bottomStart = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+            bottomEnd = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
+        )
+        ButtonPosition.MIDDLE -> RoundedCornerShape(CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE)
+    }
 
-        Text(text = formatBalance(balance))
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = shape,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = CustomerCenterConstants.Card.CARD_PADDING,
+                vertical = 12.dp
+            ),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "$virtualCurrencyName ($virtualCurrencyCode)",
+                textAlign = TextAlign.Start,
+                maxLines = 2
+            )
+
+            Text(text = formatBalance(balance))
+        }
     }
 }
 
