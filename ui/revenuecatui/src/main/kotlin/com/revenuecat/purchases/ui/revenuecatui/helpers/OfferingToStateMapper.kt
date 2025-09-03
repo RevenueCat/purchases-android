@@ -168,17 +168,6 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     ) { backendRootComponentResult, stickyFooterResult, background ->
         val hasAnyPackages = backendRootComponentResult.availablePackages.hasAnyPackages ||
             stickyFooterResult?.availablePackages?.hasAnyPackages ?: false
-        // Check if there are any packages available in the offering
-        if (!hasAnyPackages) {
-            return RcResult.Error(
-                nonEmptyListOf(
-                    PaywallValidationError.MissingAllPackages(
-                        identifier,
-                        availablePackages.map { it.identifier },
-                    ),
-                ),
-            )
-        }
 
         val backendRootComponent = backendRootComponentResult.componentStyle
         val stickyFooter = stickyFooterResult?.componentStyle
