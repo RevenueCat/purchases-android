@@ -6,7 +6,6 @@ import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
-import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
