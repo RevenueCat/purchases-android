@@ -101,7 +101,6 @@ internal fun VirtualCurrenciesListView(
             ShowAllVirtualCurrenciesRow(
                 localization = localization,
                 onAction = onAction,
-                position = ButtonPosition.LAST
             )
         }
     }
@@ -111,7 +110,6 @@ internal fun VirtualCurrenciesListView(
 private fun ShowAllVirtualCurrenciesRow(
     localization: CustomerCenterConfigData.Localization,
     onAction: (CustomerCenterAction) -> Unit,
-    position: ButtonPosition,
     modifier: Modifier = Modifier,
 ) {
     Surface(
