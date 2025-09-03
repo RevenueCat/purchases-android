@@ -31,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
@@ -123,9 +124,17 @@ internal class PaywallViewModelImpl(
     }
 
     override fun refreshStateIfLocaleChanged() {
-        if (_lastLocaleList.value != getCurrentLocaleList()) {
-            _lastLocaleList.value = getCurrentLocaleList()
-            updateState()
+        val currentLocaleList = getCurrentLocaleList()
+        if (_lastLocaleList.value != currentLocaleList) {
+            _lastLocaleList.value = currentLocaleList
+
+            // If we have a Components paywall state, update its locale instead of recreating the entire state
+            val currentState = _state.value
+            if (currentState is PaywallState.Loaded.Components) {
+                currentState.update(localeList = currentLocaleList.toFrameworkLocaleList())
+            } else {
+                updateState()
+            }
         }
     }
 
@@ -400,7 +409,22 @@ internal class PaywallViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        return LocaleListCompat.getDefault()
+        val preferredLocale = purchases.preferredUILocaleOverride ?: return LocaleListCompat.getDefault()
+
+        return try {
+            val locale = createLocaleFromString(preferredLocale)
+            val localeList = LocaleListCompat.create(locale)
+            localeList
+        } catch (e: IllegalArgumentException) {
+            Logger.e("Invalid preferred locale format: $preferredLocale. Using system default.", e)
+            LocaleListCompat.getDefault()
+        }
+    }
+
+    @Suppress("SpreadOperator")
+    private fun LocaleListCompat.toFrameworkLocaleList(): android.os.LocaleList {
+        val locales = Array(size()) { i -> get(i)!! }
+        return android.os.LocaleList(*locales)
     }
 
     private fun calculateState(
@@ -442,6 +466,7 @@ internal class PaywallViewModelImpl(
                 validationResult = validationResult,
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
+                purchases = purchases,
             )
         }
     }

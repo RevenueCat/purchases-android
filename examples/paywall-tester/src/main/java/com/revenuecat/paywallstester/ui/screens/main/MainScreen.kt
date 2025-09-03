@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreen
+import com.revenuecat.paywallstester.ui.screens.main.locale.LocaleScreen
 import com.revenuecat.paywallstester.ui.screens.main.offerings.OfferingsScreen
 import com.revenuecat.paywallstester.ui.screens.main.paywalls.PaywallsScreen
 import com.revenuecat.purchases.Offering
@@ -64,6 +65,7 @@ private val bottomNavigationItems = listOf(
     Tab.AppInfo,
     Tab.Paywalls,
     Tab.Offerings,
+    Tab.Locale,
 )
 
 @Suppress("LongParameterList")
@@ -97,6 +99,9 @@ private fun MainNavHost(
                 tappedOnOfferingCondensedFooter = { offering -> navigateToPaywallCondensedFooterScreen(offering) },
                 tappedOnOfferingByPlacement = { placementId -> navigateToPaywallByPlacementScreen(placementId) },
             )
+        }
+        composable(Tab.Locale.route) {
+            LocaleScreen()
         }
     }
 }

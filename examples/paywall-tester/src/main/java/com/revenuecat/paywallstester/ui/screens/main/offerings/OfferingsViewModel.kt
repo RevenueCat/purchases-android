@@ -17,6 +17,8 @@ abstract class OfferingsViewModel : ViewModel() {
     abstract val offeringsState: StateFlow<OfferingsState>
 
     abstract fun refreshOfferings()
+
+    abstract fun updateSearchQuery(query: String)
 }
 
 class OfferingsViewModelImpl : OfferingsViewModel() {
@@ -33,7 +35,15 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
         _offeringsState.update { OfferingsState.Loading }
         viewModelScope.launch {
             val offerings = Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
-            _offeringsState.update { OfferingsState.Loaded(offerings) }
+            val currentQuery = (_offeringsState.value as? OfferingsState.Loaded)?.searchQuery ?: ""
+            _offeringsState.update { OfferingsState.Loaded(offerings, currentQuery) }
+        }
+    }
+
+    override fun updateSearchQuery(query: String) {
+        val currentState = _offeringsState.value
+        if (currentState is OfferingsState.Loaded) {
+            _offeringsState.update { currentState.copy(searchQuery = query) }
         }
     }
 
