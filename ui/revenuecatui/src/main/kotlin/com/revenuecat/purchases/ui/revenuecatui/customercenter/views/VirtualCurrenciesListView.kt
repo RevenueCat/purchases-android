@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Surface
@@ -25,11 +26,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
 private const val MAX_NUMBER_OF_ROWS = 4
 
@@ -56,12 +57,26 @@ internal fun VirtualCurrenciesListView(
 
     val displayShowAllButton = sortedCurrencies.size > MAX_NUMBER_OF_ROWS
 
-    Surface(
+    Column(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
-        color = MaterialTheme.colorScheme.surface,
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.Start
     ) {
+        Text(
+            text = localization.commonLocalizedString(
+                CustomerCenterConfigData.Localization.CommonLocalizedString.VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER
+            ),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(
+                bottom = CustomerCenterConstants.Layout.SECTION_TITLE_BOTTOM_PADDING,
+            ),
+        )
+
+        Surface(
+            shape = RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
             Column {
                 displayedCurrencies.forEachIndexed { index, currency ->
                     VirtualCurrencyRow(
@@ -110,6 +125,7 @@ internal fun VirtualCurrenciesListView(
                     }
                 }
             }
+        }
     }
 }
 
@@ -146,6 +162,7 @@ private fun VirtualCurrencyRow(
 
 @Preview(
     name = "4 VCs, Light Mode",
+    showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
 )
 @Preview(
@@ -155,38 +172,10 @@ private fun VirtualCurrencyRow(
 @Composable
 private fun VirtualCurrenciesListView_4_VCs_Preview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
-    val virtualCurrencies = VirtualCurrencies(
-        all = mapOf(
-            "GLD" to VirtualCurrency(
-                balance = 100,
-                name = "Gold",
-                code = "GLD",
-                serverDescription = "It's gold"
-            ),
-            "SLV" to VirtualCurrency(
-                balance = 200,
-                name = "Silver",
-                code = "SLV",
-                serverDescription = "It's silver"
-            ),
-            "BRNZ" to VirtualCurrency(
-                balance = 300,
-                name = "Bronze",
-                code = "BRNZ",
-                serverDescription = "It's bronze"
-            ),
-            "PLTNM" to VirtualCurrency(
-                balance = 400,
-                name = "Platinum",
-                code = "PLTNM",
-                serverDescription = "It's platinum"
-            )
-        )
-    )
-    
+
     CustomerCenterPreviewTheme {
         VirtualCurrenciesListView(
-            virtualCurrencies = virtualCurrencies,
+            virtualCurrencies = CustomerCenterConfigTestData.fourVirtualCurrencies,
             localization = testData.localization,
             onAction = {}
         )
@@ -195,6 +184,7 @@ private fun VirtualCurrenciesListView_4_VCs_Preview() {
 
 @Preview(
     name = "5 VCs, Light Mode",
+    showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
 )
 @Preview(
@@ -204,44 +194,10 @@ private fun VirtualCurrenciesListView_4_VCs_Preview() {
 @Composable
 private fun VirtualCurrenciesListView_5_VCs_Preview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
-    val virtualCurrencies = VirtualCurrencies(
-        all = mapOf(
-            "GLD" to VirtualCurrency(
-                balance = 100,
-                name = "Gold",
-                code = "GLD",
-                serverDescription = "It's gold"
-            ),
-            "SLV" to VirtualCurrency(
-                balance = 200,
-                name = "Silver",
-                code = "SLV",
-                serverDescription = "It's silver"
-            ),
-            "BRNZ" to VirtualCurrency(
-                balance = 300,
-                name = "Bronze",
-                code = "BRNZ",
-                serverDescription = "It's bronze"
-            ),
-            "PLTNM" to VirtualCurrency(
-                balance = 400,
-                name = "Platinum",
-                code = "PLTNM",
-                serverDescription = "It's platinum"
-            ),
-            "RC_COIN" to VirtualCurrency(
-                balance = 1,
-                name = "RC Coin",
-                code = "RC_COIN",
-                serverDescription = "RevenueCat Coin"
-            ),
-        )
-    )
     
     CustomerCenterPreviewTheme {
         VirtualCurrenciesListView(
-            virtualCurrencies = virtualCurrencies,
+            virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
             localization = testData.localization,
             onAction = {}
         )
