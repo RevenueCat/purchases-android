@@ -525,6 +525,8 @@ data class CustomerCenterConfigData(
         val email: String? = null,
         @SerialName("should_warn_customer_to_update")
         val shouldWarnCustomerToUpdate: Boolean? = null,
+        @SerialName("display_virtual_currencies")
+        val displayVirtualCurrencies: Boolean? = null,
     )
 
     fun getManagementScreen(): CustomerCenterConfigData.Screen? {
