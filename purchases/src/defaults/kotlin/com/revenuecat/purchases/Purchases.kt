@@ -835,6 +835,28 @@ class Purchases internal constructor(
         }
 
     /**
+     * The preferred UI locale override for RevenueCat UI components.
+     * This affects both API requests and UI rendering.
+     *
+     * @return The preferred UI locale override, or null if using system default
+     */
+    val preferredUILocaleOverride: String?
+        @Synchronized get() = purchasesOrchestrator.preferredUILocaleOverride
+
+    /**
+     * Override the preferred UI locale for RevenueCat UI components at runtime.
+     * This affects both API requests and UI rendering.
+     *
+     * If the locale changes, this will automatically clear the offerings cache and trigger
+     * a background refetch to get paywall templates with the correct localizations.
+     *
+     * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
+     */
+    fun overridePreferredUILocale(localeString: String?): Boolean {
+        return purchasesOrchestrator.overridePreferredUILocale(localeString)
+    }
+
+    /**
      * Gets the StoreProduct for the given list of subscription products.
      * @param [productIds] List of productIds
      * @param [callback] Response callback

@@ -49,6 +49,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.showInAppMessagesAutomatically).isTrue
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
         assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isTrue
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
     }
 
     @Test
@@ -128,6 +129,19 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration trims api key`() {
         val purchasesConfiguration = PurchasesConfiguration.Builder(context, "  test-api-key  ").build()
         assertThat(purchasesConfiguration.apiKey).isEqualTo("test-api-key")
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets preferredUILocaleOverride correctly`() {
+        val localeOverride = "de_DE"
+        val purchasesConfiguration = builder.preferredUILocaleOverride(localeOverride).build()
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isEqualTo(localeOverride)
+    }
+
+    @Test
+    fun `PurchasesConfiguration handles null preferredUILocaleOverride`() {
+        val purchasesConfiguration = builder.preferredUILocaleOverride(null).build()
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
     }
 
     @Test
