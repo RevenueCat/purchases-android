@@ -13,11 +13,15 @@ import com.revenuecat.purchases.utils.TestUrlConnectionFactory
 import io.mockk.Runs
 import io.mockk.just
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FileRepositoryTest : CoroutineTest() {
     private companion object {
         const val TEST_URL = "https://www.sample.com"
@@ -59,17 +63,23 @@ class FileRepositoryTest : CoroutineTest() {
     fun `prefetch invokes network and saves file`() = runTest {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to goodConnection))
         val mockCache = mockk<LargeItemCacheType>()
+
         every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
         every { mockCache.saveData(any(), cacheUri) } just Runs
 
         val fileRepository = FileRepository(
             fileCacheManager = mockCache,
+            scope = this,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
 
-        fileRepository.prefetch(listOf(url)).join()
+        fileRepository.prefetch(listOf(url))
+
+        advanceUntilIdle()
+
+        fileRepository.store.deferred.values.awaitAll()
 
         assertThat(factory.createdConnections.size).isEqualTo(1)
         assertThat(factory.createdConnections.first()).isEqualTo(TEST_URL)

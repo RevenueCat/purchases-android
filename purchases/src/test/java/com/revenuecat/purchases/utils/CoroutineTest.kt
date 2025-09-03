@@ -33,10 +33,11 @@ abstract class CoroutineTest {
 }
 
 /**
- * Sets up a test so that it uses a [TestCoroutineDispatcher]. This allows the tests to be run synchronously and
+ * Sets up a test so that it uses a [UnconfinedTestDispatcher]. This allows the tests to be run synchronously and
  * deterministically.
  */
 class CoroutineTestRule : TestWatcher() {
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val dispatcher = UnconfinedTestDispatcher()
 

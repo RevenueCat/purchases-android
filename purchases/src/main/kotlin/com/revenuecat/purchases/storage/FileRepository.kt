@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.storage
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.verboseLog
@@ -9,8 +10,7 @@ import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -32,7 +32,7 @@ internal interface FileRepositoryType {
      * @param urls An array of URL to fetch data from.
      * @return The Job that is executing the prefetch
      */
-    fun prefetch(urls: List<URL>): Job
+    fun prefetch(urls: List<URL>)
 
     /**
      * Create and/or get the cached file url.
@@ -52,8 +52,10 @@ internal interface LargeItemCacheType {
 }
 
 internal class FileRepository(
+    @get:VisibleForTesting
+    internal val store: KeyedDeferredValueStore<URL, URI> = KeyedDeferredValueStore<URL, URI>(),
     private val fileCacheManager: LargeItemCacheType,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + NonCancellable),
     private val logHandler: LogHandler = currentLogHandler,
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
 ) : FileRepositoryType {
@@ -65,14 +67,14 @@ internal class FileRepository(
         fileCacheManager = FileCache(context),
     )
 
-    private val store = KeyedDeferredValueStore<URL, URI>()
-
-    override fun prefetch(urls: List<URL>) = scope.launch {
-        urls.forEach { url ->
-            try {
-                generateOrGetCachedFileURL(url)
-            } catch (e: IOException) {
-                logHandler.e("FileRepository", "Prefetch failed for $url: $e", e)
+    override fun prefetch(urls: List<URL>) {
+        scope.launch {
+            urls.forEach { url ->
+                try {
+                    generateOrGetCachedFileURL(url)
+                } catch (e: IOException) {
+                    logHandler.e("FileRepository", "Prefetch failed for $url: $e", e)
+                }
             }
         }
     }
