@@ -104,18 +104,14 @@ internal class FileRepository(
         return try {
             withContext(Dispatchers.IO) {
                 verboseLog { "Downloading remote font from $url" }
-                var connection: UrlConnection? = null
-                try {
-                    connection = urlConnectionFactory.createConnection(url.toString())
 
-                    if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                        throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
-                    }
+                val connection = urlConnectionFactory.createConnection(url.toString())
 
-                    return@withContext connection.inputStream
-                } finally {
-                    connection?.disconnect()
+                if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                    throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
                 }
+
+                return@withContext connection.inputStream
             }
         } catch (e: IOException) {
             val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
