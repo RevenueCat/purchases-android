@@ -476,6 +476,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     return "test-storefront"
                 }
             },
+            localeProvider = DefaultLocaleProvider(),
         )
     }
 
