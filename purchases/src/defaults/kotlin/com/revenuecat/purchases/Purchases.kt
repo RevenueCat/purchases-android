@@ -856,10 +856,9 @@ class Purchases internal constructor(
      * a background refetch to get paywall templates with the correct localizations.
      *
      * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
-     * @return true if cache was cleared and refetch triggered, false if locale unchanged or cache clear rate limited
      */
-    fun overridePreferredUILocale(localeString: String?): Boolean {
-        return purchasesOrchestrator.overridePreferredUILocale(localeString)
+    fun overridePreferredUILocale(localeString: String?) {
+        purchasesOrchestrator.overridePreferredUILocale(localeString)
     }
 
     /**

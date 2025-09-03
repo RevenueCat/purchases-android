@@ -126,19 +126,13 @@ internal class PaywallViewModelImpl(
     override fun refreshStateIfLocaleChanged() {
         val currentLocaleList = getCurrentLocaleList()
         if (_lastLocaleList.value != currentLocaleList) {
-            Logger.d(
-                "PaywallViewModel locale changed from ${_lastLocaleList.value.toLanguageTags()} " +
-                    "to ${currentLocaleList.toLanguageTags()}",
-            )
             _lastLocaleList.value = currentLocaleList
 
             // If we have a Components paywall state, update its locale instead of recreating the entire state
             val currentState = _state.value
             if (currentState is PaywallState.Loaded.Components) {
-                Logger.d("PaywallViewModel updating Components state locale to: ${currentLocaleList.toLanguageTags()}")
                 currentState.update(localeList = currentLocaleList.toFrameworkLocaleList())
             } else {
-                Logger.d("PaywallViewModel recreating entire state for locale change")
                 updateState()
             }
         }
@@ -415,16 +409,11 @@ internal class PaywallViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        val preferredLocale = purchases.preferredUILocaleOverride
-        Logger.d("PaywallViewModel getCurrentLocaleList: preferredLocale = $preferredLocale")
-        if (preferredLocale == null) {
-            return LocaleListCompat.getDefault()
-        }
+        val preferredLocale = purchases.preferredUILocaleOverride ?: return LocaleListCompat.getDefault()
 
         return try {
             val locale = createLocaleFromString(preferredLocale)
             val localeList = LocaleListCompat.create(locale)
-            Logger.d("PaywallViewModel created locale list: ${localeList.toLanguageTags()}")
             localeList
         } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
             Logger.w("Invalid preferred locale format: $preferredLocale. Using system default.")

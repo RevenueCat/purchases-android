@@ -1,5 +1,8 @@
 package com.revenuecat.paywallstester.ui.screens.main.locale
 
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -169,29 +172,20 @@ fun LocaleScreen(
 
         Button(
             onClick = {
-                val cacheCleared = Purchases.sharedInstance.overridePreferredUILocale(selectedLocale)
-
-                if (cacheCleared) {
-                    statusMessage = "Locale updated and cache refreshed"
-                    isError = false
-                } else {
-                    // Locale was still updated, but cache clearing was rate limited
-                    statusMessage = "Locale updated. Cache refresh rate limited - will use cached data."
-                    isError = true
-                }
+                Purchases.sharedInstance.overridePreferredUILocale(selectedLocale)
 
                 // Hide message after 4 seconds
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                Handler(Looper.getMainLooper()).postDelayed({
                     statusMessage = null
                 }, MESSAGE_HIDE_DELAY)
 
                 // Log for debugging
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                Handler(Looper.getMainLooper()).postDelayed({
                     val currentOverride = Purchases.sharedInstance.preferredUILocaleOverride
-                    android.util.Log.d(
+                    Log.d(
                         "LocaleScreen",
                         "Applied locale override: $selectedLocale, " +
-                            "current value: $currentOverride, cache cleared: $cacheCleared",
+                            "current value: $currentOverride",
                     )
                 }, LOG_DELAY)
             },
