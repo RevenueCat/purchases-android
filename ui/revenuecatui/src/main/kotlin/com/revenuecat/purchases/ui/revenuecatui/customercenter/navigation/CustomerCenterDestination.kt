@@ -37,4 +37,6 @@ internal sealed class CustomerCenterDestination {
         val purchaseInformation: PurchaseInformation,
         override val title: String,
     ) : CustomerCenterDestination()
+
+    data class VirtualCurrencyBalances(override val title: String?): CustomerCenterDestination()
 }

@@ -62,7 +62,6 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -122,6 +121,8 @@ internal interface CustomerCenterViewModel {
     fun trackImpressionIfNeeded()
 
     fun showPaywall(context: Context)
+
+    fun showVirtualCurrencyBalances()
 }
 
 @Stable
@@ -276,6 +277,27 @@ internal class CustomerCenterViewModelImpl(
 
     override fun onCustomActionSelected(customActionData: CustomActionData) {
         notifyListenersForCustomActionSelected(customActionData)
+    }
+
+    override fun showVirtualCurrencyBalances() {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+        if (state.customerCenterConfigData.support.displayVirtualCurrencies != true) { return }
+
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val virtualCurrencyBalancesDestination = CustomerCenterDestination.VirtualCurrencyBalances(
+                    title = null
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(virtualCurrencyBalancesDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
     }
 
     private fun handleCancelPath(context: Context, purchaseInformation: PurchaseInformation? = null) {

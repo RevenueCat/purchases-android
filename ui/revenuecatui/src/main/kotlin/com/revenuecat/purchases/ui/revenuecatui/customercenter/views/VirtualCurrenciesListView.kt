@@ -27,7 +27,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
@@ -183,7 +182,7 @@ private fun ShowAllVirtualCurrenciesRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onAction(CustomerCenterAction.ShowAllVirtualCurrencies) }
+                .clickable { onAction(CustomerCenterAction.ShowVirtualCurrencyBalances) }
                 .padding(
                     horizontal = CustomerCenterConstants.Card.CARD_PADDING,
                     vertical = 12.dp
