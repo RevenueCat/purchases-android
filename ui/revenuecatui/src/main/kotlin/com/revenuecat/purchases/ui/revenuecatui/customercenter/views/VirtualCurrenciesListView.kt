@@ -106,7 +106,7 @@ internal fun VirtualCurrenciesListView(
 }
 
 @Composable
-private fun VirtualCurrencyRow(
+internal fun VirtualCurrencyRow(
     virtualCurrencyName: String,
     virtualCurrencyCode: String,
     balance: Int,

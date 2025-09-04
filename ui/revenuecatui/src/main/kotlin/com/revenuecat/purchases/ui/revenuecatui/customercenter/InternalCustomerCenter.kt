@@ -59,6 +59,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUse
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -144,6 +145,7 @@ internal fun InternalCustomerCenter(
                 }
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
                 is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
+                is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
             }
         },
     )
@@ -428,6 +430,10 @@ private fun CustomerCenterNavHost(
                     supportedPaths = customerCenterState.detailScreenPaths,
                     onAction = onAction,
                 )
+            }
+
+            is CustomerCenterDestination.VirtualCurrencyBalances -> {
+                VirtualCurrencyBalancesScreen()
             }
         }
     }
