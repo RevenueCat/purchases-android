@@ -468,6 +468,7 @@ private fun MainScreenContent(
             RelevantPurchasesListView(
                 supportedPaths = state.mainScreenPaths,
                 contactEmail = configuration.support.email,
+                virtualCurrencies = state.virtualCurrencies,
                 localization = configuration.localization,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases
