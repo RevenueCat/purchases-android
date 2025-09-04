@@ -105,6 +105,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                 ),
                                 tabs = listOf(
                                     TabsComponent.Tab(
+                                        id = "tab-0",
                                         stack = StackComponent(
                                             components = listOf(
                                                 TabControlComponent,
@@ -155,6 +156,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                         ),
                                     ),
                                     TabsComponent.Tab(
+                                        id = "tab-1",
                                         stack = StackComponent(
                                             components = listOf(
                                                 TabControlComponent,
