@@ -433,7 +433,7 @@ private fun CustomerCenterNavHost(
             }
 
             is CustomerCenterDestination.VirtualCurrencyBalances -> {
-                VirtualCurrencyBalancesScreen()
+                VirtualCurrencyBalancesScreen(localization = customerCenterState.customerCenterConfigData.localization)
             }
         }
     }
