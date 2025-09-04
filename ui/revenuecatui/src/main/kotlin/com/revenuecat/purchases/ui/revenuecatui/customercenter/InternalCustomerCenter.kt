@@ -433,7 +433,10 @@ private fun CustomerCenterNavHost(
             }
 
             is CustomerCenterDestination.VirtualCurrencyBalances -> {
-                VirtualCurrencyBalancesScreen(localization = customerCenterState.customerCenterConfigData.localization)
+                VirtualCurrencyBalancesScreen(
+                    appearance = customerCenterState.customerCenterConfigData.appearance,
+                    localization = customerCenterState.customerCenterConfigData.localization
+                )
             }
         }
     }
@@ -484,6 +487,7 @@ private fun MainScreenContent(
             NoActiveUserManagementView(
                 screen = noActiveScreen,
                 contactEmail = configuration.support.email,
+                appearance = configuration.appearance,
                 localization = configuration.localization,
                 offering = (state as? CustomerCenterState.Success)?.noActiveScreenOffering,
                 virtualCurrencies = (state as? CustomerCenterState.Success)?.virtualCurrencies,

@@ -5,6 +5,7 @@ import android.content.res.Resources
 import android.icu.number.NumberFormatter
 import android.os.Build
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
@@ -37,6 +39,7 @@ private const val MAX_NUMBER_OF_ROWS = 4
 @Composable
 internal fun VirtualCurrenciesListView(
     virtualCurrencies: VirtualCurrencies,
+    appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -87,6 +90,7 @@ internal fun VirtualCurrenciesListView(
             }
 
             VirtualCurrencyRow(
+                appearance = appearance,
                 virtualCurrencyName = currency.name,
                 virtualCurrencyCode = currency.code,
                 balance = currency.balance,
@@ -107,6 +111,7 @@ internal fun VirtualCurrenciesListView(
 
 @Composable
 internal fun VirtualCurrencyRow(
+    appearance: CustomerCenterConfigData.Appearance,
     virtualCurrencyName: String,
     virtualCurrencyCode: String,
     balance: Int,
@@ -139,6 +144,9 @@ internal fun VirtualCurrencyRow(
         ButtonPosition.MIDDLE -> RoundedCornerShape(CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE)
     }
 
+    val isDark = isSystemInDarkTheme()
+    val textColor = appearance.getColorForTheme(isDark) { it.textColor } ?: MaterialTheme.colorScheme.onSurface
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = shape,
@@ -156,9 +164,13 @@ internal fun VirtualCurrencyRow(
                 text = "$virtualCurrencyName ($virtualCurrencyCode)",
                 textAlign = TextAlign.Start,
                 maxLines = 2,
+                color = textColor
             )
 
-            Text(text = formatBalance(balance))
+            Text(
+                text = formatBalance(balance),
+                color = textColor
+            )
         }
     }
 }
@@ -222,6 +234,7 @@ private fun VirtualCurrenciesListView_4_VCs_Preview() {
     CustomerCenterPreviewTheme {
         VirtualCurrenciesListView(
             virtualCurrencies = CustomerCenterConfigTestData.fourVirtualCurrencies,
+            appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = testData.localization,
             onAction = {},
         )
@@ -244,6 +257,7 @@ private fun VirtualCurrenciesListView_5_VCs_Preview() {
     CustomerCenterPreviewTheme {
         VirtualCurrenciesListView(
             virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
+            appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = testData.localization,
             onAction = {},
         )

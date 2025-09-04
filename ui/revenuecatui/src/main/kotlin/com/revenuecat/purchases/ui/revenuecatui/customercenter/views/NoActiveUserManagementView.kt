@@ -41,6 +41,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 internal fun NoActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
     contactEmail: String?,
+    appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
@@ -74,6 +75,7 @@ internal fun NoActiveUserManagementView(
         virtualCurrencies?.let {
             VirtualCurrenciesListView(
                 virtualCurrencies = virtualCurrencies,
+                appearance = appearance,
                 localization = localization,
                 onAction = onAction,
                 modifier = Modifier.padding(
@@ -155,6 +157,7 @@ private fun NoActiveUserManagementView_Preview() {
             NoActiveUserManagementView(
                 screen = noActiveScreen,
                 contactEmail = "support@example.com",
+                appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
                 offering = null, // No offering in preview
                 onAction = { },
@@ -185,6 +188,7 @@ private fun NoActiveUserManagementView_WithVCs_Preview() {
             NoActiveUserManagementView(
                 screen = noActiveScreen,
                 contactEmail = "support@example.com",
+                appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
                 offering = null, // No offering in preview
                 virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,

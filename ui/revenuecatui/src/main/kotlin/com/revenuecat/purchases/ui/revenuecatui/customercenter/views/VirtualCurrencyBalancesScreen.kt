@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.VirtualCurrencyBalancesScreenViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.VirtualCurrencyBalancesScreenViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
@@ -37,10 +39,14 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 @Composable
 @Suppress("LongParameterList", "LongMethod")
 internal fun VirtualCurrencyBalancesScreen(
+    appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     viewModel: VirtualCurrencyBalancesScreenViewModel = getVirtualCurrencyBalancesScreenViewModel(),
 ) {
+    val isDark = isSystemInDarkTheme()
+    val textColor = appearance.getColorForTheme(isDark) { it.textColor }
+
     val viewState by viewModel.viewState.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -69,6 +75,7 @@ internal fun VirtualCurrencyBalancesScreen(
                                     .VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
                             ),
                             style = MaterialTheme.typography.headlineSmall,
+                            color = textColor ?: MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.padding(bottom = 16.dp),
                         )
                     }
@@ -85,6 +92,7 @@ internal fun VirtualCurrencyBalancesScreen(
                         }
 
                         VirtualCurrencyRow(
+                            appearance = appearance,
                             virtualCurrencyName = virtualCurrency.name,
                             virtualCurrencyCode = virtualCurrency.code,
                             balance = virtualCurrency.balance,
