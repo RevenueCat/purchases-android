@@ -149,15 +149,19 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
 
     @InternalRevenueCatAPI
     fun setOfferingIdAndPresentedOfferingContext(
-        offeringId: String,
-        presentedOfferingContext: PresentedOfferingContext,
+        offeringId: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
     ) {
-        paywallOptions = paywallOptions.copy(
-            offeringSelection = OfferingSelection.IdAndPresentedOfferingContext(
-                offeringId = offeringId,
-                presentedOfferingContext = presentedOfferingContext,
-            ),
-        )
+        if (offeringId == null) {
+            paywallOptions = paywallOptions.copy(offeringSelection = OfferingSelection.None)
+        } else {
+            paywallOptions = paywallOptions.copy(
+                offeringSelection = OfferingSelection.IdAndPresentedOfferingContext(
+                    offeringId = offeringId,
+                    presentedOfferingContext = presentedOfferingContext,
+                ),
+            )
+        }
     }
 
     /**
