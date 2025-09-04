@@ -284,11 +284,10 @@ internal class CustomerCenterViewModelImpl(
         if (state !is CustomerCenterState.Success) return
         if (state.customerCenterConfigData.support.displayVirtualCurrencies != true) { return }
 
-
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
                 val virtualCurrencyBalancesDestination = CustomerCenterDestination.VirtualCurrencyBalances(
-                    title = null
+                    title = null,
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(virtualCurrencyBalancesDestination),
@@ -828,7 +827,6 @@ internal class CustomerCenterViewModelImpl(
                 null
             }
 
-
             // Resolve NO_ACTIVE screen offering if it exists
             val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
                 try {
@@ -844,7 +842,7 @@ internal class CustomerCenterViewModelImpl(
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
-                virtualCurrencies = virtualCurrencies
+                virtualCurrencies = virtualCurrencies,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 

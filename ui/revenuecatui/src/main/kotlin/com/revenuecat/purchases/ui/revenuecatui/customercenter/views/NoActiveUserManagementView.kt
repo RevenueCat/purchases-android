@@ -165,11 +165,11 @@ private fun NoActiveUserManagementView_Preview() {
 
 @Preview(
     name = "No Active Screen w/ Virtual Currencies (Light Mode)",
-    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL,
 )
 @Preview(
     name = "No Active Screen w/ Virtual Currencies (Dark Mode)",
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
 )
 @Composable
 private fun NoActiveUserManagementView_WithVCs_Preview() {

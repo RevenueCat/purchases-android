@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -52,7 +52,7 @@ internal fun VirtualCurrenciesListView(
     val displayedCurrencies = if (sortedCurrencies.size <= MAX_NUMBER_OF_ROWS) {
         sortedCurrencies
     } else {
-        sortedCurrencies.take(3)
+        sortedCurrencies.take(MAX_NUMBER_OF_ROWS - 1)
     }
 
     val displayShowAllButton = sortedCurrencies.size > MAX_NUMBER_OF_ROWS
@@ -60,11 +60,11 @@ internal fun VirtualCurrenciesListView(
     Column(
         modifier = modifier
             .fillMaxWidth(),
-        horizontalAlignment = Alignment.Start
+        horizontalAlignment = Alignment.Start,
     ) {
         Text(
             text = localization.commonLocalizedString(
-                CustomerCenterConfigData.Localization.CommonLocalizedString.VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER
+                CustomerCenterConfigData.Localization.CommonLocalizedString.VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
             ),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
@@ -90,13 +90,13 @@ internal fun VirtualCurrenciesListView(
                 virtualCurrencyName = currency.name,
                 virtualCurrencyCode = currency.code,
                 balance = currency.balance,
-                position = position
+                position = position,
             )
         }
 
         if (displayShowAllButton) {
             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
-            
+
             ShowAllVirtualCurrenciesRow(
                 localization = localization,
                 onAction = onAction,
@@ -147,15 +147,15 @@ internal fun VirtualCurrencyRow(
         Row(
             modifier = Modifier.padding(
                 horizontal = CustomerCenterConstants.Card.CARD_PADDING,
-                vertical = 12.dp
+                vertical = 12.dp,
             ),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "$virtualCurrencyName ($virtualCurrencyCode)",
                 textAlign = TextAlign.Start,
-                maxLines = 2
+                maxLines = 2,
             )
 
             Text(text = formatBalance(balance))
@@ -185,22 +185,22 @@ private fun ShowAllVirtualCurrenciesRow(
                 .clickable { onAction(CustomerCenterAction.ShowVirtualCurrencyBalances) }
                 .padding(
                     horizontal = CustomerCenterConstants.Card.CARD_PADDING,
-                    vertical = 12.dp
+                    vertical = 12.dp,
                 ),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.SEE_ALL_VIRTUAL_CURRENCIES
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SEE_ALL_VIRTUAL_CURRENCIES,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
         }
     }
@@ -209,11 +209,11 @@ private fun ShowAllVirtualCurrenciesRow(
 @Preview(
     name = "4 VCs, Light Mode",
     showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL,
 )
 @Preview(
     name = "4 VCs, Dark Mode",
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
 )
 @Composable
 private fun VirtualCurrenciesListView_4_VCs_Preview() {
@@ -223,7 +223,7 @@ private fun VirtualCurrenciesListView_4_VCs_Preview() {
         VirtualCurrenciesListView(
             virtualCurrencies = CustomerCenterConfigTestData.fourVirtualCurrencies,
             localization = testData.localization,
-            onAction = {}
+            onAction = {},
         )
     }
 }
@@ -231,21 +231,21 @@ private fun VirtualCurrenciesListView_4_VCs_Preview() {
 @Preview(
     name = "5 VCs, Light Mode",
     showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL,
 )
 @Preview(
     name = "5 VCs, Dark Mode",
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
 )
 @Composable
 private fun VirtualCurrenciesListView_5_VCs_Preview() {
     val testData = CustomerCenterConfigTestData.customerCenterData()
-    
+
     CustomerCenterPreviewTheme {
         VirtualCurrenciesListView(
             virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
             localization = testData.localization,
-            onAction = {}
+            onAction = {},
         )
     }
 }

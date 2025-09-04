@@ -27,26 +27,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.VirtualCurrencyBalancesScreenViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.VirtualCurrencyBalancesScreenViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
-sealed interface VirtualCurrencyBalancesScreenViewState {
-    object Loading : VirtualCurrencyBalancesScreenViewState
-    data class Loaded(val virtualCurrencyBalanceData: List<VirtualCurrency>) : VirtualCurrencyBalancesScreenViewState
-    object Error : VirtualCurrencyBalancesScreenViewState
-}
-
 @JvmSynthetic
 @Composable
-@Suppress("LongParameterList", "LongMethod")  
+@Suppress("LongParameterList", "LongMethod")
 internal fun VirtualCurrencyBalancesScreen(
+    localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
-    localization: CustomerCenterConfigData.Localization = CustomerCenterConfigTestData.customerCenterData().localization,
-    viewModel: VirtualCurrencyBalancesScreenViewModel = getVirtualCurrencyBalancesScreenViewModel()
+    viewModel: VirtualCurrencyBalancesScreenViewModel = getVirtualCurrencyBalancesScreenViewModel(),
 ) {
     val viewState by viewModel.viewState.collectAsState()
 
@@ -57,7 +50,7 @@ internal fun VirtualCurrencyBalancesScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         when (viewState) {
             is VirtualCurrencyBalancesScreenViewState.Loading -> {
@@ -66,40 +59,42 @@ internal fun VirtualCurrencyBalancesScreen(
                 }
             }
             is VirtualCurrencyBalancesScreenViewState.Loaded -> {
-                val virtualCurrencyBalanceData = (viewState as VirtualCurrencyBalancesScreenViewState.Loaded).virtualCurrencyBalanceData
+                val virtualCurrencyBalanceData = (viewState as VirtualCurrencyBalancesScreenViewState.Loaded)
+                    .virtualCurrencyBalanceData
                 if (virtualCurrencyBalanceData.isNotEmpty()) {
                     item {
                         Text(
                             text = localization.commonLocalizedString(
-                                CustomerCenterConfigData.Localization.CommonLocalizedString.VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER
+                                CustomerCenterConfigData.Localization.CommonLocalizedString
+                                    .VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
                             ),
                             style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            modifier = Modifier.padding(bottom = 16.dp),
                         )
                     }
                     itemsIndexed(virtualCurrencyBalanceData) { index, virtualCurrency ->
                         if (index > 0) {
                             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
                         }
-                        
+
                         val position = when {
                             virtualCurrencyBalanceData.size == 1 -> ButtonPosition.SINGLE
                             index == 0 -> ButtonPosition.FIRST
                             index == virtualCurrencyBalanceData.size - 1 -> ButtonPosition.LAST
                             else -> ButtonPosition.MIDDLE
                         }
-                        
+
                         VirtualCurrencyRow(
                             virtualCurrencyName = virtualCurrency.name,
                             virtualCurrencyCode = virtualCurrency.code,
                             balance = virtualCurrency.balance,
-                            position = position
+                            position = position,
                         )
                     }
                 } else {
                     item {
                         EmptyStateView(
-                            localization = localization
+                            localization = localization,
                         )
                     }
                 }
@@ -115,13 +110,13 @@ internal fun VirtualCurrencyBalancesScreen(
 
 @Composable
 private fun LoadingView(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(32.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator()
     }
@@ -129,26 +124,26 @@ private fun LoadingView(
 
 @Composable
 private fun ErrorView(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Icon(
             imageVector = Icons.Default.Warning,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(48.dp),
         )
         Spacer(modifier = Modifier.size(16.dp))
         Text(
             text = "Error loading virtual currency balances",
             style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -156,30 +151,36 @@ private fun ErrorView(
 @Composable
 private fun EmptyStateView(
     localization: CustomerCenterConfigData.Localization,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Icon(
             imageVector = Icons.Default.Warning,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(48.dp),
         )
         Spacer(modifier = Modifier.size(16.dp))
         Text(
             text = localization.commonLocalizedString(
-                CustomerCenterConfigData.Localization.CommonLocalizedString.NO_VIRTUAL_CURRENCY_BALANCES_FOUND
+                CustomerCenterConfigData.Localization.CommonLocalizedString.NO_VIRTUAL_CURRENCY_BALANCES_FOUND,
             ),
             style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
+}
+
+internal sealed interface VirtualCurrencyBalancesScreenViewState {
+    object Loading : VirtualCurrencyBalancesScreenViewState
+    data class Loaded(val virtualCurrencyBalanceData: List<VirtualCurrency>) : VirtualCurrencyBalancesScreenViewState
+    object Error : VirtualCurrencyBalancesScreenViewState
 }
 
 @Composable
@@ -187,7 +188,7 @@ private fun getVirtualCurrencyBalancesScreenViewModel(
     purchases: PurchasesType = PurchasesImpl(),
     viewModel: VirtualCurrencyBalancesScreenViewModel = viewModel<VirtualCurrencyBalancesScreenViewModel>(
         factory = VirtualCurrencyBalancesScreenViewModelFactory(
-            purchases = purchases
+            purchases = purchases,
         ),
     ),
 ): VirtualCurrencyBalancesScreenViewModel {

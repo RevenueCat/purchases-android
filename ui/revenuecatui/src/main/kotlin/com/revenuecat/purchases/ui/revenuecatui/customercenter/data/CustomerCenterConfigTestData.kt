@@ -226,27 +226,27 @@ internal object CustomerCenterConfigTestData {
                 balance = 100,
                 name = "Gold",
                 code = "GLD",
-                serverDescription = "It's gold"
+                serverDescription = "It's gold",
             ),
             "SLV" to VirtualCurrency(
                 balance = 200,
                 name = "Silver",
                 code = "SLV",
-                serverDescription = "It's silver"
+                serverDescription = "It's silver",
             ),
             "BRNZ" to VirtualCurrency(
                 balance = 300,
                 name = "Bronze",
                 code = "BRNZ",
-                serverDescription = "It's bronze"
+                serverDescription = "It's bronze",
             ),
             "PLTNM" to VirtualCurrency(
                 balance = 400,
                 name = "Platinum",
                 code = "PLTNM",
-                serverDescription = "It's platinum"
-            )
-        )
+                serverDescription = "It's platinum",
+            ),
+        ),
     )
 
     val fiveVirtualCurrencies = VirtualCurrencies(
@@ -255,32 +255,32 @@ internal object CustomerCenterConfigTestData {
                 balance = 100,
                 name = "Gold",
                 code = "GLD",
-                serverDescription = "It's gold"
+                serverDescription = "It's gold",
             ),
             "SLV" to VirtualCurrency(
                 balance = 200,
                 name = "Silver",
                 code = "SLV",
-                serverDescription = "It's silver"
+                serverDescription = "It's silver",
             ),
             "BRNZ" to VirtualCurrency(
                 balance = 300,
                 name = "Bronze",
                 code = "BRNZ",
-                serverDescription = "It's bronze"
+                serverDescription = "It's bronze",
             ),
             "PLTNM" to VirtualCurrency(
                 balance = 400,
                 name = "Platinum",
                 code = "PLTNM",
-                serverDescription = "It's platinum"
+                serverDescription = "It's platinum",
             ),
             "RC_COIN" to VirtualCurrency(
                 balance = 1,
                 name = "RC Coin",
                 code = "RC_COIN",
-                serverDescription = "RevenueCat Coin"
+                serverDescription = "RevenueCat Coin",
             ),
-        )
+        ),
     )
 }
