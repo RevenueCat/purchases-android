@@ -1,20 +1,13 @@
 ## RevenueCat SDK
 ### ✨ New Features
-* Add option to disable automatic ID collection when setting attribution network IDs at configuration time (#2643) via Toni Rico (@tonidero)
-### 🐞 Bugfixes
-* Handle payment pending errors when restoring properly (#2635) via Toni Rico (@tonidero)
-
-## RevenueCatUI SDK
-### Paywallv2
-#### ✨ New Features
-* MON-1193 Support delayed close button (Component Transitions) (#2623) via Jacob Rakidzich (@JZDesign)
-#### 🐞 Bugfixes
-* Fix PaywallDialog going over screen size on Android 35+ (#2642) via Toni Rico (@tonidero)
-### Customer Center
-#### ✨ New Features
-* Add button_text to ScreenOffering (#2638) via Facundo Menzella (@facumenzella)
+* Add preferred UI locale override for RevenueCat UI components (#2620) via Josh Holtz (@joshdholtz)
 
 ### 🔄 Other Changes
-* Chore: Update detekt yml file (#2637) via Jacob Rakidzich (@JZDesign)
-* Update CHANGELOG for version 8.23.0 release (#2636) via Toni Rico (@tonidero)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2633) via RevenueCat Git Bot (@RCGitBot)
+* Improve thread safety of setting paywalls preferred locale (#2655) via Josh Holtz (@joshdholtz)
+* Remove validation for no packages on paywalls (#2653) via Josh Holtz (@joshdholtz)
+* Video Component Models (dark code) (#2646) via Jacob Rakidzich (@JZDesign)
+* [EXTERNAL] docs: fixed a typo on documentation about `Purchases.awaitPurchase` by @matteinn in #2593 (#2651) via Toni Rico (@tonidero)
+* Add warning with 9.x issues to all versions since 9.0.0 in CHANGELOG (#2650) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2647) via RevenueCat Git Bot (@RCGitBot)
+* Delete CLAUDE.md (#2648) via Cesar de la Vega (@vegaro)
+* MON-1193 flatten Transition JSON structure after chatting more thoroughly with team (#2641) via Jacob Rakidzich (@JZDesign)
