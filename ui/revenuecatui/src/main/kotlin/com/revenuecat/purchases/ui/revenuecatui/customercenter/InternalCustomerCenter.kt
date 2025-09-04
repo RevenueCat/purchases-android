@@ -480,6 +480,7 @@ private fun MainScreenContent(
                 contactEmail = configuration.support.email,
                 localization = configuration.localization,
                 offering = (state as? CustomerCenterState.Success)?.noActiveScreenOffering,
+                virtualCurrencies = (state as? CustomerCenterState.Success)?.virtualCurrencies,
                 onAction = onAction,
             )
         } ?: run {
