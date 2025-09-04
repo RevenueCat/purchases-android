@@ -22,14 +22,21 @@ internal class VirtualCurrencyBalancesScreenViewModel(
 
     fun onViewAppeared() {
         viewModelScope.launch {
-            _viewState.value = VirtualCurrencyBalancesScreenViewState.Loading
-            try {
-                val virtualCurrencies = purchases.awaitGetVirtualCurrencies()
-                val sortedCurrencies = virtualCurrencies.all.values.sortedByDescending { it.balance }
-                _viewState.value = VirtualCurrencyBalancesScreenViewState.Loaded(sortedCurrencies)
-            } catch (e: Exception) {
-                _viewState.value = VirtualCurrencyBalancesScreenViewState.Error
-            }
+            loadData()
+        }
+    }
+
+    private suspend fun loadData() {
+        _viewState.value = VirtualCurrencyBalancesScreenViewState.Loading
+
+        purchases.invalidateVirtualCurrenciesCache()
+        try {
+            val virtualCurrencies = purchases.awaitGetVirtualCurrencies()
+            val sortedVirtualCurrencies = virtualCurrencies.all.values.sortedByDescending { it.balance }
+
+            _viewState.value = VirtualCurrencyBalancesScreenViewState.Loaded(sortedVirtualCurrencies)
+        } catch (e: Exception) {
+            _viewState.value = VirtualCurrencyBalancesScreenViewState.Error
         }
     }
 }
