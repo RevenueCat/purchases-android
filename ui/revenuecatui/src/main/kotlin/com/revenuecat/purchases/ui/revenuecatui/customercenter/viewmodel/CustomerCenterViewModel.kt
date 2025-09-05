@@ -288,8 +288,9 @@ internal class CustomerCenterViewModelImpl(
             if (currentState is CustomerCenterState.Success) {
                 val virtualCurrencyBalancesDestination = CustomerCenterDestination.VirtualCurrencyBalances(
                     title = state.customerCenterConfigData.localization.commonLocalizedString(
-                        key = CustomerCenterConfigData.Localization.CommonLocalizedString.VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER
-                    )
+                        key = CustomerCenterConfigData.Localization.CommonLocalizedString
+                            .VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
+                    ),
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(virtualCurrencyBalancesDestination),
