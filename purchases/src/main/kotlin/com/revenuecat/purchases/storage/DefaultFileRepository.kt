@@ -47,7 +47,7 @@ internal interface FileRepository {
 internal interface LocalFileCache {
     fun generateLocalFilesystemURI(remoteURL: URL): URI?
     fun cachedContentExists(uri: URI): Boolean
-    fun saveData(data: InputStream, uri: URI)
+    fun saveData(data: ByteArray, uri: URI)
 }
 
 internal class DefaultFileRepository(
@@ -99,7 +99,7 @@ internal class DefaultFileRepository(
         }.await()
     }
 
-    private suspend fun downloadFile(url: URL): InputStream {
+    private suspend fun downloadFile(url: URL): ByteArray {
         return try {
             withContext(Dispatchers.IO) {
                 verboseLog { "Downloading remote font from $url" }
@@ -110,7 +110,12 @@ internal class DefaultFileRepository(
                     throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
                 }
 
-                return@withContext connection.inputStream
+                val bytes = connection.inputStream.use { inputStream ->
+                    inputStream.readBytes()
+                }
+
+                connection.disconnect()
+                return@withContext bytes
             }
         } catch (e: IOException) {
             val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
@@ -119,7 +124,7 @@ internal class DefaultFileRepository(
         }
     }
 
-    private fun saveCachedFile(uri: URI, data: InputStream) {
+    private fun saveCachedFile(uri: URI, data: ByteArray) {
         try {
             fileCacheManager.saveData(data, uri)
         } catch (e: IOException) {
@@ -176,22 +181,16 @@ private class DefaultFileCache(
     override fun cachedContentExists(uri: URI): Boolean =
         File(uri).exists()
 
-    override fun saveData(data: InputStream, uri: URI) =
-        writeStream(data, File(uri))
+    override fun saveData(data: ByteArray, uri: URI) =
+        writeBytes(data, File(uri))
 
     private fun md5Hex(bytes: ByteArray): String =
         md.digest(bytes).joinToString("") { "%02x".format(it) }
 
     @Throws(IOException::class)
-    private fun writeStream(input: InputStream, file: File) {
+    private fun writeBytes(data: ByteArray, file: File) {
         FileOutputStream(file).use { out ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            var bytesRead: Int
-            while (true) {
-                bytesRead = input.read(buffer)
-                if (bytesRead < 0) break
-                out.write(buffer, 0, bytesRead)
-            }
+            out.write(data)
         }
     }
 }
