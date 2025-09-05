@@ -73,17 +73,19 @@ internal fun NoActiveUserManagementView(
         }
 
         virtualCurrencies?.let {
-            VirtualCurrenciesListView(
-                virtualCurrencies = virtualCurrencies,
-                appearance = appearance,
-                localization = localization,
-                onAction = onAction,
-                modifier = Modifier.padding(
-                    top = ManagementViewHorizontalPadding,
-                    start = ManagementViewHorizontalPadding,
-                    end = ManagementViewHorizontalPadding,
-                ),
-            )
+            if (virtualCurrencies.all.isNotEmpty()) {
+                VirtualCurrenciesListView(
+                    virtualCurrencies = virtualCurrencies,
+                    appearance = appearance,
+                    localization = localization,
+                    onAction = onAction,
+                    modifier = Modifier.padding(
+                        top = ManagementViewHorizontalPadding,
+                        start = ManagementViewHorizontalPadding,
+                        end = ManagementViewHorizontalPadding,
+                    ),
+                )
+            }
         }
 
         ManageSubscriptionsButtonsView(
