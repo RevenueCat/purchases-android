@@ -158,7 +158,7 @@ private fun ErrorView(
         )
         Spacer(modifier = Modifier.size(16.dp))
         Text(
-            text = "Error loading virtual currency balances",
+            text = "Something went wrong while loading the in-app currencies.",
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
         )
