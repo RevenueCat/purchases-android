@@ -179,6 +179,7 @@ dependencies {
     androidTestImplementation(libs.mockk.agent)
 
     baselineProfile(project(":baselineprofile"))
+    testImplementation(kotlin("test"))
 }
 
 tasks.dokkaHtmlPartial.configure {
