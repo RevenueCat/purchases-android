@@ -142,7 +142,6 @@ class FileRepositoryTest : CoroutineTest() {
         val result = defaultFileRepository.generateOrGetCachedFileURL(url)
         assertThat(result).isEqualTo(cacheUri)
         verify(exactly = 1) { mockCache.saveData(any(), cacheUri) }
-
     }
 
     @Test
