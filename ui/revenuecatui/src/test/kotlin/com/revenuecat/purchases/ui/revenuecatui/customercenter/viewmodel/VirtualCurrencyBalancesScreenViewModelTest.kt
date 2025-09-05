@@ -69,7 +69,7 @@ class VirtualCurrencyBalancesScreenViewModelTest {
         val state = viewModel.viewState.value
         assertThat(state).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
         val loadedState = state as VirtualCurrencyBalancesScreenViewState.Loaded
-        assertThat(loadedState.virtualCurrencies.all).hasSize(4)
+        assertThat(loadedState.virtualCurrencyBalanceData).hasSize(4)
     }
 
     @Test
@@ -85,7 +85,7 @@ class VirtualCurrencyBalancesScreenViewModelTest {
         val state = viewModel.viewState.value
         assertThat(state).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
         val loadedState = state as VirtualCurrencyBalancesScreenViewState.Loaded
-        assertThat(loadedState.virtualCurrencies.all).isEmpty()
+        assertThat(loadedState.virtualCurrencyBalanceData).isEmpty()
     }
 
     @Test
@@ -97,6 +97,29 @@ class VirtualCurrencyBalancesScreenViewModelTest {
 
         coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
         assertThat(viewModel.viewState.value).isEqualTo(VirtualCurrencyBalancesScreenViewState.Error)
+    }
+
+    @Test
+    fun `virtual currencies are sorted by balance descending`() = runTest {
+        coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns CustomerCenterConfigTestData.fourVirtualCurrencies
+
+        viewModel.onViewAppeared()
+        advanceUntilIdle()
+
+        val state = viewModel.viewState.value
+        assertThat(state).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
+        val loadedState = state as VirtualCurrencyBalancesScreenViewState.Loaded
+        val data = loadedState.virtualCurrencyBalanceData
+
+        assertThat(data).hasSize(4)
+        assertThat(data[0].balance).isEqualTo(400)
+        assertThat(data[0].code).isEqualTo("PLTNM")
+        assertThat(data[1].balance).isEqualTo(300)
+        assertThat(data[1].code).isEqualTo("BRNZ")
+        assertThat(data[2].balance).isEqualTo(200)
+        assertThat(data[2].code).isEqualTo("SLV")
+        assertThat(data[3].balance).isEqualTo(100)
+        assertThat(data[3].code).isEqualTo("GLD")
     }
 
     @Test
