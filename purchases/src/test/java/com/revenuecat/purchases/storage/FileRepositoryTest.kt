@@ -43,17 +43,17 @@ class FileRepositoryTest : CoroutineTest() {
     fun `if content exists, network is not called`() = runTest {
         val factory = TestUrlConnectionFactory(emptyMap())
 
-        val mockCache = mockk<LargeItemCacheType>()
+        val mockCache = mockk<LocalFileCache>()
         every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns true
 
-        val fileRepository = FileRepository(
+        val defaultFileRepository = DefaultFileRepository(
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
 
-        val result = fileRepository.generateOrGetCachedFileURL(url)
+        val result = defaultFileRepository.generateOrGetCachedFileURL(url)
 
         assertThat(result).isEqualTo(cacheUri)
         assertThat(factory.createdConnections.size).isEqualTo(0)
@@ -62,24 +62,24 @@ class FileRepositoryTest : CoroutineTest() {
     @Test
     fun `prefetch invokes network and saves file`() = runTest {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to goodConnection))
-        val mockCache = mockk<LargeItemCacheType>()
+        val mockCache = mockk<LocalFileCache>()
 
         every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
         every { mockCache.saveData(any(), cacheUri) } just Runs
 
-        val fileRepository = FileRepository(
+        val defaultFileRepository = DefaultFileRepository(
             fileCacheManager = mockCache,
             scope = this,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
 
-        fileRepository.prefetch(listOf(url))
+        defaultFileRepository.prefetch(listOf(url))
 
         advanceUntilIdle()
 
-        fileRepository.store.deferred.values.awaitAll()
+        defaultFileRepository.store.deferred.values.awaitAll()
 
         assertThat(factory.createdConnections.size).isEqualTo(1)
         assertThat(factory.createdConnections.first()).isEqualTo(TEST_URL)
@@ -90,35 +90,35 @@ class FileRepositoryTest : CoroutineTest() {
     fun `when cacheUri cannot be assembled, throws exception`() = runTest {
         val factory = TestUrlConnectionFactory(emptyMap())
 
-        val mockCache = mockk<LargeItemCacheType>()
+        val mockCache = mockk<LocalFileCache>()
         every { mockCache.generateLocalFilesystemURI(url) } returns null
 
-        val fileRepository = FileRepository(
+        val defaultFileRepository = DefaultFileRepository(
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
 
-        assertThrows(FileRepository.Error.FailedToCreateCacheDirectory::class) {
-            fileRepository.generateOrGetCachedFileURL(url)
+        assertThrows(DefaultFileRepository.Error.FailedToCreateCacheDirectory::class) {
+            defaultFileRepository.generateOrGetCachedFileURL(url)
         }
     }
 
     @Test
     fun `when network fails, throws exception`() = runTest {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to badConnection))
-        val mockCache = mockk<LargeItemCacheType>()
+        val mockCache = mockk<LocalFileCache>()
         every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
 
-        val fileRepository = FileRepository(
+        val defaultFileRepository = DefaultFileRepository(
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
 
-        assertThrows(FileRepository.Error.FailedToFetchFileFromRemoteSource::class) {
-            fileRepository.generateOrGetCachedFileURL(url)
+        assertThrows(DefaultFileRepository.Error.FailedToFetchFileFromRemoteSource::class) {
+            defaultFileRepository.generateOrGetCachedFileURL(url)
         }
 
         assertThat(factory.createdConnections.size).isEqualTo(1)
@@ -128,18 +128,18 @@ class FileRepositoryTest : CoroutineTest() {
     @Test
     fun `when network succeeds, saves file, returns uri`() = runTest {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to goodConnection))
-        val mockCache = mockk<LargeItemCacheType>()
+        val mockCache = mockk<LocalFileCache>()
         every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
         every { mockCache.saveData(any(), cacheUri) } just Runs
 
-        val fileRepository = FileRepository(
+        val defaultFileRepository = DefaultFileRepository(
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
 
-        val result = fileRepository.generateOrGetCachedFileURL(url)
+        val result = defaultFileRepository.generateOrGetCachedFileURL(url)
         assertThat(result).isEqualTo(cacheUri)
         verify(exactly = 1) { mockCache.saveData(any(), cacheUri) }
 
@@ -148,21 +148,21 @@ class FileRepositoryTest : CoroutineTest() {
     @Test
     fun `when save fails, throws exception`() = runTest {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to goodConnection))
-        val mockCache = mockk<LargeItemCacheType>()
+        val mockCache = mockk<LocalFileCache>()
         every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
         every {
             mockCache.saveData(any(), cacheUri)
         } throws IOException("Failed to save data")
 
-        val fileRepository = FileRepository(
+        val defaultFileRepository = DefaultFileRepository(
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
 
-        assertThrows(FileRepository.Error.FailedToSaveCachedFile::class) {
-            fileRepository.generateOrGetCachedFileURL(url)
+        assertThrows(DefaultFileRepository.Error.FailedToSaveCachedFile::class) {
+            defaultFileRepository.generateOrGetCachedFileURL(url)
         }
 
         verify(exactly = 1) { mockCache.saveData(any(), cacheUri) }

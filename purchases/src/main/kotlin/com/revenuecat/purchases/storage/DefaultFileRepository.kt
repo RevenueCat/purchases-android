@@ -23,9 +23,9 @@ import java.net.URL
 import java.security.MessageDigest
 
 /**
- * A file cache.
+ * A file repository that handles downloading and caching files from remote URLs.
  */
-internal interface FileRepositoryType {
+internal interface FileRepository {
     /**
      * Prefetch files at the given urls.
      * @param urls An array of URL to fetch data from.
@@ -42,22 +42,22 @@ internal interface FileRepositoryType {
 }
 
 /**
- * The file manager is a service capable of storing data and returning the URL where that stored data exists.
+ * The file repository is a service capable of storing data and returning the URL where that stored data exists.
  */
-internal interface LargeItemCacheType {
+internal interface LocalFileCache {
     fun generateLocalFilesystemURI(remoteURL: URL): URI?
     fun cachedContentExists(uri: URI): Boolean
     fun saveData(data: InputStream, uri: URI)
 }
 
-internal class FileRepository(
+internal class DefaultFileRepository(
     @get:VisibleForTesting
     internal val store: KeyedDeferredValueStore<URL, URI> = KeyedDeferredValueStore<URL, URI>(),
-    private val fileCacheManager: LargeItemCacheType,
+    private val fileCacheManager: LocalFileCache,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + NonCancellable),
     private val logHandler: LogHandler = currentLogHandler,
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
-) : FileRepositoryType {
+) : FileRepository {
 
     // Convenience constructor for Android
     constructor(
@@ -152,7 +152,7 @@ internal class FileRepository(
 
 private class FileCache(
     private val context: Context,
-) : LargeItemCacheType {
+) : LocalFileCache {
 
     private val md: MessageDigest by lazy {
         MessageDigest.getInstance("MD5")
