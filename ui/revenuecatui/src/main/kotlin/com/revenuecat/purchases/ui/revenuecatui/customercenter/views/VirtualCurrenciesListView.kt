@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -118,13 +119,15 @@ internal fun VirtualCurrencyRow(
     position: ButtonPosition,
     modifier: Modifier = Modifier,
 ) {
-    fun formatBalance(number: Int) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        NumberFormatter.with()
-            .locale(Resources.getSystem().configuration.locales.get(0))
-            .format(number)
-            .toString()
-    } else {
-        number.toString()
+    val formattedBalance = remember(balance) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            NumberFormatter.with()
+                .locale(Resources.getSystem().configuration.locales.get(0))
+                .format(balance)
+                .toString()
+        } else {
+            balance.toString()
+        }
     }
 
     val shape = when (position) {
@@ -168,7 +171,7 @@ internal fun VirtualCurrencyRow(
             )
 
             Text(
-                text = formatBalance(balance),
+                text = formattedBalance,
                 color = textColor
             )
         }
