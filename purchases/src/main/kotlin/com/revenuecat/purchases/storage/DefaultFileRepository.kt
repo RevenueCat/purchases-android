@@ -51,7 +51,7 @@ internal interface LocalFileCache {
 }
 
 internal class DefaultFileRepository(
-    @get:VisibleForTesting
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val store: KeyedDeferredValueStore<URL, URI> = KeyedDeferredValueStore<URL, URI>(),
     private val fileCacheManager: LocalFileCache,
     private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO + NonCancellable),
