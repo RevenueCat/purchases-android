@@ -84,7 +84,7 @@ private fun InternalVirtualCurrencyBalancesScreen(
         when (viewState) {
             is VirtualCurrencyBalancesScreenViewState.Loading -> {
                 item {
-                    LoadingView()
+                    CustomerCenterLoadingView()
                 }
             }
             is VirtualCurrencyBalancesScreenViewState.Loaded -> {
@@ -136,20 +136,6 @@ private fun InternalVirtualCurrencyBalancesScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun LoadingView(
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator()
     }
 }
 

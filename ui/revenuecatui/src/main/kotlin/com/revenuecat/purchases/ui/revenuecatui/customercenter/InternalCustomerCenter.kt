@@ -54,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterLoadingView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
@@ -178,7 +179,7 @@ private fun InternalCustomerCenter(
                 }
 
                 is CustomerCenterState.Loading -> {
-                    CustomerCenterLoading()
+                    CustomerCenterLoadingView()
                 }
 
                 is CustomerCenterState.Error -> {
@@ -350,12 +351,6 @@ private fun CustomerCenterNavigationIcon(
             contentDescription = null,
         )
     }
-}
-
-@Composable
-private fun CustomerCenterLoading() {
-    // CustomerCenter WIP: Add proper loading UI
-    Text("Loading...")
 }
 
 @Composable
