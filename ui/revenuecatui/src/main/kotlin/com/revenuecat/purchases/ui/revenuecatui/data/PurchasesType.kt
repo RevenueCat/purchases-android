@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetProducts
@@ -39,6 +40,7 @@ internal interface PurchasesType {
 
     suspend fun awaitGetProduct(productId: String, basePlan: String?): StoreProduct?
 
+    @Throws(PurchasesException::class)
     suspend fun awaitGetVirtualCurrencies(): VirtualCurrencies
 
     fun invalidateVirtualCurrenciesCache()
@@ -88,6 +90,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         }
     }
 
+    @Throws(PurchasesException::class)
     override suspend fun awaitGetVirtualCurrencies(): VirtualCurrencies {
         return purchases.awaitGetVirtualCurrencies()
     }

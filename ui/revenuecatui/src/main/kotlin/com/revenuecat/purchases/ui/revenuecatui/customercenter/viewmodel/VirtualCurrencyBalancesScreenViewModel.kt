@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreenViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -36,8 +37,8 @@ internal class VirtualCurrencyBalancesScreenViewModel(
             val sortedVirtualCurrencies = virtualCurrencies.all.values.sortedByDescending { it.balance }
 
             _viewState.value = VirtualCurrencyBalancesScreenViewState.Loaded(sortedVirtualCurrencies)
-        } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") e: Exception) {
-            _viewState.value = VirtualCurrencyBalancesScreenViewState.Error
+        } catch (@Suppress("SwallowedException") e: PurchasesException) {
+            _viewState.value = VirtualCurrencyBalancesScreenViewState.Error(error = e.error)
         }
     }
 }

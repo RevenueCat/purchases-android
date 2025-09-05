@@ -1,11 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
-import android.content.res.Configuration
-import android.graphics.Color
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,9 +25,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.VirtualCurrencyBalancesScreenViewModel
@@ -88,8 +86,7 @@ private fun InternalVirtualCurrencyBalancesScreen(
                 }
             }
             is VirtualCurrencyBalancesScreenViewState.Loaded -> {
-                val virtualCurrencyBalanceData = (viewState as VirtualCurrencyBalancesScreenViewState.Loaded)
-                    .virtualCurrencyBalanceData
+                val virtualCurrencyBalanceData = viewState.virtualCurrencyBalanceData
                 if (virtualCurrencyBalanceData.isNotEmpty()) {
                     item {
                         Text(
@@ -139,36 +136,10 @@ private fun InternalVirtualCurrencyBalancesScreen(
             }
             is VirtualCurrencyBalancesScreenViewState.Error -> {
                 item {
-                    ErrorView()
+                    CustomerCenterErrorView(CustomerCenterState.Error(viewState.error))
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ErrorView(
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.Warning,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(48.dp),
-        )
-        Spacer(modifier = Modifier.size(16.dp))
-        Text(
-            text = "Something went wrong while loading the in-app currencies.",
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-        )
     }
 }
 
@@ -204,7 +175,7 @@ private fun EmptyStateView(
 internal sealed interface VirtualCurrencyBalancesScreenViewState {
     object Loading : VirtualCurrencyBalancesScreenViewState
     data class Loaded(val virtualCurrencyBalanceData: List<VirtualCurrency>) : VirtualCurrencyBalancesScreenViewState
-    object Error : VirtualCurrencyBalancesScreenViewState
+    data class Error(val error: PurchasesError) : VirtualCurrencyBalancesScreenViewState
 }
 
 @Composable
@@ -293,7 +264,12 @@ internal fun VirtualCurrencyBalancesScreenErrorPreview() {
         InternalVirtualCurrencyBalancesScreen(
             appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = CustomerCenterConfigTestData.customerCenterData().localization,
-            viewState = VirtualCurrencyBalancesScreenViewState.Error
+            viewState = VirtualCurrencyBalancesScreenViewState.Error(
+                error = PurchasesError(
+                    code = PurchasesErrorCode.UnknownError,
+                    underlyingErrorMessage = "Mock error"
+                )
+            )
         )
     }
 }

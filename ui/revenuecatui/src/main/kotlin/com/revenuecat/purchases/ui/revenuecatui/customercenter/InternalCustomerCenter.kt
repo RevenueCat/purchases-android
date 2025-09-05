@@ -54,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterErrorView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterLoadingView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
@@ -183,7 +184,7 @@ private fun InternalCustomerCenter(
                 }
 
                 is CustomerCenterState.Error -> {
-                    CustomerCenterError(state)
+                    CustomerCenterErrorView(state)
                 }
 
                 is CustomerCenterState.Success -> {
@@ -351,12 +352,6 @@ private fun CustomerCenterNavigationIcon(
             contentDescription = null,
         )
     }
-}
-
-@Composable
-private fun CustomerCenterError(state: CustomerCenterState.Error) {
-    // CustomerCenter WIP: Add proper error UI
-    Text("Error: ${state.error}")
 }
 
 @Composable
