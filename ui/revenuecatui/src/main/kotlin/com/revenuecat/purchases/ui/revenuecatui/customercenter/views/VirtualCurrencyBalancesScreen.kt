@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import android.content.res.Configuration
+import android.graphics.Color
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,11 +27,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.VirtualCurrencyBalancesScreenViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.VirtualCurrencyBalancesScreenViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
@@ -44,19 +50,36 @@ internal fun VirtualCurrencyBalancesScreen(
     modifier: Modifier = Modifier,
     viewModel: VirtualCurrencyBalancesScreenViewModel = getVirtualCurrencyBalancesScreenViewModel(),
 ) {
-    val isDark = isSystemInDarkTheme()
-    val textColor = appearance.getColorForTheme(isDark) { it.textColor }
-
     val viewState by viewModel.viewState.collectAsState()
-
     LaunchedEffect(Unit) {
         viewModel.onViewAppeared()
     }
 
+    InternalVirtualCurrencyBalancesScreen(
+        appearance = appearance,
+        localization = localization,
+        viewState = viewState,
+        modifier = modifier,
+    )
+}
+
+@JvmSynthetic
+@Composable
+@Suppress("LongParameterList", "LongMethod")
+private fun InternalVirtualCurrencyBalancesScreen(
+    appearance: CustomerCenterConfigData.Appearance,
+    localization: CustomerCenterConfigData.Localization,
+    viewState: VirtualCurrencyBalancesScreenViewState,
+    modifier: Modifier = Modifier,
+) {
+
+    val isDark = isSystemInDarkTheme()
+    val textColor = appearance.getColorForTheme(isDark) { it.textColor }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
     ) {
         when (viewState) {
             is VirtualCurrencyBalancesScreenViewState.Loading -> {
@@ -201,4 +224,83 @@ private fun getVirtualCurrencyBalancesScreenViewModel(
     ),
 ): VirtualCurrencyBalancesScreenViewModel {
     return viewModel
+}
+
+@Preview(
+    name = "Loaded with 0 VC Balances",
+    showBackground = true
+)
+@Composable
+internal fun VirtualCurrencyBalancesScreenLoaded0VCsPreview() {
+    CustomerCenterPreviewTheme {
+        InternalVirtualCurrencyBalancesScreen(
+            appearance = CustomerCenterConfigTestData.standardAppearance,
+            localization = CustomerCenterConfigTestData.customerCenterData().localization,
+            viewState = VirtualCurrencyBalancesScreenViewState.Loaded(emptyList())
+        )
+    }
+}
+
+@Preview(
+    name = "Loaded with 4 VC Balances",
+    showBackground = true
+)
+@Composable
+internal fun VirtualCurrencyBalancesScreenLoaded4VCsPreview() {
+    CustomerCenterPreviewTheme {
+        InternalVirtualCurrencyBalancesScreen(
+            appearance = CustomerCenterConfigTestData.standardAppearance,
+            localization = CustomerCenterConfigTestData.customerCenterData().localization,
+            viewState = VirtualCurrencyBalancesScreenViewState.Loaded(
+                CustomerCenterConfigTestData.fourVirtualCurrencies.all.values.sortedByDescending { it.balance }
+            )
+        )
+    }
+}
+
+@Preview(
+    name = "Loaded with 5 VC Balances",
+    showBackground = true
+)
+@Composable
+internal fun VirtualCurrencyBalancesScreenLoadedVCsPreview() {
+    CustomerCenterPreviewTheme {
+        InternalVirtualCurrencyBalancesScreen(
+            appearance = CustomerCenterConfigTestData.standardAppearance,
+            localization = CustomerCenterConfigTestData.customerCenterData().localization,
+            viewState = VirtualCurrencyBalancesScreenViewState.Loaded(
+                CustomerCenterConfigTestData.fiveVirtualCurrencies.all.values.sortedByDescending { it.balance }
+            )
+        )
+    }
+}
+
+@Preview(
+    name = "Loading State",
+    showBackground = true
+)
+@Composable
+internal fun VirtualCurrencyBalancesScreenLoadingPreview() {
+    CustomerCenterPreviewTheme {
+        InternalVirtualCurrencyBalancesScreen(
+            appearance = CustomerCenterConfigTestData.standardAppearance,
+            localization = CustomerCenterConfigTestData.customerCenterData().localization,
+            viewState = VirtualCurrencyBalancesScreenViewState.Loading
+        )
+    }
+}
+
+@Preview(
+    name = "Error State",
+    showBackground = true
+)
+@Composable
+internal fun VirtualCurrencyBalancesScreenErrorPreview() {
+    CustomerCenterPreviewTheme {
+        InternalVirtualCurrencyBalancesScreen(
+            appearance = CustomerCenterConfigTestData.standardAppearance,
+            localization = CustomerCenterConfigTestData.customerCenterData().localization,
+            viewState = VirtualCurrencyBalancesScreenViewState.Error
+        )
+    }
 }
