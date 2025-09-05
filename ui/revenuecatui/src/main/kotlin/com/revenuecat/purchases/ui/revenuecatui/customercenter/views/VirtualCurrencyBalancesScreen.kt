@@ -41,7 +41,6 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
 @JvmSynthetic
 @Composable
-@Suppress("LongParameterList", "LongMethod")
 internal fun VirtualCurrencyBalancesScreen(
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
