@@ -33,9 +33,7 @@ internal class VirtualCurrencyBalancesScreenViewModel(
         purchases.invalidateVirtualCurrenciesCache()
         try {
             val virtualCurrencies = purchases.awaitGetVirtualCurrencies()
-            val sortedVirtualCurrencies = virtualCurrencies.all.values.sortedByDescending { it.balance }
-
-            _viewState.value = VirtualCurrencyBalancesScreenViewState.Loaded(sortedVirtualCurrencies)
+            _viewState.value = VirtualCurrencyBalancesScreenViewState.Loaded(virtualCurrencies)
         } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") e: Exception) {
             _viewState.value = VirtualCurrencyBalancesScreenViewState.Error
         }
