@@ -63,7 +63,7 @@ internal class DefaultFileRepository(
     constructor(
         context: Context,
     ) : this(
-        fileCacheManager = FileCache(context),
+        fileCacheManager = DefaultFileCache(context),
     )
 
     override fun prefetch(urls: List<URL>) {
@@ -150,7 +150,7 @@ internal class DefaultFileRepository(
     }
 }
 
-private class FileCache(
+private class DefaultFileCache(
     private val context: Context,
 ) : LocalFileCache {
 
