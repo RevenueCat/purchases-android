@@ -25,9 +25,9 @@ internal fun CustomerCenterErrorViewPreview() {
             state = CustomerCenterState.Error(
                 error = PurchasesError(
                     code = PurchasesErrorCode.UnknownError,
-                    underlyingErrorMessage = "Mock error"
-                )
-            )
+                    underlyingErrorMessage = "Mock error",
+                ),
+            ),
         )
     }
 }

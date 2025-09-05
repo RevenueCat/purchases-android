@@ -70,14 +70,13 @@ private fun InternalVirtualCurrencyBalancesScreen(
     viewState: VirtualCurrencyBalancesScreenViewState,
     modifier: Modifier = Modifier,
 ) {
-
     val isDark = isSystemInDarkTheme()
     val textColor = appearance.getColorForTheme(isDark) { it.textColor }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         when (viewState) {
             is VirtualCurrencyBalancesScreenViewState.Loading -> {
@@ -105,7 +104,7 @@ private fun InternalVirtualCurrencyBalancesScreen(
                             // Here, we use the code, name, and index as the key in case
                             // the backend returns multiple VCs with the same code for some reason
                             "${virtualCurrency.code}_${virtualCurrency.name}_$index"
-                        }
+                        },
                     ) { index, virtualCurrency ->
                         if (index > 0) {
                             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
@@ -192,7 +191,7 @@ private fun getVirtualCurrencyBalancesScreenViewModel(
 
 @Preview(
     name = "Loaded with 0 VC Balances",
-    showBackground = true
+    showBackground = true,
 )
 @Composable
 internal fun VirtualCurrencyBalancesScreenLoaded0VCsPreview() {
@@ -200,14 +199,14 @@ internal fun VirtualCurrencyBalancesScreenLoaded0VCsPreview() {
         InternalVirtualCurrencyBalancesScreen(
             appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = CustomerCenterConfigTestData.customerCenterData().localization,
-            viewState = VirtualCurrencyBalancesScreenViewState.Loaded(emptyList())
+            viewState = VirtualCurrencyBalancesScreenViewState.Loaded(emptyList()),
         )
     }
 }
 
 @Preview(
     name = "Loaded with 4 VC Balances",
-    showBackground = true
+    showBackground = true,
 )
 @Composable
 internal fun VirtualCurrencyBalancesScreenLoaded4VCsPreview() {
@@ -216,15 +215,15 @@ internal fun VirtualCurrencyBalancesScreenLoaded4VCsPreview() {
             appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = CustomerCenterConfigTestData.customerCenterData().localization,
             viewState = VirtualCurrencyBalancesScreenViewState.Loaded(
-                CustomerCenterConfigTestData.fourVirtualCurrencies.all.values.sortedByDescending { it.balance }
-            )
+                CustomerCenterConfigTestData.fourVirtualCurrencies.all.values.sortedByDescending { it.balance },
+            ),
         )
     }
 }
 
 @Preview(
     name = "Loaded with 5 VC Balances",
-    showBackground = true
+    showBackground = true,
 )
 @Composable
 internal fun VirtualCurrencyBalancesScreenLoadedVCsPreview() {
@@ -233,15 +232,15 @@ internal fun VirtualCurrencyBalancesScreenLoadedVCsPreview() {
             appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = CustomerCenterConfigTestData.customerCenterData().localization,
             viewState = VirtualCurrencyBalancesScreenViewState.Loaded(
-                CustomerCenterConfigTestData.fiveVirtualCurrencies.all.values.sortedByDescending { it.balance }
-            )
+                CustomerCenterConfigTestData.fiveVirtualCurrencies.all.values.sortedByDescending { it.balance },
+            ),
         )
     }
 }
 
 @Preview(
     name = "Loading State",
-    showBackground = true
+    showBackground = true,
 )
 @Composable
 internal fun VirtualCurrencyBalancesScreenLoadingPreview() {
@@ -249,14 +248,14 @@ internal fun VirtualCurrencyBalancesScreenLoadingPreview() {
         InternalVirtualCurrencyBalancesScreen(
             appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = CustomerCenterConfigTestData.customerCenterData().localization,
-            viewState = VirtualCurrencyBalancesScreenViewState.Loading
+            viewState = VirtualCurrencyBalancesScreenViewState.Loading,
         )
     }
 }
 
 @Preview(
     name = "Error State",
-    showBackground = true
+    showBackground = true,
 )
 @Composable
 internal fun VirtualCurrencyBalancesScreenErrorPreview() {
@@ -267,9 +266,9 @@ internal fun VirtualCurrencyBalancesScreenErrorPreview() {
             viewState = VirtualCurrencyBalancesScreenViewState.Error(
                 error = PurchasesError(
                     code = PurchasesErrorCode.UnknownError,
-                    underlyingErrorMessage = "Mock error"
-                )
-            )
+                    underlyingErrorMessage = "Mock error",
+                ),
+            ),
         )
     }
 }

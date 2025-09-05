@@ -425,7 +425,7 @@ private fun CustomerCenterNavHost(
             is CustomerCenterDestination.VirtualCurrencyBalances -> {
                 VirtualCurrencyBalancesScreen(
                     appearance = customerCenterState.customerCenterConfigData.appearance,
-                    localization = customerCenterState.customerCenterConfigData.localization
+                    localization = customerCenterState.customerCenterConfigData.localization,
                 )
             }
         }

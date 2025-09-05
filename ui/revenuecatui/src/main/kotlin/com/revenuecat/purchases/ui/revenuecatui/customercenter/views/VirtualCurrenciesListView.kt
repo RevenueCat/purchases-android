@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
 private const val MAX_NUMBER_OF_ROWS = 4
 
@@ -77,7 +78,7 @@ internal fun VirtualCurrenciesListView(
             ),
         )
 
-        displayedCurrencies.forEachIndexed { index, currency ->
+        displayedCurrencies.forEachIndexed { index, virtualCurrency ->
             if (index > 0) {
                 Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
             }
@@ -92,9 +93,7 @@ internal fun VirtualCurrenciesListView(
 
             VirtualCurrencyRow(
                 appearance = appearance,
-                virtualCurrencyName = currency.name,
-                virtualCurrencyCode = currency.code,
-                balance = currency.balance,
+                virtualCurrency = virtualCurrency,
                 position = position,
             )
         }
@@ -113,20 +112,18 @@ internal fun VirtualCurrenciesListView(
 @Composable
 internal fun VirtualCurrencyRow(
     appearance: CustomerCenterConfigData.Appearance,
-    virtualCurrencyName: String,
-    virtualCurrencyCode: String,
-    balance: Int,
+    virtualCurrency: VirtualCurrency,
     position: ButtonPosition,
     modifier: Modifier = Modifier,
 ) {
-    val formattedBalance = remember(balance) {
+    val formattedBalance = remember(virtualCurrency.balance) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             NumberFormatter.with()
                 .locale(Resources.getSystem().configuration.locales.get(0))
-                .format(balance)
+                .format(virtualCurrency.balance)
                 .toString()
         } else {
-            balance.toString()
+            virtualCurrency.balance.toString()
         }
     }
 
@@ -164,15 +161,15 @@ internal fun VirtualCurrencyRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "$virtualCurrencyName ($virtualCurrencyCode)",
+                text = "${virtualCurrency.name} (${virtualCurrency.code})",
                 textAlign = TextAlign.Start,
                 maxLines = 2,
-                color = textColor
+                color = textColor,
             )
 
             Text(
                 text = formattedBalance,
-                color = textColor
+                color = textColor,
             )
         }
     }
