@@ -39,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.Virtual
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.VirtualCurrencyBalancesScreenViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
 @JvmSynthetic
@@ -74,7 +75,6 @@ private fun InternalVirtualCurrencyBalancesScreen(
 ) {
 
     val isDark = isSystemInDarkTheme()
-    val textColor = appearance.getColorForTheme(isDark) { it.textColor }
 
     LazyColumn(
         modifier = modifier
@@ -88,45 +88,15 @@ private fun InternalVirtualCurrencyBalancesScreen(
                 }
             }
             is VirtualCurrencyBalancesScreenViewState.Loaded -> {
-                val virtualCurrencyBalanceData = (viewState as VirtualCurrencyBalancesScreenViewState.Loaded)
-                    .virtualCurrencyBalanceData
-                if (virtualCurrencyBalanceData.isNotEmpty()) {
+                val virtualCurrencies = viewState.virtualCurrencies
+                if (virtualCurrencies.all.isNotEmpty()) {
                     item {
-                        Text(
-                            text = localization.commonLocalizedString(
-                                CustomerCenterConfigData.Localization.CommonLocalizedString
-                                    .VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
-                            ),
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = textColor ?: MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(bottom = 16.dp),
-                        )
-                    }
-                    itemsIndexed(
-                        items = virtualCurrencyBalanceData,
-                        key = { index, virtualCurrency ->
-                            // Here, we use the code, name, and index as the key in case
-                            // the backend returns multiple VCs with the same code for some reason
-                            "${virtualCurrency.code}_${virtualCurrency.name}_$index"
-                        }
-                    ) { index, virtualCurrency ->
-                        if (index > 0) {
-                            Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
-                        }
-
-                        val position = when {
-                            virtualCurrencyBalanceData.size == 1 -> ButtonPosition.SINGLE
-                            index == 0 -> ButtonPosition.FIRST
-                            index == virtualCurrencyBalanceData.size - 1 -> ButtonPosition.LAST
-                            else -> ButtonPosition.MIDDLE
-                        }
-
-                        VirtualCurrencyRow(
+                        VirtualCurrenciesListView(
+                            virtualCurrencies = virtualCurrencies,
+                            allowDisplayingShowAllButton = false,
                             appearance = appearance,
-                            virtualCurrencyName = virtualCurrency.name,
-                            virtualCurrencyCode = virtualCurrency.code,
-                            balance = virtualCurrency.balance,
-                            position = position,
+                            localization = localization,
+                            onAction = null   // No actions should be taken from here
                         )
                     }
                 } else {
@@ -203,7 +173,7 @@ private fun EmptyStateView(
 
 internal sealed interface VirtualCurrencyBalancesScreenViewState {
     object Loading : VirtualCurrencyBalancesScreenViewState
-    data class Loaded(val virtualCurrencyBalanceData: List<VirtualCurrency>) : VirtualCurrencyBalancesScreenViewState
+    data class Loaded(val virtualCurrencies: VirtualCurrencies) : VirtualCurrencyBalancesScreenViewState
     object Error : VirtualCurrencyBalancesScreenViewState
 }
 
@@ -229,7 +199,7 @@ internal fun VirtualCurrencyBalancesScreenLoaded0VCsPreview() {
         InternalVirtualCurrencyBalancesScreen(
             appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = CustomerCenterConfigTestData.customerCenterData().localization,
-            viewState = VirtualCurrencyBalancesScreenViewState.Loaded(emptyList())
+            viewState = VirtualCurrencyBalancesScreenViewState.Loaded(VirtualCurrencies(all = emptyMap()))
         )
     }
 }
@@ -245,7 +215,7 @@ internal fun VirtualCurrencyBalancesScreenLoaded4VCsPreview() {
             appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = CustomerCenterConfigTestData.customerCenterData().localization,
             viewState = VirtualCurrencyBalancesScreenViewState.Loaded(
-                CustomerCenterConfigTestData.fourVirtualCurrencies.all.values.sortedByDescending { it.balance }
+                CustomerCenterConfigTestData.fourVirtualCurrencies//.all.values.sortedByDescending { it.balance }
             )
         )
     }
@@ -262,7 +232,7 @@ internal fun VirtualCurrencyBalancesScreenLoadedVCsPreview() {
             appearance = CustomerCenterConfigTestData.standardAppearance,
             localization = CustomerCenterConfigTestData.customerCenterData().localization,
             viewState = VirtualCurrencyBalancesScreenViewState.Loaded(
-                CustomerCenterConfigTestData.fiveVirtualCurrencies.all.values.sortedByDescending { it.balance }
+                CustomerCenterConfigTestData.fiveVirtualCurrencies//.all.values.sortedByDescending { it.balance }
             )
         )
     }
