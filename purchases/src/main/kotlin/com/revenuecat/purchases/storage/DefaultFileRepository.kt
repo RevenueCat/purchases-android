@@ -54,7 +54,7 @@ internal class DefaultFileRepository(
     @get:VisibleForTesting
     internal val store: KeyedDeferredValueStore<URL, URI> = KeyedDeferredValueStore<URL, URI>(),
     private val fileCacheManager: LocalFileCache,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + NonCancellable),
+    private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO + NonCancellable),
     private val logHandler: LogHandler = currentLogHandler,
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
 ) : FileRepository {
@@ -67,7 +67,7 @@ internal class DefaultFileRepository(
     )
 
     override fun prefetch(urls: List<URL>) {
-        scope.launch {
+        ioScope.launch {
             urls.forEach { url ->
                 try {
                     generateOrGetCachedFileURL(url)
@@ -80,7 +80,7 @@ internal class DefaultFileRepository(
 
     override suspend fun generateOrGetCachedFileURL(url: URL): URI {
         return store.getOrPut(url) {
-            scope.async {
+            ioScope.async {
                 val cachedUri = fileCacheManager.generateLocalFilesystemURI(remoteURL = url)
                     ?: {
                         val error = Error.FailedToCreateCacheDirectory(url.toString())

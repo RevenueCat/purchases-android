@@ -70,7 +70,7 @@ class FileRepositoryTest : CoroutineTest() {
 
         val defaultFileRepository = DefaultFileRepository(
             fileCacheManager = mockCache,
-            scope = this,
+            ioScope = this,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
         )
