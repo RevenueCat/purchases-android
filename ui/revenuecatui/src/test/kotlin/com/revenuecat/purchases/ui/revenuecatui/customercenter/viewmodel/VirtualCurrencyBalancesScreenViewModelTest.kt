@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel
 
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreenViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -90,13 +93,14 @@ class VirtualCurrencyBalancesScreenViewModelTest {
 
     @Test
     fun `loadData failure sets error state`() = runTest {
-        coEvery { mockPurchases.awaitGetVirtualCurrencies() } throws RuntimeException("An error occurred")
+        val error = PurchasesError(code = PurchasesErrorCode.UnknownError, underlyingErrorMessage = "Test error")
+        coEvery { mockPurchases.awaitGetVirtualCurrencies() } throws PurchasesException(error)
 
         viewModel.onViewAppeared()
         advanceUntilIdle()
 
         coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
-        assertThat(viewModel.viewState.value).isEqualTo(VirtualCurrencyBalancesScreenViewState.Error)
+        assertThat(viewModel.viewState.value).isEqualTo(VirtualCurrencyBalancesScreenViewState.Error(error = error))
     }
 
     @Test

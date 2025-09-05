@@ -2438,4 +2438,71 @@ class CustomerCenterViewModelTests {
         coVerify(exactly = 0) { purchases.awaitGetVirtualCurrencies() }
     }
 
+    @Test
+    fun `showVirtualCurrencyBalances navigates to virtual currency balances screen when displayVirtualCurrencies is true`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = true)
+        val model = setupViewModel()
+
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        model.showVirtualCurrencyBalances()
+        
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination).isInstanceOf(CustomerCenterDestination.VirtualCurrencyBalances::class.java)
+        assertThat(updatedState.navigationButtonType).isEqualTo(CustomerCenterState.NavigationButtonType.BACK)
+        
+        val destination = updatedState.currentDestination as CustomerCenterDestination.VirtualCurrencyBalances
+        assertThat(destination.title).isEqualTo("In-App Currencies")
+    }
+
+    @Test
+    fun `showVirtualCurrencyBalances does nothing when displayVirtualCurrencies is false`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = false)
+
+        val model = setupViewModel()
+        
+        val initialState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialDestination = initialState.currentDestination
+        
+        model.showVirtualCurrencyBalances()
+        
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination).isEqualTo(initialDestination)
+    }
+
+    @Test
+    fun `showVirtualCurrencyBalances does nothing when displayVirtualCurrencies is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = null)
+
+        val model = setupViewModel()
+        
+        val initialState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialDestination = initialState.currentDestination
+        
+        model.showVirtualCurrencyBalances()
+        
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination).isEqualTo(initialDestination)
+    }
+
+    @Test
+    fun `showVirtualCurrencyBalances does nothing when state is not Success`(): Unit = runBlocking {
+        setupPurchasesMock()
+        coEvery { purchases.awaitCustomerCenterConfigData() } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.UnknownError, "Test error")
+        )
+        
+        val model = setupViewModel()
+        
+        val errorState = model.state.filterIsInstance<CustomerCenterState.Error>().first()
+        
+        model.showVirtualCurrencyBalances()
+        
+        val currentState = model.state.value
+        assertThat(currentState).isEqualTo(errorState)
+        assertThat(currentState).isInstanceOf(CustomerCenterState.Error::class.java)
+    }
 }
