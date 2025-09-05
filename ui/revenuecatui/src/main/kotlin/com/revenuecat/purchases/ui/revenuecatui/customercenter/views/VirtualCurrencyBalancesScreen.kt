@@ -62,7 +62,7 @@ internal fun VirtualCurrencyBalancesScreen(
 
 @JvmSynthetic
 @Composable
-@Suppress("LongParameterList", "LongMethod")
+@Suppress("LongMethod")
 private fun InternalVirtualCurrencyBalancesScreen(
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
