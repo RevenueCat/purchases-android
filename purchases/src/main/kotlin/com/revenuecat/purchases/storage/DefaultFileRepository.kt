@@ -108,13 +108,18 @@ internal class DefaultFileRepository(
                 if (connection.responseCode != HttpURLConnection.HTTP_OK) {
                     throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
                 }
-
-                val bytes = connection.inputStream.use { inputStream ->
-                    inputStream.readBytes()
+                try {
+                    val bytes = connection.inputStream.use { inputStream ->
+                        inputStream.readBytes()
+                    }
+                    connection.disconnect()
+                    return@withContext bytes
+                } catch (e: IOException) {
+                    val message = "Failed to read input stream for file at: $url. Error: ${e.localizedMessage}"
+                    logHandler.e("FileRepository", message, e)
+                    connection.disconnect()
+                    throw Error.FailedToFetchFileFromRemoteSource(message)
                 }
-
-                connection.disconnect()
-                return@withContext bytes
             }
         } catch (e: IOException) {
             val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
