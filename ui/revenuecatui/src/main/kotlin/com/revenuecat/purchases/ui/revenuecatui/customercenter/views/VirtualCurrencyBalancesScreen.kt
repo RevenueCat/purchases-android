@@ -102,7 +102,14 @@ private fun InternalVirtualCurrencyBalancesScreen(
                             modifier = Modifier.padding(bottom = 16.dp),
                         )
                     }
-                    itemsIndexed(virtualCurrencyBalanceData) { index, virtualCurrency ->
+                    itemsIndexed(
+                        items = virtualCurrencyBalanceData,
+                        key = { index, virtualCurrency ->
+                            // Here, we use the code, name, and index as the key in case
+                            // the backend returns multiple VCs with the same code for some reason
+                            "${virtualCurrency.code}_${virtualCurrency.name}_$index"
+                        }
+                    ) { index, virtualCurrency ->
                         if (index > 0) {
                             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
                         }
