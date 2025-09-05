@@ -42,9 +42,8 @@ internal fun VirtualCurrenciesListView(
     virtualCurrencies: VirtualCurrencies,
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
-    onAction: ((CustomerCenterAction) -> Unit)?,
+    onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
-    allowDisplayingShowAllButton: Boolean = true,
 ) {
     if (virtualCurrencies.all.isEmpty()) return
 
@@ -60,7 +59,7 @@ internal fun VirtualCurrenciesListView(
         sortedCurrencies.take(MAX_NUMBER_OF_ROWS - 1)
     }
 
-    val displayShowAllButton = allowDisplayingShowAllButton && (sortedCurrencies.size > MAX_NUMBER_OF_ROWS)
+    val displayShowAllButton = sortedCurrencies.size > MAX_NUMBER_OF_ROWS
 
     Column(
         modifier = modifier
@@ -100,7 +99,7 @@ internal fun VirtualCurrenciesListView(
             )
         }
 
-        if (displayShowAllButton && onAction != null) {
+        if (displayShowAllButton) {
             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
 
             ShowAllVirtualCurrenciesRow(
